@@ -1,0 +1,8 @@
+so this will be the place for the server manager code.
+
+it will
+
+1) boot servers
+2) shutdown servers
+3) check their status
+4) forward this infomation into an API via JSON
