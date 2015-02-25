@@ -1,0 +1,4 @@
+logfile $HOME/.samlogs/%S.log
+logfile flush 5
+log on
+deflog on
