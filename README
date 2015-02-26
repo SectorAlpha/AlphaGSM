@@ -5,4 +5,6 @@ it will
 1) boot servers
 2) shutdown servers
 3) check their status
-4) forward this infomation into an API via JSON
+4) game servers for all (sasha user account holders)
+
+The plans are being discussed on the sector alpha wiki at http://wiki.sector-alpha.net/index.php?title=Game_Server_Management_Tool
