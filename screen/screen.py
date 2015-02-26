@@ -28,7 +28,23 @@ def sendToScreen(name,command):
     return out
 
 def sendToServer(name,inp):
-  return sendtoscreen(name,["stuff",inp])
+  return sendToScreen(name,["stuff",inp])
+
+def checkScreenExists(name):
+  try:
+    sendToScreen(name,["select","."])
+    return True
+  except ScreenError:
+    return False
+
+def connectToScreen(name):
+  try:
+    sp.check_call(["screen","-rS",SESSIONTAG+name],shell=False)
+  except sp.CalledProcessError as ex:
+    raise ScreenError("Screen Failed with return value: "+str(ex.returncode),ex.returncode)
 
 
-__all__=["ScreenError","startScreen","sendToScreen","sendToServer"]
+def logpath(name):
+  return os.path.join(os.path.expanduser("~/.samlogs"),SESSIONTAG+name+".log")
+
+__all__=["ScreenError","startScreen","sendToScreen","sendToServer","checkScreenExists","connectToScreen","logpath"]
