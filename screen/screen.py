@@ -6,7 +6,7 @@ SESSIONTAG="sam#"
 class ScreenError(Exception):
   pass
 
-def startScreen(name,command):
+def start_screen(name,command):
   if not os.path.isdir(os.path.expanduser("~/.samlogs")):
     try:
       os.mkdir(os.path.expanduser("~/.samlogs"))
@@ -19,7 +19,7 @@ def startScreen(name,command):
   else:
     return out
 
-def sendToScreen(name,command):
+def send_to_screen(name,command):
   try:
     out=sp.check_output(["screen","-S",SESSIONTAG+name,"-p","0","-X"]+list(command),stderr=sp.STDOUT,shell=False)
   except sp.CalledProcessError as ex:
@@ -27,17 +27,17 @@ def sendToScreen(name,command):
   else:
     return out
 
-def sendToServer(name,inp):
-  return sendToScreen(name,["stuff",inp])
+def send_to_server(name,inp):
+  return send_to_screen(name,["stuff",inp])
 
-def checkScreenExists(name):
+def check_screen_rxists(name):
   try:
-    sendToScreen(name,["select","."])
+    sens_to_screen(name,["select","."])
     return True
   except ScreenError:
     return False
 
-def connectToScreen(name):
+def connect_to_screen(name):
   try:
     sp.check_call(["screen","-rS",SESSIONTAG+name],shell=False)
   except sp.CalledProcessError as ex:
@@ -47,4 +47,4 @@ def connectToScreen(name):
 def logpath(name):
   return os.path.join(os.path.expanduser("~/.samlogs"),SESSIONTAG+name+".log")
 
-__all__=["ScreenError","startScreen","sendToScreen","sendToServer","checkScreenExists","connectToScreen","logpath"]
+__all__=["ScreenError","start_screen","send_to_screen","send_to_server","check_screen_exists","connect_to_screen","logpath"]
