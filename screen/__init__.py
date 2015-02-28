@@ -1,2 +1,2 @@
 from .screen import *
-from tail import *
+from .tail import *

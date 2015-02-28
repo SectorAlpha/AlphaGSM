@@ -28,11 +28,11 @@ class JSONDataStore(object):
   def load(self):
     if not os.path.isfile(self.filename):
       raise DataError("file doesn't exist: "+self.filename)
-    with open(self.filename, 'rb') as fp:
+    with open(self.filename, 'r') as fp:
       data = json.load(fp)
     self._dict=data
   def save(self):
-    with open(self.filename, 'wb') as fp:
+    with open(self.filename, 'w') as fp:
       json.dump(self._dict,fp)
     
     

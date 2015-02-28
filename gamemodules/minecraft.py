@@ -1,19 +1,20 @@
 import os
 commands=("op","deop")
-command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],None,[("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url",str)("l",["eula"],"Mark the eula as read","eula",True)],
+command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],None,[("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url",str),("l",["eula"],"Mark the eula as read","eula",True)]),
               "op":([],[],("USER","The user[s] to op",str),[]),
-              "deop":([],[],("USER","The user[s] to deop",str),[])}
+              "deop":([],[],("USER","The user[s] to deop",str),[]),
+              "message":([],[],("TARGET","The user[s] to send the message to",str),[])}
 command_descriptions={}
 
 def initialise(server,ask,port=None,dir=None,eula=None,url=None):
   if port is None and not ask:
     raise ValueError("No Port and not asking")
-  while post is None
+  while post is None:
     inp=raw_input("Please specify the port to use for this server: ")
     try:
       port=int(inp)
     except ValueError as v:
-      print inp+" isn't a valid port number"
+      print(inp+" isn't a valid port number")
   server.data["port"]=port
   if dir is None:
     dir=os.path.expand_user(os.path.join("~",server.name))
@@ -33,5 +34,5 @@ def initialise(server,ask,port=None,dir=None,eula=None,url=None):
       eula=raw_input("Please conform you have read the eula (y/yes or n/no): ").strip().lower() in ("y","yes")
     else:
       eula=False
-return (url,eula),{}
+  return (url,eula),{}
 

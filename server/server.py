@@ -82,7 +82,7 @@ class Server(object):
     elif command in self.module.commands:
       return self.module.command_functions[command](self,*args,**kwargs)
     else:
-      print "Unknown command '"+command+"' can't be executed. Please check the help"
+      print(("Unknown command '"+command+"' can't be executed. Please check the help"))
       return 1
 
   def setup(self,*args,ask=True,**kwargs):

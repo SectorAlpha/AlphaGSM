@@ -30,7 +30,7 @@ def send_to_screen(name,command):
 def send_to_server(name,inp):
   return send_to_screen(name,["stuff",inp])
 
-def check_screen_rxists(name):
+def check_screen_exists(name):
   try:
     sens_to_screen(name,["select","."])
     return True

@@ -71,7 +71,7 @@ def _gen(filename, fp, lastInode, sleepfor,timeout):
         thisData = fp.read(4096)
         if len(thisData) < 1:
           break
-        print "read data '"+thisData+"'"
+        print(("read data '"+thisData+"'"))
         data = data + thisData
         #  process lines within the data
         while 1:
