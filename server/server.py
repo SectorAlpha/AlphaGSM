@@ -12,7 +12,7 @@ class ServerError(Exception):
 
 class Server(object):
   default_commands=("setup","start","stop","status","message","connect","dump","set")
-  default_command_args={"setup":([],[],None,[]),
+  default_command_args={"setup":([],[],None,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",False)]),
                         "start":([],[],None,[]),
                         "stop":([],[],None,[]),
                         "status":([],[],None,[]),
@@ -84,3 +84,8 @@ class Server(object):
     else:
       print "Unknown command '"+command+"' can't be executed. Please check the help"
       return 1
+
+  def setup(self,*args,ask=True,**kwargs):
+    args,kwargs=self.module.initialise(self,ask,*args,**kwargs)
+    self.module.install(self,*args,**kwargs)
+    self.module.postinstall(self,*args,**kwargs)
