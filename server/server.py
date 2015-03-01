@@ -74,15 +74,15 @@ class Server(object):
         desc=desc+"\n\n"+extra_desc
     return desc
 
-  def run_command(command,*args,**kwargs):
+  def run_command(self,command,*args,**kwargs):
     if command in self.default_commands:
       if command == "setup":
-         return self.setup(*args,**args)
+         return self.setup(*args,**kwargs)
       elsif
     elif command in self.module.commands:
       return self.module.command_functions[command](self,*args,**kwargs)
     else:
-      print(("Unknown command '"+command+"' can't be executed. Please check the help"))
+      print("Unknown command '"+command+"' can't be executed. Please check the help")
       return 1
 
   def setup(self,*args,ask=True,**kwargs):
