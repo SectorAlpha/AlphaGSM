@@ -3,6 +3,27 @@ import urllib.request
 import json
 import subprocess as sp
 from server import ServerError
+import re
+
+_confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
+def updateconfig(filename,settings):
+  lines=[]
+  if os.path.isfile(filename):
+    settings=settings.copy()
+    with open(filename,"r") as f:
+      for l in f:
+        m=_confpat.match(l)
+        if m is not None and m.group(1) in settings:
+          lines.append(m.expand(r"\1="+settings[m.group(1)]+r"\3"))
+          del settings[m.group(1)]
+        else:
+          lines.append(l)
+  for k,v in settings.items():
+    lines.append(k+"="+v+"\n")
+  print(lines)
+  with open(filename,"w") as f:
+    f.write("".join(lines))
+
 
 commands=("op","deop")
 command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],None,[("v",["version"],"Version of minecraft to download. Overriden by the url option","version",str),("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url",str),("l",["eula"],"Mark the eula as read","eula",True)]),
@@ -99,9 +120,10 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
 def install(server,*,eula=False):
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
-  if "current url" not in server.data or server.data["current url"]!=server.data["url"]:
+  mcjar=os.path.join(server.data["dir"],"minecraft_server.jar")
+  if "current url" not in server.data or server.data["current url"]!=server.data["url"] or not os.path.isfile(mcjar):
     try:
-      fname,headers=urllib.request.URLopener().retrieve(server.data["url"],filename=os.path.join(server.data["dir"],"minecraft_server.jar"))
+      fname,headers=urllib.request.URLopener().retrieve(server.data["url"],filename=mcjar)
     except urllib.error.URLError as ex:
       print("Error downloading minecraft_server.jar: "+ex.reason)
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
@@ -115,20 +137,12 @@ def install(server,*,eula=False):
     print("Starting server to create settings")
     try:
       ret=sp.check_call(["java","-jar","minecraft_server.jar"],cwd=server.data["dir"],shell=False,timeout=10)
-    except CalledProcessError as ex:
-      print("Error running server. Java returned status: "+ex.returncode)
-    except TimeoutExpried as ex:
+    except sp.CalledProcessError as ex:
+      +-  print("Error running server. Java returned status: "+ex.returncode)
+    except sp.TimeoutExpried as ex:
       print("Error running server. Process didn't complete in time")
-  if os.path.isfile(eulafile):
-    lines=[]
-    with open(eulafile,"r") as f:
-      for line in f:
-        if line[0:4]=="eula":
-          lines.append("eula=true")
-        else:
-          lines.append(line)
-    with open(eulafile,"w") as f:
-      f.write("\n".join(lines))
-  #edit config file
+  if eula and os.path.isfile(eulafile):
+    updateconfig(eulafile,{"eula":"true"})
+  updateconfig(os.path.join(server.data["dir"],"server.properties"),{"server-port":str(server.data["port"])})
     
   
