@@ -86,6 +86,5 @@ class Server(object):
       return 1
 
   def setup(self,*args,ask=True,**kwargs):
-    args,kwargs=self.module.initialise(self,ask,*args,**kwargs)
+    args,kwargs=self.module.configure(self,ask,*args,**kwargs)
     self.module.install(self,*args,**kwargs)
-    self.module.postinstall(self,*args,**kwargs)
