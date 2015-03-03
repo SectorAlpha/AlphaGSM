@@ -4,6 +4,7 @@ import json
 import subprocess as sp
 from server import ServerError
 import re
+import screen
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -31,6 +32,7 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
               "deop":([],[],("USER","The user[s] to deop",str),[]),
               "message":([],[],("TARGET","The user[s] to send the message to",str),[])}
 command_descriptions={}
+command_functions={}
 
 def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
   if port is None and "port" in server.data:
@@ -136,7 +138,7 @@ def install(server,*,eula=False):
   if not os.path.isfile(eulafile): # use as flag for has the server created it's files
     print("Starting server to create settings")
     try:
-      ret=sp.check_call(["java","-jar","minecraft_server.jar"],cwd=server.data["dir"],shell=False,timeout=10)
+      ret=sp.check_call(["java","-jar","minecraft_server.jar","nogui"],cwd=server.data["dir"],shell=False,timeout=10)
     except sp.CalledProcessError as ex:
       +-  print("Error running server. Java returned status: "+ex.returncode)
     except sp.TimeoutExpried as ex:
@@ -145,4 +147,8 @@ def install(server,*,eula=False):
     updateconfig(eulafile,{"eula":"true"})
   updateconfig(os.path.join(server.data["dir"],"server.properties"),{"server-port":str(server.data["port"])})
     
-  
+def get_start_command(server):
+  return ["java","-jar","minecraft_server.jar","nogui"],server.data["dir"]
+
+def do_stop(server):
+  screen.send_to_server(server.name,"\nstop\n") 
