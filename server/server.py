@@ -14,10 +14,10 @@ class ServerError(Exception):
 
 class Server(object):
   default_commands=("setup","start","stop","status","message","connect","dump","set")
-  default_command_args={"setup":([],[],None,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",False)]),
+  default_command_args={"setup":([],[],None,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False)]),
                         "start":([],[],None,[]),
                         "stop":([],[],None,[]),
-                        "status":([],[],None,[]),
+                        "status":([],[],None,[("v","--verbose","Verbose status. argument is the level from 0 (normal) to 3 (max)","verbose","LEVEL",int)]),
                         "message":([("MESSAGE","The message to send",str)],[],None,[]),
                         "connect":([],[],None,[]),
                         "dump":([],[],None,[]),
@@ -84,6 +84,8 @@ class Server(object):
         self.start(*args,**kwargs)
       elif command == "stop":
         self.stop(*args,**kwargs)
+      elif command == "status":
+        self.status(*args,**kwargs)
     elif command in self.module.commands:
       self.module.command_functions[command](self,*args,**kwargs)
     else:
@@ -115,24 +117,32 @@ class Server(object):
   def stop(self,*args,**kwargs):
     if not screen.check_screen_exists(self.name):
       raise ServerError("Error: Can't stop a server that isn't running")
-    self.module.do_stop(self,*args,**kwargs)
-    j=0
-    i=0
-    while screen.check_screen_exists(self.name):
-      time.sleep(5)
-      i+=1
-      if i>12:
-        i=0
-        j+=1
-        if j>4:
-          raise ServerError("Server hasn't stopped after 4 minutes. Please check manually")
-        print("Server isn't stopping after "+str(j)+" minutes")
-        try:
-          force_stop=self.module.force_stop
-        except AttributeError:
-          pass
-        else:
-          force_stop(j,*args,**kwargs)
+    jmax=5
+    try:
+      jmax=min(jmax,self.module.max_stop_wait)
+    except AttributeError:
+      pass
+    print("Will try and stop server for "+str(jmax)+" minutes")
+    for j in range(jmax):
+      self.module.do_stop(self,j,*args,**kwargs)
+      for i in range(6):
+        print(j,i)
+        if not screen.check_screen_exists(self.name):
+          return # session doesn't exist so success
+        time.sleep(10)
+      if not screen.check_screen_exists(self.name):
+        return
+      print("Server isn't stopping after "+str(j+1)+" minutes")
+    print("Killing Server")
+    screen.send_to_screen(self.name,["quit"])
+    time.sleep(1)
+    if screen.check_screen_exists(self.name):
+      raise ServerError("Error can't kill server")
   
-  
-  
+  def status(self,*args,verbose=0,**kwargs):
+    if not screen.check_screen_exists(self.name):
+      print("Server isn't running as no screen session")
+    else:
+      print("Server is running as screen session exists")
+      if verbose>0:
+        self.module.status(self,*args,verbose=1,**kwargs)

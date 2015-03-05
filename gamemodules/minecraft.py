@@ -27,7 +27,10 @@ def updateconfig(filename,settings):
 
 
 commands=("op","deop")
-command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],None,[("v",["version"],"Version of minecraft to download. Overriden by the url option","version",str),("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url",str),("l",["eula"],"Mark the eula as read","eula",True)]),
+command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],None,
+                       [("v",["version"],"Version of minecraft to download. Overriden by the url option","version","VERSION",str),
+                        ("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url","URL",str),
+                        ("l",["eula"],"Mark the eula as read","eula",None,True)]),
               "op":([],[],("USER","The user[s] to op",str),[]),
               "deop":([],[],("USER","The user[s] to deop",str),[]),
               "message":([],[],("TARGET","The user[s] to send the message to",str),[])}
@@ -150,5 +153,8 @@ def install(server,*,eula=False):
 def get_start_command(server):
   return ["java","-jar","minecraft_server.jar","nogui"],server.data["dir"]
 
-def do_stop(server):
-  screen.send_to_server(server.name,"\nstop\n") 
+def do_stop(server,j):
+  screen.send_to_server(server.name,"\nstop\n")
+
+def status(server,*,verbose=1):
+  pass
