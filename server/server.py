@@ -14,15 +14,15 @@ class ServerError(Exception):
 
 class Server(object):
   default_commands=("setup","start","stop","status","message","connect","dump","set")
-  default_command_args={"setup":([],[],None,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False)]),
-                        "start":([],[],None,[]),
-                        "stop":([],[],None,[]),
-                        "status":([],[],None,[("v","--verbose","Verbose status. argument is the level from 0 (normal) to 3 (max)","verbose","LEVEL",int)]),
-                        "message":([("MESSAGE","The message to send",str)],[],None,[]),
-                        "connect":([],[],None,[]),
-                        "dump":([],[],None,[]),
+  default_command_args={"setup":([],[],False,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False)]),
+                        "start":([],[],False,[]),
+                        "stop":([],[],False,[]),
+                        "status":([],[],False,[("v",["verbose"],"Verbose status. argument is the level from 0 (normal) to 3 (max)","verbose","LEVEL",int)]),
+                        "message":([("MESSAGE","The message to send",str)],[],False,[]),
+                        "connect":([],[],False,[]),
+                        "dump":([],[],False,[]),
                         "set":([("KEY","The key to set in the form of dot seperated elements",str),
-                                ("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree.",str)],[],None,[])}
+                                ("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree.",str)],[],False,[])}
   default_command_descriptions={}
   def __init__(self,name,module=None):
     self.name=name
@@ -59,7 +59,7 @@ class Server(object):
       else:
         if len(extra_args[0])>0:
           raise ServerException("Error in module: Can't add extra required arguments")
-        if args[2] is None:
+        if args[2] is not True:
           args=(args[0],args[1]+extra_args[1],extra_args[2],args[3]+extra_args[3])
         else:
           if len(extra_args[1])>0:

@@ -27,13 +27,13 @@ def updateconfig(filename,settings):
 
 
 commands=("op","deop")
-command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],None,
+command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],False,
                        [("v",["version"],"Version of minecraft to download. Overriden by the url option","version","VERSION",str),
                         ("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url","URL",str),
                         ("l",["eula"],"Mark the eula as read","eula",None,True)]),
-              "op":([],[],("USER","The user[s] to op",str),[]),
-              "deop":([],[],("USER","The user[s] to deop",str),[]),
-              "message":([],[],("TARGET","The user[s] to send the message to",str),[])}
+              "op":([("USER","The user[s] to op",str)],[],True,[]),
+              "deop":([("USER","The user[s] to deop",str)],[],True,[]),
+              "message":([],[("TARGET","The user[s] to send the message to. Sends to all if none given.",str)],True,[])}
 command_descriptions={}
 command_functions={}
 
