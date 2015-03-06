@@ -16,35 +16,57 @@ def parse(inargs,defns):
   inargs=list(inargs)
   outargs=[]
   outopts={}
-  while len(args)>0:
-    arg=args.pop(0)
+  while len(inargs)>0:
+    arg=inargs.pop(0)
     if len(arg)>0 and arg[0]=="-":
       if len(arg)>1 and arg[1]=="-":
         if arg[2:] not in longopts:
-          raise OptionException("Option '"+arg[2:]+"'not known")
+         raise OptionError("Option '"+arg[2:]+"'not known")
         else:
           _,_,_,target,arg,value=opts[longopts[arg[2:]]]
           if arg is None:
             outopts[target]=value
           else:
-            outopts[target]=value(args.pop(0))
+            if len(inargs)<1:
+              raise OptionError("No argument for option '--"+arg[2:]+"'")
+            try:
+              outopts[target]=value(inargs.pop(0))
+            except ValueError:
+              raise OptionError("Argument isn't of the right format for option '--"+arg[2:]+"'")
       else:
-        for c in arg[2:]:
+        for c in arg[1:]:
           if c not in shortopts:
-            raise OptionException("Option '"+c+"'not known")
+            raise OptionError("Option '"+c+"'not known")
           else:
-            _,_,_,target,arg,value=opts[shortopts[arg[2]]]
+            _,_,_,target,arg,value=opts[shortopts[c]]
             if arg is None:
               outopts[target]=value
             else:
-              outopts[target]=value(args.pop(0))
+              if len(inargs)<1:
+                raise OptionError("No argument for option '-"+c+"'")
+              try:
+                outopts[target]=value(inargs.pop(0))
+              except ValueError:
+                raise OptionError("Argument isn't of the right format for option '-"+c+"'")
     else:
       outargs.append(arg)
   if len(outargs)<len(reqargs):
-    raise OptionException("Not enough arguments provided")
+    raise OptionError("Not enough arguments provided")
   if (catcharg is None or catcharg is False) and len(outargs)>len(reqargs)+len(optargs):
-    raise OptionException("Too many arguments provided")
+    raise OptionError("Too many arguments provided")
+  try:
+    outargs=[value(arg) for arg,(_,_,value) in zip(outargs,_replast(reqargs+optargs))]
+  except ValueError:
+    raise OptionError("Argumant isn't of the right format")
   return outargs,outopts
+
+def _replast(a):
+  last=None
+  for el in a:
+    last=a
+    yield a
+  while True:
+    yield a
 
 def shorthelp(cmd,defns):
   print(cmd,end="")
@@ -85,4 +107,5 @@ def longhelp(cmd,cmddesc,defns):
 def serverhelp(server):
   for cmd in server.get_commands():
     shorthelp(cmd,server.get_command_args(cmd))
+
 

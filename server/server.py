@@ -126,7 +126,6 @@ class Server(object):
     for j in range(jmax):
       self.module.do_stop(self,j,*args,**kwargs)
       for i in range(6):
-        print(j,i)
         if not screen.check_screen_exists(self.name):
           return # session doesn't exist so success
         time.sleep(10)

@@ -36,5 +36,5 @@ class JSONDataStore(object):
       json.dump(self._dict,fp)
     
     
-    
+__all__=["DataError","JSONDataStore"]    
 
