@@ -3,14 +3,11 @@ import os
 import selectors
 
 class ProcessReader(object):
-  def __init__(self,tag,proc,stream,selector):
+  def __init__(self,tag,proc,stream):
     self.tag=tag
     self.proc=proc
-    self.selector=selector
     self.stream=stream
-    self.selector.register(stream,selectors.EVENT_READ,self)
     self.data=b""
-    print(tag,proc.pid,selectors.EVENT_READ)
   def read(self):
     new=self.stream.read1(1000)
     self.data+=new
@@ -29,22 +26,55 @@ class Multiplexer(object):
     self.selector=selectors.DefaultSelector()
     self.procs={}
     self.streams=0
-    self.streamlessprocs=set()
+    self.streamlessprocs={}
   
   def run(self,tag,*args,**kwargs):
-    return self.add(tag,sp.Popen(*args,**kwargs))
+    return self.addproc(tag,sp.Popen(*args,**kwargs))
   
-  def add(self,tag,proc):
-    streams=[]
+  def addproc(self,tag,proc):
     if proc.stdout is not None:
-      streams.append(ProcessReader(tag,proc,proc.stdout,self.selector))
+      self.addstream(proc,ProcessReader(tag,proc,proc.stdout))
     if proc.stderr is not None:
-      streams.append(ProcessReader(tag,proc,proc.stderr,self.selector))
-    self.streams+=len(streams)
-    self.procs[proc]=streams
-    if len(streams)==0:
-      self.streamlessprocs.add((proc,tag))
+      self.addstream(tag,proc,ProcessReader(tag,proc,proc.stderr))
+    self.addbareproc(tag,proc)
     return proc
+
+  def addbareproc(self,tag,proc):
+    if proc not in self.procs:
+      self.procs[proc]=[]
+    if len(self.procs[proc])==0:
+      self.streamlessprocs[proc]=tag
+
+  def addstream(self,proc,reader):
+    self.selector.register(reader.stream,selectors.EVENT_READ,reader)
+    if proc not in self.procs:
+      self.procs[proc]=[]
+    elif proc in self.streamlessprocs:
+      del self.streamlessprocs[proc]
+    self.procs[proc].append(reader)
+    self.streams+=1
+
+  def removestream(self,proc,reader):
+    self.selector.unregister(reader.stream)
+    self.procs[proc].remove(reader)
+    self.streams-=1
+    if len(self.procs[proc])==0:
+      self.streamlessprocs[proc]=reader.tag
+
+  def removeproc(self,proc):
+    for stream in self.procs[proc]:
+      self.removestream(proc,stream)
+    del self.procs[proc]
+    del self.streamlessprocs
+
+  def transfer(self,target,proc):
+    for stream in self.procs[proc]:
+      self.removestream(proc,stream)
+      target.addstream(proc,stream)
+    #all streams removed so now should be in streamlessprocs
+    target.addbareproc(self.streamlessprocs[proc],proc)
+    del self.streamlessprocs[proc]
+    del self.procs[proc]
 
   def process(self,timeout=None):
     print("PROCESS")
@@ -59,25 +89,22 @@ class Multiplexer(object):
         if not hasread:
           if len(key.data.data)>0:
             print(key.data.tag+": ",key.data.data.decode())
-          self.selector.unregister(key.fileobj)
+          self.removestream(key.data.proc,key.data)
           key.fileobj.close()
-          self.procs[key.data.proc].remove(key.data)
-          self.streams-=1
-          if len(self.procs[key.data.proc])==0:
-            self.streamlessprocs.add((key.data.proc,key.data.tag))
-      for proc,tag in self.streamlessprocs.copy():
+      for proc,tag in list(self.streamlessprocs.items()):
         if proc.poll() is not None:
           del self.procs[proc]
-          self.streamlessprocs.remove((proc,tag))
+          del self.streamlessprocs[proc]
           print(tag,"has finished with status",proc.wait())
     else:
       pid,ret=os.waitpid(-1,0)
-      for proc,tag in self.streamlessprocs.copy():
+      for proc,tag in list(self.streamlessprocs.items()):
         if proc.poll() is not None:
           del self.procs[proc]
-          self.streamlessprocs.remove((proc,tag))
+          del self.streamlessprocs[proc]
           print(tag,"has finished with status",proc.wait())
     return self.streams
+
 
   def processall(self):
     while self.process() is not None: pass
