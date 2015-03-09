@@ -34,6 +34,8 @@ class JSONDataStore(object):
   def save(self):
     with open(self.filename, 'w') as fp:
       json.dump(self._dict,fp)
+  def prettydump(self):
+    return json.dumps(self._dict,indent=2,separators=(",",": "))
     
     
 __all__=["DataError","JSONDataStore"]    

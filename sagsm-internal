@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+import core
+import sys
+
+print("#%SAGSM-INTERNAL%#")
+
+core.main(sys.argv[1],sys.argv[2:])

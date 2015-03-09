@@ -1,5 +1,5 @@
 from itertools import chain
-
+import textwrap
 
 class OptionError(Exception):
   pass
@@ -68,44 +68,43 @@ def _replast(a):
   while True:
     yield a
 
-def shorthelp(cmd,defns):
-  print(cmd,end="")
+def shorthelp(cmd,cmddesc,defns):
+  s=cmd
   if len(defns[3])>0:
-    print(" [OPTION]...",end="")
+    s+=" [OPTION]..."
   for arg,_,_ in defns[0]:
-    print(" "+arg,end="")
+    s+=" "+arg
   for arg,_,_ in defns[1]:
-    print(" ["+arg+"]",end="")
+    s+=" ["+arg+"]"
   if defns[2] is True:
-    print("...",end="")
-  print()
+    s+="..."
+  if cmddesc is not None:
+    s+=" : "+cmddesc.splitlines()[0]
+  print(textwrap.fill(s,80,initial_indent="  ",subsequent_indent="        "))
 
 def longhelp(cmd,cmddesc,defns):
-  shorthelp(cmd,defns)
+  shorthelp(cmd,None,defns)
   print()
   if cmddesc is not None:
-    print(cmddesc)
-    print()
+    for par in cmddesc.splitlines():
+      print(textwrap.fill(par,80))
+      print()
   reqargs,optargs,catcharg,opts=defns
   if len(reqargs)>0 or len(optargs)>0:
     print("Arguments:")
     for arg,desc,_ in reqargs:
-      print("  "+arg+": "+desc)
+      print(textwrap.fill(arg+": "+desc,80,initial_indent="  ",subsequent_indent="        "))
     for arg,desc,_ in optargs:
-      print("  "+arg+": "+desc)
+      print(textwrap.fill(arg+": "+desc,80,initial_indent="  ",subsequent_indent="        "))
     print()
   if len(opts)>0:
     print("Options:")
     for short,long,desc,_,arg,_ in opts:
-      print("  ",end="")
-      print(*chain(("-"+s for s in short),("--"+l for l in long)),sep=", ",end="")
+      s=", ".join(chain(("-"+s for s in short),("--"+l for l in long)))
       if arg is not None:
-        print(" "+arg+" ",end="")
-      print(": "+desc)
+        s+=" "+arg+" "
+      s+=": "+desc
+      print(textwrap.fill(s,80,initial_indent="  ",subsequent_indent="        "))
     print()
-
-def serverhelp(server):
-  for cmd in server.get_commands():
-    shorthelp(cmd,server.get_command_args(cmd))
 
 

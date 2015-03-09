@@ -27,7 +27,7 @@ def main(name,args):
     return
   cmd,*args=args
   if count==1 and server == "*" and cmd == "help":
-    help(name,None)
+    help(name,None,*args)
     return
   if server == "*":
     count,servers=getallservers(command)
@@ -107,17 +107,17 @@ and may prompt for a password.
 
 The available commands are:
   help [COMMAND] : Print a help message. Without a command print this message
-          or with a command print detailed help for that command.
-  create TYPE [setup ARGS]: Create a new server of the specified type. If setup
-          is specified then will call setup on the new server immediately. ARGS
-          is passed directly on to setup so see there for the format and
-          options available""")
+        or with a command print detailed help for that command.
+  create TYPE [setup ARGS] : Create a new server of the specified type. If setup
+        is specified then will call setup on the new server immediately. ARGS is
+        passed directly on to setup so see there for the format and options
+        available""")
     if server is None:
       for cmd in Server.default_commands:
-        cmdparse.shorthelp(cmd,Server.default_command_args[cmd])
+        cmdparse.shorthelp(cmd,Server.default_command_descriptions.get(cmd,None),Server.default_command_args[cmd])
     else:
       for cmd in server.get_commands():
-        cmdparse.shorthelp(cmd,server.get_command_args(cmd))
+        cmdparse.shorthelp(cmd,server.get_command_description(cmd),server.get_command_args(cmd))
   else:
     if server is None:
       if cmd not in Server.default_commands:

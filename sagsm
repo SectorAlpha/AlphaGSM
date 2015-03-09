@@ -1,0 +1,4 @@
+#!/usr/bin/python3
+import core
+import sys
+core.main(sys.argv[0],sys.argv[1:])

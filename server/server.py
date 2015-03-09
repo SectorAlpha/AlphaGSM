@@ -13,7 +13,7 @@ class ServerError(Exception):
   pass
 
 class Server(object):
-  default_commands=("setup","start","stop","status","message","connect","dump","set")
+  default_commands=("setup","start","stop","status","message","connect","dump","set","backup")
   default_command_args={"setup":([],[],False,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False)]),
                         "start":([],[],False,[]),
                         "stop":([],[],False,[]),
@@ -22,8 +22,12 @@ class Server(object):
                         "connect":([],[],False,[]),
                         "dump":([],[],False,[]),
                         "set":([("KEY","The key to set in the form of dot seperated elements",str),
-                                ("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree.",str)],[],False,[])}
-  default_command_descriptions={}
+                                ("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree.",str)],[],False,[]),
+                        "backup":([],[],False,[])}
+  default_command_descriptions={"setup":"Setup the game server.\nThis will include processing the required settings,"
+                                        " downloading or copying any needed files and doing any setup task so that a"
+                                        " 'start' should work.\nIf noask is specified then this may fail if extra "
+                                        "game server dependant settings are not provided."}
   def __init__(self,name,module=None):
     self.name=name
     if module is not None:
@@ -66,6 +70,7 @@ class Server(object):
             raise ServerException("Error in module: Can't add extra arguments, already have a catch all argument")
           args=(args[0],args[1],args[2],args[3]+extra_args[3])
     return args
+
   def get_command_description(self,command):
     desc=self.default_command_descriptions.get(command,None)
     extra_desc=self.module.command_descriptions.get(command,None)
@@ -86,6 +91,16 @@ class Server(object):
         self.stop(*args,**kwargs)
       elif command == "status":
         self.status(*args,**kwargs)
+      elif command == "message":
+        self.module.message(*args,**kwargs)
+      elif command == "connect":
+        self.connect(*args,**kwargs)
+      elif command == "dump":
+        self.dump(*args,**kwargs)
+      elif command == "set":
+        self.doset(*args,**kwargs)
+      elif command == "backup":
+        self.module.backup(*args,**kwargs)
     elif command in self.module.commands:
       self.module.command_functions[command](self,*args,**kwargs)
     else:
@@ -145,3 +160,21 @@ class Server(object):
       print("Server is running as screen session exists")
       if verbose>0:
         self.module.status(self,*args,verbose=1,**kwargs)
+
+  def dump(self):
+    print(self.data.prettydump())
+
+  def set(self,key,value,*args,**kwargs):
+    value=self.module.checkvalue(self,key,value,*args,**kwargs)
+    key=key.split(".")
+    data=self.data
+    for el in key[:-1]:
+      data=data[el]
+    data[el]=value
+    try:
+      fn=self.module.postset
+    except AttributeError:
+      pass
+    else:
+      fn(key,*args,**kwargs)
+    self.data.save()   
