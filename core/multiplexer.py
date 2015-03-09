@@ -177,3 +177,4 @@ def addtomultiafter(multi,tag,fn,*args,**kwargs):
   else:
     print("Process "+tag+" finished early")
   multi.process(1)
+  multi.process(0)

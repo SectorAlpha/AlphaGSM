@@ -1,5 +1,8 @@
 from . import cmdparse
 from server import Server,ServerError
+from . import multiplexer as mp
+import subprocess as sp
+import os
 
 __all__=["main"]
 
@@ -30,18 +33,18 @@ def main(name,args):
     help(name,None,*args)
     return
   if server == "*":
-    count,servers=getallservers(command)
+    count,server=getallservers(cmd)
   if count<1:
     print("You must specify at least a server to work on")
     print()
     help(name,None)
     return
   elif count>1:
-    runmulti(name,count,servers,[command]+args)
+    runmulti(name,count,server,[cmd]+args)
   else:
     user,server=splitservername(server)
     if user is not None:
-      runas(name,user,server,[command]+args)
+      runas(name,user,server,[cmd]+args)
     else:
       try:
         server=Server(server)
@@ -80,11 +83,30 @@ def splitservername(server):
 def getallservers(command):
   return 0,[]
 
-def runas(name,user,server,args):
-  pass
+def getrunascmd(name,user,server,args):
+  return ["sudo","-Hu",user]+getruncmd(name,server,args)
 
-def runmulti(name,count,server,args):
-  pass
+def getruncmd(name,server,args):
+  scriptpath=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"sagsm-internal")
+  return [scriptpath,name,server]+args
+
+def runas(name,user,server,args):
+  ret=sp.call(getrunascmd(name,user,server,args))
+  print("Command finished with return status",ret)
+
+def _internalisrunning(line):
+  return line.decode().strip()=="#%SAGSM-INTERNAL%#"
+
+def runmulti(name,count,servers,args):
+  multi=mp.Multiplexer()
+  for rawserver in servers:
+    user,server=splitservername(rawserver)
+    if user is not None:
+      cmd=getrunascmd(name,user,server,args)
+    else:
+      cmd=getruncmd(name,server,args)
+    mp.addtomultiafter(multi,rawserver,_internalisrunning,cmd,stdin=sp.DEVNULL,stdout=sp.PIPE,stderr=sp.STDOUT)
+  multi.processall()
 
 def help(name,server,cmd=None,*_):
   if cmd is None:
