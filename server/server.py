@@ -1,3 +1,9 @@
+"""The core server class and the related ServerError exception
+
+We also define in here the constants that specify the path where server data stores are saved 
+(DATAPATH) and what package game server modules are searched for in (SERVERMODULEPACKAGE).
+
+For details of how to write a game server module see the gamemodules module in this package."""
 import os
 from . import data
 from importlib import import_module
@@ -10,9 +16,28 @@ DATAPATH=os.path.expanduser("~/.samconf")
 SERVERMODULEPACKAGE="gamemodules."
 
 class ServerError(Exception):
+  """An Exception thrown when there is an error with the server"""
   pass
 
 class Server(object):
+  """An object that represents a game server
+  
+  Each instance of this class corresponds to a specific game server with a specified backend.
+ 
+
+  Class Attributes: (DO NOT CHANGE)
+    default_commands: the default list of commands that all servers handle.
+    default_command_args: the default arguments for each of the commands specified in this package.
+          More arguments can be specified by the backend module but these are required to be optional.
+    default_command_description: the default description for each of the commands specified in this package.
+          Extra description can be provided by the backend module which is appended to this description.
+  
+  Instance Attributes:
+    self.name: the name of this server. DO NOT CHANGE
+    self.module: the module object for the backend of this server. DO NOT CHANGE
+    self.data: the backend data store for this server. DO NOT REPLACE
+  """
+    
   default_commands=("setup","start","stop","status","message","connect","dump","set","backup")
   default_command_args={"setup":([],[],False,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False)]),
                         "start":([],[],False,[]),
@@ -29,6 +54,13 @@ class Server(object):
                                         " 'start' should work.\nIf noask is specified then this may fail if extra "
                                         "game server dependant settings are not provided."}
   def __init__(self,name,module=None):
+    """Initialise this Server object.
+    
+    If module is not None this is a new Server so initialise it with a data store containing
+    only the module name otherwise load the data from the data store and use the module specified there.
+    
+    Raises a ServerError if we can't load the data store or if the module isn't specified or can't be loaded.
+    """
     self.name=name
     if module is not None:
       self.data=data.JSONDataStore(os.path.join(DATAPATH,name+".json"),{"module":module})
@@ -52,9 +84,11 @@ class Server(object):
       raise ServerError("Can't find module: "+self.data["module"],ex)
   
   def get_commands(self):
+    """Get a list of all the commands available for this server"""
     return self.default_commands+self.module.commands
 
   def get_command_args(self,command):
+    """Get the full argument spec for the command specified on this server"""
     args=self.default_command_args.get(command,None)
     extra_args=self.module.command_args.get(command,None)
     if extra_args is not None:
@@ -72,6 +106,7 @@ class Server(object):
     return args
 
   def get_command_description(self,command):
+    """Get the complete description for the command specified for this server"""
     desc=self.default_command_descriptions.get(command,None)
     extra_desc=self.module.command_descriptions.get(command,None)
     if extra_desc is not None:
@@ -82,6 +117,15 @@ class Server(object):
     return desc
 
   def run_command(self,command,*args,**kwargs):
+    """Run the specified command with the specified arguments on this server
+    
+    This raises ServerError if the command can't be found or the server state isnt valid
+    for the requested command (e.g. stop command on a server that isn't running).
+
+    It can also raise AttributeError if the backend modules doesn't provide some of the
+    required functions. It can also raise other Exceptions if the arguments don't match those
+    required by either this or the backend module
+    """
     if command in self.default_commands:
       if command == "setup":
         self.setup(*args,**kwargs)
@@ -104,14 +148,15 @@ class Server(object):
     elif command in self.module.commands:
       self.module.command_functions[command](self,*args,**kwargs)
     else:
-      print("Unknown command '"+command+"' can't be executed. Please check the help")
-      return 1
+      raise ServerError("Unknown command '"+command+"' can't be executed. Please check the help")
 
   def setup(self,*args,ask=True,**kwargs):
+    """Setup this server. Once this returns the server should be ready to start."""
     args,kwargs=self.module.configure(self,ask,*args,**kwargs)
     self.module.install(self,*args,**kwargs)
 
   def start(self,*args,**kwargs):
+    """Start a server. Won't start it if the server is already running."""
     if screen.check_screen_exists(self.name):
       raise ServerError("Error: Can't start server that is already running")
     try:
@@ -130,6 +175,7 @@ class Server(object):
       poststart(*args,**kwargs)
 
   def stop(self,*args,**kwargs):
+    """Stop the server. If the server can't be stopped even after multiple attempts then raises a ServerError"""
     if not screen.check_screen_exists(self.name):
       raise ServerError("Error: Can't stop a server that isn't running")
     jmax=5
@@ -154,6 +200,7 @@ class Server(object):
       raise ServerError("Error can't kill server")
   
   def status(self,*args,verbose=0,**kwargs):
+    """Print the status of the server. At the least shows if there is a server screen session running"""
     if not screen.check_screen_exists(self.name):
       print("Server isn't running as no screen session")
     else:
@@ -162,9 +209,11 @@ class Server(object):
         self.module.status(self,*args,verbose=1,**kwargs)
 
   def dump(self):
+    """Dump of the data in the data store"""
     print(self.data.prettydump())
 
   def set(self,key,value,*args,**kwargs):
+    """Set a value in the data store. The value will be check and post set actions may be run"""
     value=self.module.checkvalue(self,key,value,*args,**kwargs)
     key=key.split(".")
     data=self.data
@@ -177,4 +226,4 @@ class Server(object):
       pass
     else:
       fn(key,*args,**kwargs)
-    self.data.save()   
+    self.data.save()
