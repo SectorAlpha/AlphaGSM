@@ -11,7 +11,7 @@ def main(name,args):
     print("You must specify at least a server to work on")
     print()
     help(name,None)
-    return
+    return 2
   count=1
   server=args.pop(0)
   if server.isdigit():
@@ -22,23 +22,24 @@ def main(name,args):
     print("You must specify at least a server to work on")
     print()
     help(name,None)
-    return
+    return 2
   if len(args)<1:
     print("You must specify at least a command to run")
     print()
     help(name,None)
-    return
+    return 1
   cmd,*args=args
+  cmd=cmd.lower()
   if count==1 and server == "*" and cmd == "help":
     help(name,None,*args)
-    return
+    return 0
   if server == "*":
     count,server=getallservers(cmd)
   if count<1:
     print("You must specify at least a server to work on")
     print()
     help(name,None)
-    return
+    return 2
   elif count>1:
     runmulti(name,count,server,[cmd]+args)
   else:
@@ -46,15 +47,37 @@ def main(name,args):
     if user is not None:
       runas(name,user,server,[cmd]+args)
     else:
-      try:
-        server=Server(server)
-      except ServerError as ex:
-        print("Can't find server")
-        print(ex)
-        print()
-        help(name,None)
-        return
-      if cmd == "help":
+      if cmd == "create":
+        if len(args)<1:
+          print("Type of server to create is a required argument")
+          print()
+          help(name,None,cmd)
+          return 2
+        try:
+          server=Server(server,args[0])
+        except ServerError as ex:
+          print("Can't create server")
+          print(ex)
+          print()
+          help(name,None,cmd)
+          return 1
+        cmd=None
+        if len(args)>1:
+          cmd,*args=args[1:]
+          cmd=cmd.lower()
+        if cmd!="setup":
+          print("Only setup can be called after create")
+          return 2
+      else:
+        try:
+          server=Server(server)
+        except ServerError as ex:
+          print("Can't find server")
+          print(ex)
+          print()
+          help(name,None)
+          return 1
+      if cmd is None or cmd == "help":
         help(name,server,*args)
       else:
         try:
@@ -64,14 +87,17 @@ def main(name,args):
           print(ex)
           print()
           help(name,server,cmd)
-          return
+          return 2
         try:
           server.run_command(cmd,*args,**opts)
         except ServerError as ex:
           print(ex)
+          return 1
         except Exception as ex:
           print("Error running command")
           print(ex)
+          return 1
+  return 0
 
 def splitservername(server):
   slash=server.find("/")

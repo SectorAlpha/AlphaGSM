@@ -1,15 +1,15 @@
 import subprocess as sp
 import os
 
-SESSIONTAG="sam#"
+SESSIONTAG="AlphaGSM#"
 
 class ScreenError(Exception):
   pass
 
 def start_screen(name,command,cwd=None):
-  if not os.path.isdir(os.path.expanduser("~/.samlogs")):
+  if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):
     try:
-      os.mkdir(os.path.expanduser("~/.samlogs"))
+      os.makedirs(os.path.expanduser("~/.alphagsm/logs"))
     except OSError as ex:
       raise ScreenError("Log dir doesn't exist and can't create it",ex.args)
   extraargs={}
@@ -44,7 +44,7 @@ def check_screen_exists(name):
 
 def connect_to_screen(name):
   try:
-    sp.check_call(["screen","-rS",SESSIONTAG+name],shell=False)
+    sp.check_call(["script","/dev/null","-c","screen -rS '"+SESSIONTAG+name+"'"],shell=False)
   except sp.CalledProcessError as ex:
     raise ScreenError("Screen Failed with return value: "+str(ex.returncode),ex.returncode)
 

@@ -4,4 +4,4 @@ import sys
 
 print("#%AlphaGSM-INTERNAL%#")
 
-core.main(sys.argv[1],sys.argv[2:])
+sys.exit(core.main(sys.argv[1],sys.argv[2:]))

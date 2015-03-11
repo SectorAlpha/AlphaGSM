@@ -12,7 +12,7 @@ import time
 
 __all__=["Server","ServerError"]
 
-DATAPATH=os.path.expanduser("~/.samconf")
+DATAPATH=os.path.expanduser("~/.alphagsm/conf")
 SERVERMODULEPACKAGE="gamemodules."
 
 class ServerError(Exception):
@@ -63,6 +63,11 @@ class Server(object):
     """
     self.name=name
     if module is not None:
+      if not os.path.isdir(DATAPATH):
+        try:
+          os.makedirs(DATAPATH)
+        except OSError:
+          raise ServerError("Data Path doesn't exist and can't create it",DATAPATH)
       self.data=data.JSONDataStore(os.path.join(DATAPATH,name+".json"),{"module":module})
       try:
         self.data.save()
@@ -207,6 +212,9 @@ class Server(object):
       print("Server is running as screen session exists")
       if verbose>0:
         self.module.status(self,*args,verbose=1,**kwargs)
+
+  def connect(self):
+    screen.connect_to_screen(self.name)
 
   def dump(self):
     """Dump of the data in the data store"""
