@@ -53,6 +53,8 @@ def main(name,args):
       print()
       help(name,None)
       return 1
+    elif count==1:
+      server,=server
   if count>1:
     runmulti(name,count,server,[cmd]+args)
   else:

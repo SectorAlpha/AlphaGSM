@@ -50,7 +50,8 @@ def connect_to_screen(name):
     raise ScreenError("Screen Failed with return value: "+str(ex.returncode),ex.returncode)
 
 def list_all_screens():
-  curruser=""
+  import pwd
+  curruser=pwd.getpwuid(os.getuid())[0]
   filepat=re.compile(r"\d+\."+re.escape(SESSIONTAG)+"(.*)$")
   for path,dirs,files in os.walk("/var/run/screen/"):
     user=os.path.split(path)[1]
