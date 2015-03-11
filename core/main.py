@@ -87,7 +87,7 @@ def getrunascmd(name,user,server,args):
   return ["sudo","-Hu",user]+getruncmd(name,server,args)
 
 def getruncmd(name,server,args):
-  scriptpath=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"sagsm-internal")
+  scriptpath=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm-internal")
   return [scriptpath,name,server]+args
 
 def runas(name,user,server,args):
@@ -95,7 +95,7 @@ def runas(name,user,server,args):
   print("Command finished with return status",ret)
 
 def _internalisrunning(line):
-  return line.decode().strip()=="#%SAGSM-INTERNAL%#"
+  return line.decode().strip()=="#%AlphaGSM-INTERNAL%#"
 
 def runmulti(name,count,servers,args):
   multi=mp.Multiplexer()
@@ -110,7 +110,7 @@ def runmulti(name,count,servers,args):
 
 def help(name,server,cmd=None,*_):
   if cmd is None:
-    print("The Sector-Alpha Game server management script")
+    print("The Sector-Alpha Game Server Management Script (AlphaGSM)")
     print()
     print(name+" SERVER COMMAND [ARGS...]")
     print(name+" COUNT SERVER... COMMAND [ARGS...]")

@@ -2,6 +2,6 @@
 import core
 import sys
 
-print("#%SAGSM-INTERNAL%#")
+print("#%AlphaGSM-INTERNAL%#")
 
 core.main(sys.argv[1],sys.argv[2:])
