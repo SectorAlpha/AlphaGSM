@@ -2,6 +2,7 @@ from . import cmdparse
 from server import Server,ServerError
 from . import multiplexer as mp
 import subprocess as sp
+import screen
 import os
 
 __all__=["main"]
@@ -23,6 +24,18 @@ def main(name,args):
     print()
     help(name,None)
     return 2
+  if server.lower()=="all":
+    server="*"
+  if count==1:
+    if server.lower() in ("help","create")+Server.default_commands:
+      print(server,"is a banned server name as it's too similar to a command")
+      return 2
+  else:
+    banned=set(("help","create")+Server.default_commands)
+    for s in server:
+      if s.lower() in banned:
+        print(s,"is a banned server name as it's too similar to a command")
+        return 2
   if len(args)<1:
     print("You must specify at least a command to run")
     print()
@@ -33,14 +46,14 @@ def main(name,args):
   if count==1 and server == "*" and cmd == "help":
     help(name,None,*args)
     return 0
-  if server == "*":
+  if count==1 and server == "*":
     count,server=getallservers(cmd)
-  if count<1:
-    print("You must specify at least a server to work on")
-    print()
-    help(name,None)
-    return 2
-  elif count>1:
+    if count<1:
+      print("No servers found for",cmd)
+      print()
+      help(name,None)
+      return 1
+  if count>1:
     runmulti(name,count,server,[cmd]+args)
   else:
     user,server=splitservername(server)
@@ -61,13 +74,14 @@ def main(name,args):
           print()
           help(name,None,cmd)
           return 1
+        print("Server created")
         cmd=None
         if len(args)>1:
           cmd,*args=args[1:]
           cmd=cmd.lower()
-        if cmd!="setup":
-          print("Only setup can be called after create")
-          return 2
+          if cmd!="setup":
+            print("Only setup can be called after create")
+            return 2
       else:
         try:
           server=Server(server)
@@ -107,6 +121,13 @@ def splitservername(server):
     return server[:slash],server[slash+1:]
 
 def getallservers(command):
+  if command in {"stop","status","message","backup"}:
+    servers=list(screen.list_all_screens())
+    if command == "stop":
+      ## TODO: Write the list of servers to a file in the current directory ready for start
+      pass
+    print("Using servers:",*servers)
+    return len(servers),servers
   return 0,[]
 
 def getrunascmd(name,user,server,args):

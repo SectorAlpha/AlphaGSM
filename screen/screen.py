@@ -1,5 +1,6 @@
 import subprocess as sp
 import os
+import re
 
 SESSIONTAG="AlphaGSM#"
 
@@ -48,8 +49,24 @@ def connect_to_screen(name):
   except sp.CalledProcessError as ex:
     raise ScreenError("Screen Failed with return value: "+str(ex.returncode),ex.returncode)
 
+def list_all_screens():
+  curruser=""
+  filepat=re.compile(r"\d+\."+re.escape(SESSIONTAG)+"(.*)$")
+  for path,dirs,files in os.walk("/var/run/screen/"):
+    user=os.path.split(path)[1]
+    if user[:2] != "S-":
+      continue
+    user=user[2:]
+    for f in files:
+      match=filepat.match(f)
+      if match is not None:
+        if user==curruser:
+          yield match.group(1)
+        else:
+          yield user+"/"+match.group(1)
+
 
 def logpath(name):
   return os.path.join(os.path.expanduser("~/.samlogs"),SESSIONTAG+name+".log")
 
-__all__=["ScreenError","start_screen","send_to_screen","send_to_server","check_screen_exists","connect_to_screen","logpath"]
+__all__=["ScreenError","start_screen","send_to_screen","send_to_server","check_screen_exists","connect_to_screen","list_all_screens","logpath"]
