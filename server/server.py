@@ -141,7 +141,7 @@ class Server(object):
       elif command == "status":
         self.status(*args,**kwargs)
       elif command == "message":
-        self.module.message(*args,**kwargs)
+        self.module.message(self,*args,**kwargs)
       elif command == "connect":
         self.connect(*args,**kwargs)
       elif command == "dump":
@@ -149,7 +149,7 @@ class Server(object):
       elif command == "set":
         self.doset(*args,**kwargs)
       elif command == "backup":
-        self.module.backup(*args,**kwargs)
+        self.module.backup(self,*args,**kwargs)
     elif command in self.module.commands:
       self.module.command_functions[command](self,*args,**kwargs)
     else:
@@ -211,7 +211,7 @@ class Server(object):
     else:
       print("Server is running as screen session exists")
       if verbose>0:
-        self.module.status(self,*args,verbose=1,**kwargs)
+        self.module.status(self,verbose,*args,**kwargs)
 
   def connect(self):
     screen.connect_to_screen(self.name)
@@ -220,7 +220,7 @@ class Server(object):
     """Dump of the data in the data store"""
     print(self.data.prettydump())
 
-  def set(self,key,value,*args,**kwargs):
+  def doset(self,key,value,*args,**kwargs):
     """Set a value in the data store. The value will be check and post set actions may be run"""
     value=self.module.checkvalue(self,key,value,*args,**kwargs)
     key=key.split(".")
@@ -233,5 +233,5 @@ class Server(object):
     except AttributeError:
       pass
     else:
-      fn(key,*args,**kwargs)
+      fn(server,key,*args,**kwargs)
     self.data.save()

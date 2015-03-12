@@ -33,9 +33,9 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
                         ("l",["eula"],"Mark the eula as read","eula",None,True)]),
               "op":([("USER","The user[s] to op",str)],[],True,[]),
               "deop":([("USER","The user[s] to deop",str)],[],True,[]),
-              "message":([],[("TARGET","The user[s] to send the message to. Sends to all if none given.",str)],True,[])}
+              "message":([],[("TARGET","The user[s] to send the message to. Sends to all if none given.",str)],True,[("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True)])}
 command_descriptions={}
-command_functions={}
+command_functions={} # will have elements added as the functions are defined
 
 def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
   if port is None and "port" in server.data:
@@ -144,7 +144,7 @@ def install(server,*,eula=False):
       ret=sp.check_call(["java","-jar","minecraft_server.jar","nogui"],cwd=server.data["dir"],shell=False,timeout=10)
     except sp.CalledProcessError as ex:
       +-  print("Error running server. Java returned status: "+ex.returncode)
-    except sp.TimeoutExpried as ex:
+    except sp.TimeoutExpired as ex:
       print("Error running server. Process didn't complete in time")
   if eula and os.path.isfile(eulafile):
     updateconfig(eulafile,{"eula":"true"})
@@ -156,5 +156,41 @@ def get_start_command(server):
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nstop\n")
 
-def status(server,*,verbose=1):
+def status(server,verbose):
   pass
+
+def message(server,msg,*targets,parse=False):
+  if len(targets)<1:
+    targets=["@a"]
+  if parse and "@" in msg:
+    msglist=[]
+    pat=re.compile(r"([^@]*[^\\])?(@.(?:\[[^\]]+\])?)")
+    while True:
+      match=pat.match(msg)
+      if match is None:
+        break
+      if match.group(1) is not None:
+        msglist.append(match.group(1)) # group is optional
+        # nothing stopping two selectors straight after each other
+      msglist.append({"selector":match.group(2)})
+      msg=msg[match.end(0):]
+    msglist.append(msg)
+    msgjson=json.dumps(msglist)
+  else:
+    msgjson=json.dumps({"text":msg})
+  for target in targets:
+    print("tellraw "+target+" "+msgjson)
+  screen.send_to_server(server.name,"\ntellraw "+target+" "+msgjson+"\n")
+
+def checkvalue(server,key,value):
+  raise ServerError("All read only as not yet implemented")
+
+def backup(server):
+  print("Not yet implemented")
+
+def op(server,*users):
+  print("Not yet implemented")
+
+def deop(server,*users):
+  print("Not yet implemented")
+

@@ -2,6 +2,11 @@ from itertools import chain
 import textwrap
 
 class OptionError(Exception):
+  def __init__(self,msg,*args):
+    self.msg=msg
+    self.args=args
+  def __str__(self):
+    return self.msg+": "+", ".join(str(a) for a in self.args)
   pass
 
 def parse(inargs,defns):
@@ -56,17 +61,17 @@ def parse(inargs,defns):
     raise OptionError("Too many arguments provided")
   try:
     outargs=[value(arg) for arg,(_,_,value) in zip(outargs,_replast(reqargs+optargs))]
-  except ValueError:
-    raise OptionError("Argumant isn't of the right format")
+  except ValueError as ex:
+    raise OptionError("Argumant isn't of the right format",ex)
   return outargs,outopts
 
 def _replast(a):
   last=None
   for el in a:
-    last=a
-    yield a
+    last=el
+    yield el
   while True:
-    yield a
+    yield last
 
 def shorthelp(cmd,cmddesc,defns):
   s=cmd
