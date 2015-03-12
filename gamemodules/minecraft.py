@@ -189,8 +189,12 @@ def backup(server):
   print("Not yet implemented")
 
 def op(server,*users):
-  print("Not yet implemented")
+  for user in users:
+    screen.send_to_server(server.name,"\nop "+user+"\n")
+command_functions["op"]=op
 
 def deop(server,*users):
-  print("Not yet implemented")
+  for user in users:
+    screen.send_to_server(server.name,"\ndeop "+user+"\n")
+command_functions["deop"]=deop
 

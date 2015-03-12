@@ -111,7 +111,7 @@ def main(name,args):
           return 1
         except Exception as ex:
           print("Error running command")
-          print(ex)
+          print(repr(ex))
           return 1
   return 0
 
