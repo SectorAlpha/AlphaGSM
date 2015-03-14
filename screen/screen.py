@@ -22,6 +22,8 @@ def start_screen(name,command,cwd=None):
     raise ScreenError("Screen failed with return value: "+str(ex.returncode)+" and output: '"+ex.output+"'",ex.returncode,ex.output)
   except FileNotFoundError as ex:
     raise ScreenError("Can't change to directory '"+cwd+"' while starting screen",ex)
+  except OSError as ex:
+    raise ScreenError("Error executing screen: "+str(ex))
   else:
     return out
 
@@ -30,6 +32,8 @@ def send_to_screen(name,command):
     out=sp.check_output(["screen","-S",SESSIONTAG+name,"-p","0","-X"]+list(command),stderr=sp.STDOUT,shell=False)
   except sp.CalledProcessError as ex:
     raise ScreenError("Screen failed with return value: "+str(ex.returncode)+" and output: '"+ex.output.decode()+"'",ex.returncode,ex.output)
+  except OSError as ex:
+    raise ScreenError("Error executing screen: "+str(ex))
   else:
     return out
 
@@ -48,6 +52,8 @@ def connect_to_screen(name):
     sp.check_call(["script","/dev/null","-c","screen -rS '"+SESSIONTAG+name+"'"],shell=False)
   except sp.CalledProcessError as ex:
     raise ScreenError("Screen Failed with return value: "+str(ex.returncode),ex.returncode)
+  except OSError as ex:
+    raise ScreenError("Error executing screen: "+str(ex))
 
 def list_all_screens():
   import pwd

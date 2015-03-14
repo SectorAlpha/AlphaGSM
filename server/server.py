@@ -81,7 +81,8 @@ class Server(object):
     if "module" not in self.data:
       raise ServerError("Invalid module requested: "+self.data["module"])
     self.data["module"]=str(self.data["module"])
-    if not self.data["module"].isalnum():
+    modulepath=self.data["module"].split(".")
+    if len(self.data["module"])<2 and all((len(el)>0 and el.isalnum()) for el in modulepath):
       raise ServerError("Invalid module requested: "+self.data["module"])
     try:
       self.module=import_module(SERVERMODULEPACKAGE+self.data["module"])
