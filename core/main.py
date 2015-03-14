@@ -29,12 +29,16 @@ def main(name,args):
   if count==1:
     if server.lower() in ("help","create")+Server.default_commands:
       print(server,"is a banned server name as it's too similar to a command")
+      print()
+      help(name,None)
       return 2
   else:
     banned=set(("help","create")+Server.default_commands)
     for s in server:
       if s.lower() in banned:
         print(s,"is a banned server name as it's too similar to a command")
+        print()
+        help(name,None)
         return 2
   if len(args)<1:
     print("You must specify at least a command to run")
