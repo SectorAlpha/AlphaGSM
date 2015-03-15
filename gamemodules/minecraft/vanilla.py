@@ -37,7 +37,7 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
-def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
+def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,check_versions=True):
   if port is None and "port" in server.data:
     port=server.data["port"]
   if port is None and not ask:
@@ -66,13 +66,16 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
 
   allversions=[]
   latest=None
-  try:
-    versionsfile=urllib.request.urlopen("https://s3.amazonaws.com/Minecraft.Download/versions/versions.json")
-    versions=json.loads(versionsfile.readall().decode("utf-8"))
-    latest=versions["latest"]["release"]
-    allversions=[v["id"] for v in versions["versions"] if v["type"] in ["release","snapshot"]] #ditch other types as don't have servers
-  except Exception as ex:
-    print("Error downloading list of versions: "+str(ex)+"\nlisting versions and latest version will fail")
+  if check_versions:
+    try:
+      versionsfile=urllib.request.urlopen("https://s3.amazonaws.com/Minecraft.Download/versions/versions.json")
+      versions=json.loads(versionsfile.readall().decode("utf-8"))
+      latest=versions["latest"]["release"]
+      allversions=[v["id"] for v in versions["versions"] if v["type"] in ["release","snapshot"]] #ditch other types as don't have servers
+    except Exception as ex:
+      print("Error downloading list of versions: "+str(ex)+"\nlisting versions and latest version will fail")
+
+  
 
   if version is None and url is None:
     if "version" in server.data:
@@ -122,26 +125,42 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
 
   return (),{"eula":eula}
 
-def install(server,*,eula=False):
+def install(server,*,eula=False,exe_name="minecraft_server.jar",download_name="minecraft_server.jar"):
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
-  mcjar=os.path.join(server.data["dir"],"minecraft_server.jar")
-  if "current url" not in server.data or server.data["current url"]!=server.data["url"] or not os.path.isfile(mcjar):
+  mcjar=os.path.join(server.data["dir"],exe_name)
+  server.data["exe_name"] = exe_name
+  mcdwl=os.path.join(server.data["dir"],download_name)
+  server.data["download_name"] = download_name
+
+  # if URL has changed, or the executable does not exist, redownload the server
+  if "current url" not in server.data or server.data["current_url"]!=server.data["url"] or not os.path.isfile(mcjar):
     try:
-      fname,headers=urllib.request.URLopener().retrieve(server.data["url"],filename=mcjar)
+      fname,headers=urllib.request.URLopener().retrieve(server.data["url"],filename=mcdwl)
     except urllib.error.URLError as ex:
-      print("Error downloading minecraft_server.jar: "+ex.reason)
+      print("Error downloading "+ exe_name + ": "+ex.reason)
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
     print(fname)
     print(headers)
-    server.data["current url"]=server.data["url"]
+    server.data["current_url"]=server.data["url"]
   else:
     print("Skipping download")
+
+  # probably need to extract the executable from ... something
+  exe_extension = os.path.split(server.data["current_url"])[1].split(".")[-1]
+  if not os.path.isfile(mcjar) and exe_extension != "jar":
+    if exe_extension == "zip":
+      zip_path = os.path.join(server.data["dir"],download_name)
+      cmd = "unzip -d `dirname " + zip_path + "` -o " + zip_path
+      sp.check_output(cmd, shell=True)
+#      cmd = "rm " + zip_path # removes the zip file
+#      sp.check_output(cmd, shell=True)
+  
   eulafile=os.path.join(server.data["dir"],"eula.txt")
   if not os.path.isfile(eulafile): # use as flag for has the server created it's files
     print("Starting server to create settings")
     try:
-      ret=sp.check_call(["java","-jar","minecraft_server.jar","nogui"],cwd=server.data["dir"],shell=False,timeout=10)
+      ret=sp.check_call(["java","-jar",exe_name,"nogui"],cwd=server.data["dir"],shell=False,timeout=10)
     except sp.CalledProcessError as ex:
       +-  print("Error running server. Java returned status: "+ex.returncode)
     except sp.TimeoutExpired as ex:
@@ -149,9 +168,10 @@ def install(server,*,eula=False):
   if eula and os.path.isfile(eulafile):
     updateconfig(eulafile,{"eula":"true"})
   updateconfig(os.path.join(server.data["dir"],"server.properties"),{"server-port":str(server.data["port"])})
+  server.data.save()
     
 def get_start_command(server):
-  return ["java","-jar","minecraft_server.jar","nogui"],server.data["dir"]
+  return ["java","-jar",server.data["exe_name"],"nogui"],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nstop\n")
