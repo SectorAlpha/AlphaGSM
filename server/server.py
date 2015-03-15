@@ -19,6 +19,23 @@ class ServerError(Exception):
   """An Exception thrown when there is an error with the server"""
   pass
 
+def _findmodule(name):
+  while True:
+    name=str(name)
+    if len(name)<2 and all((len(el)>0 and el.isalnum()) for el in name.split(".")):
+      raise ServerError("Invalid module requested: "+self.data["module"])
+    try:
+      module=import_module(SERVERMODULEPACKAGE+name)
+    except ImportError as ex:
+      raise ServerError("Can't find module: "+name,ex)
+    if not hasattr(module,'__file__'): # no filesystem path so must be a namespace path
+      name=name+".DEFAULT"
+      continue
+    try:
+      name=module.ALIAS_TARGET
+    except AttributeError:
+      return name,module
+
 class Server(object):
   """An object that represents a game server
   
@@ -79,15 +96,12 @@ class Server(object):
       except (IOError,data.DataError) as ex:
         raise ServerError("Error reading data",ex)
     if "module" not in self.data:
-      raise ServerError("Invalid module requested: "+self.data["module"])
-    self.data["module"]=str(self.data["module"])
-    modulepath=self.data["module"].split(".")
-    if len(self.data["module"])<2 and all((len(el)>0 and el.isalnum()) for el in modulepath):
-      raise ServerError("Invalid module requested: "+self.data["module"])
-    try:
-      self.module=import_module(SERVERMODULEPACKAGE+self.data["module"])
-    except ImportError as ex:
-      raise ServerError("Can't find module: "+self.data["module"],ex)
+      raise ServerError("Invalid data store: No module specified")
+    truename,self.module=_findmodule(self.data["module"])
+    if truename!=self.data["module"]:
+      print("Module has been redirected. Actual module is '"+truename+"'. Saving to data store.")
+      self.data["module"]=truename
+      self.data.save()
   
   def get_commands(self):
     """Get a list of all the commands available for this server"""
