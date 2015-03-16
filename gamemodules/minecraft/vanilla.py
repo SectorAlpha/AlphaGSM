@@ -37,7 +37,7 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
-def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,check_versions=True):
+def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,check_versions=True,exe_name="minecraft_server.jar",download_name="minecraft_server.jar"):
   if port is None and "port" in server.data:
     port=server.data["port"]
   if port is None and not ask:
@@ -117,28 +117,30 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ch
 
   if eula is None:
     if ask:
-      eula=input("Please conform you have read the eula (y/yes or n/no): ").strip().lower() in ("y","yes")
+      eula=input("Please confirm you have read the eula (y/yes or n/no): ").strip().lower() in ("y","yes")
     else:
       eula=False
 
+  server.data["exe_name"] = exe_name
+  server.data["download_name"] = download_name
   server.data.save()
 
   return (),{"eula":eula}
 
-def install(server,*,eula=False,exe_name="minecraft_server.jar",download_name="minecraft_server.jar"):
+#def install(server,*,eula=False,):
+def install(server,*,eula=False):
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
-  mcjar=os.path.join(server.data["dir"],exe_name)
-  server.data["exe_name"] = exe_name
-  mcdwl=os.path.join(server.data["dir"],download_name)
-  server.data["download_name"] = download_name
+  mcjar=os.path.join(server.data["dir"],server.data["exe_name"])
+  mcdwl=os.path.join(server.data["dir"],server.data["download_name"])
 
   # if URL has changed, or the executable does not exist, redownload the server
-  if "current url" not in server.data or server.data["current_url"]!=server.data["url"] or not os.path.isfile(mcjar):
+  if "current_url" not in server.data or server.data["current_url"]!=server.data["url"] or not os.path.isfile(mcjar):
     try:
       fname,headers=urllib.request.URLopener().retrieve(server.data["url"],filename=mcdwl)
+      print("Downloading Server Files")
     except urllib.error.URLError as ex:
-      print("Error downloading "+ exe_name + ": "+ex.reason)
+      print("Error downloading "+ server.data["exe_name"] + ": "+ex.reason)
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
     print(fname)
     print(headers)
@@ -147,20 +149,21 @@ def install(server,*,eula=False,exe_name="minecraft_server.jar",download_name="m
     print("Skipping download")
 
   # probably need to extract the executable from ... something
-  exe_extension = os.path.split(server.data["current_url"])[1].split(".")[-1]
-  if not os.path.isfile(mcjar) and exe_extension != "jar":
-    if exe_extension == "zip":
-      zip_path = os.path.join(server.data["dir"],download_name)
-      cmd = "unzip -d `dirname " + zip_path + "` -o " + zip_path
-      sp.check_output(cmd, shell=True)
-#      cmd = "rm " + zip_path # removes the zip file
-#      sp.check_output(cmd, shell=True)
+  download_url, download_extension = os.path.splitext(server.data["current_url"])
+  print(download_extension)
+  if not os.path.isfile(mcjar) and download_extension == ".zip":
+    cmd = ["unzip","-d",server.data["dir"],"-o",mcdwl]
+    print("Unpacking Server Files")
+    print(cmd)
+    print(server.data["dir"])
+    print(mcdwl)
+    sp.check_output(cmd,shell=False)
   
   eulafile=os.path.join(server.data["dir"],"eula.txt")
   if not os.path.isfile(eulafile): # use as flag for has the server created it's files
     print("Starting server to create settings")
     try:
-      ret=sp.check_call(["java","-jar",exe_name,"nogui"],cwd=server.data["dir"],shell=False,timeout=10)
+      ret=sp.check_call(["java","-jar",server.data["exe_name"],"nogui"],cwd=server.data["dir"],shell=False,timeout=10)
     except sp.CalledProcessError as ex:
       +-  print("Error running server. Java returned status: "+ex.returncode)
     except sp.TimeoutExpired as ex:
