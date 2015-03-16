@@ -17,6 +17,9 @@ class Page:
 					
   def get_as_string(self):
     '''This function provides the webpage as a string'''
-    response = urllib.request.urlopen("http://" + self.servername + "/" + self.path)
+    try:
+      response = urllib.request.urlopen("http://" + self.servername + "/" + self.path)
+    except:
+      raise Exception("Invalid URL")
     html = response.read()
     return html
