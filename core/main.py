@@ -81,13 +81,17 @@ def main(name,args):
           help(name,None,cmd)
           return 1
         print("Server created")
-        cmd=None
         if len(args)>1:
-          cmd,*args=args[1:]
-          cmd=cmd.lower()
-          if cmd!="setup":
+          cmd,*args = args[1:]
+          cmd = cmd.lower()
+          if cmd != "setup":
             print("Only setup can be called after create")
+            print()
+            help(name,None,cmd)
             return 2
+        else:
+          cmd = None
+          args = ()
       else:
         try:
           server=Server(server)
