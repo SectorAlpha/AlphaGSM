@@ -1,6 +1,8 @@
 import os
 import urllib.request
 import json
+import time
+import datetime
 import subprocess as sp
 from server import ServerError
 import re
@@ -63,7 +65,7 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
       if inp!="":
         dir=inp
   server.data["dir"]=dir
-
+  server.data['backupfiles']=['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']
   allversions=[]
   latest=None
   try:
@@ -143,7 +145,7 @@ def install(server,*,eula=False):
     try:
       ret=sp.check_call(["java","-jar","minecraft_server.jar","nogui"],cwd=server.data["dir"],shell=False,timeout=10)
     except sp.CalledProcessError as ex:
-      +-  print("Error running server. Java returned status: "+ex.returncode)
+      print("Error running server. Java returned status: "+ex.returncode)
     except sp.TimeoutExpired as ex:
       print("Error running server. Process didn't complete in time")
   if eula and os.path.isfile(eulafile):
@@ -183,10 +185,18 @@ def message(server,msg,*targets,parse=False):
   screen.send_to_server(server.name,"\ntellraw "+target+" "+msgjson+"\n")
 
 def checkvalue(server,key,value):
+  if key == 'backupfiles':
+    return value.split(",")
   raise ServerError("All read only as not yet implemented")
 
 def backup(server):
-  print("Not yet implemented")
+  screen.send_to_server(server.name,"\save-off\nsave-all\n")
+  time.sleep(2)
+  try:
+    sp.check_call(['zip','-r',os.path.join('backup',datetime.datetime.now().isoformat())]+server.data['backupfiles'],cwd=server.data['dir'])
+  except sp.CalledProcessError as ex:
+    print("Error backing up the server")
+  screen.send_to_server(server.name,"\save-off\nsave-all\n")
 
 def op(server,*users):
   for user in users:

@@ -242,7 +242,7 @@ class Server(object):
     data=self.data
     for el in key[:-1]:
       data=data[el]
-    data[el]=value
+    data[key[-1]]=value
     try:
       fn=self.module.postset
     except AttributeError:
