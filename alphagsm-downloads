@@ -1,0 +1,5 @@
+#!/usr/bin/python3
+import core.downloader
+import sys
+
+sys.exit(downloader.main(sys.argv[0],sys.argv[1:]))
