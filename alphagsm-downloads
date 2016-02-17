@@ -2,4 +2,4 @@
 import core.downloader
 import sys
 
-sys.exit(downloader.main(sys.argv[0],sys.argv[1:]))
+sys.exit(core.downloader.main(sys.argv[1],sys.argv[2:]))
