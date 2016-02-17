@@ -196,7 +196,7 @@ def backup(server):
     sp.check_call(['zip','-r',os.path.join('backup',datetime.datetime.now().isoformat())]+server.data['backupfiles'],cwd=server.data['dir'])
   except sp.CalledProcessError as ex:
     print("Error backing up the server")
-  screen.send_to_server(server.name,"\save-off\nsave-all\n")
+  screen.send_to_server(server.name,"\save-on\nsave-all\n")
 
 def op(server,*users):
   for user in users:
