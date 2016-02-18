@@ -7,6 +7,7 @@ import subprocess as sp
 from server import ServerError
 import re
 import screen
+import downloader
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -130,12 +131,15 @@ def install(server,*,eula=False):
   mcjar=os.path.join(server.data["dir"],"minecraft_server.jar")
   if "current url" not in server.data or server.data["current url"]!=server.data["url"] or not os.path.isfile(mcjar):
     try:
-      fname,headers=urllib.request.URLopener().retrieve(server.data["url"],filename=mcjar)
-    except urllib.error.URLError as ex:
-      print("Error downloading minecraft_server.jar: "+ex.reason)
+      try:
+        os.remove(mcjar)
+      except FileNotFoundError:
+        pass
+      downloadpath=downloader.getpath("url",(server.data["url"],"minecraft_server.jar"))
+      os.symlink(os.path.join(downloadpath,"minecraft_server.jar"),mcjar)
+    except downloader.DownloaderError as ex:
+      print("Error downloading minecraft_server.jar: ")
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
-    print(fname)
-    print(headers)
     server.data["current url"]=server.data["url"]
   else:
     print("Skipping download")

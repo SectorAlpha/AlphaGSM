@@ -96,7 +96,7 @@ def getpath(module,args):
   if os.getuid() != USER:
     import subprocess as sp
     try:
-      path=sp.check_output(["sudo","-Hu","#"+str(USER),os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm-downloads"),module]+args)
+      path=sp.check_output(["sudo","-Hu","#"+str(USER),os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm-downloads"),module]+list(args))
     except sp.CalledProcessError as ex:
       raise DownloaderError("Error downloading file",ret=ex.returncode)
     else:

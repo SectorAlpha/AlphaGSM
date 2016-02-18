@@ -4,6 +4,7 @@ from . import multiplexer as mp
 import subprocess as sp
 import screen
 import os
+import traceback
 
 __all__=["main"]
 
@@ -76,7 +77,7 @@ def main(name,args):
           server=Server(server,args[0])
         except ServerError as ex:
           print("Can't create server")
-          print(ex)
+          traceback.print_exc()
           print()
           help(name,None,cmd)
           return 1
@@ -97,7 +98,7 @@ def main(name,args):
           server=Server(server)
         except ServerError as ex:
           print("Can't find server")
-          print(ex)
+          traceback.print_exc()
           print()
           help(name,None)
           return 1
@@ -108,18 +109,18 @@ def main(name,args):
           args,opts=cmdparse.parse(args,server.get_command_args(cmd))
         except cmdparse.OptionError as ex:
           print("Error parsing arguments and options")
-          print(ex)
+          traceback.print_exc()
           print()
           help(name,server,cmd)
           return 2
         try:
           server.run_command(cmd,*args,**opts)
         except ServerError as ex:
-          print(ex)
+          traceback.print_exc()
           return 1
         except Exception as ex:
           print("Error running command")
-          print(repr(ex))
+          traceback.print_exc()
           return 1
   return 0
 
