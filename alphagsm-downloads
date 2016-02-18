@@ -1,5 +1,13 @@
 #!/usr/bin/python3
-import core.downloader
+import downloader
 import sys
+import contextlib
 
-sys.exit(core.downloader.main(sys.argv[1],sys.argv[2:]))
+with contextlib.redirect_stdout(sys.stderr):
+  try:
+    path=downloader.main(sys.argv[1],sys.argv[2:])
+  except downloader.DownloaderError as ex:
+    print(ex)
+    sys.exit(ex.ret)
+print(path)
+sys.exit(0)

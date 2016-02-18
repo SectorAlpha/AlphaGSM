@@ -7,6 +7,7 @@ import subprocess as sp
 from server import ServerError
 import re
 import screen
+import downloader
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -129,7 +130,6 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ch
 
   return (),{"eula":eula}
 
-#def install(server,*,eula=False,):
 def install(server,*,eula=False):
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
@@ -138,29 +138,30 @@ def install(server,*,eula=False):
 
   # if URL has changed, or the executable does not exist, redownload the server
   if "current_url" not in server.data or server.data["current_url"]!=server.data["url"] or not os.path.isfile(mcjar):
+    download_url, download_extension = os.path.splitext(server.data["current_url"])
+    print(download_extension)
+    decompress=()
+    if download_extension == ".zip":
+      decompress=("zip",)
     try:
-      fname,headers=urllib.request.URLopener().retrieve(server.data["url"],filename=mcdwl)
-      print("Downloading Server Files")
-    except urllib.error.URLError as ex:
-      print("Error downloading "+ server.data["exe_name"] + ": "+ex.reason)
+      try:
+        os.remove(mcjar)
+      except FileNotFoundError:
+        pass
+      downloadpath=downloader.getpath("url",(server.data["url"],server.data["download_name"])+decompress)
+      if decompress==():
+        os.symlink(os.path.join(downloadpath,server.data["exe_name"]),mcjar)
+      else:
+        os.error
+        #implement a sensible copy/link and update system
+    except downloader.DownloaderError as ex:
+      print("Error downloading minecraft_server.jar: ")
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
-    print(fname)
-    print(headers)
-    server.data["current_url"]=server.data["url"]
+    server.data["current url"]=server.data["url"]
   else:
     print("Skipping download")
 
   # probably need to extract the executable from ... something
-  download_url, download_extension = os.path.splitext(server.data["current_url"])
-  print(download_extension)
-  if not os.path.isfile(mcjar) and download_extension == ".zip":
-    cmd = ["unzip","-d",server.data["dir"],"-o",mcdwl]
-    print("Unpacking Server Files")
-    print(cmd)
-    print(server.data["dir"])
-    print(mcdwl)
-    sp.check_output(cmd,shell=False)
-  
   eulafile=os.path.join(server.data["dir"],"eula.txt")
   if not os.path.isfile(eulafile): # use as flag for has the server created it's files
     print("Starting server to create settings")
