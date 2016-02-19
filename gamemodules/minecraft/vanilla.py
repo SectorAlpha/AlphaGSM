@@ -144,16 +144,16 @@ def install(server,*,eula=False):
     if download_extension == ".zip":
       decompress=("zip",)
     try:
-      try:
-        os.remove(mcjar)
-      except FileNotFoundError:
-        pass
       downloadpath=downloader.getpath("url",(server.data["url"],server.data["download_name"])+decompress)
       if decompress==():
+        try:
+          os.remove(mcjar)
+        except FileNotFoundError:
+          pass
         os.symlink(os.path.join(downloadpath,server.data["exe_name"]),mcjar)
       else:
-        os.error
         #implement a sensible copy/link and update system
+                 
     except downloader.DownloaderError as ex:
       print("Error downloading minecraft_server.jar: ")
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
