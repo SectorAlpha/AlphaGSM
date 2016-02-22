@@ -100,7 +100,7 @@ def getpath(module,args):
     except sp.CalledProcessError as ex:
       raise DownloaderError("Error downloading file",ret=ex.returncode)
     else:
-      return path.decode(sys.stdout.encoding)
+      return path.decode(sys.stdout.encoding).strip()
   
   # Definitely running as correct user now and file now found (yet) but may have other threads updating the file so lock then check again
 
