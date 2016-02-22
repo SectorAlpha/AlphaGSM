@@ -3,6 +3,7 @@ import os
 import time
 import random
 import sys
+from urllib.parse import quote,unquote
 
 # NONE OF THESE PATHS SHOULD BE ON A NFS!
 # If they are there may be race conditions and database corruption
@@ -80,7 +81,7 @@ def download(module,args):
   return path
 
 def getpathifexists(module,args):
-  sargs=",".join(args)
+  sargs=",".join(quote(a) for a in args)
   with open(DB_PATH,'r') as f:
     for line in f:
       lmodule,largs,llocation,ldate,lactive=line.split()
@@ -100,7 +101,7 @@ def getpath(module,args):
     except sp.CalledProcessError as ex:
       raise DownloaderError("Error downloading file",ret=ex.returncode)
     else:
-      return path.decode(sys.stdout.encoding).strip()
+      return unquote(path.decode(sys.stdout.encoding).strip())
   
   # Definitely running as correct user now and file now found (yet) but may have other threads updating the file so lock then check again
 
@@ -121,7 +122,7 @@ def getpath(module,args):
     # definitely doesn't exist so we need to download it
     path=download(module,args)
   
-    sargs=",".join(args)
+    sargs=",".join(quote(a) for a in args)
  
     try:
       os.remove(UPDATE_PATH)
