@@ -40,7 +40,7 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ch
     url = get_file_url()
   if url == None:
     raise Exception("invalid URL")
-  return van.configure(server,ask,port=port,dir=dir,eula=eula,version=version,url=url,check_versions=check_versions,exe_name=exe_name,download_name=download_name)
+  return van.configure(server,ask,port=port,dir=dir,eula=eula,version=version,url=url,check_versions=check_versions,exe_name=exe_name,download_name=download_name,download_data={"linkdir":("\\./mods/","\\./libraries/"),"copy":("\\./config/")})
 
 def get_start_command(server):
   return ["java","-Xmx3G","-Xms2G","-jar",server.data["exe_name"],"nogui"],server.data["dir"]

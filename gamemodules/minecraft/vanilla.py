@@ -40,7 +40,7 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
-def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,check_versions=True,exe_name="minecraft_server.jar",download_name="minecraft_server.jar"):
+def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,check_versions=True,exe_name="minecraft_server.jar",download_name="minecraft_server.jar",download_data=None):
   if port is None and "port" in server.data:
     port=server.data["port"]
   if port is None and not ask:
@@ -77,8 +77,6 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ch
       allversions=[v["id"] for v in versions["versions"] if v["type"] in ["release","snapshot"]] #ditch other types as don't have servers
     except Exception as ex:
       print("Error downloading list of versions: "+str(ex)+"\nlisting versions and latest version will fail")
-
-  
 
   if version is None and url is None:
     if "version" in server.data:
@@ -126,6 +124,8 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ch
 
   server.data["exe_name"] = exe_name
   server.data["download_name"] = download_name
+  if download_data is not None:
+    server.data["download"]=download_data
   server.data.save()
 
   return (),{"eula":eula}
@@ -152,8 +152,11 @@ def install(server,*,eula=False):
           pass
         os.symlink(os.path.join(downloadpath,server.data["exe_name"]),mcjar)
       else:
-        #implement a sensible copy/link and update system
-                 
+        basetagpath=os.path.join(server.data["dir"],".~basetag")
+        oldpath=os.readlink(basetagpath)
+        os.remove(basetagpath)
+        utils.updatefs.update(old,downloadpath,server.data["dir"],server.data["download"]["linkdirs"],server.data["download"]["copy"])
+        os.symlink(downloadpath,basetagpath)
     except downloader.DownloaderError as ex:
       print("Error downloading minecraft_server.jar: ")
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
@@ -161,7 +164,6 @@ def install(server,*,eula=False):
   else:
     print("Skipping download")
 
-  # probably need to extract the executable from ... something
   eulafile=os.path.join(server.data["dir"],"eula.txt")
   if not os.path.isfile(eulafile): # use as flag for has the server created it's files
     print("Starting server to create settings")
