@@ -2,6 +2,21 @@ from downloader import DownloaderError
 import urllib.request
 import os.path
 import subprocess as sp
+import sys
+
+def reporthook(blocknum, blocksize, totalsize):
+  readsofar = blocknum * blocksize
+  if totalsize > 0:
+    if readsofar > totalsize:
+      readsofar = totalsize
+    percent = readsofar * 1e2 / totalsize
+    print("\r%5.1f%% %*d / %d" % (
+        percent, len(str(totalsize)), readsofar, totalsize),end='')
+  else: # total size is unknown
+    print("read %d" % (readsofar,))
+  tenth=int(10*readsofar/totalsize)*totalsize/10
+  if tenth<=readsofar and readsofar<tenth+blocksize:
+    print()
 
 def download(path,args):
   url,targetname,*args=args
@@ -13,27 +28,27 @@ def download(path,args):
     decompress=args[0]
     if decompress not in ["zip","tar","gz","tgz"]:
       raise DownloaderError("Unknown decompression type")
-    if decompres in ["gz"]: # compression without filenames
+    if decompress in ["gz"]: # compression without filenames
       targetname+="."+decompress
   try:
-    fname,headers=urllib.request.urlretrieve(url,filename=targetname)
+    fname,headers=urllib.request.urlretrieve(url,filename=targetname,reporthook=reporthook)
   except urllib.error.URLError as ex:
     print("Error downloading "+str(targetname)+": "+ex.reason)
     raise DownloaderError("Can't download file")
-  if decompress is "zip":
-    ret=sp.call(["unzip",targetname,"-d",path],stdout=os.stderr)
+  if decompress == "zip":
+    ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
     if ret!=0:
       raise DownloaderError("Error extracting download")
-  elif decompress is "tar":
-    ret=sp.call(["tar","-xf",targetname,"-C",path],stdout=os.stderr)
+  elif decompress == "tar":
+    ret=sp.call(["tar","-xf",targetname,"-C",path],stdout=sys.stderr)
     if ret!=0:
       raise DownloaderError("Error extracting download")
-  elif decompress is "tgz":
-    ret=sp.call(["tar","-xfz",targetname,"-C",path],stdout=os.stderr)
+  elif decompress == "tgz":
+    ret=sp.call(["tar","-xfz",targetname,"-C",path],stdout=sys.stderr)
     if ret!=0:
       raise DownloaderError("Error extracting download")
-  elif decompress is "gz":
-    ret=sp.call(["gunzip",targetname],stdout=os.stderr)
+  elif decompress == "gz":
+    ret=sp.call(["gunzip",targetname],stdout=sys.stderr)
     if ret!=0:
       raise DownloaderError("Error extracting download")
   

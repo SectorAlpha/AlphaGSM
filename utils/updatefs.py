@@ -1,7 +1,10 @@
 import os
 import re
-from os.path import isdir,islink,exists,join as joinpath
+import os.path
+from os.path import isdir,islink,lexists as exists,join as joinpath
 import shutil
+import filecmp
+from shutil import copy as copyfile
 
 def update(old,new,target,linkdir=(),copy=()):
   """ Update a folder tree taking into account the current tree, the originalsource tree and a new target tree.
@@ -26,8 +29,10 @@ def update(old,new,target,linkdir=(),copy=()):
           there are extra rules for edge cases mainly triggered if the rules or settings are changed
 
       """
-  linkdir=[re.compile(pat) for pat in server.data['linkdir']]
-  copy=[re.compile(pat) for pat in server.data['copy']]
+  print(linkdir)
+  print(copy)
+  linkdir=[re.compile(pat) for pat in linkdir]
+  copy=[re.compile(pat) for pat in copy]
   return _doupdate(old,new,target,".",linkdir,copy,False)
 
 def israwdir(path):
@@ -100,10 +105,6 @@ def checkandcleartrees(target,old):
 def checkfiles(target,old):
   return filecmp.cmp(target,old,shallow=False)
 
-def copyfiles(source,target):
-  pass
-  #TODO: implement
-
 def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
   anyfailed=False 
  
@@ -111,7 +112,7 @@ def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
   if islink(target):
     os.remove(target)
   if not isdir(target):
-    os.path.mkdir(target)
+    os.mkdir(target)
 
   newentries=os.listdir(new)
   targetentries=os.listdir(target)
@@ -120,7 +121,7 @@ def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
   for entry in targetentries:
     if entry[-5:]==".~old" or entry[-5:]==".~new" or entry[-7:]==".~local":
       continue
-    if entry not in newnetries:
+    if entry not in newentries:
       oldentry=joinpath(old,entry)
       #only remove if was from old entries. Leave anything else behind (assume it was created by the game)
       if exists(oldentry):
@@ -162,7 +163,7 @@ def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
   for entry in newentries:
     # add new entries
     relentry=joinpath(rel,entry)
-    newentry=joinpath(old,entry)
+    newentry=joinpath(new,entry)
     targetentry=joinpath(target,entry)
     oldentry=joinpath(old,entry)
     # if dir and ( forcecopy or not linkdir ) then recurse possibly with forcecopy set
@@ -170,7 +171,7 @@ def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
     # if ( not dir and not forcecopy and not copy ) or ( dir and linkdir and not forcecopy) then symlink file/dir
     if isdir(newentry) and (forcecopy or not any(pat.match(relentry+"/") is not None for pat in linkdir)):
       # update recursively
-      if forcecopy or any(patmatch(relentry+"/") is not None for pat in copy):
+      if forcecopy or any(pat.match(relentry+"/") is not None for pat in copy):
         anyfailed|=_doupdate(oldentry,newentry,targetentry,relentry,linkdir,copy,True)
       else:
         anyfailed|=_doupdate(oldentry,newentry,targetentry,relentry,linkdir,copy,False)
@@ -204,7 +205,7 @@ def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
       # symlink it
       if exists(targetentry):
         if islink(targetentry):
-          os.remove(targeentry)
+          os.remove(targetentry)
         else:
           if exists(targetentry+".~local"):
             if isdir(targetentry+".~local"):

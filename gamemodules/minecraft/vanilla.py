@@ -8,6 +8,7 @@ from server import ServerError
 import re
 import screen
 import downloader
+import utils.updatefs
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -138,7 +139,7 @@ def install(server,*,eula=False):
 
   # if URL has changed, or the executable does not exist, redownload the server
   if "current_url" not in server.data or server.data["current_url"]!=server.data["url"] or not os.path.isfile(mcjar):
-    download_url, download_extension = os.path.splitext(server.data["current_url"])
+    download_name, download_extension = os.path.splitext(server.data["download_name"])
     print(download_extension)
     decompress=()
     if download_extension == ".zip":
@@ -153,16 +154,21 @@ def install(server,*,eula=False):
         os.symlink(os.path.join(downloadpath,server.data["exe_name"]),mcjar)
       else:
         basetagpath=os.path.join(server.data["dir"],".~basetag")
-        oldpath=os.readlink(basetagpath)
-        os.remove(basetagpath)
-        utils.updatefs.update(old,downloadpath,server.data["dir"],server.data["download"]["linkdirs"],server.data["download"]["copy"])
+        try:
+          oldpath=os.readlink(basetagpath)
+        except FileNotFoundError:
+          oldpath="/dev/null/INVALID"
+        else:
+          os.remove(basetagpath)
+        utils.updatefs.update(oldpath,downloadpath,server.data["dir"],server.data["download"]["linkdir"],server.data["download"]["copy"])
         os.symlink(downloadpath,basetagpath)
     except downloader.DownloaderError as ex:
       print("Error downloading minecraft_server.jar: ")
       raise ServerError("Error setting up server. Server file isn't already downloaded and can't download requested version")
-    server.data["current url"]=server.data["url"]
+    server.data["current_url"]=server.data["url"]
   else:
     print("Skipping download")
+  server.data.save()
 
   eulafile=os.path.join(server.data["dir"],"eula.txt")
   if not os.path.isfile(eulafile): # use as flag for has the server created it's files
@@ -176,7 +182,6 @@ def install(server,*,eula=False):
   if eula and os.path.isfile(eulafile):
     updateconfig(eulafile,{"eula":"true"})
   updateconfig(os.path.join(server.data["dir"],"server.properties"),{"server-port":str(server.data["port"])})
-  server.data.save()
     
 def get_start_command(server):
   return ["java","-jar",server.data["exe_name"],"nogui"],server.data["dir"]
@@ -211,8 +216,6 @@ def message(server,msg,*targets,parse=False):
   screen.send_to_server(server.name,"\ntellraw "+target+" "+msgjson+"\n")
 
 def checkvalue(server,key,value):
-  if key == 'backupfiles':
-    return value.split(",")
   raise ServerError("All read only as not yet implemented")
 
 def backup(server):
