@@ -41,7 +41,7 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
-def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,check_versions=True,exe_name="minecraft_server.jar",download_name="minecraft_server.jar",download_data=None):
+def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,exe_name="minecraft_server.jar",download_name="minecraft_server.jar",download_data=None):
   if port is None and "port" in server.data:
     port=server.data["port"]
   if port is None and not ask:
@@ -70,7 +70,7 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ch
   server.data['backupfiles']=['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']
   allversions=[]
   latest=None
-  if check_versions:
+  if version is not None or url is None:
     try:
       versionsfile=urllib.request.urlopen("https://s3.amazonaws.com/Minecraft.Download/versions/versions.json")
       versions=json.loads(versionsfile.readall().decode("utf-8"))
@@ -79,28 +79,30 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ch
     except Exception as ex:
       print("Error downloading list of versions: "+str(ex)+"\nlisting versions and latest version will fail")
 
-  if version is None and url is None:
-    if "version" in server.data:
-      version=server.data["version"]
-    else:
-      version="latest:"+str(latest)
-    if ask:
-      while True:
-        inp=input("Please specify the version of minecraft to use.\nEnter \"latest\" for the latest version ("+str(latest)+
-                  "), \"None\" for a custom download url or \"list\" to get a list of versions\n: ["+str(version)+"] ").strip()
-        if inp.lower() == "list":
-          print("'"+"', '".join(allversions)+"'")
-          continue
-        elif inp.lower()=="none":
-          version=None
-        elif inp.lower()=="latest":
-          version=latest
-        elif inp!="":
-          version=inp
-        if version is not None and version not in allversions:
-          if input(version+" is not in the list of versions. Use anyway? (y/yes or n/no): ").strip().lower() not in ("y","yes"):
+    if len(allversions)>0 and version is None:
+      if "version" in server.data:
+        version=server.data["version"]
+      else:
+        version="latest"
+      if ask:
+        while True:
+          inp=input("Please specify the version of minecraft to use.\nEnter \"latest\" for the latest version ("+str(latest)+
+                    "), \"None\" for a custom download url or \"list\" to get a list of versions\n: ["+str(version)+"] ").strip()
+          if inp.lower() == "list":
+            print("'"+"', '".join(allversions)+"'")
             continue
-        break
+          elif inp.lower()=="none":
+            version=None
+          elif inp.lower()=="latest":
+            version=latest
+          elif inp!="":
+            version=inp
+          if version is not None and version not in allversions:
+            if input(version+" is not in the list of versions. Use anyway? (y/yes or n/no): ").strip().lower() not in ("y","yes"):
+              continue
+          break
+      if version=="latest":
+        version=latest
   server.data["version"]=version
 
   if version is not None:
@@ -171,7 +173,8 @@ def install(server,*,eula=False):
   server.data.save()
 
   eulafile=os.path.join(server.data["dir"],"eula.txt")
-  if not os.path.isfile(eulafile): # use as flag for has the server created it's files
+  configfile=os.path.join(server.data["dir"],"server.properties")
+  if not os.path.isfile(configfile) or (eula and not os.path.isfile(eulafile)): # use as flag for has the server created it's files
     print("Starting server to create settings")
     try:
       ret=sp.check_call(["java","-jar",server.data["exe_name"],"nogui"],cwd=server.data["dir"],shell=False,timeout=10)
@@ -179,9 +182,9 @@ def install(server,*,eula=False):
       print("Error running server. Java returned status: "+ex.returncode)
     except sp.TimeoutExpired as ex:
       print("Error running server. Process didn't complete in time")
-  if eula and os.path.isfile(eulafile):
+  updateconfig(configfile,{"server-port":str(server.data["port"])})
+  if eula:
     updateconfig(eulafile,{"eula":"true"})
-  updateconfig(os.path.join(server.data["dir"],"server.properties"),{"server-port":str(server.data["port"])})
     
 def get_start_command(server):
   return ["java","-jar",server.data["exe_name"],"nogui"],server.data["dir"]
