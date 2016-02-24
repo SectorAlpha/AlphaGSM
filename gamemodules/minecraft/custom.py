@@ -86,7 +86,7 @@ def install(server,*,eula=False):
     os.makedirs(server.data["dir"])
   mcjar=os.path.join(server.data["dir"],server.data["exe_name"])
   if not os.path.isfile(mcjar):
-    raise ServerException("Can't find server jar. Please place the files in the directory then run setup again")
+    raise ServerException("Can't find server jar. Please place the files in the directory and/or update the 'exe_name' then run setup again")
   server.data.save()
 
   eulafile=os.path.join(server.data["dir"],"eula.txt")
@@ -136,6 +136,8 @@ def message(server,msg,*targets,parse=False):
   screen.send_to_server(server.name,"\ntellraw "+target+" "+msgjson+"\n")
 
 def checkvalue(server,key,value):
+  if key == "exe_name":
+    return value
   raise ServerError("All read only as not yet implemented")
 
 def backup(server):
