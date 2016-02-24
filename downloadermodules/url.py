@@ -51,6 +51,29 @@ def download(path,args):
     ret=sp.call(["gunzip",targetname],stdout=sys.stderr)
     if ret!=0:
       raise DownloaderError("Error extracting download")
+
+def _true(*arg):
+  return True
   
-  
-   
+def getallfilter(active=None,url=None,compression=None,sort=None):
+  filterfn=_true
+  sortfn=None
+  if url!=None:
+    import re
+    try:
+      url=re.compile(url).match
+    except TypeError:
+      pass
+  if active!=None:
+    active=bool(active)
+    if url!=None:
+      filterfn=lambda lmodule,largs,llocation,ldate,lactive: return active == lactive and url(largs[0])
+    else:
+      filterfn=lambda lmodule,largs,llocation,ldate,lactive: return active == lactive
+  elif url!=None:    
+    filterfn=lambda lmodule,largs,llocation,ldate,lactive: return url(largs[0])
+  if sort == "date":
+    sortfn=lambda lmodule,largs,llocation,ldate,lactive: return date
+  else:
+    raise DownloaderError("Unknown sort key")
+ 

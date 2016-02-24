@@ -27,7 +27,7 @@ UPDATE_PATH = DB_PATH+UPDATE_SUFFIX
 
 DOWNLOADERS_PACKAGE = "downloadermodules."
 
-__all__=["DownloaderError",'getpath','getpathifexists','main']
+__all__=["DownloaderError",'getpath','getpathifexists','main','getpaths','getargsforpath']
 
 class DownloaderError(Exception):
   def __init__(self,msg,*args,ret=1,**kwargs):
@@ -139,6 +139,41 @@ def getpath(module,args):
     os.remove(LOCK_PATH)
   
 main=getpath  
-  
-  
 
+def _true(*arg):
+  return True
+
+def _getallfilter(active=None,sort=None):
+  filterfn=_true
+  sortfn=None
+  if active!=None:
+    active=bool(active)
+    filterfn=lambda lmodule,largs,llocation,ldate,lactive: return active == lactive
+  if sort == "date":
+    sortfn=lambda lmodule,largs,llocation,ldate,lactive: return ldate
+  else:
+    raise DownloaderError("Unknown sort key")
+
+def getpaths(module,**kwargs):
+  if module=None:
+    filterfn,sortfn=_getallfilter(**kwargs)
+  else:
+    filterfn,sortfn=_findmodule(module).getfilter(**kwargs)
+  downloads=[]
+  with open(DB_PATH,'r') as f:
+    for line in f:
+      lmodule,largs,llocation,ldate,lactive=line.split()
+      largs=[unquote(arg) for arg in largs.split(",")]
+      if (module is None or lmodule==module) and filterfn(lmodule,largs,llocation,ldate,lactive):
+        downloads.append((lmodule,largs,llocation,ldate,lactive))
+  if sortfn:
+    downloads.sort(key=sortfn)
+  return downloads
+
+def getargsforpath(path):
+  with open(DB_PATH,'r') as f:
+    for line in f:
+      lmodule,largs,llocation,ldate,lactive=line.split()
+      if llocation=path:
+        return(lmodule,[unquote(arg) for arg in largs.split(",")])
+  
