@@ -41,7 +41,7 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
-def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,exe_name="minecraft_server.jar",download_name="minecraft_server.jar",download_data=None):
+def configure(server,ask,port=None,dir=None,*,eula=None,version=None,url=None,exe_name="minecraft_server.jar",download_name="minecraft_server.jar",download_data=None):
   server.data['backupfiles']=['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']
   allversions=[]
   latest=None
@@ -96,18 +96,19 @@ def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None,ex
   
   if port is None and "port" in server.data:
     port=server.data["port"]
-  if port is None and not ask:
-    raise ValueError("No Port and not asking")
-  while True:
-    inp=input("Please specify the port to use for this server: "+(str(port) if port is not None else "")).strip()
-    if port is not None and inp == "":
+  if ask:
+    while True:
+      inp=input("Please specify the port to use for this server: "+(str(port) if port is not None else "")).strip()
+      if port is not None and inp == "":
+        break
+      try:
+        port=int(inp)
+      except ValueError as v:
+        print(inp+" isn't a valid port number")
+        continue
       break
-    try:
-      port=int(inp)
-    except ValueError as v:
-      print(inp+" isn't a valid port number")
-      continue
-    break
+  if port is None :
+    raise ValueError("No Port")
   server.data["port"]=port
 
   if dir is None:
