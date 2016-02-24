@@ -7,7 +7,7 @@ import re
 import screen
 import urllib.request
 from .vanilla import *
-import .vanilla as van
+from . import vanilla as van
 
 # path to the download page
 MODPACK_URL = "http://www.technicpack.net/modpack/tekkitmain.552547"

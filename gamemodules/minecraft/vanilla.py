@@ -9,8 +9,8 @@ import re
 import screen
 import downloader
 import utils.updatefs
-from custom import *
-import custom as cust
+from .custom import *
+from . import custom as cust
 
 command_args=command_args.copy()
 command_args["setup"]=([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],False,

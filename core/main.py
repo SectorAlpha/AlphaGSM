@@ -143,9 +143,17 @@ def getallservers(command):
   if command in {"stop","status","message","backup"}:
     servers=list(screen.list_all_screens())
     if command == "stop":
-      ## TODO: Write the list of servers to a file in the current directory ready for start
-      pass
+      print("Saving server list")
+      with open(".alphagsmserverlist","w") as f:
+        for server in servers:
+          f.write(server+"\n")
     print("Using servers:",*servers)
+    return len(servers),servers
+  elif command == "start":
+    servers=[]
+    with open(".alphagsmserverlist","r") as f:
+      for line in f:
+        servers.append(line.strip())
     return len(servers),servers
   return 0,[]
 
