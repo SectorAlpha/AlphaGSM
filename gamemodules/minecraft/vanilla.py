@@ -40,7 +40,7 @@ command_args={"setup":([],[("PORT","The port for the server to listen on",int),(
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
-def configure(server,ask,*,port=None,dir=None,eula=None,version=None,url=None):
+def configure(server,ask,port=None,dir=None,*,eula=None,version=None,url=None):
   if port is None and "port" in server.data:
     port=server.data["port"]
   if port is None and not ask:
