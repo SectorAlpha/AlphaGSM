@@ -25,8 +25,11 @@ def main(name,args):
     print()
     help(name,None)
     return 2
-  if server.lower()=="all":
-    server="*"
+  try:
+    if server.lower()=="all":
+      server="*"
+  except AttributeError:
+    pass
   if count==1:
     if server.lower() in ("help","create")+Server.default_commands:
       print(server,"is a banned server name as it's too similar to a command")
