@@ -36,7 +36,7 @@ command_args["setup"]=([],[("PORT","The port for the server to listen on",int),(
                        [("u",["url"],"Url to download tekkit from. See http://www.technicpack.net/modpack/tekkitmain.552547 for latest download.","url","URL",str),
                         ("p",["modpack"],"Url for the modpack page. Used to locate the latest server url.","modpack_url","URL",str)])
 
-def configure(server,ask,*,port=None,dir=None,url=None,modpack_url=None,exe_name="Tekkit.jar",download_name="Tekkit.zip"):
+def configure(server,ask,port=None,dir=None,*,url=None,modpack_url=None,exe_name="Tekkit.jar",download_name="Tekkit.zip"):
   if url == None:
     if "url" in server.data and server.data["url"] is not None:
       url=server.data["url"]
