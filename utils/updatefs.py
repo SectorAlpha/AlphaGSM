@@ -6,13 +6,14 @@ import shutil
 import filecmp
 from shutil import copy as copyfile
 
-def update(old,new,target,linkdir=(),copy=()):
+def update(old,new,target,linkdir=(),copy=(),skip=()):
   """ Update a folder tree taking into account the current tree, the originalsource tree and a new target tree.
-         
+      
+      Any files or filders that match a regular expression in skip will be treated as if they don't exist in either old or new.
       Any folders that match a regular expression in linkdir will be linked rather than recursed into.
       Any folders that match a regular expression in copy will have them and all their contents copied recursively.
       Any files that match a regular expression in copy will be copied.
-      All folders are matched with a trailing "/".
+      All folders are matched with a trailing "/" and all paths are paths reletive to the top of tree starting with a ".".
    
       The rules forthe update are:
           Any files or folders that aren't from source and don't have version in new are left alone.
@@ -29,16 +30,15 @@ def update(old,new,target,linkdir=(),copy=()):
           there are extra rules for edge cases mainly triggered if the rules or settings are changed
 
       """
-  print(linkdir)
-  print(copy)
   linkdir=[re.compile(pat) for pat in linkdir]
   copy=[re.compile(pat) for pat in copy]
-  return _doupdate(old,new,target,".",linkdir,copy,False)
+  skip=[re.compile(pat) for pat in skip]
+  return _doupdate(old,new,target,".",linkdir,copy,skip,False)
 
 def israwdir(path):
   return (not islink(path)) and isdir(path)
 
-def checkandcleartrees(target,old):
+def checkandcleartrees(rel,target,old,skip):
   """Function to clear out the target if the old exists but new doesn't.
      If directory recurse and if empty remove.
      If files are found that are not from old then leave them and any ancestors alone,
@@ -54,8 +54,9 @@ def checkandcleartrees(target,old):
       continue
     targetentry=joinpath(target,entry)
     oldentry=joinpath(old,entry)
+    relentry=joinpath(rel,entry)
     if israwdir(targetentry):
-      if exists(oldentry):
+      if exists(oldentry) and not any(pat.match(relentry+"/") is not None for pat in skip):
         if not isdir(old):
           # target is dir but old isn't
           if exists(targetentry+".~local"):
@@ -66,7 +67,7 @@ def checkandcleartrees(target,old):
           os.rename(targetentry,targetentry+".~local")
           skiplater.append(targetentry+".~local")
           print("WARNING: file from old version is folder in local but isn't wanted in new. \n Renamed to '{0}".format(targetentry+".~local"))
-        elif checkandcleartrees(targetentry,oldentry):
+        elif checkandcleartrees(releneytr,targetentry,oldentry,skip):
           # target and old both dirs and target now empty
           os.rmdir(targetentry)
         else:
@@ -75,7 +76,7 @@ def checkandcleartrees(target,old):
       else:
         # in target but not in old so leave
         anyleft=True
-    elif exists(oldentry):
+    elif exists(oldentry) and not any(pat.match(relentry) is not None for pat in skip):
       if checkfiles(targetentry,oldentry):
         # both exist and are file and match
         os.remove(targetentry)
@@ -89,7 +90,8 @@ def checkandcleartrees(target,old):
         os.rename(targetentry,targetentry+".~local")
         skiplater.append(targetentry+".~local")
         print("WARNING: file from old version has local changes but isn't wanted in new. \n Renamed to '{0}".format(targetentry+".~local"))
-    # else target is a file and no old so leave
+    else: #target is a file and no old so leave
+      anyleft=True
 
   # process the backup files from previous runs that haven't been updated/replaced this update
   for entry in checklater:
@@ -105,7 +107,7 @@ def checkandcleartrees(target,old):
 def checkfiles(target,old):
   return filecmp.cmp(target,old,shallow=False)
 
-def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
+def _doupdate(old,new,target,rel,linkdir,copy,skip,forcecopy):
   anyfailed=False 
  
   # make sure we have a folder
@@ -123,14 +125,19 @@ def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
       continue
     if entry not in newentries:
       oldentry=joinpath(old,entry)
-      #only remove if was from old entries. Leave anything else behind (assume it was created by the game)
-      if exists(oldentry):
+      targetentry=joinpath(target,entry)
+      relentry=joinpath(rel,entry)
+      relentrymatch=relentry
+      if israwdir(targetentry):
+        relentrymatch+="/"
+      # only remove if was from old entries. Leave anything else behind (assume it was created by the game)
+      # things in skip are treated as if not in old or new even if they actually are
+      if exists(oldentry) and not any(pat.match(relentrymatch) is not None for pat in skip):
         # old and target but no new so remove or if changed append .~local, 
-        targetentry=joinpath(target,entry)
         if israwdir(targetentry):
           if isdir(old):
             # target and old dirs but no new so need to recurse
-            if checkandcleartrees(targetentry,oldentry):
+            if checkandcleartrees(relentry,targetentry,oldentry,skip):
               # target and old both dirs and target now empty
               os.rmdir(targetentry)
             else:
@@ -166,15 +173,20 @@ def _doupdate(old,new,target,rel,linkdir,copy,forcecopy):
     newentry=joinpath(new,entry)
     targetentry=joinpath(target,entry)
     oldentry=joinpath(old,entry)
+    relentrymatch=relentry
+    if israwdir(newentry):
+      relentrymatch+="/"
+    if any(pat.matich(relentrymatch) is not None for pat in skip):
+      continue
     # if dir and ( forcecopy or not linkdir ) then recurse possibly with forcecopy set
     # if not dir and forcecopy or copy then copy file
     # if ( not dir and not forcecopy and not copy ) or ( dir and linkdir and not forcecopy) then symlink file/dir
     if isdir(newentry) and (forcecopy or not any(pat.match(relentry+"/") is not None for pat in linkdir)):
       # update recursively
       if forcecopy or any(pat.match(relentry+"/") is not None for pat in copy):
-        anyfailed|=_doupdate(oldentry,newentry,targetentry,relentry,linkdir,copy,True)
+        anyfailed|=_doupdate(oldentry,newentry,targetentry,relentry,linkdir,copy,skip,True)
       else:
-        anyfailed|=_doupdate(oldentry,newentry,targetentry,relentry,linkdir,copy,False)
+        anyfailed|=_doupdate(oldentry,newentry,targetentry,relentry,linkdir,copy,skip,False)
     elif (not isdir(newentry)) and (forcecopy or any(pat.match(relentry) is not None for pat in copy)):
       # not dir and forcecopy or copy so copy files
       if exists(targetentry):
