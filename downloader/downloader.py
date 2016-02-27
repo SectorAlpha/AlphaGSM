@@ -174,7 +174,7 @@ def getargsforpath(path):
   with open(DB_PATH,'r') as f:
     for line in f:
       lmodule,largs,llocation,ldate,lactive=line.split()
-      if llocation=path:
+      if llocation==path:
         return(lmodule,[unquote(arg) for arg in largs.split(",")])
   return None
   
