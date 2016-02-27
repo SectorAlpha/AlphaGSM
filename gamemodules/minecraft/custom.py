@@ -86,7 +86,7 @@ def install(server,*,eula=False):
     os.makedirs(server.data["dir"])
   mcjar=os.path.join(server.data["dir"],server.data["exe_name"])
   if not os.path.isfile(mcjar):
-    raise ServerError("Can't find server jar. Please place the files in the directory and/or update the 'exe_name' then run setup again")
+    raise ServerError("Can't find server jar ({}). Please place the files in the directory and/or update the 'exe_name' then run setup again".format(mcjar))
   server.data.save()
 
   eulafile=os.path.join(server.data["dir"],"eula.txt")
