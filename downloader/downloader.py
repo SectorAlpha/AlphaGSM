@@ -148,9 +148,9 @@ def _getallfilter(active=None,sort=None):
   sortfn=None
   if active!=None:
     active=bool(active)
-    filterfn=lambda lmodule,largs,llocation,ldate,lactive: return active == lactive
+    filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive
   if sort == "date":
-    sortfn=lambda lmodule,largs,llocation,ldate,lactive: return ldate
+    sortfn=lambda lmodule,largs,llocation,ldate,lactive: ldate
   else:
     raise DownloaderError("Unknown sort key")
 

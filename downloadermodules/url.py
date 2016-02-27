@@ -67,13 +67,13 @@ def getallfilter(active=None,url=None,compression=None,sort=None):
   if active!=None:
     active=bool(active)
     if url!=None:
-      filterfn=lambda lmodule,largs,llocation,ldate,lactive: return active == lactive and url(largs[0])
+      filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and url(largs[0])
     else:
-      filterfn=lambda lmodule,largs,llocation,ldate,lactive: return active == lactive
+      filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive
   elif url!=None:    
-    filterfn=lambda lmodule,largs,llocation,ldate,lactive: return url(largs[0])
+    filterfn=lambda lmodule,largs,llocation,ldate,lactive: url(largs[0])
   if sort == "date":
-    sortfn=lambda lmodule,largs,llocation,ldate,lactive: return date
+    sortfn=lambda lmodule,largs,llocation,ldate,lactive: date
   else:
     raise DownloaderError("Unknown sort key")
  
