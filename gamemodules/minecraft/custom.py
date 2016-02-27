@@ -139,6 +139,8 @@ def message(server,msg,*targets,parse=False):
 def checkvalue(server,key,value):
   if key == "exe_name":
     return value
+  if key == "backupfiles":
+    return backupfiles.split(",")
   raise ServerError("All read only as not yet implemented")
 
 def backup(server):
