@@ -76,7 +76,8 @@ def configure(server,ask,port=None,dir=None,*,eula=None,exe_name="minecraft_serv
     else:
       eula=False
 
-  server.data["exe_name"] = exe_name
+  if not "exe_name" in server.data:
+    server.data["exe_name"] = exe_name
   server.data.save()
 
   return (),{"eula":eula}
