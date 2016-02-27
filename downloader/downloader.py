@@ -155,7 +155,7 @@ def _getallfilter(active=None,sort=None):
     raise DownloaderError("Unknown sort key")
 
 def getpaths(module,**kwargs):
-  if module=None:
+  if module is None:
     filterfn,sortfn=_getallfilter(**kwargs)
   else:
     filterfn,sortfn=_findmodule(module).getfilter(**kwargs)
