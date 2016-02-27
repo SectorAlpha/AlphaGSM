@@ -176,4 +176,5 @@ def getargsforpath(path):
       lmodule,largs,llocation,ldate,lactive=line.split()
       if llocation=path:
         return(lmodule,[unquote(arg) for arg in largs.split(",")])
+  return None
   
