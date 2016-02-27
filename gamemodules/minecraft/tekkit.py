@@ -10,7 +10,12 @@ from .vanilla import *
 from . import vanilla as van
 
 # path to the download page
-MODPACK_URL = "http://www.technicpack.net/modpack/tekkitmain.552547"
+MODPACK_URL_DEFAULT = "http://www.technicpack.net/modpack/tekkitmain.552547"
+MODPACK_URL = {
+	"tekkit": "http://www.technicpack.net/modpack/tekkitmain.552547",
+	"tekkit-legends": "http://www.technicpack.net/modpack/tekkit-legends.735902",
+	}
+
 
 def get_file_url(modpack_url):
   try:
@@ -45,8 +50,12 @@ def configure(server,ask,port=None,dir=None,*,url=None,modpack_url=None,exe_name
     if modpack_url == None:
       if "modpack_url" in server.data and server.data["modpack_url"] is not None:
         modpack_url=server.data["modpack_url"]
-    if modpack_url is None:
-      modpack_url = MODPACK_URL
+    try:
+        # get the URL from a known keyword
+        modpack_url = MODPACK_URL[modpack_url]
+    except KeyError:
+	# ok, lets just use this URL anyway
+        pass
     server.data["modpack_url"]=modpack_url
     latest_url = get_file_url(modpack_url)
     if url is None:
