@@ -69,7 +69,7 @@ def configure(server,ask,port=None,dir=None,*,url=None,modpack_url=None,exe_name
   if url == None:
     raise ServerError("No download URL available")
   # tekkit run time updates so must have copied of everything so it can update them
-  return van.configure(server,ask,port=port,dir=dir,eula=False,version=None,url=url,exe_name=exe_name,download_name=download_name,download_data={"linkdir":(),"copy":(r"\.")})
+  return van.configure(server,ask,port=port,dir=dir,eula=False,version=None,url=url,exe_name=exe_name,download_name=download_name,download_data={"linkdir":(),"copy":(r"\.",)})
 
 def get_start_command(server):
   return ["java","-Xmx3G","-Xms2G","-jar",server.data["exe_name"],"nogui"],server.data["dir"]
