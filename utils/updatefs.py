@@ -67,7 +67,7 @@ def checkandcleartrees(rel,target,old,skip):
           os.rename(targetentry,targetentry+".~local")
           skiplater.append(targetentry+".~local")
           print("WARNING: file from old version is folder in local but isn't wanted in new. \n Renamed to '{0}".format(targetentry+".~local"))
-        elif checkandcleartrees(releneytr,targetentry,oldentry,skip):
+        elif checkandcleartrees(relenetry,targetentry,oldentry,skip):
           # target and old both dirs and target now empty
           os.rmdir(targetentry)
         else:
@@ -89,6 +89,7 @@ def checkandcleartrees(rel,target,old,skip):
             os.remove(targetentry+".~local")
         os.rename(targetentry,targetentry+".~local")
         skiplater.append(targetentry+".~local")
+        anyleft=True
         print("WARNING: file from old version has local changes but isn't wanted in new. \n Renamed to '{0}".format(targetentry+".~local"))
     else: #target is a file and no old so leave
       anyleft=True

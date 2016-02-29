@@ -141,16 +141,18 @@ def checkvalue(server,key,value):
     return value
   if key == "backupfiles":
     return value.split(",")
-  raise ServerError("All read only as not yet implemented")
+  raise ServerError("{} read only as not yet implemented".format(key))
 
 def backup(server):
-  screen.send_to_server(server.name,"\save-off\nsave-all\n")
-  time.sleep(2)
+  if screen.check_screen_exists(server.name):
+    screen.send_to_server(server.name,"\save-off\nsave-all\n")
+    time.sleep(2)
   try:
-    sp.check_call(['zip','-r',os.path.join('backup',datetime.datetime.now().isoformat())]+server.data['backupfiles'],cwd=server.data['dir'])
+    sp.check_call(['zip','-ry',os.path.join('backup',datetime.datetime.now().isoformat())]+server.data['backupfiles']+["-x","backup/*"],cwd=server.data['dir'])
   except sp.CalledProcessError as ex:
     print("Error backing up the server")
-  screen.send_to_server(server.name,"\save-on\nsave-all\n")
+  if screen.check_screen_exists(server.name):
+    screen.send_to_server(server.name,"\save-on\nsave-all\n")
 
 def op(server,*users):
   for user in users:

@@ -6,6 +6,7 @@ from server import ServerError
 import re
 import screen
 import urllib.request
+import html5lib
 from .vanilla import *
 from . import vanilla as van
 
