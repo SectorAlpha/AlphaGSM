@@ -1,4 +1,4 @@
-from . import cmdparse
+from utils.cmdparse import cmdparse
 from server import Server,ServerError
 from . import multiplexer as mp
 import subprocess as sp

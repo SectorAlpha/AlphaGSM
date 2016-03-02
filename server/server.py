@@ -9,6 +9,7 @@ from . import data
 from importlib import import_module
 import screen
 import time
+from utils.cmdparse.cmdspec import CmdSpec, ArgSpec, OptSpec
 
 __all__=["Server","ServerError"]
 
@@ -56,16 +57,16 @@ class Server(object):
   """
     
   default_commands=("setup","start","stop","status","message","connect","dump","set","backup")
-  default_command_args={"setup":([],[],False,[("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False)]),
-                        "start":([],[],False,[]),
-                        "stop":([],[],False,[]),
-                        "status":([],[],False,[("v",["verbose"],"Verbose status. argument is the level from 0 (normal) to 3 (max)","verbose","LEVEL",int)]),
-                        "message":([("MESSAGE","The message to send",str)],[],False,[]),
-                        "connect":([],[],False,[]),
-                        "dump":([],[],False,[]),
-                        "set":([("KEY","The key to set in the form of dot seperated elements",str),
-                                ("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree.",str)],[],False,[]),
-                        "backup":([],[],False,[])}
+  default_command_args={"setup":CmdSpec(options=(OptSpec("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False),)),
+                        "start":CmdSpec(),
+                        "stop":CmdSpec(),
+                        "status":CmdSpec(options=(OptSpec("v",["verbose"],"Verbose status. argument is the level from 0 (normal) to 3 (max)","verbose","LEVEL",int),)),
+                        "message":CmdSpec(requiredarguments=(ArgSpec("MESSAGE","The message to send",str),)),
+                        "connect":CmdSpec(),
+                        "dump":CmdSpec(),
+                        "set":CmdSpec(requiredarguments=(ArgSpec("KEY","The key to set in the form of dot seperated elements",str),
+                                ArgSpec("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree. Exactly how many values can be specified is KEY dependant",str)),repeatable=True),
+                        "backup":CmdSpec()}
   default_command_descriptions={"setup":"Setup the game server.\nThis will include processing the required settings,"
                                         " downloading or copying any needed files and doing any setup task so that a"
                                         " 'start' should work.\nIf noask is specified then this may fail if extra "
@@ -111,19 +112,9 @@ class Server(object):
     """Get the full argument spec for the command specified on this server"""
     args=self.default_command_args.get(command,None)
     extra_args=self.module.command_args.get(command,None)
-    if extra_args is not None:
-      if args is None:
-        args=extra_args
-      else:
-        if len(extra_args[0])>0:
-          raise ServerException("Error in module: Can't add extra required arguments")
-        if args[2] is not True:
-          args=(args[0],args[1]+extra_args[1],extra_args[2],args[3]+extra_args[3])
-        else:
-          if len(extra_args[1])>0:
-            raise ServerException("Error in module: Can't add extra arguments, already have a catch all argument")
-          args=(args[0],args[1],args[2],args[3]+extra_args[3])
-    return args
+    if args is None:
+      return extra_args
+    return args.combine(extra_args)
 
   def get_command_description(self,command):
     """Get the complete description for the command specified for this server"""

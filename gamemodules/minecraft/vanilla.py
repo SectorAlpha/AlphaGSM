@@ -11,12 +11,12 @@ import downloader
 import utils.updatefs
 from .custom import *
 from . import custom as cust
+from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
+
 
 command_args=command_args.copy()
-command_args["setup"]=([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],False,
-                       [("v",["version"],"Version of minecraft to download. Overriden by the url option","version","VERSION",str),
-                        ("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url","URL",str),
-                        ("l",["eula"],"Mark the eula as read","eula",None,True)])
+command_args["setup"]=command_args["setup"].combine(CmdSpec(options=(OptSpec("v",["version"],"Version of minecraft to download. Overriden by the url option","version","VERSION",str),
+                        OptSpec("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url","URL",str))))
 
 def configure(server,ask,port=None,dir=None,*,eula=None,version=None,url=None,exe_name="minecraft_server.jar",download_name="minecraft_server.jar",download_data=None):
   allversions=[]

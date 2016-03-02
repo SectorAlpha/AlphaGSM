@@ -9,6 +9,8 @@ import urllib.request
 import html5lib
 from .vanilla import *
 from . import vanilla as van
+from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
+
 
 # path to the download page
 MODPACK_URL_DEFAULT = "http://www.technicpack.net/modpack/tekkitmain.552547"
@@ -35,9 +37,9 @@ def get_file_url(modpack_url):
   return None
 
 command_args=command_args.copy()
-command_args["setup"]=([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],False,
-                       [("u",["url"],"Url to download tekkit from. See http://www.technicpack.net/modpack/tekkitmain.552547 for latest download.","url","URL",str),
-                        ("p",["modpack"],"Url for the modpack page. Used to locate the latest server url.","modpack_url","URL",str)])
+command_args["setup"]=CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str),),
+                              options=(OptSpec("u",["url"],"Url to download tekkit from. See http://www.technicpack.net/modpack/tekkitmain.552547 for latest download.","url","URL",str),
+                                       OptSpec("p",["modpack"],"Url for the modpack page. Used to locate the latest server url.","modpack_url","URL",str)))
 
 def configure(server,ask,port=None,dir=None,*,url=None,modpack_url=None,exe_name="Tekkit.jar",download_name="Tekkit.zip"):
   if url == None:

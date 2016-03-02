@@ -9,8 +9,9 @@ import re
 import screen
 import downloader
 import utils.updatefs
+from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
 
-command_args={"setup":([],[("DIR","The Directory to install minecraft in",str)],False,[])}
+command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("DIR","The Directory to install minecraft in",str),))}
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 

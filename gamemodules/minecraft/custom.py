@@ -9,6 +9,7 @@ import re
 import screen
 import downloader
 import utils.updatefs
+from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -31,11 +32,12 @@ def updateconfig(filename,settings):
 
 
 commands=("op","deop")
-command_args={"setup":([],[("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str)],False,
-                       [("l",["eula"],"Mark the eula as read","eula",None,True)]),
-              "op":([("USER","The user[s] to op",str)],[],True,[]),
-              "deop":([("USER","The user[s] to deop",str)],[],True,[]),
-              "message":([],[("TARGET","The user[s] to send the message to. Sends to all if none given.",str)],True,[("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True)])}
+command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),),
+                              options=(OptSpec("l",["eula"],"Mark the eula as read","eula",None,True),)),
+              "op":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to op",str),),repeatable=True),
+              "deop":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to deop",str),),repeatable=True),
+              "message":CmdSpec(optionalarguments=(ArgSpec("TARGET","The user[s] to send the message to. Sends to all if none given.",str),),repeatable=True,
+                      options=(OptSpec("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True),))}
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
