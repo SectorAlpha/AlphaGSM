@@ -24,7 +24,7 @@ def parse(inargs,cmdspec):
   parsed arguments and options."""
   shortopts={}
   longopts={}
-  for i,opt in enumerate(cmpspec.options):
+  for i,opt in enumerate(cmdspec.options):
     for c in opt.shortforms:
       shortopts[c]=i
     for s in opt.longforms:
@@ -65,7 +65,7 @@ def parse(inargs,cmdspec):
     else: # not an option so add it to the args (will check we are allowed an arg here later)
       outargs.append(arg)
   # parsed inargs so check if the outargs for number and then convert them to relevent types
-  if len(outargs)<cmdspec.minargumnets():
+  if len(outargs)<cmdspec.minarguments():
     raise OptionError("Not enough arguments provided")
   if (not cmdspec.repeatable) and len(outargs)>cmdspec.maxarguments():
     raise OptionError("Too many arguments provided")
@@ -86,7 +86,7 @@ def _replast(a):
 
 def _convertarg(arg,spec):
   try:
-    return sec.conversion(arg)
+    return spec.conversion(arg)
   except ValueError:
     raise OptionError("Argumant isn't of the right format for '"+spec.name+"'",ex)
 

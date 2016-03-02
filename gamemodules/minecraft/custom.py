@@ -134,9 +134,9 @@ def message(server,msg,*targets,parse=False):
     msgjson=json.dumps(msglist)
   else:
     msgjson=json.dumps({"text":msg})
-  for target in targets:
-    print("tellraw "+target+" "+msgjson)
-  screen.send_to_server(server.name,"\ntellraw "+target+" "+msgjson+"\n")
+  cmd="\n".join("tellraw "+target+" "+msgjson for target in targets)
+  print(cmd)
+  screen.send_to_server(server.name,"\n"+cmd+"\n")
 
 def checkvalue(server,key,value):
   if key == "exe_name":
