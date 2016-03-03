@@ -149,6 +149,8 @@ def backup(server):
   if screen.check_screen_exists(server.name):
     screen.send_to_server(server.name,"\save-off\nsave-all\n")
     time.sleep(2)
+  if not os.path.isdir(os.path.join(server.data["dir"],"backup")):
+    os.makedirs(os.path.join(server.data["dir"],"backup"))
   try:
     sp.check_call(['zip','-ry',os.path.join('backup',datetime.datetime.now().isoformat())]+server.data['backupfiles']+["-x","backup/*"],cwd=server.data['dir'])
   except sp.CalledProcessError as ex:
