@@ -157,12 +157,12 @@ def getallservers(command):
     return len(servers),servers
   return 0,[]
 
-def getrunascmd(name,user,server,args):
-  return ["sudo","-Hu",user]+getruncmd(name,server,args)
+def getrunascmd(name,user,server,args,multi=False):
+  return ["sudo","-Hu",user]+getruncmd(name,server,args,multi=multi)
 
-def getruncmd(name,server,args):
+def getruncmd(name,server,args,multi=False):
   scriptpath=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm-internal")
-  return [scriptpath,name,server]+args
+  return [scriptpath,"1" if multi else "0",name,server]+args
 
 def runas(name,user,server,args):
   ret=sp.call(getrunascmd(name,user,server,args))
@@ -176,9 +176,9 @@ def runmulti(name,count,servers,args):
   for rawserver in servers:
     user,server=splitservername(rawserver)
     if user is not None:
-      cmd=getrunascmd(name,user,server,args)
+      cmd=getrunascmd(name,user,server,args,True)
     else:
-      cmd=getruncmd(name,server,args)
+      cmd=getruncmd(name,server,args,True)
     mp.addtomultiafter(multi,rawserver,_internalisrunning,cmd,stdin=sp.DEVNULL,stdout=sp.PIPE,stderr=sp.STDOUT)
   multi.processall()
 

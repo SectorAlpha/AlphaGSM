@@ -164,7 +164,7 @@ class Multiplexer(object):
        
 def addtomultiafter(multi,tag,fn,*args,**kwargs):
   tmp=Multiplexer()
-  print("Starting "+tag)
+  print("Starting "+tag,flush=True)
   proc=tmp.run("",*args,**kwargs)
   for s in tmp.procs[proc].streams:
     tmp.streams[s].linecheck=fn

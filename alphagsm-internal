@@ -2,6 +2,7 @@
 import core
 import sys
 
-print("#%AlphaGSM-INTERNAL%#")
+if int(sys.argv[1]):
+  print("#%AlphaGSM-INTERNAL%#")
 
-sys.exit(core.main(sys.argv[1],sys.argv[2:]))
+sys.exit(core.main(sys.argv[2],sys.argv[3:]))

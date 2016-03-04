@@ -37,7 +37,7 @@ def get_file_url(modpack_url):
   return None
 
 command_args=command_args.copy()
-command_args["setup"]=CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),("DIR","The Directory to install minecraft in",str),),
+command_args["setup"]=CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),),
                               options=(OptSpec("u",["url"],"Url to download tekkit from. See http://www.technicpack.net/modpack/tekkitmain.552547 for latest download.","url","URL",str),
                                        OptSpec("p",["modpack"],"Url for the modpack page. Used to locate the latest server url.","modpack_url","URL",str)))
 
