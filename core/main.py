@@ -121,8 +121,10 @@ def main(name,args):
           print()
           help(name,server,cmd)
           return 2
+        # needed by activate and deactivate
+        program=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm")
         try:
-          server.run_command(cmd,*args,**opts)
+          server.run_command(cmd,*args,program=program,**opts)
         except ServerError as ex:
           traceback.print_exc()
           return 1
