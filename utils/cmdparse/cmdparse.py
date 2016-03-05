@@ -4,20 +4,7 @@ messages based on CmdSpecs.
 
 from itertools import chain
 import textwrap
-
-class OptionError(Exception):
-  """ An error occured while parsing the arguments or interpreting the cmdspec"""
-  def __init__(self,msg,*args):
-    """Initialise the Exception"""
-    self.msg=msg
-    self.args=args
-  def __str__(self):
-    """Convert the Exception to a string"""
-    if len(self.args)>0:
-      return self.msg+": "+", ".join(str(a) for a in self.args)
-    else:
-      return self.msg
-  pass
+from .cmdspec import OptionError
 
 def parse(inargs,cmdspec):
   """Parse the arguments in 'inargs' according to cmdspec and return the

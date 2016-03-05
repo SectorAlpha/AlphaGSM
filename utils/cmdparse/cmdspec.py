@@ -1,6 +1,19 @@
 from operator import itemgetter as _itemgetter
 from collections import OrderedDict as _OrderedDict
 
+class OptionError(Exception):
+  """ An error occured while parsing the arguments or interpreting the cmdspec"""
+  def __init__(self,msg,*args):
+    """Initialise the Exception"""
+    self.msg=msg
+    self.args=args
+  def __str__(self):
+    """Convert the Exception to a string"""
+    if len(self.args)>0:
+      return self.msg+": "+", ".join(str(a) for a in self.args)
+    else:
+      return self.msg
+
 class CmdSpec(tuple):
     'A command specification'
 
@@ -56,10 +69,10 @@ class CmdSpec(tuple):
            Ensures that it makes sence to combine the command specifications. i.e. that the first wouldn't already absorb all the arguments'''
         if other is not None:
           if len(other.requiredarguments)>0:
-            raise ServerException("Error in module: Can't add extra required arguments")
+            raise OptionError("Error combining arguments: Can't add more required arguments")
           if self.repeatable:
             if len(other.optionalarguments)>0:
-              raise ServerException("Error in module: Can't add extra arguments, already have a catch all argument")
+              raise OptionError("Error combing arguments: Can't add extra arguments, already have a catch all argument")
             return CmdSpec(self.requiredaruments,self.optionalarguments,True,self.options+other.options)
           else:
             return CmdSpec(self.requiredarguments,self.optionalarguments+other.optionalarguments,other.repeatable,self.options+other.options)

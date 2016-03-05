@@ -108,7 +108,14 @@ def main(name,args):
       if cmd is None or cmd == "help":
         help(name,server,*args)
       else:
-        cmdargs=server.get_command_args(cmd)
+        try:
+          cmdargs=server.get_command_args(cmd)
+        except cmdparse.OptionError as ex:
+          print("Error parsing arguments and options")
+          traceback.print_exc()
+          print()
+          help(name,server,cmd)
+          return 2
         if cmdargs==None:
           print("Unknown command")
           help(name,server,cmd)
