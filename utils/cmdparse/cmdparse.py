@@ -87,7 +87,7 @@ def _replast(a):
 def _convertarg(arg,spec):
   try:
     return spec.conversion(arg)
-  except ValueError:
+  except ValueError as ex:
     raise OptionError("Argumant isn't of the right format for '"+spec.name+"'",ex)
 
 def shorthelp(cmd,cmddesc,cmdspec):
