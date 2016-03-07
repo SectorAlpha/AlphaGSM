@@ -51,7 +51,7 @@ def getprofiledata(config,profile):
   if "base" in profiledata:
     newprofiledata=getprofiledata(config,profiledata["base"]).copy()
     if "targets" in profiledata:
-      if "replace_targets" in profiledata and profiledata["reaplce_targets"] or "targets" not in newprofiledata:
+      if "replace_targets" in profiledata and profiledata["replace_targets"] or "targets" not in newprofiledata:
         newprofiledata["targets"]=profiledata["targets"]
       else:
         newprofiledata["targets"]=newprofiledata["targets"]+profiledata["targets"]
