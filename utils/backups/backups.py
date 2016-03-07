@@ -1,3 +1,42 @@
+""" Backup a folder based on profiles and a schedule
+
+The config parameter to backup has the format:
+{'profiles':
+  {'name1':
+    {'base':'othername',
+     'targets':['list', 'of', 'targets', 'to', 'include', 'in', 'the', 'backup'],
+     'exclusions':['list', 'of', 'patterns', 'that', 'match', 'files', 'and', 'folders', 'to', 'exclude'],
+     'replace_targets': True/False,
+     'replace_exclusions': True/False,
+     'lifetime':(maximumage,ageunit)
+    },
+    ...
+  },
+  'schedule':[('profilename',timebetweenupdates,timeunit), ...]
+}
+
+Each profile describes a type of backup including what is included in the backup and how long it is kept for.
+Either the 'base' entry or the 'targets' and 'exclusions' entries must be specified. If 'base' is specified
+then this profiles inherits settings from the named profile. If the profile has a base and has some targets
+specified then if 'replace_targets' is True the base profiles targets are replaced, otherwise the are combined.
+The equivelent applies with exclusions and replace_exclusions. It is not valid to have a cycle in the 'base'
+relations and if this occurs the result is unspecified.
+
+If a profile has a lifetime then any backups older than this amount of time are automatically deleted after
+the update.
+
+The schedule is an ordere list of entries. Each entry is tried in turn and if the latest backup of the
+specified profile is older than the specified amount of time then that profile will be used. The last entry
+should have a timeperiod of 0 so at least one entry will match.
+
+It is also possible to call backup and manually specify a backup profile to use.
+
+The timespecs are an amount and a unit where the unit is one of the strings 'year','month','week','day'.
+Months and years are calender months and years respectively and month rounds the day down if out of
+range for the resulting month.
+"""
+
+
 import subprocess as sp
 import os
 import datetime
@@ -12,12 +51,12 @@ def getprofiledata(config,profile):
   if "base" in profiledata:
     newprofiledata=getprofiledata(config,profiledata["base"]).copy()
     if "targets" in profiledata:
-      if "replace_targets" in profiledata or "targets" not in newprofiledata:
+      if "replace_targets" in profiledata and profiledata["reaplce_targets"] or "targets" not in newprofiledata:
         newprofiledata["targets"]=profiledata["targets"]
       else:
         newprofiledata["targets"]=newprofiledata["targets"]+profiledata["targets"]
     if "exclusions" in profiledata:
-      if "replace_exclusions" in profiledata or "exclusions" not in newprofiledata:
+      if "replace_exclusions" in profiledata and profiledata["replace_exclusion"] or "exclusions" not in newprofiledata:
         newprofiledata["exclusions"]=profiledata["exclusions"]
       else:
         newprofiledata["exclusions"]=newprofiledata["exclusions"]+profiledata["exclusions"]
@@ -50,9 +89,9 @@ def doschedule(config,now,backups):
   return tag
 
 def dobackup(dir,data,now);
-  targetname=os.path.join(os.path.join(dir,BACKUPDIR),tag+" "+now.strftime(TIMESTAMPFORMAT)+".zip")
+  targetname=os.path.join(BACKUPDIR,tag+" "+now.strftime(TIMESTAMPFORMAT)+".zip")
   try:
-    sp.check_call(['zip','-ry',os.path.join('backup',datetime.datetime.now().isoformat())]+data['targets']+["-x"]+data["exclusions"],cwd=server.data['dir'])
+    sp.check_call(['zip','-ry',targetname]+data['targets']+["-x"]+data["exclusions"],cwd=server.data['dir'])
   except sp.CalledProcessError as ex:
     print("Error backing up the server")
 
