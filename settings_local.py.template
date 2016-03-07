@@ -1,0 +1,13 @@
+DB_PATH="/home/alphagsm/downloads/downloads.txt"
+UPDATE_SUFFIX=".new"
+TARGET_PATH="/home/alphagsm/downloads/downloads"
+LOCK_SUFFIX=".lock"
+USER=1036
+
+PARENTLEN=1
+PARENTCHARS="abcdefghijklmnopqrstuvxyz"
+
+DIRLEN=8
+DIRCHARS="abcdefghijklmnopqrstuvwxyz0123456789_"
+
+MAX_TRIES=238328

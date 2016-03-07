@@ -9,6 +9,7 @@ import traceback
 __all__=["main"]
 
 def main(name,args):
+   # this is the "create" command as described in the command line
   if len(args)<1:
     print("You must specify at least a server to work on")
     print()

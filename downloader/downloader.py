@@ -5,14 +5,16 @@ import random
 import sys
 from urllib.parse import quote,unquote
 
+import settings_local
 # NONE OF THESE PATHS SHOULD BE ON A NFS!
 # If they are there may be race conditions and database corruption
 
-DB_PATH="/home/alphagsm/downloads/downloads.txt"
-UPDATE_SUFFIX=".new"
-TARGET_PATH="/home/alphagsm/downloads/downloads"
-LOCK_SUFFIX=".lock"
-USER=1036
+
+DB_PATH= settings_local.DB_PATH
+UPDATE_SUFFIX= settings_local.UPDATE_SUFFIX
+TARGET_PATH=settings_local.TARGET_PATH
+LOCK_SUFFIX=settings_local.LOCK_SUFFIX
+USER=settings_local.USER
 
 PARENTLEN=1
 PARENTCHARS="abcdefghijklmnopqrstuvxyz"
