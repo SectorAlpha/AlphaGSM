@@ -9,7 +9,7 @@ import traceback
 __all__=["main"]
 
 def main(name,args):
-   # this is the "create" command as described in the command line
+  # This is the core script command run by alphagsm script
   if len(args)<1:
     print("You must specify at least a server to work on")
     print()
@@ -72,6 +72,8 @@ def main(name,args):
       runas(name,user,server,[cmd]+args)
     else:
       if cmd == "create":
+        # This is the create command.
+        # All other commands are forwarded to the server class but this has to be handled directly as there isn't a server available yet
         if len(args)<1:
           print("Type of server to create is a required argument")
           print()
