@@ -10,6 +10,7 @@ import screen
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
+from utils import backups
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -37,12 +38,31 @@ command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for th
               "op":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to op",str),),repeatable=True),
               "deop":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to deop",str),),repeatable=True),
               "message":CmdSpec(optionalarguments=(ArgSpec("TARGET","The user[s] to send the message to. Sends to all if none given.",str),),repeatable=True,
-                      options=(OptSpec("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True),))}
-command_descriptions={}
+                      options=(OptSpec("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True),)),
+              "backup":CmdSpec(optionalarguments=(ArgSpec("PROFILE","Do a backup using the specified profile",str),))}
+command_descriptions={'set':"The available keys to set are:\texe_name: (1 value) the name of the jar file to execute\n\tbackup.profiles.PROFILENAME.targets: (many values) the "
+                            "targets to include in a backup using the specified profile\n\tbackup.profiles.PROFILENAME.exclusions: (many values) patterns that match files to "
+                            "exclude from a backup using the specified profile\n\tbackup.profiles.PROFILENAME.base: (one value) the name of a profile that this profile extends\n\t"
+                            "backups.profiles.PROFILENAME.replace_targets and backups.profiles.PROFILENAME.replace_exclusions: (one value: on/off) Should the relevent entry "
+                            "replace the base rather than extend the bases value\n\tbackups.profiles.PROFILENAME.lifetime: (two values: length year,month,week,day) How long "
+                            "the backups should be kept for\n\tbackups.schedule.INDEX/APPEND: (3 values: profile timelength timeunit) how long there should be between backups "
+                            "using that profiles"}
 command_functions={} # will have elements added as the functions are defined
 
 def configure(server,ask,port=None,dir=None,*,eula=None,exe_name="minecraft_server.jar"):
-  server.data['backupfiles']=['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']
+  if 'backup' not in server.data:
+    server.data['backup']={}
+  if 'profiles' not in server.data['backup']:
+    server.data['backup']['profiles']={}
+  if len(server.data['backup'])==0:
+    server.data['backup']['profiles']['default']={'targets':['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']}
+  if 'schedule' not in server.data['backup']:
+    server.data['schedule']=[]
+  if len(server.data['schedule'])==0:
+    profile='default'
+    if profile not in server.data['backup']['profiles']:
+      profile=next(iter(server.data['backup']['profiles']))
+    server.data['backup']['schedule'].append((profile,0,'days'))
   
   if port is None and "port" in server.data:
     port=server.data["port"]
@@ -138,23 +158,22 @@ def message(server,msg,*targets,parse=False):
   print(cmd)
   screen.send_to_server(server.name,"\n"+cmd+"\n")
 
-def checkvalue(server,key,value):
-  if key == "exe_name":
-    return value
-  if key == "backupfiles":
-    return value.split(",")
+def checkvalue(server,key,*value):
+  if key[0] == "TEST":
+    return value[0]
+  if key == ("exe_name",):
+    if len(value)!=1:
+      raise ServerError("Only one value supported for 'exe_name'")
+    return value[0]
+  if key[0] == ("backup"):
+    return backups.checkdatavalue(server.data["backup"],key[1:],*value)
   raise ServerError("{} read only as not yet implemented".format(key))
 
-def backup(server):
+def backup(server,profile=None):
   if screen.check_screen_exists(server.name):
     screen.send_to_server(server.name,"\save-off\nsave-all\n")
-    time.sleep(2)
-  if not os.path.isdir(os.path.join(server.data["dir"],"backup")):
-    os.makedirs(os.path.join(server.data["dir"],"backup"))
-  try:
-    sp.check_call(['zip','-ry',os.path.join('backup',datetime.datetime.now().isoformat())]+server.data['backupfiles']+["-x","backup/*"],cwd=server.data['dir'])
-  except sp.CalledProcessError as ex:
-    print("Error backing up the server")
+    time.sleep(5)
+  backups.backup(server.data["dir"],server.data['backup'],profile)
   if screen.check_screen_exists(server.name):
     screen.send_to_server(server.name,"\save-on\nsave-all\n")
 

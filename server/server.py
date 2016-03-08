@@ -67,8 +67,9 @@ class Server(object):
                         "message":CmdSpec(requiredarguments=(ArgSpec("MESSAGE","The message to send",str),)),
                         "connect":CmdSpec(),
                         "dump":CmdSpec(),
-                        "set":CmdSpec(requiredarguments=(ArgSpec("KEY","The key to set in the form of dot seperated elements",str),
-                                ArgSpec("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree. Exactly how many values can be specified is KEY dependant",str)),repeatable=True),
+                        "set":CmdSpec(requiredarguments=(ArgSpec("KEY","The key to set in the form of dot seperated elements",str),),
+                                      optionalarguments=(ArgSpec("VALUE","The value to set. New nodes in the structure will be created as needed. "
+                                                                 "Exactly how many values can be specified is KEY dependant.",str),),repeatable=True),
                         "backup":CmdSpec()}
   default_command_descriptions={"setup":"Setup the game server.\nThis will include processing the required settings,"
                                         " downloading or copying any needed files and doing any setup task so that a"
@@ -82,7 +83,9 @@ class Server(object):
                                 "message":"Message the server. By default sends the message to all users.",
                                 "connect":"Connect to the server's console session.",
                                 "dump":"Dump the servers data store.",
-                                "set":"Set a parameter in data store to a new value.\nWhich values are changable is game module dependent",
+                                "set":"Set a parameter in data store to a new value.\nFor keys that index into lists the special entry 'APPEND' my be used to create a new "
+                                    "entry at the end of the list. Also for some keys value 'DELETE' is a value that causes the entry to be deleted.\n\n"
+                                    "Which values are changable is game module dependent",
                                 "backup":"Backup the game server"}
   def __init__(self,name,module=None):
     """Initialise this Server object.
@@ -243,14 +246,27 @@ class Server(object):
     """Dump of the data in the data store"""
     print(self.data.prettydump())
 
-  def doset(self,key,value,*args,**kwargs):
+  def doset(self,key,*args,**kwargs):
     """Set a value in the data store. The value will be check and post set actions may be run"""
-    value=self.module.checkvalue(self,key,value,*args,**kwargs)
-    key=key.split(".")
+    types,key=_parsekey(key)
+    value=self.module.checkvalue(self,key,*args,**kwargs)
     data=self.data
-    for el in key[:-1]:
-      data=data[el]
-    data[key[-1]]=value
+    for t,el in zip(types[1:],key[:-1]):
+      if el is None:
+        print("Appending",el,t)
+        data.append(t())
+        data=data[-1]
+      else:
+        if isinstance(data,dict) and el not in data:
+          print("Adding as absent",el,t)
+          data[el]=t()
+        data=data[el]
+    if value == "DELETE":
+      del data[key[-1]]
+    elif key[-1] is None:
+      data.append(value)
+    else:
+      data[key[-1]]=value
     try:
       fn=self.module.postset
     except AttributeError:
@@ -292,6 +308,17 @@ class Server(object):
           servers.remove(self.name)
           job.command=program+" "+str(len(servers))+" "+" ".join(servers)+" start"
       ct.write()
+
+def _parsekeyelement(el):
+  if el == "APPEND":
+    return list,None
+  elif el.isdigit():
+    return list,int(el)
+  else:
+    return dict,str(el)
+
+def _parsekey(key):
+  return zip(*(_parsekeyelement(el) for el in key.split(".")))
 
 def _parsecmd(cmd):
   if cmd[1].isdigit():
