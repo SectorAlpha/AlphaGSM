@@ -240,6 +240,7 @@ class Server(object):
         self.module.status(self,verbose,*args,**kwargs)
 
   def connect(self):
+    """Connect to the screen session to manually interact with the server"""
     screen.connect_to_screen(self.name)
 
   def dump(self):
@@ -276,6 +277,7 @@ class Server(object):
     self.data.save()
 
   def activate(self,program,start=True):
+    """Activate the server by enabling it in crontab and optionally starting it if not already running"""
     ct=crontab.CronTab(user=True)
     jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(program))
     jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==program and cmd[2:]==["start"]]
@@ -293,6 +295,7 @@ class Server(object):
       self.start()
 
   def deactivate(self,program,stop=True):
+    """Activate the server by disabling it in crontab and optionally stopping it if it is running"""
     if stop and screen.check_screen_exists(self.name):
       self.stop()
     ct=crontab.CronTab(user=True)

@@ -1,3 +1,4 @@
+""" Module to download game servers and cache and share the downloads"""
 from importlib import import_module
 import os
 import time
@@ -54,6 +55,7 @@ def _findmodule(name):
 
 
 def generatepath():
+  """Generate a new (not previously existing) path within TARGET_PATH. Returns None if no path can be generated"""
   rnd=random.Random()
   # choose a destination path
   dirn=os.path.join(TARGET_PATH,"".join(rnd.choice(PARENTCHARS) for i in range(PARENTLEN)))
@@ -74,6 +76,12 @@ def generatepath():
 
 # This will always run while the DB is locked
 def download(module,args):
+  """Actually do a download.
+     
+     Returns the path that the download was downloaded to.
+     This function locates and imports the module requested then delegates to that for the actual download.
+     Should only by run while the DB lock is help.
+     """
   path = generatepath()
   if path is None:
     raise DownloaderError("Can't generate storage path. Clear out unused paths from the database")
@@ -82,6 +90,7 @@ def download(module,args):
   return path
 
 def getpathifexists(module,args):
+  """Check if a path for the download is already in the database and if so return it else return None"""
   sargs=",".join(quote(a) for a in args)
   with open(DB_PATH,'r') as f:
     for line in f:
@@ -91,6 +100,9 @@ def getpathifexists(module,args):
   return None
 
 def getpath(module,args):
+  """Get the path for a download, downloading it if it isn't already downloaded.
+     
+     Can be run as any user and will change user to the download systems owner if it needs downloading"""
   path=getpathifexists(module,args)
   if path is not None:
     return path
@@ -104,7 +116,7 @@ def getpath(module,args):
     else:
       return unquote(path.decode(sys.stdout.encoding).strip())
   
-  # Definitely running as correct user now and file now found (yet) but may have other threads updating the file so lock then check again
+  # Definitely running as correct user now and file not found (yet) but may have other threads updating the file so lock then check again
 
   while True:
     try:
@@ -145,6 +157,7 @@ def _true(*arg):
   return True
 
 def _getallfilter(active=None,sort=None):
+  """a default filter that applies to any download module"""
   filterfn=_true
   sortfn=None
   if active!=None:
@@ -155,7 +168,17 @@ def _getallfilter(active=None,sort=None):
   else:
     raise DownloaderError("Unknown sort key")
 
-def getpaths(module,**kwargs):
+def getpaths(module,sort=None,**filter):
+  """get all paths for the given module that match a specified filter, optionally sorted.
+     
+     The complete list of filters available is module dependant. If module is None then the
+     only valid filter is active=True/False/None which filters on the active state and the only
+     valid sort order is 'date'. The module's filter function is called 'getfilter' and should
+     document the valid filters and sort orders.
+
+     The result is a list of tuples that contains the elements: 
+         (module_name,[list,of,arguments],path,date_added,is_active)
+     """
   if module is None:
     filterfn,sortfn=_getallfilter(**kwargs)
   else:
@@ -172,6 +195,7 @@ def getpaths(module,**kwargs):
   return downloads
 
 def getargsforpath(path):
+  """Get the module and arguments for a download path or return None if not a valid path"""
   with open(DB_PATH,'r') as f:
     for line in f:
       lmodule,largs,llocation,ldate,lactive=line.split()
