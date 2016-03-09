@@ -166,16 +166,23 @@ def checkvalue(server,key,*value):
       raise ServerError("Only one value supported for 'exe_name'")
     return value[0]
   if key[0] == ("backup"):
-    return backups.checkdatavalue(server.data["backup"],key[1:],*value)
-  raise ServerError("{} read only as not yet implemented".format(key))
+    try:
+      return backups.checkdatavalue(server.data["backup"],key[1:],*value)
+    except backups.BackupError as ex:
+      raise ServerError(ex)
+  raise ServerError("{} invalid key to set".format(".".join(str(k) for k in key)))
 
 def backup(server,profile=None):
   if screen.check_screen_exists(server.name):
     screen.send_to_server(server.name,"\save-off\nsave-all\n")
     time.sleep(5)
-  backups.backup(server.data["dir"],server.data['backup'],profile)
-  if screen.check_screen_exists(server.name):
-    screen.send_to_server(server.name,"\save-on\nsave-all\n")
+  try:
+    backups.backup(server.data["dir"],server.data['backup'],profile)
+  except backups.BackupError as ex:
+    raise ServerError("Error backing up server: {}".format(ex))
+  finally:
+    if screen.check_screen_exists(server.name):
+      screen.send_to_server(server.name,"\save-on\nsave-all\n")
 
 def op(server,*users):
   for user in users:

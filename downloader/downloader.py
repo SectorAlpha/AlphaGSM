@@ -30,6 +30,7 @@ DOWNLOADERS_PACKAGE = "downloadermodules."
 __all__=["DownloaderError",'getpath','getpathifexists','main','getpaths','getargsforpath']
 
 class DownloaderError(Exception):
+  """ An error thrown when attempting to perform a download """
   def __init__(self,msg,*args,ret=1,**kwargs):
     super(DownloaderError,self).__init__(msg,*args,**kwargs)
     self.ret=ret

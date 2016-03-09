@@ -51,7 +51,10 @@ class BackupError(Exception):
   pass
 
 def getprofiledata(config,profile):
-  profiledata=config["profiles"][profile]
+  try:
+    profiledata=config["profiles"][profile]
+  except KeyError as ex:
+    raise BackupError("Unknown backup profile '{}'".format(profile))
   if "base" in profiledata:
     newprofiledata=getprofiledata(config,profiledata["base"]).copy()
     if "targets" in profiledata:
@@ -100,19 +103,16 @@ def backup(dir,config,profile=None):
     os.mkdir(os.path.join(dir,BACKUPDIR))
   backups={}
   for f in os.listdir(os.path.join(dir,BACKUPDIR)):
-    print(f)
     if f[-4:]!=".zip" or f[0]==".":
       continue
     tag,timestamp=f[:-4].split(" ",1)
     timestamp=datetime.datetime.strptime(timestamp,TIMESTAMPFORMAT)
-    print("adding",tag,timestamp)
     if tag not in backups:
       backups[tag]=[]
     backups[tag].append((f,timestamp))
   for key,val in backups.items():
     val.sort(key=lambda ft: ft[1])
  
-  print(backups)
 
   if profile==None:
     profile=doschedule(config,now,backups)
@@ -121,7 +121,6 @@ def backup(dir,config,profile=None):
   cmd=['zip','-ry',targetname]+data['targets']+["-x",os.path.join(BACKUPDIR,"*")]
   if 'exclusions' in data and len(data['exclusions'])>0:
     cmd+=data["exclusions"]
-  print(cmd)
   try:
     sp.check_call(cmd,cwd=dir)
   except sp.CalledProcessError as ex:

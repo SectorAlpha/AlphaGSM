@@ -8,7 +8,17 @@ import traceback
 
 __all__=["main"]
 
+DEBUG = bool(int(os.environ.get("ALPHAGSM_DEBUG",0)))
+
+def printhandledex(ex):
+  if DEBUG:
+    traceback.print_exc()
+  else:
+    print(ex)
+
 def main(name,args):
+  if len(args)==1 and args[0].lower() in ("-h","-?","--help"):
+    args=["*","help"]
   if len(args)<1:
     print("You must specify at least a server to work on")
     print()
@@ -80,7 +90,7 @@ def main(name,args):
           server=Server(server,args[0])
         except ServerError as ex:
           print("Can't create server")
-          traceback.print_exc()
+          printhandledex(ex)
           print()
           help(name,None,cmd)
           return 1
@@ -101,7 +111,7 @@ def main(name,args):
           server=Server(server)
         except ServerError as ex:
           print("Can't find server")
-          traceback.print_exc()
+          printhandledex(ex)
           print()
           help(name,None)
           return 1
@@ -112,7 +122,7 @@ def main(name,args):
           cmdargs=server.get_command_args(cmd)
         except cmdparse.OptionError as ex:
           print("Error parsing arguments and options")
-          traceback.print_exc()
+          printhandledex(ex)
           print()
           help(name,server,cmd)
           return 2
@@ -124,7 +134,7 @@ def main(name,args):
           args,opts=cmdparse.parse(args,cmdargs)
         except cmdparse.OptionError as ex:
           print("Error parsing arguments and options")
-          traceback.print_exc()
+          printhandledex(ex)
           print()
           help(name,server,cmd)
           return 2
@@ -133,12 +143,13 @@ def main(name,args):
         try:
           server.run_command(cmd,*args,program=program,**opts)
         except ServerError as ex:
-          traceback.print_exc()
+          print("Error running Command")
+          printhandledex(ex)
           return 1
         except Exception as ex:
           print("Error running command")
           traceback.print_exc()
-          return 1
+          return 3
   return 0
 
 def splitservername(server):
