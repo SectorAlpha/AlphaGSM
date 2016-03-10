@@ -11,11 +11,12 @@ import screen
 import time
 import crontab
 from utils.cmdparse.cmdspec import CmdSpec, ArgSpec, OptSpec
+from utils.settings import settings
 
 __all__=["Server","ServerError"]
 
-DATAPATH=os.path.expanduser("~/.alphagsm/conf")
-SERVERMODULEPACKAGE="gamemodules."
+DATAPATH=os.path.expanduser(settings.user.getsection('server').get('datapath',"~/.alphagsm/conf"))
+SERVERMODULEPACKAGE=settings.system.getsection('server').get('servermodulespackage',"gamemodules.")
 
 class ServerError(Exception):
   """An Exception thrown when there is an error with the server"""

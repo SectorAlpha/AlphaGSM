@@ -1,8 +1,9 @@
 import subprocess as sp
 import os
 import re
+from utils.settings import settings
 
-SESSIONTAG="AlphaGSM#"
+SESSIONTAG=settings.settings.getsection('screen').get('sessiontag','AlphaGSM#')
 
 class ScreenError(Exception):
   pass

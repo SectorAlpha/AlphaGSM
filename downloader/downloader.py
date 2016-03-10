@@ -4,29 +4,31 @@ import os
 import time
 import random
 import sys
+import pwd
 from urllib.parse import quote,unquote
+from utils.settings import settings
 
 # NONE OF THESE PATHS SHOULD BE ON A NFS!
 # If they are there may be race conditions and database corruption
 
-DB_PATH="/home/alphagsm/downloads/downloads.txt"
+USER=settings.system.downloader['user'] # required
+DB_PATH=settings.system.downloader.get('db_path') or os.path.join(pwd.getpwnam(USER).pw_dir,"downloads/downloads.txt")
+TARGET_PATH=settings.system.downloader.get('target_path') or os.path.join(pwd.getpwnam(USER).pw_dir,"downloads/downloads")
+
+DOWNLOADERS_PACKAGE = settings.system.downloader.get('downloaders_package',"downloadermodules.")
 UPDATE_SUFFIX=".new"
-TARGET_PATH="/home/alphagsm/downloads/downloads"
 LOCK_SUFFIX=".lock"
-USER=1036
-
-PARENTLEN=1
-PARENTCHARS="abcdefghijklmnopqrstuvxyz"
-
-DIRLEN=8
-DIRCHARS="abcdefghijklmnopqrstuvwxyz0123456789_"
-
-MAX_TRIES=238328
 
 LOCK_PATH = DB_PATH+LOCK_SUFFIX
 UPDATE_PATH = DB_PATH+UPDATE_SUFFIX
 
-DOWNLOADERS_PACKAGE = "downloadermodules."
+PARENTLEN=settings.system.downloader.getsection('pathgen').get('parentlen',1)
+PARENTCHARS=settings.system.downloader.getsection('pathgen').get('parentchars',"abcdefghijklmnopqrstuvxyz")
+
+DIRLEN=settings.system.downloader.getsection('pathgen').get('dirlen',8)
+DIRCHARS=settings.system.downloader.getsection('pathgen').get('dirchars',"abcdefghijklmnopqrstuvwxyz0123456789_")
+
+MAX_TRIES=settings.system.downloader.getsection('pathgen').get('maxtries',238328)
 
 __all__=["DownloaderError",'getpath','getpathifexists','main','getpaths','getargsforpath']
 
@@ -107,10 +109,10 @@ def getpath(module,args):
   if path is not None:
     return path
   
-  if os.getuid() != USER:
+  if os.getuid() != pwd.getpwnam(USER).pw_uid:
     import subprocess as sp
     try:
-      path=sp.check_output(["sudo","-Hu","#"+str(USER),os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm-downloads"),module]+list(args))
+      path=sp.check_output(["sudo","-Hu",str(USER),os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm-downloads"),module]+list(args))
     except sp.CalledProcessError as ex:
       raise DownloaderError("Error downloading file",ret=ex.returncode)
     else:

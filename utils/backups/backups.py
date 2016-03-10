@@ -40,10 +40,10 @@ import subprocess as sp
 import os
 import datetime
 import calendar
-import bisect
+from utils.settings import settings
 
-BACKUPDIR="backup"
-TIMESTAMPFORMAT="%Y.%m.%d %H:%M:%S.%f"
+BACKUPDIR=settings.user.getsection('backup').get('directory',"backup")
+TIMESTAMPFORMAT=settings.user.getsection('backup').get('timestamptformat',"%Y.%m.%d %H:%M:%S.%f")
 
 __all__=["BackupError","backup","checkdatavalue"]
 

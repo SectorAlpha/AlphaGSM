@@ -1,0 +1,36 @@
+[backup]
+  # user - where should the backups be stored relative to the game servers directory
+  directory = backup
+  # user - the format for the timestamp used in naming backup files
+  timestamptformat = 
+
+[downloader]
+  #REQUIRED system - The user that owns the downloader system
+  user =
+  # system the location of the downloader database file
+  db_path = # system
+  # system - The directory to place downloads in subfolders of
+  target_path =
+  # system - The package that downloadermodules are in
+  downloaders_package =
+
+[downloader.pathgen]
+  # directories are generated in two levels. By default it's a parent directory with a short name with
+  # another directory inside it with a longer name i.e. parent/dir
+  # system - what characters are to be used for the directory name
+  dirchars = 
+  # system - the length of the directory name
+  dirlen =
+  # system - what charachters are to be used for the parent directory name
+  parentchars =
+  # system - the length of the parent directory name
+  parentlen =
+  # system - how many tries at making a unique directory before giving up
+  maxtries =
+
+[server]
+  # user - the path to store the alphagsm data file in. can use ~ for the users home directory
+  datapath = 
+  # the package that the server modules are in
+  servermodulespackage =
+

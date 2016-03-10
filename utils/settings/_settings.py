@@ -2,9 +2,29 @@ from collections.abc import Mapping
 import configparser
 import os
 
+class EmptyMapping(Mapping):
+  def __getitem__(self,key):
+    raise 
+  def __len__(self):
+    return 0
+  def __iter__(self):
+    while False:
+      yield None
+  def __contains__(self,key):
+    return False
+  def get(self, key, default=None):
+    return default
+  def __str__(self):
+    return str({})
+  def __repr__(self):
+    return "<Empty {}>".format(self._dict)
+  
+_DEFAULT=object() # unique object to compare identity with
+
 class ImmutableMapping(Mapping):
-  def __init__(self,_dict):
+  def __init__(self,_dict,default=None):
     self._dict=_dict
+    self._default=default
   def __getitem__(self,key):
     return self._dict[key]
   def __len__(self):
@@ -13,8 +33,8 @@ class ImmutableMapping(Mapping):
     yield from self._dict
   def __contains__(self,key):
     return key in self._dict
-  def get(self, key, default=None):
-    return self._dict.get(key,default)
+  def get(self, key, default=_DEFAULT):
+    return self._dict.get(key,self._default if default is _DEFAULT else default)
   def __str__(self):
     return str(self._dict)
   def __repr__(self):
@@ -23,12 +43,15 @@ class ImmutableMapping(Mapping):
 class SettingsSection(ImmutableMapping):
   def __init__(self,sections,values):
     super(SettingsSection,self).__init__(values)
-    self.__sections=ImmutableMapping(sections)
+    self.__sections=ImmutableMapping(sections,default=EmptyMapping())
   
   @property
   def sections(self):
     """Get the sections dictionary"""
     return self.__sections
+
+  def getsection(self,key,**kwargs):
+    return self.__sections.get(key,**kwargs)
   
   def __getattr__(self,name):
     if name[0]!="_":
@@ -60,7 +83,7 @@ def _loadsettings(filename,parent=None):
   sectiondicts={}
   sections={}
   values={}
-  config = configparser.ConfigParser(interpolation=None,empty_lines_in_values=False,default_section="~#'&INVALID&'#~",dict_type=dict)
+  config = configparser.ConfigParser(interpolation=None,empty_lines_in_values=False,default_section="~#'[&INVALID&]'#~",dict_type=dict)
   
   try:
     config.read_file(open(filename,'r'))
