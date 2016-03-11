@@ -29,6 +29,7 @@ DIRLEN=settings.system.downloader.getsection('pathgen').get('dirlen',8)
 DIRCHARS=settings.system.downloader.getsection('pathgen').get('dirchars',"abcdefghijklmnopqrstuvwxyz0123456789_")
 
 MAX_TRIES=settings.system.downloader.getsection('pathgen').get('maxtries',238328)
+RETRYPARENT=MAX_TRIES//10
 
 __all__=["DownloaderError",'getpath','getpathifexists','main','getpaths','getargsforpath']
 
@@ -60,14 +61,15 @@ def generatepath():
   """Generate a new (not previously existing) path within TARGET_PATH. Returns None if no path can be generated"""
   rnd=random.Random()
   # choose a destination path
-  dirn=os.path.join(TARGET_PATH,"".join(rnd.choice(PARENTCHARS) for i in range(PARENTLEN)))
-  if not os.path.isdir(dirn):
-    try:
-      os.mkdir(dirn, 0o755)
-    except FileExistsError:
-      pass
-
   for seq in range(MAX_TRIES):
+    if seq % RETRYPARENT == 0:
+      dirn=os.path.join(TARGET_PATH,"".join(rnd.choice(PARENTCHARS) for i in range(PARENTLEN)))
+      if not os.path.isdir(dirn):
+        try:
+          os.mkdir(dirn, 0o755)
+        except FileExistsError:
+          pass
+
     path = os.path.join(dirn, "".join(rnd.choice(DIRCHARS) for i in range(DIRLEN)))
     try:
       os.mkdir(path, 0o755)
