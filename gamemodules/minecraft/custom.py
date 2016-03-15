@@ -10,6 +10,8 @@ import screen
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
+from utils import backups
+import random
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -37,12 +39,35 @@ command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for th
               "op":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to op",str),),repeatable=True),
               "deop":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to deop",str),),repeatable=True),
               "message":CmdSpec(optionalarguments=(ArgSpec("TARGET","The user[s] to send the message to. Sends to all if none given.",str),),repeatable=True,
-                      options=(OptSpec("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True),))}
-command_descriptions={}
+                      options=(OptSpec("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True),)),
+              "backup":CmdSpec(optionalarguments=(ArgSpec("PROFILE","Do a backup using the specified profile",str),),
+                               options=(OptSpec("a",["activate"],"Activate regular backups. Valid values for frequency are 'daily', 'weekly', 'monthly' and 'yearly' or 'none' to disable",'activate',"FREQUENCY",str),
+                                       OptSpec("d",["deactivate"],"Deactivate regular backups. Equivelent to --activate none",'activate',None,'none'),
+                                       OptSpec("w",["when"],"When should the regular backups take place. Valid format is 'hour[:minute][ DATE]' where DATE is the day of the week (3 letter names accepted) for "
+                                           "weekly, the day of the month for monthly, the day and month (3 letter names accepted for month) for yearly backups and not allowed for daily backups",'when','WHEN',str)))}
+command_descriptions={'set':"The available keys to set are:\texe_name: (1 value) the name of the jar file to execute\n\tbackup.profiles.PROFILENAME.targets: (many values) the "
+                            "targets to include in a backup using the specified profile\n\tbackup.profiles.PROFILENAME.exclusions: (many values) patterns that match files to "
+                            "exclude from a backup using the specified profile\n\tbackup.profiles.PROFILENAME.base: (one value) the name of a profile that this profile extends\n\t"
+                            "backups.profiles.PROFILENAME.replace_targets and backups.profiles.PROFILENAME.replace_exclusions: (one value: on/off) Should the relevent entry "
+                            "replace the base rather than extend the bases value\n\tbackups.profiles.PROFILENAME.lifetime: (two values: length year,month,week,day) How long "
+                            "the backups should be kept for\n\tbackups.schedule.INDEX/APPEND: (3 values: profile timelength timeunit) how long there should be between backups "
+                            "using that profiles"}
 command_functions={} # will have elements added as the functions are defined
 
 def configure(server,ask,port=None,dir=None,*,eula=None,exe_name="minecraft_server.jar"):
-  server.data['backupfiles']=['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']
+  if 'backup' not in server.data:
+    server.data['backup']={}
+  if 'profiles' not in server.data['backup']:
+    server.data['backup']['profiles']={}
+  if len(server.data['backup'])==0:
+    server.data['backup']['profiles']['default']={'targets':['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']}
+  if 'schedule' not in server.data['backup']:
+    server.data['schedule']=[]
+  if len(server.data['schedule'])==0:
+    profile='default'
+    if profile not in server.data['backup']['profiles']:
+      profile=next(iter(server.data['backup']['profiles']))
+    server.data['backup']['schedule'].append((profile,0,'days'))
   
   if port is None and "port" in server.data:
     port=server.data["port"]
@@ -138,25 +163,106 @@ def message(server,msg,*targets,parse=False):
   print(cmd)
   screen.send_to_server(server.name,"\n"+cmd+"\n")
 
-def checkvalue(server,key,value):
-  if key == "exe_name":
-    return value
-  if key == "backupfiles":
-    return value.split(",")
-  raise ServerError("{} read only as not yet implemented".format(key))
+def checkvalue(server,key,*value):
+  if key[0] == "TEST":
+    return value[0]
+  if key == ("exe_name",):
+    if len(value)!=1:
+      raise ServerError("Only one value supported for 'exe_name'")
+    return value[0]
+  if key[0] == ("backup"):
+    try:
+      return backups.checkdatavalue(server.data["backup"],key[1:],*value)
+    except backups.BackupError as ex:
+      raise ServerError(ex)
+  raise ServerError("{} invalid key to set".format(".".join(str(k) for k in key)))
 
-def backup(server):
+def _parsewhen(frequency,when):
+  if when is None:
+    time,rest=None,None
+  else:
+    time,rest=(when.split(None,2)+[None,None])[:2]
+  if time is None:
+    hour,minute=None,None
+  else:
+    hour,minute=(time.split(":")+[None,None])[:2] # ditch any seconds provided. If no : treat as am hour
+  if hour is None:
+    hour = random.randint(2,6)
+  if minute is None:
+    minute = random.randint(0,59)
+  if frequency == "daily":
+    return minute,hour,None,None,None
+  elif frequency == "weekly":
+    if rest is None:
+      rest = random.randint(0,6)
+    return minute,hour,None,None,rest
+  elif frequency == "monthly":
+    if rest is None:
+      rest = random.randint(1,28)
+    return minute,hour,rest,None,None
+  else: # frequency == "yearly"
+    if rest is None:
+      day,month = None,None
+    else:
+      day,month = (rest.split("/")+[None,None])[:2] # ditch any year provided. If no / treat as day
+    if day is None:
+      day = random.randint(1,28)
+    if month is None:
+      month = random.randint(1,12)
+    return minute,hour,day,month,None
+
+def backup(server,profile=None,*,activate=None,when=None):
+  if activate is None:
+    dobackup(server,profile)
+  else:
+    if profile is not None:
+      raise ServerError("Can't specify a profile if activating. Edit the backup schedule to change what backups are done when")
+    if activate not in ("weekly","monthly","yearly","daily","none"):
+      raise ServerError("Invalid frequency for backups. Options are 'yearly', 'monthly', 'weekly' or 'daily'")
+    import crontab
+    from core import program
+    programpath=program.PATH
+    ct=crontab.CronTab(user=True)
+    jobs=((job,job.command.split()) for job in ct if job.is_enabled() and job.command.startswith(programpath))
+    jobs=[job for job,cmd in jobs if cmd[0]==programpath and server.name == cmd[1] and cmd[2:]==["backup"]]
+    if activate == "none":
+      if len(jobs)==0:
+        raise ServerError("backups aren't active. Can't deactivate")
+      else:
+        for job in jobs:
+          ct.remove(job)
+    else:
+      for job in jobs:
+        ct.remove(job)
+      job=ct.new(command=programpath+" "+server.name+" backup")
+      if not job.setall(*_parsewhen(activate,when)):
+        print("Error parsing time spec")
+        if job.slices[0].parts==[]:
+          job.slices[0].parse(random.randint(0,59))
+        if job.slices[1].parts==[]:
+          job.slices[1].parse(random.randint(2,6))
+        if activate in ("monthly","yearly") and job.slices[2].parts==[]:
+          job.slices[2].parse(random.randint(1,28))
+        if activate == "yearly" and job.slices[3].parts==[]:
+          job.slices[3].parse(random.randint(1,12))
+        if activate == "weekly" and job.slices[4].parts==[]:
+          job.slices[4].parse(random.randint(0,6))
+      for slice in job.slices:
+        slice.parse(slice.render(True))
+      print("Job schedule set to {}".format(job.slices))
+    ct.write()
+    
+def dobackup(server,profile=None):
   if screen.check_screen_exists(server.name):
     screen.send_to_server(server.name,"\save-off\nsave-all\n")
-    time.sleep(2)
-  if not os.path.isdir(os.path.join(server.data["dir"],"backup")):
-    os.makedirs(os.path.join(server.data["dir"],"backup"))
+    time.sleep(5)
   try:
-    sp.check_call(['zip','-ry',os.path.join('backup',datetime.datetime.now().isoformat())]+server.data['backupfiles']+["-x","backup/*"],cwd=server.data['dir'])
-  except sp.CalledProcessError as ex:
-    print("Error backing up the server")
-  if screen.check_screen_exists(server.name):
-    screen.send_to_server(server.name,"\save-on\nsave-all\n")
+    backups.backup(server.data["dir"],server.data['backup'],profile)
+  except backups.BackupError as ex:
+    raise ServerError("Error backing up server: {}".format(ex))
+  finally:
+    if screen.check_screen_exists(server.name):
+      screen.send_to_server(server.name,"\save-on\nsave-all\n")
 
 def op(server,*users):
   for user in users:
@@ -167,4 +273,3 @@ def deop(server,*users):
   for user in users:
     screen.send_to_server(server.name,"\ndeop "+user+"\n")
 command_functions["deop"]=deop
-

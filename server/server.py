@@ -11,11 +11,12 @@ import screen
 import time
 import crontab
 from utils.cmdparse.cmdspec import CmdSpec, ArgSpec, OptSpec
+from utils.settings import settings
 
 __all__=["Server","ServerError"]
 
-DATAPATH=os.path.expanduser("~/.alphagsm/conf")
-SERVERMODULEPACKAGE="gamemodules."
+DATAPATH=os.path.expanduser(settings.user.getsection('server').get('datapath',"~/.alphagsm/conf"))
+SERVERMODULEPACKAGE=settings.system.getsection('server').get('servermodulespackage',"gamemodules.")
 
 class ServerError(Exception):
   """An Exception thrown when there is an error with the server"""
@@ -67,8 +68,9 @@ class Server(object):
                         "message":CmdSpec(requiredarguments=(ArgSpec("MESSAGE","The message to send",str),)),
                         "connect":CmdSpec(),
                         "dump":CmdSpec(),
-                        "set":CmdSpec(requiredarguments=(ArgSpec("KEY","The key to set in the form of dot seperated elements",str),
-                                ArgSpec("VALUE","The value to set. Can be '[]' or '{}' to add a new node to the tree. Exactly how many values can be specified is KEY dependant",str)),repeatable=True),
+                        "set":CmdSpec(requiredarguments=(ArgSpec("KEY","The key to set in the form of dot seperated elements",str),),
+                                      optionalarguments=(ArgSpec("VALUE","The value to set. New nodes in the structure will be created as needed. "
+                                                                 "Exactly how many values can be specified is KEY dependant.",str),),repeatable=True),
                         "backup":CmdSpec()}
   default_command_descriptions={"setup":"Setup the game server.\nThis will include processing the required settings,"
                                         " downloading or copying any needed files and doing any setup task so that a"
@@ -82,7 +84,9 @@ class Server(object):
                                 "message":"Message the server. By default sends the message to all users.",
                                 "connect":"Connect to the server's console session.",
                                 "dump":"Dump the servers data store.",
-                                "set":"Set a parameter in data store to a new value.\nWhich values are changable is game module dependent",
+                                "set":"Set a parameter in data store to a new value.\nFor keys that index into lists the special entry 'APPEND' my be used to create a new "
+                                    "entry at the end of the list. Also for some keys value 'DELETE' is a value that causes the entry to be deleted.\n\n"
+                                    "Which values are changable is game module dependent",
                                 "backup":"Backup the game server"}
   def __init__(self,name,module=None):
     """Initialise this Server object.
@@ -140,7 +144,7 @@ class Server(object):
         desc=desc+"\n\n"+extra_desc
     return desc
 
-  def run_command(self,command,*args,program=None,**kwargs):
+  def run_command(self,command,*args,**kwargs):
     """Run the specified command with the specified arguments on this server
     
     This raises ServerError if the command can't be found or the server state isnt valid
@@ -158,9 +162,9 @@ class Server(object):
       elif command == "stop":
         self.stop(*args,**kwargs)
       elif command == "activate":
-        self.activate(program,*args,**kwargs)
+        self.activate(*args,**kwargs)
       elif command == "deactivate":
-        self.deactivate(program,*args,**kwargs)
+        self.deactivate(*args,**kwargs)
       elif command == "status":
         self.status(*args,**kwargs)
       elif command == "message":
@@ -237,20 +241,34 @@ class Server(object):
         self.module.status(self,verbose,*args,**kwargs)
 
   def connect(self):
+    """Connect to the screen session to manually interact with the server"""
     screen.connect_to_screen(self.name)
 
   def dump(self):
     """Dump of the data in the data store"""
     print(self.data.prettydump())
 
-  def doset(self,key,value,*args,**kwargs):
+  def doset(self,key,*args,**kwargs):
     """Set a value in the data store. The value will be check and post set actions may be run"""
-    value=self.module.checkvalue(self,key,value,*args,**kwargs)
-    key=key.split(".")
+    types,key=_parsekey(key)
+    value=self.module.checkvalue(self,key,*args,**kwargs)
     data=self.data
-    for el in key[:-1]:
-      data=data[el]
-    data[key[-1]]=value
+    for t,el in zip(types[1:],key[:-1]):
+      if el is None:
+        print("Appending",el,t)
+        data.append(t())
+        data=data[-1]
+      else:
+        if isinstance(data,dict) and el not in data:
+          print("Adding as absent",el,t)
+          data[el]=t()
+        data=data[el]
+    if value == "DELETE":
+      del data[key[-1]]
+    elif key[-1] is None:
+      data.append(value)
+    else:
+      data[key[-1]]=value
     try:
       fn=self.module.postset
     except AttributeError:
@@ -259,29 +277,35 @@ class Server(object):
       fn(server,key,*args,**kwargs)
     self.data.save()
 
-  def activate(self,program,start=True):
+  def activate(self,start=True):
+    """Activate the server by enabling it in crontab and optionally starting it if not already running"""
+    from core import program
+    programpath=program.PATH
     ct=crontab.CronTab(user=True)
-    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(program))
-    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==program and cmd[2:]==["start"]]
+    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(programpath))
+    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==programpath and cmd[2:]==["start"]]
     if any(self.name in servers for job,servers in jobs):
       print("Server is already active. Can't activate again")
     elif len(jobs)>0:
       job,servers=jobs[0]
       servers.append(self.name)
-      job.command=program+" "+str(len(servers))+" "+" ".join(servers)+" start"
+      job.command=programpath+" "+str(len(servers))+" "+" ".join(servers)+" start"
       ct.write()
     else:
-      ct.new(command=program+" "+self.name+" start").every_reboot()
+      ct.new(command=programpath+" "+self.name+" start").every_reboot()
       ct.write()
     if start and not screen.check_screen_exists(self.name):
       self.start()
 
-  def deactivate(self,program,stop=True):
+  def deactivate(self,stop=True):
+    """Activate the server by disabling it in crontab and optionally stopping it if it is running"""
+    from core import program
+    programpath=program.PATH
     if stop and screen.check_screen_exists(self.name):
       self.stop()
     ct=crontab.CronTab(user=True)
-    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(program))
-    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==program and self.name in cmd[1] and cmd[2:]==["start"]]
+    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(programpath))
+    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==programpath and self.name in cmd[1] and cmd[2:]==["start"]]
     if len(jobs)==0:
       print("Server isn't active. Can't deactivate")
     else:
@@ -290,8 +314,19 @@ class Server(object):
           ct.remove(job)
         else:
           servers.remove(self.name)
-          job.command=program+" "+str(len(servers))+" "+" ".join(servers)+" start"
+          job.command=programpath+" "+str(len(servers))+" "+" ".join(servers)+" start"
       ct.write()
+
+def _parsekeyelement(el):
+  if el == "APPEND":
+    return list,None
+  elif el.isdigit():
+    return list,int(el)
+  else:
+    return dict,str(el)
+
+def _parsekey(key):
+  return zip(*(_parsekeyelement(el) for el in key.split(".")))
 
 def _parsecmd(cmd):
   if cmd[1].isdigit():
