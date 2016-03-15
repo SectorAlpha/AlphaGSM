@@ -144,7 +144,7 @@ class Server(object):
         desc=desc+"\n\n"+extra_desc
     return desc
 
-  def run_command(self,command,*args,program=None,**kwargs):
+  def run_command(self,command,*args,**kwargs):
     """Run the specified command with the specified arguments on this server
     
     This raises ServerError if the command can't be found or the server state isnt valid
@@ -162,9 +162,9 @@ class Server(object):
       elif command == "stop":
         self.stop(*args,**kwargs)
       elif command == "activate":
-        self.activate(program,*args,**kwargs)
+        self.activate(*args,**kwargs)
       elif command == "deactivate":
-        self.deactivate(program,*args,**kwargs)
+        self.deactivate(*args,**kwargs)
       elif command == "status":
         self.status(*args,**kwargs)
       elif command == "message":
@@ -277,31 +277,35 @@ class Server(object):
       fn(server,key,*args,**kwargs)
     self.data.save()
 
-  def activate(self,program,start=True):
+  def activate(self,start=True):
     """Activate the server by enabling it in crontab and optionally starting it if not already running"""
+    from core import program
+    programpath=program.PATH
     ct=crontab.CronTab(user=True)
-    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(program))
-    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==program and cmd[2:]==["start"]]
+    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(programpath))
+    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==programpath and cmd[2:]==["start"]]
     if any(self.name in servers for job,servers in jobs):
       print("Server is already active. Can't activate again")
     elif len(jobs)>0:
       job,servers=jobs[0]
       servers.append(self.name)
-      job.command=program+" "+str(len(servers))+" "+" ".join(servers)+" start"
+      job.command=programpath+" "+str(len(servers))+" "+" ".join(servers)+" start"
       ct.write()
     else:
-      ct.new(command=program+" "+self.name+" start").every_reboot()
+      ct.new(command=programpath+" "+self.name+" start").every_reboot()
       ct.write()
     if start and not screen.check_screen_exists(self.name):
       self.start()
 
-  def deactivate(self,program,stop=True):
+  def deactivate(self,stop=True):
     """Activate the server by disabling it in crontab and optionally stopping it if it is running"""
+    from core import program
+    programpath=program.PATH
     if stop and screen.check_screen_exists(self.name):
       self.stop()
     ct=crontab.CronTab(user=True)
-    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(program))
-    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==program and self.name in cmd[1] and cmd[2:]==["start"]]
+    jobs=((job,_parsecmd(job.command.split())) for job in ct if job.is_enabled() and job.slices.special=="@reboot" and job.command.startswith(programpath))
+    jobs=[(job,cmd[1]) for job,cmd in jobs if cmd[0]==programpath and self.name in cmd[1] and cmd[2:]==["start"]]
     if len(jobs)==0:
       print("Server isn't active. Can't deactivate")
     else:
@@ -310,7 +314,7 @@ class Server(object):
           ct.remove(job)
         else:
           servers.remove(self.name)
-          job.command=program+" "+str(len(servers))+" "+" ".join(servers)+" start"
+          job.command=programpath+" "+str(len(servers))+" "+" ".join(servers)+" start"
       ct.write()
 
 def _parsekeyelement(el):

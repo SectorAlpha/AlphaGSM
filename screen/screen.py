@@ -13,22 +13,21 @@ class ScreenError(Exception):
   pass
 
 def rotatelogs(dirn,name):
-  if not os.exists(os.path.join(dirn,name)):
+  if not os.path.exists(os.path.join(dirn,name)):
     return
   match=name+"."
   length=len(match)
   logs=[(int(el[length:]),el) for el in os.listdir(dirn) if el[:length]==match and el[length:].isdigit()]
-  oldlogs=((i,f) for i,f in logs if i>= KEEPLOGS)
-  for i,f in oldlogs:
-    os.remove(os.path.join(dirm,f))
-  logs=[(i,f) for i,f in logs if i< KEEPLOGS]
   logs.sort()
+  logs=[(i,1 if i==j else 0,f) for j,(i,f) in enumerate(logs)] 
+  oldlogs=(f for i,j,f in logs if i+j>= KEEPLOGS)
+  for f in oldlogs:
+    os.remove(os.path.join(dirn,f))
+  logstoshift=[(i,f) for i,j,f in logs if j==1 and i+j < KEEPLOGS]
   # only care if logs are in order and start correctly with index 0
-  logstoshift=[(i,f) for j,(i,f) in enumerate(logs) if i==j]
-  # reversed so you move the oldest first to make space for the later ones
   for i,f in reversed(logstoshift):
     os.rename(os.path.join(dirn,f),os.path.join(dirn,match+str(i+1)))
-  os.rename(os.path.join(dirn,name),os.path.join(dirn,name+".0")
+  os.rename(os.path.join(dirn,name),os.path.join(dirn,name+".0"))
 
 def start_screen(name,command,cwd=None):
   if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):

@@ -5,6 +5,7 @@ import subprocess as sp
 import screen
 import os
 import traceback
+from . import program
 
 __all__=["main"]
 
@@ -139,9 +140,9 @@ def main(name,args):
           help(name,server,cmd)
           return 2
         # needed by activate and deactivate
-        program=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm")
+        program.PATH=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm")
         try:
-          server.run_command(cmd,*args,program=program,**opts)
+          server.run_command(cmd,*args,**opts)
         except ServerError as ex:
           print("Error running Command")
           printhandledex(ex)
