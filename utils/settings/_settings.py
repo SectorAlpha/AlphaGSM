@@ -2,9 +2,13 @@ from collections.abc import Mapping
 import configparser
 import os
 
+_DEFAULT=object() # unique object to compare identity with
+
 class EmptyMapping(Mapping):
+  def __init__(self,default=None):
+    self._default=default
   def __getitem__(self,key):
-    raise 
+    raise KeyError("Empty mapping has no contents")
   def __len__(self):
     return 0
   def __iter__(self):
@@ -12,14 +16,12 @@ class EmptyMapping(Mapping):
       yield None
   def __contains__(self,key):
     return False
-  def get(self, key, default=None):
-    return default
+  def get(self, key, default=_DEFAULT):
+    return self._default if default is _DEFAULT else default
   def __str__(self):
     return str({})
   def __repr__(self):
-    return "<Empty {}>".format(self._dict)
-  
-_DEFAULT=object() # unique object to compare identity with
+    return "<Empty {}>"
 
 class ImmutableMapping(Mapping):
   def __init__(self,_dict,default=None):
@@ -40,10 +42,29 @@ class ImmutableMapping(Mapping):
   def __repr__(self):
     return "<Immutable {}>".format(self._dict)
 
+class EmptySection(EmptyMapping):
+  def __init__(self):
+    super(EmptySection,self).__init__()
+  @property
+  def sections(self):
+    """Get the sections dictionary"""
+    return _emptysectiondict
+
+  def getsection(self,key,**kwargs):
+    return _emptysection
+  
+  def __eq__(self,other):
+    return super(EmptySection,self).__eq__(other) and self.sections == other.sections
+  
+  def __str__(self):
+    return "<EmptySettings {}>"
+  def __repr__(self):
+    return "<EmptySettings {}>"
+
 class SettingsSection(ImmutableMapping):
   def __init__(self,sections,values):
     super(SettingsSection,self).__init__(values)
-    self.__sections=ImmutableMapping(sections,default=EmptyMapping())
+    self.__sections=ImmutableMapping(sections,default=_emptysection)
   
   @property
   def sections(self):
@@ -59,7 +80,7 @@ class SettingsSection(ImmutableMapping):
         return self.__sections[name]
       except KeyError:
         pass
-    raise AttributeError("'SettingsSection' object has no attribute '{}'".format(name))
+    raise AttributeError("'SettingsSection' has no section '{}'".format(name))
   
   def __eq__(self,other):
     return super(SettingsSection,self).__eq__(other) and self.sections == other.sections
@@ -68,6 +89,9 @@ class SettingsSection(ImmutableMapping):
     return "<Settings {}, subsections: {}>".format(self._dict,", ".join(self.__sections.keys()))
   def __repr__(self):
     return "<Settings {}, subsections: {}>".format(self._dict,self.__sections)
+
+_emptysection=EmptySection()
+_emptysectiondict=EmptyMapping(default=_emptysection)
 
 def _mergesettings(parent,sectiondict,section,value):
   for key in parent:
