@@ -4,6 +4,11 @@
 # NOTE: most of these values if changed while in use will require manual changes to ensure
 # the code finds the new locations
 
+[core]
+## system - where should the user settings file be stored. The settings file is always called alphagsm.conf
+## can use ~ for the users home directory (this is always the right thing to do)
+# userconf = ~/.alphagsm
+
 [backup]
 ## user - where should the backups be stored relative to the game servers directory
 # directory = backup

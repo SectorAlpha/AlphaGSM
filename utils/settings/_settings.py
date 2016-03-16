@@ -172,7 +172,7 @@ class Settings(object):
     try:
       return self._user
     except AttributeError:
-      settingspath=os.path.join(os.path.expanduser(self.system.sections.get('core',{}).get('userconf',"~/.alphagsm/")),"alphagsm.conf")
+      settingspath=os.path.join(os.path.expanduser(self.system.getsection('core').get('userconf',"~/.alphagsm")),"alphagsm.conf")
       self._user=_loadsettings(settingspath,self.system)
       return self._user
 
