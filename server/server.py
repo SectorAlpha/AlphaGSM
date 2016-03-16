@@ -12,6 +12,7 @@ import time
 import crontab
 from utils.cmdparse.cmdspec import CmdSpec, ArgSpec, OptSpec
 from utils.settings import settings
+from collections.abc import Mapping as MappingABC
 
 __all__=["Server","ServerError"]
 
@@ -259,7 +260,7 @@ class Server(object):
         data.append(t())
         data=data[-1]
       else:
-        if isinstance(data,dict) and el not in data:
+        if isinstance(data,MappingABC) and el not in data:
           print("Adding as absent",el,t)
           data[el]=t()
         data=data[el]

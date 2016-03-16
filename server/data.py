@@ -1,13 +1,13 @@
 """This module provides the data store used by servers."""
 import os
 import json
-
+from collections.abc import MutableMapping
 
 class DataError(Exception):
   """Thrown when there is an error reading or writing the data store"""
   pass
 
-class JSONDataStore(object):
+class JSONDataStore(MutableMapping):
   """Data store that uses json as it's storage engine"""
   def __init__(self,filename,_dict=None):
     """setup the data storeage backed by the file 'filename'.
@@ -22,6 +22,9 @@ class JSONDataStore(object):
     else:
       self._dict=_dict
 
+  def __len__(self):
+    """Get the number of items in the data store"""
+    return len(self._dict)
   def __getitem__(self,key):
     """Get the item called 'key'."""
     return self._dict[key]
