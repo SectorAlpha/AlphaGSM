@@ -92,7 +92,6 @@ def applydelta(timestamp,amount,unit):
 def doschedule(config,now,backups):
   schedule=config["schedule"]
   for tag,maxage,ageunit in schedule:
-    print(tag,maxage,ageunit,applydelta(now,-maxage,ageunit),backups[tag][-1][1])
     if tag not in backups or backups[tag][-1][1]<applydelta(now,-maxage,ageunit):
       return tag
   return tag
