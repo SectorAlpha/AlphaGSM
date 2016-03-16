@@ -25,6 +25,9 @@ class JSONDataStore(object):
   def __getitem__(self,key):
     """Get the item called 'key'."""
     return self._dict[key]
+  def get(self,key,default=None):
+    """Get the item called 'key'."""
+    return self._dict.get(key,default)
   def __setitem__(self,key,value):
     """Set the item called 'key' to 'value'."""
     self._dict[key]=value
