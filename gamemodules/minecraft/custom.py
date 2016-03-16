@@ -172,7 +172,7 @@ def checkvalue(server,key,*value):
     return value[0]
   if key[0] == ("backup"):
     try:
-      return backups.checkdatavalue(server.data["backup"],key[1:],*value)
+      return backups.checkdatavalue(server.data.get("backup",{}),key[1:],*value)
     except backups.BackupError as ex:
       raise ServerError(ex)
   raise ServerError("{} invalid key to set".format(".".join(str(k) for k in key)))
