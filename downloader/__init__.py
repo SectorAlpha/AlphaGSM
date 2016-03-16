@@ -1,6 +1,7 @@
-"""The core server package.
+"""The core downloader package.
 
-The Server and ServerException classes are imported from the server module in this package.
+The getpath, getpathifexists, getpaths, getargsforpath and main functions and the 
+DownloaderError exception class are imported from the downloader module in this package.
 
-Documentation for how to write a gameserver module is provdided in the gamemodules module."""
+Documentation for how to write a downloadermodule module is provdided in the downloadermodules module."""
 from .downloader import *

@@ -55,7 +55,7 @@ def download(path,args):
 def _true(*arg):
   return True
   
-def getallfilter(active=None,url=None,compression=None,sort=None):
+def getfilter(active=None,url=None,compression=None,sort=None):
   filterfn=_true
   sortfn=None
   if url!=None:
@@ -76,4 +76,5 @@ def getallfilter(active=None,url=None,compression=None,sort=None):
     sortfn=lambda lmodule,largs,llocation,ldate,lactive: date
   else:
     raise DownloaderError("Unknown sort key")
+  return filterfn,sortfn
  

@@ -119,31 +119,36 @@ Dump:
 
 Set:
   This section documents the function used by the set built in command. All
-  functions in this section recieve the same set of extra arguments as defined
+  functions in this section recieve the same set of extra options as defined
   in command_args. The Server class does the setting and saving the data store
   it's self.
   Functions:
-    checkvalue(server,key,value,*args,**kwargs): return the sanitised and
+    checkvalue(server,key,*values,**kwargs): return the sanitised and
       converted value to store or raise a ServerError if the value isn't valid
       for the specified key. It is permissable to make a key read only by
       always raising a ServerError but explain why in the error message.
-    postset(server,key,*args,**kwargs): do any post processing needed when the
-      the specified key is set. When this function is called the new value will
-      already have been set and saved. This function could for example trigger
-      the update logic if the level to use is changed or update other values to
-      maintain consistency.
+      The key will be already split and any integer elements (list indexes) will
+      have been converted to an int. There is also a special key elemnt value of
+      None which means the element will be appended to a list. New nodes will be
+      created as needed. values being empty signifies a request to create nodes
+      but not add new values. A special value of 'DELETE' can be returned to
+      signify the user is requesting the key be deleted.
+    postset(server,key,**kwargs) [OPTIONAL]: do any post processing needed when
+      the the specified key is set. When this function is called the new value
+      will already have been set and saved. This function could for example
+      trigger the update logic if the level to use is changed or update other
+      values to maintain consistency.
 
 Backup:
   This section documents the backup built in command. This is defined as a
-  built in to that all valid modules must provide it including a version with
+  built in so that all valid modules must provide it including a version with
   no arguments or options that does a deafault backup in a default location.
   The function is called directly and no processing is done by the Server.
   Functions:
     backup(server,*args,**kwargs): backup the server. The arguments are as
       defined in command_args but will all be optional. If no arguments or
-      options are set do a full backup to a sensible default location
-      (Module specific). Options and arguments may be used to modify what is
-      backed up or where it is stored.
-      where
+      options are set do a default backup to a sensible location (Module 
+      specific). Options and arguments may be used to modify what is backed
+      up or where it is stored.
 
 """

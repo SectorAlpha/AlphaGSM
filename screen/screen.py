@@ -1,11 +1,33 @@
 import subprocess as sp
 import os
 import re
+from utils.settings import settings
 
-SESSIONTAG="AlphaGSM#"
+SESSIONTAG=settings.system.getsection('screen').get('sessiontag','AlphaGSM#')
+try:
+  KEEPLOGS=int(setting.user.getsection('screen').get('keeplogs',5))
+except:
+  KEEPLOGS=5
 
 class ScreenError(Exception):
   pass
+
+def rotatelogs(dirn,name):
+  if not os.path.exists(os.path.join(dirn,name)):
+    return
+  match=name+"."
+  length=len(match)
+  logs=[(int(el[length:]),el) for el in os.listdir(dirn) if el[:length]==match and el[length:].isdigit()]
+  logs.sort()
+  logs=[(i,1 if i==j else 0,f) for j,(i,f) in enumerate(logs)] 
+  oldlogs=(f for i,j,f in logs if i+j>= KEEPLOGS)
+  for f in oldlogs:
+    os.remove(os.path.join(dirn,f))
+  logstoshift=[(i,f) for i,j,f in logs if j==1 and i+j < KEEPLOGS]
+  # only care if logs are in order and start correctly with index 0
+  for i,f in reversed(logstoshift):
+    os.rename(os.path.join(dirn,f),os.path.join(dirn,match+str(i+1)))
+  os.rename(os.path.join(dirn,name),os.path.join(dirn,name+".0"))
 
 def start_screen(name,command,cwd=None):
   if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):
@@ -13,6 +35,7 @@ def start_screen(name,command,cwd=None):
       os.makedirs(os.path.expanduser("~/.alphagsm/logs"))
     except OSError as ex:
       raise ScreenError("Log dir doesn't exist and can't create it",ex.args)
+  rotatelogs(os.path.expanduser("~./alphagsm/logs"),SESSIONTAG+name+".log")
   extraargs={}
   if cwd is not None:
     extraargs["cwd"]=cwd

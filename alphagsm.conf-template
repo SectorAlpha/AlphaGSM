@@ -1,0 +1,58 @@
+# NOTE: values provided here are sensible defaults but not necesserily the ones used if no
+# value is provided although as much as possible they will be
+
+# NOTE: most of these values if changed while in use will require manual changes to ensure
+# the code finds the new locations
+
+[core]
+## system - where should the user settings file be stored. The settings file is always called alphagsm.conf
+## can use ~ for the users home directory (this is always the right thing to do)
+# userconf = ~/.alphagsm
+
+[backup]
+## user - where should the backups be stored relative to the game servers directory
+# directory = backup
+## user - the format for the timestamp used in naming backup files
+# timestamptformat = %Y.%m.%d %H:%M:%S.%f
+
+[downloader]
+## REQUIRED system - The user that owns the downloader system
+# user = alphagsm
+## system the location of the downloader database file
+## Note the default is relative to the home directory of the user specified above
+# db_path = /home/alphagsm/downloads/downloads.txt
+## system - The directory to place downloads in subfolders of
+## Note the default is relative to the home directory of the user specified above
+# target_path = /home/alphagsm/downloader/downloads
+## system - The package that downloadermodules are in
+# downloaders_package = downloadermodules.
+
+[downloader.pathgen]
+## directories are generated in two levels. By default it's a parent directory with a short name with
+## another directory inside it with a longer name i.e. parent/dir
+
+## system - what characters are to be used for the directory name
+# dirchars = abcdefghijklmnopqrstuvwxyz0123456789_
+## system - the length of the directory name
+# dirlen = 8
+## system - what charachters are to be used for the parent directory name
+# parentchars = abcdefghijklmnopqrstuvxyz
+## system - the length of the parent directory name
+# parentlen = 1
+## system - how many tries at making a unique directory before giving up
+# maxtries = 238328
+
+[server]
+## user - the path to store the alphagsm data file in. can use ~ for the users home directory
+# datapath = "~/.alphagsm/conf
+## the package that the server modules are in
+# servermodulespackage = gamemodules.
+
+[screen]
+## system - the prefix used for screen sessions for alphagsm. Make sure this is unlikely to be
+## used by other users or accidentally as alphagsm assumes that all sessions that start with the tag
+## are for it to manage
+# sessiontag = AlphaGSM#
+## user - how many log files to keep for each server
+# keeplogs = 5
+
