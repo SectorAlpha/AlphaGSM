@@ -1,5 +1,5 @@
 from utils.cmdparse import cmdparse
-from server import Server,ServerError
+from server import Server,ServerError,server
 from . import multiplexer as mp
 import subprocess as sp
 import screen
@@ -19,42 +19,29 @@ def printhandledex(ex):
 
 def main(name,args):
   if len(args)==1 and args[0].lower() in ("-h","-?","--help"):
-    args=["*","help"]
+    args=["*/*","help"]
   if len(args)<1:
     print("You must specify at least a server to work on")
     print()
     help(name,None)
     return 2
-  count=1
-  server=args.pop(0)
-  if server.isdigit():
+  server=[args.pop(0)]
+  if server[0].isdigit():
     count=int(server)
     server=args[:count]
     args=args[count:]
-  if count<1:
-    print("You must specify at least a server to work on")
-    print()
-    help(name,None)
-    return 2
-  try:
-    if server.lower()=="all":
-      server="*"
-  except AttributeError:
-    pass
-  if count==1:
-    if server.lower() in ("help","create")+Server.default_commands:
-      print(server,"is a banned server name as it's too similar to a command")
+    if count<1:
+      print("You must specify at least one server to work on")
       print()
       help(name,None)
       return 2
-  else:
-    banned=set(("help","create")+Server.default_commands)
-    for s in server:
-      if s.lower() in banned:
-        print(s,"is a banned server name as it's too similar to a command")
-        print()
-        help(name,None)
-        return 2
+  banned=set(("help","create")+Server.default_commands)
+  for s in server:
+    if s.lower() in banned:
+      print(s,"is a banned server name as it's too similar to a command")
+      print()
+      help(name,None)
+      return 2
   if len(args)<1:
     print("You must specify at least a command to run")
     print()
@@ -62,22 +49,21 @@ def main(name,args):
     return 1
   cmd,*args=args
   cmd=cmd.lower()
-  if count==1 and server == "*" and cmd == "help":
+  server=[tuple(el if el != "all" else "*" for el in splitservername(s)) for spec in server]
+  if len(server)==1 and server[0] == ("*","*") and cmd == "help":
     help(name,None,*args)
     return 0
-  if count==1 and server == "*":
-    count,server=getallservers(cmd)
-    if count<1:
-      print("No servers found for",cmd)
-      print()
-      help(name,None)
-      return 1
-    elif count==1:
-      server,=server
-  if count>1:
-    runmulti(name,count,server,[cmd]+args)
-  else:
-    user,server=splitservername(server)
+  server=[s for user,tag in server for s in expandserverstar(user,tag,cmd)]
+  if len(server)<1:
+    print("No servers found for",cmd)
+    print()
+    help(name,None)
+    return 1
+  elif len(server)>1:
+    runmulti(name,len(server),server,[cmd]+args)
+  else: # count == 1
+    user,s=server[0]
+    print(user,s,server)
     if user is not None:
       runas(name,user,server,[cmd]+args)
     else:
@@ -160,7 +146,7 @@ def splitservername(server):
   else:
     return server[:slash],server[slash+1:]
 
-def getallservers(command):
+def getallallservers(command):
   if command in {"stop","status","message","backup"}:
     servers=list(screen.list_all_screens())
     if command == "stop":
@@ -178,6 +164,21 @@ def getallservers(command):
     return len(servers),servers
   return 0,[]
 
+def getalluserservers():
+  return [(None,el[:-5]) for el in os.listdir(server.DATAPATH) if el[-5:] == ".json"]
+
+def expandserverstar(user,tag,cmd):
+  if user == "*":
+    if tag != "*":
+      print("Error: Can't specify a server but '*' user")
+      return ()
+    else:
+      return getallallservers(cmd)
+  elif tag == "*" and user == None:
+    return getalluserservers()
+  else:
+    return [(user,server)]
+
 def getrunascmd(name,user,server,args,multi=False):
   return ["sudo","-Hu",user]+getruncmd(name,server,args,multi=multi)
 
@@ -194,13 +195,12 @@ def _internalisrunning(line):
 
 def runmulti(name,count,servers,args):
   multi=mp.Multiplexer()
-  for rawserver in servers:
-    user,server=splitservername(rawserver)
+  for user,server in servers:
     if user is not None:
       cmd=getrunascmd(name,user,server,args,True)
     else:
       cmd=getruncmd(name,server,args,True)
-    mp.addtomultiafter(multi,rawserver,_internalisrunning,cmd,stdin=sp.DEVNULL,stdout=sp.PIPE,stderr=sp.STDOUT)
+    mp.addtomultiafter(multi,(user+"/" if user is not None else "")+server,_internalisrunning,cmd,stdin=sp.DEVNULL,stdout=sp.PIPE,stderr=sp.STDOUT)
   multi.processall()
 
 def help(name,server,cmd=None,*_):
@@ -211,16 +211,16 @@ def help(name,server,cmd=None,*_):
     print(name+" COUNT SERVER... COMMAND [ARGS...]")
     print(
 """
-SERVER is the server or servers to process. The server can be the special form
-"*" which means apply to "all" servers. Exactly what all servers means is 
-command dependant.
+SERVER is the server or servers to process. If a server is specified as 
+username/server then we use sudo to run as the relevent user. This is always
+possible as root but is up to sudo otherwise and may prompt for a password.
+The server can be the special forms "*", which means apply to all the current
+user's servers ("username/*" works too), or "*/*" which means run on a command
+dependant definitian of "all servers". This last form is only available for a
+very limited set of commands. 
 
 If the second calling form is specified there must be EXACTLY COUNT servers
 specified.
-
-If a server is specified as username/tag then we use sudo to run it as the
-relevent user. This is always possible as root but is up to sudo otherwise
-and may prompt for a password.
 
 The available commands are:
   help [COMMAND] : Print a help message. Without a command print this message
