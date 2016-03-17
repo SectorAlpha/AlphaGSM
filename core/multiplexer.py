@@ -44,6 +44,7 @@ class Multiplexer(object):
     self.streams={}
     self.streamlessprocs=set()
     self.checkdata=set()
+    self.returnvalues={}
   
   def run(self,tag,*args,**kwargs):
     return self.addproc(tag,sp.Popen(*args,**kwargs))
@@ -142,14 +143,18 @@ class Multiplexer(object):
           key.fileobj.close()
       for proc in list(self.streamlessprocs):
         if proc.poll() is not None:
-          print(self.procs[proc].tag,"has finished with status",proc.wait())
+          ret=proc.wait()
+          print(self.procs[proc].tag,"has finished with status",ret)
+          self.returnvalues[self.procs[proc].tag]=ret
           del self.procs[proc]
           self.streamlessprocs.remove(proc)
     else:
       pid,ret=os.waitpid(-1,0)
       for proc in list(self.streamlessprocs):
         if proc.poll() is not None:
-          print(self.procs[proc].tag,"has finished with status",proc.wait())
+          ret=proc.wait()
+          print(self.procs[proc].tag,"has finished with status",ret)
+          self.returnvalues[self.procs[proc].tag]=ret
           del self.procs[proc]
           self.streamlessprocs.remove(proc)
     if len(interuptedstreams)>0:
@@ -157,25 +162,28 @@ class Multiplexer(object):
       raise OutputInteruptedException(interuptedstreams)
     return len(self.streams)
 
-
   def processall(self):
     while self.process() is not None: pass
-      
+     
+  def checkreturnvalues(self):
+    tmp=self.returnvalues
+    self.returnvalues={}
+    return tmp
+ 
        
 def addtomultiafter(multi,tag,fn,*args,**kwargs):
   tmp=Multiplexer()
-  print("Starting "+tag,flush=True)
+  print("Running "+tag,flush=True)
   proc=tmp.run("",*args,**kwargs)
   for s in tmp.procs[proc].streams:
     tmp.streams[s].linecheck=fn
   try:
     tmp.processall()
   except OutputInteruptedException as ex:
-    print(tag+" Started")
+    print(tag+" is running")
     tmp.transfer(multi,proc)
     multi.procs[proc].tag=tag
   else:
     print("Process "+tag+" finished early")
   multi.process(1)
   multi.process(0)
-  print("Moving On")

@@ -1,5 +1,5 @@
 from utils.cmdparse import cmdparse
-from server import Server,ServerError,server
+from server import Server,ServerError,server as servermodule
 from . import multiplexer as mp
 import subprocess as sp
 import screen
@@ -25,10 +25,10 @@ def main(name,args):
     print()
     help(name,None)
     return 2
-  server=[args.pop(0)]
-  if server[0].isdigit():
-    count=int(server)
-    server=args[:count]
+  servers=[args.pop(0)]
+  if servers[0].isdigit():
+    count=int(servers[0])
+    servers=args[:count]
     args=args[count:]
     if count<1:
       print("You must specify at least one server to work on")
@@ -36,7 +36,7 @@ def main(name,args):
       help(name,None)
       return 2
   banned=set(("help","create")+Server.default_commands)
-  for s in server:
+  for s in servers:
     if s.lower() in banned:
       print(s,"is a banned server name as it's too similar to a command")
       print()
@@ -49,102 +49,104 @@ def main(name,args):
     return 1
   cmd,*args=args
   cmd=cmd.lower()
-  server=[tuple(el if el != "all" else "*" for el in splitservername(s)) for spec in server]
-  if len(server)==1 and server[0] == ("*","*") and cmd == "help":
+  servers=[tuple(el if el != "all" else "*" for el in splitservername(spec)) for spec in servers]
+  if len(servers)==1 and servers[0] == ("*","*") and cmd == "help":
     help(name,None,*args)
     return 0
-  server=[s for user,tag in server for s in expandserverstar(user,tag,cmd)]
-  if len(server)<1:
+  servers=[s for user,tag in servers for s in expandserverstar(user,tag,cmd)]
+  if len(servers)<1:
     print("No servers found for",cmd)
     print()
     help(name,None)
     return 1
-  elif len(server)>1:
-    runmulti(name,len(server),server,[cmd]+args)
+  elif len(servers)>1:
+    return runmulti(name,len(servers),servers,[cmd]+args)
   else: # count == 1
-    user,s=server[0]
-    print(user,s,server)
-    if user is not None:
-      runas(name,user,server,[cmd]+args)
-    else:
-      if cmd == "create":
-        if len(args)<1:
-          print("Type of server to create is a required argument")
-          print()
-          help(name,None,cmd)
-          return 2
-        try:
-          server=Server(server,args[0])
-        except ServerError as ex:
-          print("Can't create server")
-          printhandledex(ex)
-          print()
-          help(name,None,cmd)
-          return 1
-        print("Server created")
-        if len(args)>1:
-          cmd,*args = args[1:]
-          cmd = cmd.lower()
-          if cmd != "setup":
-            print("Only setup can be called after create")
-            print()
-            help(name,None,cmd)
-            return 2
-        else:
-          cmd = None
-          args = ()
-      else:
-        try:
-          server=Server(server)
-        except ServerError as ex:
-          print("Can't find server")
-          printhandledex(ex)
-          print()
-          help(name,None)
-          return 1
-      if cmd is None or cmd == "help":
-        help(name,server,*args)
-      else:
-        try:
-          cmdargs=server.get_command_args(cmd)
-        except cmdparse.OptionError as ex:
-          print("Error parsing arguments and options")
-          printhandledex(ex)
-          print()
-          help(name,server,cmd)
-          return 2
-        if cmdargs==None:
-          print("Unknown command")
-          help(name,server,cmd)
-          return 2
-        try:
-          args,opts=cmdparse.parse(args,cmdargs)
-        except cmdparse.OptionError as ex:
-          print("Error parsing arguments and options")
-          printhandledex(ex)
-          print()
-          help(name,server,cmd)
-          return 2
-        # needed by activate and deactivate
-        program.PATH=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm")
-        try:
-          server.run_command(cmd,*args,**opts)
-        except ServerError as ex:
-          print("Error running Command")
-          printhandledex(ex)
-          return 1
-        except Exception as ex:
-          print("Error running command")
-          traceback.print_exc()
-          return 3
+    return runone(servers[0],cmd,args)
   return 0
 
-def splitservername(server):
-  slash=server.find("/")
-  if slash<0:
-    return None,server
+def runone(server,cmd,args):
+  user,tag=server
+  if user is not None:
+    return runas(name,user,tag,[cmd]+args)
   else:
-    return server[:slash],server[slash+1:]
+    if cmd == "create":
+      if len(args)<1:
+        print("Type of server to create is a required argument")
+        print()
+        help(name,None,cmd)
+        return 2
+      try:
+        server=Server(tag,args[0])
+      except ServerError as ex:
+        print("Can't create server")
+        printhandledex(ex)
+        print()
+        help(name,None,cmd)
+        return 1
+      print("Server created")
+      if len(args)>1:
+        cmd,*args = args[1:]
+        cmd = cmd.lower()
+        if cmd != "setup":
+          print("Only setup can be called after create")
+          print()
+          help(name,None,cmd)
+          return 2
+      else:
+        cmd = None
+        args = ()
+    else:
+      try:
+        server=Server(tag)
+      except ServerError as ex:
+        print("Can't find server")
+        printhandledex(ex)
+        print()
+        help(name,None)
+        return 1
+    if cmd is None or cmd == "help":
+      help(name,server,*args)
+    else:
+      try:
+        cmdargs=server.get_command_args(cmd)
+      except cmdparse.OptionError as ex:
+        print("Error parsing arguments and options")
+        printhandledex(ex)
+        print()
+        help(name,server,cmd)
+        return 2
+      if cmdargs==None:
+        print("Unknown command")
+        help(name,server,cmd)
+        return 2
+      try:
+        args,opts=cmdparse.parse(args,cmdargs)
+      except cmdparse.OptionError as ex:
+        print("Error parsing arguments and options")
+        printhandledex(ex)
+        print()
+        help(name,server,cmd)
+        return 2
+      # needed by activate and deactivate
+      program.PATH=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm")
+      try:
+        server.run_command(cmd,*args,**opts)
+      except ServerError as ex:
+        print("Error running Command")
+        printhandledex(ex)
+        return 1
+      except Exception as ex:
+        print("Error running command")
+        traceback.print_exc()
+        return 3
+
+def splitservername(name):
+  slash=name.find("/")
+  if slash<0:
+    return None,name
+  else:
+    return name[:slash],name[slash+1:]
 
 def getallallservers(command):
   if command in {"stop","status","message","backup"}:
@@ -154,18 +156,21 @@ def getallallservers(command):
       with open(".alphagsmserverlist","w") as f:
         for server in servers:
           f.write(server+"\n")
-    print("Using servers:",*servers)
-    return len(servers),servers
+    print("Using servers for '*/*':",*servers)
+    return servers
   elif command == "start":
     servers=[]
     with open(".alphagsmserverlist","r") as f:
       for line in f:
         servers.append(line.strip())
-    return len(servers),servers
-  return 0,[]
+    print("Using servers for '*/*':",*servers)
+    return servers
+  return []
 
 def getalluserservers():
-  return [(None,el[:-5]) for el in os.listdir(server.DATAPATH) if el[-5:] == ".json"]
+  servers= [(None,el[:-5]) for el in os.listdir(servermodule.DATAPATH) if el[-5:] == ".json"]
+  print("Using servers for '*':",*(tag for user,tag in servers))
+  return servers
 
 def expandserverstar(user,tag,cmd):
   if user == "*":
@@ -173,11 +178,11 @@ def expandserverstar(user,tag,cmd):
       print("Error: Can't specify a server but '*' user")
       return ()
     else:
-      return getallallservers(cmd)
+      return [splitservername(s) for s in getallallservers(cmd)]
   elif tag == "*" and user == None:
     return getalluserservers()
   else:
-    return [(user,server)]
+    return [(user,tag)]
 
 def getrunascmd(name,user,server,args,multi=False):
   return ["sudo","-Hu",user]+getruncmd(name,server,args,multi=multi)
@@ -189,6 +194,7 @@ def getruncmd(name,server,args,multi=False):
 def runas(name,user,server,args):
   ret=sp.call(getrunascmd(name,user,server,args))
   print("Command finished with return status",ret)
+  return ret
 
 def _internalisrunning(line):
   return line.decode().strip()=="#%AlphaGSM-INTERNAL%#"
@@ -202,6 +208,16 @@ def runmulti(name,count,servers,args):
       cmd=getruncmd(name,server,args,True)
     mp.addtomultiafter(multi,(user+"/" if user is not None else "")+server,_internalisrunning,cmd,stdin=sp.DEVNULL,stdout=sp.PIPE,stderr=sp.STDOUT)
   multi.processall()
+  retvals=list(multi.checkreturnvalues().values())
+  if len(retvals)!=len(servers):
+    print("Warning: Not all servers have returned")
+  if all(val==0 for val in retvals):
+    return 0
+  retvalsnon0=[val for val in retvals if val != 0]
+  if all(val==retvalsnon0[0] for val in retvalsnon0):
+    return retvalsnon0[0]
+  else:
+    return 10
 
 def help(name,server,cmd=None,*_):
   if cmd is None:
