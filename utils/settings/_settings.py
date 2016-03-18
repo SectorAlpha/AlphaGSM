@@ -110,7 +110,8 @@ def _loadsettings(filename,parent=None):
   config = configparser.ConfigParser(interpolation=None,empty_lines_in_values=False,default_section="~#'[&INVALID&]'#~",dict_type=dict)
   
   try:
-    config.read_file(open(filename,'r'))
+    with open(filename,'r') as f:
+      config.read_file(f)
   except FileNotFoundError as ex:
     if parent is None:
       raise ex
