@@ -284,7 +284,10 @@ The available commands are:
   create TYPE [setup ARGS] : Create a new server of the specified type. If setup
         is specified then will call setup on the new server immediately. ARGS is
         passed directly on to setup so see there for the format and options
-        available""",file=file)
+        available
+  list : list the servers this is run on one per line. Useful for checking what 
+        servers a wildcard matched or in scripts to list the servers in a script
+        processable way""",file=file)
     if server is None:
       for cmd in Server.default_commands:
         cmdparse.shorthelp(cmd,Server.default_command_descriptions.get(cmd,None),Server.default_command_args[cmd])
