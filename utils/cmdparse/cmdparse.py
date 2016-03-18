@@ -5,6 +5,7 @@ messages based on CmdSpecs.
 from itertools import chain
 import textwrap
 from .cmdspec import OptionError
+import sys
 
 def parse(inargs,cmdspec):
   """Parse the arguments in 'inargs' according to cmdspec and return the
@@ -77,7 +78,7 @@ def _convertarg(arg,spec):
   except ValueError:
     raise OptionError("Argumant isn't of the right format for '"+spec.name+"'",ex)
 
-def shorthelp(cmd,cmddesc,cmdspec):
+def shorthelp(cmd,cmddesc,cmdspec,file=sys.stderr):
   """Print a short help string for the command based on it's cmdspec and
   description."""
   s=cmd
@@ -91,30 +92,30 @@ def shorthelp(cmd,cmddesc,cmdspec):
     s+="..."
   if cmddesc is not None:
     s+=" : "+cmddesc.splitlines()[0]
-  print(textwrap.fill(s,80,initial_indent="  ",subsequent_indent="        "))
+  print(textwrap.fill(s,80,initial_indent="  ",subsequent_indent="        "),file=file)
 
-def longhelp(cmd,cmddesc,cmdspec):
+def longhelp(cmd,cmddesc,cmdspec,file=sys.stderr):
   """Print a long help string including the short help, full description and
   descriptions of all the arguments and options."""
-  shorthelp(cmd,None,cmdspec)
-  print()
+  shorthelp(cmd,None,cmdspec,file=file)
+  print(file=file)
   if cmddesc is not None:
     for par in cmddesc.splitlines():
-      print(textwrap.fill(par,80))
-      print()
+      print(textwrap.fill(par,80),file=file)
+      print(file=file)
   if cmdspec.hasarguments()>0:
-    print("Arguments:")
+    print("Arguments:",file=file)
     for arg in cmdspec.allarguments:
-      print(textwrap.fill(arg.name+": "+arg.description,80,initial_indent="  ",subsequent_indent="        "))
-    print()
+      print(textwrap.fill(arg.name+": "+arg.description,80,initial_indent="  ",subsequent_indent="        "),file=file)
+    print(file=file)
   if cmdspec.hasoptions():
-    print("Options:")
+    print("Options:",file=file)
     for opt in cmdspec.options:
       s=", ".join(chain(("-"+s for s in opt.shortforms),("--"+l for l in opt.longforms)))
       if opt.hasargument():
         s+=" "+opt.argument+" "
       s+=": "+opt.description
-      print(textwrap.fill(s,80,initial_indent="  ",subsequent_indent="        "))
-    print()
+      print(textwrap.fill(s,80,initial_indent="  ",subsequent_indent="        "),file=file)
+    print(file=file)
 
 
