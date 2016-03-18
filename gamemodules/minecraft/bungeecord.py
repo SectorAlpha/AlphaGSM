@@ -11,9 +11,10 @@ import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
 
+commands=()
 command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("DIR","The Directory to install minecraft in",str),))}
 command_descriptions={}
-command_functions={} # will have elements added as the functions are defined
+command_functions={}
 
 def configure(server,ask,port=None,dir=None,*,exe_name="BungeeCord.jar"):
   if dir is None:

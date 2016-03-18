@@ -59,7 +59,7 @@ class JSONDataStore(MutableMapping):
       json.dump(self._dict,fp)
   def prettydump(self):
     """A pretty formated string version of the data for showing to users."""
-    return json.dumps(self._dict,indent=2,separators=(",",": "))
+    return json.dumps(self._dict,indent=2,separators=(",",": "),sort_keys=True)
     
     
 __all__=["DataError","JSONDataStore"]    
