@@ -1,10 +1,17 @@
-so this will be the place for the server manager code.
+This is the Sector Alpha Game Server Manager.
 
-it will
+This tool runs game servers using screen to manage the sessions and provides
+tools to control them in a consistent way and to possibly many servers at once.
+This also contains code to share downloads and if possible the actual files
+between multiple installs.
 
-1) boot servers
-2) shutdown servers
-3) check their status
-4) game servers for all (sasha user account holders)
+For changing users sudo is used so all protected permissions are controlled
+using sudo.
 
-The plans are being discussed on the sector alpha wiki at http://wiki.sector-alpha.net/index.php?title=AlphaGSM
+The public script is alphagsm which should be installed in bin/ using a symlink
+(It can't be physically moved as other paths are resolved relative to it's true
+location). For help using it run alphagsm --help. For help editing and
+contributing see the documentation in the source code or the pydoc output.
+
+The plans are also being discussed on the sector alpha wiki at
+http://wiki.sector-alpha.net/index.php?title=AlphaGSM
