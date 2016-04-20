@@ -59,11 +59,11 @@ def configure(server,ask,port=None,dir=None,*,eula=None,exe_name="minecraft_serv
     server.data['backup']={}
   if 'profiles' not in server.data['backup']:
     server.data['backup']['profiles']={}
-  if len(server.data['backup'])==0:
+  if len(server.data['backup']['profiles'])==0:
     server.data['backup']['profiles']['default']={'targets':['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']}
   if 'schedule' not in server.data['backup']:
-    server.data['schedule']=[]
-  if len(server.data['schedule'])==0:
+    server.data['backup']['schedule']=[]
+  if len(server.data['backup']['schedule'])==0:
     profile='default'
     if profile not in server.data['backup']['profiles']:
       profile=next(iter(server.data['backup']['profiles']))
