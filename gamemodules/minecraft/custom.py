@@ -254,15 +254,15 @@ def backup(server,profile=None,*,activate=None,when=None):
     
 def dobackup(server,profile=None):
   if screen.check_screen_exists(server.name):
-    screen.send_to_server(server.name,"\save-off\nsave-all\n")
-    time.sleep(5)
+    screen.send_to_server(server.name,"\nsave-off\nsave-all\n")
+    time.sleep(30)
   try:
     backups.backup(server.data["dir"],server.data['backup'],profile)
   except backups.BackupError as ex:
     raise ServerError("Error backing up server: {}".format(ex))
   finally:
     if screen.check_screen_exists(server.name):
-      screen.send_to_server(server.name,"\save-on\nsave-all\n")
+      screen.send_to_server(server.name,"\nsave-on\nsave-all\n")
 
 def op(server,*users):
   for user in users:
