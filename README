@@ -15,3 +15,10 @@ contributing see the documentation in the source code or the pydoc output.
 
 The plans are also being discussed on the sector alpha wiki at
 http://wiki.sector-alpha.net/index.php?title=AlphaGSM
+
+Dependancies
+
+python3
+Screen
+crontab
+python3-crontab
