@@ -33,6 +33,8 @@ Setup will prompt you to choose your server version, your installation location,
 
 Additionally, python3 alphagsm mymcserver create minecraft will default to minecraft.vanilla. You can install e.g tekkit via minecraft.tekkit.
 
+For additional features, additional command arguments, you can call ./alphagsm --help 
+
 to stop the server
 
 ./alphagsm mymcserver stop

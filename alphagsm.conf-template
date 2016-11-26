@@ -17,13 +17,13 @@
 
 [downloader]
 ## REQUIRED system - The user that owns the downloader system
-# user = alphagsm
+# user = alphagsm_user
 ## system the location of the downloader database file
 ## Note the default is relative to the home directory of the user specified above
-# db_path = /home/.alphagsm/downloads/downloads.txt
+# db_path = /home/alphagsm_user/.alphagsm/downloads/downloads.txt
 ## system - The directory to place downloads in subfolders of
 ## Note the default is relative to the home directory of the user specified above
-# target_path = /home/alphagsm/downloader/downloads
+# target_path = /home/alphagsm_user/.alphagsm/downloader/downloads
 ## system - The package that downloadermodules are in
 # downloaders_package = downloadermodules.
 
