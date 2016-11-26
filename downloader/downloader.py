@@ -12,8 +12,8 @@ from utils.settings import settings
 # If they are there may be race conditions and database corruption
 
 USER=settings.system.downloader.get('user') or pwd.getpwuid(os.getuid()).pw_name
-DB_PATH=settings.system.downloader.get('db_path') or os.path.join(pwd.getpwnam(USER).pw_dir,"downloads/downloads.txt")
-TARGET_PATH=settings.system.downloader.get('target_path') or os.path.join(pwd.getpwnam(USER).pw_dir,"downloads/downloads")
+DB_PATH=settings.system.downloader.get('db_path') or os.path.join(pwd.getpwnam(USER).pw_dir,".alphagsm/downloads/downloads.txt")
+TARGET_PATH=settings.system.downloader.get('target_path') or os.path.join(pwd.getpwnam(USER).pw_dir,".alphagsm/downloads/downloads")
 
 DOWNLOADERS_PACKAGE = settings.system.downloader.get('downloaders_package',"downloadermodules.")
 UPDATE_SUFFIX=".new"
