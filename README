@@ -25,9 +25,9 @@ python3-crontab
 
 Example setup of a minecraft vanilla server
 
-python3 alphagsm mymcserver create minecraft
-python3 alphagsm mymcserver setup
-python3 alphagsm mymcserver start
+./alphagsm mymcserver create minecraft
+./alphagsm mymcserver setup
+./alphagsm mymcserver start
 
 Setup will prompt you to choose your server version, your installation location, your port and whether to accept the EULA. Setup will vary from game server to game server
 
@@ -35,11 +35,11 @@ Additionally, python3 alphagsm mymcserver create minecraft will default to minec
 
 to stop the server
 
-python3 alphagsm mymcserver stop
+./alphagsm mymcserver stop
 
 to backup
 
-python3 alphagsm mymcserver backup
+./alphagsm mymcserver backup
 
 At the moment, this code only supports minecraft, there are immediate plans to support other game servers (Terraria, steam games) in the near future.
 
