@@ -25,24 +25,24 @@ python3-crontab
 
 Example setup of a minecraft vanilla server
 
-./alphagsm mymcserver create minecraft
-./alphagsm mymcserver setup
-./alphagsm mymcserver start
+alphagsm mymcserver create minecraft
+alphagsm mymcserver setup
+alphagsm mymcserver start
 
 Setup will prompt you to choose your server version, your installation location, your port and whether to accept the EULA. Setup will vary from game server to game server
 
-Additionally, python3 alphagsm mymcserver create minecraft will default to minecraft.vanilla. You can install e.g tekkit via minecraft.tekkit.
+Additionally, alphagsm mymcserver create minecraft will default to minecraft.vanilla. You can install e.g tekkit via minecraft.tekkit.
 
 For additional features, additional command arguments, you can call ./alphagsm --help 
 
 to stop the server
 
-./alphagsm mymcserver stop
+alphagsm mymcserver stop
 
 to backup
 
-./alphagsm mymcserver backup
+alphagsm mymcserver backup
 
 At the moment, this code only supports minecraft, there are immediate plans to support other game servers (Terraria, steam games) in the near future.
 
-
+you can also symlink alphagsm to any directory you wish, or move it to /usr/bin/ to run alphagsm anywhere on your system
