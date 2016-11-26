@@ -24,7 +24,7 @@ def configure(server,ask,port=None,dir=None,*,eula=None,version=None,url=None,ex
   if version is not None or url is None:
     try:
       versionsfile=urllib.request.urlopen("https://s3.amazonaws.com/Minecraft.Download/versions/versions.json")
-      versions=json.loads(versionsfile.readall().decode("utf-8"))
+      versions=json.loads(versionsfile.read().decode("utf-8"))
       latest=versions["latest"]["release"]
       allversions=[v["id"] for v in versions["versions"] if v["type"] in ["release","snapshot"]] #ditch other types as don't have servers
     except Exception as ex:
