@@ -45,4 +45,4 @@ alphagsm mymcserver backup
 
 At the moment, this code only supports minecraft, there are immediate plans to support other game servers (Terraria, steam games) in the near future.
 
-you can also symlink alphagsm to any directory you wish, or move it to /usr/bin/ to run alphagsm anywhere on your system
+you can also symlink alphagsm to any directory you wish, or symlink it to /usr/bin/ to run alphagsm anywhere on your system
