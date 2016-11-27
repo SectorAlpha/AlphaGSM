@@ -30,6 +30,13 @@ Dependencies
   python3-crontab
   sudo (for multi user/shared downloads support)
 
+SteamCMD dependencies
+
+  lib32gcc1 or libstdc++ or libstdc++.i686 
+  
+for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
+see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
+
 Example of setting up of a Minecraft vanilla server
 
   alphagsm mymcserver create minecraft setup
