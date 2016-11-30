@@ -26,6 +26,8 @@
 # target_path = /home/alphagsm_user/.alphagsm/downloader/downloads
 ## system - The package that downloadermodules are in
 # downloaders_package = downloadermodules.
+## steamcmd_path - The directory SteamCMD is installed into
+# steamcmd_path = /home/alphagsm_user/Steam/
 
 [downloader.pathgen]
 ## directories are generated in two levels. By default it's a parent directory with a short name with

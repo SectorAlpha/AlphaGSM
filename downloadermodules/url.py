@@ -31,7 +31,6 @@ def download(path,args):
     if decompress in ["gz"]: # compression without filenames
       targetname+="."+decompress
 
-  print(targetname)
   try:
     fname,headers=urllib.request.urlretrieve(url,filename=targetname,reporthook=reporthook)
   except urllib.error.URLError as ex:
