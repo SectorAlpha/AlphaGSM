@@ -107,13 +107,14 @@ def install(server):
   doinstall(server)
   #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
-def doinstall(server)
+def doinstall(server):
   """ Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
 
+  # crashes here.. what is this?
   versions=downloader.getpaths("steamcmd",active=True,AppID=server.data["AppID"],sort="version")
-  
+
   if len(version)==0:
     self.data["version"]=1
     path=downloader.getpath("steamcmd",(server.data["version"],server.data["AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"],))
