@@ -76,11 +76,7 @@ def _convertarg(arg,spec):
   try:
     return spec.conversion(arg)
   except ValueError as ex:
-<<<<<<< HEAD
     raise OptionError("Argument isn't of the right format for '"+spec.name+"'",ex)
-=======
-    raise OptionError("Argumant isn't of the right format for '"+spec.name+"'",ex)
->>>>>>> 15a8fecd069f9b8029006b93de5e32ffa82256ed
 
 def shorthelp(cmd,cmddesc,cmdspec,file=sys.stderr):
   """Print a short help string for the command based on it's cmdspec and
