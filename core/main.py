@@ -19,7 +19,6 @@ def printhandledex(ex):
     print(ex,file=stderr)
 
 def main(name,args):
-  # This is the core script command run by alphagsm script
   if len(args)==1 and args[0].lower() in ("-h","-?","--help"):
     args=["*/*","help"]
   if len(args)<1:
@@ -65,7 +64,6 @@ def main(name,args):
     if cmd=="list":
       return runlistmulti(name,servers,[cmd]+args)
     else:
-<<<<<<< HEAD
       return runmulti(name,len(servers),servers,[cmd]+args)
   else: # count == 1
     return runone(name,servers[0],cmd,args)
@@ -100,14 +98,6 @@ def runone(name,server,cmd,args):
         if cmd != "setup":
           print("Only setup can be called after create",file=stderr)
           print(file=stderr)
-=======
-      if cmd == "create":
-        # This is the create command.
-        # All other commands are forwarded to the server class but this has to be handled directly as there isn't a server available yet
-        if len(args)<1:
-          print("Type of server to create is a required argument")
-          print()
->>>>>>> 15a8fecd069f9b8029006b93de5e32ffa82256ed
           help(name,None,cmd)
           return 2
       else:
@@ -319,5 +309,5 @@ The available commands are:
         help(name,server,file=file)
         return
       cmdparse.longhelp(cmd,server.get_command_description(cmd),server.get_command_args(cmd))
-   
-    
+
+
