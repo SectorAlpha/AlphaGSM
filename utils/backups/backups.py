@@ -91,6 +91,8 @@ def applydelta(timestamp,amount,unit):
 
 def doschedule(config,now,backups):
   schedule=config["schedule"]
+  if len(schedule)<=0:
+    raise BackupError("No schedule defined.")
   for tag,maxage,ageunit in schedule:
     if tag not in backups or backups[tag][-1][1]<applydelta(now,-maxage,ageunit):
       return tag
@@ -112,7 +114,6 @@ def backup(dir,config,profile=None):
   for key,val in backups.items():
     val.sort(key=lambda ft: ft[1])
  
-
   if profile==None:
     profile=doschedule(config,now,backups)
   data=getprofiledata(config,profile)
@@ -154,7 +155,7 @@ def checkdatavalue(data,key,*value):
         return "DELETE"
       else:
         return list(value)
-    elif key[2] in ("replace_targets","replace_exlclusions"):
+    elif key[2] in ("replace_targets","replace_exclusions"):
       if len(value) != 1:
         raise BackupError("key only takes one value")
       if value[0].lower() in ("t","y","true","yes","on"):
