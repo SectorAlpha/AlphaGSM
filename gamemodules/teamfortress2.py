@@ -14,6 +14,8 @@ from utils import backups
 from utils import updatefs
 import random
 
+import utils.steamcmd as steamcmd
+
 steam_app_id = 232250
 steam_anonymous_login_possible = True
 
@@ -105,44 +107,57 @@ def install(server):
   doinstall(server)
   #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
+
 def doinstall(server):
   """ Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
 
-  # crashes here.. what is this? AppID:server.data["Steam_AppID"]
- # versions=downloader.getpaths("steamcmd",sort="version",active=True)
-  versions = []
+  steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
 
-  if len(versions)==0:
-    server.data["version"]=1
-    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
-  else:
-    latest=versions[0]
-    server.data["version"]=latest[1][0]
-    path=latest[2]
 
-  basetagpath=os.path.join(server.data["dir"],".~basetag")
-  try:
-    oldpath=os.readlink(basetagpath)
-  except FileNotFoundError:
-    oldpath="/dev/null/INVALID"
-  if oldpath==path:
-    if update:
-      print("Latest version already downloaded")
-      return
 
-#   for a future release
-#   server.data["version"]+=1;
 
-    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
-    # should now be different as this shouldn't (assuming downloader is working right) return the same path as it did for the old version
-  server.data.save()
-  os.remove(basetagpath)
-  updatefs.update(oldpath,path,server.data["dir"]) #TODO: Fill in the skip, linkdir and copy args
-  os.symlink(downloadpath,basetagpath)
+## TODO integrate Steam games properly into the downloads module.
+##
+##
+##def doinstall(server):
+##  """# Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
+##  if not os.path.isdir(server.data["dir"]):
+##    os.makedirs(server.data["dir"])
+##
+##  # crashes here.. what is this? AppID:server.data["Steam_AppID"]
+##  versions=downloader.getpaths("steamcmd",sort="version",active=True)
+##  versions = []
+##
+##  if len(versions)==0:
+##    server.data["version"]=1
+##    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
+##  else:
+##    latest=versions[0]
+##    server.data["version"]=latest[1][0]
+##    path=latest[2]
+##
+##  basetagpath=os.path.join(server.data["dir"],".~basetag")
+##  try:
+##    oldpath=os.readlink(basetagpath)
+##  except FileNotFoundError:
+##   oldpath="/dev/null/INVALID"
+##  if oldpath==path:
+##    if update:
+##      print("Latest version already downloaded")
+##      return
+##
+##  # for a future release
+##  # server.data["version"]+=1;
+##
+##    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
+##    # should now be different as this shouldn't (assuming downloader is working right) return the same path as it did for the old version
+##  server.data.save()
+##  os.remove(basetagpath)
+##  updatefs.update(oldpath,path,server.data["dir"]) #TODO: Fill in the skip, linkdir and copy args
+##  os.symlink(downloadpath,basetagpath)
 
-  
 
   
 
