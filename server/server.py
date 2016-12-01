@@ -199,6 +199,7 @@ class Server(object):
     else:
       prestart(*args,**kwargs)
     cmd,cwd=self.module.get_start_command(self,*args,**kwargs)
+    print(cmd,cwd)
     screen.start_screen(self.name,cmd,cwd=cwd)
     try:
       poststart=self.module.poststart

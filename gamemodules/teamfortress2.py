@@ -115,7 +115,40 @@ def doinstall(server):
 
   steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
 
+def get_start_command(server):
+# example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
+  return [server.data["exe_name"],"-game","tf","-port",str(server.data["port"]),"+maxplayers","16","+map","cp_dustbowl"],server.data["dir"]
 
+def do_stop(server,j):
+  screen.send_to_server(server.name,"\nstop\n")
+
+def stop(self,*args,**kwargs):
+  """Stop the server. If the server can't be stopped even after multiple attempts then raises a ServerError"""
+  if not screen.check_screen_exists(self.name):
+    raise ServerError("Error: Can't stop a server that isn't running")
+  jmax=5
+  try:
+    jmax=min(jmax,self.module.max_stop_wait)
+  except AttributeError:
+    pass
+  print("Will try and stop server for "+str(jmax)+" minutes")
+  for j in range(jmax):
+    self.module.do_stop(self,j,*args,**kwargs)
+    for i in range(6):
+      if not screen.check_screen_exists(self.name):
+        return # session doesn't exist so success
+      time.sleep(10)
+    if not screen.check_screen_exists(self.name):
+      return
+    print("Server isn't stopping after "+str(j+1)+" minutes")
+  print("Killing Server")
+  screen.send_to_screen(self.name,["stop"])
+  time.sleep(1)
+  if screen.check_screen_exists(self.name):
+    raise ServerError("Error can't kill server")
+
+def status(server,verbose):
+  pass
 
 
 ## TODO integrate Steam games properly into the downloads module.

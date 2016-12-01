@@ -39,6 +39,7 @@ def start_screen(name,command,cwd=None):
   extraargs={}
   if cwd is not None:
     extraargs["cwd"]=cwd
+  print(SESSIONTAG,name,command,extraargs,os.path.abspath(os.path.dirname(__file__)))
   try:
     out=sp.check_output(["screen","-dmLS",SESSIONTAG+name,"-c",os.path.join(os.path.abspath(os.path.dirname(__file__)),"screenrc")]+list(command),stderr=sp.STDOUT,shell=False,**extraargs)
   except sp.CalledProcessError as ex:
@@ -48,6 +49,7 @@ def start_screen(name,command,cwd=None):
   except OSError as ex:
     raise ScreenError("Error executing screen: "+str(ex))
   else:
+    print("failed for some unknown reason")
     return out
 
 def send_to_screen(name,command):
