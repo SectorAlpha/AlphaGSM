@@ -1,5 +1,3 @@
-#todo 
-
 from utils.settings import settings 
 import pwd
 import os
@@ -9,7 +7,7 @@ from downloadermodules.url import download as url_download
 
 USER=settings.system.downloader.get('user') or pwd.getpwuid(os.getuid()).pw_name
 # if a user has already installed steam to e.g ubuntu, steamcmd prefers to be installed in the same directory (or at least when steamcmd starts, it sends the error related things there as if it wants to be installed there.
-STEAMCMD_DIR = settings.system.downloader.get('steamcmd_path') or "/home/" + pwd.getpwuid(os.getuid()).pw_name + "/.local/share/Steam/" if os.path.isdir( "/home/" + pwd.getpwuid(os.getuid()).pw_name + "/.local/share/Steam/") else "/home/" + pwd.getpwuid(os.getuid()).pw_name + "/Steam/"
+STEAMCMD_DIR = settings.system.downloader.get('steamcmd_path') or "/home/" + USER + "/.local/share/Steam/" if os.path.isdir( "/home/" + USER + "/.local/share/Steam/") else "/home/" + USER + "/Steam/"
 STEAMCMD_EXE = STEAMCMD_DIR + "steamcmd.sh"
 STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 

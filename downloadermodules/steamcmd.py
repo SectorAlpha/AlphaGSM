@@ -1,5 +1,7 @@
 #todo 
-
+# WARNING, THIS MODULE IS NOT SUPPORTED FOR NOW
+# USE AT YOUR OWN RISK
+# Or message the developers if you would like to help get this working.
 from utils.settings import settings 
 from . import url as urlextra
 import pwd
