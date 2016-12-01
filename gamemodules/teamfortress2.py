@@ -114,7 +114,6 @@ def doinstall(server):
  # versions=downloader.getpaths("steamcmd",sort="version",active=True)
   versions = []
 
-  print("wee")
   if len(versions)==0:
     server.data["version"]=1
     path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))

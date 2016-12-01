@@ -30,10 +30,8 @@ def install_steamcmd():
 
 def download(path,args):
   """ downloads a game via steamcmd"""
-  print("omg")
   Steam_AppID, target_dir, steam_anonymous_login_possible = *args
   # check to see if steamcmd exists
-  print("lol")
   install_steamcmd()
 
   # run steamcmd
@@ -49,15 +47,12 @@ def download(path,args):
 
 def getpathifexists(module,args):
   """Check if a path for the download is already in the database and if so return it else return None"""
-  print("wee omg")
   sargs=",".join(str(a) for a in args)
-  print(sargs)
   with open(DB_PATH,'r') as f:
     for line in f:
       lmodule,largs,llocation,ldate,lactive=line.split()
       if int(lactive) and lmodule==module and largs==sargs:
         return llocation
-  print("omg")
   return None
 
 
