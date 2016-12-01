@@ -16,7 +16,7 @@ import random
 
 import utils.steamcmd as steamcmd
 
-steam_app_id = 232250
+steam_app_id = 740
 steam_anonymous_login_possible = True
 
 commands=()
@@ -26,12 +26,10 @@ command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for th
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
-# example tf2 runscript ./srcds_run -game tf -port 27015 +maxplayers 32 +map cp_dustbowl"
 
-# Team Fortress 2 is probably the most simple example of a steamcmd game
 def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
   """
-  This function creates the configuration details for the  server
+  This function creates the configuration details for the server
   
   inputs:
     server: the server object
