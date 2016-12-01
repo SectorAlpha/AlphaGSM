@@ -117,6 +117,11 @@ def doinstall(server):
 
 def get_start_command(server):
 # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
+# interestingly, this method does not work yet
+# but this method does
+# screen -S server2 -dmS /home/ben/tf2/srcds_run -game tf -port 27015 +maxplayers 32 +map cp_dustbowl
+
+
   return [server.data["exe_name"],"-game","tf","-port",str(server.data["port"]),"+maxplayers","16","+map","cp_dustbowl"],server.data["dir"]
 
 def do_stop(server,j):
