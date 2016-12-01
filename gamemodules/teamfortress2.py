@@ -14,8 +14,6 @@ from utils import backups
 from utils import updatefs
 import random
 
-from downloadermodules.url import download as url_download
-
 steam_app_id = 232250
 steam_anonymous_login_possible = True
 
@@ -112,15 +110,17 @@ def doinstall(server):
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
 
-  # crashes here.. what is this?
-  versions=downloader.getpaths("steamcmd",active=True,AppID=server.data["AppID"],sort="version")
+  # crashes here.. what is this? AppID:server.data["Steam_AppID"]
+ # versions=downloader.getpaths("steamcmd",sort="version",active=True)
+  versions = []
 
-  if len(version)==0:
-    self.data["version"]=1
-    path=downloader.getpath("steamcmd",(server.data["version"],server.data["AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"],))
+  print("wee")
+  if len(versions)==0:
+    server.data["version"]=1
+    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
   else:
     latest=versions[0]
-    self.data["version"]=latest[1][0]
+    server.data["version"]=latest[1][0]
     path=latest[2]
 
   basetagpath=os.path.join(server.data["dir"],".~basetag")
@@ -132,8 +132,11 @@ def doinstall(server):
     if update:
       print("Latest version already downloaded")
       return
-    server.data["version"]+=1;
-    path=downloader.getpath("steamcmd",(server.data["version"],server.data["AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"],))
+
+#   for a future release
+#   server.data["version"]+=1;
+
+    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
     # should now be different as this shouldn't (assuming downloader is working right) return the same path as it did for the old version
   server.data.save()
   os.remove(basetagpath)

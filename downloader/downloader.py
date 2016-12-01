@@ -95,22 +95,28 @@ def download(module,args):
 
 def getpathifexists(module,args):
   """Check if a path for the download is already in the database and if so return it else return None"""
+  print("wee omg")
   sargs=",".join(quote(a) for a in args)
+  print(sargs)
   with open(DB_PATH,'r') as f:
     for line in f:
       lmodule,largs,llocation,ldate,lactive=line.split()
       if int(lactive) and lmodule==module and largs==sargs:
         return llocation
+  print("omg")
   return None
 
 def getpath(module,args):
   """Get the path for a download, downloading it if it isn't already downloaded.
      
      Can be run as any user and will change user to the download systems owner if it needs downloading"""
+
+  print(module)
+  print(args)
   path=getpathifexists(module,args)
   if path is not None:
     return path
-  
+    
   if os.getuid() != pwd.getpwnam(USER).pw_uid:
     import subprocess as sp
     try:
@@ -121,6 +127,7 @@ def getpath(module,args):
       return unquote(path.decode(sys.stdout.encoding).strip())
   
   # Definitely running as correct user now and file not found (yet) but may have other threads updating the file so lock then check again
+  print("wee lol")
 
   while True:
     try:
@@ -183,10 +190,12 @@ def getpaths(module,sort=None,**filter):
      The result is a list of tuples that contains the elements: 
          (module_name,[list,of,arguments],path,date_added,is_active)
      """
+  print("wee")
   if module is None:
     filterfn,sortfn=_getallfilter(**kwargs)
   else:
     filterfn,sortfn=_findmodule(module).getfilter(**kwargs)
+  print("wee")
   downloads=[]
   with open(DB_PATH,'r') as f:
     for line in f:
