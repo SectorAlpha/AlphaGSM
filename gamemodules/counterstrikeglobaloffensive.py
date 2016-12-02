@@ -115,48 +115,18 @@ def doinstall(server):
 
 
 
+def get_start_command(server):
+  exe_name = server.data["exe_name"]
+  if not os.path.isfile(server.data["dir"] + exe_name):
+    ServerError("Executable file not found")
 
-## TODO integrate Steam games properly into the downloads module.
-##
-##
-##def doinstall(server):
-##  """# Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
-##  if not os.path.isdir(server.data["dir"]):
-##    os.makedirs(server.data["dir"])
-##
-##  # crashes here.. what is this? AppID:server.data["Steam_AppID"]
-##  versions=downloader.getpaths("steamcmd",sort="version",active=True)
-##  versions = []
-##
-##  if len(versions)==0:
-##    server.data["version"]=1
-##    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
-##  else:
-##    latest=versions[0]
-##    server.data["version"]=latest[1][0]
-##    path=latest[2]
-##
-##  basetagpath=os.path.join(server.data["dir"],".~basetag")
-##  try:
-##    oldpath=os.readlink(basetagpath)
-##  except FileNotFoundError:
-##   oldpath="/dev/null/INVALID"
-##  if oldpath==path:
-##    if update:
-##      print("Latest version already downloaded")
-##      return
-##
-##  # for a future release
-##  # server.data["version"]+=1;
-##
-##    path=downloader.getpath("steamcmd",(server.data["Steam_AppID"],server.data["dir"],server.data["Steam_anonymous_login_possible"]))
-##    # should now be different as this shouldn't (assuming downloader is working right) return the same path as it did for the old version
-##  server.data.save()
-##  os.remove(basetagpath)
-##  updatefs.update(oldpath,path,server.data["dir"]) #TODO: Fill in the skip, linkdir and copy args
-##  os.symlink(downloadpath,basetagpath)
+  if exe_name[:2] != "./":
+    exe_name = "./" + exe_name
+  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers","16","+map","cp_dustbowl"],server.data["dir"]
 
+def do_stop(server,j):
+  screen.send_to_server(server.name,"\nquit\n")
 
-  
-
+def status(server,verbose):
+  pass
 

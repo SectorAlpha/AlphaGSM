@@ -93,7 +93,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
       inp=input("Where would you like to install the tf2 server: ["+dir+"] ").strip()
       if inp!="":
         dir=inp
-  server.data["dir"]=dir
+  server.data["dir"]=os.path.join(dir, "") # guarentees the inclusion of trailing slashes.
 
   # if exe_name is not asigned, use the function default one
   if not "exe_name" in server.data:
@@ -115,42 +115,20 @@ def doinstall(server):
 
   steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
 
+
+
 def get_start_command(server):
 # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
-# interestingly, this method does not work yet
-# but this method does
-# screen -S server2 -dmS /home/ben/tf2/srcds_run -game tf -port 27015 +maxplayers 32 +map cp_dustbowl
+  exe_name = server.data["exe_name"]
+  if not os.path.isfile(server.data["dir"] + exe_name):
+    ServerError("Executable file not found")
 
-
-  return [server.data["exe_name"],"-game","tf","-port",str(server.data["port"]),"+maxplayers","16","+map","cp_dustbowl"],server.data["dir"]
+  if exe_name[:2] != "./":
+    exe_name = "./" + exe_name
+  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers","16","+map","cp_dustbowl"],server.data["dir"]
 
 def do_stop(server,j):
-  screen.send_to_server(server.name,"\nstop\n")
-
-def stop(self,*args,**kwargs):
-  """Stop the server. If the server can't be stopped even after multiple attempts then raises a ServerError"""
-  if not screen.check_screen_exists(self.name):
-    raise ServerError("Error: Can't stop a server that isn't running")
-  jmax=5
-  try:
-    jmax=min(jmax,self.module.max_stop_wait)
-  except AttributeError:
-    pass
-  print("Will try and stop server for "+str(jmax)+" minutes")
-  for j in range(jmax):
-    self.module.do_stop(self,j,*args,**kwargs)
-    for i in range(6):
-      if not screen.check_screen_exists(self.name):
-        return # session doesn't exist so success
-      time.sleep(10)
-    if not screen.check_screen_exists(self.name):
-      return
-    print("Server isn't stopping after "+str(j+1)+" minutes")
-  print("Killing Server")
-  screen.send_to_screen(self.name,["stop"])
-  time.sleep(1)
-  if screen.check_screen_exists(self.name):
-    raise ServerError("Error can't kill server")
+  screen.send_to_server(server.name,"\nquit\n")
 
 def status(server,verbose):
   pass
