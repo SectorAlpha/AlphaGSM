@@ -30,7 +30,7 @@ def install_steamcmd():
 
   if not os.path.isfile(STEAMCMD_EXE):
     # if steamcmd files do not exist, download it
-    urlextra.url_download(STEAMCMD_DIR,(STEAMCMD_IRL,"steamcmd_linux.tar.gz","tar"))
+    urlextra.download(STEAMCMD_DIR,(STEAMCMD_IRL,"steamcmd_linux.tar.gz","tar.gz"))
 
 
 def download(path,args):
