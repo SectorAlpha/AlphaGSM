@@ -17,7 +17,7 @@ def make_empty_file(file_path):
     else:  # Something unexpected went wrong so reraise the exception.
         raise OSError
   else:  # No exception, so the file must have been created successfully.
-    os.fdopen(file_handle, 'w')
+    os.open(file_handle, 'w')
     os.close(file_handle)
     
 
