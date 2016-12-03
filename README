@@ -33,6 +33,8 @@ Dependencies
 SteamCMD dependencies
 
   lib32gcc1 or libstdc++ or libstdc++.i686 
+
+  e.g ubuntu, ib32stdc++6
   
 for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
 see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.

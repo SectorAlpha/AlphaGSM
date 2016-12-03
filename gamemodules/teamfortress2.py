@@ -19,12 +19,16 @@ import utils.steamcmd as steamcmd
 steam_app_id = 232250
 steam_anonymous_login_possible = True
 
-commands=()
-command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),))}
+commands=("update","restart")
+command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),)),
+		"update":CmdSpec(optionalarguments=(ArgSpec("RESTART","Type in the argument restart to start the server upon update",str),)),
+		"restart":CmdSpec()}
 
 # required still
-command_descriptions={}
-command_functions={} # will have elements added as the functions are defined
+command_descriptions={"update": "Updates the game server to the latest version.",
+			"restart": "Restarts the game server without killing the process."}
+
+
 
 # example tf2 runscript ./srcds_run -game tf -port 27015 +maxplayers 32 +map cp_dustbowl"
 
@@ -116,6 +120,21 @@ def doinstall(server):
   steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
 
 
+def restart(server):
+  server.stop()
+  server.start()
+
+def update(server,restart="no"):
+  try:
+     server.stop()
+  except:
+     print("Server has probably already stopped, updating")
+  steamcmd.download(server.data["dir"],steam_app_id,steam_anonymous_login_possible,validate=False)
+  print("Server up to date")
+  if restart == "restart":
+    print("Starting the server up")
+    server.start()
+  
 
 def get_start_command(server):
 # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
@@ -184,5 +203,6 @@ def status(server,verbose):
 
 
   
-
+# required, must be defined to allow functions listed below which are not in the defaults to be used
+command_functions={"update":update,"restart":restart} # will have elements added as the functions are defined
 

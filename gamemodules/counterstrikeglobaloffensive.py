@@ -19,8 +19,15 @@ import utils.steamcmd as steamcmd
 steam_app_id = 740
 steam_anonymous_login_possible = True
 
-commands=()
-command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),))}
+commands=("update","restart")
+command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),)),
+		"update":CmdSpec(optionalarguments=(ArgSpec("RESTART","Type in the argument restart to start the server upon update",str),)),
+		"restart":CmdSpec()}
+
+# required still
+command_descriptions={"update": "Updates the game server to the latest version.",
+			"restart": "Restarts the game server without killing the process."}
+
 
 # required still
 command_descriptions={}
@@ -114,15 +121,33 @@ def doinstall(server):
   steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
 
 
+def restart(server):
+  server.stop()
+  server.start()
+
+def update(server,restart="no"):
+  try:
+     server.stop()
+  except:
+     print("Server has probably already stopped, updating")
+  steamcmd.download(server.data["dir"],steam_app_id,steam_anonymous_login_possible,validate=False)
+  print("Server up to date")
+  if restart == "restart":
+    print("Starting the server up")
+    server.start()
+  
+
 
 def get_start_command(server):
+  # sample start command 
+  # ./srcds_run -game csgo -console -usercon +game_type 0 +game_mode 0 +mapgroup mg_active +map de_dust2 -maxplayers 30
   exe_name = server.data["exe_name"]
   if not os.path.isfile(server.data["dir"] + exe_name):
     ServerError("Executable file not found")
 
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
-  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers","16","+map","cp_dustbowl"],server.data["dir"]
+  return [exe_name,"-game","csgo","-console","-usercon","+game_type","0","+game_mode","0","-port",str(server.data["port"]),"+mapgroup","mg_active","+map","de_dust2","-maxplayers","16"],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")
@@ -130,3 +155,5 @@ def do_stop(server,j):
 def status(server,verbose):
   pass
 
+# required, must be defined to allow functions listed below which are not in the defaults to be used
+command_functions={"update":update,"restart":restart} # will have elements added as the functions are defined

@@ -19,13 +19,9 @@ STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.
 def install_steamcmd():
 
   # if steamcmd dir does not exist, download it
-  print (os.path.isdir( "/home/" + pwd.getpwuid(os.getuid()).pw_name + "/.local/share/Steam/"))
-  print ("/home/" + pwd.getpwuid(os.getuid()).pw_name + "/.local/share/Steam/")
-  print(STEAMCMD_DIR)
   if not os.path.exists(STEAMCMD_DIR):
     os.makedirs(STEAMCMD_DIR)
 
-  print(STEAMCMD_EXE)
   if not os.path.isfile(STEAMCMD_EXE):
     # if steamcmd files do not exist, download it
     url_download(STEAMCMD_DIR,(STEAMCMD_URL,"steamcmd_linux.tar.gz","tar"))
