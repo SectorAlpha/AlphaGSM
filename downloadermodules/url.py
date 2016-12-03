@@ -30,7 +30,6 @@ def download(path,args):
       raise DownloaderError("Unknown decompression type")
     if decompress in ["gz"]: # compression without filenames
       targetname+="."+decompress
-
   try:
     fname,headers=urllib.request.urlretrieve(url,filename=targetname,reporthook=reporthook)
   except urllib.error.URLError as ex:
