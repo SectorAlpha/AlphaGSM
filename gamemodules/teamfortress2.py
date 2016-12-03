@@ -14,6 +14,7 @@ from utils import backups
 from utils import updatefs
 import random
 
+from utils.fileutils import make_empty_file
 import utils.steamcmd as steamcmd
 
 steam_app_id = 232250
