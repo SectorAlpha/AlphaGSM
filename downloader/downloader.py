@@ -110,7 +110,7 @@ def getpath(module,args):
   path=getpathifexists(module,args)
   if path is not None:
     return path
-
+  
   if os.getuid() != pwd.getpwnam(USER).pw_uid:
     import subprocess as sp
     try:

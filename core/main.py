@@ -311,5 +311,3 @@ The available commands are:
         help(name,server,file=file)
         return
       cmdparse.longhelp(cmd,server.get_command_description(cmd),server.get_command_args(cmd))
-
-
