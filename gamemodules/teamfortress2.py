@@ -21,8 +21,8 @@ steam_anonymous_login_possible = True
 
 commands=("update","restart")
 command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),)),
-		"update":CmdSpec(optionalarguments=(ArgSpec("VALIDATE","Type in the argument validate to start the server upon update",str), \
-				ArgSpec("RESTART","Type in the argument restart to start the server upon update",str),)),
+		"update":CmdSpec(options=(OptSpec("v",["validate"],"Validate the server files after updating",'validate',None,True), \
+				OptSpec("r",["restart"],"Restarts the server upon updating",'restart',None,True),)),
 		"restart":CmdSpec()}
 
 # required still
@@ -125,18 +125,14 @@ def restart(server):
   server.stop()
   server.start()
 
-def update(server,validate="no",restart="no"):
+def update(server,validate=False,restart=False):
   try:
      server.stop()
   except:
      print("Server has probably already stopped, updating")
-  if validate=="validate":
-     val_bool = True
-  else:
-     val_bool = False
-  steamcmd.download(server.data["dir"],steam_app_id,steam_anonymous_login_possible,validate=val_bool)
+  steamcmd.download(server.data["dir"],steam_app_id,steam_anonymous_login_possible,validate=validate)
   print("Server up to date")
-  if restart == "restart":
+  if restart == True:
     print("Starting the server up")
     server.start()
   
