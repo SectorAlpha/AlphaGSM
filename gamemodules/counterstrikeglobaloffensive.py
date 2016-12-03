@@ -14,6 +14,8 @@ from utils import backups
 from utils import updatefs
 import random
 
+from utils.fileutils import make_empty_file
+
 import utils.steamcmd as steamcmd
 
 steam_app_id = 740
@@ -34,6 +36,25 @@ command_descriptions={"update": "Updates the game server to the latest version."
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
+
+_confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
+def updateconfig(filename,settings):
+  lines=[]
+  if os.path.isfile(filename):
+    settings=settings.copy()
+    with open(filename,"r") as f:
+      for l in f:
+        m=_confpat.match(l)
+        if m is not None and m.group(1) in settings:
+          lines.append(m.expand(r"\1 "+settings[m.group(1)]+r"\3"))
+          del settings[m.group(1)]
+        else:
+          lines.append(l)
+  for k,v in settings.items():
+    lines.append(k+" "+v+"\n")
+  print(lines)
+  with open(filename,"w") as f:
+    f.write("".join(lines))
 
 def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
   """
@@ -99,7 +120,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
       inp=input("Where would you like to install the tf2 server: ["+dir+"] ").strip()
       if inp!="":
         dir=inp
-  server.data["dir"]=dir
+  server.data["dir"]=os.path.join(dir, "") # guarentees the inclusion of trailing slashes.
 
   # if exe_name is not asigned, use the function default one
   if not "exe_name" in server.data:
@@ -110,9 +131,17 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
   
 
 def install(server):
-  doinstall(server)
+#  doinstall(server)
   #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
+  # create config file
+  server_cfg = server.data["dir"] + "csgo/cfg/" + "server.cfg"
+  cfg_exists = os.path.isfile(server_cfg)
+  if cfg_exists == False:
+    make_empty_file(server_cfg)
+  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
+    # make the config file
+    
 
 def doinstall(server):
   """ Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """

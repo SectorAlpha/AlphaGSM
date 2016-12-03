@@ -112,6 +112,9 @@ def install(server):
   doinstall(server)
   #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
+  # create config file
+  
+
 
 def doinstall(server):
   """ Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
