@@ -107,7 +107,6 @@ def getpath(module,args):
   """Get the path for a download, downloading it if it isn't already downloaded.
      
      Can be run as any user and will change user to the download systems owner if it needs downloading"""
-
   path=getpathifexists(module,args)
   if path is not None:
     return path

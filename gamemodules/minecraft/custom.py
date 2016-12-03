@@ -70,7 +70,7 @@ def configure(server,ask,port=None,dir=None,*,eula=None,exe_name="minecraft_serv
     server: the server object
     ask: whether to request details (e.g port) from the user
     dir: the server installation dir
-    *: other keyword arguments
+    *: All arguments after this are keyword only arguments
     eula: whether the user agrees to sign the eula
     exe_name: the executable name of the server
   """

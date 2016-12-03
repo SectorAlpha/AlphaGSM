@@ -16,8 +16,8 @@ def make_empty_file(file_path):
     else:  # Something unexpected went wrong so reraise the exception.
         raise
   else:  # No exception, so the file must have been created successfully.
-    with os.fdopen(file_handle, 'w') as file_obj:
-        # Using `os.fdopen` converts the handle to an object that acts like a
-        # regular Python file object, and the `with` context manager means the
-        # file will be automatically closed when we're done with it.
-        file_obj.write("")
+    # Using `os.fdopen` converts the handle to an object that acts like a
+    # regular Python file object, and the `with` context manager means the
+    # file will be automatically closed when we're done with it.
+    os.fdopen(file_handle, 'w')
+

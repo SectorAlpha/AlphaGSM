@@ -30,6 +30,11 @@ def rotatelogs(dirn,name):
   os.rename(os.path.join(dirn,name),os.path.join(dirn,name+".0"))
 
 def start_screen(name,command,cwd=None):
+  """
+  Function to start a screen session.
+  Note that this will not throw an exception if the command to be run 
+  inside the screen session is not valid or the session can't be started for any reason.
+  """
   if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):
     try:
       os.makedirs(os.path.expanduser("~/.alphagsm/logs"))
@@ -48,8 +53,7 @@ def start_screen(name,command,cwd=None):
   except OSError as ex:
     raise ScreenError("Error executing screen: "+str(ex))
   else:
-    # returning
-    # becareful, if screen fails for some reason, the error won't necessarially be caught
+    # returning.
     return out
 
 def send_to_screen(name,command):

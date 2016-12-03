@@ -65,7 +65,6 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
     ask: whether to request details (e.g port) from the user
     dir: the server installation dir
     *: other keyword arguments
-    eula: whether the user agrees to sign the eula
     exe_name: the executable name of the server
   """
 
