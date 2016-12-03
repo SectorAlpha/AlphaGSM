@@ -147,7 +147,9 @@ def install(server):
   cfg_exists = os.path.isfile(server_cfg)
   if cfg_exists == False:
     make_empty_file(server_cfg)
-  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
+
+# technically this command is not needed, but leaving it commented as an example
+#  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
     
 
 def doinstall(server):

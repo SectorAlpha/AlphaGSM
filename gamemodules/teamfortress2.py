@@ -140,8 +140,9 @@ def install(server):
   cfg_exists = os.path.isfile(server_cfg)
   if cfg_exists == False:
     make_empty_file(server_cfg)
-  updateconfig(server_cfg,{"hostport":str(server.data["port"])})  
 
+# technically this command is not needed since the chosen port is assigned in the runscript, but leaving it commented as an example
+#  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
 
 def doinstall(server):
   """ Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
