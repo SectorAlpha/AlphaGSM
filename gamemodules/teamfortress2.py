@@ -30,8 +30,24 @@ command_descriptions={"update": "Updates the game server to the latest version."
 			"restart": "Restarts the game server without killing the process."}
 
 
-
-# example tf2 runscript ./srcds_run -game tf -port 27015 +maxplayers 32 +map cp_dustbowl"
+_confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
+def updateconfig(filename,settings):
+  lines=[]
+  if os.path.isfile(filename):
+    settings=settings.copy()
+    with open(filename,"r") as f:
+      for l in f:
+        m=_confpat.match(l)
+        if m is not None and m.group(1) in settings:
+          lines.append(m.expand(r"\1 "+settings[m.group(1)]+r"\3"))
+          del settings[m.group(1)]
+        else:
+          lines.append(l)
+  for k,v in settings.items():
+    lines.append(k+" "+v+"\n")
+  print(lines)
+  with open(filename,"w") as f:
+    f.write("".join(lines))
 
 # Team Fortress 2 is probably the most simple example of a steamcmd game
 def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
@@ -50,6 +66,11 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
 
   server.data["Steam_AppID"] = steam_app_id
   server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
+
+  # defaults
+
+  server.data["startmap"] = "cp_dustbowl"
+  server.data["maxplayers"] = "16"
 
   # do we have backup data already? if not initialise the dictionary
   if 'backup' not in server.data:
@@ -75,7 +96,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
     port=server.data["port"]
   if ask:
     while True:
-      inp=input("Please specify the port to use for this server: "+(str(port) if port is not None else "")).strip()
+      inp=input("Please specify the port to use for this server: "+("(current=" +str(port) + ") " if port is not None else "")).strip()
       if port is not None and inp == "":
         break
       try:
@@ -102,7 +123,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
 
   # if exe_name is not asigned, use the function default one
   if not "exe_name" in server.data:
-    server.data["exe_name"] = "srcds_linux"
+    server.data["exe_name"] = "srcds_run"
   server.data.save()
 
   return (),{}
@@ -113,7 +134,12 @@ def install(server):
   #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
   # create config file
-  
+  # create config file
+  server_cfg = server.data["dir"] + "tf/cfg/" + "server.cfg"
+  cfg_exists = os.path.isfile(server_cfg)
+  if cfg_exists == False:
+    make_empty_file(server_cfg)
+  updateconfig(server_cfg,{"hostport":str(server.data["port"])})  
 
 
 def doinstall(server):
@@ -148,7 +174,7 @@ def get_start_command(server):
 
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
-  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers","16","+map","cp_dustbowl"],server.data["dir"]
+  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+map",str(server.data["startmap"])],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")

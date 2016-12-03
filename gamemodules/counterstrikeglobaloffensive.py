@@ -73,6 +73,14 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
   server.data["Steam_AppID"] = steam_app_id
   server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
 
+  # set some defaults
+  server.data["mapgroup"] = "mg_active"
+  server.data["startmap"] = "de_dust2"
+  server.data["maxplayers"] = "16"
+  server.data["gametype"] = "0"
+  server.data["gamemode"] = "0"
+  
+
   # do we have backup data already? if not initialise the dictionary
   if 'backup' not in server.data:
     server.data['backup']={}
@@ -97,7 +105,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
     port=server.data["port"]
   if ask:
     while True:
-      inp=input("Please specify the port to use for this server: "+(str(port) if port is not None else "")).strip()
+      inp=input("Please specify the port to use for this server: "+("(current=" +str(port) + ") " if port is not None else "")).strip()
       if port is not None and inp == "":
         break
       try:
@@ -131,7 +139,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
   
 
 def install(server):
-#  doinstall(server)
+  doinstall(server)
   #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
   # create config file
@@ -140,7 +148,6 @@ def install(server):
   if cfg_exists == False:
     make_empty_file(server_cfg)
   updateconfig(server_cfg,{"hostport":str(server.data["port"])})
-    # make the config file
     
 
 def doinstall(server):
@@ -165,8 +172,6 @@ def update(server,validate=False,restart=False):
   if restart == True:
     print("Starting the server up")
     server.start()
-  
-
 
 def get_start_command(server):
   # sample start command 
@@ -177,7 +182,7 @@ def get_start_command(server):
 
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
-  return [exe_name,"-game","csgo","-console","-usercon","+game_type","0","+game_mode","0","-port",str(server.data["port"]),"+mapgroup","mg_active","+map","de_dust2","-maxplayers","16"],server.data["dir"]
+  return [exe_name,"-game","csgo","-console","-usercon","+game_type",str(server.data["gametype"]),"+game_mode",str(server.data["gamemode"]),"-port",str(server.data["port"]),"+mapgroup",str(server.data["mapgroup"]),"+map",str(server.data["startmap"]),"-maxplayers",str(server.data["maxplayers"])],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")
