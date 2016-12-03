@@ -50,7 +50,7 @@ Example of setting up a CS:GO server
   alphagsm mycsgo setup
   alphagsm mycsgo start
 
-Example of updating the CS:GO server (A specific command for updating the server files)
+Example of updating the CS:GO server (A specific command for updating the server files). These commands are not specific to all game servers (e.g Minecraft).
 
   alphagsm mycsgo update
   alphagsm mycsgo update -v -r
