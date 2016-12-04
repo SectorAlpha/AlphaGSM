@@ -4,7 +4,7 @@ import re
 from utils.settings import settings
 
 SESSIONTAG=settings.system.getsection('screen').get('sessiontag','AlphaGSM#')
-LOGPATH=os.path.expanduser(settings.user.getsection('screen').get('screenlog_path',"~/.alphagsm/conf"))
+LOGPATH=os.path.expanduser(settings.user.getsection('screen').get('screenlog_path',"~/.alphagsm/logs"))
 try:
   KEEPLOGS=int(setting.user.getsection('screen').get('keeplogs',5))
 except:
@@ -41,12 +41,12 @@ def start_screen(name,command,cwd=None):
   If you need to ensure the session started successfully try waiting a short amount 
   of time (1s say) and then check if the screen session exists.
   """
-  if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):
+  if not os.path.isdir(os.path.expanduser(LOGPATH)):
     try:
-      os.makedirs(os.path.expanduser("~/.alphagsm/logs"))
+      os.makedirs(os.path.expanduser(LOGPATH))
     except OSError as ex:
       raise ScreenError("Log dir doesn't exist and can't create it",ex.args)
-  rotatelogs(os.path.expanduser("~./alphagsm/logs"),SESSIONTAG+name+".log")
+  rotatelogs(os.path.expanduser(LOGPATH),SESSIONTAG+name+".log")
   extraargs={}
   if cwd is not None:
     extraargs["cwd"]=cwd
