@@ -4,6 +4,7 @@ import re
 from utils.settings import settings
 
 SESSIONTAG=settings.system.getsection('screen').get('sessiontag','AlphaGSM#')
+LOGPATH=os.path.expanduser(settings.user.getsection('screen').get('screenlog_path',"~/.alphagsm/conf"))
 try:
   KEEPLOGS=int(setting.user.getsection('screen').get('keeplogs',5))
 except:

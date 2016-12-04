@@ -16,7 +16,8 @@
 # timestamptformat = %Y.%m.%d %H:%M:%S.%f
 
 [downloader]
-## REQUIRED system - The user that owns the downloader system
+## system - The user that owns the downloader system, default is the user running the program,
+## Note for multiuser setups, a user should be defined to benifit from a shared environment.
 # user = alphagsm_user
 ## system the location of the downloader database file
 ## Note the default is relative to the home directory of the user specified above
@@ -55,6 +56,8 @@
 ## used by other users or accidentally as alphagsm assumes that all sessions that start with the tag
 ## are for it to manage
 # sessiontag = AlphaGSM#
+## system - the path to store the screen logs
+#screenlog_path = /home/alphagsm_user/.alphagsm/conf
 ## user - how many log files to keep for each server
 # keeplogs = 5
 
