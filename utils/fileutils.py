@@ -15,7 +15,7 @@ def make_empty_file(file_path):
     # If the file already exists, then this is not a problem
     # Otherwise something unexpected went wrong, so reraise the previous exception
     if e.errno != errno.EEXIST: raise  
-    # The file was never opened due to errno.EEXIST being true.
+    # The file was never opened since os.open threw an exception
   else:  
     # No exception, so the file must have been created successfully.
     # Finally, close the file.
