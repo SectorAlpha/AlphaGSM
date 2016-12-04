@@ -32,8 +32,12 @@ def rotatelogs(dirn,name):
 def start_screen(name,command,cwd=None):
   """
   Function to start a screen session.
-  Note that this will not throw an exception if the command to be run 
+  Note that this will throw an exception if the command to be run 
   inside the screen session is not valid or the session can't be started for any reason.
+  
+  Additionally, if a command is valid but a program within the screen either
+  fails to start or ends quickly then the problem lies with either the program
+  or how the executable is called. Check the screen logs for a traceback.
   """
   if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):
     try:

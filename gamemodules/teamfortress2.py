@@ -170,9 +170,9 @@ def update(server,validate=False,restart=False):
 def get_start_command(server):
 # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
   exe_name = server.data["exe_name"]
+
   if not os.path.isfile(server.data["dir"] + exe_name):
     ServerError("Executable file not found")
-
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
   return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+map",str(server.data["startmap"])],server.data["dir"]
