@@ -12,13 +12,11 @@ def make_empty_file(file_path):
   try:
     file_handle = os.open(file_path, flags)
   except OSError as e:
-    if e.errno == errno.EEXIST:  # Failed as the file already exists.
-        # no need to close the file handle
-        # It is not opened due to errno.EEXIST being true
-        pass
-    else:  
-        # Something unexpected went wrong so reraise the previous exception.
-        raise
+    # If the file already exists, then this is not a problem
+    # Otherwise something unexpected went wrong, so reraise the previous exception
+    if e.errno != errno.EEXIST: raise  
+    # no need to close the file handle since it was not opened due to errno.EEXIST being true
+    pass
   else:  
     # No exception, so the file must have been created successfully.
     # Finally, close the file.
