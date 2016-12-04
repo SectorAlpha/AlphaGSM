@@ -32,7 +32,7 @@ def updateconfig(filename,settings):
   with open(filename,"w") as f:
     f.write("".join(lines))
 
-# required turple
+# required tuple
 commands=("op","deop")
 
 # required
