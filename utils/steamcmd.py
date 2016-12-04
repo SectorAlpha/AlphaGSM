@@ -24,7 +24,7 @@ def install_steamcmd():
 
   if not os.path.isfile(STEAMCMD_EXE):
     # if steamcmd files do not exist, download it
-    url_download(STEAMCMD_DIR,(STEAMCMD_URL,"steamcmd_linux.tar.gz","tar"))
+    url_download(STEAMCMD_DIR,(STEAMCMD_URL,"steamcmd_linux.tar.gz","tar.gz"))
 
 
 def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
