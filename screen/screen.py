@@ -31,13 +31,14 @@ def rotatelogs(dirn,name):
 
 def start_screen(name,command,cwd=None):
   """
-  Function to start a screen session.
-  Note that this will throw an exception if the command to be run 
-  inside the screen session is not valid or the session can't be started for any reason.
-  
-  Additionally, if a command is valid but a program within the screen either
-  fails to start or ends quickly then the problem lies with either the program
-  or how the executable is called. Check the screen logs for a traceback.
+  Function to start a screen session. 
+  Note: this will throw if for any reason it can't start the request screen session 
+    (it already exists or screen is unavailable or something) but will succeed 
+    even if the program to run inside of screen is invalid in which case the session 
+    will immediately shut down again.
+
+  If you need to ensure the session started successfully try waiting a short amount 
+  of time (1s say) and then check if the screen session exists.
   """
   if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):
     try:
