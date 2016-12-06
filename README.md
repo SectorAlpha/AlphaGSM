@@ -53,7 +53,7 @@ SteamCMD dependencies
 for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
 see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
 
-# Example use
+# Examples
 
 Example of setting up of a Minecraft vanilla server
 
