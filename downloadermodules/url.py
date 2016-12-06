@@ -26,7 +26,7 @@ def download(path,args):
     raise DownloaderError("Too many arguments")
   elif len(args)==1:
     decompress=args[0]
-    if decompress not in ["zip","tar","gz","tgz"]:
+    if decompress not in ["zip","tar","gz","tgz","tar.gz"]:
       raise DownloaderError("Unknown decompression type")
     if decompress in ["gz"]: # compression without filenames
       targetname+="."+decompress
@@ -39,7 +39,7 @@ def download(path,args):
     ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
     if ret!=0:
       raise DownloaderError("Error extracting download")
-  elif decompress == "tar":
+  elif decompress == "tar" or decompress == "tar.gz":
     ret=sp.call(["tar","-xf",targetname,"-C",path],stdout=sys.stderr)
     if ret!=0:
       raise DownloaderError("Error extracting download")

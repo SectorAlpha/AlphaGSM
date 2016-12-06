@@ -142,6 +142,8 @@ def runone(name,server,cmd,args):
       program.PATH=os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),"alphagsm")
       try:
         server.run_command(cmd,*args,**opts)
+        # developers, be sure to check if command_functions dictionary has been filled
+        # otherwise the error called here will make no sense
       except ServerError as ex:
         print("Error running Command",file=stderr)
         printhandledex(ex)
@@ -309,5 +311,3 @@ The available commands are:
         help(name,server,file=file)
         return
       cmdparse.longhelp(cmd,server.get_command_description(cmd),server.get_command_args(cmd))
-   
-    

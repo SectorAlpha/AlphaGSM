@@ -32,8 +32,14 @@ def updateconfig(filename,settings):
   with open(filename,"w") as f:
     f.write("".join(lines))
 
-
+# required tuple
 commands=("op","deop")
+
+# required
+# dictionary command_args 
+#   key = command name
+#   value = CmdSpec(optional argument tuple=(Argument, description, type), 
+#      options=(Optspec( shortform, longform, description, keyword to store option, default value, store value if true, else run function))
 command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),),
                               options=(OptSpec("l",["eula"],"Mark the eula as read","eula",None,True),)),
               "op":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to op",str),),repeatable=True),
@@ -45,6 +51,8 @@ command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for th
                                        OptSpec("d",["deactivate"],"Deactivate regular backups. Equivelent to --activate none",'activate',None,'none'),
                                        OptSpec("w",["when"],"When should the regular backups take place. Valid format is 'hour[:minute][ DATE]' where DATE is the day of the week (3 letter names accepted) for "
                                            "weekly, the day of the month for monthly, the day and month (3 letter names accepted for month) for yearly backups and not allowed for daily backups",'when','WHEN',str)))}
+
+# required
 command_descriptions={'set':"The available keys to set are:\texe_name: (1 value) the name of the jar file to execute\n\tbackup.profiles.PROFILENAME.targets: (many values) the "
                             "targets to include in a backup using the specified profile\n\tbackup.profiles.PROFILENAME.exclusions: (many values) patterns that match files to "
                             "exclude from a backup using the specified profile\n\tbackup.profiles.PROFILENAME.base: (one value) the name of a profile that this profile extends\n\t"
@@ -55,20 +63,37 @@ command_descriptions={'set':"The available keys to set are:\texe_name: (1 value)
 command_functions={} # will have elements added as the functions are defined
 
 def configure(server,ask,port=None,dir=None,*,eula=None,exe_name="minecraft_server.jar"):
+  """
+  This function creates the configuration details for the minecraft server
+  
+  inputs:
+    server: the server object
+    ask: whether to request details (e.g port) from the user
+    dir: the server installation dir
+    *: All arguments after this are keyword only arguments
+    eula: whether the user agrees to sign the eula
+    exe_name: the executable name of the server
+  """
+  # do we have backup data already? if not initialise the dictionary
   if 'backup' not in server.data:
     server.data['backup']={}
   if 'profiles' not in server.data['backup']:
     server.data['backup']['profiles']={}
+  # if no backup profile exists, create a basic one
   if len(server.data['backup']['profiles'])==0:
+    # essentially, the world, server properties and the root level json files are the best ones to back up. This can be configured though in the backup setup
     server.data['backup']['profiles']['default']={'targets':['world','server.properties','whitelist.json','ops.json','banned-ips.json','banned-players.json']}
   if 'schedule' not in server.data['backup']:
     server.data['backup']['schedule']=[]
   if len(server.data['backup']['schedule'])==0:
+    # if default does not exist, create it
     profile='default'
     if profile not in server.data['backup']['profiles']:
       profile=next(iter(server.data['backup']['profiles']))
+    # set the default to never back up
     server.data['backup']['schedule'].append((profile,0,'days'))
   
+  # assign the port to the server
   if port is None and "port" in server.data:
     port=server.data["port"]
   if ask:
@@ -86,29 +111,38 @@ def configure(server,ask,port=None,dir=None,*,eula=None,exe_name="minecraft_serv
     raise ValueError("No Port")
   server.data["port"]=port
 
+  # assign the installation directory
   if dir is None:
     if "dir" in server.data and server.data["dir"] is not None:
       dir=server.data["dir"]
     else:
+      # if no directory is assigned, set it to the users home area
       dir=os.path.expanduser(os.path.join("~",server.name))
     if ask:
+      # set a custom location to install the directory?
       inp=input("Where would you like to install the minecraft server: ["+dir+"] ").strip()
       if inp!="":
         dir=inp
   server.data["dir"]=dir
 
+  # lets sign the eula
   if eula is None:
     if ask:
       eula=input("Please confirm you have read the eula (y/yes or n/no): ").strip().lower() in ("y","yes")
     else:
       eula=False
 
+  # if exe_name is not asigned, use the function default one
   if not "exe_name" in server.data:
     server.data["exe_name"] = exe_name
   server.data.save()
 
+  # required since we are returning args and kwargs.
+  # essentially the default version of this line would be return (),{}
   return (),{"eula":eula}
 
+# install requires the server object. you also feed in the arguments (*) and the kwargs {} from the previous return statement
+# as seen at the end of the configure function.
 def install(server,*,eula=False):
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])

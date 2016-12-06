@@ -30,10 +30,32 @@ Dependencies
   python3-crontab
   sudo (for multi user/shared downloads support)
 
+SteamCMD dependencies
+
+  lib32gcc1 or libstdc++ or libstdc++.i686 
+
+  e.g ubuntu, ib32stdc++6
+  
+for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
+see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
+
 Example of setting up of a Minecraft vanilla server
 
   alphagsm mymcserver create minecraft setup
   alphagsm mymcserver start
+
+Example of setting up a CS:GO server
+
+  alphagsm mycsgo create csgo
+  alphagsm mycsgo setup
+  alphagsm mycsgo start
+
+Example of updating the CS:GO server (A specific command for updating the server files). These commands are not specific to all game servers (e.g Minecraft).
+
+  alphagsm mycsgo update
+  alphagsm mycsgo update -v -r
+
+Where the -v flag requests the validation of files, and -r will restart your server once the update has been done.
 
 This will create a new minecraft server called mymcserver and set it up
 asking you for which version and port to use and any other info it needs.
