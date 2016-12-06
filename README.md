@@ -25,11 +25,11 @@ pydoc output, especially for the modules "server.gamemodules" and
 
 ## Community
 
-IRC: sasha.sector-alpha.net, channel #sector-alpha
-WebIRC: http://webirc.sector-alpha.net/
-Discord: https://discordapp.com/invite/p5PtHat
-Twitter: https://twitter.com/sectoralpha
-Steam: http://steamcommunity.com/groups/sector-alpha
+* IRC: sasha.sector-alpha.net, channel #sector-alpha
+* WebIRC: http://webirc.sector-alpha.net/
+* Discord: https://discordapp.com/invite/p5PtHat
+* Twitter: https://twitter.com/sectoralpha
+* Steam: http://steamcommunity.com/groups/sector-alpha
 
 The plans are also being discussed on the sector alpha wiki at
 http://wiki.sector-alpha.net/index.php?title=AlphaGSM
