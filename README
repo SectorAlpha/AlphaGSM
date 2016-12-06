@@ -1,3 +1,5 @@
+# AlphaGSM
+
 This is the Sector Alpha Game Server Manager.
 
 This tool runs game servers using screen to manage the sessions and provides
@@ -5,7 +7,9 @@ tools to control them in a consistent way and to possibly many servers at once.
 This also contains code to share downloads and if possible the actual files
 between multiple installs.
 
-For changing users sudo is used so all protected permissions are controlled
+## Setup
+
+For changing users on multi-user setups, sudo is used so all protected permissions are controlled
 using sudo.
 
 The public script is alphagsm. This can either by run using it's full or relative
@@ -19,10 +23,20 @@ For help editing and contributing see the documentation in the source code or th
 pydoc output, especially for the modules "server.gamemodules" and
 "downloader.downloadermodules".
 
+## Community
+
+IRC: sasha.sector-alpha.net, channel #sector-alpha
+WebIRC: http://webirc.sector-alpha.net/
+Discord: https://discordapp.com/invite/p5PtHat
+Twitter: https://twitter.com/sectoralpha
+Steam: http://steamcommunity.com/groups/sector-alpha
+
 The plans are also being discussed on the sector alpha wiki at
 http://wiki.sector-alpha.net/index.php?title=AlphaGSM
 
-Dependencies
+## Dependencies
+
+Main dependancies
 
   python3
   screen
@@ -38,6 +52,8 @@ SteamCMD dependencies
   
 for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
 see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
+
+# Example use
 
 Example of setting up of a Minecraft vanilla server
 
