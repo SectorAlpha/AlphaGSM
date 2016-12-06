@@ -16,7 +16,7 @@ from collections.abc import Mapping as MappingABC
 
 __all__=["Server","ServerError"]
 
-DATAPATH=os.path.expanduser(settings.user.getsection('server').get('datapath',"~/.alphagsm/conf"))
+DATAPATH=os.path.expanduser(settings.user.getsection('server').get('datapath',os.path.join(settings.user.getsection('core',"~/.alphagsm"),"conf")))
 SERVERMODULEPACKAGE=settings.system.getsection('server').get('servermodulespackage',"gamemodules.")
 
 class ServerError(Exception):

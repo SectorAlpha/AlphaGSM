@@ -176,5 +176,10 @@ class Settings(object):
       settingspath=os.path.join(os.path.expanduser(self.system.getsection('core').get('userconf',"~/.alphagsm")),"alphagsm.conf")
       self._user=_loadsettings(settingspath,self.system)
       return self._user
+  def get(self,user):
+    if user:
+      return self.user
+    else:
+      return self.system
 
 settings=Settings()
