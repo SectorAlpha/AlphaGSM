@@ -1,0 +1,11 @@
+# Change Log
+All notable changes to this project will be documented in this file.
+
+## 0.2
+### Added
+ - Support for TF2 and CS:GO
+ - Support for SteamCMD
+
+## 0.1
+### Added
+ - Support for Minecraft
