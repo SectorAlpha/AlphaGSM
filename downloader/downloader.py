@@ -13,14 +13,23 @@ def expandcustomuser(path,user):
      return pwd.getpwnam(user).pw_dir + path[1:]
   return path
 
+
 # NONE OF THESE PATHS SHOULD BE ON A NFS!
 # If they are there may be race conditions and database corruption
 
+<<<<<<< HEAD
 RAW_USER = settings.system.downloader.get('user')
 USER_SET = RAW_USER != None
 USER=RAW_USER if USER_SET else pwd.getpwuid(os.getuid()).pw_name
 DB_PATH=expandcustomuser(settings.get(USER_SET).downloader.get('db_path') or os.path.join(settings.get(USER_SET).getsection("core").get("alphagsm_path","~/.alphagsm"),"downloads/downloads.txt"),USER)
 TARGET_PATH=expandcustomuser(settings.system.downloader.get('target_path') or os.path.join(settings.get(USER_SET).getsection("core").get("alphagsm_path","~/.alphagsm"),"downloads/downloads"),USER)
+=======
+RAW_USER = settings.downloader.get('user')
+USER_SET = USER != None
+USER=RAW_USER or pwd.getpwuid(os.getuid()).pw_name
+DB_PATH=expandcustomuser(settings.get(!USER_SET).downloader.get('db_path') or os.path.join(settings.get(!USER_SET).core.get("alphagsm_path","~/.alphagsm"),"downloads/downloads.txt"),USER)
+TARGET_PATH=expandcustomuse(settings.system.downloader.get('target_path') or os.path.join(settings.get(!USER_SET).core.get("alphagsm_path","~/.alphagsm"),"downloads/downloads")
+>>>>>>> cfc265b241a3665d68507cebfc61be3cade308c0
 
 DOWNLOADERS_PACKAGE = settings.system.downloader.get('downloaders_package',"downloadermodules.")
 UPDATE_SUFFIX=".new"
