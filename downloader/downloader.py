@@ -8,12 +8,19 @@ import pwd
 from urllib.parse import quote,unquote
 from utils.settings import settings
 
+def expandcustomuser(path,user):
+  if path[0:2] == "~/":
+     return pwd.getpwnam(user).pw_dir + path[1:]
+  return path
+
 # NONE OF THESE PATHS SHOULD BE ON A NFS!
 # If they are there may be race conditions and database corruption
 
-USER=settings.system.downloader.get('user') or pwd.getpwuid(os.getuid()).pw_name
-DB_PATH=settings.system.downloader.get('db_path') or os.path.join(pwd.getpwnam(USER).pw_dir,".alphagsm/downloads/downloads.txt")
-TARGET_PATH=settings.system.downloader.get('target_path') or os.path.join(pwd.getpwnam(USER).pw_dir,".alphagsm/downloads/downloads")
+RAW_USER = settings.system.downloader.get('user')
+USER_SET = RAW_USER != None
+USER=RAW_USER if USER_SET else pwd.getpwuid(os.getuid()).pw_name
+DB_PATH=expandcustomuser(settings.get(USER_SET).downloader.get('db_path') or os.path.join(settings.get(USER_SET).getsection("core").get("alphagsm_path","~/.alphagsm"),"downloads/downloads.txt"),USER)
+TARGET_PATH=expandcustomuser(settings.system.downloader.get('target_path') or os.path.join(settings.get(USER_SET).getsection("core").get("alphagsm_path","~/.alphagsm"),"downloads/downloads"),USER)
 
 DOWNLOADERS_PACKAGE = settings.system.downloader.get('downloaders_package',"downloadermodules.")
 UPDATE_SUFFIX=".new"
@@ -22,13 +29,13 @@ LOCK_SUFFIX=".lock"
 LOCK_PATH = DB_PATH+LOCK_SUFFIX
 UPDATE_PATH = DB_PATH+UPDATE_SUFFIX
 
-PARENTLEN=settings.system.downloader.getsection('pathgen').get('parentlen',1)
-PARENTCHARS=settings.system.downloader.getsection('pathgen').get('parentchars',"abcdefghijklmnopqrstuvxyz")
+PARENTLEN=settings.user.downloader.getsection('pathgen').get('parentlen',1)
+PARENTCHARS=settings.user.downloader.getsection('pathgen').get('parentchars',"abcdefghijklmnopqrstuvxyz")
 
-DIRLEN=settings.system.downloader.getsection('pathgen').get('dirlen',8)
-DIRCHARS=settings.system.downloader.getsection('pathgen').get('dirchars',"abcdefghijklmnopqrstuvwxyz0123456789_")
+DIRLEN=settings.user.downloader.getsection('pathgen').get('dirlen',8)
+DIRCHARS=settings.user.downloader.getsection('pathgen').get('dirchars',"abcdefghijklmnopqrstuvwxyz0123456789_")
 
-MAX_TRIES=settings.system.downloader.getsection('pathgen').get('maxtries',238328)
+MAX_TRIES=settings.user.downloader.getsection('pathgen').get('maxtries',238328)
 RETRYPARENT=MAX_TRIES//10
 
 __all__=["DownloaderError",'getpath','getpathifexists','main','getpaths','getargsforpath']

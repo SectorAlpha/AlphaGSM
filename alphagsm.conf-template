@@ -5,49 +5,71 @@
 # the code finds the new locations
 
 [core]
-## system - where should the user settings file be stored. The settings file is always called alphagsm.conf
-## can use ~ for the users home directory (this is always the right thing to do)
+## system - where should the user settings file be stored. The settings file is always called
+## alphagsm.conf. This should be a path starting with ~ otherwise all users will use the same
+## file.
 # userconf = ~/.alphagsm
+
+## user - where should all alphagsm files be placed by default. This is only used as a default
+## folder for other values which have their own options below. If set at system level should 
+## be a path starting with ~ as otherwise all users will share the same files.
+# alphagsm_path = ~/.alphagsm 
 
 [backup]
 ## user - where should the backups be stored relative to the game servers directory
 # directory = backup
+
 ## user - the format for the timestamp used in naming backup files
 # timestamptformat = %Y.%m.%d %H:%M:%S.%f
 
 [downloader]
-## REQUIRED system - The user that owns the downloader system
+## system - The user that owns the downloader system if not set will use the current use
+## and not share downloads
 # user = alphagsm_user
-## system the location of the downloader database file
-## Note the default is relative to the home directory of the user specified above
-# db_path = /home/alphagsm_user/.alphagsm/downloads/downloads.txt
-## system - The directory to place downloads in subfolders of
-## Note the default is relative to the home directory of the user specified above
-# target_path = /home/alphagsm_user/.alphagsm/downloader/downloads
+
+## system if user is set else user - the location of the downloader database file. Can use ~ 
+## to refer to the home directory if the user specified above. Default is 
+## "${alphagsm_path}/downloads/downloads.txt" with ~ resolved for the user specified above.
+# db_path = ~/.alphagsm/downloads/downloads.txt
+
+## system if user is set else user - The directory to place downloads in subfolders of. 
+## Default is "${alphagsm_path}/downloads/downloads" resolved relative to the user
+## specified above.
+# target_path = ~/.alphagsm/downloads/downloads
+
 ## system - The package that downloadermodules are in
 # downloaders_package = downloadermodules.
-## steamcmd_path - The directory SteamCMD is installed into
-# steamcmd_path = /home/alphagsm_user/Steam/
 
 [downloader.pathgen]
-## directories are generated in two levels. By default it's a parent directory with a short name with
-## another directory inside it with a longer name i.e. parent/dir
+## directories are generated in two levels. By default it's a parent directory with a short
+## name with another directory inside it with a longer name i.e. parent/dir
 
-## system - what characters are to be used for the directory name
+## user - what characters are to be used for the directory name
 # dirchars = abcdefghijklmnopqrstuvwxyz0123456789_
-## system - the length of the directory name
+
+## user - the length of the directory name
 # dirlen = 8
-## system - what charachters are to be used for the parent directory name
+
+## user - what charachters are to be used for the parent directory name
 # parentchars = abcdefghijklmnopqrstuvxyz
-## system - the length of the parent directory name
+
+## user - the length of the parent directory name
 # parentlen = 1
-## system - how many tries at making a unique directory before giving up
+
+## user - how many tries at making a unique directory before giving up
 # maxtries = 238328
 
+[downloader.steamcmd]
+## user - The directory SteamCMD is installed into. Defaults to 
+## "~/.local/steam" if it exists else "~/Steam"
+# steamcmd_path = /home/alphagsm_user/Steam/
+
 [server]
-## user - the path to store the alphagsm data file in. can use ~ for the users home directory
-# datapath = "~/.alphagsm/conf
-## the package that the server modules are in
+## user - the path to store the alphagsm data file in. can use ~ for the users home directory.
+## Default is "${alphagsm_path}/conf".
+# datapath = ~/.alphagsm/conf
+
+## system - the package that the server modules are in.
 # servermodulespackage = gamemodules.
 
 [screen]
@@ -55,6 +77,7 @@
 ## used by other users or accidentally as alphagsm assumes that all sessions that start with the tag
 ## are for it to manage
 # sessiontag = AlphaGSM#
+
 ## user - how many log files to keep for each server
 # keeplogs = 5
 
