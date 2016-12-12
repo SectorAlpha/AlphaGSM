@@ -7,4 +7,4 @@ Ideas that have been pitched and will be implemented
 Ideas which may be considered
 
 - Manage server.cfg for steam game servers within AlphaGSM
-- Be able to edit the startup commands for game servers.
+- Be able to choose start up arguments/options for game servers.
