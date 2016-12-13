@@ -148,6 +148,7 @@ def doinstall(server):
   if not os.path.isdir(server.data["dir"]):
     os.makedirs(server.data["dir"])
 
+  print("Installing game server at", server.data["dir"])
   steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
 
 
@@ -169,13 +170,14 @@ def update(server,validate=False,restart=False):
 
 def get_start_command(server):
 # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
+# TODO define a map using the -m optional argument
   exe_name = server.data["exe_name"]
 
   if not os.path.isfile(server.data["dir"] + exe_name):
     ServerError("Executable file not found")
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
-  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+map",str(server.data["startmap"])],server.data["dir"]
+  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+randommap","-autoupdate","-steam_dir","/home/steam/Steam/","-steamcmd_script","/home/steam/scripts/tf2update.txt","+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")

@@ -45,10 +45,10 @@ def download(path,args):
   if len(existing) > 0:
     lmodule,largs,llocation,ldate,lactive = existing[0]
     shutil.copytree(llocation,path)
-  
+ 
   if bool(steam_anonymous_login_possible):
     print("Running SteamCMD")
-    proc_list = [STEAMCMD_EXE,"+login","anonymous","+force_install_dir",target_dir,"+app_update",str(Steam_AppID),"+quit"]
+    proc_list = [STEAMCMD_EXE,"+login","anonymous","+force_install_dir",path,"+app_update",str(Steam_AppID),"+quit"]
     sp.call(proc_list)
   else:
     print("no support for normal SteamCMD logins yet.")

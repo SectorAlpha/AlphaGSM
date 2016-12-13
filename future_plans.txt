@@ -3,8 +3,7 @@
 
 - 7 Days to die game server support
 
-
 ## Ideas which may be considered
 
 - Manage server.cfg for steam game servers within AlphaGSM
-- Be able to choose start up arguments/options for game servers.
+- Extra configuration options for game servers to control the arguments used to start game servers. e.g. memory available to minecraft.
