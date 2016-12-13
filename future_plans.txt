@@ -1,0 +1,10 @@
+# Future Plans
+## Ideas that have been pitched and will be implemented
+
+- 7 Days to die game server support
+
+
+## Ideas which may be considered
+
+- Manage server.cfg for steam game servers within AlphaGSM
+- Be able to choose start up arguments/options for game servers.
