@@ -3,6 +3,7 @@ import pwd
 import os
 import os.path
 import subprocess as sp
+from server.server import get_datapath
 
 from downloadermodules.url import download as url_download
 
@@ -41,4 +42,33 @@ def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
     sp.call(proc_list)
   else:
     print("no support for normal SteamCMD logins yet.")
+
+def get_steam_dir():
+  return STEAMCMD_DIR
+
+def write_autoupdate_script(name,path,app_id):
+  file_path = os.path.join(get_datapath(),"steamcmd_scripts/")
+  print(file_path)
+  if not os.path.isdir(file_path):
+    os.mkdir(file_path)
+  file_name = file_path + name + ".txt"
+  if not os.path.isfile(file_name):
+    string = make_autoupdate_string(path,app_id)
+    f = open(file_name,"w")
+    f.write(string)
+    f.close()
+  return file_name
+
+
+
+def make_autoupdate_string(path,app_id):
+  string = "@ShutdownOnFailedCommand 1\n" + \
+            "@NoPromptForPassword 1\n" + \
+	    "@sSteamCmdForcePlatformType linux\n" + \
+	    "login anonymous\n" + \
+            "force_install_dir %s\n" % path + \
+            "app_update %s\n" % app_id + \
+            "exit"
+  return string
+
 

@@ -177,7 +177,10 @@ def get_start_command(server):
     ServerError("Executable file not found")
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
-  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+randommap","-autoupdate","-steam_dir","/home/steam/Steam/","-steamcmd_script","/home/steam/scripts/tf2update.txt","+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
+
+  steam_updatescript = steamcmd.write_autoupdate_script(server.name,server.data["dir"],steam_app_id)
+
+  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+randommap","-autoupdate","-steam_dir",steamcmd.get_steam_dir(),"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")
