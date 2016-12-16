@@ -46,7 +46,6 @@ def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
 
 def write_autoupdate_script(name,path,app_id):
   file_path = os.path.join(DATAPATH,"steamcmd_scripts/")
-  print(file_path)
   if not os.path.isdir(file_path):
     os.mkdir(file_path)
   file_name = file_path + name + ".txt"

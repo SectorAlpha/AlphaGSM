@@ -4,7 +4,9 @@ import re
 from utils.settings import settings
 
 SESSIONTAG=settings.system.getsection('screen').get('sessiontag','AlphaGSM#')
-LOGPATH=os.path.expanduser(settings.user.getsection('screen').get('screenlog_path',"~/.alphagsm/logs"))
+LOGPATH=os.path.expanduser(settings.user.getsection('screen').get('screenlog_path', os.path.join(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"),"logs" )  ))
+SCREENRC=os.path.join(os.path.expanduser(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm")), '') + "screenrc"
+
 try:
   KEEPLOGS=int(setting.user.getsection('screen').get('keeplogs',5))
 except:
@@ -41,6 +43,7 @@ def start_screen(name,command,cwd=None):
   If you need to ensure the session started successfully try waiting a short amount 
   of time (1s say) and then check if the screen session exists.
   """
+  write_screenrc()
   if not os.path.isdir(os.path.expanduser(LOGPATH)):
     try:
       os.makedirs(os.path.expanduser(LOGPATH))
@@ -51,7 +54,7 @@ def start_screen(name,command,cwd=None):
   if cwd is not None:
     extraargs["cwd"]=cwd
   try:
-    out=sp.check_output(["screen","-dmLS",SESSIONTAG+name,"-c",os.path.join(os.path.abspath(os.path.dirname(__file__)),"screenrc")]+list(command),stderr=sp.STDOUT,shell=False,**extraargs)
+    out=sp.check_output(["screen","-dmLS",SESSIONTAG+name,"-c",SCREENRC]+list(command),stderr=sp.STDOUT,shell=False,**extraargs)
   except sp.CalledProcessError as ex:
     raise ScreenError("Screen failed with return value: "+str(ex.returncode)+" and output: '"+ex.output+"'",ex.returncode,ex.output)
   except FileNotFoundError as ex:
@@ -108,7 +111,29 @@ def list_all_screens():
           yield user+"/"+match.group(1)
 
 
+def write_screenrc():
+  file_path = os.path.expanduser(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"))
+  if not os.path.isdir(file_path):
+    os.mkdir(file_path)
+  file_name = SCREENRC
+  if not os.path.isfile(file_name):
+    string = make_screenrc()
+    f = open(file_name,"w")
+    f.write(string)
+    f.close()
+
+def make_screenrc():
+  string = "logfile " + os.path.join(LOGPATH, '') + "%S.log\n" + \
+            "logfile flush 5\n" + \
+            "log on\n" + \
+            "deflog on"
+
+  return string
+
 def logpath(name):
-  return os.path.join(os.path.expanduser("~/.samlogs"),SESSIONTAG+name+".log")
+  return os.path.join(os.path.expanduser(LOGPATH),SESSIONTAG+name+".log")
+
+
+
 
 __all__=["ScreenError","start_screen","send_to_screen","send_to_server","check_screen_exists","connect_to_screen","list_all_screens","logpath"]
