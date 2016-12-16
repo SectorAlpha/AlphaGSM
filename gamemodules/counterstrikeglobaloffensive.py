@@ -36,6 +36,7 @@ command_descriptions={"update": "Updates the game server to the latest version."
 command_descriptions={}
 command_functions={} # will have elements added as the functions are defined
 
+max_stop_wait = 1
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -184,9 +185,10 @@ def get_start_command(server):
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
 
+  steamcmd_dir = steamcmd.STEAMCMD_DIR
   steam_updatescript = steamcmd.write_autoupdate_script(server.name,server.data["dir"],steam_app_id)
 
-  return [exe_name,"-game","csgo","-console","-usercon","+game_type",str(server.data["gametype"]),"+game_mode",str(server.data["gamemode"]),"-port",str(server.data["port"]),"+mapgroup",str(server.data["mapgroup"]),"+map",str(server.data["startmap"]),"-maxplayers",str(server.data["maxplayers"]),"-autoupdate","-steam_dir",steamcmd.get_steam_dir(),"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
+  return [exe_name,"-game","csgo","-console","-usercon","+game_type",str(server.data["gametype"]),"+game_mode",str(server.data["gamemode"]),"-port",str(server.data["port"]),"+mapgroup",str(server.data["mapgroup"]),"+map",str(server.data["startmap"]),"-maxplayers",str(server.data["maxplayers"]),"-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")

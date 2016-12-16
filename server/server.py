@@ -16,11 +16,10 @@ from collections.abc import Mapping as MappingABC
 
 __all__=["Server","ServerError"]
 
-DATAPATH=os.path.expanduser(settings.user.getsection('server').get('datapath',os.path.join(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm") )))
+DATAPATH=os.path.expanduser(settings.user.getsection('server').get('datapath',os.path.join(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"),"conf" )))
 SERVERMODULEPACKAGE=settings.system.getsection('server').get('servermodulespackage',"gamemodules.")
 
-def get_datapath():
-  return DATAPATH
+print(DATAPATH)
 
 class ServerError(Exception):
   """An Exception thrown when there is an error with the server"""

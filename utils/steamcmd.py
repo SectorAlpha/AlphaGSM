@@ -3,7 +3,7 @@ import pwd
 import os
 import os.path
 import subprocess as sp
-from server.server import get_datapath
+from server.server import DATAPATH
 
 from downloadermodules.url import download as url_download
 
@@ -43,11 +43,9 @@ def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
   else:
     print("no support for normal SteamCMD logins yet.")
 
-def get_steam_dir():
-  return STEAMCMD_DIR
 
 def write_autoupdate_script(name,path,app_id):
-  file_path = os.path.join(get_datapath(),"steamcmd_scripts/")
+  file_path = os.path.join(DATAPATH,"steamcmd_scripts/")
   print(file_path)
   if not os.path.isdir(file_path):
     os.mkdir(file_path)
