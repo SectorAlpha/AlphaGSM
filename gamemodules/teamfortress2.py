@@ -180,7 +180,6 @@ def get_start_command(server):
     exe_name = "./" + exe_name
 
   steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
-  print(steam_updatescript)
   steamcmd_dir =  steamcmd.STEAMCMD_DIR
 
   return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+randommap","-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
