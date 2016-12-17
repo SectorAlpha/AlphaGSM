@@ -113,13 +113,13 @@ def list_all_screens():
           yield user+"/"+match.group(1)
 
 
-def write_screenrc():
+def write_screenrc(force=False):
   file_path = os.path.expanduser(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"))
   if not os.path.isdir(file_path):
     os.mkdir(file_path)
   file_name = SCREENRC
-  if not os.path.isfile(file_name):
-    screenrc_text = open(SCREENRC_TEMPLATE, 'r').read()
+  if not os.path.isfile(file_name) or (force == True):
+    screenrc_text = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),SCREENRC_TEMPLATE), 'r').read()
     # adds the game server logpath directory to the screenrc_text
     screenrc_text = screenrc_text % os.path.join(LOGPATH, '') # appends trailing slash if none exists.
     f = open(file_name,"w")

@@ -64,6 +64,10 @@
 ## "~/.local/steam" if it exists else "~/Steam"
 # steamcmd_path = /home/alphagsm_user/Steam/
 
+## user - The directory SteamCMD related scripts are written to. Defaults to
+## "~/.alphagsm/steamcmd_scripts"
+# steamcmd_scripts = ~/.alphagsm/steamcmd_scripts
+
 [server]
 ## user - the path to store the alphagsm data file in. can use ~ for the users home directory.
 ## Default is "${alphagsm_path}/conf".

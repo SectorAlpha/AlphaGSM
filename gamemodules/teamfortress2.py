@@ -179,7 +179,7 @@ def get_start_command(server):
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
 
-  steam_updatescript = steamcmd.write_autoupdate_script(server.name,server.data["dir"],steam_app_id)
+  steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
   print(steam_updatescript)
   steamcmd_dir =  steamcmd.STEAMCMD_DIR
 

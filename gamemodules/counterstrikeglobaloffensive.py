@@ -186,7 +186,7 @@ def get_start_command(server):
     exe_name = "./" + exe_name
 
   steamcmd_dir = steamcmd.STEAMCMD_DIR
-  steam_updatescript = steamcmd.write_autoupdate_script(server.name,server.data["dir"],steam_app_id)
+  steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
 
   return [exe_name,"-game","csgo","-console","-usercon","+game_type",str(server.data["gametype"]),"+game_mode",str(server.data["gamemode"]),"-port",str(server.data["port"]),"+mapgroup",str(server.data["mapgroup"]),"+map",str(server.data["startmap"]),"-maxplayers",str(server.data["maxplayers"]),"-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
