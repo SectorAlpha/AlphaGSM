@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.2.1 03/12/2016
+### Added
+ - Moved screenrc to the config directory
+ - Added more config options, improving the flexibility of the program
+ - TF2 and CSGO now autoupdate when an update comes out by default
+ - 
+
 ## 0.2 03/12/2016
 ### Added
  - Support for TF2 and CS:GO
