@@ -7,6 +7,8 @@ SESSIONTAG=settings.system.getsection('screen').get('sessiontag','AlphaGSM#')
 LOGPATH=os.path.expanduser(settings.user.getsection('screen').get('screenlog_path', os.path.join(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"),"logs" )  ))
 SCREENRC=os.path.join(os.path.expanduser(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm")), '') + "screenrc"
 
+SCREENRC_TEMPLATE = "screenrc_template.txt"
+
 try:
   KEEPLOGS=int(setting.user.getsection('screen').get('keeplogs',5))
 except:
@@ -117,18 +119,12 @@ def write_screenrc():
     os.mkdir(file_path)
   file_name = SCREENRC
   if not os.path.isfile(file_name):
-    string = make_screenrc()
+    screenrc_text = open(SCREENRC_TEMPLATE, 'r').read()
+    # adds the game server logpath directory to the screenrc_text
+    screenrc_text = screenrc_text % os.path.join(LOGPATH, '') # appends trailing slash if none exists.
     f = open(file_name,"w")
-    f.write(string)
+    f.write(screenrc_text)
     f.close()
-
-def make_screenrc():
-  string = "logfile " + os.path.join(LOGPATH, '') + "%S.log\n" + \
-            "logfile flush 5\n" + \
-            "log on\n" + \
-            "deflog on"
-
-  return string
 
 def logpath(name):
   return os.path.join(os.path.expanduser(LOGPATH),SESSIONTAG+name+".log")

@@ -12,6 +12,7 @@ STEAMCMD_DIR = os.path.expanduser(settings.user.downloader.getsection('steamcmd'
 STEAMCMD_EXE = STEAMCMD_DIR + "steamcmd.sh"
 STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 
+STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -50,22 +51,9 @@ def write_autoupdate_script(name,path,app_id):
     os.mkdir(file_path)
   file_name = file_path + name + ".txt"
   if not os.path.isfile(file_name):
-    string = make_autoupdate_string(path,app_id)
+    steamcmd_gameupdate_text = open(STEAMCMD_GAMEUPDATE_TEMPLATE, 'r').read()
+    steamcmd_gameupdate_text = steamcmd_gameupdate_text % (path,app_id)
     f = open(file_name,"w")
     f.write(string)
     f.close()
   return file_name
-
-
-
-def make_autoupdate_string(path,app_id):
-  string = "@ShutdownOnFailedCommand 1\n" + \
-            "@NoPromptForPassword 1\n" + \
-	    "@sSteamCmdForcePlatformType linux\n" + \
-	    "login anonymous\n" + \
-            "force_install_dir %s\n" % path + \
-            "app_update %s\n" % app_id + \
-            "exit"
-  return string
-
-
