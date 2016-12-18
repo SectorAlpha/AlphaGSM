@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.2.1 03/12/2016
+### Added
+ - Moved screenrc to the config directory, which is now used on a user level.
+ -- This is now generated from a template file, rather than using a pre-made screenrc file.
+ - Added more config options, improving the flexibility of the program
+ - TF2 and CSGO default settings is now to autoupdate comes out by default.
+  -- A file is created in alphagsm_path/conf/steamcmd_scripts which handles this.
+ - TF2 and CSGO pick a random map by default.
+
 ## 0.2 03/12/2016
 ### Added
  - Support for TF2 and CS:GO

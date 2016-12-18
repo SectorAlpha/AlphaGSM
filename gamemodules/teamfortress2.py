@@ -30,6 +30,7 @@ command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for th
 command_descriptions={"update": "Updates the game server to the latest version.",
 			"restart": "Restarts the game server without killing the process."}
 
+max_stop_wait = 1
 
 _confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 def updateconfig(filename,settings):
@@ -178,9 +179,10 @@ def get_start_command(server):
   if exe_name[:2] != "./":
     exe_name = "./" + exe_name
 
-  steam_updatescript = steamcmd.write_autoupdate_script(server.name,server.data["dir"],steam_app_id)
+  steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
+  steamcmd_dir =  steamcmd.STEAMCMD_DIR
 
-  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+randommap","-autoupdate","-steam_dir",steamcmd.get_steam_dir(),"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
+  return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+randommap","-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")
