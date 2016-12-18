@@ -188,7 +188,7 @@ def get_start_command(server):
   steamcmd_dir = steamcmd.STEAMCMD_DIR
   steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
 
-  return [exe_name,"-game","csgo","-console","-usercon","+game_type",str(server.data["gametype"]),"+game_mode",str(server.data["gamemode"]),"-port",str(server.data["port"]),"+mapgroup",str(server.data["mapgroup"]),"+map",str(server.data["startmap"]),"-maxplayers",str(server.data["maxplayers"]),"-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
+  return [exe_name,"-game","csgo","-console","-usercon","+game_type",str(server.data["gametype"]),"+game_mode",str(server.data["gamemode"]),"+sv_pure","1","+ip","0.0.0.0","-secured","-timeout 0","-strictportbind","-port",str(server.data["port"]),"+mapgroup",str(server.data["mapgroup"]),"+map",str(server.data["startmap"]),"-maxplayers",str(server.data["maxplayers"]),"-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
 def do_stop(server,j):
   screen.send_to_server(server.name,"\nquit\n")
