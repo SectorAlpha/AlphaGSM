@@ -312,13 +312,14 @@ The available commands are:
         return
       cmdparse.longhelp(cmd,server.get_command_description(cmd),server.get_command_args(cmd))
 
-  print("")
-  print("AlphaGSM Copyright (C) 2016 by Sector Alpha.")
-  print("Licensed under GPL v3.0. See the LISCENCE file for details.")
-  print("Developed by Cosmosquark and Staircase27.")
-  print("A command line tool to download, manage and maintain game servers using simple and similar commands")
-  print("See the README, future_plans.txt and the changelog.txt for more details.")
-  print("Hosted and maintained on our github page https://github.com/SectorAlpha/AlphaGSM.")
-  print("Raise any issues or ask any questions on our github page, or contact cosmosquark@sector-alpha.net.")
-  print("Additionally check out the project wiki http://wiki.sector-alpha.net/index.php?title=AlphaGSM")
-  print("")
+  print(
+"""
+AlphaGSM Copyright (C) 2016 by Sector Alpha.
+Licensed under GPL v3.0. See the LISCENCE file for details.
+Developed by Cosmosquark and Staircase27. See the CREDITS file for a full list of contributors.
+
+A command line tool to download, manage and maintain game servers using simple and similar commands.
+See the README, future_plans and the changelog files for more details.
+Hosted and maintained on our github page https://github.com/SectorAlpha/AlphaGSM.
+Raise any issues or ask any questions on our github page, or contact cosmosquark@sector-alpha.net.
+Additionally check out the project wiki http://wiki.sector-alpha.net/index.php?title=AlphaGSM""",file=file)

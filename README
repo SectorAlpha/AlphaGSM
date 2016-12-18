@@ -28,6 +28,10 @@ For help editing and contributing see the documentation in the source code or th
 pydoc output, especially for the modules "server.gamemodules" and
 "downloader.downloadermodules".
 
+## Project hosting
+
+The project is currently hosted at https://github.com/SectorAlpha/AlphaGSM.
+
 ## Community
 
 IRC: sasha.sector-alpha.net, channel #sector-alpha
@@ -38,6 +42,7 @@ Steam: http://steamcommunity.com/groups/sector-alpha
 
 The plans are also being discussed on the sector alpha wiki at
 http://wiki.sector-alpha.net/index.php?title=AlphaGSM
+
 
 ## Dependencies
 
@@ -58,7 +63,7 @@ SteamCMD dependencies
 for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
 see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
 
-# Example use
+# Examples
 
 Example of setting up of a Minecraft vanilla server
 
@@ -98,3 +103,21 @@ To backup
 which will use the default backup settings for the server. For details of how
 configure backups and setup regular backups please see the full help by 
 running 'alphagsm --help'.
+
+# Legal
+
+## Liscence
+
+Licensed under GPL v3.0. See the LISCENCE file for details.
+
+## Copyright
+
+AlphaGSM Copyright (C) 2016 by Sector Alpha.
+
+## Credits
+
+Developed by Cosmosquark and Staircase27. See the CREDITS file for the full list of contributors.
+
+## Contact
+
+Any queries? Contact cosmosquark@sector-alpha.net.

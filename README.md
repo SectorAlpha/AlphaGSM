@@ -34,6 +34,10 @@ For help editing and contributing see the documentation in the source code or th
 pydoc output, especially for the modules "server.gamemodules" and
 "downloader.downloadermodules".
 
+## Project hosting
+
+The project is currently hosted at https://github.com/SectorAlpha/AlphaGSM.
+
 ## Community
 
 If you have a question for the community and developers, you will
@@ -47,6 +51,7 @@ always be welcome to contact us by these various means of communication.
 
 The plans are also being discussed on the sector alpha wiki at
 http://wiki.sector-alpha.net/index.php?title=AlphaGSM.
+
 
 ## Dependencies
 
@@ -107,3 +112,21 @@ To backup
 which will use the default backup settings for the server. For details of how
 configure backups and setup regular backups please see the full help by 
 running `alphagsm --help`.
+
+# Legal
+
+## Liscence
+
+Licensed under GPL v3.0. See the LISCENCE file for details.
+
+## Copyright
+
+AlphaGSM Copyright (C) 2016 by Sector Alpha.
+
+## Credits
+
+Developed by Cosmosquark and Staircase27. See the CREDITS file for the full list of contributors.
+
+## Contact
+
+Any queries? Contact cosmosquark@sector-alpha.net.
