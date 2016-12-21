@@ -7,13 +7,13 @@ from . import url as urlextra
 import downloader.downloader as downloader
 import pwd
 import os
+import os.path
 import shutil
 
 
 
-USER=settings.system.downloader.get('user') or pwd.getpwuid(os.getuid()).pw_name
 # if a user has already installed steam to e.g ubuntu, steamcmd prefers to be installed in the same directory (or at least when steamcmd starts, it sends the error related things there as if it wants to be installed there.
-STEAMCMD_DIR = settings.system.downloader.get('steamcmd_path') or "/home/" + USER + "/.local/share/Steam/" if os.path.isdir( "/home/" + USER + "/.local/share/Steam/") else "/home/" + USER + "/Steam/"
+STEAMCMD_DIR = os.path.expanduser(settings.user.downloader.getsection('steamcmd').get('steamcmd_path') or "~/.local/share/Steam/" if os.path.isdir(os.path.expanduser("~/.local/share/Steam/")) else "~/Steam/")
 STEAMCMD_EXE = STEAMCMD_DIR + "steamcmd.sh"
 STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 
@@ -45,10 +45,10 @@ def download(path,args):
   if len(existing) > 0:
     lmodule,largs,llocation,ldate,lactive = existing[0]
     shutil.copytree(llocation,path)
-  
+ 
   if bool(steam_anonymous_login_possible):
     print("Running SteamCMD")
-    proc_list = [STEAMCMD_EXE,"+login","anonymous","+force_install_dir",target_dir,"+app_update",str(Steam_AppID),"+quit"]
+    proc_list = [STEAMCMD_EXE,"+login","anonymous","+force_install_dir",path,"+app_update",str(Steam_AppID),"+quit"]
     sp.call(proc_list)
   else:
     print("no support for normal SteamCMD logins yet.")

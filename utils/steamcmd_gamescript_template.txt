@@ -1,0 +1,7 @@
+@ShutdownOnFailedCommand 1
+@NoPromptForPassword 1
+@sSteamCmdForcePlatformType linux
+login anonymous
+force_install_dir %s
+app_update %s
+exit

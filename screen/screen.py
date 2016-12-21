@@ -4,6 +4,11 @@ import re
 from utils.settings import settings
 
 SESSIONTAG=settings.system.getsection('screen').get('sessiontag','AlphaGSM#')
+LOGPATH=os.path.expanduser(settings.user.getsection('screen').get('screenlog_path', os.path.join(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"),"logs" )  ))
+SCREENRC=os.path.join(os.path.expanduser(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm")), '') + "screenrc"
+
+SCREENRC_TEMPLATE = "screenrc_template.txt"
+
 try:
   KEEPLOGS=int(setting.user.getsection('screen').get('keeplogs',5))
 except:
@@ -40,17 +45,18 @@ def start_screen(name,command,cwd=None):
   If you need to ensure the session started successfully try waiting a short amount 
   of time (1s say) and then check if the screen session exists.
   """
-  if not os.path.isdir(os.path.expanduser("~/.alphagsm/logs")):
+  write_screenrc()
+  if not os.path.isdir(os.path.expanduser(LOGPATH)):
     try:
-      os.makedirs(os.path.expanduser("~/.alphagsm/logs"))
+      os.makedirs(os.path.expanduser(LOGPATH))
     except OSError as ex:
       raise ScreenError("Log dir doesn't exist and can't create it",ex.args)
-  rotatelogs(os.path.expanduser("~./alphagsm/logs"),SESSIONTAG+name+".log")
+  rotatelogs(os.path.expanduser(LOGPATH),SESSIONTAG+name+".log")
   extraargs={}
   if cwd is not None:
     extraargs["cwd"]=cwd
   try:
-    out=sp.check_output(["screen","-dmLS",SESSIONTAG+name,"-c",os.path.join(os.path.abspath(os.path.dirname(__file__)),"screenrc")]+list(command),stderr=sp.STDOUT,shell=False,**extraargs)
+    out=sp.check_output(["screen","-dmLS",SESSIONTAG+name,"-c",SCREENRC]+list(command),stderr=sp.STDOUT,shell=False,**extraargs)
   except sp.CalledProcessError as ex:
     raise ScreenError("Screen failed with return value: "+str(ex.returncode)+" and output: '"+ex.output+"'",ex.returncode,ex.output)
   except FileNotFoundError as ex:
@@ -107,7 +113,23 @@ def list_all_screens():
           yield user+"/"+match.group(1)
 
 
+def write_screenrc(force=False):
+  file_path = os.path.expanduser(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"))
+  if not os.path.isdir(file_path):
+    os.mkdir(file_path)
+  file_name = SCREENRC
+  if not os.path.isfile(file_name) or (force == True):
+    screenrc_text = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),SCREENRC_TEMPLATE), 'r').read()
+    # adds the game server logpath directory to the screenrc_text
+    screenrc_text = screenrc_text % os.path.join(LOGPATH, '') # appends trailing slash if none exists.
+    f = open(file_name,"w")
+    f.write(screenrc_text)
+    f.close()
+
 def logpath(name):
-  return os.path.join(os.path.expanduser("~/.samlogs"),SESSIONTAG+name+".log")
+  return os.path.join(os.path.expanduser(LOGPATH),SESSIONTAG+name+".log")
+
+
+
 
 __all__=["ScreenError","start_screen","send_to_screen","send_to_server","check_screen_exists","connect_to_screen","list_all_screens","logpath"]

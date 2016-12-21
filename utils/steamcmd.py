@@ -1,16 +1,17 @@
 from utils.settings import settings 
 import pwd
 import os
+import os.path
 import subprocess as sp
 
 from downloadermodules.url import download as url_download
 
-USER=settings.system.downloader.get('user') or pwd.getpwuid(os.getuid()).pw_name
 # if a user has already installed steam to e.g ubuntu, steamcmd prefers to be installed in the same directory (or at least when steamcmd starts, it sends the error related things there as if it wants to be installed there.
-STEAMCMD_DIR = settings.system.downloader.get('steamcmd_path') or "/home/" + USER + "/.local/share/Steam/" if os.path.isdir( "/home/" + USER + "/.local/share/Steam/") else "/home/" + USER + "/Steam/"
+STEAMCMD_DIR = os.path.expanduser(settings.user.downloader.getsection('steamcmd').get('steamcmd_path') or "~/.local/share/Steam/" if os.path.isdir(os.path.expanduser("~/.local/share/Steam/")) else "~/Steam/")
 STEAMCMD_EXE = STEAMCMD_DIR + "steamcmd.sh"
 STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
-
+STEAMCMD_SCRIPTS = os.path.expanduser(settings.user.getsection('steamcmd').get('steamcmd_scripts',os.path.join(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"),"steamcmd_scripts" )))
+STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -42,3 +43,20 @@ def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
   else:
     print("no support for normal SteamCMD logins yet.")
 
+
+def get_autoupdate_script(name,path,app_id,force=False):
+  """
+  Gets the autoupdate script
+  If it does not exist, write it
+  Write it anyway if force = True
+  """
+  if not os.path.isdir(STEAMCMD_SCRIPTS):
+    os.mkdir(STEAMCMD_SCRIPTS)
+  file_name = os.path.join(STEAMCMD_SCRIPTS, '') + name + "_update.txt"
+  if not os.path.isfile(file_name) or (force == True):
+    steamcmd_gameupdate_text = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),STEAMCMD_GAMEUPDATE_TEMPLATE), 'r').read()
+    steamcmd_gameupdate_text = steamcmd_gameupdate_text % (path,app_id)
+    f = open(file_name,"w")
+    f.write(steamcmd_gameupdate_text)
+    f.close()
+  return file_name
