@@ -114,11 +114,11 @@ def _loadsettings(filename,parent=None):
       config.read_file(f)
   except FileNotFoundError as ex:
     if parent is None:
+      print("Config file not found")
       raise ex
     else:
       return parent
   except configparser.Error as ex:
-    print("Error reading config file")
     print(ex)
     if parent is None:
       raise ex
@@ -176,5 +176,10 @@ class Settings(object):
       settingspath=os.path.join(os.path.expanduser(self.system.getsection('core').get('userconf',"~/.alphagsm")),"alphagsm.conf")
       self._user=_loadsettings(settingspath,self.system)
       return self._user
+  def get(self,user):
+    if user:
+      return self.user
+    else:
+      return self.system
 
 settings=Settings()
