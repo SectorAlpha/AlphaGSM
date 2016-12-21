@@ -10,7 +10,9 @@ between multiple installs.
 In short, setting up and installing a game server is as easy as
 
   `alphagsm mymcserver create minecraft` 
+
   `alphagsm mymcserver setup`
+
   `alphagsm mymcserver start`
 
 ## Setup
@@ -77,17 +79,21 @@ see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
 Example of setting up of a Minecraft vanilla server
 
   `alphagsm mymcserver create minecraft setup`
+
   `alphagsm mymcserver start`
 
 Example of setting up a CS:GO server
 
   `alphagsm mycsgo create csgo`
+
   `alphagsm mycsgo setup`
+
   `alphagsm mycsgo start`
 
 Example of updating the CS:GO server (A specific command for updating the server files). These commands are not specific to all game servers (e.g Minecraft).
 
   `alphagsm mycsgo update`
+
   `alphagsm mycsgo update -v -r`
 
 Where the -v flag requests the validation of files, and -r will restart your server once the update has been done.
