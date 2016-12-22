@@ -70,7 +70,7 @@ class Multiplexer(object):
             self.procs[proc] = ProcData(tag)
         else:
             self.procs[proc].tag = tag
-        if len(self.procs[proc].streams) == 0:
+        if not self.procs[proc].streams:
             self.streamlessprocs.add(proc)
 
     def addstream(self, stream, proc, tag=None, data=None):
@@ -97,7 +97,7 @@ class Multiplexer(object):
         data = self.streams[stream]
         self.procs[data.proc].streams.remove(stream)
         del self.streams[stream]
-        if len(self.procs[data.proc].streams) == 0:
+        if not self.procs[data.proc].streams:
             self.streamlessprocs.add(data.proc)
         return data.proc, data.tag, data.data
 
@@ -124,40 +124,42 @@ class Multiplexer(object):
         return tag
 
     def process(self, timeout=None):
-        if len(self.procs) < 1:
+        if not self.procs:
             return None
         interuptedstreams = {}
-        for stream in self.checkdata:  # Should this be stream_name?
-            for l in self.streams[stream].consumelines():
-                # TODO: assign linecheck or self.streams[stream] to a variable
-                # Perhaps this should instead check if callable(linecheck)?
-                if self.streams[stream].linecheck is not None and self.streams[stream].linecheck(l):
-                    interuptedstreams[stream] = (l, self.streams[stream].linecheck)
-                    self.streams[stream].linecheck = None
+        for stream in self.checkdata:
+            stream_data = self.streams[stream]
+            for l in stream_data.consumelines():
+                if stream_data.linecheck and stream_data.linecheck(l):
+                    interuptedstreams[stream] = (l, stream_data.linecheck)
+                    stream_data.linecheck = None
                     break
                 else:
                     print(self.gettag(stream), l.decode())
         self.checkdata = set()
-        if len(self.streams):
+        if self.streams:
             inputs = self.selector.select(timeout)
             for key, events in inputs:
                 stream = key.fileobj
+                stream_data = self.streams[stream]
                 new = stream.read1(1000)
-                self.streams[stream].data += new
-                for l in self.streams[stream].consumelines():
-                    if self.streams[stream].linecheck is not None and self.streams[stream].linecheck(l):
-                        interuptedstreams[stream] = (l, self.streams[stream].linecheck)
-                        self.streams[stream].linecheck = None
+                stream_data.data += new
+                for l in stream_data.consumelines():
+                    if stream_data.linecheck and stream_data.linecheck(l):
+                        interuptedstreams[stream] = (l, stream_data.linecheck)
+                        stream_data.linecheck = None
                         break
                     else:
                         print(self.gettag(stream), l.decode())
-                if not len(new):  # event but no new data means eof
-                    if len(self.streams[stream].data):  # write out any part line anyway
+                if not new:  # event but no new data means eof
+                    if stream_data.data:  # write out any part line anyway
                         print(
                             self.gettag(stream),
-                            self.streams[stream].data.decode()
+                            stream_data.data.decode()
                         )
-                    self.removestream(stream)  # adds to streamlessprocs if no streams left
+                    self.removestream(
+                        stream
+                    )  # adds to streamlessprocs if no streams left
                     key.fileobj.close()
             for proc in list(self.streamlessprocs):
                 if proc.poll() is not None:
