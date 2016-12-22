@@ -5,76 +5,76 @@ import subprocess as sp
 import sys
 
 def reporthook(blocknum, blocksize, totalsize):
-  readsofar = blocknum * blocksize
-  if totalsize > 0:
-    if readsofar > totalsize:
-      readsofar = totalsize
-    percent = readsofar * 1e2 / totalsize
-    print("\r%5.1f%% %*d / %d" % (
-        percent, len(str(totalsize)), readsofar, totalsize),end='')
-  else: # total size is unknown
-    print("read %d" % (readsofar,))
-  tenth=int(10*readsofar/totalsize)*totalsize/10
-  if tenth<=readsofar and readsofar<tenth+blocksize:
-    print()
+    readsofar = blocknum * blocksize
+    if totalsize > 0:
+        if readsofar > totalsize:
+            readsofar = totalsize
+        percent = readsofar * 1e2 / totalsize
+        print("\r%5.1f%% %*d / %d" % (
+                percent, len(str(totalsize)), readsofar, totalsize),end='')
+    else: # total size is unknown
+        print("read %d" % (readsofar,))
+    tenth=int(10*readsofar/totalsize)*totalsize/10
+    if tenth<=readsofar and readsofar<tenth+blocksize:
+        print()
 
 def download(path,args):
-  url,targetname,*args=args
-  targetname=os.path.join(path,targetname)
-  decompress=None
-  if len(args)>1:
-    raise DownloaderError("Too many arguments")
-  elif len(args)==1:
-    decompress=args[0]
-    if decompress not in ["zip","tar","gz","tgz","tar.gz"]:
-      raise DownloaderError("Unknown decompression type")
-    if decompress in ["gz"]: # compression without filenames
-      targetname+="."+decompress
-  try:
-    fname,headers=urllib.request.urlretrieve(url,filename=targetname,reporthook=reporthook)
-  except urllib.error.URLError as ex:
-    print("Error downloading "+str(targetname)+": "+ex.reason)
-    raise DownloaderError("Can't download file")
-  if decompress == "zip":
-    ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
-    if ret!=0:
-      raise DownloaderError("Error extracting download")
-  elif decompress == "tar" or decompress == "tar.gz":
-    ret=sp.call(["tar","-xf",targetname,"-C",path],stdout=sys.stderr)
-    if ret!=0:
-      raise DownloaderError("Error extracting download")
-  elif decompress == "tgz":
-    ret=sp.call(["tar","-xfz",targetname,"-C",path],stdout=sys.stderr)
-    if ret!=0:
-      raise DownloaderError("Error extracting download")
-  elif decompress == "gz":
-    ret=sp.call(["gunzip",targetname],stdout=sys.stderr)
-    if ret!=0:
-      raise DownloaderError("Error extracting download")
+    url,targetname,*args=args
+    targetname=os.path.join(path,targetname)
+    decompress=None
+    if len(args)>1:
+        raise DownloaderError("Too many arguments")
+    elif len(args)==1:
+        decompress=args[0]
+        if decompress not in ["zip","tar","gz","tgz","tar.gz"]:
+            raise DownloaderError("Unknown decompression type")
+        if decompress in ["gz"]: # compression without filenames
+            targetname+="."+decompress
+    try:
+        fname,headers=urllib.request.urlretrieve(url,filename=targetname,reporthook=reporthook)
+    except urllib.error.URLError as ex:
+        print("Error downloading "+str(targetname)+": "+ex.reason)
+        raise DownloaderError("Can't download file")
+    if decompress == "zip":
+        ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
+        if ret!=0:
+            raise DownloaderError("Error extracting download")
+    elif decompress == "tar" or decompress == "tar.gz":
+        ret=sp.call(["tar","-xf",targetname,"-C",path],stdout=sys.stderr)
+        if ret!=0:
+            raise DownloaderError("Error extracting download")
+    elif decompress == "tgz":
+        ret=sp.call(["tar","-xfz",targetname,"-C",path],stdout=sys.stderr)
+        if ret!=0:
+            raise DownloaderError("Error extracting download")
+    elif decompress == "gz":
+        ret=sp.call(["gunzip",targetname],stdout=sys.stderr)
+        if ret!=0:
+            raise DownloaderError("Error extracting download")
 
 def _true(*arg):
-  return True
-  
+    return True
+    
 def getfilter(active=None,url=None,compression=None,sort=None):
-  filterfn=_true
-  sortfn=None
-  if url!=None:
-    import re
-    try:
-      url=re.compile(url).match
-    except TypeError:
-      pass
-  if active!=None:
-    active=bool(active)
+    filterfn=_true
+    sortfn=None
     if url!=None:
-      filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and url(largs[0])
+        import re
+        try:
+            url=re.compile(url).match
+        except TypeError:
+            pass
+    if active!=None:
+        active=bool(active)
+        if url!=None:
+            filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and url(largs[0])
+        else:
+            filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive
+    elif url!=None:    
+        filterfn=lambda lmodule,largs,llocation,ldate,lactive: url(largs[0])
+    if sort == "date":
+        sortfn=lambda lmodule,largs,llocation,ldate,lactive: date
     else:
-      filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive
-  elif url!=None:    
-    filterfn=lambda lmodule,largs,llocation,ldate,lactive: url(largs[0])
-  if sort == "date":
-    sortfn=lambda lmodule,largs,llocation,ldate,lactive: date
-  else:
-    raise DownloaderError("Unknown sort key")
-  return filterfn,sortfn
+        raise DownloaderError("Unknown sort key")
+    return filterfn,sortfn
  
