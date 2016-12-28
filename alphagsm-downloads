@@ -5,10 +5,10 @@ import contextlib
 from urllib.parse import quote
 
 with contextlib.redirect_stdout(sys.stderr):
-  try:
-    path=downloader.main(sys.argv[1],sys.argv[2:])
-  except downloader.DownloaderError as ex:
-    print(ex)
-    sys.exit(ex.ret)
+    try:
+        path=downloader.main(sys.argv[1],sys.argv[2:])
+    except downloader.DownloaderError as ex:
+        print(ex)
+        sys.exit(ex.ret)
 print(quote(path))
 sys.exit(0)

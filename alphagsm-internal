@@ -3,6 +3,6 @@ import core
 import sys
 
 if int(sys.argv[1]):
-  print("#%AlphaGSM-INTERNAL%#",flush=True)
+    print("#%AlphaGSM-INTERNAL%#",flush=True)
 
 sys.exit(core.main(sys.argv[2],sys.argv[3:]))
