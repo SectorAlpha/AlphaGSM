@@ -68,6 +68,12 @@ def _findmodule(name):
 
 def generatepath():
     """Generate a new (not previously existing) path within TARGET_PATH. Returns None if no path can be generated"""
+    # check if the target directory exists
+    if not os.path.exists(TARGET_PATH):
+        try:
+            os.makedirs(TARGET_PATH)
+        except FileExistsError:
+            pass
     rnd=random.Random()
     # choose a destination path
     for seq in range(MAX_TRIES):
@@ -105,6 +111,15 @@ def download(module,args):
 def getpathifexists(module,args):
     """Check if a path for the download is already in the database and if so return it else return None"""
     sargs=",".join(quote(a) for a in args)
+    # check if DB_PATH exists, if not make it
+    if not os.path.exists(DB_PATH):
+        make_dirs = DB_PATH.rsplit("/",1)[0]
+        try:
+            os.makedirs(make_dirs)
+        except FileExistsError:
+            pass
+        open(DB_PATH, 'a').close()
+        return None
     with open(DB_PATH,'r') as f:
         for line in f:
             lmodule,largs,llocation,ldate,lactive=line.split()
