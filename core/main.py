@@ -26,7 +26,7 @@ def main(name, args):
         args = ["*/*", "help"]
     if len(args) < 1:
         print("You must specify at least a server to work on", file = stderr)
-        print(file=stderr)
+        print(file = stderr)
         help(name, None)
         return 2
     servers = [args.pop(0)]
@@ -50,7 +50,7 @@ def main(name, args):
                 file = stderr
             )
             print(file = stderr)
-            help(name, None, full_help=True)
+            help(name, None, full_help = True)
             return 2
     if len(args) < 1:
         print("You must specify at least a command to run", file = stderr)
