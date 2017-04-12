@@ -64,13 +64,13 @@ def main(name, args):
         for spec in servers
     ]
     if len(servers) == 1 and servers[0] == ("*", "*") and cmd == "help":
-        help(name, None, *args, file = stdout)
+        help(name, None, *args, file=stdout)
         return 0
     servers = [
         s for user, tag in servers for s in expandserverstar(user, tag, cmd)
     ]
     if len(servers) < 1:
-        print("No servers found for", cmd, file = stderr)
+        print("No servers found for", cmd, file=stderr)
         print(file=stderr)
         help(name, None)
         return 1
@@ -104,12 +104,12 @@ def runone(name, server, cmd, args):
             try:
                 server = Server(tag, args[0])
             except ServerError as ex:
-                print("Can't create server", file = stderr)
+                print("Can't create server", file=stderr)
                 printhandledex(ex)
                 print(file=stderr)
                 help(name, None, cmd)
                 return 1
-            print("Server created", flush = True)
+            print("Server created", flush=True)
             if len(args) > 1:
                 cmd, *args = args[1:]
                 cmd = cmd.lower()
@@ -254,7 +254,7 @@ def getruncmd(name, server, args, multi=False):
 
 def runas(name, user, server, args):
     ret = sp.call(getrunascmd(name, user, server, args))
-    print("Command finished with return status", ret, file = stderr)
+    print("Command finished with return status", ret, file=stderr)
     return ret
 
 
