@@ -50,12 +50,12 @@ def main(name, args):
                 file=stderr
             )
             print(file=stderr)
-            help(name, None)
+            help(name, None, full_help=True)
             return 2
     if len(args) < 1:
         print("You must specify at least a command to run", file=stderr)
         print(file=stderr)
-        help(name, None)
+        help(name, None, full_help=True)
         return 1
     cmd, *args = args
     cmd = cmd.lower()
@@ -131,7 +131,7 @@ def runone(name, server, cmd, args):
                 help(name, None)
                 return 1
         if cmd is None or cmd == "help":
-            help(name, server, *args, file=stdout)
+            help(name, server, *args, file = stdout, full_help=True)
         elif cmd == "list":
             print(tag)
         else:
@@ -239,7 +239,7 @@ def expandserverstar(user, tag, cmd):
 
 
 def getrunascmd(name, user, server, args, multi=False):
-    return ["sudo", "-Hu", user] + getruncmd(name, server, args, multi=multi)
+    return ["sudo", "-Hu", user] + getruncmd(name, server, args, multi = multi)
 
 
 def getruncmd(name, server, args, multi=False):
@@ -322,42 +322,51 @@ def runmulti(name, count, servers, args):
         return 10
 
 
-def help(name, server, cmd=None, *, file=stderr):
+def help(name, server, cmd=None, *, file=stderr, full_help=False):
     if cmd is None:
-        print(
-            "The Sector-Alpha Game Server Management Script (AlphaGSM)",
-            file=file
-        )
+        if full_help:
+            print(
+                "The Sector-Alpha Game Server Management Script (AlphaGSM)",
+                file=file
+            )
         print(file=file)
         print(name, "SERVER COMMAND [ARGS...]", file=file)
         print(name, "COUNT SERVER... COMMAND [ARGS...]", file=file)
+        if full_help:
+            print(dedent("""
+                SERVER is the server or servers to process. If a server is
+                specified as username/server then we use sudo to run as the
+                relevant user. This is always possible as root but is up to sudo
+                otherwise and may prompt for a password. The server can be the
+                special forms "*", which means apply to all the current user's
+                servers ("username/*" works too), or "*/*" which means run on a
+                command dependent definition of "all servers". This last form is
+                only available for a very limited set of commands.
+
+                If the second calling form is specified there must be EXACTLY
+                COUNT servers specified.
+             
+            """), file=file
+            )
+
         print(dedent("""
-            SERVER is the server or servers to process. If a server is
-            specified as username/server then we use sudo to run as the
-            relevant user. This is always possible as root but is up to sudo
-            otherwise and may prompt for a password. The server can be the
-            special forms "*", which means apply to all the current user's
-            servers ("username/*" works too), or "*/*" which means run on a
-            command dependent definition of "all servers". This last form is
-            only available for a very limited set of commands.
+        The available commands are:
+          help [COMMAND] : Print a help message. Without a command print
+                           this message or with a command print detailed help
+                           for that command.
+          create TYPE [setup ARGS] : Create a new server of the specified
+                           type. If setup is specified then will call setup on
+                           the new server immediately. ARGS is passed directly
+                           on to setup so see there for the format and options
+                           available.
+          list : list the servers this is run on one per line. Useful for
+                           checking what servers a wildcard matched or in
+                           scripts to list the servers in a script processable
+                           way.
+        """), file=file)
 
-            If the second calling form is specified there must be EXACTLY
-            COUNT servers specified.
 
-            The available commands are:
-                help [COMMAND] : Print a help message. Without a command print
-                            this message or with a command print detailed help
-                            for that command.
-                create TYPE [setup ARGS] : Create a new server of the specified
-                            type. If setup is specified then will call setup on
-                            the new server immediately. ARGS is passed directly
-                            on to setup so see there for the format and options
-                            available.
-                list : list the servers this is run on one per line. Useful for
-                            checking what servers a wildcard matched or in
-                            scripts to list the servers in a script processable
-                            way.
-                """), file=file)
+
         if server is None:
             for cmd in Server.default_commands:
                 cmdparse.shorthelp(
@@ -392,17 +401,18 @@ def help(name, server, cmd=None, *, file=stderr):
                 server.get_command_args(cmd)
             )
 
-    print(dedent("""
-        AlphaGSM Copyright (C) 2016 by Sector Alpha.
-        Licensed under GPL v3.0. See the LISCENCE file for details.
-        Developed by Cosmosquark and Staircase27. See the CREDITS file for a
-        full list of contributors.
+    if full_help:
+        print(dedent("""
+            AlphaGSM Copyright (C) 2016 by Sector Alpha.
+            Licensed under GPL v3.0. See the LISCENCE file for details.
+            Developed by Cosmosquark and Staircase27. See the CREDITS file for a
+            full list of contributors.
 
-        A command line tool to download, manage and maintain game servers
-        using simple and similar commands. See the README, future_plans and
-        the changelog files for more details. Hosted and maintained on our
-        github page https://github.com/SectorAlpha/AlphaGSM. Raise any issues
-        or ask any questions on our github page, or contact
-        cosmosquark@sector-alpha.net. Additionally check out the project
-        wiki at http://wiki.sector-alpha.net/index.php?title=AlphaGSM
-    """), file=file)
+            A command line tool to download, manage and maintain game servers
+            using simple and similar commands. See the README, future_plans and
+            the changelog files for more details. Hosted and maintained on our
+            github page https://github.com/SectorAlpha/AlphaGSM. Raise any issues
+            or ask any questions on our github page, or contact
+            cosmosquark@sector-alpha.net. Additionally check out the project
+            wiki at http://wiki.sector-alpha.net/index.php?title=AlphaGSM
+        """), file=file)
