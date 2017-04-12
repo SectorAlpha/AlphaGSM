@@ -18,14 +18,14 @@ def printhandledex(ex):
     if DEBUG:
         traceback.print_exc()
     else:
-        print(ex, file=stderr)
+        print(ex, file = stderr)
 
 
 def main(name, args):
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]
     if len(args) < 1:
-        print("You must specify at least a server to work on", file=stderr)
+        print("You must specify at least a server to work on", file = stderr)
         print(file=stderr)
         help(name, None)
         return 2
@@ -37,9 +37,9 @@ def main(name, args):
         if count < 1:
             print(
                 "You must specify at least one server to work on",
-                file=stderr
+                file = stderr
             )
-            print(file=stderr)
+            print(file = stderr)
             help(name, None)
             return 2
     banned = set(("help", "create") + Server.default_commands)
@@ -47,15 +47,15 @@ def main(name, args):
         if s.lower() in banned:
             print(
                 s, "is a banned server name as it's too similar to a command",
-                file=stderr
+                file = stderr
             )
-            print(file=stderr)
+            print(file = stderr)
             help(name, None, full_help=True)
             return 2
     if len(args) < 1:
-        print("You must specify at least a command to run", file=stderr)
-        print(file=stderr)
-        help(name, None, full_help)
+        print("You must specify at least a command to run", file = stderr)
+        print(file = stderr)
+        help(name, None, full_help = True)
         return 1
     cmd, *args = args
     cmd = cmd.lower()
@@ -64,14 +64,14 @@ def main(name, args):
         for spec in servers
     ]
     if len(servers) == 1 and servers[0] == ("*", "*") and cmd == "help":
-        help(name, None, *args, file=stdout)
+        help(name, None, *args, file = stdout)
         return 0
     servers = [
         s for user, tag in servers for s in expandserverstar(user, tag, cmd)
     ]
     if len(servers) < 1:
-        print("No servers found for", cmd, file=stderr)
-        print(file=stderr)
+        print("No servers found for", cmd, file = stderr)
+        print(file = stderr)
         help(name, None)
         return 1
     elif len(servers) > 1:
@@ -96,26 +96,26 @@ def runone(name, server, cmd, args):
             if len(args) < 1:
                 print(
                     "Type of server to create is a required argument",
-                    file=stderr
+                    file = stderr
                 )
-                print(file=stderr)
+                print(file = stderr)
                 help(name, None, cmd)
                 return 2
             try:
                 server = Server(tag, args[0])
             except ServerError as ex:
-                print("Can't create server", file=stderr)
+                print("Can't create server", file = stderr)
                 printhandledex(ex)
-                print(file=stderr)
+                print(file = stderr)
                 help(name, None, cmd)
                 return 1
-            print("Server created", flush=True)
+            print("Server created", flush = True)
             if len(args) > 1:
                 cmd, *args = args[1:]
                 cmd = cmd.lower()
                 if cmd != "setup":
-                    print("Only setup can be called after create", file=stderr)
-                    print(file=stderr)
+                    print("Only setup can be called after create", file = stderr)
+                    print(file = stderr)
                     help(name, None, cmd)
                     return 2
             else:
@@ -125,35 +125,35 @@ def runone(name, server, cmd, args):
             try:
                 server = Server(tag)
             except ServerError as ex:
-                print("Can't find server", file=stderr)
+                print("Can't find server", file = stderr)
                 printhandledex(ex)
-                print(file=stderr)
+                print(file = stderr)
                 help(name, None)
                 return 1
         if cmd is None or cmd == "help":
-            help(name, server, *args, file=stdout, full_help=True)
+            help(name, server, *args, file = stdout, full_help = True)
         elif cmd == "list":
             print(tag)
         else:
             try:
                 cmdargs = server.get_command_args(cmd)
             except cmdparse.OptionError as ex:
-                print("Error parsing arguments and options", file=stderr)
+                print("Error parsing arguments and options", file = stderr)
                 printhandledex(ex)
-                print(file=stderr)
+                print(file = stderr)
                 help(name, server, cmd)
                 return 2
             if cmdargs is None:
-                print("Unknown command", file=stderr)
-                print(file=stderr)
+                print("Unknown command", file = stderr)
+                print(file = stderr)
                 help(name, server, cmd)
                 return 2
             try:
                 args, opts = cmdparse.parse(args, cmdargs)
             except cmdparse.OptionError as ex:
-                print("Error parsing arguments and options", file=stderr)
+                print("Error parsing arguments and options", file = stderr)
                 printhandledex(ex)
-                print(file=stderr)
+                print(file = stderr)
                 help(name, server, cmd)
                 return 2
             # needed by activate and deactivate
@@ -169,11 +169,11 @@ def runone(name, server, cmd, args):
                 # has been filled, otherwise the error called here will make
                 # no sense
             except ServerError as ex:
-                print("Error running Command", file=stderr)
+                print("Error running Command", file = stderr)
                 printhandledex(ex)
                 return 1
             except Exception as ex:
-                print("Error running command", file=stderr)
+                print("Error running command", file = stderr)
                 printhandledex(ex)
                 return 3
     return 0
@@ -193,18 +193,18 @@ def getallallservers(command):
     if command in {"stop", "status", "message", "backup", "list"}:
         servers = list(screen.list_all_screens())
         if command == "stop":
-            print("Saving server list", file=stderr)
+            print("Saving server list", file = stderr)
             with open(".alphagsmserverlist", "w") as f:
                 for server in servers:
                     f.write("{}\n".format(server))
-        print("Using servers for '*/*':", *servers, file=stderr)
+        print("Using servers for '*/*':", *servers, file = stderr)
         return servers
     elif command == "start":
         servers = []
         with open(".alphagsmserverlist", "r") as f:
             for line in f:
                 servers.append(line.strip())
-        print("Using servers for '*/*':", *servers, file=stderr)
+        print("Using servers for '*/*':", *servers, file = stderr)
         return servers
     return []
 
@@ -217,10 +217,10 @@ def getalluserservers():
             if el.endswith(".json")
         ]
     except FileNotFoundError:
-        print("No servers found for user", file=stderr)
+        print("No servers found for user", file = stderr)
         return []
     print(
-        "Using servers for '*':", *(tag for user, tag in servers), file=stderr
+        "Using servers for '*':", *(tag for user, tag in servers), file = stderr
     )
     return servers
 
@@ -238,11 +238,11 @@ def expandserverstar(user, tag, cmd):
         return [(user, tag)]
 
 
-def getrunascmd(name, user, server, args, multi=False):
-    return ["sudo", "-Hu", user] + getruncmd(name, server, args, multi=multi)
+def getrunascmd(name, user, server, args, multi = False):
+    return ["sudo", "-Hu", user] + getruncmd(name, server, args, multi = multi)
 
 
-def getruncmd(name, server, args, multi=False):
+def getruncmd(name, server, args, multi = False):
     scriptpath = os.path.join(
         os.path.dirname(os.path.dirname(
             os.path.realpath(os.path.abspath(__file__))
@@ -254,7 +254,7 @@ def getruncmd(name, server, args, multi=False):
 
 def runas(name, user, server, args):
     ret = sp.call(getrunascmd(name, user, server, args))
-    print("Command finished with return status", ret, file=stderr)
+    print("Command finished with return status", ret, file = stderr)
     return ret
 
 
@@ -312,7 +312,7 @@ def runmulti(name, count, servers, args):
     multi.processall()
     retvals = list(multi.checkreturnvalues().values())
     if len(retvals) != len(servers):
-        print("Warning: Not all servers have returned", file=stderr)
+        print("Warning: Not all servers have returned", file = stderr)
     if all(val == 0 for val in retvals):
         return 0
     retvalsnon0 = [val for val in retvals if val != 0]
@@ -322,16 +322,16 @@ def runmulti(name, count, servers, args):
         return 10
 
 
-def help(name, server, cmd=None, *, file=stderr, full_help=False):
+def help(name, server, cmd=None, *, file = stderr, full_help = False):
     if cmd is None:
         if full_help:
             print(
                 "The Sector-Alpha Game Server Management Script (AlphaGSM)",
-                file=file
+                file = file
             )
-        print(file=file)
-        print(name, "SERVER COMMAND [ARGS...]", file=file)
-        print(name, "COUNT SERVER... COMMAND [ARGS...]", file=file)
+        print(file = file)
+        print(name, "SERVER COMMAND [ARGS...]", file = file)
+        print(name, "COUNT SERVER... COMMAND [ARGS...]", file = file)
         if full_help:
             print(dedent("""
                 SERVER is the server or servers to process. If a server is
@@ -346,7 +346,7 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                 If the second calling form is specified there must be EXACTLY
                 COUNT servers specified.
              
-            """), file=file
+            """), file = file
             )
 
         print(dedent("""
@@ -363,7 +363,7 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            checking what servers a wildcard matched or in
                            scripts to list the servers in a script processable
                            way.
-        """), file=file)
+        """), file = file)
 
 
 
@@ -382,9 +382,9 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
     else:
         if server is None:
             if cmd not in Server.default_commands:
-                print("Unknown Command", file=file)
-                print(file=file)
-                help(name, server, file=file)
+                print("Unknown Command", file = file)
+                print(file = file)
+                help(name, server, file = file)
                 return
             cmdparse.longhelp(
                 cmd, Server.default_command_descriptions.get(cmd, None),
@@ -392,9 +392,9 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
             )
         else:
             if cmd not in server.get_commands():
-                print("Unknown Command", file=file)
-                print(file=file)
-                help(name, server, file=file)
+                print("Unknown Command", file = file)
+                print(file = file)
+                help(name, server, file = file)
                 return
             cmdparse.longhelp(
                 cmd, server.get_command_description(cmd),
@@ -415,4 +415,4 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
             or ask any questions on our github page, or contact
             cosmosquark@sector-alpha.net. Additionally check out the project
             wiki at http://wiki.sector-alpha.net/index.php?title=AlphaGSM
-        """), file=file)
+        """), file = file)
