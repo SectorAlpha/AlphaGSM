@@ -15,6 +15,9 @@ DEBUG = bool(int(os.environ.get("ALPHAGSM_DEBUG", 0)))
 
 
 def printhandledex(ex):
+    """
+    Print the traceback or error to terminal depending on whether we're in debug mode
+    """
     if DEBUG:
         traceback.print_exc()
     else:
@@ -22,18 +25,29 @@ def printhandledex(ex):
 
 
 def main(name, args):
+    """
+    Main function called from the alphagsm executable
+
+    """
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]
+    # if no arguments are called
     if len(args) < 1:
         print("You must specify at least a server to work on", file=stderr)
         print(file=stderr)
-        help(name, None)
+        help(name, None, full_help=True)
         return 2
+
+    # the first argument is either the server name, or the number of servers to run on
     servers = [args.pop(0)]
+    # if the first letter in server is a number, we want to work with a number of servers
     if servers[0].isdigit():
+        # how many servers?
         count = int(servers[0])
+        # seperate them from the arguments
         servers = args[:count]
         args = args[count:]
+        # we need at least 2 servers via this method
         if count < 1:
             print(
                 "You must specify at least one server to work on",
@@ -42,6 +56,7 @@ def main(name, args):
             print(file=stderr)
             help(name, None)
             return 2
+    # prevent servers having similar names to commnds
     banned = set(("help", "create") + Server.default_commands)
     for s in servers:
         if s.lower() in banned:
@@ -52,11 +67,17 @@ def main(name, args):
             print(file=stderr)
             help(name, None, full_help=True)
             return 2
+
+    # if no commands to run on the server(s)
     if len(args) < 1:
         print("You must specify at least a command to run", file=stderr)
         print(file=stderr)
         help(name, None, full_help=True)
         return 1
+
+    # since we popped the servers from the args variable earlier,
+    # we now get the command, and the arguments associated with the command
+    # this command is what we operate on the server (e.g start, stop)
     cmd, *args = args
     cmd = cmd.lower()
     servers = [
@@ -180,10 +201,15 @@ def runone(name, server, cmd, args):
 
 
 def splitservername(name):
+    """
+    This is used to select a server owned by a user
+    """
     split = name.split("/")
     if len(split) == 1:
+        # current user
         return None, split[0]
     elif len(split) == 2:
+        # user and server
         return split[0], split[1]
     else:
         raise ServerError("Invalid server name. Only one / allowed")
@@ -323,6 +349,15 @@ def runmulti(name, count, servers, args):
 
 
 def help(name, server, cmd=None, *, file=stderr, full_help=False):
+    """
+    The help function, which lists all of the commands used in AlphaGSM
+
+    Parameters
+    ------------
+    server: The name of the server that was used to execute the command
+    cmd : The command in question
+    * : passomg  
+    """
     if cmd is None:
         if full_help:
             print(
