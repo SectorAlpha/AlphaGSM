@@ -14,9 +14,9 @@ __all__ = ["main"]
 DEBUG = bool(int(os.environ.get("ALPHAGSM_DEBUG", 0)))
 
 
-def printhandledex(ex):
+def print_handled_ex(ex):
     """
-    Print the traceback or error to terminal depending on whether we're in debug mode
+    Print the exception or traceback to terminal depending on whether we're in debug mode
     """
     if DEBUG:
         traceback.print_exc()
@@ -28,26 +28,51 @@ def main(name, args):
     """
     Main function called from the alphagsm executable
 
+    name is the exectable name, whereas args are the arguments associated with the server
+
+    args is a tuple of arguments used whilst executing the program, the infomation contains
+      server names and commands to execute on those servers. 
+         - Typically the first argument  is the server name (the one you want to operate on), 
+           and this is followed by server related arguments.
+           e.g "./alphagsm myserver mycommand"
+
+         - If the first argument is a number, you then need to provide in spaces the names
+           of servers you wish to operate on, 
+           e.g  "./alphagsm 2 myservera myserverb mycommand"
+
+         - You can also use * to denote all servers owned by the user
+        
+      On multiusers AlphaGSM setups, AlphaGSM can aquire a limited amount of "sudo" rights should 
+      such a feature be requested. This opens up additional commands
+         -  "user/server" for a user owned game server 
+            e.g "./alphagsm someuser/someserver somecommand"
+         - "./alphagsm */* somecommand" for all game servers running on the hardware 
+
+    NB: we often refer the individual assigned server name itself as the server "tag"
+
+    The main role of this function is to sanitize the command input from the user.
     """
+
+
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]
-    # if no arguments are called
+    #  if no arguments are called
     if len(args) < 1:
         print("You must specify at least a server to work on", file=stderr)
         print(file=stderr)
         help(name, None, full_help=True)
         return 2
 
-    # the first argument is either the server name, or the number of servers to run on
+    #  the first argument is either the server name, or the number of servers to run on
     servers = [args.pop(0)]
-    # if the first letter in server is a number, we want to work with a number of servers
+    #  if the first letter in server is a number, we want to work with a number of servers
     if servers[0].isdigit():
-        # how many servers?
+        #  how many servers?
         count = int(servers[0])
-        # seperate them from the arguments
+        #  seperate them from the arguments
         servers = args[:count]
         args = args[count:]
-        # we need at least 2 servers via this method
+        #  we need at least 2 servers via this method
         if count < 1:
             print(
                 "You must specify at least one server to work on",
@@ -56,7 +81,7 @@ def main(name, args):
             print(file=stderr)
             help(name, None)
             return 2
-    # prevent servers having similar names to commnds
+    #  prevent servers having similar names to commnds
     banned = set(("help", "create") + Server.default_commands)
     for s in servers:
         if s.lower() in banned:
@@ -68,51 +93,79 @@ def main(name, args):
             help(name, None, full_help=True)
             return 2
 
-    # if no commands to run on the server(s)
+    #  if no commands to run on the server(s)
     if len(args) < 1:
         print("You must specify at least a command to run", file=stderr)
         print(file=stderr)
         help(name, None, full_help=True)
         return 1
 
-    # since we popped the servers from the args variable earlier,
-    # we now get the command, and the arguments associated with the command
-    # this command is what we operate on the server (e.g start, stop)
+    #  since we popped the servers from the args variable earlier,
+    #    we now get the command, and the arguments associated with the command
+    #    this command is what we operate on the server (e.g start, stop)
+    #
+    #  At this point in time, servers are in the form of "servername" or 
+    #    "username/servername" split_server_name returns (user,server)
+    #     where user is None if we are that user
+    #    
+    #  spec is a single instance of "server" or "user/server", in which
+    #     we put into a tuple (user,server)
+    #
+    #  in short, here were converting the list of servers containing
+    #     list items of "server" or "user/server" into (user,server)
+    #
     cmd, *args = args
     cmd = cmd.lower()
     servers = [
-        tuple(el if el != "all" else "*" for el in splitservername(spec))
+        #  split_server_name returns (User, server). User can be None
+        #  if User = None, then we operate on own server.
+        tuple(el if el != "all" else "*" for el in split_server_name(spec))
         for spec in servers
     ]
+
+    #  now servers = [(user,server)] 
+    #  [(*,*)] represents all users and all servers
+    #  the help command for all servers owed by all users being called
     if len(servers) == 1 and servers[0] == ("*", "*") and cmd == "help":
         help(name, None, *args, file=stdout)
         return 0
+
+    #  now we modify the server list even more
+    #  TODO: WHY DO WE DO THIS`
     servers = [
-        s for user, tag in servers for s in expandserverstar(user, tag, cmd)
+        s for user, tag in servers for s in expand_server_star(user, tag, cmd)
     ]
     if len(servers) < 1:
         print("No servers found for", cmd, file=stderr)
         print(file=stderr)
         help(name, None)
         return 1
+
+    #  run the command on multiple servers
     elif len(servers) > 1:
         if cmd == "list":
-            return runlistmulti(name, servers, [cmd] + args)
+            return run_list_multi(name, servers, [cmd] + args)
         else:
-            return runmulti(name, len(servers), servers, [cmd] + args)
-    else:  # count == 1
-        return runone(name, servers[0], cmd, args)
+            return run_multi(name, len(servers), servers, [cmd] + args)
+    #  just operating on one server
+    else: 
+        return run_one(name, servers[0], cmd, args)
     return 0
 
 
-def runone(name, server, cmd, args):
+def run_one(name, server, cmd, args):
+    """
+    Run a single command or list of commands on a single server
+    """
     user, tag = server
     if user is not None:
+        #  run the command for a server another user owns
         if cmd == "list":
-            return runlistmulti(name, [server], [cmd] + args)
+            return run_list_multi(name, [server], [cmd] + args)
         else:
-            return runas(name, user, tag, [cmd] + args)
+            return run_as(name, user, tag, [cmd] + args)
     else:
+        #  are we making a new server?
         if cmd == "create":
             if len(args) < 1:
                 print(
@@ -126,7 +179,7 @@ def runone(name, server, cmd, args):
                 server = Server(tag, args[0])
             except ServerError as ex:
                 print("Can't create server", file=stderr)
-                printhandledex(ex)
+                print_handle_dex(ex)
                 print(file=stderr)
                 help(name, None, cmd)
                 return 1
@@ -147,7 +200,7 @@ def runone(name, server, cmd, args):
                 server = Server(tag)
             except ServerError as ex:
                 print("Can't find server", file=stderr)
-                printhandledex(ex)
+                print_handled_ex(ex)
                 print(file=stderr)
                 help(name, None)
                 return 1
@@ -160,7 +213,7 @@ def runone(name, server, cmd, args):
                 cmdargs = server.get_command_args(cmd)
             except cmdparse.OptionError as ex:
                 print("Error parsing arguments and options", file=stderr)
-                printhandledex(ex)
+                print_handled_ex(ex)
                 print(file=stderr)
                 help(name, server, cmd)
                 return 2
@@ -173,11 +226,11 @@ def runone(name, server, cmd, args):
                 args, opts = cmdparse.parse(args, cmdargs)
             except cmdparse.OptionError as ex:
                 print("Error parsing arguments and options", file=stderr)
-                printhandledex(ex)
+                print_handled_ex(ex)
                 print(file=stderr)
                 help(name, server, cmd)
                 return 2
-            # needed by activate and deactivate
+            #  needed by activate and deactivate
             program.PATH = os.path.join(
                 os.path.dirname(os.path.dirname(
                     os.path.realpath(os.path.abspath(__file__))
@@ -186,36 +239,52 @@ def runone(name, server, cmd, args):
             )
             try:
                 server.run_command(cmd, *args, **opts)
-                # developers: be sure to check if command_functions dictionary
-                # has been filled, otherwise the error called here will make
-                # no sense
+                #  developers: be sure to check if command_functions dictionary
+                #  has been filled, otherwise the error called here will make
+                #  no sense
             except ServerError as ex:
                 print("Error running Command", file=stderr)
-                printhandledex(ex)
+                print_handled_ex(ex)
                 return 1
             except Exception as ex:
                 print("Error running command", file=stderr)
-                printhandledex(ex)
+                print_handled_ex(ex)
                 return 3
     return 0
 
 
-def splitservername(name):
+def split_server_name(name):
     """
     This is used to select a server owned by a user
+    
+    name: 
+       - if name is a string without "/", then this represents
+          the server name, and thus this server is owned by
+          the current user
+       - if name is a string with "/" we split it, the left 
+          hand side is the user name and the right hand side is
+          the server owned by that user
+
+    returns
+         User, server
+
+    if User = None, then we act upon the server owned by the current user
     """
+
     split = name.split("/")
     if len(split) == 1:
-        # current user
+        #  server is owned by user
         return None, split[0]
     elif len(split) == 2:
-        # user and server
+        #  server is owned by another user
+        #  split[0] = user, split[1] is the server
         return split[0], split[1]
     else:
+        #  invalid input, raise error
         raise ServerError("Invalid server name. Only one / allowed")
 
 
-def getallallservers(command):
+def get_all_all_servers(command):
     if command in {"stop", "status", "message", "backup", "list"}:
         servers = list(screen.list_all_screens())
         if command == "stop":
@@ -235,7 +304,12 @@ def getallallservers(command):
     return []
 
 
-def getalluserservers():
+def get_all_user_servers():
+    """
+    Loop over the datapath of the user
+    Return     
+    """
+
     try:
         servers = [
             (None, el[:-5])
@@ -251,24 +325,44 @@ def getalluserservers():
     return servers
 
 
-def expandserverstar(user, tag, cmd):
+def expand_server_star(user, tag, cmd):
+    """
+    inputs
+       user: the user (None if we are using the current logged in users servers)
+       tag: the server name
+       cmd: the command or list of commands
+
+    Output:
+       A list of users and server tags turples
+          [(user,server_tag)]
+    """
+   
+    #  are we acting on all users, we can act on all users
     if user == "*":
+        #  are we acting on all servers? 
+        #  we don't know every server owned by a user trivially
+        #  TODO allow this?
         if tag != "*":
+            # if not acting on all servers, then this is ambiguous
             print("Error: Can't specify a server but '*' user")
             return ()
         else:
-            return [splitservername(s) for s in getallallservers(cmd)]
+            #  get all users and servers
+            return [split_server_name(s) for s in get_all_all_servers(cmd)]
+
+    #  i.e we are acting on all of the servers owned by the user
     elif tag == "*" and user is None:
-        return getalluserservers()
+        return get_all_user_servers()
+    #  otherwise don't change much
     else:
         return [(user, tag)]
 
 
-def getrunascmd(name, user, server, args, multi=False):
-    return ["sudo", "-Hu", user] + getruncmd(name, server, args, multi = multi)
+def get_run_as_cmd(name, user, server, args, multi=False):
+    return ["sudo", "-Hu", user] + get_run_cmd(name, server, args, multi = multi)
 
 
-def getruncmd(name, server, args, multi=False):
+def get_run_cmd(name, server, args, multi=False):
     scriptpath = os.path.join(
         os.path.dirname(os.path.dirname(
             os.path.realpath(os.path.abspath(__file__))
@@ -278,19 +372,19 @@ def getruncmd(name, server, args, multi=False):
     return [scriptpath, "1" if multi else "0", name, server] + args
 
 
-def runas(name, user, server, args):
-    ret = sp.call(getrunascmd(name, user, server, args))
+def run_as(name, user, server, args):
+    ret = sp.call(get_run_as_cmd(name, user, server, args))
     print("Command finished with return status", ret, file=stderr)
     return ret
 
 
-def runlistmulti(name, servers, args):
+def run_list_multi(name, servers, args):
     finalret = 0
     for user, server in servers:
         if user is not None:
-            cmd = getrunascmd(name, user, server, args)
+            cmd = get_run_as_cmd(name, user, server, args)
         else:
-            cmd = getruncmd(name, server, args)
+            cmd = get_run_cmd(name, server, args)
         proc = sp.Popen(cmd, stdout=sp.PIPE)
         output, _ = proc.communicate()
         output = [
@@ -315,26 +409,26 @@ def runlistmulti(name, servers, args):
     return finalret
 
 
-def _internalisrunning(line):
+def _internal_is_running(line):
     return line.decode().strip() == "#%AlphaGSM-INTERNAL%#"
 
 
-def runmulti(name, count, servers, args):
+def run_multi(name, count, servers, args):
     multi = mp.Multiplexer()
     for user, server in servers:
         if user is not None:
-            cmd = getrunascmd(name, user, server, args, True)
+            cmd = get_run_as_cmd(name, user, server, args, True)
         else:
-            cmd = getruncmd(name, server, args, True)
+            cmd = get_run_cmd(name, server, args, True)
         mp.addtomultiafter(
             multi,
             (user + "/" if user is not None else "") + server,
-            _internalisrunning,
-            cmd,
-            stdin=sp.DEVNULL,
-            stdout=sp.PIPE,
-            stderr=sp.STDOUT
-        )
+                    _internal_is_running,
+                    cmd,
+                    stdin=sp.DEVNULL,
+                    stdout=sp.PIPE,
+                    stderr=sp.STDOUT
+	    )
     multi.processall()
     retvals = list(multi.checkreturnvalues().values())
     if len(retvals) != len(servers):
