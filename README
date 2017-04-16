@@ -118,7 +118,33 @@ AlphaGSM Copyright (C) 2016 by Sector Alpha.
 
 Developed by Cosmosquark and Staircase27. See the CREDITS file for the full list of contributors.
 
-## Contact
+# Development
+
+We're working on improving the clarity of the comments on the code. We have also included a file "technical_introduction.txt" which gives a quick start guide on how to develop for the code. 
+
+## Adding New Game Severs
+
+So long as a game server is downloadable via steamCMD or over http, adding a new game 
+server is possible with the AlphaGSM code. An overview of the commands are given
+in "server/gamemodules.py" of which are common for all game servers. "gamemodules/minecraft/vanilla.py"
+is a doccumented example of how to download a game server over URL and additionally allow for 
+variations/mods of the same game (e.g tekkit). "gamemodules/teamfortress2.py" is a doccumented
+example of how to download a game server via SteamCMD. 
+
+In each gameserver module, you are either adding new commands to the server object as described in "server/server.py", or overriding existing ones to be more suitable for the game server of choice. Essentially you are extending "server/server.py".
+
+The methods in particular that require the most attention in a game module are 'configure', where one defines the game server configuration (e.g port, startup map, game server properties file).
+The other method is "get_start_command" which defines the executable command to startup the game server (e.g in minecraft this is "java -jar minecraft.jar").
+
+If you need to develop a new downloader, "downloader/downloadermodules.py" contains doccumentation for developing this.
+
+A tutorial is on the TODO list, but we hope for now that the game server modules that already exist act as a good starting point. If you are interested in adding a new game server and would like help, contact cosmosquark@sector-alpha.net.
+
+## Developing AlphaGSM
+
+Read over the infomation provided in "technical_introduction.txt" to get an overview of how AlphaGSM works and look at the files associated with the software. This is currently in development.
+
+# Contact
 
 Any queries? Contact cosmosquark@sector-alpha.net.
 
