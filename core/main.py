@@ -43,7 +43,7 @@ def main(name, args):
          - You can also use * to denote all servers owned by the user
         
       On multiusers AlphaGSM setups, AlphaGSM can aquire a limited amount of "sudo" rights should 
-      such a feature be requested. This provides new ways of accessing servers.
+      such a feature be requested. This provides new ways of labelling servers.
          -  "user/server" for a user owned game server 
             e.g "./alphagsm someuser/someserver somecommand"
          - "./alphagsm */* somecommand" for all game servers running on the hardware 
@@ -166,7 +166,7 @@ def run_one(name, server, cmd, args):
     if user is not None:
         #  run the command for a server another user owns.
         if cmd == "list":
-            # list is a special case.
+            # list is a special case so it outputs correctly.
             return run_list_multi(name, [server], [cmd] + args)
         else:
             return run_as(name, user, tag, [cmd] + args)
@@ -392,6 +392,7 @@ def expand_server_star(user, tag, cmd):
     if user == "*":
         #  are we acting on all servers? 
         #  we don't know every server owned by a user trivially
+        #  We support this for commands that we can support this on! :
         if tag != "*":
             # if not acting on all servers, then this is ambiguous
             print("Error: Can't specify a server but '*' user")
