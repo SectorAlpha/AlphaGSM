@@ -1,0 +1,7 @@
+# Technical Introduction
+
+The purposes of this file is to give an overview of AlphaGSM for developers
+who are interested in either adding in new game server modules into AlphaGSM
+or expanding upon the functionality of AlphaGSM itself.
+
+TODO write this
