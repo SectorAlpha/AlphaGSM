@@ -45,15 +45,11 @@ The project is currently hosted at https://github.com/SectorAlpha/AlphaGSM.
 If you have a question for the community and developers, you will
 always be welcome to contact us by these various means of communication.
 
-* IRC: sasha.sector-alpha.net, channel #sector-alpha
-* WebIRC: http://webirc.sector-alpha.net/
-* Discord: https://discordapp.com/invite/p5PtHat
+* Discord: https://discord.gg/8audc8Ukaq
 * Twitter: https://twitter.com/sectoralpha
 * Steam: http://steamcommunity.com/groups/sector-alpha
 
-The plans are also being discussed on the sector alpha wiki at
-http://wiki.sector-alpha.net/index.php?title=AlphaGSM.
-
+The plans are also being discussed on discord and within this github repo
 
 ## Dependencies
 
@@ -157,15 +153,16 @@ The other method is "get_start_command" which defines the executable command to 
 
 If you need to develop a new downloader, "downloader/downloadermodules.py" contains doccumentation for developing this.
 
-A tutorial is on the TODO list, but we hope for now that the game server modules that already exist act as a good starting point. If you are interested in adding a new game server and would like help, c
-ontact cosmosquark@sector-alpha.net.
+A tutorial is on the TODO list, but we hope for now that the game server modules that already exist act as a good starting point. 
+
+If you are interested in adding a new game server and would like help, raise an issue or a discussion on this github page
+
+You can also contact cosmosquark on our discord server https://discord.gg/8audc8Ukaq via email cosmosquark@sector-alpha.net.
 
 ## Developing AlphaGSM
 
 Read over the infomation provided in "technical_introduction.txt" to get an overview of how AlphaGSM works and look at the files associated with the software. This is currently in development.
 
-
 # Contact
 
-Any queries? Contact cosmosquark@sector-alpha.net.
-
+Any queries? Contact us on Discord https://discord.gg/8audc8Ukaq or via email cosmosquark@sector-alpha.net

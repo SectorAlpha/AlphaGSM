@@ -3,13 +3,21 @@
 This is the Sector Alpha Game Server Manager.
 
 This tool runs game servers using screen to manage the sessions and provides
-tools to control them in a consistent way and to possibly many servers at once.
+tools to control them in a consistent way and to manage many servers at once.
 This also contains code to share downloads and if possible the actual files
 between multiple installs.
 
+In short, setting up and installing a game server is as easy as
+
+  `alphagsm mymcserver create minecraft`
+
+  `alphagsm mymcserver setup`
+
+  `alphagsm mymcserver start`
+
 ## Setup
 
-For a single user configuration AlphaGSM will run out of the box. Simply download the code, copy alphagsm.conf-template to alphagsm.conf and 
+For a single user configuration AlphaGSM will run out of the box. Simply download the code, copy alphagsm.conf-template to alphagsm.conf and
 run the alphagsm executable. Edit alphagsm.conf if you wish to alter the default setup.
 
 Be sure to check out the dependancies and to look at the examples below to get your first game server running.
@@ -19,7 +27,7 @@ using sudo.
 
 The public script is alphagsm. This can either by run using it's full or relative
 path or for ease of use can be installed in bin/ (or ~/bin/) using a symlink (It
-can't be physically moved as other paths are resolved relative to it's true 
+can't be physically moved as other paths are resolved relative to it's true
 location).
 
 For help using it run alphagsm --help or see the examples below.
@@ -34,15 +42,14 @@ The project is currently hosted at https://github.com/SectorAlpha/AlphaGSM.
 
 ## Community
 
-IRC: sasha.sector-alpha.net, channel #sector-alpha
-WebIRC: http://webirc.sector-alpha.net/
-Discord: https://discordapp.com/invite/p5PtHat
-Twitter: https://twitter.com/sectoralpha
-Steam: http://steamcommunity.com/groups/sector-alpha
+If you have a question for the community and developers, you will
+always be welcome to contact us by these various means of communication.
 
-The plans are also being discussed on the sector alpha wiki at
-http://wiki.sector-alpha.net/index.php?title=AlphaGSM
+* Discord: https://discord.gg/8audc8Ukaq
+* Twitter: https://twitter.com/sectoralpha
+* Steam: http://steamcommunity.com/groups/sector-alpha
 
+The plans are also being discussed on discord and within this github repo
 
 ## Dependencies
 
@@ -56,10 +63,10 @@ Main dependancies
 
 SteamCMD dependencies
 
-  lib32gcc1 or libstdc++ or libstdc++.i686 
+  lib32gcc1 or libstdc++ or libstdc++.i686
 
   e.g ubuntu, ib32stdc++6
-  
+
 for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
 see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
 
@@ -67,19 +74,23 @@ see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
 
 Example of setting up of a Minecraft vanilla server
 
-  alphagsm mymcserver create minecraft setup
-  alphagsm mymcserver start
+  `alphagsm mymcserver create minecraft setup`
+
+  `alphagsm mymcserver start`
 
 Example of setting up a CS:GO server
 
-  alphagsm mycsgo create csgo
-  alphagsm mycsgo setup
-  alphagsm mycsgo start
+  `alphagsm mycsgo create csgo`
+
+  `alphagsm mycsgo setup`
+
+  `alphagsm mycsgo start`
 
 Example of updating the CS:GO server (A specific command for updating the server files). These commands are not specific to all game servers (e.g Minecraft).
 
-  alphagsm mycsgo update
-  alphagsm mycsgo update -v -r
+  `alphagsm mycsgo update`
+
+  `alphagsm mycsgo update -v -r`
 
 Where the -v flag requests the validation of files, and -r will restart your server once the update has been done.
 
@@ -92,17 +103,17 @@ which has the full name is minecraft.vanilla. There is also minecraft.custom
 and minecraft.tekkit and many more to come including Terraria, Steam games
 and team speak
 
-To stop the server 
+To stop the server
 
-  alphagsm mymcserver stop
+  `alphagsm mymcserver stop`
 
 To backup
 
-  alphagsm mymcserver backup
+  `alphagsm mymcserver backup`
 
 which will use the default backup settings for the server. For details of how
-configure backups and setup regular backups please see the full help by 
-running 'alphagsm --help'.
+configure backups and setup regular backups please see the full help by
+running `alphagsm --help`.
 
 # Legal
 
@@ -118,27 +129,35 @@ AlphaGSM Copyright (C) 2016 by Sector Alpha.
 
 Developed by Cosmosquark and Staircase27. See the CREDITS file for the full list of contributors.
 
+# Developers
+
+
 # Development
 
-We're working on improving the clarity of the comments on the code. We have also included a file "technical_introduction.txt" which gives a quick start guide on how to develop for the code. 
+We're working on improving the clarity of the comments on the code. We have also included a file "technical_introduction.txt" which gives a quick start guide on how to develop for the code.
 
 ## Adding New Game Severs
 
-So long as a game server is downloadable via steamCMD or over http, adding a new game 
+So long as a game server is downloadable via steamCMD or over http, adding a new game
 server is possible with the AlphaGSM code. An overview of the commands are given
 in "server/gamemodules.py" of which are common for all game servers. "gamemodules/minecraft/vanilla.py"
-is a doccumented example of how to download a game server over URL and additionally allow for 
+is a doccumented example of how to download a game server over URL and additionally allow for
 variations/mods of the same game (e.g tekkit). "gamemodules/teamfortress2.py" is a doccumented
-example of how to download a game server via SteamCMD. 
+example of how to download a game server via SteamCMD.
 
-In each gameserver module, you are either adding new commands to the server object as described in "server/server.py", or overriding existing ones to be more suitable for the game server of choice. Essentially you are extending "server/server.py".
+In each gameserver module, you are either adding new commands to the server object as described in "server/server.py", or overriding existing ones to be more suitable for the game server of choice. Esse
+ntially you are extending "server/server.py".
 
 The methods in particular that require the most attention in a game module are 'configure', where one defines the game server configuration (e.g port, startup map, game server properties file).
 The other method is "get_start_command" which defines the executable command to startup the game server (e.g in minecraft this is "java -jar minecraft.jar").
 
 If you need to develop a new downloader, "downloader/downloadermodules.py" contains doccumentation for developing this.
 
-A tutorial is on the TODO list, but we hope for now that the game server modules that already exist act as a good starting point. If you are interested in adding a new game server and would like help, contact cosmosquark@sector-alpha.net.
+A tutorial is on the TODO list, but we hope for now that the game server modules that already exist act as a good starting point.
+
+If you are interested in adding a new game server and would like help, raise an issue or a discussion on this github page
+
+You can also contact cosmosquark on our discord server https://discord.gg/8audc8Ukaq via email cosmosquark@sector-alpha.net.
 
 ## Developing AlphaGSM
 
@@ -146,5 +165,4 @@ Read over the infomation provided in "technical_introduction.txt" to get an over
 
 # Contact
 
-Any queries? Contact cosmosquark@sector-alpha.net.
-
+Any queries? Contact us on Discord https://discord.gg/8audc8Ukaq or via email cosmosquark@sector-alpha.net
