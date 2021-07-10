@@ -1,10 +1,9 @@
-from utils.settings import settings 
-import pwd
 import os
 import os.path
 import subprocess as sp
 
 from downloadermodules.url import download as url_download
+from utils.settings import settings
 
 # if a user has already installed steam to e.g ubuntu, steamcmd prefers to be installed in the same directory (or at least when steamcmd starts, it sends the error related things there as if it wants to be installed there.
 STEAMCMD_DIR = os.path.expanduser(settings.user.downloader.getsection('steamcmd').get('steamcmd_path') or "~/.local/share/Steam/" if os.path.isdir(os.path.expanduser("~/.local/share/Steam/")) else "~/Steam/")

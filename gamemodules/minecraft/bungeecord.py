@@ -12,7 +12,7 @@ import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
 
 commands=()
-command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("DIR","The Directory to install minecraft in",str),))}
+command_args={"setup":CmdSpec(optional_arguments=(ArgSpec("DIR", "The Directory to install minecraft in", str),))}
 command_descriptions={}
 command_functions={}
 

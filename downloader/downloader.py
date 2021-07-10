@@ -52,7 +52,7 @@ def _findmodule(name):
     while True:
         name=str(name)
         if len(name)<2 and all((len(el)>0 and el.isalnum()) for el in name.split(".")):
-            raise DownloaderError("Invalid module requested: "+self.data["module"])
+            raise DownloaderError("Invalid module requested: "+name)
         try:
             module=import_module(DOWNLOADERS_PACKAGE+name)
         except ImportError as ex:
@@ -158,7 +158,7 @@ def getpath(module,args):
         # Now locked so no-one else can be changing it
         path=getpathifexists(module,args)
         if path is not None:
-            return Path
+            return path
         
         # definitely doesn't exist so we need to download it
         path=download(module,args)
@@ -208,9 +208,9 @@ def getpaths(module,sort=None,**filter):
                  (module_name,[list,of,arguments],path,date_added,is_active)
          """
     if module is None:
-        filterfn,sortfn=_getallfilter(**kwargs)
+        filterfn,sortfn=_getallfilter(sort = sort, **filter)
     else:
-        filterfn,sortfn=_findmodule(module).getfilter(**kwargs)
+        filterfn,sortfn=_findmodule(module).getfilter(sort=sort, **filter)
     downloads=[]
     with open(DB_PATH,'r') as f:
         for line in f:

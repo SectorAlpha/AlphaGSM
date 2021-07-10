@@ -73,7 +73,7 @@ def getfilter(active=None,url=None,compression=None,sort=None):
     elif url!=None:    
         filterfn=lambda lmodule,largs,llocation,ldate,lactive: url(largs[0])
     if sort == "date":
-        sortfn=lambda lmodule,largs,llocation,ldate,lactive: date
+        sortfn=lambda lmodule,largs,llocation,ldate,lactive: ldate
     else:
         raise DownloaderError("Unknown sort key")
     return filterfn,sortfn

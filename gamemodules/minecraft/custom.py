@@ -9,7 +9,7 @@ import re
 import screen
 import downloader
 import utils.updatefs
-from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
+from utils.cmdparse.cmdspec import CmdSpec,FlagOptSpec,ArgOptSpec,ArgSpec
 from utils import backups
 import random
 
@@ -40,17 +40,17 @@ commands=("op","deop")
 #   key = command name
 #   value = CmdSpec(optional argument tuple=(Argument, description, type), 
 #      options=(Optspec( shortform, longform, description, keyword to store option, default value, store value if true, else run function))
-command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),),
-                                                            options=(OptSpec("l",["eula"],"Mark the eula as read","eula",None,True),)),
-                            "op":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to op",str),),repeatable=True),
-                            "deop":CmdSpec(requiredarguments=(ArgSpec("USER","The user[s] to deop",str),),repeatable=True),
-                            "message":CmdSpec(optionalarguments=(ArgSpec("TARGET","The user[s] to send the message to. Sends to all if none given.",str),),repeatable=True,
-                                            options=(OptSpec("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse",None,True),)),
-                            "backup":CmdSpec(optionalarguments=(ArgSpec("PROFILE","Do a backup using the specified profile",str),),
-                                                             options=(OptSpec("a",["activate"],"Activate regular backups. Valid values for frequency are 'daily', 'weekly', 'monthly' and 'yearly' or 'none' to disable",'activate',"FREQUENCY",str),
-                                                                             OptSpec("d",["deactivate"],"Deactivate regular backups. Equivelent to --activate none",'activate',None,'none'),
-                                                                             OptSpec("w",["when"],"When should the regular backups take place. Valid format is 'hour[:minute][ DATE]' where DATE is the day of the week (3 letter names accepted) for "
-                                                                                     "weekly, the day of the month for monthly, the day and month (3 letter names accepted for month) for yearly backups and not allowed for daily backups",'when','WHEN',str)))}
+command_args={"setup":CmdSpec(optional_arguments=(ArgSpec("PORT", "The port for the server to listen on", int), ArgSpec("DIR", "The Directory to install minecraft in", str),),
+                              options=(FlagOptSpec("l",["eula"],"Mark the eula as read","eula"),)),
+                            "op":CmdSpec(required_arguments=(ArgSpec("USER", "The user[s] to op", str),), repeatable=True),
+                            "deop":CmdSpec(required_arguments=(ArgSpec("USER", "The user[s] to deop", str),), repeatable=True),
+                            "message":CmdSpec(optional_arguments=(ArgSpec("TARGET", "The user[s] to send the message to. Sends to all if none given.", str),), repeatable=True,
+                                              options=(FlagOptSpec("p",["parse"],"Parse the message for selectors (otherwise prints directly).","parse"),)),
+                            "backup":CmdSpec(optional_arguments=(ArgSpec("PROFILE", "Do a backup using the specified profile", str),),
+                                             options=(ArgOptSpec("a", ["activate"], "Activate regular backups. Valid values for frequency are 'daily', 'weekly', 'monthly' and 'yearly' or 'none' to disable", 'activate', "FREQUENCY", str),
+                                                      FlagOptSpec("d",["deactivate"],"Deactivate regular backups. Equivelent to --activate none",'activate','none'),
+                                                      ArgOptSpec("w", ["when"], "When should the regular backups take place. Valid format is 'hour[:minute][ DATE]' where DATE is the day of the week (3 letter names accepted) for "
+                                                                                     "weekly, the day of the month for monthly, the day and month (3 letter names accepted for month) for yearly backups and not allowed for daily backups",'when','WHEN', str)))}
 
 # required
 command_descriptions={'set':"The available keys to set are:\texe_name: (1 value) the name of the jar file to execute\n\tbackup.profiles.PROFILENAME.targets: (many values) the "

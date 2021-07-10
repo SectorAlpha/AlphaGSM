@@ -15,8 +15,8 @@ from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
 
 
 command_args=command_args.copy()
-command_args["setup"]=command_args["setup"].combine(CmdSpec(options=(OptSpec("v",["version"],"Version of minecraft to download. Overriden by the url option","version","VERSION",str),
-                                                OptSpec("u",["url"],"Url to download minecraft from. See https://minecraft.net/download for latest download.","url","URL",str))))
+command_args["setup"]=command_args["setup"].combine(CmdSpec(options=(ArgOptSpec("v", ["version"], "Version of minecraft to download. Overriden by the url option", "version", "VERSION", str),
+                                                                     ArgOptSpec("u", ["url"], "Url to download minecraft from. See https://minecraft.net/download for latest download.", "url", "URL", str))))
 
 def configure(server,ask,port=None,dir=None,*,eula=None,version=None,url=None,exe_name="minecraft_server.jar",download_name="minecraft_server.jar",download_data=None):
     allversions=[]

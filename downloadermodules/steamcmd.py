@@ -2,15 +2,13 @@
 # USE AT YOUR OWN RISK
 # Or message the developers if you would like to help get this working.
 # There may be major bugs and errors and it isn't at all tested.
-from utils.settings import settings 
-from . import url as urlextra
-import downloader.downloader as downloader
-import pwd
 import os
 import os.path
 import shutil
 
-
+import downloader.downloader as downloader
+from utils.settings import settings
+from . import url as urlextra
 
 # if a user has already installed steam to e.g ubuntu, steamcmd prefers to be installed in the same directory (or at least when steamcmd starts, it sends the error related things there as if it wants to be installed there.
 STEAMCMD_DIR = os.path.expanduser(settings.user.downloader.getsection('steamcmd').get('steamcmd_path') or "~/.local/share/Steam/" if os.path.isdir(os.path.expanduser("~/.local/share/Steam/")) else "~/Steam/")
@@ -25,17 +23,17 @@ STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.
 def install_steamcmd():
 
     # if steamcmd dir does not exist, download it  
-    if not os.path.exists(steam_cmd_install_dir):
+    if not os.path.exists(STEAMCMD_DIR):
         os.makedirs(STEAMCMD_DIR)
 
     if not os.path.isfile(STEAMCMD_EXE):
         # if steamcmd files do not exist, download it
-        urlextra.download(STEAMCMD_DIR,(STEAMCMD_IRL,"steamcmd_linux.tar.gz","tar.gz"))
+        urlextra.download(STEAMCMD_DIR,(STEAMCMD_URL,"steamcmd_linux.tar.gz","tar.gz"))
 
 
 def download(path,args):
     """ downloads a game via steamcmd"""
-    Steam_AppID, version, steam_anonymous_login_possible = *args
+    Steam_AppID, version, steam_anonymous_login_possible = args
     version = int(version)
     # check to see if steamcmd exists
     install_steamcmd()
@@ -61,18 +59,18 @@ def getfilter(active=None,Steam_AppID=None,steam_anonymous_login_possible=None,s
         if Steam_AppID!=None:
             if steam_anonymous_login_possible!=None:
                 filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and str(Steam_AppID) == largs[0] and str(steam_anonymous_login_possible) == largs[2]
-            else
+            else:
                 filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and str(Steam_AppID) == largs[0]
         elif steam_anonymous_login_possible!=None:
             filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and str(steam_anonymous_login_possible) == largs[2]
-        else
+        else:
             filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive
     elif Steam_AppID!=None:    
         if steam_anonymous_login_possible!=None:
             filterfn=lambda lmodule,largs,llocation,ldate,lactive: str(Steam_AppID) == largs[0] and str(steam_anonymous_login_possible) == largs[2]
-        else
+        else:
             filterfn=lambda lmodule,largs,llocation,ldate,lactive: str(Steam_AppID) == largs[0]
-    else if steam_anonymous_login_possible!=None:
+    elif steam_anonymous_login_possible!=None:
             filterfn=lambda lmodule,largs,llocation,ldate,lactive: str(steam_anonymous_login_possible) == largs[2]
     if sort == "version":
         sortfn=lambda lmodule,largs,llocation,ldate,lactive: int(largs[1])

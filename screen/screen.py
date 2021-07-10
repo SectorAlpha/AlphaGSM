@@ -10,7 +10,7 @@ SCREENRC=os.path.join(os.path.expanduser(settings.user.getsection('core').get("a
 SCREENRC_TEMPLATE = "screenrc_template.txt"
 
 try:
-    KEEPLOGS=int(setting.user.getsection('screen').get('keeplogs',5))
+    KEEPLOGS=int(settings.user.getsection('screen').get('keeplogs',5))
 except:
     KEEPLOGS=5
 

@@ -97,7 +97,7 @@ def checkandcleartrees(rel,target,old,skip):
                     os.rename(targetentry,targetentry+LOCALSUFFIX)
                     skiplater.append(targetentry+LOCALSUFFIX)
                     print("WARNING: file from old version is folder in local but isn't wanted in new.\nRenamed to '{0}".format(targetentry+LOCALSUFFIX))
-                elif checkandcleartrees(relenetry,targetentry,oldentry,skip):
+                elif checkandcleartrees(relentry,targetentry,oldentry,skip):
                     # target and old both dirs and target now empty
                     os.rmdir(targetentry)
                 else:
@@ -112,7 +112,7 @@ def checkandcleartrees(rel,target,old,skip):
                 os.remove(targetentry)
             else:
                 # both exist but are different
-                ensusreabsent(targetentry+LOCALSUFFIX)
+                ensureabsent(targetentry+LOCALSUFFIX)
                 os.rename(targetentry,targetentry+LOCALSUFFIX)
                 skiplater.append(targetentry+LOCALSUFFIX)
                 anyleft=True
@@ -260,5 +260,5 @@ def doupdate(old,new,target,rel,linkdir,copy,skip,forcecopy):
             anyfailed|=removeuneeded(old,target,rel,entry,skip)
     
     for entry in newentries:
-        anyfailed|=updatefromnew(old,new,target,rel,entrym,linkdircopy,skip,forcecopy)
+        anyfailed|=updatefromnew(old,new,target,rel,entry,linkdir,copy,skip,forcecopy)
     return anyfailed

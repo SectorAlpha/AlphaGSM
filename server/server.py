@@ -10,7 +10,7 @@ from importlib import import_module
 import screen
 import time
 import crontab
-from utils.cmdparse.cmdspec import CmdSpec, ArgSpec, OptSpec
+from utils.cmdparse.cmdspec import CmdSpec, ArgSpec, FlagOptSpec, ArgOptSpec
 from utils.settings import settings
 from collections.abc import Mapping as MappingABC
 
@@ -27,7 +27,7 @@ def _findmodule(name):
     while True:
         name=str(name)
         if len(name)<2 and all((len(el)>0 and el.isalnum()) for el in name.split(".")):
-            raise ServerError("Invalid module requested: "+self.data["module"])
+            raise ServerError("Invalid module requested: "+name)
         try:
             module=import_module(SERVERMODULEPACKAGE+name)
         except ImportError as ex:
@@ -60,18 +60,18 @@ class Server(object):
     """
         
     default_commands=("setup","start","stop","activate","deactivate","status","message","connect","dump","set","backup")
-    default_command_args={"setup":CmdSpec(options=(OptSpec("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",None,False),)),
+    default_command_args={"setup":CmdSpec(options=(FlagOptSpec("n",["noask"],"Don't ask for input. Just fail if we can't cope","ask",False),)),
                                                 "start":CmdSpec(),
                                                 "stop":CmdSpec(),
-                                                "activate":CmdSpec(options=(OptSpec("d",["delay"],"Delay starting the server just setup the crontab","start",None,False),)),
-                                                "deactivate":CmdSpec(options=(OptSpec("d",["delay"],"Delay stopping the server just remove the crontab","stop",None,False),)),
-                                                "status":CmdSpec(options=(OptSpec("v",["verbose"],"Verbose status. argument is the level from 0 (normal) to 3 (max)","verbose","LEVEL",int),)),
-                                                "message":CmdSpec(requiredarguments=(ArgSpec("MESSAGE","The message to send",str),)),
+                                                "activate":CmdSpec(options=(FlagOptSpec("d",["delay"],"Delay starting the server just setup the crontab","start",False),)),
+                                                "deactivate":CmdSpec(options=(FlagOptSpec("d",["delay"],"Delay stopping the server just remove the crontab","stop",False),)),
+                                                "status":CmdSpec(options=(ArgOptSpec("v", ["verbose"], "Verbose status. argument is the level from 0 (normal) to 3 (max)", "verbose", "LEVEL", int),)),
+                                                "message":CmdSpec(required_arguments=(ArgSpec("MESSAGE", "The message to send", str),)),
                                                 "connect":CmdSpec(),
                                                 "dump":CmdSpec(),
-                                                "set":CmdSpec(requiredarguments=(ArgSpec("KEY","The key to set in the form of dot seperated elements",str),),
-                                                                            optionalarguments=(ArgSpec("VALUE","The value to set. New nodes in the structure will be created as needed. "
-                                                                                                                                 "Exactly how many values can be specified is KEY dependant.",str),),repeatable=True),
+                                                "set":CmdSpec(required_arguments=(ArgSpec("KEY", "The key to set in the form of dot seperated elements", str),),
+                                                              optional_arguments=(ArgSpec("VALUE", "The value to set. New nodes in the structure will be created as needed. "
+                                                                                                                                 "Exactly how many values can be specified is KEY dependant.", str),), repeatable=True),
                                                 "backup":CmdSpec()}
     default_command_descriptions={"setup":"Setup the game server.\nThis will include processing the required settings,"
                                                                                 " downloading or copying any needed files and doing any setup task so that a"
@@ -275,7 +275,7 @@ class Server(object):
         except AttributeError:
             pass
         else:
-            fn(server,key,*args,**kwargs)
+            fn(self,key,*args,**kwargs)
         self.data.save()
 
     def activate(self,start=True):

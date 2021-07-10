@@ -195,7 +195,7 @@ def run_one(name, server, cmd, args):
                 server = Server(tag, args[0])
             except ServerError as ex:
                 print("Can't create server", file=stderr)
-                print_handle_dex(ex)
+                print_handled_ex(ex)
                 print(file=stderr)
                 help(name, None, cmd)
                 return 1
@@ -587,14 +587,14 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         #  that are typical of every game server
         if server is None:
             for cmd in Server.default_commands:
-                cmdparse.shorthelp(
+                cmdparse.short_help(
                     cmd, Server.default_command_descriptions.get(cmd, None),
                     Server.default_command_args[cmd]
                 )
         #  otherwise return the commands specific to the server.
         else:
             for cmd in server.get_commands():
-                cmdparse.shorthelp(
+                cmdparse.short_help(
                     cmd, server.get_command_description(cmd),
                     server.get_command_args(cmd)
                 )
@@ -607,7 +607,7 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                 print(file=file)
                 help(name, server, file=file, full_help=full_help)
                 return
-            cmdparse.longhelp(
+            cmdparse.long_help(
                 cmd, Server.default_command_descriptions.get(cmd, None),
                 Server.default_command_args[cmd]
             )
@@ -617,7 +617,7 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                 print(file=file)
                 help(name, server, file=file, full_help=full_help)
                 return
-            cmdparse.longhelp(
+            cmdparse.long_help(
                 cmd, server.get_command_description(cmd),
                 server.get_command_args(cmd)
             )

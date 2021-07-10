@@ -9,7 +9,7 @@ import re
 import screen
 import downloader
 import utils.updatefs
-from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
+from utils.cmdparse.cmdspec import CmdSpec,FlagOptSpec,ArgSpec
 from utils import backups
 from utils import updatefs
 import random
@@ -21,9 +21,9 @@ steam_app_id = 232250
 steam_anonymous_login_possible = True
 
 commands=("update","restart")
-command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),)),
-        "update":CmdSpec(options=(OptSpec("v",["validate"],"Validate the server files after updating",'validate',None,True), \
-                OptSpec("r",["restart"],"Restarts the server upon updating",'restart',None,True),)),
+command_args={"setup":CmdSpec(optional_arguments=(ArgSpec("PORT", "The port for the server to listen on", int), ArgSpec("DIR", "The Directory to install minecraft in", str),)),
+        "update":CmdSpec(options=(FlagOptSpec("v",["validate"],"Validate the server files after updating",'validate'),
+                FlagOptSpec("r",["restart"],"Restarts the server upon updating",'restart'),)),
         "restart":CmdSpec()}
 
 # required still
