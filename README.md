@@ -157,7 +157,7 @@ A tutorial is on the TODO list, but we hope for now that the game server modules
 
 If you are interested in adding a new game server and would like help, raise an issue or a discussion on this github page
 
-You can also contact cosmosquark on our discord server https://discord.gg/8audc8Ukaq via email cosmosquark@sector-alpha.net.
+You can also contact cosmosquark on our discord server https://discord.gg/8audc8Ukaq via email.=
 
 ## Developing AlphaGSM
 
@@ -165,4 +165,4 @@ Read over the infomation provided in "technical_introduction.txt" to get an over
 
 # Contact
 
-Any queries? Contact us on Discord https://discord.gg/8audc8Ukaq or via email cosmosquark@sector-alpha.net
+Any queries? Contact us on Discord https://discord.gg/8audc8Ukaq
