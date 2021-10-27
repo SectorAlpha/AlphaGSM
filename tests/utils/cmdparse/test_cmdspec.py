@@ -45,3 +45,22 @@ class TestArgSpec:
     def test_default_conversion_is_identity(self,arg):
         arg_spec = ArgSpec("","")
         assert arg_spec.conversion(arg) == arg
+
+    def test_cant_set_properties(self):
+        arg_spec = ArgSpec("","",str)
+        with pytest.raises(AttributeError) as ex:
+            arg_spec.name="new"
+        with pytest.raises(AttributeError) as ex:
+            arg_spec.description="new"
+        with pytest.raises(AttributeError) as ex:
+            arg_spec.conversion=int
+        with pytest.raises(AttributeError) as ex:
+            arg_spec.invalid=0
+        with pytest.raises(TypeError) as ex:
+            arg_spec[0]="new"
+        with pytest.raises(TypeError) as ex:
+            arg_spec[1]="new"
+        with pytest.raises(TypeError) as ex:
+            arg_spec[2]=int
+        with pytest.raises(TypeError) as ex:
+            arg_spec[3]=int
