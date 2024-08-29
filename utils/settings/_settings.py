@@ -152,30 +152,44 @@ def __print(section,indent=""):
     print(indent,"}")
 
 class Settings(object):
+
   def __new__(cls):
     try:
       return cls._instance
     except AttributeError:
       cls._instance = super(Settings,cls).__new__(cls)
       return cls._instance
+
   @property
   def system(self):
     """ System settings """
     try:
       return self._system
     except AttributeError:
-      settingspath="/etc/alphagsm.conf" if __file__[:5]=="/usr/" else os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),"alphagsm.conf")
-      self._system=_loadsettings(settingspath)
+      settings_path = os.environ.get(
+        'ALPHAGSM_CONFIG_LOCATION',
+        "/etc/alphagsm.conf" if __file__[:5] == "/usr/" else os.path.join(
+          os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+          "alphagsm.conf"
+        )
+      )
+      self._system=_loadsettings(settings_path)
       return self._system
+
   @property
   def user(self):
     """ User settings """
     try:
       return self._user
     except AttributeError:
-      settingspath=os.path.join(os.path.expanduser(self.system.getsection('core').get('userconf',"~/.alphagsm")),"alphagsm.conf")
-      self._user=_loadsettings(settingspath,self.system)
+      user_settings_path = (
+        os.environ.get(
+          'ALPHAGSM_USERCONFIG_LOCATION',
+          os.path.join(os.path.expanduser(self.system.getsection('core').get('userconf',"~/.alphagsm")),"alphagsm.conf"))
+      )
+      self._user=_loadsettings(user_settings_path, self.system)
       return self._user
+
   def get(self,user):
     if user:
       return self.user

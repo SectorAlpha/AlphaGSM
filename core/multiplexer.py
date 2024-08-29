@@ -44,6 +44,9 @@ class ProcData(object):
             streams = []
         self.streams = streams
 
+    def __iter__(self):
+        return iter(self.streams)
+
 
 class Multiplexer(object):
     def __init__(self):
