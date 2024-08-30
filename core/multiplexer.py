@@ -33,6 +33,7 @@ class StreamData(object):
             if i < 0:
                 return
             tmp = self.data[:i]
+
             self.data = self.data[i + 1:]
             yield tmp
 
