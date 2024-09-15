@@ -1,1 +1,2 @@
-crontab
+crontab==0.23.0
+pytest==6.2.4
