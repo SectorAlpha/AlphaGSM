@@ -33,6 +33,7 @@ class StreamData(object):
             if i < 0:
                 return
             tmp = self.data[:i]
+
             self.data = self.data[i + 1:]
             yield tmp
 
@@ -43,6 +44,9 @@ class ProcData(object):
         if streams is None:
             streams = []
         self.streams = streams
+
+    def __iter__(self):
+        return iter(self.streams)
 
 
 class Multiplexer(object):

@@ -30,10 +30,10 @@ def install_steamcmd():
 
     if not os.path.isfile(STEAMCMD_EXE):
         # if steamcmd files do not exist, download it
-        urlextra.download(STEAMCMD_DIR,(STEAMCMD_IRL,"steamcmd_linux.tar.gz","tar.gz"))
+        urlextra.download(STEAMCMD_DIR,(STEAMCMD_URL,"steamcmd_linux.tar.gz","tar.gz"))
 
 
-def download(path,args):
+def download(path, args):
     """ downloads a game via steamcmd"""
     Steam_AppID, version, steam_anonymous_login_possible = *args
     version = int(version)
