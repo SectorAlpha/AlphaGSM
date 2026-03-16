@@ -153,10 +153,11 @@ def install(server,*,eula=False):
 
     eulafile=os.path.join(server.data["dir"],"eula.txt")
     configfile=os.path.join(server.data["dir"],"server.properties")
+    javapath = server.data.get("javapath","java")
     if not os.path.isfile(configfile) or (eula and not os.path.isfile(eulafile)): # use as flag for has the server created it's files
         print("Starting server to create settings")
         try:
-            ret=sp.check_call(["java","-jar",server.data["exe_name"],"nogui"],cwd=server.data["dir"],shell=False,timeout=20)
+            ret=sp.check_call([javapath,"-jar",server.data["exe_name"],"nogui"],cwd=server.data["dir"],shell=False,timeout=20)
         except sp.CalledProcessError as ex:
             print("Error running server. Java returned status: "+ex.returncode)
         except sp.TimeoutExpired as ex:
@@ -166,7 +167,8 @@ def install(server,*,eula=False):
         updateconfig(eulafile,{"eula":"true"})
         
 def get_start_command(server):
-    return ["java","-jar",server.data["exe_name"],"nogui"],server.data["dir"]
+    javapath = server.data.get("javapath","java")
+    return [javapath,"-jar",server.data["exe_name"],"nogui"],server.data["dir"]
 
 def do_stop(server,j):
     screen.send_to_server(server.name,"\nstop\n")
@@ -203,6 +205,10 @@ def checkvalue(server,key,*value):
     if key == ("exe_name",):
         if len(value)!=1:
             raise ServerError("Only one value supported for 'exe_name'")
+        return value[0]
+    if key == ("javapath",):
+        if len(value)!=1:
+            raise ServerError("Only one value supported for 'javapath'")
         return value[0]
     if key[0] == ("backup"):
         try:
