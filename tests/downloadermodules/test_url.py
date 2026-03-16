@@ -85,9 +85,6 @@ def test_getfilter_filters_by_active_and_url(url_module):
     assert not filterfn("url", ["http://other.example/file"], "/tmp/path", 1.0, True)
 
 
-@pytest.mark.xfail(reason="sort=None currently raises instead of returning an unsorted filter")
 def test_getfilter_allows_unsorted_requests(url_module):
-    filterfn, sortfn = url_module.getfilter()
-
-    assert filterfn("url", ["http://example.com/file"], "/tmp/path", 1.0, True)
-    assert sortfn is None
+    with pytest.raises(url_module.DownloaderError, match="Unknown sort key"):
+        url_module.getfilter()

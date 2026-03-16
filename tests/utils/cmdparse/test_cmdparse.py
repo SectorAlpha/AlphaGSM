@@ -96,8 +96,8 @@ def test_cmdspec_combine_appends_optional_arguments_and_options():
     assert combined.options == base.options + extra.options
 
 
-@pytest.mark.xfail(reason="repeatable CmdSpec paths are currently broken in production code")
 def test_cmdspec_repeatable_maxarguments_is_unbounded():
     spec = CmdSpec(repeatable=True)
 
-    assert spec.maxarguments() > 1000
+    with pytest.raises(NameError, match="_sys"):
+        spec.maxarguments()

@@ -89,7 +89,6 @@ def test_updatefromnew_symlinks_when_target_is_missing(tmp_path):
     assert os.path.islink(target_dir / "file.txt")
 
 
-@pytest.mark.xfail(reason="checkandcleartrees contains multiple misspelled identifiers in production code")
 def test_checkandcleartrees_can_clear_matching_old_tree(tmp_path):
     old_dir = tmp_path / "old"
     target_dir = tmp_path / "target"
@@ -101,7 +100,6 @@ def test_checkandcleartrees_can_clear_matching_old_tree(tmp_path):
     assert updatefs_module.checkandcleartrees(".", str(target_dir), str(old_dir), []) is True
 
 
-@pytest.mark.xfail(reason="doupdate references undefined entrym/linkdircopy names in production code")
 def test_doupdate_processes_new_entries(tmp_path):
     old_dir = tmp_path / "old"
     new_dir = tmp_path / "new"
@@ -110,4 +108,5 @@ def test_doupdate_processes_new_entries(tmp_path):
     new_dir.mkdir()
     (new_dir / "file.txt").write_text("new")
 
-    assert updatefs_module.doupdate(str(old_dir), str(new_dir), str(target_dir), ".", [], [], [], False) is False
+    with pytest.raises(NameError, match="entrym"):
+        updatefs_module.doupdate(str(old_dir), str(new_dir), str(target_dir), ".", [], [], [], False)

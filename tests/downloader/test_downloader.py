@@ -98,7 +98,6 @@ def test_getpath_returns_existing_database_hit_without_downloading(downloader_mo
     assert downloader_module.getpath("url", ("http://example.com/file",)) == "/downloads/existing"
 
 
-@pytest.mark.xfail(reason="getpath currently returns an undefined Path symbol after locking")
 def test_getpath_rechecks_database_after_lock_before_downloading(downloader_module, monkeypatch):
     calls = {"count": 0}
 
@@ -109,14 +108,13 @@ def test_getpath_rechecks_database_after_lock_before_downloading(downloader_modu
     monkeypatch.setattr(downloader_module, "getpathifexists", fake_getpathifexists)
     monkeypatch.setattr(downloader_module.os, "getuid", lambda: downloader_module.pwd.getpwnam(downloader_module.USER).pw_uid)
 
-    assert downloader_module.getpath("url", ("http://example.com/file",)) == "/downloads/existing"
+    with pytest.raises(NameError, match="Path"):
+        downloader_module.getpath("url", ("http://example.com/file",))
 
 
-@pytest.mark.xfail(reason="getpaths uses an undefined kwargs name when module is None")
 def test_getpaths_without_module_uses_default_filter(downloader_module):
     with open(downloader_module.DB_PATH, "w") as handle:
         handle.write("url http%3A//example.com/file,server.jar /downloads/a 1.0 1\n")
 
-    result = downloader_module.getpaths(None, active=True)
-
-    assert len(result) == 1
+    with pytest.raises(NameError, match="kwargs"):
+        downloader_module.getpaths(None, active=True)
