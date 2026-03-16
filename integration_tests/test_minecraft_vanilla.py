@@ -113,6 +113,24 @@ def _run_alphagsm(env, *args, timeout=TEST_TIMEOUT_SECONDS):
     )
 
 
+def _log_command_result(name, result):
+    print(f"\n=== {name} ===")
+    print(f"returncode: {result.returncode}")
+    if result.stdout:
+        print("stdout:")
+        print(result.stdout.rstrip())
+    if result.stderr:
+        print("stderr:")
+        print(result.stderr.rstrip())
+
+
+def _run_and_assert_ok(env, *args, timeout=TEST_TIMEOUT_SECONDS):
+    result = _run_alphagsm(env, *args, timeout=timeout)
+    _log_command_result("alphagsm " + " ".join(args), result)
+    assert result.returncode == 0, result.stderr or result.stdout
+    return result
+
+
 def _encode_varint(value):
     buf = bytearray()
     while True:
@@ -211,13 +229,11 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
     release_id, server_url = _fetch_latest_release_server_url()
     env = _alphagsm_env(config_path)
 
-    create = _run_alphagsm(env, server_name, "create", "minecraft.vanilla")
-    assert create.returncode == 0, create.stderr or create.stdout
+    _run_and_assert_ok(env, server_name, "create", "minecraft.vanilla")
 
-    set_java = _run_alphagsm(env, server_name, "set", "javapath", str(wrapper_path))
-    assert set_java.returncode == 0, set_java.stderr or set_java.stdout
+    _run_and_assert_ok(env, server_name, "set", "javapath", str(wrapper_path))
 
-    setup = _run_alphagsm(
+    _run_and_assert_ok(
         env,
         server_name,
         "setup",
@@ -229,21 +245,23 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         server_url,
         timeout=TEST_TIMEOUT_SECONDS,
     )
-    assert setup.returncode == 0, setup.stderr or setup.stdout
 
     jar_path = install_dir / "minecraft_server.jar"
     assert jar_path.exists(), f"Expected downloaded jar at {jar_path}"
     assert (install_dir / "eula.txt").exists()
     assert (install_dir / "server.properties").exists()
 
-    start = _run_alphagsm(env, server_name, "start", timeout=60)
-    assert start.returncode == 0, start.stderr or start.stdout
+    _run_and_assert_ok(env, server_name, "start", timeout=60)
 
     try:
         status = _wait_for_status("127.0.0.1", port, START_TIMEOUT_SECONDS)
         assert status["version"]["name"]
         assert release_id.split(".")[0] in status["version"]["name"]
+        status_cmd = _run_and_assert_ok(env, server_name, "status")
+        assert "Server is running" in status_cmd.stdout
+        _run_and_assert_ok(env, server_name, "message", "hello world")
     finally:
-        stop = _run_alphagsm(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
-        assert stop.returncode == 0, stop.stderr or stop.stdout
+        _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
         _wait_for_port_to_close("127.0.0.1", port, STOP_TIMEOUT_SECONDS)
+        final_status = _run_and_assert_ok(env, server_name, "status")
+        assert "isn't running" in final_status.stdout
