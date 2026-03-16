@@ -1,9 +1,10 @@
+import importlib
 from io import StringIO
 from types import SimpleNamespace
 
 import pytest
 
-import core.main as main_module
+main_module = importlib.import_module("core.main")
 
 
 class FakeStdout:
@@ -32,23 +33,27 @@ def test_split_server_name_rejects_multiple_separators():
 def test_get_all_all_servers_reads_running_and_saved_lists(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(main_module.screen, "list_all_screens", lambda: ["alice/one", "two"])
+    err = StringIO()
+    monkeypatch.setattr(main_module, "stderr", err)
 
     stopped = main_module.get_all_all_servers("stop")
     started = main_module.get_all_all_servers("start")
 
     assert stopped == ["alice/one", "two"]
     assert started == ["alice/one", "two"]
-    assert "Using servers for '*/*':" in capsys.readouterr().err
+    assert "Using servers for '*/*':" in err.getvalue()
 
 
 def test_get_all_user_servers_reads_json_filenames(monkeypatch, capsys):
     monkeypatch.setattr(main_module.servermodule, "DATAPATH", "/srv/conf")
     monkeypatch.setattr(main_module.os, "listdir", lambda path: ["one.json", "two.json", "ignore.txt"])
+    err = StringIO()
+    monkeypatch.setattr(main_module, "stderr", err)
 
     result = main_module.get_all_user_servers()
 
     assert result == [(None, "one"), (None, "two")]
-    assert "Using servers for '*': one two" in capsys.readouterr().err
+    assert "Using servers for '*': one two" in err.getvalue()
 
 
 def test_expand_server_star_handles_user_and_tag_wildcards(monkeypatch, capsys):
@@ -70,18 +75,20 @@ def test_get_run_cmd_and_run_as_cmd_build_expected_subprocess_command(monkeypatc
     local = main_module.get_run_cmd("alphagsm", "alpha", ["status"], multi=True)
     remote = main_module.get_run_as_cmd("alphagsm", "bob", "alpha", ["status"], multi=False)
 
-    assert local == ["/repo/alphagsm-internal", "1", "alphagsm", "alpha", "status"]
-    assert remote == ["sudo", "-Hu", "bob", "/repo/alphagsm-internal", "0", "alphagsm", "alpha", "status"]
+    assert local == ["/repo/core/alphagsm-internal", "1", "alphagsm", "alpha", "status"]
+    assert remote == ["sudo", "-Hu", "bob", "/repo/core/alphagsm-internal", "0", "alphagsm", "alpha", "status"]
 
 
 def test_run_as_returns_subprocess_status(monkeypatch, capsys):
     monkeypatch.setattr(main_module, "get_run_as_cmd", lambda name, user, server, args: ["cmd"])
     monkeypatch.setattr(main_module.sp, "call", lambda cmd: 3)
+    err = StringIO()
+    monkeypatch.setattr(main_module, "stderr", err)
 
     result = main_module.run_as("alphagsm", "bob", "alpha", ["status"])
 
     assert result == 3
-    assert "Command finished with return status 3" in capsys.readouterr().err
+    assert "Command finished with return status 3" in err.getvalue()
 
 
 def test_run_list_multi_prefixes_remote_output_and_combines_return_codes(monkeypatch, capsys):
@@ -90,6 +97,8 @@ def test_run_list_multi_prefixes_remote_output_and_combines_return_codes(monkeyp
         FakeProc(b"two\n", 4),
     ]
     monkeypatch.setattr(main_module, "stdout", FakeStdout())
+    err = StringIO()
+    monkeypatch.setattr(main_module, "stderr", err)
     monkeypatch.setattr(main_module, "get_run_as_cmd", lambda *args, **kwargs: ["remote"])
     monkeypatch.setattr(main_module, "get_run_cmd", lambda *args, **kwargs: ["local"])
     monkeypatch.setattr(main_module.sp, "Popen", lambda cmd, stdout=None: outputs.pop(0))
@@ -100,7 +109,7 @@ def test_run_list_multi_prefixes_remote_output_and_combines_return_codes(monkeyp
     assert result == 10
     assert "bob/one" in captured.out
     assert "two" in captured.out
-    assert "Command finished with return status 2" in captured.err
+    assert "Command finished with return status 2" in err.getvalue()
 
 
 def test_internal_is_running_matches_internal_marker():
@@ -141,10 +150,13 @@ def test_run_one_handles_remote_list_and_remote_command(monkeypatch):
 
 def test_run_one_create_requires_type_and_restricts_followup(monkeypatch, capsys):
     monkeypatch.setattr(main_module, "help", lambda *args, **kwargs: None)
+    err = StringIO()
+    monkeypatch.setattr(main_module, "stderr", err)
+    monkeypatch.setattr(main_module, "Server", lambda tag, module=None: SimpleNamespace())
 
     assert main_module.run_one("alphagsm", (None, "alpha"), "create", []) == 2
     assert main_module.run_one("alphagsm", (None, "alpha"), "create", ["minecraft", "start"]) == 2
-    assert "Type of server to create is a required argument" in capsys.readouterr().err
+    assert "Type of server to create is a required argument" in err.getvalue()
 
 
 def test_run_one_parses_and_runs_local_command(monkeypatch):

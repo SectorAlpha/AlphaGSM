@@ -151,13 +151,16 @@ def test_steam_game_update_downloads_and_optionally_restarts(monkeypatch):
     csgo_server.data["dir"] = "/srv/csgo/"
     calls = []
 
-    monkeypatch.setattr(tf2.steamcmd, "download", lambda path, app_id, anon, validate=True: calls.append(("tf2", path, app_id, anon, validate)))
-    monkeypatch.setattr(csgo.steamcmd, "download", lambda path, app_id, anon, validate=True: calls.append(("csgo", path, app_id, anon, validate)))
+    monkeypatch.setattr(
+        tf2.steamcmd,
+        "download",
+        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+    )
 
     tf2.update(tf2_server, validate=True, restart=True)
     csgo.update(csgo_server, validate=False, restart=False)
 
-    assert ("tf2", "/srv/tf2/", tf2.steam_app_id, tf2.steam_anonymous_login_possible, True) in calls
-    assert ("csgo", "/srv/csgo/", csgo.steam_app_id, csgo.steam_anonymous_login_possible, False) in calls
+    assert ("/srv/tf2/", tf2.steam_app_id, tf2.steam_anonymous_login_possible, True) in calls
+    assert ("/srv/csgo/", csgo.steam_app_id, csgo.steam_anonymous_login_possible, False) in calls
     assert tf2_server.start_calls == 1
     assert csgo_server.start_calls == 0
