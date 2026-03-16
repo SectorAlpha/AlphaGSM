@@ -1,0 +1,93 @@
+import importlib
+import io
+import sys
+import urllib.error
+
+import pytest
+
+
+@pytest.fixture
+def url_module(monkeypatch):
+    monkeypatch.setenv("ALPHAGSM_CONFIG_LOCATION", "./tests/alphagsm-test.conf")
+    sys.modules.pop("downloadermodules.url", None)
+    return importlib.import_module("downloadermodules.url")
+
+
+def test_reporthook_prints_progress_for_known_size(url_module, capsys):
+    url_module.reporthook(1, 10, 100)
+
+    captured = capsys.readouterr()
+    assert "10.0%" in captured.out
+
+
+def test_download_rejects_too_many_arguments(url_module, tmp_path):
+    with pytest.raises(url_module.DownloaderError, match="Too many arguments"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server.jar", "zip", "extra"))
+
+
+def test_download_rejects_unknown_decompression(url_module, tmp_path):
+    with pytest.raises(url_module.DownloaderError, match="Unknown decompression type"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server.jar", "rar"))
+
+
+def test_download_wraps_url_errors(url_module, tmp_path, monkeypatch):
+    def fake_urlretrieve(url, filename, reporthook):
+        raise urllib.error.URLError("offline")
+
+    monkeypatch.setattr(url_module.urllib.request, "urlretrieve", fake_urlretrieve)
+
+    with pytest.raises(url_module.DownloaderError, match="Can't download file"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
+
+
+@pytest.mark.parametrize(
+    ("compression", "expected_cmd"),
+    [
+        ("zip", ["unzip"]),
+        ("tar", ["tar", "-xf"]),
+        ("tar.gz", ["tar", "-xf"]),
+        ("tgz", ["tar", "-xfz"]),
+        ("gz", ["gunzip"]),
+    ],
+)
+def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, compression, expected_cmd):
+    calls = []
+
+    def fake_urlretrieve(url, filename, reporthook):
+        return filename, {}
+
+    def fake_call(cmd, stdout):
+        calls.append(cmd)
+        return 0
+
+    monkeypatch.setattr(url_module.urllib.request, "urlretrieve", fake_urlretrieve)
+    monkeypatch.setattr(url_module.sp, "call", fake_call)
+
+    url_module.download(str(tmp_path), ("http://example.com/file", "server", compression))
+
+    assert calls
+    assert calls[0][: len(expected_cmd)] == expected_cmd
+
+
+def test_download_raises_when_extractor_fails(url_module, tmp_path, monkeypatch):
+    monkeypatch.setattr(url_module.urllib.request, "urlretrieve", lambda url, filename, reporthook: (filename, {}))
+    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 1)
+
+    with pytest.raises(url_module.DownloaderError, match="Error extracting download"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server", "zip"))
+
+
+def test_getfilter_filters_by_active_and_url(url_module):
+    filterfn, sortfn = url_module.getfilter(active=True, url=r"http://example.com/.*", sort="date")
+
+    assert sortfn is not None
+    assert filterfn("url", ["http://example.com/file"], "/tmp/path", 1.0, True)
+    assert not filterfn("url", ["http://other.example/file"], "/tmp/path", 1.0, True)
+
+
+@pytest.mark.xfail(reason="sort=None currently raises instead of returning an unsorted filter")
+def test_getfilter_allows_unsorted_requests(url_module):
+    filterfn, sortfn = url_module.getfilter()
+
+    assert filterfn("url", ["http://example.com/file"], "/tmp/path", 1.0, True)
+    assert sortfn is None
