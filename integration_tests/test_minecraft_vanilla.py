@@ -211,7 +211,7 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
     release_id, server_url = _fetch_latest_release_server_url()
     env = _alphagsm_env(config_path)
 
-    create = _run_alphagsm(env, server_name, "create", "minecraft")
+    create = _run_alphagsm(env, server_name, "create", "minecraft.vanilla")
     assert create.returncode == 0, create.stderr or create.stdout
 
     set_java = _run_alphagsm(env, server_name, "set", "javapath", str(wrapper_path))
