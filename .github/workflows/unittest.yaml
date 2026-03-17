@@ -38,6 +38,30 @@ jobs:
     - name: AlphaGSM Unit Tests
       run: pytest
 
+  smoke-test:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    env:
+      PYTHONPATH: .
+    steps:
+    - name: Checkout AlphaGSM code
+      uses: actions/checkout@v2
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '21'
+    - name: AlphaGSM Smoke Test Runner
+      run: ./smoke_tests/run_minecraft_vanilla.sh
+
   integration-test:
     runs-on: ubuntu-latest
     needs: unit-test
@@ -59,7 +83,7 @@ jobs:
       with:
         distribution: temurin
         java-version: '21'
-    - name: AlphaGSM Integration Tests
+    - name: AlphaGSM Pytest Integration Test
       env:
         ALPHAGSM_RUN_INTEGRATION: '1'
       run: pytest integration_tests/test_minecraft_vanilla.py

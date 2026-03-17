@@ -194,7 +194,7 @@ def _wait_for_status(host, port, timeout_seconds):
     while time.time() < deadline:
         try:
             return _minecraft_status_ping(host, port, timeout=3)
-        except Exception as ex:  # noqa: BLE001 - integration polling
+        except Exception as ex:  # noqa: BLE001
             last_error = ex
             time.sleep(2)
     raise AssertionError(f"Minecraft server did not respond in time: {last_error}")
@@ -205,7 +205,7 @@ def _wait_for_port_to_close(host, port, timeout_seconds):
     while time.time() < deadline:
         try:
             _minecraft_status_ping(host, port, timeout=2)
-        except Exception:  # noqa: BLE001 - any failure means the server is no longer responding
+        except Exception:  # noqa: BLE001
             return
         time.sleep(2)
     raise AssertionError("Minecraft server still responds after stop timeout")
@@ -230,9 +230,7 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
     env = _alphagsm_env(config_path)
 
     _run_and_assert_ok(env, server_name, "create", "minecraft.vanilla")
-
     _run_and_assert_ok(env, server_name, "set", "javapath", str(wrapper_path))
-
     _run_and_assert_ok(
         env,
         server_name,

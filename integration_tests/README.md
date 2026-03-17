@@ -12,16 +12,12 @@ Run them with:
 PYTHONPATH=. pytest integration_tests
 ```
 
-Or use the dedicated runner:
+The direct runner-style smoke checks live separately under `smoke_tests/`.
+
+Run the Minecraft pytest integration test with:
 
 ```bash
-./run_integration_tests.sh
-```
-
-These tests are opt-in. For the Minecraft flow, enable:
-
-```bash
-ALPHAGSM_RUN_INTEGRATION=1 ./run_integration_tests.sh
+ALPHAGSM_RUN_INTEGRATION=1 PYTHONPATH=. pytest integration_tests/test_minecraft_vanilla.py
 ```
 
 Requirements for the Minecraft integration:
