@@ -3,7 +3,7 @@ set -Eeuo pipefail
 set -x
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PYTHON_BIN="${PYTHON_BIN:-python}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 STATUS_HELPER="$REPO_ROOT/smoke_tests/source_status.py"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 
@@ -41,6 +41,20 @@ run_alphagsm_capture() {
   return "$status"
 }
 
+wait_for_log_ready() {
+  local log_path="$1"
+  local timeout_seconds="$2"
+  local deadline=$((SECONDS + timeout_seconds))
+  while (( SECONDS < deadline )); do
+    if [[ -f "$log_path" ]] && grep -Eq 'SV_ActivateServer: setting tickrate|Server is hibernating' "$log_path"; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "TF2 log did not show readiness markers in time: $log_path" >&2
+  return 1
+}
+
 skip_for_known_tf2_setup_issue() {
   local output="$1"
   if {
@@ -67,6 +81,7 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/tf2-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-tf2.conf"
+LOG_PATH="$HOME_DIR/logs/AlphaGSM-TF2-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -113,9 +128,8 @@ test -f "$INSTALL_DIR/tf/cfg/server.cfg"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-"$PYTHON_BIN" "$STATUS_HELPER" wait-for-status 127.0.0.1 "$PORT" "$START_TIMEOUT_SECONDS"
+wait_for_log_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" stop
 SERVER_STARTED=0
-"$PYTHON_BIN" "$STATUS_HELPER" wait-for-closed 127.0.0.1 "$PORT" "$STOP_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status

@@ -101,6 +101,8 @@ def test_tf2_get_start_command_prefixes_executable_and_uses_steamcmd(tmp_path, m
     command, cwd = tf2.get_start_command(server)
 
     assert command[0] == "./srcds_run"
+    assert "-clientport" in command
+    assert "27016" in command
     assert "-steam_dir" in command
     assert "/tmp/update.txt" in command
     assert cwd == server.data["dir"]
@@ -119,6 +121,7 @@ def test_tf2_get_start_command_falls_back_to_64_bit_launcher(tmp_path, monkeypat
 
     assert command[0] == "./srcds_run_64"
     assert server.data["exe_name"] == "srcds_run_64"
+    assert "27016" in command
     assert cwd == server.data["dir"]
 
 

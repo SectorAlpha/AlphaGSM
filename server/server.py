@@ -197,7 +197,7 @@ class Server(object):
         except AttributeError:
             pass
         else:
-            prestart(*args,**kwargs)
+            prestart(self,*args,**kwargs)
         cmd,cwd=self.module.get_start_command(self,*args,**kwargs)
         screen.start_screen(self.name,cmd,cwd=cwd)
         try:
@@ -205,7 +205,7 @@ class Server(object):
         except AttributeError:
             pass
         else:
-            poststart(*args,**kwargs)
+            poststart(self,*args,**kwargs)
 
     def stop(self,*args,**kwargs):
         """Stop the server. If the server can't be stopped even after multiple attempts then raises a ServerError"""

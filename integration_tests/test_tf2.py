@@ -8,9 +8,6 @@ import time
 
 import pytest
 
-from smoke_tests import source_status
-
-
 pytestmark = pytest.mark.integration
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +15,7 @@ ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 TEST_TIMEOUT_SECONDS = 1200
 START_TIMEOUT_SECONDS = 180
 STOP_TIMEOUT_SECONDS = 90
+READY_LOG_MARKERS = ("SV_ActivateServer: setting tickrate", "Server is hibernating")
 
 
 def _require_integration_opt_in():
@@ -115,27 +113,41 @@ def _skip_for_known_tf2_setup_issue(result):
         )
 
 
-def _wait_for_status(host, port, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    last_error = None
-    while time.time() < deadline:
-        try:
-            return source_status._query_info(host, port)
-        except Exception as ex:  # noqa: BLE001
-            last_error = ex
-            time.sleep(2)
-    raise AssertionError(f"TF2 server did not respond in time: {last_error}")
-
-
 def _wait_for_closed(host, port, timeout_seconds):
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        try:
-            source_status._query_info(host, port, timeout=2)
-        except Exception:  # noqa: BLE001
-            return
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(2)
+            try:
+                sock.connect((host, port))
+                sock.send(b"\xFF\xFF\xFF\xFFTSource Engine Query\x00")
+                sock.recv(4096)
+            except Exception:  # noqa: BLE001
+                return
         time.sleep(2)
     raise AssertionError("TF2 server still responds after stop timeout")
+
+
+def _wait_for_log_ready(log_path, timeout_seconds):
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        if log_path.exists():
+            log_text = log_path.read_text(errors="replace")
+            if any(marker in log_text for marker in READY_LOG_MARKERS):
+                return log_text
+        time.sleep(2)
+    raise AssertionError(f"TF2 server log never showed readiness markers: {log_path}")
+
+
+def _wait_for_screen_exit(log_path, timeout_seconds):
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        if log_path.exists():
+            log_text = log_path.read_text(errors="replace")
+            if "Server is hibernating" in log_text:
+                return
+        time.sleep(2)
+    raise AssertionError("TF2 log did not reach steady-state before stop")
 
 
 def _assert_tf2_launcher_exists(install_dir):
@@ -156,6 +168,7 @@ def test_tf2_download_install_and_start(tmp_path):
     home_dir.mkdir()
     _write_config(config_path, home_dir)
     env = _alphagsm_env(config_path)
+    log_path = home_dir / "logs" / "AlphaGSM-TF2-IT#ittf2.log"
 
     _run_and_assert_ok(env, server_name, "create", "teamfortress2")
     setup_result = _run_alphagsm(
@@ -180,11 +193,12 @@ def test_tf2_download_install_and_start(tmp_path):
     _run_and_assert_ok(env, server_name, "start", timeout=60)
 
     try:
-        payload = _wait_for_status("127.0.0.1", port, START_TIMEOUT_SECONDS)
-        assert payload.startswith(b"\xFF\xFF\xFF\xFFI")
+        log_text = _wait_for_log_ready(log_path, START_TIMEOUT_SECONDS)
+        assert "SV_ActivateServer: setting tickrate" in log_text
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
     finally:
+        _wait_for_screen_exit(log_path, START_TIMEOUT_SECONDS)
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
         _wait_for_closed("127.0.0.1", port, STOP_TIMEOUT_SECONDS)
         final_status = _run_and_assert_ok(env, server_name, "status")

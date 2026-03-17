@@ -201,6 +201,7 @@ def get_start_command(server):
 # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
 # TODO define a map using the -m optional argument
     exe_name = server.data["exe_name"]
+    client_port = min(int(server.data["port"]) + 1, 65535)
 
     if not os.path.isfile(server.data["dir"] + exe_name):
         for fallback in ("srcds_run_64", "srcds_run"):
@@ -217,7 +218,7 @@ def get_start_command(server):
     steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
     steamcmd_dir =  steamcmd.STEAMCMD_DIR
 
-    return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+sv_pure","1","+ip","0.0.0.0","-secured","-timeout 0","-strictportbind","+randommap","-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
+    return [exe_name,"-game","tf","-port",str(server.data["port"]),"-clientport",str(client_port),"+maxplayers",str(server.data["maxplayers"]),"+sv_pure","1","+ip","0.0.0.0","-secured","-timeout 0","-strictportbind","+randommap","-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
 def do_stop(server,j):
     screen.send_to_server(server.name,"\nquit\n")

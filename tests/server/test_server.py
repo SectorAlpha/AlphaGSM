@@ -190,9 +190,9 @@ def test_start_runs_pre_and_post_hooks_and_starts_screen(monkeypatch):
 
     srv.start("now", force=True)
 
-    assert events[0][0] == "prestart"
+    assert events[0] == ("prestart", (srv, "now"), {"force": True})
     assert events[1] == ("start_screen", "alpha", ["run", "server"], "/srv/server")
-    assert events[2][0] == "poststart"
+    assert events[2] == ("poststart", (srv, "now"), {"force": True})
 
 
 def test_start_rejects_already_running_server(monkeypatch):
