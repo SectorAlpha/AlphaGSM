@@ -44,7 +44,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        game-server: [minecraft_vanilla, tf2]
+        include:
+        - game-server: minecraft
+          smoke-script: smoke_tests/run_minecraft_vanilla.sh
+        - game-server: tf2
+          smoke-script: smoke_tests/run_tf2.sh
     env:
       PYTHONPATH: .
     name: smoke-test (${{ matrix.game-server }})
@@ -70,7 +74,7 @@ jobs:
         distribution: temurin
         java-version: '21'
     - name: AlphaGSM Smoke Test Runner
-      run: bash ./smoke_tests/run_${{ matrix.game-server }}.sh
+      run: bash ./${{ matrix.smoke-script }}
 
   integration-test:
     runs-on: ubuntu-latest
@@ -78,7 +82,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        game-server: [minecraft_vanilla, tf2]
+        include:
+        - game-server: minecraft
+          test-file: integration_tests/test_minecraft_vanilla.py
+        - game-server: tf2
+          test-file: integration_tests/test_tf2.py
     env:
       PYTHONPATH: .
     name: integration-test (${{ matrix.game-server }})
@@ -106,4 +114,4 @@ jobs:
     - name: AlphaGSM Pytest Integration Test
       env:
         ALPHAGSM_RUN_INTEGRATION: '1'
-      run: pytest integration_tests/test_${{ matrix.game-server }}.py
+      run: pytest ${{ matrix.test-file }}
