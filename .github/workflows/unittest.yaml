@@ -60,7 +60,7 @@ jobs:
         distribution: temurin
         java-version: '21'
     - name: AlphaGSM Smoke Test Runner
-      run: ./smoke_tests/run_minecraft_vanilla.sh
+      run: bash ./smoke_tests/run_minecraft_vanilla.sh
 
   integration-test:
     runs-on: ubuntu-latest
