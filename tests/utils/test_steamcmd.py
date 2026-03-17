@@ -60,7 +60,11 @@ def test_get_autoupdate_script_writes_template(tmp_path, monkeypatch):
     monkeypatch.setattr(steamcmd_module, "STEAMCMD_SCRIPTS", str(scripts_dir))
     monkeypatch.setattr(steamcmd_module.os.path, "dirname", lambda path: str(tmp_path))
     monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path.replace("~", "/home/tester"))
-    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: "/abs" + path)
+    monkeypatch.setattr(
+        steamcmd_module.os.path,
+        "abspath",
+        lambda path: "/abs" + path if path == "/home/tester/srv/game" else path,
+    )
 
     path = steamcmd_module.get_autoupdate_script("alpha", "~/srv/game", 232250, force=True)
 
