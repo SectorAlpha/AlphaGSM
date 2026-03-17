@@ -134,12 +134,19 @@ def install(server):
     doinstall(server)
     #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
-    # create config file
-    # create config file
-    server_cfg = server.data["dir"] + "tf/cfg/" + "server.cfg"
-    cfg_exists = os.path.isfile(server_cfg)
-    if cfg_exists == False:
+    # create a default config if the download didn't include one
+    server_cfg_dir = server.data["dir"] + "tf/cfg/"
+    if not os.path.isdir(server_cfg_dir):
+        os.makedirs(server_cfg_dir)
+
+    server_cfg = server_cfg_dir + "server.cfg"
+    if not os.path.isfile(server_cfg):
         make_empty_file(server_cfg)
+        with open(server_cfg, "w") as f:
+            f.write("""// AlphaGSM default TF2 server config
+hostname "AlphaGSM TF2 Server"
+sv_pure 1
+""")
 
 # technically this command is not needed since the chosen port is assigned in the runscript, but leaving it commented as an example
 #  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
@@ -243,4 +250,3 @@ def status(server,verbose):
     
 # required, must be defined to allow functions listed below which are not in the defaults to be used
 command_functions={"update":update,"restart":restart} # will have elements added as the functions are defined
-

@@ -59,16 +59,14 @@ def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
     server = DummyServer()
     server.data.update({"dir": str(tmp_path) + "/", "Steam_AppID": 1, "Steam_anonymous_login_possible": True})
     cfg_path = tmp_path / "tf" / "cfg" / "server.cfg"
-    cfg_path.parent.mkdir(parents=True)
-    calls = []
-
-    monkeypatch.setattr(tf2, "doinstall", lambda server_obj: calls.append(server_obj))
-    monkeypatch.setattr(tf2, "make_empty_file", lambda path: calls.append(path))
+    doinstall_calls = []
+    monkeypatch.setattr(tf2, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
 
     tf2.install(server)
 
-    assert calls[0] is server
-    assert calls[1] == str(cfg_path)
+    assert doinstall_calls == [server]
+    assert cfg_path.exists()
+    assert 'hostname "AlphaGSM TF2 Server"' in cfg_path.read_text()
 
 
 def test_csgo_install_creates_config_file_when_missing(tmp_path, monkeypatch):
