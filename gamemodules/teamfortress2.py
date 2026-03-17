@@ -19,6 +19,7 @@ import utils.steamcmd as steamcmd
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
+STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 
 commands=("update","restart")
 command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),)),
@@ -163,12 +164,26 @@ def doinstall(server):
         os.makedirs(server.data["dir"])
 
     print("Installing game server at", server.data["dir"])
-    steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
+    steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=False)
 
 
 def restart(server):
     server.stop()
     server.start()
+
+
+def prestart(server,*args,**kwargs):
+    steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
+    steamclient_dir = os.path.dirname(STEAMCLIENT_DST)
+
+    if os.path.isfile(steamclient_src):
+        if not os.path.isdir(steamclient_dir):
+            os.makedirs(steamclient_dir)
+        if os.path.lexists(STEAMCLIENT_DST):
+            if os.path.islink(STEAMCLIENT_DST) and os.readlink(STEAMCLIENT_DST) == steamclient_src:
+                return
+            os.remove(STEAMCLIENT_DST)
+        os.symlink(steamclient_src, STEAMCLIENT_DST)
 
 def update(server,validate=False,restart=False):
     try:

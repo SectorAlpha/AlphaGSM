@@ -181,3 +181,20 @@ def test_steam_game_update_downloads_and_optionally_restarts(monkeypatch):
     assert ("/srv/csgo/", csgo.steam_app_id, csgo.steam_anonymous_login_possible, False) in calls
     assert tf2_server.start_calls == 1
     assert csgo_server.start_calls == 0
+
+
+def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):
+    server = DummyServer()
+    steam_root = tmp_path / "steam"
+    sdk_dir = tmp_path / ".steam" / "sdk64"
+    steamclient_src = steam_root / "linux64" / "steamclient.so"
+    steamclient_src.parent.mkdir(parents=True)
+    steamclient_src.write_text("")
+
+    monkeypatch.setattr(tf2.steamcmd, "STEAMCMD_DIR", str(steam_root) + "/")
+    monkeypatch.setattr(tf2, "STEAMCLIENT_DST", str(sdk_dir / "steamclient.so"))
+
+    tf2.prestart(server)
+
+    assert (sdk_dir / "steamclient.so").is_symlink()
+    assert (sdk_dir / "steamclient.so").resolve() == steamclient_src
