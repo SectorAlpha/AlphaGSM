@@ -25,16 +25,18 @@ def test_download_runs_steamcmd_with_validate(monkeypatch):
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
     monkeypatch.setattr(steamcmd_module.sp, "call", lambda cmd: calls.append(cmd) or 0)
     monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: "/abs/" + path)
 
-    steamcmd_module.download("/srv/game", 232250, True, validate=True)
+    steamcmd_module.download("srv/game", 232250, True, validate=True)
 
     assert calls[0] == "install"
     assert calls[1] == [
         "/steam/steamcmd.sh",
+        "+force_install_dir",
+        "/abs/srv/game",
         "+login",
         "anonymous",
-        "+force_install_dir",
-        "/srv/game",
         "+app_update",
         "232250",
         "validate",
@@ -54,12 +56,17 @@ def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch, capsys):
 def test_get_autoupdate_script_writes_template(tmp_path, monkeypatch):
     scripts_dir = tmp_path / "scripts"
     template = tmp_path / "steamcmd_gamescript_template.txt"
-    template.write_text("force_install_dir %s\napp_update %s\n")
+    template.write_text("force_install_dir %s\nlogin anonymous\napp_update %s\n")
     monkeypatch.setattr(steamcmd_module, "STEAMCMD_SCRIPTS", str(scripts_dir))
     monkeypatch.setattr(steamcmd_module.os.path, "dirname", lambda path: str(tmp_path))
-    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path.replace("~", "/home/tester"))
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: "/abs" + path)
 
-    path = steamcmd_module.get_autoupdate_script("alpha", "/srv/game", 232250, force=True)
+    path = steamcmd_module.get_autoupdate_script("alpha", "~/srv/game", 232250, force=True)
 
     assert path == str(scripts_dir / "alpha_update.txt")
-    assert (scripts_dir / "alpha_update.txt").read_text() == "force_install_dir /srv/game\napp_update 232250\n"
+    assert (scripts_dir / "alpha_update.txt").read_text() == (
+        "force_install_dir /abs/home/tester/srv/game\n"
+        "login anonymous\n"
+        "app_update 232250\n"
+    )

@@ -17,6 +17,9 @@ STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 # <user> = Anonymous by default
 # ./steamcmd +login <user> +force_install_dir <download_location> +app_update <appid> +quit
 
+def _normalise_install_path(path):
+    return os.path.abspath(os.path.expanduser(path))
+
 def install_steamcmd():
 
     # if steamcmd dir does not exist, download it
@@ -32,11 +35,12 @@ def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
     """ downloads a game via steamcmd"""
     # check to see if steamcmd exists
     install_steamcmd()
+    path = _normalise_install_path(path)
 
     # run steamcmd
     if steam_anonymous_login_possible == True:
         print("Running SteamCMD")
-        proc_list = [STEAMCMD_EXE,"+login","anonymous","+force_install_dir",path,"+app_update",str(Steam_AppID),"+quit"]
+        proc_list = [STEAMCMD_EXE,"+force_install_dir",path,"+login","anonymous","+app_update",str(Steam_AppID),"+quit"]
         if validate == True:
             proc_list.insert(-1,"validate")
         sp.call(proc_list)
@@ -54,6 +58,7 @@ def get_autoupdate_script(name,path,app_id,force=False):
         os.mkdir(STEAMCMD_SCRIPTS)
     file_name = os.path.join(STEAMCMD_SCRIPTS, '') + name + "_update.txt"
     if not os.path.isfile(file_name) or (force == True):
+        path = _normalise_install_path(path)
         steamcmd_gameupdate_text = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),STEAMCMD_GAMEUPDATE_TEMPLATE), 'r').read()
         steamcmd_gameupdate_text = steamcmd_gameupdate_text % (path,app_id)
         f = open(file_name,"w")
