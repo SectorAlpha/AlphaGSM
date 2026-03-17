@@ -32,3 +32,6 @@ Current target:
   download the official server jar, install into a temporary directory, start
   the server under `screen`, ping it over the Minecraft status protocol, and
   stop it cleanly.
+- Team Fortress 2 end-to-end setup through `alphagsm`:
+  download the dedicated server via SteamCMD, start it, verify it responds to a
+  Source query, and stop it cleanly.
