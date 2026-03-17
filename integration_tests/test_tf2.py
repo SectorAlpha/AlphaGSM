@@ -138,6 +138,11 @@ def _wait_for_closed(host, port, timeout_seconds):
     raise AssertionError("TF2 server still responds after stop timeout")
 
 
+def _assert_tf2_launcher_exists(install_dir):
+    launchers = [install_dir / "srcds_run_64", install_dir / "srcds_run"]
+    assert any(path.exists() for path in launchers), "No TF2 launcher found after setup"
+
+
 def test_tf2_download_install_and_start(tmp_path):
     _require_integration_opt_in()
     _require_command("screen")
@@ -169,7 +174,7 @@ def test_tf2_download_install_and_start(tmp_path):
     _skip_for_known_tf2_setup_issue(setup_result)
     assert setup_result.returncode == 0, setup_result.stderr or setup_result.stdout
 
-    assert (install_dir / "srcds_run").exists()
+    _assert_tf2_launcher_exists(install_dir)
     assert (install_dir / "tf" / "cfg" / "server.cfg").exists()
 
     _run_and_assert_ok(env, server_name, "start", timeout=60)

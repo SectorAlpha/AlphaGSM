@@ -134,6 +134,11 @@ def install(server):
     doinstall(server)
     #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
+    if os.path.isfile(server.data["dir"] + "srcds_run_64"):
+        server.data["exe_name"] = "srcds_run_64"
+    elif os.path.isfile(server.data["dir"] + "srcds_run"):
+        server.data["exe_name"] = "srcds_run"
+
     # create a default config if the download didn't include one
     server_cfg_dir = server.data["dir"] + "tf/cfg/"
     if not os.path.isdir(server_cfg_dir):
@@ -147,6 +152,7 @@ def install(server):
 hostname "AlphaGSM TF2 Server"
 sv_pure 1
 """)
+    server.data.save()
 
 # technically this command is not needed since the chosen port is assigned in the runscript, but leaving it commented as an example
 #  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
@@ -182,7 +188,14 @@ def get_start_command(server):
     exe_name = server.data["exe_name"]
 
     if not os.path.isfile(server.data["dir"] + exe_name):
-        ServerError("Executable file not found")
+        for fallback in ("srcds_run_64", "srcds_run"):
+            if os.path.isfile(server.data["dir"] + fallback):
+                exe_name = fallback
+                server.data["exe_name"] = fallback
+                server.data.save()
+                break
+        else:
+            raise ServerError("Executable file not found")
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
 

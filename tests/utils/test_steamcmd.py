@@ -1,4 +1,5 @@
 import os
+import subprocess as sp
 
 import utils.steamcmd as steamcmd_module
 
@@ -23,7 +24,14 @@ def test_install_steamcmd_creates_directory_and_downloads_when_missing(tmp_path,
 def test_download_runs_steamcmd_with_validate(monkeypatch):
     calls = []
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
-    monkeypatch.setattr(steamcmd_module.sp, "call", lambda cmd: calls.append(cmd) or 0)
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: (
+            calls.append(cmd)
+            or sp.CompletedProcess(cmd, 0, "Success! App '232250' fully installed.\n")
+        ),
+    )
     monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
     monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
     monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: "/abs/" + path)
@@ -44,9 +52,59 @@ def test_download_runs_steamcmd_with_validate(monkeypatch):
     ]
 
 
+def test_download_retries_until_steamcmd_reports_success(monkeypatch):
+    outputs = [
+        sp.CompletedProcess(["cmd"], 0, "Steam Console Client bootstrap\n"),
+        sp.CompletedProcess(["cmd"], 0, "Success! App '232250' already up to date.\n"),
+    ]
+    calls = []
+
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda seconds: calls.append(("sleep", seconds)))
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: calls.append(cmd) or outputs.pop(0),
+    )
+
+    steamcmd_module.download("/srv/game", 232250, True, validate=False)
+
+    assert calls[0][0] == "/steam/steamcmd.sh"
+    assert calls[1] == ("sleep", 2)
+    assert calls[2][0] == "/steam/steamcmd.sh"
+
+
+def test_download_raises_when_steamcmd_never_reports_success(monkeypatch):
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: sp.CompletedProcess(
+            cmd,
+            0,
+            "ERROR! Failed to install app '232250' (Missing configuration)\n",
+        ),
+    )
+
+    try:
+        steamcmd_module.download("/srv/game", 232250, True, validate=False)
+    except sp.CalledProcessError as ex:
+        assert ex.returncode == 0
+        assert "Missing configuration" in ex.output
+    else:
+        raise AssertionError("Expected steamcmd download failure to raise CalledProcessError")
+
+
 def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch, capsys):
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
-    monkeypatch.setattr(steamcmd_module.sp, "call", lambda cmd: (_ for _ in ()).throw(AssertionError("should not run")))
+    monkeypatch.setattr(steamcmd_module.sp, "run", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not run")))
 
     steamcmd_module.download("/srv/game", 232250, False)
 

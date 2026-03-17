@@ -105,7 +105,10 @@ if ! run_alphagsm_capture "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"; then
   exit 1
 fi
 
-test -f "$INSTALL_DIR/srcds_run"
+if [[ ! -f "$INSTALL_DIR/srcds_run_64" ]] && [[ ! -f "$INSTALL_DIR/srcds_run" ]]; then
+  echo "Expected TF2 launcher not found in $INSTALL_DIR" >&2
+  exit 1
+fi
 test -f "$INSTALL_DIR/tf/cfg/server.cfg"
 
 run_alphagsm "$SERVER_NAME" start

@@ -3,6 +3,7 @@ import pwd
 import os
 import os.path
 import subprocess as sp
+import time
 
 from downloadermodules.url import download as url_download
 
@@ -12,6 +13,7 @@ STEAMCMD_EXE = STEAMCMD_DIR + "steamcmd.sh"
 STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 STEAMCMD_SCRIPTS = os.path.expanduser(settings.user.getsection('steamcmd').get('steamcmd_scripts',os.path.join(settings.user.getsection('core').get("alphagsm_path","~/.alphagsm"),"steamcmd_scripts" )))
 STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
+STEAMCMD_RETRIES = 3
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -19,6 +21,14 @@ STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 
 def _normalise_install_path(path):
     return os.path.abspath(os.path.expanduser(path))
+
+
+def _steamcmd_succeeded(output, app_id):
+    success_markers = (
+        "Success! App '{}' fully installed.".format(app_id),
+        "Success! App '{}' already up to date.".format(app_id),
+    )
+    return any(marker in output for marker in success_markers)
 
 def install_steamcmd():
 
@@ -43,7 +53,17 @@ def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
         proc_list = [STEAMCMD_EXE,"+force_install_dir",path,"+login","anonymous","+app_update",str(Steam_AppID),"+quit"]
         if validate == True:
             proc_list.insert(-1,"validate")
-        sp.call(proc_list)
+        last_output = ""
+        for attempt in range(STEAMCMD_RETRIES):
+            proc = sp.run(proc_list, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False)
+            print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+            last_output = proc.stdout
+            if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
+                return
+            if attempt + 1 < STEAMCMD_RETRIES:
+                print("SteamCMD did not complete install cleanly, retrying...")
+                time.sleep(2)
+        raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
     else:
         print("no support for normal SteamCMD logins yet.")
 

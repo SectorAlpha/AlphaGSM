@@ -57,8 +57,10 @@ def test_csgo_configure_populates_game_defaults(tmp_path):
 
 def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
     server = DummyServer()
-    server.data.update({"dir": str(tmp_path) + "/", "Steam_AppID": 1, "Steam_anonymous_login_possible": True})
+    server.data.update({"dir": str(tmp_path) + "/", "Steam_AppID": 1, "Steam_anonymous_login_possible": True, "exe_name": "srcds_run"})
     cfg_path = tmp_path / "tf" / "cfg" / "server.cfg"
+    launcher = tmp_path / "srcds_run_64"
+    launcher.write_text("")
     doinstall_calls = []
     monkeypatch.setattr(tf2, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
 
@@ -67,6 +69,7 @@ def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
     assert doinstall_calls == [server]
     assert cfg_path.exists()
     assert 'hostname "AlphaGSM TF2 Server"' in cfg_path.read_text()
+    assert server.data["exe_name"] == "srcds_run_64"
 
 
 def test_csgo_install_creates_config_file_when_missing(tmp_path, monkeypatch):
@@ -100,6 +103,22 @@ def test_tf2_get_start_command_prefixes_executable_and_uses_steamcmd(tmp_path, m
     assert command[0] == "./srcds_run"
     assert "-steam_dir" in command
     assert "/tmp/update.txt" in command
+    assert cwd == server.data["dir"]
+
+
+def test_tf2_get_start_command_falls_back_to_64_bit_launcher(tmp_path, monkeypatch):
+    server = DummyServer("blue")
+    launcher = tmp_path / "srcds_run_64"
+    launcher.write_text("")
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "srcds_run", "port": 27015, "maxplayers": "24"})
+
+    monkeypatch.setattr(tf2.steamcmd, "get_autoupdate_script", lambda name, path, app_id: "/tmp/update.txt")
+    monkeypatch.setattr(tf2.steamcmd, "STEAMCMD_DIR", "/tmp/steamcmd")
+
+    command, cwd = tf2.get_start_command(server)
+
+    assert command[0] == "./srcds_run_64"
+    assert server.data["exe_name"] == "srcds_run_64"
     assert cwd == server.data["dir"]
 
 
