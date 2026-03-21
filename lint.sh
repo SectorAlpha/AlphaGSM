@@ -19,4 +19,4 @@ else
   mapfile -t files < <(find "${DIRS[@]}" -type f -name '*.py' ! -path 'downloadermodules/steamcmd.py' | sort)
 fi
 
-PYTHONPATH="${PYTHONPATH:-.}" "$PYTHON_BIN" -m pylint "${files[@]}"
+PYTHONPATH="${PYTHONPATH:-.}" "$PYTHON_BIN" -m pylint --fail-under=10 "${files[@]}"
