@@ -47,11 +47,13 @@ def tail(filename, tailbytes=0, sleepfor=2, timeout=-1):
 
 
 def _nogen():
+    """Return an empty generator used when the file cannot be tailed yet."""
     return
     yield
 
 
 def _gen(filename, fp, lastInode, sleepfor, timeout):
+    """Yield appended lines from a file while handling rotations and truncation."""
     lastSize = 0
     data = ""
     sleeps = 0  # sleeps since last succesful yield

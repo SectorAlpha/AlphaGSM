@@ -1,3 +1,5 @@
+"""HTTP and archive-based download helpers used by the shared downloader cache."""
+
 from downloader import DownloaderError
 import urllib.request
 import os.path
@@ -5,6 +7,7 @@ import subprocess as sp
 import sys
 
 def reporthook(blocknum, blocksize, totalsize):
+    """Print simple download progress information during URL retrieval."""
     readsofar = blocknum * blocksize
     if totalsize > 0:
         if readsofar > totalsize:
@@ -19,6 +22,7 @@ def reporthook(blocknum, blocksize, totalsize):
         print()
 
 def download(path,args):
+    """Download a file to a target path and optionally decompress it in place."""
     url,targetname,*args=args
     targetname=os.path.join(path,targetname)
     decompress=None
@@ -53,9 +57,11 @@ def download(path,args):
             raise DownloaderError("Error extracting download")
 
 def _true(*arg):
+    """Return true for every cached download record."""
     return True
     
 def getfilter(active=None,url=None,compression=None,sort=None):
+    """Build a filter and sort function for URL-backed download records."""
     filterfn=_true
     sortfn=None
     if url!=None:

@@ -1,3 +1,5 @@
+"""Command-specification data structures used by the AlphaGSM parser."""
+
 from operator import itemgetter as _itemgetter
 from collections import OrderedDict as _OrderedDict
 

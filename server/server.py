@@ -38,6 +38,7 @@ class ServerError(Exception):
 
 
 def _findmodule(name):
+    """Resolve a game module name, following namespace and alias indirection."""
     while True:
         name = str(name)
         if len(name) < 2 and all(
@@ -463,6 +464,7 @@ class Server(object):
 
 
 def _parsekeyelement(el):
+    """Parse one element of a dotted `set` path into a list or mapping key."""
     if el == "APPEND":
         return list, None
     elif el.isdigit():
@@ -472,10 +474,12 @@ def _parsekeyelement(el):
 
 
 def _parsekey(key):
+    """Parse a dotted `set` key into the nested elements needed for traversal."""
     return zip(*(_parsekeyelement(el) for el in key.split(".")))
 
 
 def _parsecmd(cmd):
+    """Parse a raw command vector into command name, server list, and arguments."""
     if cmd[1].isdigit():
         count = int(cmd[1])
         return [cmd[0], cmd[2 : 2 + count]] + cmd[2 + count :]

@@ -1,168 +1,198 @@
 # AlphaGSM
 
-This is the Sector Alpha Game Server Manager.
+AlphaGSM is a command-line tool that helps you download, set up, start, stop, update, and back up game servers.
 
-This tool runs game servers using screen to manage the sessions and provides
-tools to control them in a consistent way and to manage many servers at once.
-This also contains code to share downloads and if possible the actual files
-between multiple installs.
+If you are not very technical, the short version is:
 
-In short, setting up and installing a game server is as easy as
+1. Install the few things AlphaGSM needs.
+2. Run one command to create a server.
+3. Run one command to set it up.
+4. Start it.
 
-  `alphagsm mymcserver create minecraft` 
+AlphaGSM keeps the server running inside `screen`, so you do not need to keep one terminal window open for the server process yourself.
 
-  `alphagsm mymcserver setup`
+## What Can It Manage?
 
-  `alphagsm mymcserver start`
+AlphaGSM currently includes built-in support for:
 
-## Setup
+- Minecraft Vanilla
+- Minecraft Bungeecord
+- Custom Minecraft server jars
+- Team Fortress 2
+- Counter-Strike: Global Offensive
 
-For a single user configuration AlphaGSM will run out of the box. Simply download the code, copy alphagsm.conf-template to alphagsm.conf and 
-run the alphagsm executable. Edit alphagsm.conf if you wish to alter the default setup.
+There are also alias names such as `minecraft`, `tf2`, and `csgo`.
 
-Be sure to check out the dependancies and to look at the examples below to get your first game server running.
+## What You Need
 
-For changing users on multi-user setups, sudo is used so all protected permissions are controlled
-using sudo.
+Most people only need:
 
-The public script is alphagsm. This can either by run using it's full or relative
-path or for ease of use can be installed in bin/ (or ~/bin/) using a symlink (It
-can't be physically moved as other paths are resolved relative to it's true 
-location).
+- Python 3
+- `screen`
+- the Python packages in `requirements.txt`
 
-For help using it run alphagsm --help or see the examples below.
+Some servers need extra software:
 
-For help editing and contributing see the documentation in the source code or the
-pydoc output, especially for the modules "server.gamemodules" and
-"downloader.downloadermodules".
+- Minecraft needs Java
+- Steam-based servers such as TF2 and CS:GO need SteamCMD runtime libraries
 
-## Project hosting
+## Quick Start
 
-The project is currently hosted at https://github.com/SectorAlpha/AlphaGSM.
+### 1. Download AlphaGSM
+
+Clone the repository or download it, then move into the project directory.
+
+### 2. Install Python dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Create a config file
+
+```bash
+cp alphagsm.conf-template alphagsm.conf
+```
+
+For many single-user setups, the default config is enough to get started.
+
+### 4. Create a server
+
+Minecraft:
+
+```bash
+./alphagsm mymc create minecraft.vanilla
+```
+
+Team Fortress 2:
+
+```bash
+./alphagsm mytf2 create teamfortress2
+```
+
+CS:GO:
+
+```bash
+./alphagsm mycsgo create csgo
+```
+
+### 5. Set the server up
+
+```bash
+./alphagsm mymc setup
+```
+
+The setup command may ask questions such as:
+
+- which port to use
+- where to install the server
+- which version to download
+- where Java lives for Minecraft
+
+### 6. Start the server
+
+```bash
+./alphagsm mymc start
+```
+
+### 7. Check if it is running
+
+```bash
+./alphagsm mymc status
+```
+
+### 8. Stop the server later
+
+```bash
+./alphagsm mymc stop
+```
+
+## Useful Everyday Commands
+
+Send a message to players:
+
+```bash
+./alphagsm mymc message "Server restarting soon"
+```
+
+Back a server up:
+
+```bash
+./alphagsm mymc backup
+```
+
+Update a Steam game server:
+
+```bash
+./alphagsm mytf2 update
+./alphagsm mytf2 update -r
+```
+
+Show full help:
+
+```bash
+./alphagsm --help
+```
+
+## Where To Find Help
+
+If you want step-by-step guides for specific servers, start here:
+
+- [Documentation Index](docs/README.md)
+- [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
+- [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
+- [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)
+
+If you are developing or changing AlphaGSM itself, read:
+
+- [DEVELOPERS.md](DEVELOPERS.md)
+- [technical_introduction.txt](technical_introduction.txt)
+
+## Testing and Quality Checks
+
+AlphaGSM now includes:
+
+- unit tests
+- integration tests
+- smoke tests
+- pylint linting
+- unit test coverage reporting
+
+Run the unit tests:
+
+```bash
+pytest tests
+```
+
+Run the lint checks:
+
+```bash
+bash ./lint.sh
+```
+
+Run the integration test suite when you explicitly want it:
+
+```bash
+ALPHAGSM_RUN_INTEGRATION=1 pytest integration_tests
+```
+
+Run the streamed smoke-test examples:
+
+```bash
+bash ./smoke_tests/run_minecraft_vanilla.sh
+bash ./smoke_tests/run_tf2.sh
+```
+
+These smoke runners are also useful as real working examples of how AlphaGSM creates a temporary config, installs a server, starts it, checks it, and shuts it down again.
 
 ## Community
 
-If you have a question for the community and developers, you will
-always be welcome to contact us by these various means of communication.
+- Discord: https://discord.gg/8audc8Ukaq
+- Twitter: https://twitter.com/sectoralpha
+- Steam: http://steamcommunity.com/groups/sector-alpha
 
-* Discord: https://discord.gg/8audc8Ukaq
-* Twitter: https://twitter.com/sectoralpha
-* Steam: http://steamcommunity.com/groups/sector-alpha
+## Project
 
-The plans are also being discussed on discord and within this github repo
-
-## Dependencies
-
-Main dependancies
-
-  python3
-  screen
-  crontab
-  python3-crontab
-  sudo (for multi user/shared downloads support)
-
-SteamCMD dependencies
-
-  lib32gcc1 or libstdc++ or libstdc++.i686 
-
-  e.g ubuntu, ib32stdc++6
-  
-for Ubuntu/Debian, redhat/centos and redhat/centos 64 bit respectively (pick one).
-see https://developer.valvesoftware.com/wiki/SteamCMD#Linux for more details.
-
-# Examples
-
-Example of setting up of a Minecraft vanilla server
-
-  `alphagsm mymcserver create minecraft setup`
-
-  `alphagsm mymcserver start`
-
-Example of setting up a CS:GO server
-
-  `alphagsm mycsgo create csgo`
-
-  `alphagsm mycsgo setup`
-
-  `alphagsm mycsgo start`
-
-Example of updating the CS:GO server (A specific command for updating the server files). These commands are not specific to all game servers (e.g Minecraft).
-
-  `alphagsm mycsgo update`
-
-  `alphagsm mycsgo update -v -r`
-
-Where the -v flag requests the validation of files, and -r will restart your server once the update has been done.
-
-This will create a new minecraft server called mymcserver and set it up
-asking you for which version and port to use and any other info it needs.
-The second command will (assuming the setup succeded) start the server.
-
-There are various servers available "minecraft" defaults to vanilla minecraft
-which has the full name is minecraft.vanilla. There is also minecraft.custom
-and minecraft.tekkit and many more to come including Terraria, Steam games
-and team speak
-
-To stop the server 
-
-  `alphagsm mymcserver stop`
-
-To backup
-
-  `alphagsm mymcserver backup`
-
-which will use the default backup settings for the server. For details of how
-configure backups and setup regular backups please see the full help by 
-running `alphagsm --help`.
-
-# Legal
-
-## Liscence
-
-Licensed under GPL v3.0. See the LISCENCE file for details.
-
-## Copyright
-
-AlphaGSM Copyright (C) 2016 by Sector Alpha.
-
-## Credits
-
-Developed by Cosmosquark and Staircase27. See the CREDITS file for the full list of contributors.
-
-# Developers
-
-
-# Development
-
-We're working on improving the clarity of the comments on the code. We have also included a file "technical_introduction.txt" which gives a quick start guide on how to develop for the code.
-
-## Adding New Game Severs
-
-So long as a game server is downloadable via steamCMD or over http, adding a new game
-server is possible with the AlphaGSM code. An overview of the commands are given
-in "server/gamemodules.py" of which are common for all game servers. "gamemodules/minecraft/vanilla.py"
-is a doccumented example of how to download a game server over URL and additionally allow for
-variations/mods of the same game (e.g tekkit). "gamemodules/teamfortress2.py" is a doccumented
-example of how to download a game server via SteamCMD.
-
-In each gameserver module, you are either adding new commands to the server object as described in "server/server.py", or overriding existing ones to be more suitable for the game server of choice. Esse
-ntially you are extending "server/server.py".
-
-The methods in particular that require the most attention in a game module are 'configure', where one defines the game server configuration (e.g port, startup map, game server properties file).
-The other method is "get_start_command" which defines the executable command to startup the game server (e.g in minecraft this is "java -jar minecraft.jar").
-
-If you need to develop a new downloader, "downloader/downloadermodules.py" contains doccumentation for developing this.
-
-A tutorial is on the TODO list, but we hope for now that the game server modules that already exist act as a good starting point. 
-
-If you are interested in adding a new game server and would like help, raise an issue or a discussion on this github page
-
-You can also contact cosmosquark on our discord server https://discord.gg/8audc8Ukaq
-
-## Developing AlphaGSM
-
-Read over the infomation provided in "technical_introduction.txt" to get an overview of how AlphaGSM works and look at the files associated with the software. This is currently in development.
-
-# Contact
-
-Any queries? Contact us on Discord https://discord.gg/8audc8Ukaq
+- GitHub: https://github.com/SectorAlpha/AlphaGSM
+- License: GPL v3.0, see [LICENSE](LICENSE)
+- Credits: see [CREDITS](CREDITS)

@@ -1,3 +1,5 @@
+"""Top-level command-line entry points and dispatch helpers for AlphaGSM."""
+
 from utils.cmdparse import cmdparse
 from server import Server, ServerError, server as servermodule
 from . import multiplexer as mp
@@ -470,6 +472,7 @@ def run_list_multi(name, servers, args):
 
 
 def _internal_is_running(line):
+    """Return whether a subprocess emitted the AlphaGSM internal ready marker."""
     return line.decode().strip() == "#%AlphaGSM-INTERNAL%#"
 
 

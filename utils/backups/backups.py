@@ -52,10 +52,13 @@ __all__ = ["BackupError", "backup", "checkdatavalue"]
 
 
 class BackupError(Exception):
+    """Raised when backup configuration or execution cannot be completed."""
+
     pass
 
 
 def getprofiledata(config, profile):
+    """Resolve a backup profile, including any inherited base profile settings."""
     try:
         profiledata = config["profiles"][profile]
     except KeyError as ex:
@@ -92,6 +95,7 @@ def getprofiledata(config, profile):
 
 
 def applydelta(timestamp, amount, unit):
+    """Return a timestamp shifted by the requested calendar or fixed-time delta."""
     if amount == 0:
         return timestamp
     if unit.lower() == "year":
@@ -109,6 +113,7 @@ def applydelta(timestamp, amount, unit):
 
 
 def doschedule(config, now, backups):
+    """Select the next backup profile to run from the configured schedule."""
     schedule = config["schedule"]
     if len(schedule) <= 0:
         raise BackupError("No schedule defined.")
@@ -121,6 +126,7 @@ def doschedule(config, now, backups):
 
 
 def backup(dir, config, profile=None):
+    """Create a backup archive for a directory using the supplied backup config."""
     now = datetime.datetime.utcnow()
     if not os.path.exists(os.path.join(dir, BACKUPDIR)):
         os.mkdir(os.path.join(dir, BACKUPDIR))
@@ -171,6 +177,7 @@ def backup(dir, config, profile=None):
 
 
 def checkdatavalue(data, key, *value):
+    """Validate backup-related values before they are stored in server data."""
     if key[0] == "profiles":
         if not key[1].isidentifier():
             raise BackupError("Invalid backup profile name")

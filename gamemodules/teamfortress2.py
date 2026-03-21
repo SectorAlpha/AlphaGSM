@@ -1,3 +1,5 @@
+"""Team Fortress 2-specific lifecycle, configuration, and update helpers."""
+
 import os
 import re
 
@@ -54,6 +56,7 @@ _confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 
 
 def updateconfig(filename, settings):
+    """Rewrite a simple key/value config file with the provided settings."""
     lines = []
     if os.path.isfile(filename):
         settings = settings.copy()
@@ -158,6 +161,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
 
 
 def install(server):
+    """Install or prepare the TF2 server files for this server object."""
     doinstall(server)
     # TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
@@ -201,11 +205,13 @@ def doinstall(server):
 
 
 def restart(server):
+    """Restart the server by stopping it and then starting it again."""
     server.stop()
     server.start()
 
 
 def prestart(server, *args, **kwargs):
+    """Perform TF2-specific setup immediately before the server is started."""
     steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
     steamclient_dir = os.path.dirname(STEAMCLIENT_DST)
 
@@ -223,6 +229,7 @@ def prestart(server, *args, **kwargs):
 
 
 def update(server, validate=False, restart=False):
+    """Update the TF2 install through SteamCMD and optionally restart it."""
     try:
         server.stop()
     except:
@@ -240,6 +247,7 @@ def update(server, validate=False, restart=False):
 
 
 def get_start_command(server):
+    """Build the command list used to launch the TF2 dedicated server."""
     # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
     # TODO define a map using the -m optional argument
     exe_name = server.data["exe_name"]
@@ -291,10 +299,12 @@ def get_start_command(server):
 
 
 def do_stop(server, j):
+    """Send the console command used to stop a running TF2 server."""
     screen.send_to_server(server.name, "\nquit\n")
 
 
 def status(server, verbose):
+    """Report TF2 server status information."""
     pass
 
 

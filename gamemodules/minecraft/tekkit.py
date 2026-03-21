@@ -1,3 +1,5 @@
+"""Tekkit-specific download and startup helpers layered on vanilla Minecraft."""
+
 import os
 import urllib.request
 import json
@@ -20,6 +22,7 @@ MODPACK_URL = {
 
 
 def get_file_url(modpack_url):
+    """Resolve the direct server download URL from a Tekkit modpack page."""
     try:
         with urllib.request.urlopen(modpack_url) as f:
             dom = html5lib.parse(f, "etree")
@@ -78,6 +81,7 @@ def configure(
     exe_name="Tekkit.jar",
     download_name="Tekkit.zip"
 ):
+    """Collect and store configuration values for a Tekkit server."""
     if url == None:
         if "url" in server.data and server.data["url"] is not None:
             url = server.data["url"]
@@ -130,6 +134,7 @@ def configure(
 
 
 def get_start_command(server):
+    """Build the command list used to launch a Tekkit server."""
     return [
         "java",
         "-Xmx3G",

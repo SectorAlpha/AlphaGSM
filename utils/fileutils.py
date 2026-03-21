@@ -1,3 +1,5 @@
+"""Small filesystem helpers used across the AlphaGSM codebase."""
+
 import os
 import errno
 
