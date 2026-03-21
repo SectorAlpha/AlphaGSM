@@ -34,7 +34,7 @@ class StreamData(object):
                 return
             tmp = self.data[:i]
 
-            self.data = self.data[i + 1:]
+            self.data = self.data[i + 1 :]
             yield tmp
 
 
@@ -91,7 +91,10 @@ class Multiplexer(object):
                 (
                     "Error we already know about the stream but "
                     "you provided different state"
-                ), stream, data, self.streams[stream].data
+                ),
+                stream,
+                data,
+                self.streams[stream].data,
             )
         else:
             self.streams[stream].tag = tag
@@ -143,7 +146,7 @@ class Multiplexer(object):
         self.checkdata = set()
         if self.streams:
             inputs = self.selector.select(timeout)
-            for key, events in inputs:
+            for key, _events in inputs:
                 stream = key.fileobj
                 stream_data = self.streams[stream]
                 new = stream.read1(1000)
@@ -157,10 +160,7 @@ class Multiplexer(object):
                         print(self.gettag(stream), line.decode())
                 if not new:  # event but no new data means eof
                     if stream_data.data:  # write out any part line anyway
-                        print(
-                            self.gettag(stream),
-                            stream_data.data.decode()
-                        )
+                        print(self.gettag(stream), stream_data.data.decode())
                     self.removestream(
                         stream
                     )  # adds to streamlessprocs if no streams left
@@ -168,20 +168,24 @@ class Multiplexer(object):
             for proc in list(self.streamlessprocs):
                 if proc.poll() is not None:
                     ret = proc.wait()
-                    print("{} has finished with status {}".format(
-                        self.procs[proc].tag, ret
-                    ))
+                    print(
+                        "{} has finished with status {}".format(
+                            self.procs[proc].tag, ret
+                        )
+                    )
                     self.returnvalues[self.procs[proc].tag] = ret
                     del self.procs[proc]
                     self.streamlessprocs.remove(proc)
         else:
-            pid, ret = os.waitpid(-1, 0)
+            _, ret = os.waitpid(-1, 0)
             for proc in list(self.streamlessprocs):
                 if proc.poll() is not None:
                     ret = proc.wait()
-                    print("{} has finished with status {}".format(
-                        self.procs[proc].tag, ret
-                    ))
+                    print(
+                        "{} has finished with status {}".format(
+                            self.procs[proc].tag, ret
+                        )
+                    )
                     self.returnvalues[self.procs[proc].tag] = ret
                     del self.procs[proc]
                     self.streamlessprocs.remove(proc)

@@ -37,11 +37,7 @@ jobs:
           pip install -r requirements.txt
       - name: AlphaGSM Lint
         run: |
-          ruff check \
-            core/multiplexer.py \
-            gamemodules/teamfortress2.py \
-            tests/test_init.py \
-            utils/steamcmd.py
+          bash ./lint.sh
 
   unit-test:
     runs-on: ubuntu-latest

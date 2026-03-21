@@ -1,6 +1,7 @@
 import os
 import errno
 
+
 def make_empty_file(file_path):
     """
     Creates an empty file if the file does not exist.
@@ -14,11 +15,10 @@ def make_empty_file(file_path):
     except OSError as e:
         # If the file already exists, then this is not a problem
         # Otherwise something unexpected went wrong, so reraise the previous exception
-        if e.errno != errno.EEXIST: raise  
+        if e.errno != errno.EEXIST:
+            raise
         # The file was never opened since os.open threw an exception
-    else:  
+    else:
         # No exception, so the file must have been created successfully.
         # Finally, close the file.
         os.close(file_handle)
-        
-

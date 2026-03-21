@@ -1,4 +1,4 @@
 crontab==0.23.0
 pytest==9.0.2
 pytest-cov==7.0.0
-ruff==0.15.7
+pylint==4.0.5

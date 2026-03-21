@@ -1,1 +1,1 @@
-ALIAS_TARGET="minecraft.vanilla"
+ALIAS_TARGET = "minecraft.vanilla"
