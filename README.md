@@ -1,62 +1,48 @@
 # AlphaGSM
 
-AlphaGSM is a command-line tool that helps you download, set up, start, stop, update, and back up game servers.
+AlphaGSM helps you run game servers.
 
-If you are not very technical, the short version is:
+You do not need to be deeply technical to use it. If you can copy and paste commands into a terminal, that is enough for most single-server setups.
 
-1. Install the few things AlphaGSM needs.
-2. Run one command to create a server.
-3. Run one command to set it up.
-4. Start it.
+AlphaGSM can:
 
-AlphaGSM keeps the server running inside `screen`, so you do not need to keep one terminal window open for the server process yourself.
-
-## What Can It Manage?
-
-AlphaGSM currently includes built-in support for:
-
-- Minecraft Vanilla
-- Minecraft Bungeecord
-- Custom Minecraft server jars
-- Team Fortress 2
-- Counter-Strike: Global Offensive
-
-There are also alias names such as `minecraft`, `tf2`, and `csgo`.
+- download server files
+- set a server up
+- start it
+- stop it
+- update it
+- back it up
 
 ## What You Need
 
-Most people only need:
+You need:
 
 - Python 3
 - `screen`
 - the Python packages in `requirements.txt`
 
-Some servers need extra software:
+Some server types need one extra thing:
 
 - Minecraft needs Java
-- Steam-based servers such as TF2 and CS:GO need SteamCMD runtime libraries
+- TF2 and CS:GO need SteamCMD runtime libraries
 
-## Quick Start
+## Fast Start
 
-### 1. Download AlphaGSM
-
-Clone the repository or download it, then move into the project directory.
-
-### 2. Install Python dependencies
+### 1. Install the Python packages
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Create a config file
+### 2. Make your config file
 
 ```bash
 cp alphagsm.conf-template alphagsm.conf
 ```
 
-For many single-user setups, the default config is enough to get started.
+For most people, the default config is fine to start with.
 
-### 4. Create a server
+### 3. Create a server
 
 Minecraft:
 
@@ -76,46 +62,46 @@ CS:GO:
 ./alphagsm mycsgo create csgo
 ```
 
-### 5. Set the server up
+### 4. Run setup
 
 ```bash
 ./alphagsm mymc setup
 ```
 
-The setup command may ask questions such as:
+Setup may ask for:
 
-- which port to use
-- where to install the server
+- a port number
+- where the files should be installed
 - which version to download
-- where Java lives for Minecraft
+- where Java is installed for Minecraft
 
-### 6. Start the server
+### 5. Start the server
 
 ```bash
 ./alphagsm mymc start
 ```
 
-### 7. Check if it is running
+### 6. Check that it is running
 
 ```bash
 ./alphagsm mymc status
 ```
 
-### 8. Stop the server later
+### 7. Stop it later
 
 ```bash
 ./alphagsm mymc stop
 ```
 
-## Useful Everyday Commands
+## Commands You Will Probably Use Often
 
-Send a message to players:
+Send a message:
 
 ```bash
 ./alphagsm mymc message "Server restarting soon"
 ```
 
-Back a server up:
+Back the server up:
 
 ```bash
 ./alphagsm mymc backup
@@ -128,62 +114,42 @@ Update a Steam game server:
 ./alphagsm mytf2 update -r
 ```
 
-Show full help:
+Show help:
 
 ```bash
 ./alphagsm --help
 ```
 
-## Where To Find Help
+## The Best Real Examples
 
-If you want step-by-step guides for specific servers, start here:
-
-- [Documentation Index](docs/README.md)
-- [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
-- [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
-- [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)
-
-If you are developing or changing AlphaGSM itself, read:
-
-- [DEVELOPERS.md](DEVELOPERS.md)
-- [technical_introduction.txt](technical_introduction.txt)
-
-## Testing and Quality Checks
-
-AlphaGSM now includes:
-
-- unit tests
-- integration tests
-- smoke tests
-- pylint linting
-- unit test coverage reporting
-
-Run the unit tests:
-
-```bash
-pytest tests
-```
-
-Run the lint checks:
-
-```bash
-bash ./lint.sh
-```
-
-Run the integration test suite when you explicitly want it:
-
-```bash
-ALPHAGSM_RUN_INTEGRATION=1 pytest integration_tests
-```
-
-Run the streamed smoke-test examples:
+If you want examples that show the exact order of commands that work in this repository, use the smoke-test scripts:
 
 ```bash
 bash ./smoke_tests/run_minecraft_vanilla.sh
 bash ./smoke_tests/run_tf2.sh
 ```
 
-These smoke runners are also useful as real working examples of how AlphaGSM creates a temporary config, installs a server, starts it, checks it, and shuts it down again.
+These scripts are useful because they show a full real flow:
+
+1. create the server
+2. run setup
+3. start it
+4. check it
+5. stop it cleanly
+
+## Step-By-Step Server Guides
+
+- [Documentation Index](docs/README.md)
+- [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
+- [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
+- [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)
+
+## If You Are A Developer
+
+Use:
+
+- [DEVELOPERS.md](DEVELOPERS.md)
+- [technical_introduction.txt](technical_introduction.txt)
 
 ## Community
 
