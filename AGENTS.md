@@ -50,3 +50,14 @@ Update these in order when relevant:
 ## Known Exception
 
 `downloadermodules/steamcmd.py` is legacy parser-broken code and is intentionally outside the active lint/docstring verification surface.
+
+## Repo Skills
+
+See:
+
+- `SKILLS.md`
+- `skills/smoke-driven-docs/SKILL.md`
+- `skills/server-lifecycle/SKILL.md`
+- `skills/install-layout/SKILL.md`
+- `skills/wiki-publishing/SKILL.md`
+- `skills/system-install-validation/SKILL.md`

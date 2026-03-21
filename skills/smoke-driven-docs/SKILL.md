@@ -1,5 +1,17 @@
 # Smoke-Driven Docs
 
+| Field | Value |
+| --- | --- |
+| Purpose | Keep user-facing docs aligned with the real working command flow. |
+| Use when | Updating `README.md`, `docs/`, or server guides. |
+| Main source | `smoke_tests/` first, then integration tests and module code. |
+
+| Field | Value |
+| --- | --- |
+| Inputs | Smoke runners, integration tests, current docs, and lifecycle command order. |
+| Outputs | Simpler user docs with exact working commands and realistic examples. |
+| Related files | `README.md`, `docs/README.md`, `docs/servers/*.md`, `smoke_tests/*.sh`, `integration_tests/*`. |
+
 Use this skill when updating user-facing documentation in AlphaGSM.
 
 ## Goal

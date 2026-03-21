@@ -1,5 +1,17 @@
 # Server Lifecycle
 
+| Field | Value |
+| --- | --- |
+| Purpose | Preserve and document the real AlphaGSM server lifecycle. |
+| Use when | Changing lifecycle code or documenting per-server behaviour. |
+| Main source | `smoke_tests/`, `server/server.py`, and the relevant game module. |
+
+| Field | Value |
+| --- | --- |
+| Inputs | Smoke tests, integration tests, server dispatch logic, game module lifecycle code. |
+| Outputs | Updated lifecycle code, matching docs, and matching tests. |
+| Related files | `server/server.py`, `core/main.py`, `screen/screen.py`, `smoke_tests/*.sh`, `integration_tests/*`, `gamemodules/**`. |
+
 Use this skill when changing or documenting the lifecycle for a game server module.
 
 ## Focus
