@@ -6,6 +6,8 @@ If you are not sure where to start, pick your server below and follow that guide
 
 ## Server Guides
 
+- [Local User Install](install/local-user.md)
+- [System-Wide Install](install/system-wide.md)
 - [Minecraft Vanilla](servers/minecraft-vanilla.md)
 - [Team Fortress 2](servers/team-fortress-2.md)
 - [Counter-Strike: Global Offensive](servers/counter-strike-global-offensive.md)

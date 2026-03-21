@@ -282,6 +282,11 @@ Main template:
 
 - [alphagsm.conf-template](alphagsm.conf-template)
 
+Documented installation layouts:
+
+- [docs/install/local-user.md](docs/install/local-user.md)
+- [docs/install/system-wide.md](docs/install/system-wide.md)
+
 Important environment variables:
 
 - `ALPHAGSM_CONFIG_LOCATION`
@@ -290,6 +295,15 @@ Important environment variables:
 - `ALPHAGSM_DEBUG`
 
 The smoke tests rely on temporary config files and `ALPHAGSM_CONFIG_LOCATION` to isolate state per run.
+
+For system-wide installs, the intended layout is:
+
+- `/etc/alphagsm.conf`
+- `/home/alphagsm/`
+- `/usr/local/lib/alphagsm`
+- `/usr/local/sbin/gitalphagsm`
+- `/usr/local/bin/alphagsm`
+- `/etc/sudoers.d/gameservers`
 
 ## Documentation Contract
 
