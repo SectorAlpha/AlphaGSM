@@ -3,7 +3,7 @@ import pytest
 from tests.helpers import load_module_from_repo
 
 
-tail_module = load_module_from_repo("screen_tail_module", "screen/tail.py")
+tail_module = load_module_from_repo("screen_tail_module", "src/screen/tail.py")
 tail = tail_module.tail
 
 

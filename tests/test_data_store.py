@@ -5,7 +5,7 @@ import pytest
 from tests.helpers import load_module_from_repo
 
 
-data_module = load_module_from_repo("server_data_module", "server/data.py")
+data_module = load_module_from_repo("server_data_module", "src/server/data.py")
 DataError = data_module.DataError
 JSONDataStore = data_module.JSONDataStore
 
