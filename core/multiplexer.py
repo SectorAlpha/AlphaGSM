@@ -1,6 +1,6 @@
-import subprocess as sp
 import os
 import selectors
+import subprocess as sp
 
 
 class OutputInteruptedException(Exception):
@@ -14,8 +14,8 @@ class OutputInteruptedException(Exception):
         )
 
     def reapply(self, multi):
-        for s, (l, f) in self.streams.items():
-            multi.streams[s].linecheck = f
+        for stream, (_, linecheck) in self.streams.items():
+            multi.streams[stream].linecheck = linecheck
 
 
 class StreamData(object):
@@ -34,7 +34,7 @@ class StreamData(object):
                 return
             tmp = self.data[:i]
 
-            self.data = self.data[i + 1:]
+            self.data = self.data[i + 1 :]
             yield tmp
 
 
@@ -91,7 +91,10 @@ class Multiplexer(object):
                 (
                     "Error we already know about the stream but "
                     "you provided different state"
-                ), stream, data, self.streams[stream].data
+                ),
+                stream,
+                data,
+                self.streams[stream].data,
             )
         else:
             self.streams[stream].tag = tag
@@ -133,34 +136,31 @@ class Multiplexer(object):
         interuptedstreams = {}
         for stream in self.checkdata:
             stream_data = self.streams[stream]
-            for l in stream_data.consumelines():
-                if stream_data.linecheck and stream_data.linecheck(l):
-                    interuptedstreams[stream] = (l, stream_data.linecheck)
+            for line in stream_data.consumelines():
+                if stream_data.linecheck and stream_data.linecheck(line):
+                    interuptedstreams[stream] = (line, stream_data.linecheck)
                     stream_data.linecheck = None
                     break
                 else:
-                    print(self.gettag(stream), l.decode())
+                    print(self.gettag(stream), line.decode())
         self.checkdata = set()
         if self.streams:
             inputs = self.selector.select(timeout)
-            for key, events in inputs:
+            for key, _events in inputs:
                 stream = key.fileobj
                 stream_data = self.streams[stream]
                 new = stream.read1(1000)
                 stream_data.data += new
-                for l in stream_data.consumelines():
-                    if stream_data.linecheck and stream_data.linecheck(l):
-                        interuptedstreams[stream] = (l, stream_data.linecheck)
+                for line in stream_data.consumelines():
+                    if stream_data.linecheck and stream_data.linecheck(line):
+                        interuptedstreams[stream] = (line, stream_data.linecheck)
                         stream_data.linecheck = None
                         break
                     else:
-                        print(self.gettag(stream), l.decode())
+                        print(self.gettag(stream), line.decode())
                 if not new:  # event but no new data means eof
                     if stream_data.data:  # write out any part line anyway
-                        print(
-                            self.gettag(stream),
-                            stream_data.data.decode()
-                        )
+                        print(self.gettag(stream), stream_data.data.decode())
                     self.removestream(
                         stream
                     )  # adds to streamlessprocs if no streams left
@@ -168,20 +168,24 @@ class Multiplexer(object):
             for proc in list(self.streamlessprocs):
                 if proc.poll() is not None:
                     ret = proc.wait()
-                    print("{} has finished with status {}".format(
-                        self.procs[proc].tag, ret
-                    ))
+                    print(
+                        "{} has finished with status {}".format(
+                            self.procs[proc].tag, ret
+                        )
+                    )
                     self.returnvalues[self.procs[proc].tag] = ret
                     del self.procs[proc]
                     self.streamlessprocs.remove(proc)
         else:
-            pid, ret = os.waitpid(-1, 0)
+            _, ret = os.waitpid(-1, 0)
             for proc in list(self.streamlessprocs):
                 if proc.poll() is not None:
                     ret = proc.wait()
-                    print("{} has finished with status {}".format(
-                        self.procs[proc].tag, ret
-                    ))
+                    print(
+                        "{} has finished with status {}".format(
+                            self.procs[proc].tag, ret
+                        )
+                    )
                     self.returnvalues[self.procs[proc].tag] = ret
                     del self.procs[proc]
                     self.streamlessprocs.remove(proc)
@@ -208,7 +212,7 @@ def addtomultiafter(multi, tag, fn, *args, **kwargs):
         tmp.streams[s].linecheck = fn
     try:
         tmp.processall()
-    except OutputInteruptedException as ex:
+    except OutputInteruptedException:
         print(tag, "is running")
         tmp.transfer(multi, proc)
         multi.procs[proc].tag = tag

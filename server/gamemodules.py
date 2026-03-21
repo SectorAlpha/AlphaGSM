@@ -23,13 +23,13 @@ Commands:
                 documentation of the module core.cmdparse for how the argument specs
                 are interpreted.
         command_descriptions: the descriptions for any commands we provide and any
-                extra descriptions for built in commands in a dictionary with the 
+                extra descriptions for built in commands in a dictionary with the
                 command as they key. The extra descriptions are appended to any default
                 description.
         command_functions: the functions used to implement any commands we provide
                 as a dictionary with the command as the key. Do not provide functions
                 for built in commands here as they will be ignored. The functions are
-                called by code of the form 
+                called by code of the form
                         module.command_functions[command](*args,**kwargs)
                 where args and kwargs are the arguments and options defined in
                 command_args.
@@ -147,7 +147,7 @@ Backup:
     Functions:
         backup(server,*args,**kwargs): backup the server. The arguments are as
             defined in command_args but will all be optional. If no arguments or
-            options are set do a default backup to a sensible location (Module 
+            options are set do a default backup to a sensible location (Module
             specific). Options and arguments may be used to modify what is backed
             up or where it is stored.
 

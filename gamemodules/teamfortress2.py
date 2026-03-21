@@ -1,62 +1,82 @@
 import os
-import urllib.request
-import json
-import time
-import datetime
-import subprocess as sp
-from server import ServerError
 import re
-import screen
-import downloader
-import utils.updatefs
-from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
-from utils import backups
-from utils import updatefs
-import random
 
-from utils.fileutils import make_empty_file
+import screen
 import utils.steamcmd as steamcmd
+from server import ServerError
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.fileutils import make_empty_file
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 
-commands=("update","restart")
-command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),)),
-        "update":CmdSpec(options=(OptSpec("v",["validate"],"Validate the server files after updating",'validate',None,True), \
-                OptSpec("r",["restart"],"Restarts the server upon updating",'restart',None,True),)),
-        "restart":CmdSpec()}
+commands = ("update", "restart")
+command_args = {
+    "setup": CmdSpec(
+        optionalarguments=(
+            ArgSpec("PORT", "The port for the server to listen on", int),
+            ArgSpec("DIR", "The Directory to install minecraft in", str),
+        )
+    ),
+    "update": CmdSpec(
+        options=(
+            OptSpec(
+                "v",
+                ["validate"],
+                "Validate the server files after updating",
+                "validate",
+                None,
+                True,
+            ),
+            OptSpec(
+                "r",
+                ["restart"],
+                "Restarts the server upon updating",
+                "restart",
+                None,
+                True,
+            ),
+        )
+    ),
+    "restart": CmdSpec(),
+}
 
 # required still
-command_descriptions={"update": "Updates the game server to the latest version.",
-            "restart": "Restarts the game server without killing the process."}
+command_descriptions = {
+    "update": "Updates the game server to the latest version.",
+    "restart": "Restarts the game server without killing the process.",
+}
 
 max_stop_wait = 1
 
-_confpat=re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
-def updateconfig(filename,settings):
-    lines=[]
+_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
+
+
+def updateconfig(filename, settings):
+    lines = []
     if os.path.isfile(filename):
-        settings=settings.copy()
-        with open(filename,"r") as f:
-            for l in f:
-                m=_confpat.match(l)
+        settings = settings.copy()
+        with open(filename, "r") as f:
+            for line in f:
+                m = _confpat.match(line)
                 if m is not None and m.group(1) in settings:
-                    lines.append(m.expand(r"\1 "+settings[m.group(1)]+r"\3"))
+                    lines.append(m.expand(r"\1 " + settings[m.group(1)] + r"\3"))
                     del settings[m.group(1)]
                 else:
-                    lines.append(l)
-    for k,v in settings.items():
-        lines.append(k+" "+v+"\n")
+                    lines.append(line)
+    for k, v in settings.items():
+        lines.append(k + " " + v + "\n")
     print(lines)
-    with open(filename,"w") as f:
+    with open(filename, "w") as f:
         f.write("".join(lines))
 
+
 # Team Fortress 2 is probably the most simple example of a steamcmd game
-def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
+def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
     """
     This function creates the configuration details for the  server
-    
+
     inputs:
         server: the server object
         ask: whether to request details (e.g port) from the user
@@ -64,7 +84,6 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
         *: All arguments after this are keyword only arguments
         exe_name: the executable name of the server
     """
-
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
@@ -75,65 +94,72 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
     server.data["maxplayers"] = "16"
 
     # do we have backup data already? if not initialise the dictionary
-    if 'backup' not in server.data:
-        server.data['backup']={}
-    if 'profiles' not in server.data['backup']:
-        server.data['backup']['profiles']={}
+    if "backup" not in server.data:
+        server.data["backup"] = {}
+    if "profiles" not in server.data["backup"]:
+        server.data["backup"]["profiles"] = {}
     # if no backup profile exists, create a basic one
-    if len(server.data['backup']['profiles'])==0:
+    if len(server.data["backup"]["profiles"]) == 0:
         # essentially, the world, server properties and the root level json files are the best ones to back up. This can be configured though in the backup setup
-        server.data['backup']['profiles']['default']={'targets':{}}
-    if 'schedule' not in server.data['backup']:
-        server.data['backup']['schedule']=[]
-    if len(server.data['backup']['schedule'])==0:
+        server.data["backup"]["profiles"]["default"] = {"targets": {}}
+    if "schedule" not in server.data["backup"]:
+        server.data["backup"]["schedule"] = []
+    if len(server.data["backup"]["schedule"]) == 0:
         # if default does not exist, create it
-        profile='default'
-        if profile not in server.data['backup']['profiles']:
-            profile=next(iter(server.data['backup']['profiles']))
+        profile = "default"
+        if profile not in server.data["backup"]["profiles"]:
+            profile = next(iter(server.data["backup"]["profiles"]))
         # set the default to never back up
-        server.data['backup']['schedule'].append((profile,0,'days'))
+        server.data["backup"]["schedule"].append((profile, 0, "days"))
 
     # assign the port to the server
     if port is None and "port" in server.data:
-        port=server.data["port"]
+        port = server.data["port"]
     if ask:
         while True:
-            inp=input("Please specify the port to use for this server: "+("(current=" +str(port) + ") " if port is not None else "")).strip()
+            inp = input(
+                "Please specify the port to use for this server: "
+                + ("(current=" + str(port) + ") " if port is not None else "")
+            ).strip()
             if port is not None and inp == "":
                 break
             try:
-                port=int(inp)
-            except ValueError as v:
-                print(inp+" isn't a valid port number")
+                port = int(inp)
+            except ValueError:
+                print(inp + " isn't a valid port number")
                 continue
             break
-    if port is None :
+    if port is None:
         raise ValueError("No Port")
-    server.data["port"]=port
+    server.data["port"] = port
 
     # assign install dir for the server
     if dir is None:
         if "dir" in server.data and server.data["dir"] is not None:
-            dir=server.data["dir"]
+            dir = server.data["dir"]
         else:
-            dir=os.path.expanduser(os.path.join("~",server.name))
+            dir = os.path.expanduser(os.path.join("~", server.name))
         if ask:
-            inp=input("Where would you like to install the tf2 server: ["+dir+"] ").strip()
-            if inp!="":
-                dir=inp
-    server.data["dir"]=os.path.join(dir, "") # guarentees the inclusion of trailing slashes.
+            inp = input(
+                "Where would you like to install the tf2 server: [" + dir + "] "
+            ).strip()
+            if inp != "":
+                dir = inp
+    server.data["dir"] = os.path.join(
+        dir, ""
+    )  # guarentees the inclusion of trailing slashes.
 
     # if exe_name is not asigned, use the function default one
-    if not "exe_name" in server.data:
+    if "exe_name" not in server.data:
         server.data["exe_name"] = "srcds_run"
     server.data.save()
 
-    return (),{}
-    
+    return (), {}
+
 
 def install(server):
     doinstall(server)
-    #TODO: any config files that need creating or any commands that need running before the server can start for the first time
+    # TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
@@ -155,16 +181,23 @@ sv_pure 1
 """)
     server.data.save()
 
+
 # technically this command is not needed since the chosen port is assigned in the runscript, but leaving it commented as an example
 #  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
 
+
 def doinstall(server):
-    """ Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
+    """Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater"""
     if not os.path.isdir(server.data["dir"]):
         os.makedirs(server.data["dir"])
 
     print("Installing game server at", server.data["dir"])
-    steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=False)
+    steamcmd.download(
+        server.data["dir"],
+        server.data["Steam_AppID"],
+        server.data["Steam_anonymous_login_possible"],
+        validate=False,
+    )
 
 
 def restart(server):
@@ -172,7 +205,7 @@ def restart(server):
     server.start()
 
 
-def prestart(server,*args,**kwargs):
+def prestart(server, *args, **kwargs):
     steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
     steamclient_dir = os.path.dirname(STEAMCLIENT_DST)
 
@@ -180,26 +213,35 @@ def prestart(server,*args,**kwargs):
         if not os.path.isdir(steamclient_dir):
             os.makedirs(steamclient_dir)
         if os.path.lexists(STEAMCLIENT_DST):
-            if os.path.islink(STEAMCLIENT_DST) and os.readlink(STEAMCLIENT_DST) == steamclient_src:
+            if (
+                os.path.islink(STEAMCLIENT_DST)
+                and os.readlink(STEAMCLIENT_DST) == steamclient_src
+            ):
                 return
             os.remove(STEAMCLIENT_DST)
         os.symlink(steamclient_src, STEAMCLIENT_DST)
 
-def update(server,validate=False,restart=False):
+
+def update(server, validate=False, restart=False):
     try:
-         server.stop()
+        server.stop()
     except:
-         print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"],steam_app_id,steam_anonymous_login_possible,validate=validate)
+        print("Server has probably already stopped, updating")
+    steamcmd.download(
+        server.data["dir"],
+        steam_app_id,
+        steam_anonymous_login_possible,
+        validate=validate,
+    )
     print("Server up to date")
-    if restart == True:
+    if restart:
         print("Starting the server up")
         server.start()
-    
+
 
 def get_start_command(server):
-# example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
-# TODO define a map using the -m optional argument
+    # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
+    # TODO define a map using the -m optional argument
     exe_name = server.data["exe_name"]
     client_port = min(int(server.data["port"]) + 1, 65535)
 
@@ -215,24 +257,45 @@ def get_start_command(server):
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
 
-    steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
-    steamcmd_dir =  steamcmd.STEAMCMD_DIR
+    steam_updatescript = steamcmd.get_autoupdate_script(
+        server.name, server.data["dir"], steam_app_id
+    )
+    steamcmd_dir = steamcmd.STEAMCMD_DIR
 
-    return [exe_name,"-game","tf","-port",str(server.data["port"]),"-clientport",str(client_port),"+maxplayers",str(server.data["maxplayers"]),"+sv_pure","1","+ip","0.0.0.0","-secured","-timeout 0","-strictportbind","+randommap","-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
+    return [
+        exe_name,
+        "-game",
+        "tf",
+        "-port",
+        str(server.data["port"]),
+        "-clientport",
+        str(client_port),
+        "+maxplayers",
+        str(server.data["maxplayers"]),
+        "+sv_pure",
+        "1",
+        "+ip",
+        "0.0.0.0",
+        "-secured",
+        "-timeout 0",
+        "-strictportbind",
+        "+randommap",
+        "-autoupdate",
+        "-steam_dir",
+        steamcmd_dir,
+        "-steamcmd_script",
+        steam_updatescript,
+        "+sv_shutdown_timeout_minutes",
+        "2",
+    ], server.data["dir"]
 
-def do_stop(server,j):
-    screen.send_to_server(server.name,"\nquit\n")
 
-def status(server,verbose):
+def do_stop(server, j):
+    screen.send_to_server(server.name, "\nquit\n")
+
+
+def status(server, verbose):
     pass
-
-
-
-
-
-
-
-
 
 
 ## TODO integrate Steam games properly into the downloads module.
@@ -276,6 +339,8 @@ def status(server,verbose):
 ##  os.symlink(downloadpath,basetagpath)
 
 
-    
 # required, must be defined to allow functions listed below which are not in the defaults to be used
-command_functions={"update":update,"restart":restart} # will have elements added as the functions are defined
+command_functions = {
+    "update": update,
+    "restart": restart,
+}  # will have elements added as the functions are defined

@@ -31,28 +31,27 @@ def main(name, args):
     name is the exectable name, whereas args are the arguments associated with the server
 
     args is a tuple of arguments used whilst executing the program, the infomation contains
-      server names and commands to execute on those servers. 
-         - Typically the first argument  is the server name (the one you want to operate on), 
+      server names and commands to execute on those servers.
+         - Typically the first argument  is the server name (the one you want to operate on),
            and this is followed by server related arguments.
            e.g "./alphagsm myserver mycommand"
 
          - If the first argument is a number, you then need to provide in spaces the names
-           of servers you wish to operate on, 
+           of servers you wish to operate on,
            e.g  "./alphagsm 2 myservera myserverb mycommand"
 
          - You can also use * to denote all servers owned by the user
-        
-      On multiusers AlphaGSM setups, AlphaGSM can aquire a limited amount of "sudo" rights should 
+
+      On multiusers AlphaGSM setups, AlphaGSM can aquire a limited amount of "sudo" rights should
       such a feature be requested. This provides new ways of labelling servers.
-         -  "user/server" for a user owned game server 
+         -  "user/server" for a user owned game server
             e.g "./alphagsm someuser/someserver somecommand"
-         - "./alphagsm */* somecommand" for all game servers running on the hardware 
+         - "./alphagsm */* somecommand" for all game servers running on the hardware
 
     NB: we often refer the individual assigned server name itself as the server "tag"
 
     The main role of this function is to sanitize the command input from the user.
     """
-
 
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]
@@ -74,10 +73,7 @@ def main(name, args):
         args = args[count:]
         #  Check if we don't have 0 or a negative amount of servers.
         if count < 1:
-            print(
-                "You must specify at least one server to work on",
-                file=stderr
-            )
+            print("You must specify at least one server to work on", file=stderr)
             print(file=stderr)
             help(name, None)
             return 2
@@ -86,8 +82,9 @@ def main(name, args):
     for s in raw_servers:
         if s.lower() in banned:
             print(
-                s, "is a banned server name as it's too similar to a command",
-                file=stderr
+                s,
+                "is a banned server name as it's too similar to a command",
+                file=stderr,
             )
             print(file=stderr)
             help(name, None, full_help=True)
@@ -104,10 +101,10 @@ def main(name, args):
     #    we now get the command, and the arguments associated with the command
     #    this command is what we operate on the server (e.g start, stop).
     #
-    #  At this point in time, servers are in the form of "servername" or 
+    #  At this point in time, servers are in the form of "servername" or
     #    "username/servername" split_server_name returns (user,server)
     #     where user is None if we are that user.
-    #    
+    #
     #  spec is a single instance of "server" or "user/server", which
     #     we put into a tuple (user,server).  user can be None
     #     if user = None, then we operate on own server.
@@ -123,7 +120,7 @@ def main(name, args):
     ]
 
     #  servers = [(user,server)].
-    #  If command is "help" and servers contains just the wild card server 
+    #  If command is "help" and servers contains just the wild card server
     #  ("/") then show help for commands common to all servers.
     if len(servers) == 1 and servers[0] == ("*", "*") and cmd == "help":
         help(name, None, *args, file=stdout)
@@ -131,9 +128,7 @@ def main(name, args):
 
     #  Now we modify the server list even more.
     #  Expand any wildcards in the list into the concrete list of servers.
-    servers = [
-        s for user, tag in servers for s in expand_server_star(user, tag, cmd)
-    ]
+    servers = [s for user, tag in servers for s in expand_server_star(user, tag, cmd)]
     if len(servers) < 1:
         print("No servers found for", cmd, file=stderr)
         print(file=stderr)
@@ -151,7 +146,7 @@ def main(name, args):
         else:
             return run_multi(name, len(servers), servers, [cmd] + args)
     #  Just operating on one server.
-    else: 
+    else:
         return run_one(name, servers[0], cmd, args)
     return 0
 
@@ -181,10 +176,7 @@ def run_one(name, server, cmd, args):
             #  or "tf2" for a team fortress 2 server.
             #  If no name, return the error.
             if len(args) < 1:
-                print(
-                    "Type of server to create is a required argument",
-                    file=stderr
-                )
+                print("Type of server to create is a required argument", file=stderr)
                 print(file=stderr)
                 help(name, None, cmd)
                 return 2
@@ -228,7 +220,7 @@ def run_one(name, server, cmd, args):
                 return 1
         #  The server exists, check if we wish for help, or wish to list the server
         if cmd is None or cmd == "help":
-            help(name, server, *args, file = stdout, full_help=True)
+            help(name, server, *args, file=stdout, full_help=True)
         elif cmd == "list":
             #  TODO: I am assuming list makes more sense if you are listing a users servers?
             print(tag)
@@ -254,7 +246,7 @@ def run_one(name, server, cmd, args):
             #  parse the command input by the  user of alphagsm to create something
             #  that the game server can understand. Otherwise raise an error.
             try:
-                #  Essentially here we translate our "universal" alphagsm commands 
+                #  Essentially here we translate our "universal" alphagsm commands
                 #  (e.g start, stop),
                 #  Into something that makes sense to the server
                 #  (e.g java minecraft.jar)
@@ -267,10 +259,10 @@ def run_one(name, server, cmd, args):
                 return 2
             #  needed by activate and deactivate
             program.PATH = os.path.join(
-                os.path.dirname(os.path.dirname(
-                    os.path.realpath(os.path.abspath(__file__))
-                )),
-                "alphagsm"
+                os.path.dirname(
+                    os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
+                ),
+                "alphagsm",
             )
             #  now we have the commands that the game server understands,
             #  try running the command
@@ -293,12 +285,12 @@ def run_one(name, server, cmd, args):
 def split_server_name(name):
     """
     This is used to select a server owned by a user
-    
-    name: 
+
+    name:
        - if name is a string without "/", then this represents
           the server name, and thus this server is owned by
           the current user
-       - if name is a string with "/" we split it, the left 
+       - if name is a string with "/" we split it, the left
           hand side is the user name and the right hand side is
           the server owned by that user
 
@@ -323,13 +315,13 @@ def split_server_name(name):
 
 def get_all_all_servers(command):
     """
-    Get all servers for all users. What exactly this means is 
+    Get all servers for all users. What exactly this means is
     command dependent.
 
-    If command is "stop", "status", "message", "backup" or "list" 
-    then uses the list of all currently running servers. 
-    If command is "start" then this returns the list of servers 
-    stopped by the most recent "stop" command issued by the current user. 
+    If command is "stop", "status", "message", "backup" or "list"
+    then uses the list of all currently running servers.
+    If command is "start" then this returns the list of servers
+    stopped by the most recent "stop" command issued by the current user.
 
     For all other commands this is not supported and returns an empty list
     """
@@ -355,7 +347,7 @@ def get_all_all_servers(command):
 
 def get_all_user_servers():
     """
-    Get the list of all known servers for the current user from the datapath.    
+    Get the list of all known servers for the current user from the datapath.
     """
 
     try:
@@ -367,15 +359,13 @@ def get_all_user_servers():
     except FileNotFoundError:
         print("No servers found for user", file=stderr)
         return []
-    print(
-        "Using servers for '*':", *(tag for user, tag in servers), file=stderr
-    )
+    print("Using servers for '*':", *(tag for user, tag in servers), file=stderr)
     return servers
 
 
 def expand_server_star(user, tag, cmd):
     """
-    Expand any wild cards "*" in either user or tag into the list 
+    Expand any wild cards "*" in either user or tag into the list
     of concrete servers to use.
 
     inputs
@@ -387,10 +377,10 @@ def expand_server_star(user, tag, cmd):
        A list of users and server tags turples
           [(user,server)]
     """
-   
+
     #  If user is "*" then should use all servers for all users.
     if user == "*":
-        #  are we acting on all servers? 
+        #  are we acting on all servers?
         #  we don't know every server owned by a user trivially
         #  We support this for commands that we can support this on! :
         if tag != "*":
@@ -419,7 +409,7 @@ def get_run_as_cmd(name, user, server, args, multi=False):
     Return a list suitable to run in sp.subprocess
     """
 
-    return ["sudo", "-Hu", user] + get_run_cmd(name, server, args, multi = multi)
+    return ["sudo", "-Hu", user] + get_run_cmd(name, server, args, multi=multi)
 
 
 def get_run_cmd(name, server, args, multi=False):
@@ -430,10 +420,8 @@ def get_run_cmd(name, server, args, multi=False):
     """
 
     scriptpath = os.path.join(
-        os.path.dirname(os.path.dirname(
-            os.path.realpath(os.path.abspath(__file__))
-        )),
-        "alphagsm-internal"
+        os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),
+        "alphagsm-internal",
     )
     return [scriptpath, "1" if multi else "0", name, server] + args
 
@@ -473,10 +461,7 @@ def run_list_multi(name, servers, args):
             else:
                 print(el)
         if proc.returncode != 0:
-            print(
-                "Command finished with return status", proc.returncode,
-                file=stderr
-            )
+            print("Command finished with return status", proc.returncode, file=stderr)
             if finalret == 0 or finalret == proc.returncode:
                 finalret = proc.returncode
             else:
@@ -491,7 +476,7 @@ def _internal_is_running(line):
 def run_multi(name, count, servers, args):
     """
     Run a single command on multiple servers
-    
+
     This is used for e.g start and stop commands, anything that is trivial
     to run as a bulk action.
 
@@ -507,12 +492,12 @@ def run_multi(name, count, servers, args):
         mp.addtomultiafter(
             multi,
             (user + "/" if user is not None else "") + server,
-                    _internal_is_running,
-                    cmd,
-                    stdin=sp.DEVNULL,
-                    stdout=sp.PIPE,
-                    stderr=sp.STDOUT
-	    )
+            _internal_is_running,
+            cmd,
+            stdin=sp.DEVNULL,
+            stdout=sp.PIPE,
+            stderr=sp.STDOUT,
+        )
     #  run the command on all of the servers
     multi.processall()
     #  check the status
@@ -544,14 +529,14 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
     if cmd is None:
         if full_help:
             print(
-                "The Sector-Alpha Game Server Management Script (AlphaGSM)",
-                file=file
+                "The Sector-Alpha Game Server Management Script (AlphaGSM)", file=file
             )
         print(file=file)
         print(name, "SERVER COMMAND [ARGS...]", file=file)
         print(name, "COUNT SERVER... COMMAND [ARGS...]", file=file)
         if full_help:
-            print(dedent("""
+            print(
+                dedent("""
                 SERVER is the server or servers to process. If a server is
                 specified as username/server then we use sudo to run as the
                 relevant user. This is always possible as root but is up to sudo
@@ -564,10 +549,12 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                 If the second calling form is specified there must be EXACTLY
                 COUNT servers specified.
              
-            """), file=file
+            """),
+                file=file,
             )
 
-        print(dedent("""
+        print(
+            dedent("""
         The available commands are:
           help [COMMAND] : Print a help message. Without a command print
                            this message or with a command print detailed help
@@ -581,25 +568,29 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            checking what servers a wildcard matched or in
                            scripts to list the servers in a script processable
                            way.
-        """), file=file)
+        """),
+            file=file,
+        )
 
         #  if there is no server, then return a default set of server commands
         #  that are typical of every game server
         if server is None:
             for cmd in Server.default_commands:
                 cmdparse.shorthelp(
-                    cmd, Server.default_command_descriptions.get(cmd, None),
-                    Server.default_command_args[cmd]
+                    cmd,
+                    Server.default_command_descriptions.get(cmd, None),
+                    Server.default_command_args[cmd],
                 )
         #  otherwise return the commands specific to the server.
         else:
             for cmd in server.get_commands():
                 cmdparse.shorthelp(
-                    cmd, server.get_command_description(cmd),
-                    server.get_command_args(cmd)
+                    cmd,
+                    server.get_command_description(cmd),
+                    server.get_command_args(cmd),
                 )
     else:
-        #  if we have a command, return help relating to the command to the 
+        #  if we have a command, return help relating to the command to the
         #  specific command
         if server is None:
             if cmd not in Server.default_commands:
@@ -608,8 +599,9 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                 help(name, server, file=file, full_help=full_help)
                 return
             cmdparse.longhelp(
-                cmd, Server.default_command_descriptions.get(cmd, None),
-                Server.default_command_args[cmd]
+                cmd,
+                Server.default_command_descriptions.get(cmd, None),
+                Server.default_command_args[cmd],
             )
         else:
             if cmd not in server.get_commands():
@@ -618,13 +610,13 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                 help(name, server, file=file, full_help=full_help)
                 return
             cmdparse.longhelp(
-                cmd, server.get_command_description(cmd),
-                server.get_command_args(cmd)
+                cmd, server.get_command_description(cmd), server.get_command_args(cmd)
             )
 
     if full_help:
         # print the copyright and information notice.
-        print(dedent("""
+        print(
+            dedent("""
             AlphaGSM Copyright (C) 2016 by Sector Alpha.
             Licensed under GPL v3.0. See the LISCENCE file for details.
             Developed by Cosmosquark and Staircase27. See the CREDITS file for a
@@ -637,4 +629,6 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
             or ask any questions on our github page, or contact
             cosmosquark@sector-alpha.net. Additionally check out the project
             wiki at http://wiki.sector-alpha.net/index.php?title=AlphaGSM
-        """), file=file)
+        """),
+            file=file,
+        )

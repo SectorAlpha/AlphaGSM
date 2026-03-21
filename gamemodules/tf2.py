@@ -1,1 +1,1 @@
-ALIAS_TARGET="teamfortress2"
+ALIAS_TARGET = "teamfortress2"

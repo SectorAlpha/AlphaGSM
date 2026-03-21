@@ -1,1 +1,1 @@
-ALIAS_TARGET="terraria.vanilla"
+ALIAS_TARGET = "terraria.vanilla"

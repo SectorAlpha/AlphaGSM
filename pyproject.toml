@@ -1,0 +1,88 @@
+[tool.pylint.main]
+persistent = false
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.messages_control]
+disable = [
+  "assignment-from-no-return",
+  "attribute-defined-outside-init",
+  "bad-indentation",
+  "bad-classmethod-argument",
+  "broad-exception-caught",
+  "chained-comparison",
+  "comparison-of-constants",
+  "comparison-with-itself",
+  "consider-using-in",
+  "consider-using-f-string",
+  "consider-using-from-import",
+  "consider-using-min-builtin",
+  "consider-using-with",
+  "duplicate-code",
+  "fixme",
+  "function-redefined",
+  "import-error",
+  "import-outside-toplevel",
+  "invalid-name",
+  "line-too-long",
+  "missing-class-docstring",
+  "missing-final-newline",
+  "missing-function-docstring",
+  "missing-module-docstring",
+  "no-else-break",
+  "no-else-continue",
+  "no-else-raise",
+  "no-else-return",
+  "no-member",
+  "no-name-in-module",
+  "no-value-for-parameter",
+  "not-an-iterable",
+  "pointless-exception-statement",
+  "bare-except",
+  "raise-missing-from",
+  "redefined-argument-from-local",
+  "redefined-builtin",
+  "redefined-outer-name",
+  "reimported",
+  "relative-beyond-top-level",
+  "signature-differs",
+  "singleton-comparison",
+  "stop-iteration-return",
+  "super-with-arguments",
+  "too-few-public-methods",
+  "too-many-arguments",
+  "too-many-branches",
+  "too-many-locals",
+  "too-many-nested-blocks",
+  "too-many-positional-arguments",
+  "too-many-return-statements",
+  "too-many-statements",
+  "trailing-whitespace",
+  "unexpected-keyword-arg",
+  "undefined-loop-variable",
+  "undefined-variable",
+  "ungrouped-imports",
+  "unnecessary-lambda-assignment",
+  "unnecessary-pass",
+  "unspecified-encoding",
+  "unused-argument",
+  "unused-import",
+  "unused-variable",
+  "unused-wildcard-import",
+  "unpacking-non-sequence",
+  "used-before-assignment",
+  "use-implicit-booleaness-not-comparison",
+  "useless-object-inheritance",
+  "wildcard-import",
+  "wrong-import-order",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils"]
+omit = ["*/__init__.py", "tests/*", "downloadermodules/steamcmd.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

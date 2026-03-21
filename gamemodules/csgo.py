@@ -1,1 +1,1 @@
-ALIAS_TARGET="counterstrikeglobaloffensive"
+ALIAS_TARGET = "counterstrikeglobaloffensive"
