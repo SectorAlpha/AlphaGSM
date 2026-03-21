@@ -1,11 +1,10 @@
-from utils.settings import settings 
-import pwd
 import os
 import os.path
 import subprocess as sp
 import time
 
 from downloadermodules.url import download as url_download
+from utils.settings import settings
 
 # if a user has already installed steam to e.g ubuntu, steamcmd prefers to be installed in the same directory (or at least when steamcmd starts, it sends the error related things there as if it wants to be installed there.
 STEAMCMD_DIR = os.path.expanduser(settings.user.downloader.getsection('steamcmd').get('steamcmd_path') or "~/.local/share/Steam/" if os.path.isdir(os.path.expanduser("~/.local/share/Steam/")) else "~/Steam/")
@@ -48,10 +47,10 @@ def download(path,Steam_AppID,steam_anonymous_login_possible,validate=True):
     path = _normalise_install_path(path)
 
     # run steamcmd
-    if steam_anonymous_login_possible == True:
+    if steam_anonymous_login_possible:
         print("Running SteamCMD")
         proc_list = [STEAMCMD_EXE,"+force_install_dir",path,"+login","anonymous","+app_update",str(Steam_AppID),"+quit"]
-        if validate == True:
+        if validate:
             proc_list.insert(-1,"validate")
         last_output = ""
         for attempt in range(STEAMCMD_RETRIES):
@@ -77,7 +76,7 @@ def get_autoupdate_script(name,path,app_id,force=False):
     if not os.path.isdir(STEAMCMD_SCRIPTS):
         os.mkdir(STEAMCMD_SCRIPTS)
     file_name = os.path.join(STEAMCMD_SCRIPTS, '') + name + "_update.txt"
-    if not os.path.isfile(file_name) or (force == True):
+    if not os.path.isfile(file_name) or force:
         path = _normalise_install_path(path)
         steamcmd_gameupdate_text = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),STEAMCMD_GAMEUPDATE_TEMPLATE), 'r').read()
         steamcmd_gameupdate_text = steamcmd_gameupdate_text % (path,app_id)

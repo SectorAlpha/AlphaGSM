@@ -3,3 +3,5 @@ __pycache__
 *.bak
 alphagsm.conf
 env
+.coverage
+coverage.xml

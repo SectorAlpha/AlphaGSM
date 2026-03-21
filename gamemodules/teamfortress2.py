@@ -1,21 +1,11 @@
 import os
-import urllib.request
-import json
-import time
-import datetime
-import subprocess as sp
-from server import ServerError
 import re
-import screen
-import downloader
-import utils.updatefs
-from utils.cmdparse.cmdspec import CmdSpec,OptSpec,ArgSpec
-from utils import backups
-from utils import updatefs
-import random
 
-from utils.fileutils import make_empty_file
+import screen
 import utils.steamcmd as steamcmd
+from server import ServerError
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.fileutils import make_empty_file
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
@@ -39,13 +29,13 @@ def updateconfig(filename,settings):
     if os.path.isfile(filename):
         settings=settings.copy()
         with open(filename,"r") as f:
-            for l in f:
-                m=_confpat.match(l)
+            for line in f:
+                m=_confpat.match(line)
                 if m is not None and m.group(1) in settings:
                     lines.append(m.expand(r"\1 "+settings[m.group(1)]+r"\3"))
                     del settings[m.group(1)]
                 else:
-                    lines.append(l)
+                    lines.append(line)
     for k,v in settings.items():
         lines.append(k+" "+v+"\n")
     print(lines)
@@ -103,7 +93,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
                 break
             try:
                 port=int(inp)
-            except ValueError as v:
+            except ValueError:
                 print(inp+" isn't a valid port number")
                 continue
             break
@@ -124,7 +114,7 @@ def configure(server,ask,port=None,dir=None,*,exe_name="srcds_run"):
     server.data["dir"]=os.path.join(dir, "") # guarentees the inclusion of trailing slashes.
 
     # if exe_name is not asigned, use the function default one
-    if not "exe_name" in server.data:
+    if "exe_name" not in server.data:
         server.data["exe_name"] = "srcds_run"
     server.data.save()
 
@@ -192,7 +182,7 @@ def update(server,validate=False,restart=False):
          print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"],steam_app_id,steam_anonymous_login_possible,validate=validate)
     print("Server up to date")
-    if restart == True:
+    if restart:
         print("Starting the server up")
         server.start()
     

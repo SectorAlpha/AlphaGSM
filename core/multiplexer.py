@@ -1,6 +1,6 @@
-import subprocess as sp
 import os
 import selectors
+import subprocess as sp
 
 
 class OutputInteruptedException(Exception):
@@ -14,8 +14,8 @@ class OutputInteruptedException(Exception):
         )
 
     def reapply(self, multi):
-        for s, (l, f) in self.streams.items():
-            multi.streams[s].linecheck = f
+        for stream, (_, linecheck) in self.streams.items():
+            multi.streams[stream].linecheck = linecheck
 
 
 class StreamData(object):
@@ -133,13 +133,13 @@ class Multiplexer(object):
         interuptedstreams = {}
         for stream in self.checkdata:
             stream_data = self.streams[stream]
-            for l in stream_data.consumelines():
-                if stream_data.linecheck and stream_data.linecheck(l):
-                    interuptedstreams[stream] = (l, stream_data.linecheck)
+            for line in stream_data.consumelines():
+                if stream_data.linecheck and stream_data.linecheck(line):
+                    interuptedstreams[stream] = (line, stream_data.linecheck)
                     stream_data.linecheck = None
                     break
                 else:
-                    print(self.gettag(stream), l.decode())
+                    print(self.gettag(stream), line.decode())
         self.checkdata = set()
         if self.streams:
             inputs = self.selector.select(timeout)
@@ -148,13 +148,13 @@ class Multiplexer(object):
                 stream_data = self.streams[stream]
                 new = stream.read1(1000)
                 stream_data.data += new
-                for l in stream_data.consumelines():
-                    if stream_data.linecheck and stream_data.linecheck(l):
-                        interuptedstreams[stream] = (l, stream_data.linecheck)
+                for line in stream_data.consumelines():
+                    if stream_data.linecheck and stream_data.linecheck(line):
+                        interuptedstreams[stream] = (line, stream_data.linecheck)
                         stream_data.linecheck = None
                         break
                     else:
-                        print(self.gettag(stream), l.decode())
+                        print(self.gettag(stream), line.decode())
                 if not new:  # event but no new data means eof
                     if stream_data.data:  # write out any part line anyway
                         print(
@@ -208,7 +208,7 @@ def addtomultiafter(multi, tag, fn, *args, **kwargs):
         tmp.streams[s].linecheck = fn
     try:
         tmp.processall()
-    except OutputInteruptedException as ex:
+    except OutputInteruptedException:
         print(tag, "is running")
         tmp.transfer(multi, proc)
         multi.procs[proc].tag = tag
