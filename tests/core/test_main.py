@@ -68,15 +68,15 @@ def test_expand_server_star_handles_user_and_tag_wildcards(monkeypatch, capsys):
 
 
 def test_get_run_cmd_and_run_as_cmd_build_expected_subprocess_command(monkeypatch):
-    monkeypatch.setattr(main_module.os.path, "dirname", lambda path: "/repo/core")
+    monkeypatch.setattr(main_module.os.path, "dirname", lambda path: "/repo/src")
     monkeypatch.setattr(main_module.os.path, "abspath", lambda path: path)
     monkeypatch.setattr(main_module.os.path, "realpath", lambda path: path)
 
     local = main_module.get_run_cmd("alphagsm", "alpha", ["status"], multi=True)
     remote = main_module.get_run_as_cmd("alphagsm", "bob", "alpha", ["status"], multi=False)
 
-    assert local == ["/repo/core/alphagsm-internal", "1", "alphagsm", "alpha", "status"]
-    assert remote == ["sudo", "-Hu", "bob", "/repo/core/alphagsm-internal", "0", "alphagsm", "alpha", "status"]
+    assert local == ["/repo/src/alphagsm-internal", "1", "alphagsm", "alpha", "status"]
+    assert remote == ["sudo", "-Hu", "bob", "/repo/src/alphagsm-internal", "0", "alphagsm", "alpha", "status"]
 
 
 def test_run_as_returns_subprocess_status(monkeypatch, capsys):

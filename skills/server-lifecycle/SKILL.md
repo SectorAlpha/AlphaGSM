@@ -4,13 +4,13 @@
 | --- | --- |
 | Purpose | Preserve, document, and enforce the standard AlphaGSM server lifecycle contract. |
 | Use when | Changing lifecycle code, adding a new game server, or documenting per-server behaviour. |
-| Main source | `server/server.py`, `core/main.py`, and the relevant game module. |
+| Main source | `server/server.py`, `core/main.py`, smoke tests, and the relevant game module. |
 
 | Field | Value |
 | --- | --- |
 | Inputs | Server dispatch logic, default command contract, and game module lifecycle code. |
 | Outputs | Updated lifecycle code, matching docs, matching tests, and command-contract compliance for new modules. |
-| Related files | `server/server.py`, `core/main.py`, `screen/screen.py`, `gamemodules/**`, `tests/server/*`. |
+| Related files | `server/server.py`, `core/main.py`, `screen/screen.py`, `gamemodules/**`, `tests/server/*`, `smoke_tests/*.sh`. |
 
 Use this skill when changing or documenting the lifecycle for a game server module, especially when adding a new game server type.
 
@@ -65,6 +65,7 @@ The smoke tests are not owned by this skill, but new server lifecycle work shoul
 - `server/server.py`
 - `core/main.py`
 - `screen/screen.py`
+- `smoke_tests/*.sh`
 - the relevant `gamemodules/...` file
 
 ## Update Rule

@@ -22,7 +22,7 @@ require_cmd() {
 run_alphagsm() {
   echo
   echo "=== alphagsm $* ==="
-  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
 run_alphagsm_capture() {
@@ -31,7 +31,7 @@ run_alphagsm_capture() {
   echo
   echo "=== alphagsm $* ==="
   set +e
-  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT" \
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
     "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@" >"$output_file" 2>&1
   local status=$?
   set -e
@@ -68,7 +68,7 @@ skip_for_known_tf2_setup_issue() {
 cleanup() {
   set +e
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
-    ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
+    ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
 }
 

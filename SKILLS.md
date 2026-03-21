@@ -10,6 +10,9 @@ All repo-local skills live under [skills](skills).
 
 - [smoke-driven-docs](skills/smoke-driven-docs/SKILL.md)
 - [server-lifecycle](skills/server-lifecycle/SKILL.md)
-- [install-layout](skills/install-layout/SKILL.md)
 - [wiki-publishing](skills/wiki-publishing/SKILL.md)
-- [system-install-validation](skills/system-install-validation/SKILL.md)
+
+## Related Guidance
+
+- [AGENTS.md](AGENTS.md)
+- [skills/README.md](skills/README.md)

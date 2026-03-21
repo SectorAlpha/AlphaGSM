@@ -1,6 +1,10 @@
 #!/usr/bin/python3
-import core
+import os
 import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+
+import core
 
 # call the main code
 sys.exit(core.main(sys.argv[0],sys.argv[1:]))

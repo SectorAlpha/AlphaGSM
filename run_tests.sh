@@ -1,1 +1,1 @@
-PYTHONPATH=.:$PYTHONPATH pytest tests
+PYTHONPATH=.:src${PYTHONPATH:+:$PYTHONPATH} pytest tests

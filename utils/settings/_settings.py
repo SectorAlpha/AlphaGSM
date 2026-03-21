@@ -252,7 +252,9 @@ class Settings(object):
                     "/etc/alphagsm.conf"
                     if __file__[:5] == "/usr/"
                     else os.path.join(
-                        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                        os.path.dirname(
+                            os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                        ),
                         "alphagsm.conf",
                     )
                 ),

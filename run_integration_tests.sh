@@ -1,1 +1,1 @@
-PYTHONPATH=.:$PYTHONPATH pytest integration_tests "$@"
+PYTHONPATH=.:src${PYTHONPATH:+:$PYTHONPATH} pytest integration_tests "$@"

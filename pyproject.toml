@@ -81,7 +81,7 @@ disable = [
 [tool.coverage.run]
 branch = true
 source = ["core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils"]
-omit = ["*/__init__.py", "tests/*", "downloadermodules/steamcmd.py"]
+omit = ["*/__init__.py", "tests/*", "*/downloadermodules/steamcmd.py"]
 
 [tool.coverage.report]
 show_missing = true
