@@ -262,7 +262,7 @@ def run_one(name, server, cmd, args):
             #  needed by activate and deactivate
             program.PATH = os.path.join(
                 os.path.dirname(
-                    os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
+                    os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))
                 ),
                 "alphagsm",
             )
@@ -422,7 +422,7 @@ def get_run_cmd(name, server, args, multi=False):
     """
 
     scriptpath = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__)))),
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))),
         "alphagsm-internal",
     )
     return [scriptpath, "1" if multi else "0", name, server] + args

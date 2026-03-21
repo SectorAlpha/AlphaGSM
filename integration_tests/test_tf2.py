@@ -63,7 +63,7 @@ def _write_config(config_path, home_dir):
 def _alphagsm_env(config_path):
     env = os.environ.copy()
     env["ALPHAGSM_CONFIG_LOCATION"] = str(config_path)
-    env["PYTHONPATH"] = str(REPO_ROOT)
+    env["PYTHONPATH"] = str(REPO_ROOT / "src")
     return env
 
 

@@ -49,7 +49,7 @@ Update these in order when relevant:
 
 ## Known Exception
 
-`downloadermodules/steamcmd.py` is legacy parser-broken code and is intentionally outside the active lint/docstring verification surface.
+`src/downloadermodules/steamcmd.py` is legacy parser-broken code and is intentionally outside the active lint/docstring verification surface.
 
 ## Repo Skills
 

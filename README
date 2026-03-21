@@ -140,18 +140,18 @@ We're working on improving the clarity of the comments on the code. We have also
 
 So long as a game server is downloadable via steamCMD or over http, adding a new game
 server is possible with the AlphaGSM code. An overview of the commands are given
-in "server/gamemodules.py" of which are common for all game servers. "gamemodules/minecraft/vanilla.py"
+in "src/server/gamemodules.py" of which are common for all game servers. "src/gamemodules/minecraft/vanilla.py"
 is a doccumented example of how to download a game server over URL and additionally allow for
-variations/mods of the same game (e.g tekkit). "gamemodules/teamfortress2.py" is a doccumented
+variations/mods of the same game (e.g tekkit). "src/gamemodules/teamfortress2.py" is a doccumented
 example of how to download a game server via SteamCMD.
 
-In each gameserver module, you are either adding new commands to the server object as described in "server/server.py", or overriding existing ones to be more suitable for the game server of choice. Esse
-ntially you are extending "server/server.py".
+In each gameserver module, you are either adding new commands to the server object as described in "src/server/server.py", or overriding existing ones to be more suitable for the game server of choice. Esse
+ntially you are extending "src/server/server.py".
 
 The methods in particular that require the most attention in a game module are 'configure', where one defines the game server configuration (e.g port, startup map, game server properties file).
 The other method is "get_start_command" which defines the executable command to startup the game server (e.g in minecraft this is "java -jar minecraft.jar").
 
-If you need to develop a new downloader, "downloader/downloadermodules.py" contains doccumentation for developing this.
+If you need to develop a new downloader, "src/downloader/downloadermodules.py" contains doccumentation for developing this.
 
 A tutorial is on the TODO list, but we hope for now that the game server modules that already exist act as a good starting point.
 

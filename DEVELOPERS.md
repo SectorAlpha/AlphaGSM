@@ -15,12 +15,12 @@ AlphaGSM is a Python CLI that normalises game-server lifecycle management across
 At runtime, the user-facing call path is:
 
 1. `./alphagsm ...`
-2. [core/main.py](core/main.py)
+2. [src/core/main.py](src/core/main.py)
 3. server-name parsing, wildcard expansion, and command parsing
-4. [server/server.py](server/server.py) `Server(...)`
+4. [src/server/server.py](src/server/server.py) `Server(...)`
 5. merge of default commands with module-defined commands
 6. dispatch into default server behaviour or module-specific functions
-7. process startup through [screen/screen.py](screen/screen.py)
+7. process startup through [src/screen/screen.py](src/screen/screen.py)
 
 ## Repository Layout
 
@@ -55,7 +55,7 @@ At runtime, the user-facing call path is:
 
 ## Command And Server Model
 
-The shared command contract is defined in [server/server.py](server/server.py).
+The shared command contract is defined in [src/server/server.py](src/server/server.py).
 
 Default commands:
 
@@ -104,9 +104,9 @@ Operational expectations:
 
 Representative implementations:
 
-- [gamemodules/minecraft/vanilla.py](gamemodules/minecraft/vanilla.py)
-- [gamemodules/teamfortress2.py](gamemodules/teamfortress2.py)
-- [gamemodules/counterstrikeglobaloffensive.py](gamemodules/counterstrikeglobaloffensive.py)
+- [src/gamemodules/minecraft/vanilla.py](src/gamemodules/minecraft/vanilla.py)
+- [src/gamemodules/teamfortress2.py](src/gamemodules/teamfortress2.py)
+- [src/gamemodules/counterstrikeglobaloffensive.py](src/gamemodules/counterstrikeglobaloffensive.py)
 
 ## Datastore Model
 
@@ -114,8 +114,8 @@ Per-server state is persisted as JSON under the configured server datapath.
 
 Primary files:
 
-- [server/data.py](server/data.py)
-- [server/server.py](server/server.py)
+- [src/server/data.py](src/server/data.py)
+- [src/server/server.py](src/server/server.py)
 
 Typical persisted keys include:
 
@@ -133,16 +133,16 @@ Typical persisted keys include:
 
 The download subsystem is split between:
 
-- [downloader/downloader.py](downloader/downloader.py)
+- [src/downloader/downloader.py](src/downloader/downloader.py)
   cache lookup, lock handling, and shared-download ownership
-- [downloadermodules/url.py](downloadermodules/url.py)
+- [src/downloadermodules/url.py](src/downloadermodules/url.py)
   HTTP download and decompression
-- [utils/steamcmd.py](utils/steamcmd.py)
+- [src/utils/steamcmd.py](src/utils/steamcmd.py)
   SteamCMD bootstrap and Steam app installation
 
 Known exception:
 
-- [downloadermodules/steamcmd.py](downloadermodules/steamcmd.py) is currently legacy parser-broken code and remains outside the maintained lint/doc verification surface
+- [src/downloadermodules/steamcmd.py](src/downloadermodules/steamcmd.py) is currently legacy parser-broken code and remains outside the maintained lint/doc verification surface
 
 ## Screen Lifecycle
 
@@ -150,8 +150,8 @@ AlphaGSM uses GNU screen as the process supervisor for long-running game servers
 
 Core helpers:
 
-- [screen/screen.py](screen/screen.py)
-- [screen/tail.py](screen/tail.py)
+- [src/screen/screen.py](src/screen/screen.py)
+- [src/screen/tail.py](src/screen/tail.py)
 
 Lifecycle model:
 
@@ -238,7 +238,7 @@ Lint is driven by [lint.sh](lint.sh).
 Properties of the current lint pipeline:
 
 - enumerates maintained Python files under the primary source trees
-- excludes the parser-broken legacy `downloadermodules/steamcmd.py`
+- excludes the parser-broken legacy `src/downloadermodules/steamcmd.py`
 - runs pylint through the selected interpreter
 - enforces `--fail-under=10`
 

@@ -1,8 +1,12 @@
 #!/usr/bin/python3
-import downloader
+import os
 import sys
 import contextlib
 from urllib.parse import quote
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+
+import downloader
 
 with contextlib.redirect_stdout(sys.stderr):
     try:
