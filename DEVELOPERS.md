@@ -50,6 +50,8 @@ At runtime, the user-facing call path is:
   Pytest-driven end-to-end tests.
 - [smoke_tests](smoke_tests)
   Shell-driven streamed lifecycle runners used by CI and documentation.
+- [system_install_tests](system_install_tests)
+  Container-based validation of the system-wide install layout.
 - [docs](docs)
   User-facing documentation.
 
@@ -231,6 +233,20 @@ bash ./smoke_tests/run_minecraft_vanilla.sh
 bash ./smoke_tests/run_tf2.sh
 ```
 
+### System install tests
+
+Location:
+
+- [system_install_tests](system_install_tests)
+
+Command:
+
+```bash
+bash ./system_install_tests/run_system_install_in_container.sh
+```
+
+This validates the system-wide installer in a fresh Linux container and checks the expected `/etc`, `/usr/local`, `/home/alphagsm`, and sudoers layout.
+
 ## Linting
 
 Lint is driven by [lint.sh](lint.sh).
@@ -259,6 +275,7 @@ Current job layout:
 3. `unit-test`
 4. matrix `smoke-test`
 5. matrix `integration-test`
+6. `system-install-test`
 
 Triggers:
 
@@ -282,6 +299,11 @@ Main template:
 
 - [alphagsm.conf-template](alphagsm.conf-template)
 
+Documented installation layouts:
+
+- [docs/install/local-user.md](docs/install/local-user.md)
+- [docs/install/system-wide.md](docs/install/system-wide.md)
+
 Important environment variables:
 
 - `ALPHAGSM_CONFIG_LOCATION`
@@ -290,6 +312,15 @@ Important environment variables:
 - `ALPHAGSM_DEBUG`
 
 The smoke tests rely on temporary config files and `ALPHAGSM_CONFIG_LOCATION` to isolate state per run.
+
+For system-wide installs, the intended layout is:
+
+- `/etc/alphagsm.conf`
+- `/home/alphagsm/`
+- `/usr/local/lib/alphagsm`
+- `/usr/local/sbin/gitalphagsm`
+- `/usr/local/bin/alphagsm`
+- `/etc/sudoers.d/gameservers`
 
 ## Documentation Contract
 

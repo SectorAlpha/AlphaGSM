@@ -28,6 +28,11 @@ Some server types need one extra thing:
 
 ## Fast Start
 
+If you want AlphaGSM to install itself for you, use one of these first:
+
+- local-user install: [docs/install/local-user.md](docs/install/local-user.md)
+- system-wide install: [docs/install/system-wide.md](docs/install/system-wide.md)
+
 ### 1. Install the Python packages
 
 ```bash
@@ -137,9 +142,13 @@ These scripts are useful because they show a full real flow:
 4. check it
 5. stop it cleanly
 
+There is also a container-based system install check in `system_install_tests/` that verifies the shared Linux install layout without touching the host machine.
+
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Local User Install](docs/install/local-user.md)
+- [System-Wide Install](docs/install/system-wide.md)
 - [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
 - [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
 - [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)
