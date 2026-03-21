@@ -144,6 +144,8 @@ These scripts are useful because they show a full real flow:
 - [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
 - [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)
 
+The GitHub wiki can also be updated automatically from these files when changes are pushed to `master`.
+
 ## If You Are A Developer
 
 Use:

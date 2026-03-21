@@ -270,6 +270,12 @@ Current matrix targets:
 - Minecraft vanilla
 - TF2
 
+There is also a documentation publishing workflow:
+
+- [`.github/workflows/wiki-sync.yaml`](.github/workflows/wiki-sync.yaml)
+
+That workflow mirrors selected repository docs into the GitHub wiki by pushing to the wiki repository.
+
 ## Configuration
 
 Main template:
@@ -302,6 +308,8 @@ When behaviour changes:
 - update server guides if user steps changed
 - update `README.md` if first-run commands changed
 - update `DEVELOPERS.md` if architecture, CI, or maintenance expectations changed
+
+The repository is the source of truth. The wiki is a published mirror generated from tracked docs by `scripts/publish_wiki.sh`.
 
 ## Repo Automation Files
 
