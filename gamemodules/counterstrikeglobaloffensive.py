@@ -1,3 +1,5 @@
+"""CS:GO-specific lifecycle, configuration, and update helpers."""
+
 import os
 import urllib.request
 import json
@@ -69,6 +71,7 @@ _confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 
 
 def updateconfig(filename, settings):
+    """Rewrite a simple key/value config file with the provided settings."""
     lines = []
     if os.path.isfile(filename):
         settings = settings.copy()
@@ -176,6 +179,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
 
 
 def install(server):
+    """Install or prepare the CS:GO server files for this server object."""
     doinstall(server)
     # TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
@@ -204,11 +208,13 @@ def doinstall(server):
 
 
 def restart(server):
+    """Restart the server by stopping it and then starting it again."""
     server.stop()
     server.start()
 
 
 def update(server, validate=False, restart=False):
+    """Update the CS:GO install through SteamCMD and optionally restart it."""
     try:
         server.stop()
     except:
@@ -226,6 +232,7 @@ def update(server, validate=False, restart=False):
 
 
 def get_start_command(server):
+    """Build the command list used to launch the CS:GO dedicated server."""
     # sample start command
     # ./srcds_run -game csgo -console -usercon +game_type 0 +game_mode 0 +mapgroup mg_active +map de_dust2 -maxplayers 30
     exe_name = server.data["exe_name"]
@@ -276,10 +283,12 @@ def get_start_command(server):
 
 
 def do_stop(server, j):
+    """Send the console command used to stop a running CS:GO server."""
     screen.send_to_server(server.name, "\nquit\n")
 
 
 def status(server, verbose):
+    """Report CS:GO server status information."""
     pass
 
 

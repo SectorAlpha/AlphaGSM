@@ -1,3 +1,5 @@
+"""Helpers for starting, controlling, and inspecting GNU screen sessions."""
+
 import subprocess as sp
 import os
 import re
@@ -31,10 +33,13 @@ except:
 
 
 class ScreenError(Exception):
+    """Raised when a screen command cannot be completed successfully."""
+
     pass
 
 
 def rotatelogs(dirn, name):
+    """Rotate screen log files for a server, keeping the configured history."""
     if not os.path.exists(os.path.join(dirn, name)):
         return
     match = name + "."
@@ -106,6 +111,7 @@ def start_screen(name, command, cwd=None):
 
 
 def send_to_screen(name, command):
+    """Send a raw command list to an existing screen session."""
     try:
         out = sp.check_output(
             ["screen", "-S", SESSIONTAG + name, "-p", "0", "-X"] + list(command),
@@ -129,10 +135,12 @@ def send_to_screen(name, command):
 
 
 def send_to_server(name, inp):
+    """Send text input to the server process running inside a screen session."""
     return send_to_screen(name, ["stuff", inp])
 
 
 def check_screen_exists(name):
+    """Return whether the named screen session currently exists."""
     try:
         send_to_screen(name, ["select", "."])
         return True
@@ -141,6 +149,7 @@ def check_screen_exists(name):
 
 
 def connect_to_screen(name):
+    """Attach the current terminal to an existing screen session."""
     try:
         sp.check_call(
             ["script", "/dev/null", "-c", "screen -rS '" + SESSIONTAG + name + "'"],
@@ -155,6 +164,7 @@ def connect_to_screen(name):
 
 
 def list_all_screens():
+    """Yield every AlphaGSM screen session visible on the current host."""
     import pwd
 
     curruser = pwd.getpwuid(os.getuid())[0]
@@ -174,6 +184,7 @@ def list_all_screens():
 
 
 def write_screenrc(force=False):
+    """Ensure the per-user AlphaGSM screen configuration file exists."""
     file_path = os.path.expanduser(
         settings.user.getsection("core").get("alphagsm_path", "~/.alphagsm")
     )
@@ -195,6 +206,7 @@ def write_screenrc(force=False):
 
 
 def logpath(name):
+    """Return the log file path used for a server's screen session."""
     return os.path.join(os.path.expanduser(LOGPATH), SESSIONTAG + name + ".log")
 
 

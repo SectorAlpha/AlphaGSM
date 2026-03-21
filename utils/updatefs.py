@@ -1,3 +1,6 @@
+
+"""Helpers for mirroring and updating filesystem trees for game server installs."""
+
 import os
 import re
 import os.path

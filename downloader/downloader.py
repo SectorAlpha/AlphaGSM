@@ -11,6 +11,7 @@ from utils.settings import settings
 
 
 def expandcustomuser(path, user):
+    """Expand a `~/` path using the home directory of the named user."""
     if path[0:2] == "~/":
         return pwd.getpwnam(user).pw_dir + path[1:]
     return path
@@ -76,11 +77,13 @@ class DownloaderError(Exception):
     """An error thrown when attempting to perform a download"""
 
     def __init__(self, msg, *args, ret=1, **kwargs):
+        """Store a downloader-specific return code alongside the error message."""
         super(DownloaderError, self).__init__(msg, *args, **kwargs)
         self.ret = ret
 
 
 def _findmodule(name):
+    """Resolve a downloader module name, following namespace and alias indirection."""
     while True:
         name = str(name)
         if len(name) < 2 and all(
@@ -243,6 +246,7 @@ main = getpath
 
 
 def _true(*arg):
+    """Return true for every record, for use as a default filter predicate."""
     return True
 
 

@@ -1,3 +1,5 @@
+"""Vanilla Minecraft-specific setup and install helpers."""
+
 import os
 import urllib.request
 import json
@@ -51,6 +53,7 @@ def configure(
     download_name="minecraft_server.jar",
     download_data=None
 ):
+    """Collect and store configuration values for a vanilla Minecraft server."""
     allversions = []
     latest = None
     if version is not None or url is None:
@@ -138,6 +141,7 @@ def configure(
 
 
 def install(server, *, eula=False):
+    """Download or validate the selected vanilla Minecraft server jar."""
     if not os.path.isdir(server.data["dir"]):
         os.makedirs(server.data["dir"])
     mcjar = os.path.join(server.data["dir"], server.data["exe_name"])

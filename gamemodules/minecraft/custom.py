@@ -1,3 +1,5 @@
+"""Common Minecraft server helpers shared by vanilla and related modules."""
+
 import os
 import urllib.request
 import json
@@ -17,6 +19,7 @@ _confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 
 
 def updateconfig(filename, settings):
+    """Rewrite a simple key/value config file with the provided settings."""
     lines = []
     if os.path.isfile(filename):
         settings = settings.copy()
@@ -226,6 +229,7 @@ def configure(
 # install requires the server object. you also feed in the arguments (*) and the kwargs {} from the previous return statement
 # as seen at the end of the configure function.
 def install(server, *, eula=False):
+    """Install or validate the configured custom Minecraft server files."""
     if not os.path.isdir(server.data["dir"]):
         os.makedirs(server.data["dir"])
     mcjar = os.path.join(server.data["dir"], server.data["exe_name"])
@@ -261,19 +265,23 @@ def install(server, *, eula=False):
 
 
 def get_start_command(server):
+    """Build the command list used to launch a custom Minecraft server."""
     javapath = server.data.get("javapath", "java")
     return [javapath, "-jar", server.data["exe_name"], "nogui"], server.data["dir"]
 
 
 def do_stop(server, j):
+    """Send the console command used to stop a running Minecraft server."""
     screen.send_to_server(server.name, "\nstop\n")
 
 
 def status(server, verbose):
+    """Report Minecraft server status information."""
     pass
 
 
 def message(server, msg, *targets, parse=False):
+    """Send a chat message or command through the Minecraft server console."""
     if len(targets) < 1:
         targets = ["@a"]
     if parse and "@" in msg:
@@ -298,6 +306,7 @@ def message(server, msg, *targets, parse=False):
 
 
 def checkvalue(server, key, *value):
+    """Validate a proposed stored setting value for this server type."""
     if key[0] == "TEST":
         return value[0]
     if key == ("exe_name",):
@@ -319,6 +328,7 @@ def checkvalue(server, key, *value):
 
 
 def _parsewhen(frequency, when):
+    """Parse backup scheduling input into the form expected by backup helpers."""
     if when is None:
         time, rest = None, None
     else:
@@ -358,6 +368,7 @@ def _parsewhen(frequency, when):
 
 
 def backup(server, profile=None, *, activate=None, when=None):
+    """Run or schedule a backup using the shared backup subsystem."""
     if activate is None:
         dobackup(server, profile)
     else:
@@ -413,6 +424,7 @@ def backup(server, profile=None, *, activate=None, when=None):
 
 
 def dobackup(server, profile=None):
+    """Execute the actual filesystem backup for a Minecraft server."""
     if screen.check_screen_exists(server.name):
         screen.send_to_server(server.name, "\nsave-off\nsave-all\n")
         time.sleep(30)
@@ -426,6 +438,7 @@ def dobackup(server, profile=None):
 
 
 def op(server, *users):
+    """Grant operator status to one or more Minecraft users."""
     for user in users:
         screen.send_to_server(server.name, "\nop " + user + "\n")
 
@@ -434,6 +447,7 @@ command_functions["op"] = op
 
 
 def deop(server, *users):
+    """Remove operator status from one or more Minecraft users."""
     for user in users:
         screen.send_to_server(server.name, "\ndeop " + user + "\n")
 

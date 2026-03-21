@@ -1,0 +1,25 @@
+name: Publish Wiki
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "README.md"
+      - "DEVELOPERS.md"
+      - "docs/**"
+      - "scripts/publish_wiki.sh"
+  workflow_dispatch:
+
+jobs:
+  publish-wiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Publish repository docs to wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash ./scripts/publish_wiki.sh

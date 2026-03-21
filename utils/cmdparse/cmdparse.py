@@ -89,6 +89,7 @@ def _replast(a):
 
 
 def _convertarg(arg, spec):
+    """Convert one raw argument string using the conversion for its argument spec."""
     try:
         return spec.conversion(arg)
     except ValueError as ex:

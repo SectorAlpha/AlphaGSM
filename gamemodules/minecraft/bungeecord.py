@@ -1,3 +1,5 @@
+"""Bungeecord-specific setup and runtime helpers."""
+
 import os
 import urllib.request
 import json
@@ -24,6 +26,7 @@ command_functions = {}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
+    """Collect and store configuration values for a Bungeecord server."""
     if dir is None:
         if "dir" in server.data and server.data["dir"] is not None:
             dir = server.data["dir"]
@@ -45,6 +48,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
 
 
 def install(server, *, eula=False):
+    """Install or validate the Bungeecord server files for this server."""
     if not os.path.isdir(server.data["dir"]):
         os.makedirs(server.data["dir"])
     mcjar = os.path.join(server.data["dir"], server.data["exe_name"])
@@ -58,26 +62,32 @@ def install(server, *, eula=False):
 
 
 def get_start_command(server):
+    """Build the command list used to launch the Bungeecord server."""
     return ["java", "-Xmx256M", "-jar", server.data["exe_name"]], server.data["dir"]
 
 
 def do_stop(server, j):
+    """Send the console command used to stop a running Bungeecord server."""
     screen.send_to_server(server.name, "\nend\n")
 
 
 def status(server, verbose):
+    """Report Bungeecord server status information."""
     pass
 
 
 def message(server, msg):
+    """Explain that Bungeecord has no direct user-message support here."""
     print("This server doesn't have users directly")
 
 
 def checkvalue(server, key, value):
+    """Validate a proposed stored setting value for this server type."""
     if key == "exe_name":
         return value
     raise ServerError("All read only as not yet implemented")
 
 
 def backup(server):
+    """Explain that this server type has no dedicated backup implementation here."""
     print("This server doesn't have anything to backup")

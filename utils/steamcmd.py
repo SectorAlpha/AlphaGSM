@@ -1,3 +1,5 @@
+"""SteamCMD installation and game-download helpers used by Steam game modules."""
+
 import os
 import os.path
 import subprocess as sp
@@ -33,10 +35,12 @@ STEAMCMD_RETRIES = 3
 
 
 def _normalise_install_path(path):
+    """Return an absolute, user-expanded install path for SteamCMD commands."""
     return os.path.abspath(os.path.expanduser(path))
 
 
 def _steamcmd_succeeded(output, app_id):
+    """Return whether SteamCMD output includes a success marker for the app."""
     success_markers = (
         "Success! App '{}' fully installed.".format(app_id),
         "Success! App '{}' already up to date.".format(app_id),
@@ -45,6 +49,7 @@ def _steamcmd_succeeded(output, app_id):
 
 
 def install_steamcmd():
+    """Ensure the SteamCMD runtime exists in the configured installation path."""
 
     # if steamcmd dir does not exist, download it
     if not os.path.exists(STEAMCMD_DIR):
