@@ -50,6 +50,8 @@ At runtime, the user-facing call path is:
   Pytest-driven end-to-end tests.
 - [smoke_tests](smoke_tests)
   Shell-driven streamed lifecycle runners used by CI and documentation.
+- [system_install_tests](system_install_tests)
+  Container-based validation of the system-wide install layout.
 - [docs](docs)
   User-facing documentation.
 
@@ -231,6 +233,20 @@ bash ./smoke_tests/run_minecraft_vanilla.sh
 bash ./smoke_tests/run_tf2.sh
 ```
 
+### System install tests
+
+Location:
+
+- [system_install_tests](system_install_tests)
+
+Command:
+
+```bash
+bash ./system_install_tests/run_system_install_in_container.sh
+```
+
+This validates the system-wide installer in a fresh Linux container and checks the expected `/etc`, `/usr/local`, `/home/alphagsm`, and sudoers layout.
+
 ## Linting
 
 Lint is driven by [lint.sh](lint.sh).
@@ -259,6 +275,7 @@ Current job layout:
 3. `unit-test`
 4. matrix `smoke-test`
 5. matrix `integration-test`
+6. `system-install-test`
 
 Triggers:
 

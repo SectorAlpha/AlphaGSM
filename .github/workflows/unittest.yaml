@@ -147,3 +147,14 @@ jobs:
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
         run: pytest ${{ matrix.test-file }}
+
+  system-install-test:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    name: system-install-test
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Run system-wide install test in container
+        run: |
+          bash ./system_install_tests/run_system_install_in_container.sh

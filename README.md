@@ -142,6 +142,8 @@ These scripts are useful because they show a full real flow:
 4. check it
 5. stop it cleanly
 
+There is also a container-based system install check in `system_install_tests/` that verifies the shared Linux install layout without touching the host machine.
+
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
