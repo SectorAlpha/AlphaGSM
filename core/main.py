@@ -195,7 +195,7 @@ def run_one(name, server, cmd, args):
                 server = Server(tag, args[0])
             except ServerError as ex:
                 print("Can't create server", file=stderr)
-                print_handle_dex(ex)
+                print_handled_ex(ex)
                 print(file=stderr)
                 help(name, None, cmd)
                 return 1

@@ -19,6 +19,7 @@ import utils.steamcmd as steamcmd
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
+STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 
 commands=("update","restart")
 command_args={"setup":CmdSpec(optionalarguments=(ArgSpec("PORT","The port for the server to listen on",int),ArgSpec("DIR","The Directory to install minecraft in",str),)),
@@ -134,12 +135,25 @@ def install(server):
     doinstall(server)
     #TODO: any config files that need creating or any commands that need running before the server can start for the first time
 
-    # create config file
-    # create config file
-    server_cfg = server.data["dir"] + "tf/cfg/" + "server.cfg"
-    cfg_exists = os.path.isfile(server_cfg)
-    if cfg_exists == False:
+    if os.path.isfile(server.data["dir"] + "srcds_run_64"):
+        server.data["exe_name"] = "srcds_run_64"
+    elif os.path.isfile(server.data["dir"] + "srcds_run"):
+        server.data["exe_name"] = "srcds_run"
+
+    # create a default config if the download didn't include one
+    server_cfg_dir = server.data["dir"] + "tf/cfg/"
+    if not os.path.isdir(server_cfg_dir):
+        os.makedirs(server_cfg_dir)
+
+    server_cfg = server_cfg_dir + "server.cfg"
+    if not os.path.isfile(server_cfg):
         make_empty_file(server_cfg)
+        with open(server_cfg, "w") as f:
+            f.write("""// AlphaGSM default TF2 server config
+hostname "AlphaGSM TF2 Server"
+sv_pure 1
+""")
+    server.data.save()
 
 # technically this command is not needed since the chosen port is assigned in the runscript, but leaving it commented as an example
 #  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
@@ -150,12 +164,26 @@ def doinstall(server):
         os.makedirs(server.data["dir"])
 
     print("Installing game server at", server.data["dir"])
-    steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=True)
+    steamcmd.download(server.data["dir"],server.data["Steam_AppID"],server.data["Steam_anonymous_login_possible"],validate=False)
 
 
 def restart(server):
     server.stop()
     server.start()
+
+
+def prestart(server,*args,**kwargs):
+    steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
+    steamclient_dir = os.path.dirname(STEAMCLIENT_DST)
+
+    if os.path.isfile(steamclient_src):
+        if not os.path.isdir(steamclient_dir):
+            os.makedirs(steamclient_dir)
+        if os.path.lexists(STEAMCLIENT_DST):
+            if os.path.islink(STEAMCLIENT_DST) and os.readlink(STEAMCLIENT_DST) == steamclient_src:
+                return
+            os.remove(STEAMCLIENT_DST)
+        os.symlink(steamclient_src, STEAMCLIENT_DST)
 
 def update(server,validate=False,restart=False):
     try:
@@ -173,16 +201,24 @@ def get_start_command(server):
 # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
 # TODO define a map using the -m optional argument
     exe_name = server.data["exe_name"]
+    client_port = min(int(server.data["port"]) + 1, 65535)
 
     if not os.path.isfile(server.data["dir"] + exe_name):
-        ServerError("Executable file not found")
+        for fallback in ("srcds_run_64", "srcds_run"):
+            if os.path.isfile(server.data["dir"] + fallback):
+                exe_name = fallback
+                server.data["exe_name"] = fallback
+                server.data.save()
+                break
+        else:
+            raise ServerError("Executable file not found")
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
 
     steam_updatescript = steamcmd.get_autoupdate_script(server.name,server.data["dir"],steam_app_id)
     steamcmd_dir =  steamcmd.STEAMCMD_DIR
 
-    return [exe_name,"-game","tf","-port",str(server.data["port"]),"+maxplayers",str(server.data["maxplayers"]),"+sv_pure","1","+ip","0.0.0.0","-secured","-timeout 0","-strictportbind","+randommap","-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
+    return [exe_name,"-game","tf","-port",str(server.data["port"]),"-clientport",str(client_port),"+maxplayers",str(server.data["maxplayers"]),"+sv_pure","1","+ip","0.0.0.0","-secured","-timeout 0","-strictportbind","+randommap","-autoupdate","-steam_dir",steamcmd_dir,"-steamcmd_script",steam_updatescript,"+sv_shutdown_timeout_minutes", "2"],server.data["dir"]
 
 def do_stop(server,j):
     screen.send_to_server(server.name,"\nquit\n")
@@ -243,4 +279,3 @@ def status(server,verbose):
     
 # required, must be defined to allow functions listed below which are not in the defaults to be used
 command_functions={"update":update,"restart":restart} # will have elements added as the functions are defined
-
