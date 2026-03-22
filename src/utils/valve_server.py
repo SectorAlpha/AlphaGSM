@@ -14,6 +14,7 @@ from utils.settings import settings
 import utils.steamcmd as steamcmd
 
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
+STEAMCLIENT_32_DST = os.path.expanduser("~/.steam/sdk32/steamclient.so")
 _CONFPAT = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 
 _COMMAND_ARGS = {
@@ -90,19 +91,23 @@ def _save_data_store(server):
 
 
 def _ensure_steamclient_link():
-    """Link Steam's shared client library where Valve engines expect it."""
+    """Link Steam's shared client libraries where Valve engines expect them."""
 
-    steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
-    steamclient_dir = os.path.dirname(STEAMCLIENT_DST)
-    if not os.path.isfile(steamclient_src):
-        return
-    if not os.path.isdir(steamclient_dir):
-        os.makedirs(steamclient_dir)
-    if os.path.lexists(STEAMCLIENT_DST):
-        if os.path.islink(STEAMCLIENT_DST) and os.readlink(STEAMCLIENT_DST) == steamclient_src:
-            return
-        os.remove(STEAMCLIENT_DST)
-    os.symlink(steamclient_src, STEAMCLIENT_DST)
+    for src_subdir, dst_path in (
+        ("linux64", STEAMCLIENT_DST),
+        ("linux32", STEAMCLIENT_32_DST),
+    ):
+        steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, src_subdir, "steamclient.so")
+        steamclient_dir = os.path.dirname(dst_path)
+        if not os.path.isfile(steamclient_src):
+            continue
+        if not os.path.isdir(steamclient_dir):
+            os.makedirs(steamclient_dir)
+        if os.path.lexists(dst_path):
+            if os.path.islink(dst_path) and os.readlink(dst_path) == steamclient_src:
+                continue
+            os.remove(dst_path)
+        os.symlink(steamclient_src, dst_path)
 
 
 def updateconfig(filename, config_values):

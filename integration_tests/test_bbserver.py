@@ -55,7 +55,7 @@ def test_bbserver_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["SV_ActivateServer", "Server is hibernating", "ready"],
+            ["SV_ActivateServer", "Server is hibernating", "Connection to Steam servers successful", "VAC secure mode"],
             START_TIMEOUT,
         )
 

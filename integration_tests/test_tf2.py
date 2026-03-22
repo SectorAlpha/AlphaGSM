@@ -1,7 +1,6 @@
 """Integration test for Team Fortress 2.
 
-Disabled: TF2 requires SteamCMD for download (app_id 232250).
-Awaiting further support.
+Requires SteamCMD (app_id 232250) — gated behind ALPHAGSM_RUN_STEAMCMD=1.
 """
 
 import os
@@ -27,6 +26,11 @@ READY_LOG_MARKERS = ("SV_ActivateServer: setting tickrate", "Server is hibernati
 def _require_integration_opt_in():
     if os.environ.get("ALPHAGSM_RUN_INTEGRATION") != "1":
         pytest.skip("Set ALPHAGSM_RUN_INTEGRATION=1 to run integration tests")
+
+
+def _require_steamcmd_opt_in():
+    if os.environ.get("ALPHAGSM_RUN_STEAMCMD") != "1":
+        pytest.skip("Set ALPHAGSM_RUN_STEAMCMD=1 to run SteamCMD integration tests")
 
 
 def _require_command(name):
@@ -161,9 +165,9 @@ def _assert_tf2_launcher_exists(install_dir):
     assert any(path.exists() for path in launchers), "No TF2 launcher found after setup"
 
 
-@pytest.mark.skip(reason="Disabled: requires SteamCMD (app_id 232250)")
 def test_tf2_download_install_and_start(tmp_path):
     _require_integration_opt_in()
+    _require_steamcmd_opt_in()
     _require_command("screen")
 
     home_dir = tmp_path / "alphagsm-home"

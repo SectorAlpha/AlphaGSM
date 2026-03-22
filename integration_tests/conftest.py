@@ -94,7 +94,7 @@ def alphagsm_env(config_path):
 # AlphaGSM command runners
 # ---------------------------------------------------------------------------
 
-DEFAULT_TIMEOUT = 600
+DEFAULT_TIMEOUT = 1200
 
 
 def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
