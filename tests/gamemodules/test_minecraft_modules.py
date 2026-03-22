@@ -156,7 +156,29 @@ def test_bungeecord_install_requires_existing_jar(tmp_path):
 
 def test_vanilla_configure_prefers_explicit_version_url_and_download_metadata(tmp_path, monkeypatch):
     server = DummyServer()
-    monkeypatch.setattr(vanilla.urllib.request, "urlopen", lambda url: type("Response", (), {"read": lambda self: b'{"latest":{"release":"1.20.4"},"versions":[{"id":"1.20.4","type":"release"}]}'})())
+    responses = {
+        vanilla.VERSION_MANIFEST_URL: {
+            "latest": {"release": "1.20.4"},
+            "versions": [
+                {
+                    "id": "1.20.4",
+                    "type": "release",
+                    "url": "https://piston-meta.mojang.com/v1/packages/example-1.20.4.json",
+                }
+            ],
+        },
+        "https://piston-meta.mojang.com/v1/packages/example-1.20.4.json": {
+            "downloads": {"server": {"url": "https://example.com/minecraft_server.1.20.4.jar"}}
+        },
+    }
+
+    monkeypatch.setattr(
+        vanilla.urllib.request,
+        "urlopen",
+        lambda url: type(
+            "Response", (), {"read": lambda self: json.dumps(responses[url]).encode("utf-8")}
+        )(),
+    )
     captured = {}
     monkeypatch.setattr(vanilla.cust, "configure", lambda server_obj, ask, port, dir, eula=None, exe_name=None: captured.update({"port": port, "dir": dir, "eula": eula, "exe_name": exe_name}) or ((), {"eula": eula}))
 
@@ -165,7 +187,7 @@ def test_vanilla_configure_prefers_explicit_version_url_and_download_metadata(tm
     assert args == ()
     assert kwargs == {"eula": None}
     assert server.data["version"] == "1.20.4"
-    assert server.data["url"].endswith("/1.20.4/minecraft_server.1.20.4.jar")
+    assert server.data["url"] == "https://example.com/minecraft_server.1.20.4.jar"
     assert server.data["download_name"] == "minecraft_server.jar"
     assert captured["exe_name"] == "minecraft_server.jar"
 

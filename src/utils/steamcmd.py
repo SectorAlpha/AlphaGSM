@@ -48,6 +48,20 @@ def _steamcmd_succeeded(output, app_id):
     return any(marker in output for marker in success_markers)
 
 
+def _get_login_args(steam_anonymous_login_possible):
+    """Return the SteamCMD login arguments for anonymous or owned-game installs."""
+
+    if steam_anonymous_login_possible:
+        return ["+login", "anonymous"]
+    username = settings.user.downloader.getsection("steamcmd").get("username")
+    password = settings.user.downloader.getsection("steamcmd").get("password", "")
+    if not username:
+        raise RuntimeError(
+            "SteamCMD username required for this server. Set [downloader.steamcmd] username in alphagsm.conf"
+        )
+    return ["+login", str(username), str(password)]
+
+
 def install_steamcmd():
     """Ensure the SteamCMD runtime exists in the configured installation path."""
 
@@ -60,45 +74,36 @@ def install_steamcmd():
         url_download(STEAMCMD_DIR, (STEAMCMD_URL, "steamcmd_linux.tar.gz", "tar.gz"))
 
 
-def download(path, Steam_AppID, steam_anonymous_login_possible, validate=True):
-    """downloads a game via steamcmd"""
+def download(path, Steam_AppID, steam_anonymous_login_possible, validate=True, mod=None):
+    """Download a game server via SteamCMD, optionally setting a GoldSrc mod."""
     # check to see if steamcmd exists
     install_steamcmd()
     path = _normalise_install_path(path)
 
-    # run steamcmd
-    if steam_anonymous_login_possible:
-        print("Running SteamCMD")
-        proc_list = [
-            STEAMCMD_EXE,
-            "+force_install_dir",
-            path,
-            "+login",
-            "anonymous",
-            "+app_update",
-            str(Steam_AppID),
-            "+quit",
-        ]
-        if validate:
-            proc_list.insert(-1, "validate")
-        last_output = ""
-        for attempt in range(STEAMCMD_RETRIES):
-            proc = sp.run(
-                proc_list, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False
-            )
-            print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
-            last_output = proc.stdout
-            if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
-                return
-            if attempt + 1 < STEAMCMD_RETRIES:
-                print("SteamCMD did not complete install cleanly, retrying...")
-                time.sleep(2)
-        raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
-    else:
-        print("no support for normal SteamCMD logins yet.")
+    print("Running SteamCMD")
+    proc_list = [STEAMCMD_EXE, "+force_install_dir", path]
+    proc_list.extend(_get_login_args(steam_anonymous_login_possible))
+    if mod is not None:
+        proc_list.extend(["+app_set_config", "90", "mod", str(mod)])
+    proc_list.extend(["+app_update", str(Steam_AppID), "+quit"])
+    if validate:
+        proc_list.insert(-1, "validate")
+    last_output = ""
+    for attempt in range(STEAMCMD_RETRIES):
+        proc = sp.run(
+            proc_list, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False
+        )
+        print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+        last_output = proc.stdout
+        if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
+            return
+        if attempt + 1 < STEAMCMD_RETRIES:
+            print("SteamCMD did not complete install cleanly, retrying...")
+            time.sleep(2)
+    raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
 
 
-def get_autoupdate_script(name, path, app_id, force=False):
+def get_autoupdate_script(name, path, app_id, force=False, mod=None):
     """
     Gets the autoupdate script
     If it does not exist, write it
@@ -115,7 +120,10 @@ def get_autoupdate_script(name, path, app_id, force=False):
             ),
             "r",
         ).read()
-        steamcmd_gameupdate_text = steamcmd_gameupdate_text % (path, app_id)
+        mod_line = ""
+        if mod is not None:
+            mod_line = "app_set_config 90 mod %s\n" % (mod,)
+        steamcmd_gameupdate_text = steamcmd_gameupdate_text % (path, mod_line, app_id)
         f = open(file_name, "w")
         f.write(steamcmd_gameupdate_text)
         f.close()

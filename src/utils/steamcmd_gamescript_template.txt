@@ -3,5 +3,5 @@
 @sSteamCmdForcePlatformType linux
 force_install_dir %s
 login anonymous
-app_update %s
+%sapp_update %s
 exit

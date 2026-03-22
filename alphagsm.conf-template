@@ -68,6 +68,15 @@
 ## "~/.alphagsm/steamcmd_scripts"
 # steamcmd_scripts = ~/.alphagsm/steamcmd_scripts
 
+## user - Steam account username for owned-game dedicated servers that do not support
+## anonymous SteamCMD login.
+# username = your_steam_username
+
+## user - Steam account password for owned-game dedicated servers that do not support
+## anonymous SteamCMD login. Leaving this blank is allowed if SteamCMD can complete
+## login another way for your account setup.
+# password = your_steam_password
+
 [server]
 ## user - the path to store the alphagsm data file in. can use ~ for the users home directory.
 ## Default is "${alphagsm_path}/conf".
@@ -86,4 +95,3 @@
 
 ## user - how many log files to keep for each server
 # keeplogs = 5
-

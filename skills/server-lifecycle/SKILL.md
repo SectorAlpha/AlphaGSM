@@ -79,3 +79,10 @@ If lifecycle behaviour changes, update all relevant:
 - `DEVELOPERS.md`
 
 If a new game server is added, verify that it participates in the standard command contract before treating it as complete.
+
+If a new game server requires a user-supplied `--url` rather than a built-in resolver, also:
+
+- document the expected archive type and executable
+- add or update an entry in `docs/manual-download-fallbacks.md`
+- prefer an official or project-maintained release source when one exists
+- add a built-in resolver instead of a manual `--url` flow whenever there is a stable official API or predictable release pattern

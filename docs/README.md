@@ -9,6 +9,9 @@ If you are not sure where to start, pick your server below and follow that guide
 - [Minecraft Vanilla](servers/minecraft-vanilla.md)
 - [Team Fortress 2](servers/team-fortress-2.md)
 - [Counter-Strike: Global Offensive](servers/counter-strike-global-offensive.md)
+- [Game Server Support Tracker](game-server-support.md)
+- [Platform Support](platform-support.md)
+- [Manual Download Fallbacks](manual-download-fallbacks.md)
 
 Each guide tries to show:
 

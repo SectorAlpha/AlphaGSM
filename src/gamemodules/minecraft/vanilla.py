@@ -1,19 +1,22 @@
 """Vanilla Minecraft-specific setup and install helpers."""
 
 import os
-import urllib.request
-import json
-import time
 import datetime
+import json
 import subprocess as sp
-from server import ServerError
 import re
+import time
+import urllib.request
+
 import screen
 import downloader
+from server import ServerError
 import utils.updatefs
-from .custom import *
-from . import custom as cust
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
+from . import custom as cust
+from .custom import *
+
+VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 
 command_args = command_args.copy()
 command_args["setup"] = command_args["setup"].combine(
@@ -56,13 +59,15 @@ def configure(
     """Collect and store configuration values for a vanilla Minecraft server."""
     allversions = []
     latest = None
+    version_urls = {}
     if version is not None or url is None:
         try:
-            versionsfile = urllib.request.urlopen(
-                "https://s3.amazonaws.com/Minecraft.Download/versions/versions.json"
-            )
+            versionsfile = urllib.request.urlopen(VERSION_MANIFEST_URL)
             versions = json.loads(versionsfile.read().decode("utf-8"))
             latest = versions["latest"]["release"]
+            version_urls = {
+                v["id"]: v["url"] for v in versions["versions"] if v["type"] in ["release", "snapshot"]
+            }
             allversions = [
                 v["id"]
                 for v in versions["versions"]
@@ -110,23 +115,40 @@ def configure(
     server.data["version"] = version
 
     if version is not None:
-        url = (
-            "https://s3.amazonaws.com/Minecraft.Download/versions/"
-            + version
-            + "/minecraft_server."
-            + version
-            + ".jar"
-        )
+        try:
+            versionfile = urllib.request.urlopen(version_urls[version])
+            versiondata = json.loads(versionfile.read().decode("utf-8"))
+            url = versiondata["downloads"]["server"]["url"]
+        except KeyError:
+            print(
+                "Version "
+                + str(version)
+                + " was not found in the current Mojang manifest. "
+                + "Use --url if you need a custom server download."
+            )
+        except Exception as ex:
+            print(
+                "Error downloading version details for "
+                + str(version)
+                + ": "
+                + str(ex)
+                + "\nUsing saved or manual URL if available."
+            )
 
     if url is None:
         if "url" in server.data and server.data["url"] is not None:
             url = server.data["url"]
-        else:
-            url = "https://s3.amazonaws.com/Minecraft.Download/versions/1.8.3/minecraft_server.1.8.3.jar"
+        elif latest in version_urls:
+            try:
+                versionfile = urllib.request.urlopen(version_urls[latest])
+                versiondata = json.loads(versionfile.read().decode("utf-8"))
+                url = versiondata["downloads"]["server"]["url"]
+            except Exception:
+                url = None
         if ask:
             inp = input(
                 "Please give the download url for the minecraft server:\n["
-                + url
+                + str(url)
                 + "]\n "
             ).strip()
             if inp != "":
