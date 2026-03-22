@@ -1,5 +1,7 @@
 import os
-from unittest.mock import patch
+import urllib.request
+
+import pytest
 
 os.environ['ALPHAGSM_CONFIG_LOCATION'] = './tests/alphagsm-test.conf'
 
@@ -14,44 +16,23 @@ def _blocked(name):
     return _fail
 
 
-# Block real network access for every test in the suite.  Individual tests
-# that need to verify download logic should mock the call themselves (via
-# monkeypatch or unittest.mock); the per-test mock takes precedence.
+@pytest.fixture(autouse=True)
+def _block_network(monkeypatch):
+    """Prevent real downloads in every test.
 
-_PATCHES = [
-    patch("urllib.request.urlopen", new=_blocked("urllib.request.urlopen")),
-    patch("urllib.request.urlretrieve", new=_blocked("urllib.request.urlretrieve")),
-]
-
-# steamcmd may not be importable in every environment (e.g. when only running
-# _cov tests with sys.modules patching), so guard with try/except.
-try:
-    _PATCHES.append(
-        patch("utils.steamcmd.download", new=_blocked("utils.steamcmd.download"))
+    * urllib — raises so tests that need it must supply their own mock.
+    * steamcmd — silent no-op so _cov tests get coverage of install/update
+      paths without triggering a real SteamCMD download.
+    """
+    monkeypatch.setattr(
+        urllib.request, "urlopen", _blocked("urllib.request.urlopen")
     )
-    _PATCHES.append(
-        patch(
-            "utils.steamcmd.install_steamcmd",
-            new=_blocked("utils.steamcmd.install_steamcmd"),
-        )
+    monkeypatch.setattr(
+        urllib.request, "urlretrieve", _blocked("urllib.request.urlretrieve")
     )
-except Exception:  # pragma: no cover
-    pass
-
-
-def pytest_runtest_setup(item):
-    """Start all network-blocking patches before every test."""
-    for p in _PATCHES:
-        try:
-            p.start()
-        except Exception:  # pragma: no cover
-            pass
-
-
-def pytest_runtest_teardown(item, nextitem):
-    """Stop all network-blocking patches after every test."""
-    for p in _PATCHES:
-        try:
-            p.stop()
-        except Exception:  # pragma: no cover
-            pass
+    try:
+        import utils.steamcmd as _sc
+        monkeypatch.setattr(_sc, "download", lambda *a, **kw: None)
+        monkeypatch.setattr(_sc, "install_steamcmd", lambda *a, **kw: None)
+    except ImportError:
+        pass
