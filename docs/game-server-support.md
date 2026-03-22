@@ -1,11 +1,7 @@
 # Game Server Support
 
 This file tracks AlphaGSM game server support across the current module set and a broader
-commercial-hosting-style server list.
-
-Reference sources:
-
-- GTX Gaming server list snapshot provided during the AlphaGSM parity pass
+self-hosted dedicated-server landscape.
 
 Snapshot date:
 
@@ -20,7 +16,7 @@ AlphaGSM currently has the strongest coverage in these areas:
 - Terraria variants
 - Arma family and several Arma scenario/mod variants
 - A growing standalone dedicated-server set
-- Several additional provider-list servers beyond the baseline support list
+- Several additional servers beyond the original baseline support set
 
 Representative implemented modules include:
 
