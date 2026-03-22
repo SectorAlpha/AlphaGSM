@@ -1,15 +1,17 @@
 """ET: Legacy dedicated server lifecycle helpers."""
 
 import os
+import re
+import urllib.request
 
 import screen
 from server import ServerError
 from utils.archive_install import install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
-from utils.github_releases import resolve_release_asset
 
-ETLEGACY_LATEST_RELEASE_API = "https://api.github.com/repos/etlegacy/etlegacy/releases/latest"
+ETLEGACY_DOWNLOAD_PAGE = "https://www.etlegacy.com/download"
+ETLEGACY_RELEASE_LIST_PAGE = "https://www.etlegacy.com/download/release/list"
 
 commands = ()
 command_args = {
@@ -30,17 +32,43 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _read_page(url):
+    request = urllib.request.Request(url, headers={"User-Agent": "AlphaGSM/1.0"})
+    with urllib.request.urlopen(request) as response:
+        return response.read().decode("utf-8", "replace")
+
+
+def _parse_release_page(page_html):
+    version_match = re.search(r"stable release ([0-9.]+)", page_html, re.IGNORECASE)
+    download_match = re.search(
+        r"Linux.*?data-href=\"(https://www\.etlegacy\.com/download/file/\d+)\">x86_64 archive",
+        page_html,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if version_match is None or download_match is None:
+        raise ServerError("Unable to locate a suitable ET: Legacy Linux download")
+    version = version_match.group(1)
+    return version, download_match.group(1)
+
+
 def resolve_download(version=None):
-    """Resolve an ET: Legacy Linux server release asset."""
+    """Resolve an ET: Legacy Linux server archive from the official downloads site."""
 
-    def _matches(asset):
-        name = asset.get("name", "").lower()
-        return (
-            ("linux" in name or "x86_64" in name or "etl" in name)
-            and (name.endswith(".tar.gz") or name.endswith(".tgz") or name.endswith(".tar.xz"))
-        )
+    if version in (None, "", "latest"):
+        return _parse_release_page(_read_page(ETLEGACY_DOWNLOAD_PAGE))
 
-    return resolve_release_asset(ETLEGACY_LATEST_RELEASE_API, _matches, version=version)
+    release_list = _read_page(ETLEGACY_RELEASE_LIST_PAGE)
+    release_match = re.search(
+        r'href="https://www\.etlegacy\.com/download/release/(\d+)">%s\b'
+        % re.escape(str(version)),
+        release_list,
+        re.IGNORECASE,
+    )
+    if release_match is None:
+        raise ServerError("Unable to locate the requested ET: Legacy release")
+    release_url = "https://www.etlegacy.com/download/release/%s" % (release_match.group(1),)
+    resolved_version, resolved_url = _parse_release_page(_read_page(release_url))
+    return resolved_version, resolved_url
 
 
 def _compression(server):
@@ -110,7 +138,10 @@ def configure(
     if download_name is not None:
         server.data["download_name"] = download_name
     elif "download_name" not in server.data:
-        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or "etlegacy.tar.gz"
+        if server.data.get("version"):
+            server.data["download_name"] = "etlegacy-v%s-x86_64.tar.gz" % (server.data["version"],)
+        else:
+            server.data["download_name"] = os.path.basename(server.data.get("url", "")) or "etlegacy.tar.gz"
     server.data["exe_name"] = server.data.get("exe_name", exe_name)
     server.data.save()
     return (), {}
@@ -123,7 +154,7 @@ def install(server):
         resolved_version, resolved_url = resolve_download(version=server.data.get("version"))
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
-        server.data.setdefault("download_name", os.path.basename(resolved_url))
+        server.data.setdefault("download_name", "etlegacy-v%s-x86_64.tar.gz" % (resolved_version,))
     install_archive(server, _compression(server))
 
 

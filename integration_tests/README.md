@@ -35,3 +35,7 @@ Current target:
 - Team Fortress 2 end-to-end setup through `alphagsm`:
   download the dedicated server via SteamCMD, start it, verify it responds to a
   Source query, and stop it cleanly.
+- Archive-backed install flows through `alphagsm`:
+  download and install real archive/release assets for modules like `etlegacyserver`
+  and `cod2server`, then verify the expected server binaries land in the install
+  directory.

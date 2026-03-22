@@ -30,6 +30,8 @@ def _compression(server):
     name = server.data["download_name"].lower()
     if name.endswith(".zip"):
         return "zip"
+    if name.endswith(".tar.bz2") or name.endswith(".tbz2"):
+        return "tar"
     if name.endswith(".tar.gz") or name.endswith(".tgz"):
         return "tar.gz"
     if name.endswith(".tar"):
