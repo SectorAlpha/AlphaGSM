@@ -34,5 +34,9 @@ def _block_network(monkeypatch):
         import utils.steamcmd as _sc
         monkeypatch.setattr(_sc, "download", lambda *a, **kw: None)
         monkeypatch.setattr(_sc, "install_steamcmd", lambda *a, **kw: None)
+        monkeypatch.setattr(
+            _sc, "get_autoupdate_script",
+            lambda name, path, app_id, force=False, mod=None: "/dev/null",
+        )
     except ImportError:
         pass
