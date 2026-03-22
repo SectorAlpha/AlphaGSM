@@ -41,6 +41,14 @@ def test_configure_basic(tmp_path):
     assert server.data['port'] == 9987
 
 
+def test_configure_resolves_download(tmp_path):
+    server = DummyServer()
+    with patch.object(mod, 'resolve_teamspeak_download', return_value=('3.13.7', 'https://example.com/ts3.tar.bz2')):
+        mod.configure(server, ask=False, port=9987, dir=str(tmp_path))
+    assert server.data['url'] == 'https://example.com/ts3.tar.bz2'
+    assert server.data['version'] == '3.13.7'
+
+
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
     server = DummyServer()

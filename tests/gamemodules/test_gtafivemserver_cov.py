@@ -61,6 +61,14 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     mod.configure(server, ask=True)
 
 
+def test_configure_resolves_download(tmp_path):
+    server = DummyServer()
+    with patch.object(mod, 'resolve_download', return_value=('7777', 'https://example.com/fx.tar.xz')):
+        mod.configure(server, ask=False, port=30120, dir=str(tmp_path))
+    assert server.data['url'] == 'https://example.com/fx.tar.xz'
+    assert server.data['version'] == '7777'
+
+
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -69,6 +77,17 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
     mod.install(server)
+
+
+def test_install_resolves_download(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "run.sh"
+    server.data["download_name"] = "fx.tar.gz"
+    with patch.object(mod, 'resolve_download', return_value=('7777', 'https://example.com/fx.tar.xz')):
+        mod.install(server)
+    assert server.data['url'] == 'https://example.com/fx.tar.xz'
+    assert server.data['version'] == '7777'
 
 
 def test_get_start_command(tmp_path):
