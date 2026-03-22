@@ -43,7 +43,7 @@ def test_subnautica_configure_stores_url_and_defaults(tmp_path):
     assert server.data["port"] == 11000
     assert server.data["url"] == "https://example.com/nitrox.zip"
     assert server.data["download_name"] == "nitrox.zip"
-    assert server.data["exe_name"] == "NitroxServer"
+    assert server.data["exe_name"] == "Nitrox.Server.Subnautica"
 
 
 def test_subnautica_configure_resolves_default_download(monkeypatch, tmp_path):

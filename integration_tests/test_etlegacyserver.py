@@ -1,4 +1,8 @@
-"""Integration test for etlegacyserver."""
+"""Integration test for etlegacyserver.
+
+Disabled: ET: Legacy requires original Wolfenstein: Enemy Territory game data
+(pak0.pk3) which cannot be freely distributed.  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires original W:ET game data (pak0.pk3)")
 def test_etlegacyserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

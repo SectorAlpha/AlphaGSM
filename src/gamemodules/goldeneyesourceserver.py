@@ -6,7 +6,7 @@ import urllib.request
 
 import screen
 from server import ServerError
-from utils.archive_install import install_archive
+from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
@@ -21,7 +21,7 @@ command_args = {
         ),
         options=(
             OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("n", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
+            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
         ),
     )
 }
@@ -33,29 +33,23 @@ max_stop_wait = 1
 def resolve_download():
     """Resolve the current GoldenEye: Source server archive redirect URL."""
 
-    with urllib.request.urlopen(GES_SERVER_DOWNLOADS_PAGE) as response:
+    request = urllib.request.Request(
+        GES_SERVER_DOWNLOADS_PAGE,
+        headers={"User-Agent": "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"},
+    )
+    with urllib.request.urlopen(request) as response:
         page = response.read().decode("utf-8")
-    name_match = re.search(r"Name:\s*([A-Za-z0-9_.-]+)", page)
-    url_match = re.search(r'href="([^"]+/go/[^"]+moddb/)"', page)
+    name_match = re.search(r"Name:(?:</strong>)?\s*([A-Za-z0-9_.-]+)", page)
+    url_match = re.search(r'href="([^"]*/go/[^"]*moddb/[^"]*)"', page)
     if name_match is None or url_match is None:
         raise ServerError("Unable to locate the current GoldenEye: Source server download")
     filename = name_match.group(1)
     version_match = re.search(r"_v([0-9.]+)_", filename)
     version = version_match.group(1) if version_match is not None else None
-    return version, filename, url_match.group(1)
-
-
-def _compression(server):
-    """Infer the archive compression format from the configured download name."""
-
-    name = server.data["download_name"].lower()
-    if name.endswith(".zip"):
-        return "zip"
-    if name.endswith(".tar.gz") or name.endswith(".tgz"):
-        return "tar.gz"
-    if name.endswith(".tar"):
-        return "tar"
-    raise ServerError("Unable to determine archive type")
+    download_url = url_match.group(1)
+    if download_url.startswith("/"):
+        download_url = "https://www.geshl2.com" + download_url
+    return version, filename, download_url
 
 
 def configure(
@@ -126,7 +120,7 @@ def install(server):
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", resolved_name)
-    install_archive(server, _compression(server))
+    install_archive(server, detect_compression(server.data["download_name"]))
 
 
 def get_start_command(server):

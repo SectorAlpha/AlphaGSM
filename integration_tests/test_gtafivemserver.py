@@ -23,6 +23,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="CFX server requires proot/container runtime")
 def test_gtafivemserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

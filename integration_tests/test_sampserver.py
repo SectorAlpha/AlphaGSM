@@ -1,4 +1,7 @@
-"""Integration test for sampserver."""
+"""Integration test for sampserver.
+
+Disabled: SA-MP download domain files.sa-mp.com is dead
+"""
 
 import pytest
 
@@ -17,7 +20,10 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(reason="SA-MP download domain files.sa-mp.com is dead"),
+]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

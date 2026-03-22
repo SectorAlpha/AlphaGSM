@@ -1,4 +1,8 @@
-"""Integration test for gravserver."""
+"""Integration test for gravserver.
+
+Disabled: GRAV requires user-provided Win32 server files and is
+Windows-only.  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires user-provided Win32 server files (Windows-only)")
 def test_gravserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

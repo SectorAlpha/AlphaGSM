@@ -1,4 +1,8 @@
-"""Integration test for aloftserver."""
+"""Integration test for aloftserver.
+
+Disabled: Aloft requires user-provided server files (PowerShell script)
+and is not available for automated download.  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires user-provided server files (bring-your-own)")
 def test_aloftserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

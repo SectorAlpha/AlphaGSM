@@ -4,7 +4,7 @@ import os
 
 import screen
 from server import ServerError
-from utils.archive_install import install_archive
+from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
@@ -20,26 +20,13 @@ command_args = {
         ),
         options=(
             OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("n", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
+            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
         ),
     )
 }
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
-
-
-def _compression(server):
-    """Infer the archive compression format from the configured download name."""
-
-    name = server.data["download_name"].lower()
-    if name.endswith(".zip"):
-        return "zip"
-    if name.endswith(".tar.gz") or name.endswith(".tgz"):
-        return "tar.gz"
-    if name.endswith(".tar"):
-        return "tar"
-    raise ServerError("Unable to determine archive type")
 
 
 def configure(
@@ -106,7 +93,7 @@ def install(server):
     if "url" not in server.data or not server.data["url"]:
         server.data["url"] = TRACKMANIA_SERVER_URL
         server.data.setdefault("download_name", TRACKMANIA_SERVER_NAME)
-    install_archive(server, _compression(server))
+    install_archive(server, detect_compression(server.data["download_name"]))
 
 
 def get_start_command(server):

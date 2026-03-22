@@ -2,6 +2,8 @@
 
 import pytest
 
+pytest.importorskip("html5lib")
+
 from conftest import (
     require_integration_opt_in,
     require_command,

@@ -56,6 +56,12 @@ def configure(server, ask, port=None, dir=None, *, exe_name="CAGGameServer-Win32
     return (), {}
 
 
+def install(server):
+    """GRAV uses user-provided files; ensure the install directory exists."""
+
+    os.makedirs(server.data["dir"], exist_ok=True)
+
+
 def get_start_command(server):
     """Build the command used to launch a GRAV dedicated server."""
 

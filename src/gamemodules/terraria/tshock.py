@@ -6,6 +6,7 @@ from .common import (
     command_args,
     command_descriptions,
     command_functions,
+    commands,
     configure_base,
     do_stop,
     get_tshock_start_command,

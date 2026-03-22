@@ -1,12 +1,12 @@
 """GTA FiveM dedicated server lifecycle helpers."""
 
-import json
 import os
+import re
 import urllib.request
 
 import screen
 from server import ServerError
-from utils.archive_install import install_archive
+from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
@@ -22,7 +22,7 @@ command_args = {
         options=(
             OptSpec("v", ["version"], "Artifact version to download.", "version", "VERSION", str),
             OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("n", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
+            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
         ),
     )
 }
@@ -35,23 +35,22 @@ def resolve_download(version=None):
     """Resolve a FiveM Linux artifact download URL."""
 
     if version in (None, "", "latest"):
-        with urllib.request.urlopen(CFX_ARTIFACTS_BASE + "/latest.json") as response:
-            version = json.loads(response.read().decode("utf-8"))["version"]
+        request = urllib.request.Request(
+            CFX_ARTIFACTS_BASE + "/",
+            headers={"User-Agent": "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"},
+        )
+        with urllib.request.urlopen(request) as response:
+            page = response.read().decode("utf-8")
+        match = re.search(
+            r'LATEST RECOMMENDED.*?href="\.?/?(\d+-[a-f0-9]+)/fx\.tar\.xz"',
+            page,
+            re.DOTALL,
+        )
+        if match is None:
+            raise ServerError("Unable to determine latest recommended FiveM artifact version")
+        version = match.group(1)
     url = "%s/%s/fx.tar.xz" % (CFX_ARTIFACTS_BASE, version)
     return version, url
-
-
-def _compression(server):
-    """Infer the archive compression format from the configured download name."""
-
-    name = server.data["download_name"].lower()
-    if name.endswith(".zip"):
-        return "zip"
-    if name.endswith(".tar.gz") or name.endswith(".tgz"):
-        return "tar.gz"
-    if name.endswith(".tar"):
-        return "tar"
-    raise ServerError("Unable to determine archive type")
 
 
 def configure(
@@ -63,7 +62,7 @@ def configure(
     version=None,
     url=None,
     download_name=None,
-    exe_name="run.sh",
+    exe_name="opt/cfx-server/run.sh",
 ):
     """Collect and store configuration values for a FiveM server."""
 
@@ -116,7 +115,7 @@ def install(server):
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", "fx.tar.xz")
-    install_archive(server, _compression(server))
+    install_archive(server, detect_compression(server.data["download_name"]))
 
 
 def get_start_command(server):

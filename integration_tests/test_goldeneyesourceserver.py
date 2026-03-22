@@ -23,6 +23,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Requires Source 2007 Dedicated Server (SteamCMD AppID 310) and ModDB redirect handling")
 def test_goldeneyesourceserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

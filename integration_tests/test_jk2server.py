@@ -1,4 +1,7 @@
-"""Integration test for jk2server."""
+"""Integration test for jk2server.
+
+Disabled: JK2 download URL returns 404
+"""
 
 import pytest
 
@@ -17,7 +20,10 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(reason="JK2 download URL returns 404"),
+]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

@@ -6,7 +6,7 @@ import urllib.request
 
 import screen
 from server import ServerError
-from utils.archive_install import install_archive
+from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
@@ -23,7 +23,7 @@ command_args = {
         options=(
             OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
             OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("n", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
+            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
         ),
     )
 }
@@ -35,33 +35,22 @@ max_stop_wait = 1
 def resolve_download(version=None):
     """Resolve a Multi Theft Auto x86_64 Linux server package."""
 
-    with urllib.request.urlopen(MTA_DOWNLOADS_PAGE) as response:
+    req = urllib.request.Request(MTA_DOWNLOADS_PAGE, headers={"User-Agent": "AlphaGSM"})
+    with urllib.request.urlopen(req) as response:
         page = response.read().decode("utf-8")
-    matches = re.findall(
-        r"Version ([0-9]+(?:\.[0-9]+)+).*?x86_64.*?href=\"([^\"]+?\\.tar\\.gz)\"",
-        page,
-        re.IGNORECASE | re.DOTALL,
-    )
-    if not matches:
+    ver_match = re.search(r"Version\s+([0-9]+(?:\.[0-9]+)+)", page)
+    if not ver_match:
         raise ServerError("Unable to locate Multi Theft Auto Linux server downloads")
-    if version not in (None, "", "latest"):
-        for candidate_version, candidate_url in matches:
-            if candidate_version == version:
-                return candidate_version, candidate_url
+    resolved_version = ver_match.group(1)
+    url_match = re.search(r'href="([^"]*multitheftauto_linux_x64\.tar\.gz)"', page)
+    if not url_match:
+        raise ServerError("Unable to locate Multi Theft Auto Linux server downloads")
+    resolved_url = url_match.group(1)
+    if not resolved_url.startswith("http"):
+        resolved_url = MTA_DOWNLOADS_PAGE.rstrip("/") + "/" + resolved_url.lstrip("/")
+    if version not in (None, "", "latest") and version != resolved_version:
         raise ServerError("Unable to locate the requested Multi Theft Auto version")
-    resolved_version, resolved_url = matches[0]
     return resolved_version, resolved_url
-
-
-def _compression(server):
-    name = server.data["download_name"].lower()
-    if name.endswith(".zip"):
-        return "zip"
-    if name.endswith(".tar.gz") or name.endswith(".tgz"):
-        return "tar.gz"
-    if name.endswith(".tar"):
-        return "tar"
-    raise ServerError("Unable to determine archive type")
 
 
 def configure(
@@ -129,7 +118,7 @@ def install(server):
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url) or MTA_LATEST_DOWNLOAD_NAME)
-    install_archive(server, _compression(server))
+    install_archive(server, detect_compression(server.data["download_name"]))
 
 
 def get_start_command(server):

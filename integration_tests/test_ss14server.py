@@ -1,4 +1,7 @@
-"""Integration test for ss14server."""
+"""Integration test for ss14server.
+
+Disabled: SS14 CDN returns 404
+"""
 
 import pytest
 
@@ -17,7 +20,10 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(reason="SS14 CDN returns 404"),
+]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

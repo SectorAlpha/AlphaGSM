@@ -17,7 +17,10 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(reason="Requires Quake game data files (maps/dm2.bsp etc.) not available in CI"),
+]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

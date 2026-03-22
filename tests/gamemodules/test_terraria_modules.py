@@ -28,8 +28,8 @@ def test_resolve_terraria_download_uses_explicit_version():
 def test_resolve_terraria_download_finds_latest_from_homepage(monkeypatch):
     monkeypatch.setattr(
         terraria_common,
-        "_read_text",
-        lambda url: '<a href="https://terraria.org/api/download/pc-dedicated-server/terraria-server-1456.zip">download</a>',
+        "_head_ok",
+        lambda url: "1457" not in url,
     )
 
     version, url = terraria_common.resolve_terraria_download()

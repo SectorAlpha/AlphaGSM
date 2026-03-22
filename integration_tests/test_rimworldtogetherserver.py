@@ -53,7 +53,7 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Server launched", "Listening for users"],
             START_TIMEOUT,
         )
 

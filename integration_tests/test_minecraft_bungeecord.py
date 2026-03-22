@@ -1,4 +1,7 @@
-"""Integration test for minecraft.bungeecord."""
+"""Integration test for minecraft.bungeecord.
+
+Disabled: BungeeCord requires manually placing the jar file.
+"""
 
 import pytest
 
@@ -17,7 +20,10 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(reason="BYO: BungeeCord requires manually placing the jar"),
+]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
@@ -42,7 +48,7 @@ def test_minecraft_bungeecord_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "minecraft.bungeecord")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_and_assert_ok(env, server_name, "setup", "-n", str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
 

@@ -23,6 +23,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Requires 32-bit compat libraries (libstdc++.so.5) not available in CI")
 def test_codserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

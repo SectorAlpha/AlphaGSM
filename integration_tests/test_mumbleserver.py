@@ -1,4 +1,8 @@
-"""Integration test for mumbleserver."""
+"""Integration test for mumbleserver.
+
+Disabled: Mumble requires system-installed mumble-server/murmurd package.
+Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires system-installed mumble-server/murmurd")
 def test_mumbleserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

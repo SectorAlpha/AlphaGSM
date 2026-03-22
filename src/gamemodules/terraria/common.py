@@ -57,21 +57,36 @@ def _version_to_tag(version):
     return version.replace(".", "").replace("-", "")
 
 
+def _head_ok(url):
+    """Return True if a HEAD request to the URL succeeds (HTTP 200)."""
+
+    request = urllib.request.Request(
+        url, method="HEAD", headers={"User-Agent": HTTP_USER_AGENT}
+    )
+    try:
+        with urllib.request.urlopen(request) as response:
+            return response.status == 200
+    except urllib.error.HTTPError:
+        return False
+
+
 def resolve_terraria_download(version=None):
     """Resolve an official Terraria dedicated server zip URL."""
 
     if version not in (None, "", "latest"):
         return version, TERRARIA_DOWNLOAD_TEMPLATE % (_version_to_tag(version),)
-    homepage = _read_text(TERRARIA_HOMEPAGE)
-    match = re.search(
-        r"https://terraria\.org/api/download/pc-dedicated-server/terraria-server-([0-9]+)\.zip",
-        homepage,
-    )
-    if match is None:
+    # terraria.org is a JavaScript SPA so the download link cannot be
+    # scraped from the static HTML.  Instead, probe the download API
+    # starting from a known baseline and walk forward until the server
+    # returns a 404.
+    baseline = 1449
+    tag = baseline
+    while _head_ok(TERRARIA_DOWNLOAD_TEMPLATE % (tag + 1,)):
+        tag += 1
+    if not _head_ok(TERRARIA_DOWNLOAD_TEMPLATE % (tag,)):
         raise ServerError("Unable to locate the latest Terraria server download URL")
-    version_tag = match.group(1)
-    version = ".".join(version_tag)
-    return version, TERRARIA_DOWNLOAD_TEMPLATE % (version_tag,)
+    version = ".".join(str(tag))
+    return version, TERRARIA_DOWNLOAD_TEMPLATE % (tag,)
 
 
 def resolve_tshock_download():
@@ -129,6 +144,9 @@ def install_archive(server):
         server.data["current_url"] = server.data["url"]
     else:
         print("Skipping download")
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if os.path.isfile(exe_path):
+        os.chmod(exe_path, os.stat(exe_path).st_mode | 0o111)
     server.data.save()
 
 
@@ -225,8 +243,8 @@ def get_vanilla_start_command(server):
             [
                 "-autocreate",
                 str(server.data["worldsize"]),
-                "-worldname",
-                server.data["worldname"],
+                "-world",
+                world_path,
             ]
         )
     if server.data.get("serverpassword"):

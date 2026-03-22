@@ -4,7 +4,7 @@ import os
 
 import screen
 from server import ServerError
-from utils.archive_install import install_archive
+from utils.archive_install import install_binary
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.github_releases import resolve_release_asset
@@ -21,7 +21,7 @@ command_args = {
         options=(
             OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
             OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("n", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
+            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
         ),
     )
 }
@@ -38,19 +38,6 @@ def resolve_download(version=None):
         return "linux" in name and "amd64" in name
 
     return resolve_release_asset(MVDSV_LATEST_RELEASE_API, _matches, version=version)
-
-
-def _compression(server):
-    """Infer the archive compression format from the configured download name."""
-
-    name = server.data["download_name"].lower()
-    if name.endswith(".zip"):
-        return "zip"
-    if name.endswith(".tar.gz") or name.endswith(".tgz"):
-        return "tar.gz"
-    if name.endswith(".tar"):
-        return "tar"
-    raise ServerError("Unable to determine archive type")
 
 
 def configure(
@@ -110,14 +97,14 @@ def configure(
 
 
 def install(server):
-    """Download and install the QuakeWorld server archive."""
+    """Download and install the QuakeWorld server binary."""
 
     if "url" not in server.data or not server.data["url"]:
         resolved_version, resolved_url = resolve_download(version=server.data.get("version"))
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
-    install_archive(server, _compression(server))
+    install_binary(server)
 
 
 def get_start_command(server):

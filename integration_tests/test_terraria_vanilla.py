@@ -53,7 +53,7 @@ def test_terraria_vanilla_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Listening on port", "Type 'help'"],
             START_TIMEOUT,
         )
 

@@ -1,4 +1,8 @@
-"""Integration test for bfvserver."""
+"""Integration test for bfvserver.
+
+Disabled: BFV download URL (GameFront) is likely dead or gated.
+Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: download URL (GameFront) is likely dead or gated")
 def test_bfvserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

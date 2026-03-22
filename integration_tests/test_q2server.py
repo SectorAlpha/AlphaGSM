@@ -1,4 +1,8 @@
-"""Integration test for q2server."""
+"""Integration test for q2server.
+
+Disabled: Quake 2 builds from source and requires a full build toolchain
+(make, gcc, etc.).  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires build toolchain (make, gcc) to compile from source")
 def test_q2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

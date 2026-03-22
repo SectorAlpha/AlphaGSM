@@ -1,4 +1,8 @@
-"""Integration test for identityserver."""
+"""Integration test for identityserver.
+
+Disabled: Identity requires user-provided server archive URL
+and is not available for automated download.  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires user-provided server archive URL (bring-your-own)")
 def test_identityserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

@@ -1,4 +1,8 @@
-"""Integration test for minecraft.custom."""
+"""Integration test for minecraft.custom.
+
+Disabled: Custom Minecraft requires user-provided server jar.
+No automated download available.  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires user-provided server jar (bring-your-own)")
 def test_minecraft_custom_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("java")

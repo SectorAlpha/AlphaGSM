@@ -1,4 +1,8 @@
-"""Integration test for terraria.tshock."""
+"""Integration test for terraria.tshock.
+
+Disabled: TShock requires the dotnet runtime to be installed.
+Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires dotnet runtime")
 def test_terraria_tshock_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

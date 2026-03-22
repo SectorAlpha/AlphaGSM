@@ -1,4 +1,8 @@
-"""Integration test for arma3.wasteland."""
+"""Integration test for arma3.wasteland.
+
+Disabled: Arma 3 requires SteamCMD for download (app_id 233780).
+Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires SteamCMD (app_id 233780)")
 def test_arma3_wasteland_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

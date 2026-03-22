@@ -1,4 +1,8 @@
-"""Integration test for pathoftitansserver."""
+"""Integration test for pathoftitansserver.
+
+Disabled: Path of Titans requires Alderon auth token and proprietary
+launcher.  Not available for automated download.  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires Alderon auth token and proprietary launcher (bring-your-own)")
 def test_pathoftitansserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

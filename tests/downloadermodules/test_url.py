@@ -31,10 +31,10 @@ def test_download_rejects_unknown_decompression(url_module, tmp_path):
 
 
 def test_download_wraps_url_errors(url_module, tmp_path, monkeypatch):
-    def fake_urlretrieve(url, filename, reporthook):
+    def fake_download_url(url, targetname):
         raise urllib.error.URLError("offline")
 
-    monkeypatch.setattr(url_module.urllib.request, "urlretrieve", fake_urlretrieve)
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
 
     with pytest.raises(url_module.DownloaderError, match="Can't download file"):
         url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
@@ -53,14 +53,14 @@ def test_download_wraps_url_errors(url_module, tmp_path, monkeypatch):
 def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, compression, expected_cmd):
     calls = []
 
-    def fake_urlretrieve(url, filename, reporthook):
-        return filename, {}
+    def fake_download_url(url, targetname):
+        return targetname
 
     def fake_call(cmd, stdout):
         calls.append(cmd)
         return 0
 
-    monkeypatch.setattr(url_module.urllib.request, "urlretrieve", fake_urlretrieve)
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
     monkeypatch.setattr(url_module.sp, "call", fake_call)
 
     url_module.download(str(tmp_path), ("http://example.com/file", "server", compression))
@@ -70,7 +70,7 @@ def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, com
 
 
 def test_download_raises_when_extractor_fails(url_module, tmp_path, monkeypatch):
-    monkeypatch.setattr(url_module.urllib.request, "urlretrieve", lambda url, filename, reporthook: (filename, {}))
+    monkeypatch.setattr(url_module, "_download_url", lambda url, targetname: targetname)
     monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 1)
 
     with pytest.raises(url_module.DownloaderError, match="Error extracting download"):

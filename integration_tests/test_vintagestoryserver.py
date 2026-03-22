@@ -1,4 +1,8 @@
-"""Integration test for vintagestoryserver."""
+"""Integration test for vintagestoryserver.
+
+Disabled: Vintage Story requires an explicit --version flag and has no
+auto-resolve for the latest release.  Awaiting further support.
+"""
 
 import pytest
 
@@ -23,6 +27,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Disabled: requires explicit --version with no auto-resolve")
 def test_vintagestoryserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

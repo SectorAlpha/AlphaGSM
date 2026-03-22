@@ -2,6 +2,11 @@
 
 import pytest
 
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(reason="OldUnreal installer requires p7zip-full not available in CI"),
+]
+
 from conftest import (
     require_integration_opt_in,
     require_command,
@@ -16,8 +21,6 @@ from conftest import (
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
-
-pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

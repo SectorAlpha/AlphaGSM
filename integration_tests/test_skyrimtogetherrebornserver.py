@@ -1,4 +1,7 @@
-"""Integration test for skyrimtogetherrebornserver."""
+"""Integration test for skyrimtogetherrebornserver.
+
+Disabled: TiltedEvolution has no GitHub release assets
+"""
 
 import pytest
 
@@ -17,7 +20,10 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(reason="TiltedEvolution has no GitHub release assets"),
+]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

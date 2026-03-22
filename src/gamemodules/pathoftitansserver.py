@@ -8,7 +8,7 @@ import uuid
 import downloader
 import screen
 from server import ServerError
-from utils.archive_install import install_archive
+from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
@@ -27,7 +27,7 @@ command_args = {
             OptSpec("a", ["auth-token"], "Alderon auth token for the server host account.", "auth_token", "TOKEN", str),
             OptSpec("b", ["beta-branch"], "Alderon branch key to install.", "beta_branch", "BRANCH", str),
             OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("n", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
+            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
         ),
     )
 }
@@ -44,19 +44,6 @@ def _get_updater_path():
     mode = os.stat(cmd_path).st_mode
     os.chmod(cmd_path, mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     return cmd_path
-
-
-def _compression(server):
-    """Infer the archive compression format from the configured download name."""
-
-    name = server.data["download_name"].lower()
-    if name.endswith(".zip"):
-        return "zip"
-    if name.endswith(".tar.gz") or name.endswith(".tgz"):
-        return "tar.gz"
-    if name.endswith(".tar"):
-        return "tar"
-    raise ServerError("Unable to determine archive type")
 
 
 def configure(
@@ -131,7 +118,7 @@ def install(server):
     """Install Path of Titans using AlderonGamesCmd or an explicit archive override."""
 
     if server.data.get("url"):
-        install_archive(server, _compression(server))
+        install_archive(server, detect_compression(server.data["download_name"]))
         return
     auth_token = server.data.get("auth_token")
     if not auth_token:
