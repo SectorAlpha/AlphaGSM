@@ -58,6 +58,7 @@ jobs:
       - name: AlphaGSM Unit Tests with Coverage
         run: |
           pytest tests \
+            -n auto \
             --cov=core \
             --cov=downloader \
             --cov=downloadermodules \
