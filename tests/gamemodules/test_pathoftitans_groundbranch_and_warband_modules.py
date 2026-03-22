@@ -37,6 +37,7 @@ def test_pathoftitans_get_start_command_builds_expected_args(tmp_path):
             "port": 7777,
             "server_name": "AlphaGSM_pot",
             "maxplayers": "100",
+            "server_guid": "test-guid-1234",
         }
     )
 

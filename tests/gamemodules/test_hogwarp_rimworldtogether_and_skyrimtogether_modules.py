@@ -53,7 +53,7 @@ def test_rimworldtogether_configure_resolves_default_download(monkeypatch, tmp_p
     monkeypatch.setattr(
         rimworldtogetherserver,
         "resolve_download",
-        lambda: ("25.7.11.1", "https://example.com/rimworld-together-server.zip"),
+        lambda version=None: ("25.7.11.1", "https://example.com/rimworld-together-server.zip"),
     )
 
     rimworldtogetherserver.configure(server, ask=False, port=25555, dir=str(tmp_path))

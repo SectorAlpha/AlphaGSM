@@ -51,7 +51,7 @@ def test_ksp_configure_resolves_default_download(monkeypatch, tmp_path):
     monkeypatch.setattr(
         kerbalspaceprogramserver,
         "resolve_download",
-        lambda: ("0.29.0", "https://example.com/LunaMultiplayer-Server-Release.zip"),
+        lambda version=None: ("0.29.0", "https://example.com/LunaMultiplayer-Server-Release.zip"),
     )
 
     kerbalspaceprogramserver.configure(server, ask=False, port=8800, dir=str(tmp_path))

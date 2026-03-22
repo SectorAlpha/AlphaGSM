@@ -135,13 +135,13 @@ def test_download_raises_when_steamcmd_never_reports_success(monkeypatch):
         raise AssertionError("Expected steamcmd download failure to raise CalledProcessError")
 
 
-def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch, capsys):
+def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch):
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
     monkeypatch.setattr(steamcmd_module.sp, "run", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not run")))
 
-    steamcmd_module.download("/srv/game", 232250, False)
-
-    assert "no support for normal SteamCMD logins yet." in capsys.readouterr().out
+    import pytest
+    with pytest.raises(RuntimeError, match="SteamCMD username required"):
+        steamcmd_module.download("/srv/game", 232250, False)
 
 
 def test_get_autoupdate_script_writes_template(tmp_path, monkeypatch):

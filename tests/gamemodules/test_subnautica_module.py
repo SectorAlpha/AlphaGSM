@@ -51,7 +51,7 @@ def test_subnautica_configure_resolves_default_download(monkeypatch, tmp_path):
     monkeypatch.setattr(
         subnauticaserver,
         "resolve_download",
-        lambda: ("1.0.0", "https://example.com/nitrox-server-linux.zip"),
+        lambda version=None: ("1.0.0", "https://example.com/nitrox-server-linux.zip"),
     )
 
     subnauticaserver.configure(server, ask=False, port=11000, dir=str(tmp_path))
