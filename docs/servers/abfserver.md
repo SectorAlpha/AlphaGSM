@@ -59,3 +59,23 @@ alphagsm myabfserve backup
 
 - Module name: `abfserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `AbioticFactorServer.sh`
+- **Location**: `<install_dir>/AbioticFactorServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2857200`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/abfserver/](../server-templates/abfserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

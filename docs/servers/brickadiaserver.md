@@ -59,3 +59,23 @@ alphagsm mybrickadi backup
 
 - Module name: `brickadiaserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BrickadiaServer.sh`
+- **Location**: `<install_dir>/BrickadiaServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `3017590`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/brickadiaserver/](../server-templates/brickadiaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

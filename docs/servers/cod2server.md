@@ -58,3 +58,22 @@ alphagsm mycod2serv backup
 
 - Module name: `cod2server`
 - Default port: 28960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `cod2_lnxded`
+- **Location**: `<install_dir>/cod2_lnxded`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/cod2server/](../server-templates/cod2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

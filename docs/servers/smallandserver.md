@@ -59,3 +59,23 @@ alphagsm mysmalland backup
 
 - Module name: `smallandserver`
 - Default port: 7778
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `start-server.sh`
+- **Location**: `<install_dir>/start-server.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `808040`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/smallandserver/](../server-templates/smallandserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

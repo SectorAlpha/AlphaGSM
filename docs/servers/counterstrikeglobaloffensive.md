@@ -59,3 +59,23 @@ alphagsm mycounters backup
 
 - Module name: `counterstrikeglobaloffensive`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `740`
+
+### Server Configuration
+
+- **Config files**: `server.cfg`
+- **Template**: See [server-templates/counterstrikeglobaloffensive/](../server-templates/counterstrikeglobaloffensive/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

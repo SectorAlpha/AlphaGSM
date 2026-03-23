@@ -58,3 +58,22 @@ alphagsm mysubnauti backup
 
 - Module name: `subnauticaserver`
 - Default port: 11000
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Nitrox.Server.Subnautica`
+- **Location**: `<install_dir>/Nitrox.Server.Subnautica`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/subnauticaserver/](../server-templates/subnauticaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

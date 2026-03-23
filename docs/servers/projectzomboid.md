@@ -59,3 +59,23 @@ alphagsm myprojectz backup
 
 - Module name: `projectzomboid`
 - Default port: 16261
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `start-server.sh`
+- **Location**: `<install_dir>/start-server.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `380870`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/projectzomboid/](../server-templates/projectzomboid/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

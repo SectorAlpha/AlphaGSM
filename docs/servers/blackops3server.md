@@ -59,3 +59,24 @@ alphagsm myblackops backup
 
 - Module name: `blackops3server`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BlackOps3Server.exe`
+- **Location**: `<install_dir>/BlackOps3Server.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `545990`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `18`
+- **Template**: See [server-templates/blackops3server/](../server-templates/blackops3server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

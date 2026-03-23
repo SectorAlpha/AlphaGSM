@@ -37,10 +37,44 @@ class ServerError(Exception):
     pass
 
 
+_DISABLED_SERVERS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "disabled_servers.conf",
+)
+
+
+def _load_disabled_servers():
+    """Load the disabled servers list from disabled_servers.conf.
+
+    Returns a dict mapping module name to reason string.
+    """
+    disabled = {}
+    if not os.path.isfile(_DISABLED_SERVERS_PATH):
+        return disabled
+    with open(_DISABLED_SERVERS_PATH, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t", 1)
+            module_name = parts[0].strip()
+            reason = parts[1].strip() if len(parts) > 1 else "No reason given"
+            disabled[module_name] = reason
+    return disabled
+
+
 def _findmodule(name):
     """Resolve a game module name, following namespace and alias indirection."""
+    disabled = _load_disabled_servers()
     while True:
         name = str(name)
+        if name in disabled:
+            raise ServerError(
+                "Server module '" + name + "' is currently disabled: "
+                + disabled[name]
+                + "\nIf you'd like to help fix this, please open an issue or "
+                "submit a pull request."
+            )
         if len(name) < 2 and all(
             (len(el) > 0 and el.isalnum()) for el in name.split(".")
         ):

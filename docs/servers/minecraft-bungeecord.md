@@ -58,3 +58,30 @@ alphagsm mybungeeco backup
 
 - Module name: `minecraft.bungeecord`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BungeeCord.jar`
+- **Location**: `<install_dir>/BungeeCord.jar`
+- **Engine**: Java (BungeeCord proxy)
+
+### Server Configuration
+
+- **Config file**: `config.yml`
+- **Key settings** (in `config.yml`):
+  - `server-port` — Game port (default 25565)
+  - `motd` — Message of the day
+  - `max-players` — Maximum players
+  - `level-seed` — World generation seed
+  - `online-mode` — Mojang authentication
+- **Template**: See [server-templates/minecraft-bungeecord/](../server-templates/minecraft-bungeecord/) if available
+
+### Maps and Mods
+
+- **Map directory**: `N/A (proxy)`
+- **Mod directory**: `plugins/`
+- **Workshop support**: No
+- **Map notes**: BungeeCord is a proxy and does not host worlds.
+- **Mod notes**: Place BungeeCord plugin .jar files in the `plugins/` directory.

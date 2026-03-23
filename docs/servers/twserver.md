@@ -59,3 +59,23 @@ alphagsm mytwserver backup
 
 - Module name: `twserver`
 - Default port: 8303
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `teeworlds_srv`
+- **Location**: `<install_dir>/teeworlds_srv`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `380840`
+
+### Server Configuration
+
+- **Config file**: `autoexec.cfg`
+- **Template**: See [server-templates/twserver/](../server-templates/twserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

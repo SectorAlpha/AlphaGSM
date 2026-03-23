@@ -58,3 +58,23 @@ alphagsm mygoldeney backup
 
 - Module name: `goldeneyesourceserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `16`
+- **Template**: See [server-templates/goldeneyesourceserver/](../server-templates/goldeneyesourceserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

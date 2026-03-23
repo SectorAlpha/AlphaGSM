@@ -59,3 +59,23 @@ alphagsm mywreckfes backup
 
 - Module name: `wreckfestserver`
 - Default port: 33540
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `WreckfestServer`
+- **Location**: `<install_dir>/WreckfestServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `361580`
+
+### Server Configuration
+
+- **Config file**: `server_config.cfg`
+- **Template**: See [server-templates/wreckfestserver/](../server-templates/wreckfestserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

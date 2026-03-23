@@ -59,3 +59,23 @@ alphagsm mystormwor backup
 
 - Module name: `stormworksserver`
 - Default port: 25566
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `server64.exe`
+- **Location**: `<install_dir>/server64.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1247090`
+
+### Server Configuration
+
+- **Config file**: `server_config.xml`
+- **Template**: See [server-templates/stormworksserver/](../server-templates/stormworksserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

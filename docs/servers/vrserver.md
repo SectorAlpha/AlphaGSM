@@ -59,3 +59,23 @@ alphagsm myvrserver backup
 
 - Module name: `vrserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `VRisingServer`
+- **Location**: `<install_dir>/VRisingServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1829350`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/vrserver/](../server-templates/vrserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

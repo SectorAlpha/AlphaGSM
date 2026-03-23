@@ -59,3 +59,24 @@ alphagsm myoutpostz backup
 
 - Module name: `outpostzeroserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `OutpostZeroServer.exe`
+- **Location**: `<install_dir>/OutpostZeroServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `762880`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `16`
+- **Template**: See [server-templates/outpostzeroserver/](../server-templates/outpostzeroserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

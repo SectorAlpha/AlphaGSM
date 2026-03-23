@@ -58,3 +58,23 @@ alphagsm mywarbands backup
 
 - Module name: `warbandserver`
 - Default port: 7240
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `mb_warband_dedicated`
+- **Location**: `<install_dir>/mb_warband_dedicated`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `64`
+- **Template**: See [server-templates/warbandserver/](../server-templates/warbandserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

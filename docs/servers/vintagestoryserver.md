@@ -58,3 +58,22 @@ alphagsm myvintages backup
 
 - Module name: `vintagestoryserver`
 - Default port: 42420
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `VintagestoryServer`
+- **Location**: `<install_dir>/VintagestoryServer`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config files**: `serverconfig.json`
+- **Template**: See [server-templates/vintagestoryserver/](../server-templates/vintagestoryserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

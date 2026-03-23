@@ -61,3 +61,36 @@ alphagsm mybmdmserv backup
 
 - Module name: `bmdmserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Source
+- **SteamCMD App ID**: `346680`
+
+### Server Configuration
+
+- **Config file**: `bms/cfg/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `dm_bounce`
+- **Max players**: `16`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+  - SourceTV port: `27020` (UDP)
+- **Template**: See [server-templates/bmdmserver/](../server-templates/bmdmserver/)
+
+### Maps and Mods
+
+- **Map directory**: `bms/maps/`
+- **Mod directory**: `bms/addons/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `bms/maps/` and add to `bms/cfg/mapcycle.txt`.
+- **Mod install**: Copy addon folders into `bms/addons/`.

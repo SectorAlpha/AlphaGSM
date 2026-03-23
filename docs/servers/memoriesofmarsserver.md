@@ -59,3 +59,23 @@ alphagsm mymemories backup
 
 - Module name: `memoriesofmarsserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `MemoriesOfMarsServer.sh`
+- **Location**: `<install_dir>/MemoriesOfMarsServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `897590`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/memoriesofmarsserver/](../server-templates/memoriesofmarsserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

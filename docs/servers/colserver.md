@@ -59,3 +59,24 @@ alphagsm mycolserve backup
 
 - Module name: `colserver`
 - Default port: 27004
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ColonyServer.x86_64`
+- **Location**: `<install_dir>/ColonyServer.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `748090`
+
+### Server Configuration
+
+- **Config files**: `server_settings.json`
+- **Max players**: `16`
+- **Template**: See [server-templates/colserver/](../server-templates/colserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm myets2serv backup
 
 - Module name: `ets2server`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `bin/linux_x64/eurotrucks2_server`
+- **Location**: `<install_dir>/bin/linux_x64/eurotrucks2_server`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1948160`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/ets2server/](../server-templates/ets2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

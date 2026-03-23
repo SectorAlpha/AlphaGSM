@@ -2,7 +2,9 @@
 
 import pytest
 
-from conftest import (
+pytestmark = pytest.mark.skip(
+    reason="SteamCMD app 2857200 returns Invalid platform on Linux"
+)
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,

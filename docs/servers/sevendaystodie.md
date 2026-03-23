@@ -59,3 +59,23 @@ alphagsm mysevenday backup
 
 - Module name: `sevendaystodie`
 - Default port: 26900
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `startserver.sh`
+- **Location**: `<install_dir>/startserver.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `294420`
+
+### Server Configuration
+
+- **Config file**: `serverconfig.xml`
+- **Template**: See [server-templates/sevendaystodie/](../server-templates/sevendaystodie/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

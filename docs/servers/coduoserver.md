@@ -58,3 +58,22 @@ alphagsm mycoduoser backup
 
 - Module name: `coduoserver`
 - Default port: 28960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `coduoded_lnxded`
+- **Location**: `<install_dir>/coduoded_lnxded`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/coduoserver/](../server-templates/coduoserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

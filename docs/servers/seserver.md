@@ -59,3 +59,23 @@ alphagsm myseserver backup
 
 - Module name: `seserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DedicatedServer64`
+- **Location**: `<install_dir>/DedicatedServer64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `298740`
+
+### Server Configuration
+
+- **Config files**: `SpaceEngineers-Dedicated.cfg`
+- **Template**: See [server-templates/seserver/](../server-templates/seserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

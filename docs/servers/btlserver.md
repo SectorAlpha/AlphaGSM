@@ -59,3 +59,23 @@ alphagsm mybtlserve backup
 
 - Module name: `btlserver`
 - Default port: 7788
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Battalion/Binaries/Linux/BattalionServer-Linux-Shipping`
+- **Location**: `<install_dir>/Battalion/Binaries/Linux/BattalionServer-Linux-Shipping`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `805140`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/btlserver/](../server-templates/btlserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

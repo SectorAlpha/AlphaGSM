@@ -61,3 +61,36 @@ alphagsm mycssserve backup
 
 - Module name: `cssserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Source
+- **SteamCMD App ID**: `232330`
+
+### Server Configuration
+
+- **Config file**: `cstrike/cfg/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `de_dust2`
+- **Max players**: `16`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+  - SourceTV port: `27020` (UDP)
+- **Template**: See [server-templates/cssserver/](../server-templates/cssserver/)
+
+### Maps and Mods
+
+- **Map directory**: `cstrike/maps/`
+- **Mod directory**: `cstrike/addons/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `cstrike/maps/` and add to `cstrike/cfg/mapcycle.txt`.
+- **Mod install**: Copy addon folders into `cstrike/addons/`.

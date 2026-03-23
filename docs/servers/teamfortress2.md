@@ -59,3 +59,23 @@ alphagsm myteamfort backup
 
 - Module name: `teamfortress2`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `232250`
+
+### Server Configuration
+
+- **Config files**: `server.cfg`
+- **Template**: See [server-templates/teamfortress2/](../server-templates/teamfortress2/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

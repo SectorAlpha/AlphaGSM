@@ -59,3 +59,23 @@ alphagsm myfoundrys backup
 
 - Module name: `foundryserver`
 - Default port: 37200
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `FoundryDedicatedServer`
+- **Location**: `<install_dir>/FoundryDedicatedServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2915550`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/foundryserver/](../server-templates/foundryserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

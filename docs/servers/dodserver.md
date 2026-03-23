@@ -61,3 +61,36 @@ alphagsm mydodserve backup
 
 - Module name: `dodserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `hlds_run`
+- **Location**: `<install_dir>/hlds_run`
+- **Engine**: GoldSrc (HLDS)
+- **SteamCMD App ID**: `90`
+- **Mod App ID**: `dod`
+
+### Server Configuration
+
+- **Config file**: `dod/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `dod_Anzio`
+- **Max players**: `16`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+- **Template**: See [server-templates/dodserver/](../server-templates/dodserver/)
+
+### Maps and Mods
+
+- **Map directory**: `dod/maps/`
+- **Mod directory**: `dod/dlls/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `dod/maps/` and add to `dod/mapcycle.txt`.
+- **Mod install**: Use Metamod in `dod/dlls/` or AMX Mod X in `dod/addons/amxmodx/`.

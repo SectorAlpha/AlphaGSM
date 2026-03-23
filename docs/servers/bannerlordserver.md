@@ -59,3 +59,24 @@ alphagsm mybannerlo backup
 
 - Module name: `bannerlordserver`
 - Default port: 7210
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Bannerlord.DedicatedServer`
+- **Location**: `<install_dir>/Bannerlord.DedicatedServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1863440`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `32`
+- **Template**: See [server-templates/bannerlordserver/](../server-templates/bannerlordserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

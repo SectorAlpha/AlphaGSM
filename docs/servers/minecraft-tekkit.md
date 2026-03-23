@@ -58,3 +58,30 @@ alphagsm mytekkit backup
 
 - Module name: `minecraft.tekkit`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Tekkit.jar / custom jar`
+- **Location**: `<install_dir>/Tekkit.jar / custom jar`
+- **Engine**: Java (Tekkit modpack)
+
+### Server Configuration
+
+- **Config file**: `server.properties`
+- **Key settings** (in `server.properties`):
+  - `server-port` — Game port (default 25565)
+  - `motd` — Message of the day
+  - `max-players` — Maximum players
+  - `level-seed` — World generation seed
+  - `online-mode` — Mojang authentication
+- **Template**: See [server-templates/minecraft-tekkit/](../server-templates/minecraft-tekkit/) if available
+
+### Maps and Mods
+
+- **Map directory**: `world/`
+- **Mod directory**: `mods/`
+- **Workshop support**: No
+- **Map notes**: The world directory contains all world data.
+- **Mod notes**: Tekkit ships with pre-configured mods. Additional mods go in `mods/`.

@@ -58,3 +58,22 @@ alphagsm mytshock backup
 
 - Module name: `terraria.tshock`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `TShock.Server.dll`
+- **Location**: `<install_dir>/TShock.Server.dll`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/terraria-tshock/](../server-templates/terraria-tshock/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

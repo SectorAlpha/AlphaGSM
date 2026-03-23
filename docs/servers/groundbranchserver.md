@@ -59,3 +59,24 @@ alphagsm mygroundbr backup
 
 - Module name: `groundbranchserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `GroundBranchServer-Win64-Shipping.exe`
+- **Location**: `<install_dir>/GroundBranchServer-Win64-Shipping.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `476400`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `16`
+- **Template**: See [server-templates/groundbranchserver/](../server-templates/groundbranchserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

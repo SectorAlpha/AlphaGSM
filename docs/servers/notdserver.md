@@ -59,3 +59,23 @@ alphagsm mynotdserv backup
 
 - Module name: `notdserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `LF/Binaries/Win64/LFServer.exe`
+- **Location**: `<install_dir>/LF/Binaries/Win64/LFServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1420710`
+
+### Server Configuration
+
+- **Config files**: `ServerSettings.ini`
+- **Template**: See [server-templates/notdserver/](../server-templates/notdserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

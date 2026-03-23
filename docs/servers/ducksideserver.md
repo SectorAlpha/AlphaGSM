@@ -59,3 +59,23 @@ alphagsm myduckside backup
 
 - Module name: `ducksideserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DucksideServer.exe`
+- **Location**: `<install_dir>/DucksideServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2690320`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/ducksideserver/](../server-templates/ducksideserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

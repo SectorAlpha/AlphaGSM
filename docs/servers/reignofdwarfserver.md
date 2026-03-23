@@ -59,3 +59,24 @@ alphagsm myreignofd backup
 
 - Module name: `reignofdwarfserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ReignOfDwarfServer.exe`
+- **Location**: `<install_dir>/ReignOfDwarfServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1999160`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `16`
+- **Template**: See [server-templates/reignofdwarfserver/](../server-templates/reignofdwarfserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

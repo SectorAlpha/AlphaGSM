@@ -59,3 +59,24 @@ alphagsm myhellletl backup
 
 - Module name: `hellletlooseserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `HLLServer.exe`
+- **Location**: `<install_dir>/HLLServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `822500`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `100`
+- **Template**: See [server-templates/hellletlooseserver/](../server-templates/hellletlooseserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

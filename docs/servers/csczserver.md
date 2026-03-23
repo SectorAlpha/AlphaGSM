@@ -61,3 +61,36 @@ alphagsm mycsczserv backup
 
 - Module name: `csczserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `hlds_run`
+- **Location**: `<install_dir>/hlds_run`
+- **Engine**: GoldSrc (HLDS)
+- **SteamCMD App ID**: `90`
+- **Mod App ID**: `czero`
+
+### Server Configuration
+
+- **Config file**: `czero/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `de_dust2`
+- **Max players**: `16`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+- **Template**: See [server-templates/csczserver/](../server-templates/csczserver/)
+
+### Maps and Mods
+
+- **Map directory**: `czero/maps/`
+- **Mod directory**: `czero/dlls/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `czero/maps/` and add to `czero/mapcycle.txt`.
+- **Mod install**: Use Metamod in `czero/dlls/` or AMX Mod X in `czero/addons/amxmodx/`.

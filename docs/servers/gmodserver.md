@@ -61,3 +61,36 @@ alphagsm mygmodserv backup
 
 - Module name: `gmodserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Source
+- **SteamCMD App ID**: `4020`
+
+### Server Configuration
+
+- **Config file**: `garrysmod/cfg/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `gm_construct`
+- **Max players**: `16`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+  - SourceTV port: `27020` (UDP)
+- **Template**: See [server-templates/gmodserver/](../server-templates/gmodserver/)
+
+### Maps and Mods
+
+- **Map directory**: `garrysmod/maps/`
+- **Mod directory**: `garrysmod/addons/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `garrysmod/maps/` and add to `garrysmod/cfg/mapcycle.txt`.
+- **Mod install**: Copy addon folders into `garrysmod/addons/`.

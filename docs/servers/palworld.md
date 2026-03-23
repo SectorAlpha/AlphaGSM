@@ -59,3 +59,23 @@ alphagsm mypalworld backup
 
 - Module name: `palworld`
 - Default port: 8211
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `PalServer.sh`
+- **Location**: `<install_dir>/PalServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2394010`
+
+### Server Configuration
+
+- **Config files**: `DefaultPalWorldSettings.ini`, `PalWorldSettings.ini`
+- **Template**: See [server-templates/palworld/](../server-templates/palworld/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

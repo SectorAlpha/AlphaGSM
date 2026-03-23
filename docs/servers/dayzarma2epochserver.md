@@ -59,3 +59,23 @@ alphagsm mydayzarma backup
 
 - Module name: `dayzarma2epochserver`
 - Default port: 2302
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `arma2oaserver`
+- **Location**: `<install_dir>/arma2oaserver`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `33935`
+
+### Server Configuration
+
+- **Config file**: `server.cfg`
+- **Template**: See [server-templates/dayzarma2epochserver/](../server-templates/dayzarma2epochserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm myarmarser backup
 
 - Module name: `armarserver`
 - Default port: 2001
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ArmaReforgerServer`
+- **Location**: `<install_dir>/ArmaReforgerServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1874900`
+
+### Server Configuration
+
+- **Config file**: `configs/server.json`
+- **Template**: See [server-templates/armarserver/](../server-templates/armarserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -58,3 +58,22 @@ alphagsm myjk2serve backup
 
 - Module name: `jk2server`
 - Default port: 28070
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `jk2mvded.x86_64`
+- **Location**: `<install_dir>/jk2mvded.x86_64`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/jk2server/](../server-templates/jk2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -58,3 +58,22 @@ alphagsm myidentity backup
 
 - Module name: `identityserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `IdentityServer.x86_64`
+- **Location**: `<install_dir>/IdentityServer.x86_64`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/identityserver/](../server-templates/identityserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,24 @@ alphagsm mydeadpoly backup
 
 - Module name: `deadpolyserver`
 - Default port: 7779
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DeadPolyServer.sh`
+- **Location**: `<install_dir>/DeadPolyServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2208380`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `100`
+- **Template**: See [server-templates/deadpolyserver/](../server-templates/deadpolyserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

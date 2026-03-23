@@ -59,3 +59,23 @@ alphagsm mycryofall backup
 
 - Module name: `cryofallserver`
 - Default port: 49001
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `CryoFall_Server`
+- **Location**: `<install_dir>/CryoFall_Server`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1061710`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/cryofallserver/](../server-templates/cryofallserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

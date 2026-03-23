@@ -59,3 +59,23 @@ alphagsm myenshroud backup
 
 - Module name: `enshrouded`
 - Default port: 15638
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `enshrouded_server`
+- **Location**: `<install_dir>/enshrouded_server`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2278520`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/enshrouded/](../server-templates/enshrouded/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm mypvrserve backup
 
 - Module name: `pvrserver`
 - Default port: 9100
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `PavlovServer.sh`
+- **Location**: `<install_dir>/PavlovServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `622970`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/pvrserver/](../server-templates/pvrserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

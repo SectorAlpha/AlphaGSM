@@ -59,3 +59,24 @@ alphagsm mycraftopi backup
 
 - Module name: `craftopiaserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Craftopia.x86_64`
+- **Location**: `<install_dir>/Craftopia.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1670340`
+
+### Server Configuration
+
+- **Config files**: `DedicatedServerSetting.ini`
+- **Max players**: `8`
+- **Template**: See [server-templates/craftopiaserver/](../server-templates/craftopiaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

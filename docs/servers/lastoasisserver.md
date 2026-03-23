@@ -59,3 +59,24 @@ alphagsm mylastoasi backup
 
 - Module name: `lastoasisserver`
 - Default port: 15001
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `LastOasisServer.x86_64`
+- **Location**: `<install_dir>/LastOasisServer.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `920720`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `100`
+- **Template**: See [server-templates/lastoasisserver/](../server-templates/lastoasisserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

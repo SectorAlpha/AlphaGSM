@@ -59,3 +59,23 @@ alphagsm myarma3was backup
 
 - Module name: `arma3wastelandserver`
 - Default port: 2302
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `arma3server_x64`
+- **Location**: `<install_dir>/arma3server_x64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `233780`
+
+### Server Configuration
+
+- **Config file**: `server.cfg`
+- **Template**: See [server-templates/arma3wastelandserver/](../server-templates/arma3wastelandserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

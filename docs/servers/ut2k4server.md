@@ -58,3 +58,23 @@ alphagsm myut2k4ser backup
 
 - Module name: `ut2k4server`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `System/ucc-bin`
+- **Location**: `<install_dir>/System/ucc-bin`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: `System/UT2004.ini`
+- **Max players**: `16`
+- **Template**: See [server-templates/ut2k4server/](../server-templates/ut2k4server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

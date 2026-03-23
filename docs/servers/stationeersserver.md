@@ -59,3 +59,24 @@ alphagsm mystatione backup
 
 - Module name: `stationeersserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `rocketstation_DedicatedServer.x86_64`
+- **Location**: `<install_dir>/rocketstation_DedicatedServer.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `600760`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `10`
+- **Template**: See [server-templates/stationeersserver/](../server-templates/stationeersserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm mymedieval backup
 
 - Module name: `medievalengineersserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DedicatedServer64/MedievalEngineersDedicated.exe`
+- **Location**: `<install_dir>/DedicatedServer64/MedievalEngineersDedicated.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `367970`
+
+### Server Configuration
+
+- **Config files**: `global.cfg`
+- **Template**: See [server-templates/medievalengineersserver/](../server-templates/medievalengineersserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

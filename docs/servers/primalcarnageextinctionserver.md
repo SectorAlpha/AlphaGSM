@@ -59,3 +59,23 @@ alphagsm myprimalca backup
 
 - Module name: `primalcarnageextinctionserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `PCEdedicated.exe`
+- **Location**: `<install_dir>/PCEdedicated.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `336400`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/primalcarnageextinctionserver/](../server-templates/primalcarnageextinctionserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

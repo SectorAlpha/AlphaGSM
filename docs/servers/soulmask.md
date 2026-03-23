@@ -59,3 +59,24 @@ alphagsm mysoulmask backup
 
 - Module name: `soulmask`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `WSServer.sh`
+- **Location**: `<install_dir>/WSServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `3017300`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `10`
+- **Template**: See [server-templates/soulmask/](../server-templates/soulmask/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

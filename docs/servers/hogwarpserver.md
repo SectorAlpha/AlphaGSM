@@ -58,3 +58,22 @@ alphagsm myhogwarps backup
 
 - Module name: `hogwarpserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `HogWarpServer.exe`
+- **Location**: `<install_dir>/HogWarpServer.exe`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/hogwarpserver/](../server-templates/hogwarpserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

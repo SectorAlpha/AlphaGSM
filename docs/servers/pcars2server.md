@@ -59,3 +59,23 @@ alphagsm mypcars2se backup
 
 - Module name: `pcars2server`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DedicatedServerCmd`
+- **Location**: `<install_dir>/DedicatedServerCmd`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `413770`
+
+### Server Configuration
+
+- **Config file**: `server.cfg`
+- **Template**: See [server-templates/pcars2server/](../server-templates/pcars2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

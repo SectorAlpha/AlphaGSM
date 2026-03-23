@@ -59,3 +59,23 @@ alphagsm myrs2serve backup
 
 - Module name: `rs2server`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Binaries/Win64/VNGame.exe`
+- **Location**: `<install_dir>/Binaries/Win64/VNGame.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `418480`
+
+### Server Configuration
+
+- **Config file**: `ROGame/Config/PCServer-ROGame.ini`
+- **Template**: See [server-templates/rs2server/](../server-templates/rs2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

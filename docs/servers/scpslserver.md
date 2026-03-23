@@ -59,3 +59,23 @@ alphagsm myscpslser backup
 
 - Module name: `scpslserver`
 - Default port: 7778
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `LocalAdmin`
+- **Location**: `<install_dir>/LocalAdmin`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `996560`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/scpslserver/](../server-templates/scpslserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

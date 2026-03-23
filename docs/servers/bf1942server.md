@@ -58,3 +58,22 @@ alphagsm mybf1942se backup
 
 - Module name: `bf1942server`
 - Default port: 1942
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `bf1942_lnxded`
+- **Location**: `<install_dir>/bf1942_lnxded`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/bf1942server/](../server-templates/bf1942server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -58,3 +58,22 @@ alphagsm mytrackman backup
 
 - Module name: `trackmaniaserver`
 - Default port: 5000
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `TrackmaniaServer`
+- **Location**: `<install_dir>/TrackmaniaServer`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/trackmaniaserver/](../server-templates/trackmaniaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

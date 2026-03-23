@@ -59,3 +59,24 @@ alphagsm mybtserver backup
 
 - Module name: `btserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DedicatedServer`
+- **Location**: `<install_dir>/DedicatedServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1026340`
+
+### Server Configuration
+
+- **Config files**: `config_player.xml`, `serversettings.xml`
+- **Max players**: `16`
+- **Template**: See [server-templates/btserver/](../server-templates/btserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

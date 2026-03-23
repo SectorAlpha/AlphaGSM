@@ -58,3 +58,22 @@ alphagsm myskyrimto backup
 
 - Module name: `skyrimtogetherrebornserver`
 - Default port: 10578
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `SkyrimTogetherServer`
+- **Location**: `<install_dir>/SkyrimTogetherServer`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/skyrimtogetherrebornserver/](../server-templates/skyrimtogetherrebornserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

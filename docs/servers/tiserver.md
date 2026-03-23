@@ -59,3 +59,23 @@ alphagsm mytiserver backup
 
 - Module name: `tiserver`
 - Default port: 7778
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `TheIsleServer.sh`
+- **Location**: `<install_dir>/TheIsleServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `412680`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/tiserver/](../server-templates/tiserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

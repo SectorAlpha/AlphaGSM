@@ -59,3 +59,24 @@ alphagsm mymw3serve backup
 
 - Module name: `mw3server`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `iw5mp_server.exe`
+- **Location**: `<install_dir>/iw5mp_server.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `115310`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `18`
+- **Template**: See [server-templates/mw3server/](../server-templates/mw3server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

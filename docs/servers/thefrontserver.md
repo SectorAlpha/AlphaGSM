@@ -59,3 +59,24 @@ alphagsm mythefront backup
 
 - Module name: `thefrontserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ProjectWar/Binaries/Linux/TheFrontServer`
+- **Location**: `<install_dir>/ProjectWar/Binaries/Linux/TheFrontServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2334200`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `32`
+- **Template**: See [server-templates/thefrontserver/](../server-templates/thefrontserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

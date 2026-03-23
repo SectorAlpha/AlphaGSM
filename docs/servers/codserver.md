@@ -58,3 +58,22 @@ alphagsm mycodserve backup
 
 - Module name: `codserver`
 - Default port: 28960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `cod_lnxded`
+- **Location**: `<install_dir>/cod_lnxded`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/codserver/](../server-templates/codserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

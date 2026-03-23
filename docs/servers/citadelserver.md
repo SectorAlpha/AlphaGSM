@@ -59,3 +59,24 @@ alphagsm mycitadels backup
 
 - Module name: `citadelserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `CitadelServer-Linux-Shipping`
+- **Location**: `<install_dir>/CitadelServer-Linux-Shipping`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `489650`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `50`
+- **Template**: See [server-templates/citadelserver/](../server-templates/citadelserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

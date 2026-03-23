@@ -59,3 +59,23 @@ alphagsm myfrozenfl backup
 
 - Module name: `frozenflameserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `FrozenFlameServer.sh`
+- **Location**: `<install_dir>/FrozenFlameServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1348640`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/frozenflameserver/](../server-templates/frozenflameserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

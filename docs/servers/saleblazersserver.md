@@ -59,3 +59,23 @@ alphagsm mysaleblaz backup
 
 - Module name: `saleblazersserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Default/Saleblazers.exe`
+- **Location**: `<install_dir>/Default/Saleblazers.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `3099600`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/saleblazersserver/](../server-templates/saleblazersserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

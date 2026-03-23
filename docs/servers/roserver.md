@@ -59,3 +59,23 @@ alphagsm myroserver backup
 
 - Module name: `roserver`
 - Default port: 7757
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `System/ucc-bin`
+- **Location**: `<install_dir>/System/ucc-bin`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `223250`
+
+### Server Configuration
+
+- **Config file**: `System/RedOrchestra.ini`
+- **Template**: See [server-templates/roserver/](../server-templates/roserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -58,3 +58,22 @@ alphagsm myrimworld backup
 
 - Module name: `rimworldtogetherserver`
 - Default port: 25555
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `GameServer`
+- **Location**: `<install_dir>/GameServer`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/rimworldtogetherserver/](../server-templates/rimworldtogetherserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm mybattlecr backup
 
 - Module name: `battlecryoffreedomserver`
 - Default port: 8263
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BCoF.exe`
+- **Location**: `<install_dir>/BCoF.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1362540`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/battlecryoffreedomserver/](../server-templates/battlecryoffreedomserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

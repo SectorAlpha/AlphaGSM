@@ -58,3 +58,22 @@ alphagsm myq3server backup
 
 - Module name: `q3server`
 - Default port: 27960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `q3ded.x86_64`
+- **Location**: `<install_dir>/q3ded.x86_64`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/q3server/](../server-templates/q3server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

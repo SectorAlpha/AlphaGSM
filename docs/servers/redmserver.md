@@ -58,3 +58,22 @@ alphagsm myredmserv backup
 
 - Module name: `redmserver`
 - Default port: 30120
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `run.sh`
+- **Location**: `<install_dir>/run.sh`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/redmserver/](../server-templates/redmserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

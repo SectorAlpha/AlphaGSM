@@ -59,3 +59,23 @@ alphagsm myempyrion backup
 
 - Module name: `empyrionserver`
 - Default port: 30004
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `EmpyrionDedicated.exe`
+- **Location**: `<install_dir>/EmpyrionDedicated.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `530870`
+
+### Server Configuration
+
+- **Config files**: `dedicated.yaml`
+- **Template**: See [server-templates/empyrionserver/](../server-templates/empyrionserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

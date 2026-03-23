@@ -59,3 +59,24 @@ alphagsm myjc2serve backup
 
 - Module name: `jc2server`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `openjc2-server`
+- **Location**: `<install_dir>/openjc2-server`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `261140`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `64`
+- **Template**: See [server-templates/jc2server/](../server-templates/jc2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

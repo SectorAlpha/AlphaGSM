@@ -58,3 +58,23 @@ alphagsm mypathofti backup
 
 - Module name: `pathoftitansserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `PathOfTitansServer.sh`
+- **Location**: `<install_dir>/PathOfTitansServer.sh`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `100`
+- **Template**: See [server-templates/pathoftitansserver/](../server-templates/pathoftitansserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

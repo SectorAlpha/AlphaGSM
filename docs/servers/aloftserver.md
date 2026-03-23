@@ -57,3 +57,22 @@ alphagsm myaloftser backup
 
 - Module name: `aloftserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `AloftServerNoGuiLoad.ps1`
+- **Location**: `<install_dir>/AloftServerNoGuiLoad.ps1`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/aloftserver/](../server-templates/aloftserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm mydayzserv backup
 
 - Module name: `dayzserver`
 - Default port: 2302
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DayZServer`
+- **Location**: `<install_dir>/DayZServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `223350`
+
+### Server Configuration
+
+- **Config file**: `serverDZ.cfg`
+- **Template**: See [server-templates/dayzserver/](../server-templates/dayzserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

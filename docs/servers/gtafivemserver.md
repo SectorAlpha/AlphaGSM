@@ -58,3 +58,22 @@ alphagsm mygtafivem backup
 
 - Module name: `gtafivemserver`
 - Default port: 30120
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `opt/cfx-server/run.sh`
+- **Location**: `<install_dir>/opt/cfx-server/run.sh`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/gtafivemserver/](../server-templates/gtafivemserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

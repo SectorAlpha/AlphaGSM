@@ -59,3 +59,24 @@ alphagsm mypixarkse backup
 
 - Module name: `pixarkserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `PixARKServer.exe`
+- **Location**: `<install_dir>/PixARKServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `824360`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `70`
+- **Template**: See [server-templates/pixarkserver/](../server-templates/pixarkserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

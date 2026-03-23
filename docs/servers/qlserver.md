@@ -59,3 +59,23 @@ alphagsm myqlserver backup
 
 - Module name: `qlserver`
 - Default port: 27960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `qzeroded.x64`
+- **Location**: `<install_dir>/qzeroded.x64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `349090`
+
+### Server Configuration
+
+- **Config files**: `baseq3/server.cfg`
+- **Template**: See [server-templates/qlserver/](../server-templates/qlserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

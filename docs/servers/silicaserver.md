@@ -59,3 +59,24 @@ alphagsm mysilicase backup
 
 - Module name: `silicaserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Silica.x86_64`
+- **Location**: `<install_dir>/Silica.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2738040`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `64`
+- **Template**: See [server-templates/silicaserver/](../server-templates/silicaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

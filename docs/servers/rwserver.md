@@ -59,3 +59,23 @@ alphagsm myrwserver backup
 
 - Module name: `rwserver`
 - Default port: 4254
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `server.jar`
+- **Location**: `<install_dir>/server.jar`
+- **Engine**: Java / Custom
+- **SteamCMD App ID**: `339010`
+
+### Server Configuration
+
+- **Config files**: `server.properties`
+- **Template**: See [server-templates/rwserver/](../server-templates/rwserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: `world/`
+- **Mod directory**: `plugins/`
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm myfearthen backup
 
 - Module name: `fearthenightserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Moonlight/Binaries/Win64/MoonlightServer.exe`
+- **Location**: `<install_dir>/Moonlight/Binaries/Win64/MoonlightServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `764940`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/fearthenightserver/](../server-templates/fearthenightserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

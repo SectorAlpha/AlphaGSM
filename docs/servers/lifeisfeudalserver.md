@@ -59,3 +59,23 @@ alphagsm mylifeisfe backup
 
 - Module name: `lifeisfeudalserver`
 - Default port: 28001
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ddctd_cm_yo_server.exe`
+- **Location**: `<install_dir>/ddctd_cm_yo_server.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `320850`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/lifeisfeudalserver/](../server-templates/lifeisfeudalserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

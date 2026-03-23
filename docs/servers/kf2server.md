@@ -59,3 +59,23 @@ alphagsm mykf2serve backup
 
 - Module name: `kf2server`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Binaries/Win64/KFGameSteamServer.bin.x86_64`
+- **Location**: `<install_dir>/Binaries/Win64/KFGameSteamServer.bin.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `232130`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/kf2server/](../server-templates/kf2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -58,3 +58,22 @@ alphagsm myqwserver backup
 
 - Module name: `qwserver`
 - Default port: 27500
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `mvdsv`
+- **Location**: `<install_dir>/mvdsv`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/qwserver/](../server-templates/qwserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

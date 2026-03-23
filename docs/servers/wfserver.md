@@ -59,3 +59,23 @@ alphagsm mywfserver backup
 
 - Module name: `wfserver`
 - Default port: 44400
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `wf_server.x86_64`
+- **Location**: `<install_dir>/wf_server.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1136510`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/wfserver/](../server-templates/wfserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

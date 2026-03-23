@@ -61,3 +61,36 @@ alphagsm mynsserver backup
 
 - Module name: `nsserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `hlds_run`
+- **Location**: `<install_dir>/hlds_run`
+- **Engine**: GoldSrc (HLDS)
+- **SteamCMD App ID**: `90`
+- **Mod App ID**: `cstrike`
+
+### Server Configuration
+
+- **Config file**: `ns/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `ns_hera`
+- **Max players**: `16`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+- **Template**: See [server-templates/nsserver/](../server-templates/nsserver/)
+
+### Maps and Mods
+
+- **Map directory**: `ns/maps/`
+- **Mod directory**: `ns/dlls/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `ns/maps/` and add to `ns/mapcycle.txt`.
+- **Mod install**: Use Metamod in `ns/dlls/` or AMX Mod X in `ns/addons/amxmodx/`.

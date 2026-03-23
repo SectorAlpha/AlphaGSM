@@ -58,3 +58,22 @@ alphagsm myrtcwserv backup
 
 - Module name: `rtcwserver`
 - Default port: 27960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `iowolfded.x86_64`
+- **Location**: `<install_dir>/iowolfded.x86_64`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/rtcwserver/](../server-templates/rtcwserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

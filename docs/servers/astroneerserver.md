@@ -59,3 +59,23 @@ alphagsm myastronee backup
 
 - Module name: `astroneerserver`
 - Default port: 8777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `AstroServer.exe`
+- **Location**: `<install_dir>/AstroServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `728470`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/astroneerserver/](../server-templates/astroneerserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm mysquadser backup
 
 - Module name: `squadserver`
 - Default port: 27165
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `SquadGameServer.sh`
+- **Location**: `<install_dir>/SquadGameServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `403240`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/squadserver/](../server-templates/squadserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

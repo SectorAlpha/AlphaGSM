@@ -59,3 +59,23 @@ alphagsm myveinserv backup
 
 - Module name: `veinserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `VeinServer.sh`
+- **Location**: `<install_dir>/VeinServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2131400`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/veinserver/](../server-templates/veinserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

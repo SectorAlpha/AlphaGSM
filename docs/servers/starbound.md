@@ -59,3 +59,23 @@ alphagsm mystarboun backup
 
 - Module name: `starbound`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `linux64/starbound_server`
+- **Location**: `<install_dir>/linux64/starbound_server`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `211820`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/starbound/](../server-templates/starbound/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

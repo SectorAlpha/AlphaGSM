@@ -60,6 +60,19 @@ When adding a new game server, treat the lifecycle work as incomplete until it h
 
 The smoke tests are not owned by this skill, but new server lifecycle work should still result in smoke coverage being added or updated.
 
+## Running Integration Tests On Low Disk Space
+
+SteamCMD game servers can be very large (1–15 GB each). When disk space is limited:
+
+- Run tests **one at a time**, not in batches.
+- After each test finishes, **delete the pytest temp directory** to reclaim space:
+  ```bash
+  rm -rf /tmp/pytest-of-$(whoami)/pytest-current/
+  ```
+- Check free space before each test with `df -h /`.
+- If a test installs a large game and fails, clean up before retrying.
+- Consider keeping a SteamCMD download cache (`~/Steam/steamapps/`) across runs to avoid re-downloading unchanged files — but delete per-server install dirs from `/tmp`.
+
 ## Files To Inspect
 
 - `server/server.py`

@@ -59,3 +59,23 @@ alphagsm myreturnto backup
 
 - Module name: `returntomoriaserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `MoriaServer.exe`
+- **Location**: `<install_dir>/MoriaServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `3349480`
+
+### Server Configuration
+
+- **Config files**: `MoriaServerConfig.ini`
+- **Template**: See [server-templates/returntomoriaserver/](../server-templates/returntomoriaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

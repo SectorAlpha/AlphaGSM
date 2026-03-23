@@ -59,3 +59,23 @@ alphagsm mychivalry backup
 
 - Module name: `chivalryserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Binaries/Linux/UDKGameServer-Linux`
+- **Location**: `<install_dir>/Binaries/Linux/UDKGameServer-Linux`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `220070`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/chivalryserver/](../server-templates/chivalryserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

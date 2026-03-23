@@ -58,3 +58,22 @@ alphagsm myxntserve backup
 
 - Module name: `xntserver`
 - Default port: 26000
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `xonotic-linux64-dedicated`
+- **Location**: `<install_dir>/xonotic-linux64-dedicated`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/xntserver/](../server-templates/xntserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

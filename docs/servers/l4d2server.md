@@ -61,3 +61,35 @@ alphagsm myl4d2serv backup
 
 - Module name: `l4d2server`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Source
+- **SteamCMD App ID**: `222860`
+
+### Server Configuration
+
+- **Config file**: `left4dead2/cfg/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `c5m1_waterfront`
+- **Max players**: `8`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+- **Template**: See [server-templates/l4d2server/](../server-templates/l4d2server/)
+
+### Maps and Mods
+
+- **Map directory**: `left4dead2/maps/`
+- **Mod directory**: `left4dead2/addons/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `left4dead2/maps/` and add to `left4dead2/cfg/mapcycle.txt`.
+- **Mod install**: Copy addon folders into `left4dead2/addons/`.

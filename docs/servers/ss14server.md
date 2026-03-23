@@ -58,3 +58,22 @@ alphagsm myss14serv backup
 
 - Module name: `ss14server`
 - Default port: 1212
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Robust.Server`
+- **Location**: `<install_dir>/Robust.Server`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config files**: `config.toml`
+- **Template**: See [server-templates/ss14server/](../server-templates/ss14server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

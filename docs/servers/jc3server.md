@@ -59,3 +59,24 @@ alphagsm myjc3serve backup
 
 - Module name: `jc3server`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `openjc3-server`
+- **Location**: `<install_dir>/openjc3-server`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `619960`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `64`
+- **Template**: See [server-templates/jc3server/](../server-templates/jc3server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -57,3 +57,22 @@ alphagsm myts3serve backup
 
 - Module name: `ts3server`
 - Default port: 10011
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ts3server`
+- **Location**: `<install_dir>/ts3server`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config files**: `ts3server.ini`
+- **Template**: See [server-templates/ts3server/](../server-templates/ts3server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

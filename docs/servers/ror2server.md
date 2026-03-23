@@ -59,3 +59,23 @@ alphagsm myror2serv backup
 
 - Module name: `ror2server`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Risk of Rain 2.exe`
+- **Location**: `<install_dir>/Risk of Rain 2.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1180760`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/ror2server/](../server-templates/ror2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

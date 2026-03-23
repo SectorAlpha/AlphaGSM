@@ -58,3 +58,23 @@ alphagsm myut99serv backup
 
 - Module name: `ut99server`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `System/ucc-bin`
+- **Location**: `<install_dir>/System/ucc-bin`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: `System/UnrealTournament.ini`
+- **Max players**: `16`
+- **Template**: See [server-templates/ut99server/](../server-templates/ut99server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

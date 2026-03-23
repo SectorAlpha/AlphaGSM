@@ -59,3 +59,23 @@ alphagsm myavserver backup
 
 - Module name: `avserver`
 - Default port: 27000
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `server.sh`
+- **Location**: `<install_dir>/server.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `565060`
+
+### Server Configuration
+
+- **Config files**: `admin.xml`
+- **Template**: See [server-templates/avserver/](../server-templates/avserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

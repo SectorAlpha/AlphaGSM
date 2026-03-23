@@ -59,3 +59,24 @@ alphagsm myrust backup
 
 - Module name: `rust`
 - Default port: 28016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `RustDedicated`
+- **Location**: `<install_dir>/RustDedicated`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `258550`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `50`
+- **Template**: See [server-templates/rust/](../server-templates/rust/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

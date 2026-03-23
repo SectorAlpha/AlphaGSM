@@ -59,3 +59,24 @@ alphagsm mybattlebi backup
 
 - Module name: `battlebitserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BattleBitDedicatedServer`
+- **Location**: `<install_dir>/BattleBitDedicatedServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `689410`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `127`
+- **Template**: See [server-templates/battlebitserver/](../server-templates/battlebitserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

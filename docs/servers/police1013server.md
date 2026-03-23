@@ -59,3 +59,24 @@ alphagsm mypolice10 backup
 
 - Module name: `police1013server`
 - Default port: 1013
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `RPCityServer.x86_64`
+- **Location**: `<install_dir>/RPCityServer.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2691380`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `64`
+- **Template**: See [server-templates/police1013server/](../server-templates/police1013server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

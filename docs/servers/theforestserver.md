@@ -59,3 +59,23 @@ alphagsm mythefores backup
 
 - Module name: `theforestserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `TheForestDedicatedServer.exe`
+- **Location**: `<install_dir>/TheForestDedicatedServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `556450`
+
+### Server Configuration
+
+- **Config files**: `Server.cfg`
+- **Template**: See [server-templates/theforestserver/](../server-templates/theforestserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,24 @@ alphagsm myheatserv backup
 
 - Module name: `heatserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `HeatServer.exe`
+- **Location**: `<install_dir>/HeatServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `996600`
+
+### Server Configuration
+
+- **Config files**: `ServerConfig.cfg`
+- **Max players**: `32`
+- **Template**: See [server-templates/heatserver/](../server-templates/heatserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

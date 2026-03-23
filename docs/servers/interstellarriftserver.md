@@ -59,3 +59,23 @@ alphagsm myinterste backup
 
 - Module name: `interstellarriftserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `InterstellarRiftServer.x86_64`
+- **Location**: `<install_dir>/InterstellarRiftServer.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `363360`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/interstellarriftserver/](../server-templates/interstellarriftserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

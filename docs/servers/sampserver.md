@@ -58,3 +58,22 @@ alphagsm mysampserv backup
 
 - Module name: `sampserver`
 - Default port: 7777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `samp03svr`
+- **Location**: `<install_dir>/samp03svr`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config files**: `server.cfg`
+- **Template**: See [server-templates/sampserver/](../server-templates/sampserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

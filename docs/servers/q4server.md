@@ -58,3 +58,22 @@ alphagsm myq4server backup
 
 - Module name: `q4server`
 - Default port: 28004
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `q4ded.x86`
+- **Location**: `<install_dir>/q4ded.x86`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/q4server/](../server-templates/q4server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

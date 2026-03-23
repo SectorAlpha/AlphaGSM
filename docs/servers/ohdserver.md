@@ -59,3 +59,23 @@ alphagsm myohdserve backup
 
 - Module name: `ohdserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `OHDServer.sh`
+- **Location**: `<install_dir>/OHDServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `950900`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/ohdserver/](../server-templates/ohdserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

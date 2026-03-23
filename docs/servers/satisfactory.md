@@ -59,3 +59,23 @@ alphagsm mysatisfac backup
 
 - Module name: `satisfactory`
 - Default port: 15777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `FactoryServer.sh`
+- **Location**: `<install_dir>/FactoryServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1690800`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/satisfactory/](../server-templates/satisfactory/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

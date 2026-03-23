@@ -59,3 +59,23 @@ alphagsm myaccserve backup
 
 - Module name: `accserver`
 - Default port: 9231
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `server/accServer.exe`
+- **Location**: `<install_dir>/server/accServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1430110`
+
+### Server Configuration
+
+- **Config file**: `configuration.json`
+- **Template**: See [server-templates/accserver/](../server-templates/accserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

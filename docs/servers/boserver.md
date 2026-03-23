@@ -59,3 +59,24 @@ alphagsm myboserver backup
 
 - Module name: `boserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BODS.x86_64`
+- **Location**: `<install_dir>/BODS.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `416881`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `16`
+- **Template**: See [server-templates/boserver/](../server-templates/boserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

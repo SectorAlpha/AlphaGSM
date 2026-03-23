@@ -59,3 +59,23 @@ alphagsm myatsserve backup
 
 - Module name: `atsserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `bin/linux_x64/americantruck_server`
+- **Location**: `<install_dir>/bin/linux_x64/americantruck_server`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2239530`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/atsserver/](../server-templates/atsserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

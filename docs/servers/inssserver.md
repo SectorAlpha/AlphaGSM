@@ -59,3 +59,24 @@ alphagsm myinssserv backup
 
 - Module name: `inssserver`
 - Default port: 27131
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `InsurgencyServer-Linux-Shipping`
+- **Location**: `<install_dir>/InsurgencyServer-Linux-Shipping`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `581330`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `28`
+- **Template**: See [server-templates/inssserver/](../server-templates/inssserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

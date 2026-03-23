@@ -59,3 +59,24 @@ alphagsm myscumserv backup
 
 - Module name: `scumserver`
 - Default port: 7779
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `SCUM/Binaries/Win64/SCUMServer.exe`
+- **Location**: `<install_dir>/SCUM/Binaries/Win64/SCUMServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `3792580`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `64`
+- **Template**: See [server-templates/scumserver/](../server-templates/scumserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

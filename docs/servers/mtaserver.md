@@ -58,3 +58,22 @@ alphagsm mymtaserve backup
 
 - Module name: `mtaserver`
 - Default port: 22003
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `mta-server64`
+- **Location**: `<install_dir>/mta-server64`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/mtaserver/](../server-templates/mtaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

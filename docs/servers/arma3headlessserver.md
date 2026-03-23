@@ -59,3 +59,23 @@ alphagsm myarma3hea backup
 
 - Module name: `arma3headlessserver`
 - Default port: 2302
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `arma3server_x64`
+- **Location**: `<install_dir>/arma3server_x64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `233780`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/arma3headlessserver/](../server-templates/arma3headlessserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

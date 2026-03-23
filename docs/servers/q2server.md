@@ -58,3 +58,22 @@ alphagsm myq2server backup
 
 - Module name: `q2server`
 - Default port: 27910
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `q2ded`
+- **Location**: `<install_dir>/q2ded`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/q2server/](../server-templates/q2server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm myremnants backup
 
 - Module name: `remnantsserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `StartServer.bat`
+- **Location**: `<install_dir>/StartServer.bat`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1141420`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/remnantsserver/](../server-templates/remnantsserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

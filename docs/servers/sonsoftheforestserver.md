@@ -59,3 +59,23 @@ alphagsm mysonsofth backup
 
 - Module name: `sonsoftheforestserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `SonsOfTheForestDS.exe`
+- **Location**: `<install_dir>/SonsOfTheForestDS.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2465200`
+
+### Server Configuration
+
+- **Config files**: `dedicatedserver.cfg`
+- **Template**: See [server-templates/sonsoftheforestserver/](../server-templates/sonsoftheforestserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

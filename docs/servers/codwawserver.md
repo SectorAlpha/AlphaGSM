@@ -58,3 +58,22 @@ alphagsm mycodwawse backup
 
 - Module name: `codwawserver`
 - Default port: 28960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `codwaw_lnxded`
+- **Location**: `<install_dir>/codwaw_lnxded`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/codwawserver/](../server-templates/codwawserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

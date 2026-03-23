@@ -59,3 +59,23 @@ alphagsm mybobserve backup
 
 - Module name: `bobserver`
 - Default port: 7778
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BeastsOfBermudaServer.sh`
+- **Location**: `<install_dir>/BeastsOfBermudaServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `882430`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/bobserver/](../server-templates/bobserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

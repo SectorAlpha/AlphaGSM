@@ -59,3 +59,23 @@ alphagsm mynecserve backup
 
 - Module name: `necserver`
 - Default port: 14159
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Server.jar`
+- **Location**: `<install_dir>/Server.jar`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1169370`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/necserver/](../server-templates/necserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

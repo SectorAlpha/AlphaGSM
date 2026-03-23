@@ -59,3 +59,24 @@ alphagsm myhurtworl backup
 
 - Module name: `hurtworldserver`
 - Default port: 12872
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `HurtworldDedicated`
+- **Location**: `<install_dir>/HurtworldDedicated`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `405100`
+
+### Server Configuration
+
+- **Config files**: `hurtworld.cfg`
+- **Max players**: `50`
+- **Template**: See [server-templates/hurtworldserver/](../server-templates/hurtworldserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

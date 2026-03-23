@@ -59,3 +59,23 @@ alphagsm mykfserver backup
 
 - Module name: `kfserver`
 - Default port: 7707
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `System/KillingFloorServer-bin`
+- **Location**: `<install_dir>/System/KillingFloorServer-bin`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `215360`
+
+### Server Configuration
+
+- **Config file**: `system/KillingFloor.ini`
+- **Template**: See [server-templates/kfserver/](../server-templates/kfserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

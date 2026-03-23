@@ -59,3 +59,23 @@ alphagsm mymotortow backup
 
 - Module name: `motortownserver`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe`
+- **Location**: `<install_dir>/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2223650`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/motortownserver/](../server-templates/motortownserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

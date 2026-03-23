@@ -59,3 +59,23 @@ alphagsm myalienare backup
 
 - Module name: `alienarenaserver`
 - Default port: 27910
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `crx-dedicated`
+- **Location**: `<install_dir>/crx-dedicated`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `629540`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/alienarenaserver/](../server-templates/alienarenaserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

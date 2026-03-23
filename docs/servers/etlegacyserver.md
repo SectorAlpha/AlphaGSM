@@ -58,3 +58,22 @@ alphagsm myetlegacy backup
 
 - Module name: `etlegacyserver`
 - Default port: 27960
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `etlded.x86_64`
+- **Location**: `<install_dir>/etlded.x86_64`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: `etl_server.cfg`
+- **Template**: See [server-templates/etlegacyserver/](../server-templates/etlegacyserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

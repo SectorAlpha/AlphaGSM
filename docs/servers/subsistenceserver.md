@@ -59,3 +59,24 @@ alphagsm mysubsiste backup
 
 - Module name: `subsistenceserver`
 - Default port: 27016
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Binaries/Win32/run_dedicated_server.bat`
+- **Location**: `<install_dir>/Binaries/Win32/run_dedicated_server.bat`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1362640`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `10`
+- **Template**: See [server-templates/subsistenceserver/](../server-templates/subsistenceserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

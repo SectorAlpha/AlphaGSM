@@ -57,3 +57,21 @@ alphagsm myheadless backup
 
 - Module name: `arma3.headless`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: See game module source
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/arma3-headless/](../server-templates/arma3-headless/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

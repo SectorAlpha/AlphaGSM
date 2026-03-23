@@ -59,3 +59,24 @@ alphagsm mysolserve backup
 
 - Module name: `solserver`
 - Default port: 23073
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `soldatserver`
+- **Location**: `<install_dir>/soldatserver`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `638500`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `16`
+- **Template**: See [server-templates/solserver/](../server-templates/solserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,24 @@ alphagsm myacserver backup
 
 - Module name: `acserver`
 - Default port: 8081
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `acServer`
+- **Location**: `<install_dir>/acServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `302550`
+
+### Server Configuration
+
+- **Config file**: `cfg/server_cfg.ini`
+- **Default port**: `9600`
+- **Template**: See [server-templates/acserver/](../server-templates/acserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

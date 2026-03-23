@@ -61,3 +61,36 @@ alphagsm mybb2serve backup
 
 - Module name: `bb2server`
 - Default port: 27015
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Source
+- **SteamCMD App ID**: `475370`
+
+### Server Configuration
+
+- **Config file**: `brainbread2/cfg/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `bba_barracks`
+- **Max players**: `20`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+  - SourceTV port: `27020` (UDP)
+- **Template**: See [server-templates/bb2server/](../server-templates/bb2server/)
+
+### Maps and Mods
+
+- **Map directory**: `brainbread2/maps/`
+- **Mod directory**: `brainbread2/addons/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `brainbread2/maps/` and add to `brainbread2/cfg/mapcycle.txt`.
+- **Mod install**: Copy addon folders into `brainbread2/addons/`.

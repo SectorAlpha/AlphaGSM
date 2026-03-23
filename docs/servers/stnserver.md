@@ -59,3 +59,23 @@ alphagsm mystnserve backup
 
 - Module name: `stnserver`
 - Default port: 8888
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Server_Linux_x64`
+- **Location**: `<install_dir>/Server_Linux_x64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1502300`
+
+### Server Configuration
+
+- **Config file**: `Config/ServerConfig.txt`
+- **Template**: See [server-templates/stnserver/](../server-templates/stnserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

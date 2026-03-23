@@ -59,3 +59,24 @@ alphagsm mybrokepro backup
 
 - Module name: `brokeprotocolserver`
 - Default port: 27777
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `Start.sh`
+- **Location**: `<install_dir>/Start.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `696370`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `64`
+- **Template**: See [server-templates/brokeprotocolserver/](../server-templates/brokeprotocolserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -59,3 +59,23 @@ alphagsm mysquad44s backup
 
 - Module name: `squad44server`
 - Default port: 27165
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `PostScriptumServer.sh`
+- **Location**: `<install_dir>/PostScriptumServer.sh`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `746200`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/squad44server/](../server-templates/squad44server/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -57,3 +57,23 @@ alphagsm mygravserv backup
 
 - Module name: `gravserver`
 - Default port: 7778
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `CAGGameServer-Win32-Shipping`
+- **Location**: `<install_dir>/CAGGameServer-Win32-Shipping`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `32`
+- **Template**: See [server-templates/gravserver/](../server-templates/gravserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

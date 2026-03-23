@@ -59,3 +59,23 @@ alphagsm myvalheim backup
 
 - Module name: `valheim`
 - Default port: 2456
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `valheim_server.x86_64`
+- **Location**: `<install_dir>/valheim_server.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `896660`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/valheim/](../server-templates/valheim/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

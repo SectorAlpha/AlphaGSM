@@ -59,3 +59,24 @@ alphagsm myatlasser backup
 
 - Module name: `atlasserver`
 - Default port: 57561
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ShooterGame/Binaries/Linux/ShooterGameServer`
+- **Location**: `<install_dir>/ShooterGame/Binaries/Linux/ShooterGameServer`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1006030`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `100`
+- **Template**: See [server-templates/atlasserver/](../server-templates/atlasserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No
