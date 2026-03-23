@@ -13,6 +13,19 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 
+# ---------------------------------------------------------------------------
+# Override pytest-timeout for integration tests (default pytest.ini is 10s)
+# ---------------------------------------------------------------------------
+INTEGRATION_TEST_TIMEOUT = 180  # 3 minutes per test function
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(items):
+    """Give integration-marked tests a longer pytest-timeout."""
+    for item in items:
+        if item.get_closest_marker("integration"):
+            item.add_marker(pytest.mark.timeout(INTEGRATION_TEST_TIMEOUT))
+
 
 # ---------------------------------------------------------------------------
 # Opt-in gates

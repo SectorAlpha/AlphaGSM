@@ -2,9 +2,7 @@
 
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="SteamCMD app 1430110 requires authentication (No subscription)"
-)
+from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -20,7 +18,9 @@ pytestmark = pytest.mark.skip(
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="SteamCMD app 1430110 requires authentication (No subscription)"
+)]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

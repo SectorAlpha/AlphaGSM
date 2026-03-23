@@ -2,9 +2,7 @@
 
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing"
-)
+from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -20,7 +18,9 @@ pytestmark = pytest.mark.skip(
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing"
+)]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
