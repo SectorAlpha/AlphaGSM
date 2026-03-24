@@ -16,7 +16,7 @@ ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 # ---------------------------------------------------------------------------
 # Override pytest-timeout for integration tests (default pytest.ini is 10s)
 # ---------------------------------------------------------------------------
-INTEGRATION_TEST_TIMEOUT = 180  # 3 minutes per test function
+INTEGRATION_TEST_TIMEOUT = 1200  # 20 minutes per test function
 
 
 @pytest.hookimpl(tryfirst=True)

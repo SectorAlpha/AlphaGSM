@@ -6,6 +6,12 @@ downloads, installs, and process startup.
 These tests are intentionally separate from the default `tests/` suite so the
 normal unit test run stays fast and deterministic.
 
+## Test Status
+
+See [TEST_STATUS.md](TEST_STATUS.md) for the current pass/fail/skip/disabled
+state of every integration test. Agents must update that file after each test
+run.
+
 Run them with:
 
 ```bash

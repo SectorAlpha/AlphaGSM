@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Hurtworld (app 405100) installs no Linux-compatible server binary (HurtworldDedicated not present); module disabled")
 def test_hurtworldserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

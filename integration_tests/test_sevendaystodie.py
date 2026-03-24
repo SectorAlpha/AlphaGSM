@@ -1,5 +1,9 @@
 """Integration test for sevendaystodie."""
 
+import glob
+import time
+from pathlib import Path
+
 import pytest
 
 from conftest import (
@@ -20,10 +24,11 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 900  # 7DTD generates a game world on first start, which takes several minutes
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(3600)  # 60 min: large download (~12 GB) + world generation on first start
 def test_sevendaystodie_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -51,11 +56,21 @@ def test_sevendaystodie_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
+        # 7DTD writes all server output to output_log__DATE.txt in the install dir (not stdout).
+        # Wait up to 60s for the output log file to appear, then use it for marker detection.
+        actual_log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"  # fallback
+        deadline_find = time.time() + 60
+        while time.time() < deadline_find:
+            candidates = sorted(glob.glob(str(install_dir / "output_log__*.txt")))
+            if candidates:
+                actual_log_path = Path(candidates[-1])
+                break
+            time.sleep(2)
+
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
+            actual_log_path,
+            ["INF StartGame done", "StartGame done", "GameSense", "INF Net:"],
             START_TIMEOUT,
         )
 

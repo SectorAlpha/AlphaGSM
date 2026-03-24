@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Wreckfest (app 361580) installs no Linux-compatible server binary (WreckfestServer not present); module disabled")
 def test_wreckfestserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

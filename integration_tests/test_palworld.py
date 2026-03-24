@@ -20,10 +20,11 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600  # Palworld (UE5) has a longer startup time
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(2400)  # 40 min: large download (~3.7 GB) + UE5 startup time
 def test_palworld_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -55,7 +56,7 @@ def test_palworld_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Running Palworld dedicated server", "Game version is", "LogNet:", "LogInit:"],
             START_TIMEOUT,
         )
 

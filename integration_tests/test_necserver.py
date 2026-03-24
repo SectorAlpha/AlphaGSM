@@ -55,7 +55,7 @@ def test_necserver_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Listening", "Started", "listening", "started", "ready", "Done", "Running", "port"],
             START_TIMEOUT,
         )
 

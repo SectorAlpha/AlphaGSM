@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Broke Protocol (app 696370) returns Invalid platform on Linux; Windows-only")
 def test_brokeprotocolserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

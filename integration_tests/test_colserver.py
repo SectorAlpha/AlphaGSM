@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Colony Survival (app 748090) installs no Linux-compatible server binary (ColonyServer.x86_64 not present); module disabled")
 def test_colserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

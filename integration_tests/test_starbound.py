@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="Starbound (app 211820) installs no Linux-compatible server binary (linux64/starbound_server not present); module disabled")
 def test_starbound_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

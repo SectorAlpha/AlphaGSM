@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="CS2/CS:GO (app 740) server binary fails to load due to bundled libgcc_s.so.1 missing GCC_7.0.0 symbol on Ubuntu 24.04 (module disabled)")
 def test_counterstrikeglobaloffensive_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

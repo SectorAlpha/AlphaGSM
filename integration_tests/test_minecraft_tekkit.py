@@ -25,6 +25,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="TechnicPack download page returns 403 Forbidden; server download URL unavailable")
 def test_minecraft_tekkit_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("java")

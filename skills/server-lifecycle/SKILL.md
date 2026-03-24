@@ -78,6 +78,55 @@ SteamCMD game servers can be very large (1–15 GB each). When disk space is lim
 - `server/server.py`
 - `core/main.py`
 - `screen/screen.py`
+
+## Integration Test Status Tracking
+
+The file `integration_tests/TEST_STATUS.md` tracks every integration test and its
+current state: **PASSED**, **DISABLED**, **SKIPPED**, or **RUNNABLE**.
+
+### Agent requirement
+
+Every time an agent runs integration tests it **must** update `TEST_STATUS.md`
+**immediately after each test** — not in a batch at the end:
+
+1. **After a test passes** — move it from RUNNABLE to PASSED with the correct
+   type (SteamCMD, Source, GoldSrc, Direct download, Archive, etc.)
+   **right away, before running the next test**.
+2. **After disabling a server** — move it from RUNNABLE to DISABLED and record
+   the reason (must also match `disabled_servers.conf`). Do this **immediately**.
+3. **After adding a skip marker** — move it from RUNNABLE to SKIPPED with the
+   reason. Do this **immediately**.
+4. **Update the summary counts** at the top of the file after every change.
+5. **Update the "Last updated" date** after every change.
+
+**Bulk runs**: When running many tests in sequence, update `TEST_STATUS.md`
+after **every single test**, not at the end. This ensures progress is never
+lost if a session is interrupted.
+
+### How to regenerate the list from scratch
+
+```bash
+cd /home/cosmosquark/sector_alpha/github/AlphaGSM
+# Build disabled list
+cut -f1 disabled_servers.conf | grep -v '^#' | grep -v '^$' | sort > /tmp/disabled.txt
+# Build passed list (update with known-passed test names)
+sort /tmp/passed.txt -o /tmp/passed.txt
+# Classify
+for f in integration_tests/test_*.py; do
+  t=$(echo "$f" | sed 's|.*/test_||;s|\.py||')
+  if grep -qFx "$t" /tmp/disabled.txt; then echo "DISABLED  $t"
+  elif grep -qFx "$t" /tmp/passed.txt; then echo "PASSED    $t"
+  elif grep -q 'pytest.mark.skip' "$f"; then echo "SKIPPED   $t"
+  else echo "RUNNABLE  $t"
+  fi
+done | sort -k1,1
+```
+
+### Cross-references
+
+- `disabled_servers.conf` — authoritative list of disabled modules and reasons.
+- `integration_tests/TEST_STATUS.md` — human-readable tracker.
+- Both files must stay in sync.
 - `smoke_tests/*.sh`
 - the relevant `gamemodules/...` file
 

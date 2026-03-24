@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="JC2-MP (app 261140) installs no Linux-compatible server binary (openjc2-server not present); module disabled")
 def test_jc2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

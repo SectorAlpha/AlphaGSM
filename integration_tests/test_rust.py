@@ -20,10 +20,11 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 900  # Rust generates a new world on first start, which takes 5-15 minutes
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(2400)  # 40 min: download (~2 GB) + world generation on first start
 def test_rust_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -55,7 +56,7 @@ def test_rust_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Server startup complete", "startup complete", "SteamServer Connected"],
             START_TIMEOUT,
         )
 
