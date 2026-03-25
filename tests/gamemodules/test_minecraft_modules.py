@@ -246,7 +246,13 @@ def test_tekkit_get_file_url_returns_first_server_download(monkeypatch):
         def find(self, tag):
             return FakeBody()
 
-    monkeypatch.setattr(tekkit.urllib.request, "urlopen", lambda url: object())
+    class FakeResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            pass
+
+    monkeypatch.setattr(tekkit.urllib.request, "urlopen", lambda url: FakeResponse())
     monkeypatch.setattr(tekkit.html5lib, "parse", lambda file_obj, parser: FakeDom())
 
     assert tekkit.get_file_url("http://example.com/modpack") == "http://example.com/server.zip"

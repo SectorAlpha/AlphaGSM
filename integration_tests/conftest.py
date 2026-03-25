@@ -204,6 +204,8 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
         "No such file or directory",
         "Failed to install app",
         "Missing configuration",
+        "No subscription",
+        "returned non-zero exit status",
     )
     if any(marker in combined for marker in known_markers):
         extra = f" (app {app_id})" if app_id else ""

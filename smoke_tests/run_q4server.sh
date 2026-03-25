@@ -29,6 +29,9 @@ run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
+# shellcheck source=smoke_tests/steamcmd_helpers.sh
+source "$REPO_ROOT/smoke_tests/steamcmd_helpers.sh"
+
 wait_for_log_ready() {
   local log_path="$1"
   local timeout_seconds="$2"
@@ -93,7 +96,7 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_alphagsm "$SERVER_NAME" create q4server
-run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

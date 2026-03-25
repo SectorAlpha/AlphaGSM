@@ -24,6 +24,9 @@ run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
+# shellcheck source=smoke_tests/steamcmd_helpers.sh
+source "$REPO_ROOT/smoke_tests/steamcmd_helpers.sh"
+
 cleanup() {
   set +e
   if [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
