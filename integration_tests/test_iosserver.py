@@ -2,10 +2,6 @@
 
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="IOSoccer dedicated server segfaults on startup"
-)
-
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
@@ -22,7 +18,9 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="IOSoccer dedicated server segfaults on startup"
+)]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

@@ -2,11 +2,25 @@
 
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="Nuclear Dawn dedicated server install is incomplete; gameinfo.txt missing"
+from conftest import (
+    require_integration_opt_in,
+    require_steamcmd_opt_in,
+    require_command,
+    pick_free_udp_port,
+    write_config,
+    alphagsm_env,
+    run_and_assert_ok,
+    run_alphagsm,
+    log_command_result,
+    skip_for_known_steamcmd_issue,
+    wait_for_log_marker,
+    wait_for_tcp_closed,
+    wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="Nuclear Dawn dedicated server install is incomplete; gameinfo.txt missing"
+)]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

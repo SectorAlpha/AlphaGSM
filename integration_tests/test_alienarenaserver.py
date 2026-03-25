@@ -18,8 +18,9 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
-
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="SteamCMD app 629540 reports success but installs no game files (no Linux depot)"
+)]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 

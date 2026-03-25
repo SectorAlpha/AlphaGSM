@@ -18,8 +18,9 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
-
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="SteamCMD app 2533070 is Windows-only (TT2Server.exe)"
+)]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 

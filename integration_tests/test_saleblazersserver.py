@@ -18,8 +18,9 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
-
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="SteamCMD app 3099600 is Windows-only (Saleblazers.exe)"
+)]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 

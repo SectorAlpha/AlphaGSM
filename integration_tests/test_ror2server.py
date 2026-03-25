@@ -18,8 +18,9 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
-
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="SteamCMD app 1180760 is Windows-only (Risk of Rain 2.exe)"
+)]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 

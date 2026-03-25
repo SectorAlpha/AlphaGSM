@@ -18,8 +18,9 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = pytest.mark.integration
-
+pytestmark = [pytest.mark.integration, pytest.mark.skip(
+    reason="SteamCMD app 115310 is Windows-only (iw5mp_server.exe)"
+)]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
