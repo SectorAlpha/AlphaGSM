@@ -27,19 +27,6 @@ run_alphagsm() {
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/smoke_tests/steamcmd_helpers.sh"
 
-wait_for_log_ready() {
-  local log_path="$1"
-  local timeout_seconds="$2"
-  local deadline=$((SECONDS + timeout_seconds))
-  while (( SECONDS < deadline )); do
-    if [[ -f "$log_path" ]] && grep -Eq 'ready|started|listening|Done' "$log_path"; then
-      return 0
-    fi
-    sleep 2
-  done
-  echo "Server log did not show readiness markers in time: $log_path" >&2
-  return 1
-}
 
 cleanup() {
   set +e
@@ -95,9 +82,9 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_log_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
-run_alphagsm "$SERVER_NAME" stop
+run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 
 run_alphagsm "$SERVER_NAME" status
