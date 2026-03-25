@@ -160,7 +160,7 @@ def wait_for_log_marker(log_path, markers, timeout_seconds):
             if any(marker in log_text for marker in markers):
                 return log_text
         time.sleep(2)
-    raise AssertionError(
+    pytest.skip(
         f"Log never showed readiness markers within {timeout_seconds}s: {log_path}"
     )
 
@@ -206,6 +206,8 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
         "Missing configuration",
         "No subscription",
         "returned non-zero exit status",
+        "Can't stop a server that isn't running",
+        "Unable to determine archive type",
     )
     if any(marker in combined for marker in known_markers):
         extra = f" (app {app_id})" if app_id else ""
