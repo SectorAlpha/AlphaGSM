@@ -80,7 +80,7 @@ def configure(
     version=None,
     url=None,
     download_name=None,
-    exe_name="etlded.x86_64",
+    exe_name="etl.x86_64",
 ):
     """Collect and store configuration values for an ET: Legacy server."""
 

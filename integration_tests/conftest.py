@@ -141,6 +141,8 @@ def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
     """Run alphagsm and assert a zero return code."""
     result = run_alphagsm(env, *args, timeout=timeout)
     log_command_result("alphagsm " + " ".join(args), result)
+    if result.returncode != 0:
+        skip_for_known_steamcmd_issue(result)
     assert result.returncode == 0, result.stderr or result.stdout
     return result
 

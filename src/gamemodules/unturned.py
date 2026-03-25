@@ -15,6 +15,7 @@ commands = ("update", "restart")
 command_args = {
     "setup": CmdSpec(
         optionalarguments=(
+            ArgSpec("PORT", "The port for the server to listen on", int),
             ArgSpec("DIR", "The directory to install Unturned in", str),
         )
     ),

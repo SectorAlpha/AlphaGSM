@@ -17,6 +17,7 @@ commands = ()
 command_args = {
     "setup": CmdSpec(
         optionalarguments=(
+            ArgSpec("PORT", "The port for the server to listen on", int),
             ArgSpec("DIR", "The Directory to install minecraft in", str),
         )
     )
