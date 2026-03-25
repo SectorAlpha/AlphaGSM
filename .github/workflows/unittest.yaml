@@ -144,7 +144,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
       - name: AlphaGSM Smoke Tests
         run: |
           failed=0
@@ -220,7 +220,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
       - name: AlphaGSM Pytest Integration Tests
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
