@@ -33,6 +33,10 @@ Some server types need one extra thing:
   sudo apt update
   sudo apt install lib32gcc-s1 lib32stdc++6
   ```
+- Some servers distribute archives in 7z format:
+  ```bash
+  sudo apt install p7zip-full
+  ```
 
 ## Fast Start
 

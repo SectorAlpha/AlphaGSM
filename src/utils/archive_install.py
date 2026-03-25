@@ -21,6 +21,8 @@ def detect_compression(download_name):
         return "tar.xz"
     if name.endswith(".tar"):
         return "tar"
+    if name.endswith(".7z"):
+        return "7z"
     raise ServerError("Unable to determine archive type for '%s'" % download_name)
 
 

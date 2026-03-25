@@ -139,7 +139,7 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6
+          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -215,7 +215,7 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6
+          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
