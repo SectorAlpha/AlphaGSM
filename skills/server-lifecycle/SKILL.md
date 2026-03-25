@@ -81,7 +81,7 @@ SteamCMD game servers can be very large (1–15 GB each). When disk space is lim
 
 ## Integration Test Status Tracking
 
-The file `integration_tests/TEST_STATUS.md` tracks every integration test and its
+The file `docs/TEST_STATUS.md` tracks every integration test and its
 current state: **PASSED**, **DISABLED**, **SKIPPED**, or **RUNNABLE**.
 
 ### Agent requirement
@@ -125,10 +125,62 @@ done | sort -k1,1
 ### Cross-references
 
 - `disabled_servers.conf` — authoritative list of disabled modules and reasons.
-- `integration_tests/TEST_STATUS.md` — human-readable tracker.
+- `docs/TEST_STATUS.md` — human-readable tracker.
 - Both files must stay in sync.
 - `smoke_tests/*.sh`
 - the relevant `gamemodules/...` file
+
+## Server Disabling Process
+
+When integration tests fail and a server needs to be disabled, follow this exact sequence:
+
+### 1. Add to disabled_servers.conf
+
+**Format**: `module_name<TAB>reason`
+
+**Common failure reasons**:
+- `SteamCMD app XXXXXX is Windows-only (ExecutableName.exe)`
+- `SteamCMD app XXXXXX requires authentication (No subscription)`
+- `SteamCMD app XXXXXX installs no Linux-compatible dedicated server binary (executable file not found)`
+- `SteamCMD downloads successfully but server never outputs expected readiness markers`
+- `Download domain example.com is dead`
+- `Server starts but crashes during initialization before log markers appear (crash pattern)`
+- `Can't start server that is already running (process management issue during setup)`
+
+### 2. Update TEST_STATUS.md
+
+Move the server from RUNNABLE to DISABLED section with the **same reason** as disabled_servers.conf:
+
+```markdown
+| servername | Reason from disabled_servers.conf |
+```
+
+Update summary counts at the top.
+
+### 3. Disable corresponding smoke test
+
+**Location**: `smoke_tests/run_[servername].sh`
+
+**Method**: Add early exit with informative message:
+
+```bash
+#!/usr/bin/env bash
+# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
+# See docs/TEST_STATUS.md for current server status
+echo "Smoke test for [servername] is disabled - see docs/TEST_STATUS.md for status"
+exit 0
+
+# Original test code follows (preserved but unreachable)...
+```
+
+### 4. Verification
+
+Ensure all three files stay synchronized:
+- `disabled_servers.conf` entry exists
+- `docs/TEST_STATUS.md` DISABLED section updated
+- `smoke_tests/run_[servername].sh` disabled with early exit
+
+**Never disable servers without proper documentation** — every disabled server must have a clear, actionable reason that explains why it cannot run on the target platform.
 
 ## Update Rule
 

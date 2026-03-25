@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found)")
 def test_battlebitserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

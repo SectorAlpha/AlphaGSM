@@ -24,6 +24,7 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.skip(reason="SteamCMD app 413770 requires authentication (No subscription)")
 def test_pcars2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

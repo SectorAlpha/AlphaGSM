@@ -8,7 +8,7 @@ normal unit test run stays fast and deterministic.
 
 ## Test Status
 
-See [TEST_STATUS.md](TEST_STATUS.md) for the current pass/fail/skip/disabled
+See [TEST_STATUS.md](../docs/TEST_STATUS.md) for the current pass/fail/skip/disabled
 state of every integration test. Agents must update that file after each test
 run.
 
