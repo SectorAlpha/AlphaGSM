@@ -4,7 +4,7 @@ set -x
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || cd "$(dirname "${BASH_SOURCE[0]}")/../.. && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
+ALPHAGSM_SCRIPT="$REPO_ROOT/../alphagsm"
 STATUS_HELPER="$REPO_ROOT/smoke_tests/source_status.py"
 
 START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
