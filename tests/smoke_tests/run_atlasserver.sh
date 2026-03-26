@@ -7,7 +7,7 @@ exit 0
 set -Eeuo pipefail
 set -x
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || cd "$(dirname "${BASH_SOURCE[0]}")/../.. && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 
