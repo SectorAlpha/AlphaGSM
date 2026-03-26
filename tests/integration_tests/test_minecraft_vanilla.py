@@ -7,17 +7,16 @@ import struct
 import subprocess
 import sys
 import time
-import urllib.request
 
 import pytest
 
 
 pytestmark = pytest.mark.integration
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
+STATUS_HELPER = REPO_ROOT / "tests" / "smoke_tests" / "minecraft_status.py"
 
-MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
 TEST_TIMEOUT_SECONDS = 600
 START_TIMEOUT_SECONDS = 180
 STOP_TIMEOUT_SECONDS = 90
@@ -79,17 +78,12 @@ def _write_java_wrapper(wrapper_path):
 
 
 def _fetch_latest_release_server_url():
-    with urllib.request.urlopen(MANIFEST_URL, timeout=30) as response:
-        manifest = json.loads(response.read().decode("utf-8"))
-    latest_release = manifest["latest"]["release"]
-    version_url = next(
-        version["url"]
-        for version in manifest["versions"]
-        if version["id"] == latest_release
+    output = subprocess.check_output(
+        [sys.executable, str(STATUS_HELPER), "latest-release"],
+        timeout=30,
     )
-    with urllib.request.urlopen(version_url, timeout=30) as response:
-        version_data = json.loads(response.read().decode("utf-8"))
-    return latest_release, version_data["downloads"]["server"]["url"]
+    release_id, server_url = output.strip().split(b"\t")
+    return release_id.decode(), server_url.decode()
 
 
 def _alphagsm_env(config_path):

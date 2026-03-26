@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 set -x
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || cd "$(dirname "${BASH_SOURCE[0]}")/../.. && pwd)"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$_SCRIPT_DIR/../.." && pwd))"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 STATUS_HELPER="$REPO_ROOT/tests/smoke_tests/minecraft_status.py"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"

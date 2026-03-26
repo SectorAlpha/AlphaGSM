@@ -15,7 +15,7 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 TEST_TIMEOUT_SECONDS = 1200
 START_TIMEOUT_SECONDS = 180
