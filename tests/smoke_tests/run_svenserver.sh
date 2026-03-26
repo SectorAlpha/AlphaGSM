@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 set -x
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || cd "$(dirname "${BASH_SOURCE[0]}")/../.. && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 STATUS_HELPER="$REPO_ROOT/smoke_tests/source_status.py"
@@ -25,8 +25,8 @@ run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
-# shellcheck source=smoke_tests/steamcmd_helpers.sh
-source "$REPO_ROOT/smoke_tests/steamcmd_helpers.sh"
+# shellcheck source=tests/smoke_tests/steamcmd_helpers.sh
+source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 
 cleanup() {
