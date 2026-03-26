@@ -22,6 +22,15 @@ BACKEND_TEST_TIMEOUT = 1200  # 20 minutes per test
 
 
 # ---------------------------------------------------------------------------
+# Override global network blocker
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _block_network():
+    """No-op override: backend integration tests need real network access."""
+
+
+# ---------------------------------------------------------------------------
 # Hooks
 # ---------------------------------------------------------------------------
 

@@ -15,14 +15,15 @@ This test will:
 If not on macOS, this test is skipped.
 """
 
+import subprocess
 import sys
 import os
-import tempfile
 import time
 import urllib.request
+from pathlib import Path
 import pytest
 from utils.platform_info import IS_MACOS
-from screen.subprocess_backend import SubprocessBackend, ProcessError
+from screen.subprocess_backend import SubprocessBackend
 
 pytestmark = pytest.mark.backend_integration
 
@@ -32,9 +33,16 @@ STOP_TIMEOUT = 20
 
 @pytest.mark.skipif(not IS_MACOS, reason="macOS required")
 def test_minecraft_macos_subprocess(tmp_path):
-    # Download Minecraft server jar (latest release)
+    # Resolve the latest Minecraft release via the status helper subprocess
+    _status_helper = Path(__file__).resolve().parent.parent / "smoke_tests" / "minecraft_status.py"
+    result = subprocess.run(
+        [sys.executable, str(_status_helper), "latest-release"],
+        capture_output=True, text=True, check=True, timeout=60,
+    )
+    _version, url = result.stdout.strip().split("\t")
+
+    # Download Minecraft server jar
     mc_jar = tmp_path / "minecraft_server.jar"
-    url = "https://launcher.mojang.com/v1/objects/fe3aa5b7e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5/server.jar"  # Example hash, update as needed
     urllib.request.urlretrieve(url, mc_jar)
 
     # Accept EULA
