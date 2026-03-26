@@ -55,7 +55,26 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: AlphaGSM Unit Tests with Coverage
+      - name: AlphaGSM Unit Tests
+        run: pytest tests -n auto
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      PYTHONPATH: .:src
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: AlphaGSM Coverage Report
         run: |
           pytest tests \
             --cov=core \
@@ -65,23 +84,46 @@ jobs:
             --cov=screen \
             --cov=server \
             --cov=utils \
-            --cov-report=term-missing \
-            --cov-report=xml
+            --cov-report=xml \
+            -q --tb=no
+
+  discover-smoke-tests:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - id: set-matrix
+        name: Split smoke scripts into max 20 batches
+        run: |
+          python3 - <<'PY'
+          import json, math, os
+          scripts = sorted(f for f in os.listdir("smoke_tests") if f.startswith("run_") and f.endswith(".sh"))
+          max_jobs = 20
+          batch_size = math.ceil(len(scripts) / max_jobs)
+          batches = []
+          for i in range(0, len(scripts), batch_size):
+              chunk = scripts[i:i+batch_size]
+              batches.append({
+                  "batch": i // batch_size + 1,
+                  "scripts": " ".join(f"smoke_tests/{s}" for s in chunk),
+                  "label": f"batch-{i // batch_size + 1}-of-{math.ceil(len(scripts) / batch_size)}"
+              })
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f'matrix={json.dumps({"include": batches})}\n')
+          PY
 
   smoke-test:
     runs-on: ubuntu-latest
-    needs: unit-test
+    needs: discover-smoke-tests
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - game-server: minecraft
-            smoke-script: smoke_tests/run_minecraft_vanilla.sh
-          - game-server: tf2
-            smoke-script: smoke_tests/run_tf2.sh
+      matrix: ${{ fromJson(needs.discover-smoke-tests.outputs.matrix) }}
     env:
       PYTHONPATH: .:src
-    name: smoke-test (${{ matrix.game-server }})
+    name: smoke-test (${{ matrix.label }})
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
@@ -97,29 +139,67 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6
+          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
-      - name: AlphaGSM Smoke Test Runner
-        run: bash ./${{ matrix.smoke-script }}
+          java-version: "25"
+      - name: AlphaGSM Smoke Tests
+        run: |
+          failed=0
+          for script in ${{ matrix.scripts }}; do
+            echo ""
+            echo "========================================"
+            echo "Running: $script"
+            echo "========================================"
+            if ! bash "./$script"; then
+              echo "FAILED: $script"
+              failed=$((failed + 1))
+            fi
+          done
+          if [ "$failed" -gt 0 ]; then
+            echo "$failed smoke test(s) failed"
+            exit 1
+          fi
+
+  discover-integration-tests:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - id: set-matrix
+        name: Split integration tests into max 20 batches
+        run: |
+          python3 - <<'PY'
+          import json, math, os
+          tests = sorted(f for f in os.listdir("integration_tests") if f.startswith("test_") and f.endswith(".py"))
+          max_jobs = 20
+          batch_size = math.ceil(len(tests) / max_jobs)
+          batches = []
+          for i in range(0, len(tests), batch_size):
+              chunk = tests[i:i+batch_size]
+              batches.append({
+                  "batch": i // batch_size + 1,
+                  "files": " ".join(f"integration_tests/{t}" for t in chunk),
+                  "label": f"batch-{i // batch_size + 1}-of-{math.ceil(len(tests) / batch_size)}"
+              })
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f'matrix={json.dumps({"include": batches})}\n')
+          PY
 
   integration-test:
     runs-on: ubuntu-latest
-    needs: unit-test
+    needs: discover-integration-tests
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - game-server: minecraft
-            test-file: integration_tests/test_minecraft_vanilla.py
-          - game-server: tf2
-            test-file: integration_tests/test_tf2.py
+      matrix: ${{ fromJson(needs.discover-integration-tests.outputs.matrix) }}
     env:
       PYTHONPATH: .:src
-    name: integration-test (${{ matrix.game-server }})
+    name: integration-test (${{ matrix.label }})
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
@@ -135,13 +215,14 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6
+          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
-      - name: AlphaGSM Pytest Integration Test
+          java-version: "25"
+      - name: AlphaGSM Pytest Integration Tests
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
-        run: pytest ${{ matrix.test-file }}
+          ALPHAGSM_RUN_STEAMCMD: "1"
+        run: pytest ${{ matrix.files }}

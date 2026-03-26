@@ -56,8 +56,10 @@ Update these in order when relevant:
 See:
 
 - `SKILLS.md`
-- `skills/smoke-driven-docs/SKILL.md`
-- `skills/server-lifecycle/SKILL.md`
+- `skills/disabled-server-gate/SKILL.md`
 - `skills/install-layout/SKILL.md`
-- `skills/wiki-publishing/SKILL.md`
+- `skills/server-info-gathering/SKILL.md`
+- `skills/server-lifecycle/SKILL.md`
+- `skills/smoke-driven-docs/SKILL.md`
 - `skills/system-install-validation/SKILL.md`
+- `skills/wiki-publishing/SKILL.md`

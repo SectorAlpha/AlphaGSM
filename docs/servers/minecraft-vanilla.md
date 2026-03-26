@@ -79,3 +79,30 @@ alphagsm itmc status
 - `minecraft` is the short name people usually type.
 - `minecraft.vanilla` is the full module name.
 - If you want the most realistic example, follow the smoke test.
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `minecraft_server.jar`
+- **Location**: `<install_dir>/minecraft_server.jar`
+- **Engine**: Java (Mojang)
+
+### Server Configuration
+
+- **Config file**: `server.properties`
+- **Key settings** (in `server.properties`):
+  - `server-port` — Game port (default 25565)
+  - `motd` — Message of the day
+  - `max-players` — Maximum players
+  - `level-seed` — World generation seed
+  - `online-mode` — Mojang authentication
+- **Template**: See [server-templates/minecraft-vanilla/](../server-templates/minecraft-vanilla/) if available
+
+### Maps and Mods
+
+- **Map directory**: `world/`
+- **Mod directory**: `Not supported (vanilla)`
+- **Workshop support**: No
+- **Map notes**: The world directory contains all world data. Delete it to regenerate.
+- **Mod notes**: Vanilla servers do not support mods. Use Paper or Forge for mod support.

@@ -14,10 +14,10 @@ from . import vanilla as van
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
 
 # path to the download page
-MODPACK_URL_DEFAULT = "http://www.technicpack.net/modpack/tekkitmain.552547"
+MODPACK_URL_DEFAULT = "https://www.technicpack.net/modpack/tekkitmain.552547"
 MODPACK_URL = {
-    "tekkit": "http://www.technicpack.net/modpack/tekkitmain.552547",
-    "tekkit-legends": "http://www.technicpack.net/modpack/tekkit-legends.735902",
+    "tekkit": "https://www.technicpack.net/modpack/tekkitmain.552547",
+    "tekkit-legends": "https://www.technicpack.net/modpack/tekkit-legends.735902",
 }
 
 
@@ -53,7 +53,7 @@ command_args["setup"] = CmdSpec(
         OptSpec(
             "u",
             ["url"],
-            "Url to download tekkit from. See http://www.technicpack.net/modpack/tekkitmain.552547 for latest download.",
+            "Url to download tekkit from. See https://www.technicpack.net/modpack/tekkitmain.552547 for latest download.",
             "url",
             "URL",
             str,

@@ -1,0 +1,105 @@
+import gamemodules.minecraft.bedrock as bedrock
+
+
+class DummyData(dict):
+    def __init__(self):
+        super().__init__()
+        self.saved = 0
+
+    def save(self):
+        self.saved += 1
+
+
+class DummyServer:
+    def __init__(self, name="alpha"):
+        self.name = name
+        self.data = DummyData()
+
+
+def test_resolve_bedrock_download_uses_explicit_version():
+    version, url = bedrock.resolve_bedrock_download("1.21.100.6")
+
+    assert version == "1.21.100.6"
+    assert url.endswith("/bedrock-server-1.21.100.6.zip")
+
+
+def test_resolve_bedrock_download_parses_latest_page(monkeypatch):
+    monkeypatch.setattr(
+        bedrock,
+        "_read_download_page",
+        lambda: '<a href="https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-1.21.100.6.zip">download</a>',
+    )
+
+    version, url = bedrock.resolve_bedrock_download()
+
+    assert version == "1.21.100.6"
+    assert url.endswith("/bedrock-server-1.21.100.6.zip")
+
+
+def test_bedrock_configure_sets_defaults(tmp_path, monkeypatch):
+    server = DummyServer("bedrock")
+    monkeypatch.setattr(
+        bedrock,
+        "resolve_bedrock_download",
+        lambda version=None: ("1.21.100.6", "http://example.com/bedrock.zip"),
+    )
+
+    args, kwargs = bedrock.configure(server, ask=False, port=19132, dir=str(tmp_path))
+
+    assert args == ()
+    assert kwargs == {}
+    assert server.data["url"] == "http://example.com/bedrock.zip"
+    assert server.data["backupfiles"] == [
+        "worlds",
+        "server.properties",
+        "permissions.json",
+        "allowlist.json",
+    ]
+    assert server.data["levelname"] == "bedrock"
+    assert server.data["exe_name"] == "bedrock_server"
+
+
+def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monkeypatch):
+    server = DummyServer("bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path / "server"),
+            "exe_name": "bedrock_server",
+            "url": "http://example.com/bedrock.zip",
+            "download_name": "bedrock-server.zip",
+            "port": 19132,
+            "gamemode": "creative",
+            "difficulty": "hard",
+            "levelname": "world_one",
+            "maxplayers": "12",
+            "servername": "AlphaGSM Bedrock",
+        }
+    )
+    download_root = tmp_path / "download"
+    executable = download_root / "bedrock_server"
+    executable.parent.mkdir(parents=True)
+    executable.write_text("")
+    updates = []
+
+    monkeypatch.setattr(bedrock.downloader, "getpath", lambda module, args: str(download_root))
+    monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    bedrock.install(server)
+
+    assert (tmp_path / "server" / "bedrock_server").exists()
+    assert updates[0][0].endswith("server.properties")
+    assert updates[0][1]["server-port"] == "19132"
+    assert updates[0][1]["server-name"] == "AlphaGSM Bedrock"
+    assert server.data["current_url"] == "http://example.com/bedrock.zip"
+
+
+def test_bedrock_get_start_command_uses_local_library_path(tmp_path):
+    server = DummyServer("bedrock")
+    executable = tmp_path / "bedrock_server"
+    executable.write_text("")
+    server.data.update({"dir": str(tmp_path), "exe_name": "bedrock_server"})
+
+    cmd, cwd = bedrock.get_start_command(server)
+
+    assert cmd == ["env", "LD_LIBRARY_PATH=.", "./bedrock_server"]
+    assert cwd == str(tmp_path)

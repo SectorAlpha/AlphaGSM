@@ -6,6 +6,12 @@ downloads, installs, and process startup.
 These tests are intentionally separate from the default `tests/` suite so the
 normal unit test run stays fast and deterministic.
 
+## Test Status
+
+See [TEST_STATUS.md](../docs/TEST_STATUS.md) for the current pass/fail/skip/disabled
+state of every integration test. Agents must update that file after each test
+run.
+
 Run them with:
 
 ```bash
@@ -35,3 +41,7 @@ Current target:
 - Team Fortress 2 end-to-end setup through `alphagsm`:
   download the dedicated server via SteamCMD, start it, verify it responds to a
   Source query, and stop it cleanly.
+- Archive-backed install flows through `alphagsm`:
+  download and install real archive/release assets for modules like `etlegacyserver`
+  and `cod2server`, then verify the expected server binaries land in the install
+  directory.

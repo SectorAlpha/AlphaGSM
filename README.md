@@ -23,8 +23,20 @@ You need:
 
 Some server types need one extra thing:
 
-- Minecraft needs Java
-- TF2 and CS:GO need SteamCMD runtime libraries
+- Minecraft needs Java:
+  ```bash
+  sudo apt install openjdk-25-jre-headless
+  ```
+- TF2, CS:GO, and other Steam-based servers need 32-bit runtime libraries:
+  ```bash
+  sudo dpkg --add-architecture i386
+  sudo apt update
+  sudo apt install lib32gcc-s1 lib32stdc++6
+  ```
+- Some servers distribute archives in 7z format:
+  ```bash
+  sudo apt install p7zip-full
+  ```
 
 ## Fast Start
 
