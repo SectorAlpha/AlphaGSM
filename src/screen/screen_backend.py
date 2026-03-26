@@ -11,6 +11,12 @@ class ScreenBackend(ProcessBackend):
 
     def __init__(self, session_tag, log_path, keeplogs, screenrc, template_dir):
         """Initialise with paths needed for screen configuration files."""
+        from utils.platform_info import IS_WINDOWS
+        if IS_WINDOWS:
+            raise ProcessError(
+                "The 'screen' backend is not available on Windows. "
+                "Please use 'subprocess' or 'tmux' (on WSL/Linux) instead."
+            )
         super().__init__(session_tag, log_path, keeplogs)
         self._screenrc = screenrc
         self._template_dir = template_dir

@@ -10,7 +10,7 @@
 | --- | --- |
 | Inputs | Server dispatch logic, default command contract, and game module lifecycle code. |
 | Outputs | Updated lifecycle code, matching docs, matching tests, and command-contract compliance for new modules. |
-| Related files | `server/server.py`, `core/main.py`, `screen/screen.py`, `gamemodules/**`, `tests/server/*`, `smoke_tests/*.sh`. |
+| Related files | `server/server.py`, `core/main.py`, `screen/screen.py`, `gamemodules/**`, `tests/server/*`, `tests/smoke_tests/*.sh`. |
 
 Use this skill when changing or documenting the lifecycle for a game server module, especially when adding a new game server type.
 
@@ -112,7 +112,7 @@ cut -f1 disabled_servers.conf | grep -v '^#' | grep -v '^$' | sort > /tmp/disabl
 # Build passed list (update with known-passed test names)
 sort /tmp/passed.txt -o /tmp/passed.txt
 # Classify
-for f in integration_tests/test_*.py; do
+for f in tests/integration_tests/test_*.py; do
   t=$(echo "$f" | sed 's|.*/test_||;s|\.py||')
   if grep -qFx "$t" /tmp/disabled.txt; then echo "DISABLED  $t"
   elif grep -qFx "$t" /tmp/passed.txt; then echo "PASSED    $t"
@@ -127,7 +127,7 @@ done | sort -k1,1
 - `disabled_servers.conf` — authoritative list of disabled modules and reasons.
 - `docs/TEST_STATUS.md` — human-readable tracker.
 - Both files must stay in sync.
-- `smoke_tests/*.sh`
+- `tests/smoke_tests/*.sh`
 - the relevant `gamemodules/...` file
 
 ## Server Disabling Process
@@ -159,7 +159,7 @@ Update summary counts at the top.
 
 ### 3. Disable corresponding smoke test
 
-**Location**: `smoke_tests/run_[servername].sh`
+**Location**: `tests/smoke_tests/run_[servername].sh`
 
 **Method**: Add early exit with informative message:
 
@@ -178,7 +178,7 @@ exit 0
 Ensure all three files stay synchronized:
 - `disabled_servers.conf` entry exists
 - `docs/TEST_STATUS.md` DISABLED section updated
-- `smoke_tests/run_[servername].sh` disabled with early exit
+- `tests/smoke_tests/run_[servername].sh` disabled with early exit
 
 **Never disable servers without proper documentation** — every disabled server must have a clear, actionable reason that explains why it cannot run on the target platform.
 

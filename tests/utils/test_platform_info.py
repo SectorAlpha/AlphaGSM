@@ -87,3 +87,29 @@ def test_current_host_is_consistent():
     assert platform_info_module.IS_WINDOWS == (p == "windows")
     assert platform_info_module.IS_MACOS == (p == "macos")
     assert platform_info_module.IS_POSIX == (p in ("linux", "macos"))
+
+
+def test_arch_and_bits_consistent():
+    """ARCH, IS_64BIT, IS_32BIT are consistent with sys.maxsize and platform.machine."""
+    import platform
+
+    arch = platform_info_module.ARCH
+    is_64 = platform_info_module.IS_64BIT
+    is_32 = platform_info_module.IS_32BIT
+
+    # If arch is x86_64 or arm64, must be 64-bit
+    if arch in ("x86_64", "arm64"):
+        assert is_64 is True
+        assert is_32 is False
+
+    # If arch is x86, must be 32-bit
+    if arch == "x86":
+        assert is_32 is True
+        assert is_64 is False
+
+    # sys.maxsize check
+    if hasattr(sys, "maxsize"):
+        if sys.maxsize > 2**32:
+            assert is_64 is True
+        else:
+            assert is_32 is True

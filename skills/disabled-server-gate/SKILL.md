@@ -10,7 +10,7 @@
 | --- | --- |
 | Inputs | The module name the user passes to `create`, the `disabled_servers.conf` file. |
 | Outputs | A `ServerError` with the reason and a request to open an issue or submit a PR. |
-| Related files | `disabled_servers.conf`, `src/server/server.py`, `src/core/main.py`, `integration_tests/`. |
+| Related files | `disabled_servers.conf`, `src/server/server.py`, `src/core/main.py`, `tests/integration_tests/`. |
 
 Use this skill when disabling or re-enabling a game server module, or when investigating why a `create` command is being refused.
 

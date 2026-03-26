@@ -4,6 +4,7 @@ This file is for coding agents and automation working inside this repository.
 
 ## Main Rule
 
+
 Use the smoke tests as the most reliable example of how a server is supposed to be:
 
 - created
@@ -14,8 +15,8 @@ Use the smoke tests as the most reliable example of how a server is supposed to 
 
 Current smoke runners:
 
-- `smoke_tests/run_minecraft_vanilla.sh`
-- `smoke_tests/run_tf2.sh`
+- `tests/smoke_tests/run_minecraft_vanilla.sh`
+- `tests/smoke_tests/run_tf2.sh`
 
 If code comments and docs disagree, check the smoke runners first.
 
@@ -44,8 +45,8 @@ Update these in order when relevant:
 - lint with `bash ./lint.sh`
 - keep the lint score at `10.00/10`
 - keep unit tests in `tests/` green
-- keep integration tests in `integration_tests/` green
-- keep smoke tests in `smoke_tests/` accurate
+- keep integration tests in `tests/integration_tests/` green
+- keep smoke tests in `tests/smoke_tests/` accurate
 
 ## Known Exception
 

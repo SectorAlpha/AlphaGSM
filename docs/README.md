@@ -264,4 +264,4 @@ Each guide tries to show:
 - which commands to run
 - what a real working example looks like
 
-The guides also point to the smoke-test runners in `smoke_tests/`. Those scripts are the best real examples in the repository because they show a full working start-to-stop flow.
+The guides also point to the smoke-test runners in `tests/smoke_tests/`. Those scripts are the best real examples in the repository because they show a full working start-to-stop flow.

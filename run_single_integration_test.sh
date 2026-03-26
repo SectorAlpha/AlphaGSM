@@ -5,7 +5,7 @@
 
 set -u
 TEST_NAME="$1"
-TEST_FILE="integration_tests/test_${TEST_NAME}.py"
+TEST_FILE="tests/integration_tests/test_${TEST_NAME}.py"
 BASEDIR="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme/agsm-it-${TEST_NAME}"
 
 if [[ ! -f "$TEST_FILE" ]]; then

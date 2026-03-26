@@ -5,7 +5,7 @@
 set -uo pipefail
 
 TEST_NAME="${1:?Usage: $0 <test_name>}"
-TEST_FILE="integration_tests/test_${TEST_NAME}.py"
+TEST_FILE="tests/integration_tests/test_${TEST_NAME}.py"
 
 if [[ ! -f "$TEST_FILE" ]]; then
     echo "NOTFOUND: $TEST_FILE does not exist"

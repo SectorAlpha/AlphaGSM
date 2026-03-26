@@ -1,0 +1,26 @@
+# escape=`
+# Windows Server Core image with Java and Python for Minecraft integration testing
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+# Install Chocolatey
+RUN powershell -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "\
+    Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
+
+# Install Java 17+ and Python 3.10+
+RUN choco install -y openjdk --version=17.0.9.0
+RUN choco install -y python --version=3.10.9
+
+# Set up environment
+ENV JAVA_HOME="C:\Program Files\OpenJDK\openjdk-17.0.9.0"
+ENV PATH="%JAVA_HOME%\bin;%PATH%"
+
+# Create workdir
+WORKDIR C:\alphagsm
+
+# Copy AlphaGSM repo (context must be set to repo root)
+COPY . .
+
+# Default command (override in test)
+CMD ["cmd.exe"]

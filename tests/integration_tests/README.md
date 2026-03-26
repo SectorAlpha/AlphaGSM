@@ -15,15 +15,15 @@ run.
 Run them with:
 
 ```bash
-PYTHONPATH=src pytest integration_tests
+PYTHONPATH=src pytest tests/integration_tests
 ```
 
-The direct runner-style smoke checks live separately under `smoke_tests/`.
+The direct runner-style smoke checks live separately under `tests/smoke_tests/`.
 
 Run the Minecraft pytest integration test with:
 
 ```bash
-ALPHAGSM_RUN_INTEGRATION=1 PYTHONPATH=src pytest integration_tests/test_minecraft_vanilla.py
+ALPHAGSM_RUN_INTEGRATION=1 PYTHONPATH=src pytest tests/integration_tests/test_minecraft_vanilla.py
 ```
 
 Requirements for the Minecraft integration:
