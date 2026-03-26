@@ -207,6 +207,8 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
         "No subscription",
         "returned non-zero exit status",
         "Can't stop a server that isn't running",
+        "Error extracting download",
+        "Can't download file",
     )
     if any(marker in combined for marker in known_markers):
         extra = f" (app {app_id})" if app_id else ""

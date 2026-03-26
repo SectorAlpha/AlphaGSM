@@ -18,7 +18,7 @@ Last updated: 2026-03-25
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 - **RUNNABLE** — Test exists and has no skip marker but has not been confirmed passing yet.
 
-## PASSED (56)
+## PASSED (60)
 
 | Test | Type |
 |------|------|

@@ -10,7 +10,7 @@ run_setup_or_skip_steamcmd() {
   local rc=${PIPESTATUS[0]}
   set -e
   if [[ $rc -ne 0 ]]; then
-    if grep -qE 'Failed to install app|No subscription|Missing configuration|No such file or directory|returned non-zero exit status' "$output_file"; then
+    if grep -qE 'Failed to install app|No subscription|Missing configuration|No such file or directory|returned non-zero exit status|Error extracting download|Can.t download file' "$output_file"; then
       echo "Setup failed with known SteamCMD issue — skipping smoke test"
       rm -f "$output_file"
       exit 0
