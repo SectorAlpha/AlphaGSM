@@ -225,7 +225,7 @@ jobs:
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
           ALPHAGSM_RUN_STEAMCMD: "1"
-        run: pytest ${{ matrix.files }}
+        run: pytest -rs ${{ matrix.files }}
 
   backend-smoke-test:
     runs-on: ubuntu-latest
