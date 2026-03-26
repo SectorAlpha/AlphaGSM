@@ -9,6 +9,7 @@ that existing game modules keep working without modification.
 import os
 import shutil
 
+from utils.platform_info import IS_WINDOWS
 from .backend import ProcessError
 from .tail import *  # noqa: F401,F403
 
@@ -45,6 +46,8 @@ def _read_settings():
 
 def _detect_backend():
     """Return the name of the best backend available on this system."""
+    if IS_WINDOWS:
+        return "subprocess"
     if shutil.which("screen"):
         return "screen"
     if shutil.which("tmux"):

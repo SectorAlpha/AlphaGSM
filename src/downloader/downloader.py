@@ -1,18 +1,26 @@
 """Module to download game servers and cache and share the downloads"""
 
 from importlib import import_module
+import getpass
 import os
 import time
 import random
 import sys
-import pwd
 from urllib.parse import quote, unquote
+from utils.platform_info import IS_WINDOWS
 from utils.settings import settings
+
+if not IS_WINDOWS:
+    import pwd  # pylint: disable=import-error
+else:
+    pwd = None  # pylint: disable=invalid-name
 
 
 def expandcustomuser(path, user):
     """Expand a `~/` path using the home directory of the named user."""
     if path[0:2] == "~/":
+        if IS_WINDOWS:
+            return os.path.expanduser("~") + path[1:]
         return pwd.getpwnam(user).pw_dir + path[1:]
     return path
 
@@ -23,7 +31,12 @@ def expandcustomuser(path, user):
 
 RAW_USER = settings.system.downloader.get("user")
 USER_SET = RAW_USER != None
-USER = RAW_USER if USER_SET else pwd.getpwuid(os.getuid()).pw_name
+if USER_SET:
+    USER = RAW_USER
+elif IS_WINDOWS:
+    USER = getpass.getuser()
+else:
+    USER = pwd.getpwuid(os.getuid()).pw_name
 DB_PATH = expandcustomuser(
     settings.get(USER_SET).downloader.get("db_path")
     or os.path.join(
@@ -182,7 +195,7 @@ def getpath(module, args):
     if path is not None:
         return path
 
-    if os.getuid() != pwd.getpwnam(USER).pw_uid:
+    if not IS_WINDOWS and os.getuid() != pwd.getpwnam(USER).pw_uid:
         import subprocess as sp
 
         try:

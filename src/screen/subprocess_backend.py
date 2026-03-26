@@ -14,6 +14,7 @@ import os
 import signal
 import subprocess as sp
 
+from utils.platform_info import IS_WINDOWS
 from .backend import ProcessBackend, ProcessError
 
 # Module-level registry of Popen objects started in *this* invocation.
@@ -63,15 +64,18 @@ class SubprocessBackend(ProcessBackend):
         self._rotatelogs(name)
         log_file = self.logpath(name)
         logfh = open(log_file, "a", encoding="utf-8")  # pylint: disable=consider-using-with
+        popen_kwargs = {
+            "cwd": cwd,
+            "stdout": logfh,
+            "stderr": logfh,
+            "stdin": sp.PIPE,
+        }
+        if IS_WINDOWS:
+            popen_kwargs["creationflags"] = sp.CREATE_NEW_PROCESS_GROUP
+        else:
+            popen_kwargs["start_new_session"] = True
         try:
-            proc = sp.Popen(
-                list(command),
-                cwd=cwd,
-                stdout=logfh,
-                stderr=logfh,
-                stdin=sp.PIPE,
-                start_new_session=True,
-            )
+            proc = sp.Popen(list(command), **popen_kwargs)
         except FileNotFoundError as ex:
             logfh.close()
             raise ProcessError("Can't start process: " + str(ex)) from ex
@@ -100,7 +104,10 @@ class SubprocessBackend(ProcessBackend):
             pid = entry[0].pid if entry else self._read_pid(name)
             if pid is not None:
                 try:
-                    os.kill(pid, signal.SIGINT)
+                    if IS_WINDOWS:
+                        os.kill(pid, signal.CTRL_BREAK_EVENT)
+                    else:
+                        os.kill(pid, signal.SIGINT)
                     return
                 except ProcessLookupError as ex:
                     raise ProcessError(
@@ -149,6 +156,27 @@ class SubprocessBackend(ProcessBackend):
             return
         raise ProcessError("No running session '%s' to kill" % name)
 
+    def _is_pid_alive(self, pid):
+        """Return whether a process with the given PID is still running."""
+        if IS_WINDOWS:
+            try:
+                # On Windows os.kill(pid, 0) terminates the process,
+                # so we use the ctypes-free approach via tasklist.
+                result = sp.run(
+                    ["tasklist", "/FI", "PID eq %d" % pid, "/NH"],
+                    capture_output=True, text=True, timeout=10, check=False,
+                )
+                return str(pid) in result.stdout
+            except OSError:
+                return False
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+
     def is_running(self, name):
         """Return whether the named session is still alive."""
         entry = _processes.get(name)
@@ -164,15 +192,10 @@ class SubprocessBackend(ProcessBackend):
         pid = self._read_pid(name)
         if pid is None:
             return False
-        try:
-            os.kill(pid, 0)
+        if self._is_pid_alive(pid):
             return True
-        except ProcessLookupError:
-            self._cleanup_pidfile(name)
-            return False
-        except PermissionError:
-            # Process exists but we can't signal it (different user).
-            return True
+        self._cleanup_pidfile(name)
+        return False
 
     def connect(self, name):
         """Tail the server log file (Ctrl-C to detach)."""
@@ -180,14 +203,33 @@ class SubprocessBackend(ProcessBackend):
         if not os.path.isfile(log_file):
             raise ProcessError("No log file found for '%s'" % name)
         print("Subprocess backend: tailing log (press Ctrl-C to detach)")
+        if IS_WINDOWS:
+            self._tail_log_python(log_file)
+        else:
+            try:
+                sp.check_call(["tail", "-f", log_file], shell=False)
+            except KeyboardInterrupt:
+                pass
+            except OSError as ex:
+                raise ProcessError(
+                    "Error tailing log for '%s': %s" % (name, ex)
+                ) from ex
+
+    @staticmethod
+    def _tail_log_python(log_file):
+        """Pure-Python fallback for tailing a log file on Windows."""
+        import time  # pylint: disable=import-outside-toplevel
         try:
-            sp.check_call(["tail", "-f", log_file], shell=False)
+            with open(log_file, "r", encoding="utf-8", errors="replace") as fh:
+                fh.seek(0, 2)  # seek to end
+                while True:
+                    line = fh.readline()
+                    if line:
+                        print(line, end="")
+                    else:
+                        time.sleep(0.3)
         except KeyboardInterrupt:
             pass
-        except OSError as ex:
-            raise ProcessError(
-                "Error tailing log for '%s': %s" % (name, ex)
-            ) from ex
 
     def list_sessions(self):
         """Yield server names whose PID files point to a live process."""
