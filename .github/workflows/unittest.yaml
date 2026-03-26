@@ -147,14 +147,19 @@ jobs:
           java-version: "25"
       - name: AlphaGSM Smoke Tests
         run: |
+          touch smoke-results.txt
+          passed=0
           failed=0
           for script in ${{ matrix.scripts }}; do
             echo ""
             echo "========================================"
             echo "Running: $script"
             echo "========================================"
-            if ! bash "./$script"; then
-              echo "FAILED: $script"
+            if bash "./$script"; then
+              echo "PASSED: $script" | tee -a smoke-results.txt
+              passed=$((passed + 1))
+            else
+              echo "FAILED: $script" | tee -a smoke-results.txt
               failed=$((failed + 1))
             fi
           done
@@ -162,6 +167,12 @@ jobs:
             echo "$failed smoke test(s) failed"
             exit 1
           fi
+      - name: Upload smoke test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-results-${{ matrix.label }}
+          path: smoke-results.txt
 
   discover-integration-tests:
     runs-on: ubuntu-latest
@@ -225,7 +236,13 @@ jobs:
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
           ALPHAGSM_RUN_STEAMCMD: "1"
-        run: pytest -rs ${{ matrix.files }}
+        run: pytest -rs --junit-xml=results.xml ${{ matrix.files }}
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-results-${{ matrix.label }}
+          path: results.xml
 
   backend-smoke-test:
     runs-on: ubuntu-latest
@@ -349,3 +366,94 @@ jobs:
         env:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
         run: pytest tests/backend_integration_tests/test_minecraft_macos.py -v
+
+  summarize-tests:
+    runs-on: ubuntu-latest
+    needs: [smoke-test, integration-test]
+    if: always()
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-results-*"
+          path: artifacts
+          merge-multiple: false
+      - name: Summarize test results
+        run: |
+          python3 - <<'PYEOF'
+          import glob, xml.etree.ElementTree as ET
+
+          smoke_passed, smoke_failed = [], []
+          int_passed, int_skipped, int_failed = [], [], []
+
+          for txt in sorted(glob.glob("artifacts/smoke-results-*/*.txt")):
+              for line in open(txt):
+                  line = line.strip()
+                  if line.startswith("PASSED: "):
+                      smoke_passed.append(line[8:])
+                  elif line.startswith("FAILED: "):
+                      smoke_failed.append(line[8:])
+
+          for xml_file in sorted(glob.glob("artifacts/integration-results-*/*.xml")):
+              try:
+                  root = ET.parse(xml_file).getroot()
+              except ET.ParseError:
+                  continue
+              for tc in root.iter("testcase"):
+                  name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
+                  skip = tc.find("skipped")
+                  fail = tc.find("failure")
+                  err = tc.find("error")
+                  if skip is not None:
+                      int_skipped.append((name, skip.attrib.get("message", "").split("\n")[0]))
+                  elif fail is not None or err is not None:
+                      node = fail if fail is not None else err
+                      int_failed.append((name, node.attrib.get("message", "").split("\n")[0]))
+                  else:
+                      int_passed.append(name)
+
+          SEP = "=" * 64
+          print(SEP)
+          print("AlphaGSM Test Summary")
+          print(SEP)
+
+          print("\nSMOKE TESTS")
+          print(f"  Passed : {len(smoke_passed)}")
+          print(f"  Failed : {len(smoke_failed)}")
+          if smoke_passed:
+              print("\n  Passed:")
+              for t in smoke_passed:
+                  print(f"    PASS  {t}")
+          if smoke_failed:
+              print("\n  Failed:")
+              for t in smoke_failed:
+                  print(f"    FAIL  {t}")
+
+          print("\nINTEGRATION TESTS")
+          print(f"  Passed  : {len(int_passed)}")
+          print(f"  Skipped : {len(int_skipped)}")
+          print(f"  Failed  : {len(int_failed)}")
+          if int_passed:
+              print("\n  Passed (server launched successfully):")
+              for t in int_passed:
+                  print(f"    PASS  {t}")
+          if int_skipped:
+              print("\n  Skipped:")
+              for t, r in int_skipped:
+                  print(f"    SKIP  {t}")
+                  if r:
+                      print(f"          Reason: {r}")
+          if int_failed:
+              print("\n  Failed:")
+              for t, r in int_failed:
+                  print(f"    FAIL  {t}")
+                  if r:
+                      print(f"          Reason: {r}")
+
+          total_p = len(smoke_passed) + len(int_passed)
+          total_s = len(int_skipped)
+          total_f = len(smoke_failed) + len(int_failed)
+          print("\n" + SEP)
+          print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")
+          print(SEP)
+          PYEOF
