@@ -29,7 +29,9 @@ install_wine() {
     if ! sudo dpkg --add-architecture i386 2>/dev/null; then
         echo "    WARNING: could not add i386 architecture (may already be present)"
     fi
-    sudo apt-get update -qq
+    # || true: ignore errors from broken third-party repos (e.g. missing Release
+    # files); Wine itself comes from the main Ubuntu archive which is unaffected.
+    sudo apt-get update -qq || true
     sudo apt-get install -y wine64 wine32:i386
 
     echo "    Wine installed: $(wine --version)"

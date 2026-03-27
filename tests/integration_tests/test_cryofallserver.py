@@ -18,9 +18,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 1061710 installs no Linux-compatible dedicated server binary (CryoFall_Server not present)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 

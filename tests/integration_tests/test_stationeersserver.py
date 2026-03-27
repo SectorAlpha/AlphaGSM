@@ -18,9 +18,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="Can't start server that is already running (process management issue during setup)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 

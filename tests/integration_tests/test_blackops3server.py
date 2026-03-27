@@ -19,9 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 545990 is Windows-only (BlackOps3Server.exe)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 

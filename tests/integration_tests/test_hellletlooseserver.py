@@ -19,9 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 822500 is Windows-only (HLLServer.exe)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
