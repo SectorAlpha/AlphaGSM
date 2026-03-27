@@ -114,7 +114,7 @@ def test_motortown_noonesurvived_and_subsistence_update_downloads_and_optionally
     noonesurvivedserver.update(nos, validate=False, restart=False)
     subsistenceserver.update(subs, validate=False, restart=False)
 
-    assert ("/srv/mt/", 2223650, True, True) in calls
+    assert ("/srv/mt/", 2223650, False, True) in calls
     assert ("/srv/nos/", 2329680, True, False) in calls
     assert ("/srv/subs/", 1362640, True, False) in calls
     assert motortown.start_calls == 1

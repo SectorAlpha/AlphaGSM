@@ -1,14 +1,14 @@
 # Integration Test Status
 
-Last updated: 2026-05-30
+Last updated: 2026-03-27
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 60    |
+| PASSED   | 66    |
 | DISABLED | 82    |
-| SKIPPED  | 92    |
+| SKIPPED  | 86    |
 | RUNNABLE | 0     |
 
 ## Status Key
@@ -18,7 +18,7 @@ Last updated: 2026-05-30
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 - **RUNNABLE** — Test exists and has no skip marker but has not been confirmed passing yet.
 
-## PASSED (60)
+## PASSED (66)
 
 | Test | Type |
 |------|------|
@@ -82,6 +82,12 @@ Last updated: 2026-05-30
 | valheim | SteamCMD |
 | wfserver | SteamCMD |
 | xntserver | Direct download |
+| battlecryoffreedomserver | SteamCMD (Proton) |
+| enshrouded | SteamCMD (Proton) |
+| mythofempiresserver | SteamCMD (Proton) |
+| reignofdwarfserver | SteamCMD (Proton) |
+| sunkenlandserver | SteamCMD (Proton) |
+| theforestserver | SteamCMD (Proton) |
 
 ## DISABLED (82)
 
@@ -170,25 +176,23 @@ Last updated: 2026-05-30
 | zmrserver | Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (92)
+## SKIPPED (86)
 
 Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
-| enshrouded | Requires Wine or Proton-GE; Windows binary (enshrouded_server.exe) via SteamCMD app 2278520; run scripts/install_proton.sh |
 | stormworksserver | Requires Wine or Proton-GE; Windows binary (server64.exe) via SteamCMD app 1247090; run scripts/install_proton.sh |
 | arksurvivalascended | Requires Wine or Proton-GE; Windows binary (ArkAscendedServer.exe) via SteamCMD app 2430930; run scripts/install_proton.sh |
 | askaserver | Requires Wine or Proton-GE; Windows binary (AskaServer.exe) via SteamCMD app 3246670; run scripts/install_proton.sh |
 | astroneerserver | Requires Wine or Proton-GE; Windows binary (AstroServer.exe) via SteamCMD app 728470; run scripts/install_proton.sh |
-| battlecryoffreedomserver | Requires Wine or Proton-GE; Windows binary (BCoF.exe) via SteamCMD app 1362540; run scripts/install_proton.sh |
-| blackops3server | Requires Wine or Proton-GE; Windows binary (BlackOps3Server.exe) via SteamCMD app 545990; run scripts/install_proton.sh |
-| blackwakeserver | Requires Wine or Proton-GE; Windows binary (Blackwake Dedicated Server.exe) via SteamCMD app 423410; run scripts/install_proton.sh |
+| blackops3server | Requires Wine or Proton-GE; Windows binary (UnrankedServer/Launch_Server.bat) via SteamCMD app 545990; run scripts/install_proton.sh |
+| blackwakeserver | Requires Wine or Proton-GE; Windows binary (BlackwakeServer.exe) via SteamCMD app 423410; run scripts/install_proton.sh |
 | darkandlightserver | Requires Wine or Proton-GE; Windows binary (DNLServer.exe) via SteamCMD app 630230; run scripts/install_proton.sh |
 | ducksideserver | Requires Wine or Proton-GE; Windows binary (DucksideServer.exe) via SteamCMD app 2690320; run scripts/install_proton.sh |
-| empyrionserver | Requires Wine or Proton-GE; Windows binary (EmpyrionDedicated.exe) via SteamCMD app 530870; run scripts/install_proton.sh |
+| empyrionserver | Requires Wine or Proton-GE; Windows binary (EmpyrionLauncher.exe) via SteamCMD app 530870; run scripts/install_proton.sh |
 | fearthenightserver | Requires Wine or Proton-GE; Windows binary (MoonlightServer.exe) via SteamCMD app 764940; run scripts/install_proton.sh |
-| groundbranchserver | Requires Wine or Proton-GE; Windows binary (GroundBranchServer-Win64-Shipping.exe) via SteamCMD app 476400; run scripts/install_proton.sh |
+| groundbranchserver | Requires Wine or Proton-GE; Windows binary (GroundBranch/Binaries/Win64/GroundBranchServer-Win64-Shipping.exe) via SteamCMD app 476400; run scripts/install_proton.sh |
 | heatserver | Requires Wine or Proton-GE; Windows binary (HeatServer.exe) via SteamCMD app 996600; run scripts/install_proton.sh |
 | hellletlooseserver | Requires Wine or Proton-GE; Windows binary (HLLServer.exe) via SteamCMD app 822500; run scripts/install_proton.sh |
 | icarusserver | Requires Wine or Proton-GE; Windows binary (IcarusServer.exe) via SteamCMD app 2089300; run scripts/install_proton.sh |
@@ -197,14 +201,12 @@ Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guar
 | miscreatedserver | Requires Wine or Proton-GE; Windows binary (MiscreatedServer.exe) via SteamCMD app 302200; run scripts/install_proton.sh |
 | motortownserver | Requires Wine or Proton-GE; Windows binary (MotorTownServer-Win64-Shipping.exe) via SteamCMD app 2223650; run scripts/install_proton.sh |
 | mw3server | Requires Wine or Proton-GE; Windows binary (iw5mp_server.exe) via SteamCMD app 115310; run scripts/install_proton.sh |
-| mythofempiresserver | Requires Wine or Proton-GE; Windows binary (MOEServer.exe) via SteamCMD app 1794810; run scripts/install_proton.sh |
 | noonesurvivedserver | Requires Wine or Proton-GE; Windows binary (WRSHServer.exe) via SteamCMD app 2329680; run scripts/install_proton.sh |
 | notdserver | Requires Wine or Proton-GE; Windows binary (LFServer.exe) via SteamCMD app 1420710; run scripts/install_proton.sh |
-| outpostzeroserver | Requires Wine or Proton-GE; Windows binary (OutpostZeroServer.exe) via SteamCMD app 762880; run scripts/install_proton.sh |
-| pixarkserver | Requires Wine or Proton-GE; Windows binary (PixARKServer.exe) via SteamCMD app 824360; run scripts/install_proton.sh |
-| primalcarnageextinctionserver | Requires Wine or Proton-GE; Windows binary (PCEdedicated.exe) via SteamCMD app 336400; run scripts/install_proton.sh |
+| outpostzeroserver | Requires Wine or Proton-GE; Windows binary (WindowsServer/SurvivalGameServer.exe) via SteamCMD app 762880; run scripts/install_proton.sh |
+| pixarkserver | Requires Wine or Proton-GE; Windows binary (ShooterGame/Binaries/Win64/PixARKServer.exe) via SteamCMD app 824360; run scripts/install_proton.sh |
+| primalcarnageextinctionserver | Requires Wine or Proton-GE; Windows binary (Binaries/Win64/PrimalCarnageServer.exe) via SteamCMD app 336400; run scripts/install_proton.sh |
 | readyornotserver | Requires Wine or Proton-GE; Windows binary (ReadyOrNotServer.exe) via SteamCMD app 950290; run scripts/install_proton.sh |
-| reignofdwarfserver | Requires Wine or Proton-GE; Windows binary (ReignOfDwarfServer.exe) via SteamCMD app 1999160; run scripts/install_proton.sh |
 | reignofkingsserver | Requires Wine or Proton-GE; Windows binary (Server.exe) via SteamCMD app 381690; run scripts/install_proton.sh |
 | remnantsserver | Requires Wine or Proton-GE; Windows binary (StartServer.bat) via SteamCMD app 1141420; run scripts/install_proton.sh |
 | returntomoriaserver | Requires Wine or Proton-GE; Windows binary (MoriaServer.exe) via SteamCMD app 3349480; run scripts/install_proton.sh |
@@ -212,14 +214,12 @@ Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guar
 | rs2server | Requires Wine or Proton-GE; Windows binary (VNGame.exe) via SteamCMD app 418480; run scripts/install_proton.sh |
 | saleblazersserver | Requires Wine or Proton-GE; Windows binary (Saleblazers.exe) via SteamCMD app 3099600; run scripts/install_proton.sh |
 | scumserver | Requires Wine or Proton-GE; Windows binary (SCUMServer.exe) via SteamCMD app 3792580; run scripts/install_proton.sh |
-| sniperelite4server | Requires Wine or Proton-GE; Windows binary (SniperElite4_DedicatedServer.exe) via SteamCMD app 568880; run scripts/install_proton.sh |
-| sonsoftheforestserver | Requires Wine or Proton-GE; Windows binary (SonsOfTheForestDS.exe) via SteamCMD app 2465200; run scripts/install_proton.sh |
+| sniperelite4server | Requires Wine or Proton-GE; Windows binary (bin/SniperElite4_Dedicated.exe) via SteamCMD app 568880; run scripts/install_proton.sh |
+| sonsoftheforestserver | Requires Wine or Proton-GE; Windows binary (StartSOTFDedicated.bat) via SteamCMD app 2465200; run scripts/install_proton.sh |
 | starruptureserver | Requires Wine or Proton-GE; Windows binary (StarRuptureServerEOS.exe) via SteamCMD app 3809400; run scripts/install_proton.sh |
 | staxelserver | Requires Wine or Proton-GE; Windows binary (Staxel.ServerWizard.exe) via SteamCMD app 755170; run scripts/install_proton.sh |
 | subsistenceserver | Requires Wine or Proton-GE; Windows binary (run_dedicated_server.bat) via SteamCMD app 1362640; run scripts/install_proton.sh |
-| sunkenlandserver | Requires Wine or Proton-GE; Windows binary (Sunkenland-DedicatedServer.exe) via SteamCMD app 2667530; run scripts/install_proton.sh |
 | terratechworldsserver | Requires Wine or Proton-GE; Windows binary (TT2Server.exe) via SteamCMD app 2533070; run scripts/install_proton.sh |
-| theforestserver | Requires Wine or Proton-GE; Windows binary (TheForestDedicatedServer.exe) via SteamCMD app 556450; run scripts/install_proton.sh |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |

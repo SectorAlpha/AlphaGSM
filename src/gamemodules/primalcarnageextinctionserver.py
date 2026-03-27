@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="PCEdedicated.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/PrimalCarnageServer.exe"):
     """Collect and store configuration values for a Primal Carnage server."""
 
     server.data["Steam_AppID"] = steam_app_id

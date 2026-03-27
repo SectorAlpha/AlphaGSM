@@ -12,7 +12,7 @@ from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.platform_info import IS_LINUX
 
 steam_app_id = 1180760
-steam_anonymous_login_possible = True
+steam_anonymous_login_possible = False
 
 commands = ("update", "restart")
 command_args = {

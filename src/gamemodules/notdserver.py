@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="LF/Binaries/Win64/LFServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="LFServer.exe"):
     """Collect and store configuration values for a Night of the Dead server."""
 
     server.data["Steam_AppID"] = steam_app_id

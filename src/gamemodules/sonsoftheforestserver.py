@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="SonsOfTheForestDS.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="StartSOTFDedicated.bat"):
     """Collect and store configuration values for a Sons Of The Forest server."""
 
     server.data["Steam_AppID"] = steam_app_id

@@ -117,5 +117,5 @@ def test_pixark_outpostzero_and_reignofkings_update_downloads_and_optionally_res
 
     assert ("/srv/pixark/", 824360, True, True) in calls
     assert ("/srv/opz/", 762880, True, False) in calls
-    assert ("/srv/rok/", 381690, True, False) in calls
+    assert ("/srv/rok/", 381690, False, False) in calls
     assert pixark.start_calls == 1

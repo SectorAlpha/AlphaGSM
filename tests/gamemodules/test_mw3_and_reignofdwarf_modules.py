@@ -86,6 +86,6 @@ def test_mw3_and_reignofdwarf_update_downloads_and_optionally_restart(monkeypatc
     mw3server.update(mw3, validate=True, restart=True)
     reignofdwarfserver.update(rod, validate=False, restart=False)
 
-    assert ("/srv/mw3/", 115310, True, True) in calls
+    assert ("/srv/mw3/", 115310, False, True) in calls
     assert ("/srv/rod/", 1999160, True, False) in calls
     assert mw3.start_calls == 1

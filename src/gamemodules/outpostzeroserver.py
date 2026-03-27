@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="OutpostZeroServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="WindowsServer/SurvivalGameServer.exe"):
     """Collect and store configuration values for an Outpost Zero server."""
 
     server.data["Steam_AppID"] = steam_app_id

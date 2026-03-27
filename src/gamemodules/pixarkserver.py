@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="PixARKServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="ShooterGame/Binaries/Win64/PixARKServer.exe"):
     """Collect and store configuration values for a PixARK server."""
 
     server.data["Steam_AppID"] = steam_app_id

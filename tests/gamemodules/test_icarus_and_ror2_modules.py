@@ -86,5 +86,5 @@ def test_icarus_and_ror2_updates_download_and_optionally_restart(monkeypatch):
     ror2server.update(ror2, validate=False, restart=False)
 
     assert ("/srv/icarus/", 2089300, True, True) in calls
-    assert ("/srv/ror2/", 1180760, True, False) in calls
+    assert ("/srv/ror2/", 1180760, False, False) in calls
     assert icarus.start_calls == 1

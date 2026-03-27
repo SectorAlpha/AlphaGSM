@@ -52,13 +52,20 @@ def test_astroneerserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
+        # Astroneer needs Windows RichEdit DLL (riched20); Wine may lack this.
+        # Detect the Wine error early so the test skips quickly rather than
+        # timing out after START_TIMEOUT seconds.
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
+        log_text = wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["ready", "started", "listening", "Done", "err:richedit"],
             START_TIMEOUT,
         )
+        if "err:richedit" in log_text:
+            pytest.skip(
+                "Astroneer server requires Windows RichEdit DLL (riched20) "
+                "which is not available in the current Wine installation."
+            )
 
         # status
         run_and_assert_ok(env, server_name, "status")

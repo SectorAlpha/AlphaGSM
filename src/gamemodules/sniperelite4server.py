@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="SniperElite4_DedicatedServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="bin/SniperElite4_Dedicated.exe"):
     """Collect and store configuration values for a Sniper Elite 4 server."""
 
     server.data["Steam_AppID"] = steam_app_id

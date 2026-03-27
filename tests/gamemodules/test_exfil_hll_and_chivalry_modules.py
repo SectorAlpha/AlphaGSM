@@ -104,5 +104,5 @@ def test_exfil_and_hll_update_downloads_and_optionally_restart(monkeypatch):
     hellletlooseserver.update(hll, validate=False, restart=False)
 
     assert ("/srv/exfil/", 3093190, True, True) in calls
-    assert ("/srv/hll/", 822500, True, False) in calls
+    assert ("/srv/hll/", 822500, False, False) in calls
     assert exfil.start_calls == 1

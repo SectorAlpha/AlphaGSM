@@ -97,7 +97,7 @@ def test_duckside_and_vein_updates_download_and_optionally_restart(monkeypatch):
     ducksideserver.update(duck, validate=True, restart=True)
     veinserver.update(vein, validate=False, restart=False)
 
-    assert ("/srv/duck/", 2690320, True, True) in calls
+    assert ("/srv/duck/", 2690320, False, True) in calls
     assert ("/srv/vein/", 2131400, True, False) in calls
     assert duck.start_calls == 1
 

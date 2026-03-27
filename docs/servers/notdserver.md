@@ -64,8 +64,8 @@ alphagsm mynotdserv backup
 
 ### Run File
 
-- **Executable**: `LF/Binaries/Win64/LFServer.exe`
-- **Location**: `<install_dir>/LF/Binaries/Win64/LFServer.exe`
+- **Executable**: `LFServer.exe`
+- **Location**: `<install_dir>/LFServer.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `1420710`
 

@@ -228,6 +228,7 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
         "Can't stop a server that isn't running",
         "Error extracting download",
         "Can't download file",
+        "SteamCMD username required for this server",
     )
     if any(marker in combined for marker in known_markers):
         extra = f" (app {app_id})" if app_id else ""

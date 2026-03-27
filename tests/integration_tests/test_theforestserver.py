@@ -52,11 +52,13 @@ def test_theforestserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        # The Forest writes its Steam CM log to logs/connection_log_27015.txt
+        # (port 27015 is the hardcoded game-server Steam auth port).
+        # "[Logged On" appears when Steam auth succeeds and the server is ready.
+        server_log = install_dir / "logs" / "connection_log_27015.txt"
         wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
+            server_log,
+            ["[Logged On"],
             START_TIMEOUT,
         )
 
