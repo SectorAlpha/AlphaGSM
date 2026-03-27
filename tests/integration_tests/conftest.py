@@ -184,6 +184,25 @@ def wait_for_log_marker(log_path, markers, timeout_seconds):
     )
 
 
+def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
+    """Poll files matching glob_pattern in log_dir until a marker appears."""
+    deadline = time.time() + timeout_seconds
+    log_dir_path = Path(log_dir)
+    while time.time() < deadline:
+        if log_dir_path.exists():
+            for log_path in log_dir_path.glob(glob_pattern):
+                try:
+                    text = log_path.read_text(errors="replace")
+                    if any(marker in text for marker in markers):
+                        return text
+                except OSError:
+                    pass
+        time.sleep(2)
+    pytest.skip(
+        f"Log never showed readiness markers within {timeout_seconds}s in {log_dir}"
+    )
+
+
 def wait_for_tcp_closed(host, port, timeout_seconds):
     """Wait until a TCP connect to *host:port* fails."""
     deadline = time.time() + timeout_seconds

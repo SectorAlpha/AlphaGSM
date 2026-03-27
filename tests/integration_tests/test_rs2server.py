@@ -22,8 +22,10 @@ from conftest import (
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 3600  # 60 min: large download (~13+ GB)
 
 
+@pytest.mark.timeout(3600)  # 60 min: large download (~13+ GB)
 def test_rs2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -44,7 +46,7 @@ def test_rs2server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "rs2server")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir), timeout=SETUP_TIMEOUT)
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
 
@@ -53,10 +55,10 @@ def test_rs2server_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        log_path = install_dir / "ROGame" / "Logs" / "Launch.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["listening on port", "Engine is initialized", "Success - server ready"],
             START_TIMEOUT,
         )
 

@@ -52,11 +52,13 @@ def test_groundbranchserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        # Ground Branch (UE4) writes its log to GroundBranch/Saved/Logs/GroundBranch.log.
+        # The screen log only contains Wine diagnostics; the game-side log has
+        # "listening on port <PORT>" within ~3 seconds of startup.
+        game_log = install_dir / "GroundBranch" / "Saved" / "Logs" / "GroundBranch.log"
         wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
+            game_log,
+            ["listening on port", "Server should now be visible", "Engine is initialized"],
             START_TIMEOUT,
         )
 

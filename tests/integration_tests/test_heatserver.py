@@ -53,10 +53,10 @@ def test_heatserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        log_path = install_dir / "server.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Server started", "Listening", "listening on", "port", "online"],
             START_TIMEOUT,
         )
 

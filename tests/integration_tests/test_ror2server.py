@@ -49,7 +49,14 @@ def test_ror2server_lifecycle(tmp_path):
         skip_for_known_steamcmd_issue(result)
 
     # start
-    run_and_assert_ok(env, server_name, "start")
+    result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm start", result)
+    if result.returncode != 0 and "Executable file not found" in result.stderr:
+        pytest.skip(
+            "Risk of Rain 2 dedicated server depot (1180760) is empty on Steam; "
+            "server executable requires owning the main game (632360)"
+        )
+    assert result.returncode == 0, result.stderr or result.stdout
 
     try:
         # wait for readiness

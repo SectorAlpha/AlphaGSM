@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="BlackwakeServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="Blackwake Dedicated Server.exe"):
     """Collect and store configuration values for a Blackwake server."""
 
     server.data["Steam_AppID"] = steam_app_id

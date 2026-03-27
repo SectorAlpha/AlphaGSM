@@ -53,10 +53,10 @@ def test_motortownserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        log_path = install_dir / "MotorTown" / "Saved" / "Logs" / "MotorTown.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["listening on port", "Engine is initialized"],
             START_TIMEOUT,
         )
 

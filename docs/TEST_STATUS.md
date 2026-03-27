@@ -6,7 +6,7 @@ Last updated: 2026-03-27
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 66    |
+| PASSED   | 68    |
 | DISABLED | 82    |
 | SKIPPED  | 86    |
 | RUNNABLE | 0     |
@@ -18,7 +18,7 @@ Last updated: 2026-03-27
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 - **RUNNABLE** — Test exists and has no skip marker but has not been confirmed passing yet.
 
-## PASSED (66)
+## PASSED (68)
 
 | Test | Type |
 |------|------|
@@ -31,6 +31,7 @@ Last updated: 2026-03-27
 | bdserver | SteamCMD (GoldSrc) |
 | bmdmserver | SteamCMD (Source) |
 | ccserver | SteamCMD (Source) |
+| colserver | SteamCMD |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
 | cssserver | SteamCMD (Source) |
@@ -84,6 +85,7 @@ Last updated: 2026-03-27
 | xntserver | Direct download |
 | battlecryoffreedomserver | SteamCMD (Proton) |
 | enshrouded | SteamCMD (Proton) |
+| groundbranchserver | SteamCMD (Proton) |
 | mythofempiresserver | SteamCMD (Proton) |
 | reignofdwarfserver | SteamCMD (Proton) |
 | sunkenlandserver | SteamCMD (Proton) |
@@ -118,7 +120,6 @@ Last updated: 2026-03-27
 | bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing |
 | bsserver | Blade Symphony server layout changed; srcds_run.sh moved to bin/ subdirectory |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
-| colserver | SteamCMD app 748090 installs no Linux-compatible dedicated server binary (ColonyServer.x86_64 not present) |
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
 | ckserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | chivalryserver | Server starts but crashes during initialization before log markers appear (crash pattern) |
@@ -145,6 +146,7 @@ Last updated: 2026-03-27
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
+| mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | Nuclear Dawn dedicated server install is incomplete; gameinfo.txt missing |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -176,7 +178,7 @@ Last updated: 2026-03-27
 | zmrserver | Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (86)
+## SKIPPED (84)
 
 Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -187,12 +189,11 @@ Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guar
 | askaserver | Requires Wine or Proton-GE; Windows binary (AskaServer.exe) via SteamCMD app 3246670; run scripts/install_proton.sh |
 | astroneerserver | Requires Wine or Proton-GE; Windows binary (AstroServer.exe) via SteamCMD app 728470; run scripts/install_proton.sh |
 | blackops3server | Requires Wine or Proton-GE; Windows binary (UnrankedServer/Launch_Server.bat) via SteamCMD app 545990; run scripts/install_proton.sh |
-| blackwakeserver | Requires Wine or Proton-GE; Windows binary (BlackwakeServer.exe) via SteamCMD app 423410; run scripts/install_proton.sh |
+| blackwakeserver | Requires Wine or Proton-GE; Windows binary (Blackwake Dedicated Server.exe) via SteamCMD app 423410; run scripts/install_proton.sh |
 | darkandlightserver | Requires Wine or Proton-GE; Windows binary (DNLServer.exe) via SteamCMD app 630230; run scripts/install_proton.sh |
 | ducksideserver | Requires Wine or Proton-GE; Windows binary (DucksideServer.exe) via SteamCMD app 2690320; run scripts/install_proton.sh |
-| empyrionserver | Requires Wine or Proton-GE; Windows binary (EmpyrionLauncher.exe) via SteamCMD app 530870; run scripts/install_proton.sh |
+| empyrionserver | Requires Wine or Proton-GE; Windows binary (EmpyrionDedicated.exe) via SteamCMD app 530870; run scripts/install_proton.sh |
 | fearthenightserver | Requires Wine or Proton-GE; Windows binary (MoonlightServer.exe) via SteamCMD app 764940; run scripts/install_proton.sh |
-| groundbranchserver | Requires Wine or Proton-GE; Windows binary (GroundBranch/Binaries/Win64/GroundBranchServer-Win64-Shipping.exe) via SteamCMD app 476400; run scripts/install_proton.sh |
 | heatserver | Requires Wine or Proton-GE; Windows binary (HeatServer.exe) via SteamCMD app 996600; run scripts/install_proton.sh |
 | hellletlooseserver | Requires Wine or Proton-GE; Windows binary (HLLServer.exe) via SteamCMD app 822500; run scripts/install_proton.sh |
 | icarusserver | Requires Wine or Proton-GE; Windows binary (IcarusServer.exe) via SteamCMD app 2089300; run scripts/install_proton.sh |
@@ -200,7 +201,6 @@ Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guar
 | medievalengineersserver | Requires Wine or Proton-GE; Windows binary (MedievalEngineersDedicated.exe) via SteamCMD app 367970; run scripts/install_proton.sh |
 | miscreatedserver | Requires Wine or Proton-GE; Windows binary (MiscreatedServer.exe) via SteamCMD app 302200; run scripts/install_proton.sh |
 | motortownserver | Requires Wine or Proton-GE; Windows binary (MotorTownServer-Win64-Shipping.exe) via SteamCMD app 2223650; run scripts/install_proton.sh |
-| mw3server | Requires Wine or Proton-GE; Windows binary (iw5mp_server.exe) via SteamCMD app 115310; run scripts/install_proton.sh |
 | noonesurvivedserver | Requires Wine or Proton-GE; Windows binary (WRSHServer.exe) via SteamCMD app 2329680; run scripts/install_proton.sh |
 | notdserver | Requires Wine or Proton-GE; Windows binary (LFServer.exe) via SteamCMD app 1420710; run scripts/install_proton.sh |
 | outpostzeroserver | Requires Wine or Proton-GE; Windows binary (WindowsServer/SurvivalGameServer.exe) via SteamCMD app 762880; run scripts/install_proton.sh |

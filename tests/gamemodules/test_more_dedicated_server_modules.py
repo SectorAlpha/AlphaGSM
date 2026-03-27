@@ -50,6 +50,8 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
         "AskaServer.exe",
         "-batchmode",
         "-nographics",
+        "-logFile",
+        "./server.log",
         "-Port",
         "27015",
         "-QueryPort",

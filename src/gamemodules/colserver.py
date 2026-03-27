@@ -35,7 +35,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="ColonyServer.x86_64"):
+def configure(server, ask, port=None, dir=None, *, exe_name="colonyserver.x86_64"):
     """Collect and store configuration values for a Colony Survival server."""
 
     server.data["Steam_AppID"] = steam_app_id

@@ -117,6 +117,8 @@ def get_start_command(server):
             server.data["exe_name"],
             "-batchmode",
             "-nographics",
+            "-logFile",
+            "./server.log",
             "-port",
             str(server.data["port"]),
             "-queryport",

@@ -111,7 +111,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"]]
+    cmd = [server.data["exe_name"], "-batchmode", "-nographics", "-logFile", "./server.log"]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]
