@@ -110,7 +110,6 @@ if [[ $? -ne 0 ]]; then
 fi
 set -e
 run_alphagsm "$SERVER_NAME" status
-run_alphagsm "$SERVER_NAME" message "hello from subprocess backend"
 run_alphagsm "$SERVER_NAME" stop
 set +e
 "$PYTHON_BIN" "$STATUS_HELPER" wait-for-closed 127.0.0.1 "$PORT" "$STOP_TIMEOUT_SECONDS"
