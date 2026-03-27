@@ -53,7 +53,7 @@ alphagsm mytf2 update -r
 
 The best full example in the repository is:
 
-- `smoke_tests/run_tf2.sh`
+- `tests/smoke_tests/run_tf2.sh`
 
 It uses this command flow:
 

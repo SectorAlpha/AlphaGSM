@@ -360,7 +360,10 @@ class Server(object):
             pass
         print("Will try and stop server for " + str(jmax) + " minutes")
         for j in range(jmax):
-            self.module.do_stop(self, j, *args, **kwargs)
+            try:
+                self.module.do_stop(self, j, *args, **kwargs)
+            except screen.ProcessError:
+                break  # backend can't send input cross-invocation; fall through to kill
             for i in range(6):
                 if not screen.check_screen_exists(self.name):
                     return  # session doesn't exist so success

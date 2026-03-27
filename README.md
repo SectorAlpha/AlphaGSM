@@ -137,8 +137,8 @@ Show help:
 If you want examples that show the exact order of commands that work in this repository, use the smoke-test scripts:
 
 ```bash
-bash ./smoke_tests/run_minecraft_vanilla.sh
-bash ./smoke_tests/run_tf2.sh
+bash ./tests/smoke_tests/run_minecraft_vanilla.sh
+bash ./tests/smoke_tests/run_tf2.sh
 ```
 
 These scripts are useful because they show a full real flow:

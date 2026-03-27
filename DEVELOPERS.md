@@ -154,24 +154,24 @@ Core helpers:
 
 - [src/screen/screen.py](src/screen/screen.py)
 - [src/screen/tail.py](src/screen/tail.py)
-
 Lifecycle model:
-
+ [tests/integration_tests](tests/integration_tests)
+ ALPHAGSM_RUN_INTEGRATION=1 pytest tests/integration_tests
 1. build command line
 2. write `screenrc` if needed
 3. start detached session
 4. inject console commands with `screen ... stuff`
-5. inspect screen logs for troubleshooting or readiness
 
-## Smoke Tests As Executable Documentation
-
+ [tests/smoke_tests](tests/smoke_tests)
+ bash ./tests/smoke_tests/run_minecraft_vanilla.sh
+ bash ./tests/smoke_tests/run_tf2.sh
 The smoke runners are the best repository examples of the real lifecycle a user should follow:
 
 - [smoke_tests/run_minecraft_vanilla.sh](smoke_tests/run_minecraft_vanilla.sh)
 - [smoke_tests/run_tf2.sh](smoke_tests/run_tf2.sh)
 
-They are important because they:
-
+ [tests/smoke_tests/run_minecraft_vanilla.sh](tests/smoke_tests/run_minecraft_vanilla.sh)
+ [tests/smoke_tests/run_tf2.sh](tests/smoke_tests/run_tf2.sh)
 - create isolated temporary configs
 - show the exact command sequence a real operator would use
 - stream command output directly into CI logs
@@ -179,24 +179,9 @@ They are important because they:
 
 For documentation changes, prefer the smoke tests over hand-written examples.
 
-## Test Layers
-
-### Unit tests
-
-Location:
-
-- [tests](tests)
-
-Command:
-
-```bash
 pytest tests
 ```
 
-Coverage command:
-
-```bash
-pytest tests \
   --cov=core \
   --cov=downloader \
   --cov=downloadermodules \
@@ -204,16 +189,12 @@ pytest tests \
   --cov=screen \
   --cov=server \
   --cov=utils \
-  --cov-report=term-missing \
   --cov-report=xml
-```
 
-### Integration tests
 
 Location:
 
 - [integration_tests](integration_tests)
-
 Command:
 
 ```bash
@@ -221,10 +202,6 @@ ALPHAGSM_RUN_INTEGRATION=1 pytest integration_tests
 ```
 
 ### Smoke tests
-
-Location:
-
-- [smoke_tests](smoke_tests)
 
 Command:
 

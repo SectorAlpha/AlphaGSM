@@ -258,6 +258,12 @@ def test_multiplexer_process_interruption(setup_multiplexer_addproc):
             print("Process was interrupted.")
 
     # Ensure the subprocess has terminated
+    if sp_proc.poll() is None:
+        sp_proc.terminate()
+        try:
+            sp_proc.wait(timeout=5)
+        except Exception:
+            pass
     assert sp_proc.poll() is not None, "The subprocess should have been terminated."
 
     # Verify the captured output contains at least one "Iteration" message

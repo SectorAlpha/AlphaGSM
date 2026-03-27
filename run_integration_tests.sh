@@ -7,7 +7,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IT_DIR="${SCRIPT_DIR}/integration_tests"
+IT_DIR="${SCRIPT_DIR}/tests/integration_tests"
 export PYTHONPATH=".:src${PYTHONPATH:+:$PYTHONPATH}"
 
 # Accept optional extra pytest args after --pytest-args

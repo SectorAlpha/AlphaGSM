@@ -95,3 +95,9 @@
 
 ## user - how many log files to keep for each server
 # keeplogs = 5
+
+[process]
+## user - which process backend to use for managing server sessions.
+## Supported values: auto, screen, tmux, subprocess
+## "auto" will try screen first, then tmux, then fall back to subprocess.
+# backend = auto

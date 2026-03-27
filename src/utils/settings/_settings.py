@@ -4,6 +4,8 @@ from collections.abc import Mapping
 import configparser
 import os
 
+from utils.platform_info import IS_WINDOWS
+
 _DEFAULT = object()  # unique object to compare identity with
 
 
@@ -246,18 +248,24 @@ class Settings(object):
         try:
             return self._system
         except AttributeError:
+            if IS_WINDOWS:
+                default_path = os.path.join(
+                    os.path.dirname(
+                        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                    ),
+                    "alphagsm.conf",
+                )
+            elif __file__[:5] == "/usr/":
+                default_path = "/etc/alphagsm.conf"
+            else:
+                default_path = os.path.join(
+                    os.path.dirname(
+                        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                    ),
+                    "alphagsm.conf",
+                )
             settings_path = os.environ.get(
-                "ALPHAGSM_CONFIG_LOCATION",
-                (
-                    "/etc/alphagsm.conf"
-                    if __file__[:5] == "/usr/"
-                    else os.path.join(
-                        os.path.dirname(
-                            os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-                        ),
-                        "alphagsm.conf",
-                    )
-                ),
+                "ALPHAGSM_CONFIG_LOCATION", default_path,
             )
             self._system = _loadsettings(settings_path)
             return self._system
@@ -268,11 +276,20 @@ class Settings(object):
         try:
             return self._user
         except AttributeError:
+            if IS_WINDOWS:
+                default_userconf = os.path.join(
+                    os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+                    "alphagsm",
+                )
+            else:
+                default_userconf = "~/.alphagsm"
             user_settings_path = os.environ.get(
                 "ALPHAGSM_USERCONFIG_LOCATION",
                 os.path.join(
                     os.path.expanduser(
-                        self.system.getsection("core").get("userconf", "~/.alphagsm")
+                        self.system.getsection("core").get(
+                            "userconf", default_userconf,
+                        )
                     ),
                     "alphagsm.conf",
                 ),

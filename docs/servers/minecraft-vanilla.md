@@ -59,7 +59,7 @@ alphagsm mymc backup
 
 The best full example in the repository is:
 
-- `smoke_tests/run_minecraft_vanilla.sh`
+- `tests/smoke_tests/run_minecraft_vanilla.sh`
 
 It uses this command flow:
 

@@ -4,13 +4,13 @@
 | --- | --- |
 | Purpose | Keep user-facing docs aligned with the real working command flow. |
 | Use when | Updating `README.md`, `docs/`, or server guides. |
-| Main source | `smoke_tests/` first, then integration tests and module code. |
+| Main source | `tests/smoke_tests/` first, then integration tests and module code. |
 
 | Field | Value |
 | --- | --- |
 | Inputs | Smoke runners, integration tests, current docs, and lifecycle command order. |
 | Outputs | Simpler user docs with exact working commands and realistic examples. |
-| Related files | `README.md`, `docs/README.md`, `docs/servers/*.md`, `smoke_tests/*.sh`, `integration_tests/*`. |
+| Related files | `README.md`, `docs/README.md`, `docs/servers/*.md`, `tests/smoke_tests/*.sh`, `tests/integration_tests/*`. |
 
 Use this skill when updating user-facing documentation in AlphaGSM.
 
@@ -22,9 +22,9 @@ Write docs that match the real working server lifecycle in this repository.
 
 Read these first:
 
-1. `smoke_tests/run_minecraft_vanilla.sh`
-2. `smoke_tests/run_tf2.sh`
-3. matching `integration_tests/` files
+1. `tests/smoke_tests/run_minecraft_vanilla.sh`
+2. `tests/smoke_tests/run_tf2.sh`
+3. matching `tests/integration_tests/` files
 4. matching game module implementation
 
 ## Rules
