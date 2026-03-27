@@ -1,14 +1,14 @@
 # Integration Test Status
 
-Last updated: 2026-03-27
+Last updated: 2026-03-28
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 68    |
+| PASSED   | 71    |
 | DISABLED | 82    |
-| SKIPPED  | 86    |
+| SKIPPED  | 81    |
 | RUNNABLE | 0     |
 
 ## Status Key
@@ -18,7 +18,7 @@ Last updated: 2026-03-27
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 - **RUNNABLE** — Test exists and has no skip marker but has not been confirmed passing yet.
 
-## PASSED (68)
+## PASSED (71)
 
 | Test | Type |
 |------|------|
@@ -90,6 +90,9 @@ Last updated: 2026-03-27
 | reignofdwarfserver | SteamCMD (Proton) |
 | sunkenlandserver | SteamCMD (Proton) |
 | theforestserver | SteamCMD (Proton) |
+| askaserver | SteamCMD (Wine) |
+| remnantsserver | SteamCMD (Wine) |
+| readyornotserver | SteamCMD (Wine) |
 
 ## DISABLED (82)
 
@@ -178,48 +181,45 @@ Last updated: 2026-03-27
 | zmrserver | Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (84)
+## SKIPPED (81)
 
 Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
-| stormworksserver | Requires Wine or Proton-GE; Windows binary (server64.exe) via SteamCMD app 1247090; run scripts/install_proton.sh |
-| arksurvivalascended | Requires Wine or Proton-GE; Windows binary (ArkAscendedServer.exe) via SteamCMD app 2430930; run scripts/install_proton.sh |
-| askaserver | Requires Wine or Proton-GE; Windows binary (AskaServer.exe) via SteamCMD app 3246670; run scripts/install_proton.sh |
-| astroneerserver | Requires Wine or Proton-GE; Windows binary (AstroServer.exe) via SteamCMD app 728470; run scripts/install_proton.sh |
+| stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
+| arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
+| astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
 | blackops3server | Requires Wine or Proton-GE; Windows binary (UnrankedServer/Launch_Server.bat) via SteamCMD app 545990; run scripts/install_proton.sh |
-| blackwakeserver | Requires Wine or Proton-GE; Windows binary (Blackwake Dedicated Server.exe) via SteamCMD app 423410; run scripts/install_proton.sh |
-| darkandlightserver | Requires Wine or Proton-GE; Windows binary (DNLServer.exe) via SteamCMD app 630230; run scripts/install_proton.sh |
-| ducksideserver | Requires Wine or Proton-GE; Windows binary (DucksideServer.exe) via SteamCMD app 2690320; run scripts/install_proton.sh |
-| empyrionserver | Requires Wine or Proton-GE; Windows binary (EmpyrionDedicated.exe) via SteamCMD app 530870; run scripts/install_proton.sh |
-| fearthenightserver | Requires Wine or Proton-GE; Windows binary (MoonlightServer.exe) via SteamCMD app 764940; run scripts/install_proton.sh |
-| heatserver | Requires Wine or Proton-GE; Windows binary (HeatServer.exe) via SteamCMD app 996600; run scripts/install_proton.sh |
-| hellletlooseserver | Requires Wine or Proton-GE; Windows binary (HLLServer.exe) via SteamCMD app 822500; run scripts/install_proton.sh |
-| icarusserver | Requires Wine or Proton-GE; Windows binary (IcarusServer.exe) via SteamCMD app 2089300; run scripts/install_proton.sh |
-| lifeisfeudalserver | Requires Wine or Proton-GE; Windows binary (ddctd_cm_yo_server.exe) via SteamCMD app 320850; run scripts/install_proton.sh |
-| medievalengineersserver | Requires Wine or Proton-GE; Windows binary (MedievalEngineersDedicated.exe) via SteamCMD app 367970; run scripts/install_proton.sh |
-| miscreatedserver | Requires Wine or Proton-GE; Windows binary (MiscreatedServer.exe) via SteamCMD app 302200; run scripts/install_proton.sh |
-| motortownserver | Requires Wine or Proton-GE; Windows binary (MotorTownServer-Win64-Shipping.exe) via SteamCMD app 2223650; run scripts/install_proton.sh |
+| blackwakeserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 423410 — run individually to verify |
+| darkandlightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 630230 — run individually to verify |
+| ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
+| empyrionserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 530870 — run individually to verify |
+| fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
+| heatserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 996600 — run individually to verify |
+| hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
+| icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
+| lifeisfeudalserver | Wine: server (ddctd_cm_yo_server.exe, app 320850) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
+| medievalengineersserver | Wine: server (MedievalEngineersDedicated.exe, app 367970) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
+| miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
+| motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | noonesurvivedserver | Requires Wine or Proton-GE; Windows binary (WRSHServer.exe) via SteamCMD app 2329680; run scripts/install_proton.sh |
-| notdserver | Requires Wine or Proton-GE; Windows binary (LFServer.exe) via SteamCMD app 1420710; run scripts/install_proton.sh |
+| notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
 | outpostzeroserver | Requires Wine or Proton-GE; Windows binary (WindowsServer/SurvivalGameServer.exe) via SteamCMD app 762880; run scripts/install_proton.sh |
 | pixarkserver | Requires Wine or Proton-GE; Windows binary (ShooterGame/Binaries/Win64/PixARKServer.exe) via SteamCMD app 824360; run scripts/install_proton.sh |
-| primalcarnageextinctionserver | Requires Wine or Proton-GE; Windows binary (Binaries/Win64/PrimalCarnageServer.exe) via SteamCMD app 336400; run scripts/install_proton.sh |
-| readyornotserver | Requires Wine or Proton-GE; Windows binary (ReadyOrNotServer.exe) via SteamCMD app 950290; run scripts/install_proton.sh |
-| reignofkingsserver | Requires Wine or Proton-GE; Windows binary (Server.exe) via SteamCMD app 381690; run scripts/install_proton.sh |
-| remnantsserver | Requires Wine or Proton-GE; Windows binary (StartServer.bat) via SteamCMD app 1141420; run scripts/install_proton.sh |
-| returntomoriaserver | Requires Wine or Proton-GE; Windows binary (MoriaServer.exe) via SteamCMD app 3349480; run scripts/install_proton.sh |
-| ror2server | Requires Wine or Proton-GE; Windows binary (Risk of Rain 2.exe) via SteamCMD app 1180760; run scripts/install_proton.sh |
+| primalcarnageextinctionserver | Wine: server (PrimalCarnageServer.exe, app 336400) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
+| reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
+| returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
+| ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
 | rs2server | Requires Wine or Proton-GE; Windows binary (VNGame.exe) via SteamCMD app 418480; run scripts/install_proton.sh |
-| saleblazersserver | Requires Wine or Proton-GE; Windows binary (Saleblazers.exe) via SteamCMD app 3099600; run scripts/install_proton.sh |
+| saleblazersserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3099600 — run individually to verify |
 | scumserver | Requires Wine or Proton-GE; Windows binary (SCUMServer.exe) via SteamCMD app 3792580; run scripts/install_proton.sh |
-| sniperelite4server | Requires Wine or Proton-GE; Windows binary (bin/SniperElite4_Dedicated.exe) via SteamCMD app 568880; run scripts/install_proton.sh |
-| sonsoftheforestserver | Requires Wine or Proton-GE; Windows binary (StartSOTFDedicated.bat) via SteamCMD app 2465200; run scripts/install_proton.sh |
-| starruptureserver | Requires Wine or Proton-GE; Windows binary (StarRuptureServerEOS.exe) via SteamCMD app 3809400; run scripts/install_proton.sh |
-| staxelserver | Requires Wine or Proton-GE; Windows binary (Staxel.ServerWizard.exe) via SteamCMD app 755170; run scripts/install_proton.sh |
-| subsistenceserver | Requires Wine or Proton-GE; Windows binary (run_dedicated_server.bat) via SteamCMD app 1362640; run scripts/install_proton.sh |
-| terratechworldsserver | Requires Wine or Proton-GE; Windows binary (TT2Server.exe) via SteamCMD app 2533070; run scripts/install_proton.sh |
+| sniperelite4server | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 568880 (Sniper Elite 4) is very large — run individually with extended timeout |
+| sonsoftheforestserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2465200 (Sons of the Forest) is large — run individually with extended timeout |
+| starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
+| staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
+| subsistenceserver | Wine: server (run_dedicated_server.bat, app 1362640) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
+| terratechworldsserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2533070 — run individually to verify |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |
