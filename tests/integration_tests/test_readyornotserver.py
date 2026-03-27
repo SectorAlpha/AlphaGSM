@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -28,6 +29,7 @@ STOP_TIMEOUT = 90
 def test_readyornotserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
+    require_proton()
     require_command("screen")
 
     home_dir = tmp_path / "home"

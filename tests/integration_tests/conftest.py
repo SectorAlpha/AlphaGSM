@@ -49,6 +49,25 @@ def require_command(name):
         pytest.skip(f"Required command not available: {name}")
 
 
+def require_proton():
+    """Skip if neither Wine nor Proton-GE is available on the host system.
+
+    Imports ``utils.proton`` at call time so that game-module tests that call
+    this helper do not pull in the module at collection time.
+    """
+    import sys
+    import os as _os
+    src_path = str(Path(__file__).resolve().parents[2] / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    import utils.proton as _proton  # pylint: disable=import-outside-toplevel
+    if not _proton.is_available():
+        pytest.skip(
+            "Wine or Proton-GE is required to run Windows-binary servers; "
+            "install with  scripts/install_proton.sh"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Port helpers
 # ---------------------------------------------------------------------------

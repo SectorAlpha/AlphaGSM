@@ -30,7 +30,8 @@ def test_redm_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_starrupture_get_start_command_builds_expected_args(tmp_path):
+def test_starrupture_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(starruptureserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("star")
     exe = tmp_path / "StarRuptureServer.x86_64"
     exe.write_text("")
@@ -38,5 +39,5 @@ def test_starrupture_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = starruptureserver.get_start_command(server)
 
-    assert cmd == ["./StarRuptureServer.x86_64", "--port", "7777"]
+    assert cmd == ["StarRuptureServer.x86_64", "--port", "7777"]
     assert cwd == server.data["dir"]

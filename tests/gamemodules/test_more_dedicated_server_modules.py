@@ -26,7 +26,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_askaserver_get_start_command_builds_expected_args(tmp_path):
+def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(askaserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("aska")
     exe = tmp_path / "AskaServer.exe"
     exe.write_text("")
@@ -46,7 +47,7 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = askaserver.get_start_command(server)
 
     assert cmd == [
-        "./AskaServer.exe",
+        "AskaServer.exe",
         "-batchmode",
         "-nographics",
         "-Port",
@@ -63,7 +64,8 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_astroneerserver_get_start_command_builds_expected_args(tmp_path):
+def test_astroneerserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(astroneerserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("astro")
     exe = tmp_path / "AstroServer.exe"
     exe.write_text("")
@@ -71,7 +73,7 @@ def test_astroneerserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = astroneerserver.get_start_command(server)
 
-    assert cmd == ["./AstroServer.exe"]
+    assert cmd == ["AstroServer.exe"]
     assert cwd == server.data["dir"]
 
 
@@ -118,7 +120,7 @@ def test_more_dedicated_modules_update_downloads_and_optionally_restart(monkeypa
     monkeypatch.setattr(
         askaserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     askaserver.update(aska, validate=True, restart=True)

@@ -7,7 +7,9 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 sys.modules.pop('gamemodules.sunkenlandserver', None)
-with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
+_proton_mock = MagicMock()
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.sunkenlandserver as mod
     from server import ServerError
 
@@ -105,7 +107,8 @@ def test_restart():
     assert server._started
 
 
-def test_get_start_command(tmp_path):
+def test_get_start_command(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "Sunkenland-DedicatedServer.exe"

@@ -26,7 +26,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_motortown_get_start_command_builds_expected_args(tmp_path):
+def test_motortown_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(motortownserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("mt")
     exe_dir = tmp_path / "MotorTown" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -44,12 +45,13 @@ def test_motortown_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = motortownserver.get_start_command(server)
 
-    assert cmd[0] == "./MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe"
+    assert cmd[0] == "MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe"
     assert "-useperfthreads" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_noonesurvived_get_start_command_builds_expected_args(tmp_path):
+def test_noonesurvived_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(noonesurvivedserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("nos")
     exe = tmp_path / "WRSHServer.exe"
     exe.write_text("")
@@ -65,12 +67,13 @@ def test_noonesurvived_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = noonesurvivedserver.get_start_command(server)
 
-    assert cmd[0] == "./WRSHServer.exe"
+    assert cmd[0] == "WRSHServer.exe"
     assert "-servername=AlphaGSM nos" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_subsistence_get_start_command_builds_expected_args(tmp_path):
+def test_subsistence_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(subsistenceserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("subs")
     exe_dir = tmp_path / "Binaries" / "Win32"
     exe_dir.mkdir(parents=True)
@@ -88,7 +91,7 @@ def test_subsistence_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = subsistenceserver.get_start_command(server)
 
-    assert cmd == ["./Binaries/Win32/run_dedicated_server.bat", "27015", "27016", "10"]
+    assert cmd == ["Binaries/Win32/run_dedicated_server.bat", "27015", "27016", "10"]
     assert cwd == server.data["dir"]
 
 
@@ -104,7 +107,7 @@ def test_motortown_noonesurvived_and_subsistence_update_downloads_and_optionally
     monkeypatch.setattr(
         motortownserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     motortownserver.update(motortown, validate=True, restart=True)

@@ -38,7 +38,8 @@ def test_dayofdragons_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_empyrion_get_start_command_builds_expected_args(tmp_path):
+def test_empyrion_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(empyrionserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("emp")
     exe = tmp_path / "EmpyrionDedicated.exe"
     exe.write_text("")
@@ -46,7 +47,7 @@ def test_empyrion_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = empyrionserver.get_start_command(server)
 
-    assert cmd == ["./EmpyrionDedicated.exe"]
+    assert cmd == ["EmpyrionDedicated.exe"]
     assert cwd == server.data["dir"]
 
 
@@ -74,7 +75,7 @@ def test_three_module_updates_download_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         dayofdragonsserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     dayofdragonsserver.update(dod, validate=True, restart=True)

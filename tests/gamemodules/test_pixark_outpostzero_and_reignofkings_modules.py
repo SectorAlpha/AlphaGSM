@@ -26,7 +26,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_pixark_get_start_command_builds_expected_args(tmp_path):
+def test_pixark_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(pixarkserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("pixark")
     exe = tmp_path / "PixARKServer.exe"
     exe.write_text("")
@@ -43,12 +44,13 @@ def test_pixark_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = pixarkserver.get_start_command(server)
 
-    assert cmd[0] == "./PixARKServer.exe"
+    assert cmd[0] == "PixARKServer.exe"
     assert "-QueryPort=27016" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_outpostzero_get_start_command_builds_expected_args(tmp_path):
+def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(outpostzeroserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("opz")
     exe = tmp_path / "OutpostZeroServer.exe"
     exe.write_text("")
@@ -65,12 +67,13 @@ def test_outpostzero_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = outpostzeroserver.get_start_command(server)
 
-    assert cmd[0] == "./OutpostZeroServer.exe"
+    assert cmd[0] == "OutpostZeroServer.exe"
     assert "-ServerName=AlphaGSM opz" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_reignofkings_get_start_command_builds_expected_args(tmp_path):
+def test_reignofkings_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(reignofkingsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("rok")
     exe = tmp_path / "Server.exe"
     exe.write_text("")
@@ -87,7 +90,7 @@ def test_reignofkings_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = reignofkingsserver.get_start_command(server)
 
-    assert cmd[0] == "./Server.exe"
+    assert cmd[0] == "Server.exe"
     assert "-worldname" in cmd
     assert "rokworld" in cmd
     assert cwd == server.data["dir"]
@@ -105,7 +108,7 @@ def test_pixark_outpostzero_and_reignofkings_update_downloads_and_optionally_res
     monkeypatch.setattr(
         pixarkserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     pixarkserver.update(pixark, validate=True, restart=True)

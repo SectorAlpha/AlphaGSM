@@ -28,7 +28,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_battlecryoffreedom_get_start_command_builds_expected_args(tmp_path):
+def test_battlecryoffreedom_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(battlecryoffreedomserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("bcof")
     exe = tmp_path / "BCoF.exe"
     exe.write_text("")
@@ -36,7 +37,7 @@ def test_battlecryoffreedom_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = battlecryoffreedomserver.get_start_command(server)
 
-    assert cmd[0] == "./BCoF.exe"
+    assert cmd[0] == "BCoF.exe"
     assert "-server" in cmd
     assert cwd == server.data["dir"]
 
@@ -53,7 +54,8 @@ def test_deadmatter_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_lifeisfeudal_get_start_command_builds_expected_args(tmp_path):
+def test_lifeisfeudal_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(lifeisfeudalserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("lif")
     exe = tmp_path / "ddctd_cm_yo_server.exe"
     exe.write_text("")
@@ -61,11 +63,12 @@ def test_lifeisfeudal_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = lifeisfeudalserver.get_start_command(server)
 
-    assert cmd == ["./ddctd_cm_yo_server.exe"]
+    assert cmd == ["ddctd_cm_yo_server.exe"]
     assert cwd == server.data["dir"]
 
 
-def test_medievalengineers_get_start_command_builds_expected_args(tmp_path):
+def test_medievalengineers_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(medievalengineersserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("me")
     exe_dir = tmp_path / "DedicatedServer64"
     exe_dir.mkdir(parents=True)
@@ -77,12 +80,13 @@ def test_medievalengineers_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = medievalengineersserver.get_start_command(server)
 
-    assert cmd[0] == "./DedicatedServer64/MedievalEngineersDedicated.exe"
+    assert cmd[0] == "DedicatedServer64/MedievalEngineersDedicated.exe"
     assert "console" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path):
+def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(sonsoftheforestserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("sotf")
     exe = tmp_path / "SonsOfTheForestDS.exe"
     exe.write_text("")
@@ -90,7 +94,7 @@ def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = sonsoftheforestserver.get_start_command(server)
 
-    assert cmd[0] == "./SonsOfTheForestDS.exe"
+    assert cmd[0] == "SonsOfTheForestDS.exe"
     assert "-log" in cmd
     assert cwd == server.data["dir"]
 
@@ -111,7 +115,7 @@ def test_large_batch_updates_download_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         battlecryoffreedomserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     battlecryoffreedomserver.update(bcof, validate=True, restart=True)

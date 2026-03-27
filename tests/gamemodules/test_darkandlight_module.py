@@ -24,7 +24,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_darkandlight_get_start_command_builds_expected_args(tmp_path):
+def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(darkandlightserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("dnl")
     exe_dir = tmp_path / "DNL" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -46,7 +47,7 @@ def test_darkandlight_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = darkandlightserver.get_start_command(server)
 
-    assert cmd[0] == "./DNL/Binaries/Win64/DNLServer.exe"
+    assert cmd[0] == "DNL/Binaries/Win64/DNLServer.exe"
     assert "DNL_ALL?listen?SessionName=AlphaGSM dnl" in cmd[1]
     assert cwd == server.data["dir"]
 
@@ -59,7 +60,7 @@ def test_darkandlight_update_downloads_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         darkandlightserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     darkandlightserver.update(server, validate=True, restart=True)

@@ -26,7 +26,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_duckside_get_start_command_builds_expected_args(tmp_path):
+def test_duckside_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(ducksideserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("duck")
     exe = tmp_path / "DucksideServer.exe"
     exe.write_text("")
@@ -41,7 +42,7 @@ def test_duckside_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = ducksideserver.get_start_command(server)
 
-    assert cmd == ["./DucksideServer.exe", "-log", "-port", "7777", "-queryport", "27015"]
+    assert cmd == ["DucksideServer.exe", "-log", "-port", "7777", "-queryport", "27015"]
     assert cwd == server.data["dir"]
 
 
@@ -90,7 +91,7 @@ def test_duckside_and_vein_updates_download_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         ducksideserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     ducksideserver.update(duck, validate=True, restart=True)

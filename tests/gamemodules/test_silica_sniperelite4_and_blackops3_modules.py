@@ -47,7 +47,8 @@ def test_silica_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_sniperelite4_get_start_command_builds_expected_args(tmp_path):
+def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(sniperelite4server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("se4")
     exe = tmp_path / "SniperElite4_DedicatedServer.exe"
     exe.write_text("")
@@ -63,12 +64,13 @@ def test_sniperelite4_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = sniperelite4server.get_start_command(server)
 
-    assert cmd[0] == "./SniperElite4_DedicatedServer.exe"
+    assert cmd[0] == "SniperElite4_DedicatedServer.exe"
     assert "-queryport" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_blackops3_get_start_command_builds_expected_args(tmp_path):
+def test_blackops3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(blackops3server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("bo3")
     exe = tmp_path / "BlackOps3Server.exe"
     exe.write_text("")
@@ -83,7 +85,7 @@ def test_blackops3_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = blackops3server.get_start_command(server)
 
-    assert cmd[0] == "./BlackOps3Server.exe"
+    assert cmd[0] == "BlackOps3Server.exe"
     assert "sv_maxclients" in cmd
     assert cwd == server.data["dir"]
 
@@ -98,7 +100,7 @@ def test_silica_and_blackops3_update_downloads_and_optionally_restart(monkeypatc
     monkeypatch.setattr(
         silicaserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     silicaserver.update(silica, validate=True, restart=True)

@@ -1,14 +1,14 @@
 # Integration Test Status
 
-Last updated: 2026-03-25
+Last updated: 2026-05-30
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
 | PASSED   | 60    |
-| DISABLED | 126   |
-| SKIPPED  | 48    |
+| DISABLED | 82    |
+| SKIPPED  | 92    |
 | RUNNABLE | 0     |
 
 ## Status Key
@@ -83,7 +83,7 @@ Last updated: 2026-03-25
 | wfserver | SteamCMD |
 | xntserver | Direct download |
 
-## DISABLED (126)
+## DISABLED (82)
 
 | Test | Reason |
 |------|--------|
@@ -92,7 +92,6 @@ Last updated: 2026-03-25
 | alienarenaserver | SteamCMD app 629540 reports success but installs no game files (no Linux depot) |
 | argoserver | SteamCMD app 563930 installs no Linux-compatible executable |
 | ark | SteamCMD app 376030 is 23GB; too large for automated CI testing |
-| arksurvivalascended | SteamCMD app 2430930 is Windows-only (Win64/ArkAscendedServer.exe) |
 | arma2coserver | SteamCMD app 33935 requires authentication (No subscription) |
 | arma3altislifeserver | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3desolationreduxserver | SteamCMD app 233780 requires authentication (No subscription) |
@@ -102,18 +101,13 @@ Last updated: 2026-03-25
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | armarserver | Arma Reforger server requires configs/server.json; module does not create it |
-| askaserver | SteamCMD app 3246670 is Windows-only (AskaServer.exe) |
-| astroneerserver | SteamCMD app 728470 is Windows-only (AstroServer.exe) |
 | avserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
 | atlasserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| battlecryoffreedomserver | SteamCMD app 1362540 is Windows-only (BCoF.exe) |
 | bannerlordserver | SteamCMD app 1863440 installs no Linux-compatible dedicated server binary (executable file not found) |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
-| blackops3server | SteamCMD app 545990 is Windows-only (BlackOps3Server.exe) |
-| blackwakeserver | SteamCMD app 423410 is Windows-only (Blackwake Dedicated Server.exe) |
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing |
 | bsserver | Blade Symphony server layout changed; srcds_run.sh moved to bin/ subdirectory |
@@ -129,22 +123,13 @@ Last updated: 2026-03-25
 | dabserver | Dedicated server binary segfaults on startup |
 | deadpolyserver | SteamCMD app 2208380 installs no Linux-compatible dedicated server binary (executable file not found) |
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
-| darkandlightserver | SteamCMD app 630230 is Windows-only (Win64/DNLServer.exe) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
-| ducksideserver | SteamCMD app 2690320 is Windows-only (DucksideServer.exe) |
 | dysserver | Dystopia server layout changed; srcds_run.sh moved to bin/ subdirectory |
-| empyrionserver | SteamCMD app 530870 is Windows-only (EmpyrionDedicated.exe) |
-| enshrouded | SteamCMD app 2278520 installs no Linux-compatible dedicated server binary (enshrouded_server not present) |
 | ets2server | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| fearthenightserver | SteamCMD app 764940 is Windows-only (Win64/MoonlightServer.exe) |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
-| groundbranchserver | SteamCMD app 476400 is Windows-only (Win64-Shipping.exe) |
-| heatserver | SteamCMD app 996600 is Windows-only (HeatServer.exe) |
-| hellletlooseserver | SteamCMD app 822500 is Windows-only (HLLServer.exe) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
 | hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |
-| icarusserver | SteamCMD app 2089300 is Windows-only (IcarusServer.exe) |
 | insserver | Insurgency srcds_run has CRLF line endings; cannot exec |
 | inssserver | Insurgency: Sandstorm (app 581330) module uses incorrect executable path; binary is at Insurgency/Binaries/Linux/ not install root |
 | iosserver | IOSoccer dedicated server segfaults on startup |
@@ -154,55 +139,26 @@ Last updated: 2026-03-25
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
-| lifeisfeudalserver | SteamCMD app 320850 is Windows-only (ddctd_cm_yo_server.exe) |
-| medievalengineersserver | SteamCMD app 367970 is Windows-only (MedievalEngineersDedicated.exe) |
-| miscreatedserver | SteamCMD app 302200 is Windows-only (MiscreatedServer.exe) |
-| motortownserver | SteamCMD app 2223650 is Windows-only (Win64/MotorTownServer.exe) |
-| mw3server | SteamCMD app 115310 is Windows-only (iw5mp_server.exe) |
-| mythofempiresserver | SteamCMD app 1794810 is Windows-only (Win64/MOEServer.exe) |
 | ndserver | Nuclear Dawn dedicated server install is incomplete; gameinfo.txt missing |
-| noonesurvivedserver | SteamCMD app 2329680 is Windows-only (WRSHServer.exe) |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
-| notdserver | SteamCMD app 1420710 is Windows-only (Win64/LFServer.exe) |
-| outpostzeroserver | SteamCMD app 762880 is Windows-only (OutpostZeroServer.exe) |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
-| pixarkserver | SteamCMD app 824360 is Windows-only (PixARKServer.exe) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
 | pcarserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | pvrserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
-| primalcarnageextinctionserver | SteamCMD app 336400 is Windows-only (PCEdedicated.exe) |
 | q3server | ioquake3 has no GitHub releases; download 404 |
 | q4server | Quake 4 download URL returns 404 |
-| readyornotserver | SteamCMD app 950290 is Windows-only (ReadyOrNotServer.exe) |
-| reignofdwarfserver | SteamCMD app 1999160 is Windows-only (ReignOfDwarfServer.exe) |
-| reignofkingsserver | SteamCMD app 381690 is Windows-only (Server.exe) |
-| remnantsserver | SteamCMD app 1141420 is Windows-only (StartServer.bat) |
-| returntomoriaserver | SteamCMD app 3349480 is Windows-only (MoriaServer.exe) |
-| ror2server | SteamCMD app 1180760 is Windows-only (Risk of Rain 2.exe) |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
-| rs2server | SteamCMD app 418480 is Windows-only (Win64/VNGame.exe) |
 | rwserver | SteamCMD app 339010 installs no Linux-compatible dedicated server binary (server.jar not present) |
-| saleblazersserver | SteamCMD app 3099600 is Windows-only (Saleblazers.exe) |
 | sampserver | Download domain files.sa-mp.com is dead |
 | scpslserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| scumserver | SteamCMD app 3792580 is Windows-only (Win64/SCUMServer.exe) |
 | seserver | SteamCMD app 298740 installs no Linux-compatible dedicated server binary (executable file not found) |
 | sfcserver | SourceForts Classic install incomplete; sfclassic/gameinfo.txt missing |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | smallandserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| sniperelite4server | SteamCMD app 568880 is Windows-only (SniperElite4_DedicatedServer.exe) |
-| sonsoftheforestserver | SteamCMD app 2465200 is Windows-only (SonsOfTheForestDS.exe) |
 | ss14server | SS14 CDN returns 404 |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| starruptureserver | SteamCMD app 3809400 is Windows-only (StarRuptureServerEOS.exe) |
 | stationeersserver | Can't start server that is already running (process management issue during setup) |
-| staxelserver | SteamCMD app 755170 is Windows-only (Staxel.ServerWizard.exe) |
-| stormworksserver | SteamCMD app 1247090 is Windows-only (server64.exe) |
-| subsistenceserver | SteamCMD app 1362640 is Windows-only (Win32/run_dedicated_server.bat) |
-| sunkenlandserver | SteamCMD app 2667530 is Windows-only (Sunkenland-DedicatedServer.exe) |
-| terratechworldsserver | SteamCMD app 2533070 is Windows-only (TT2Server.exe) |
-| theforestserver | SteamCMD app 556450 is Windows-only (TheForestDedicatedServer.exe) |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | trackmaniaserver | TrackMania download URL returns 403 |
 | ts3server | TeamSpeak downloads page layout changed; version scraper broken |
@@ -214,12 +170,56 @@ Last updated: 2026-03-25
 | zmrserver | Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (48)
+## SKIPPED (92)
 
-Tests with `pytest.mark.skip` in the test file — need prerequisite fixes before running.
+Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
+| enshrouded | Requires Wine or Proton-GE; Windows binary (enshrouded_server.exe) via SteamCMD app 2278520; run scripts/install_proton.sh |
+| stormworksserver | Requires Wine or Proton-GE; Windows binary (server64.exe) via SteamCMD app 1247090; run scripts/install_proton.sh |
+| arksurvivalascended | Requires Wine or Proton-GE; Windows binary (ArkAscendedServer.exe) via SteamCMD app 2430930; run scripts/install_proton.sh |
+| askaserver | Requires Wine or Proton-GE; Windows binary (AskaServer.exe) via SteamCMD app 3246670; run scripts/install_proton.sh |
+| astroneerserver | Requires Wine or Proton-GE; Windows binary (AstroServer.exe) via SteamCMD app 728470; run scripts/install_proton.sh |
+| battlecryoffreedomserver | Requires Wine or Proton-GE; Windows binary (BCoF.exe) via SteamCMD app 1362540; run scripts/install_proton.sh |
+| blackops3server | Requires Wine or Proton-GE; Windows binary (BlackOps3Server.exe) via SteamCMD app 545990; run scripts/install_proton.sh |
+| blackwakeserver | Requires Wine or Proton-GE; Windows binary (Blackwake Dedicated Server.exe) via SteamCMD app 423410; run scripts/install_proton.sh |
+| darkandlightserver | Requires Wine or Proton-GE; Windows binary (DNLServer.exe) via SteamCMD app 630230; run scripts/install_proton.sh |
+| ducksideserver | Requires Wine or Proton-GE; Windows binary (DucksideServer.exe) via SteamCMD app 2690320; run scripts/install_proton.sh |
+| empyrionserver | Requires Wine or Proton-GE; Windows binary (EmpyrionDedicated.exe) via SteamCMD app 530870; run scripts/install_proton.sh |
+| fearthenightserver | Requires Wine or Proton-GE; Windows binary (MoonlightServer.exe) via SteamCMD app 764940; run scripts/install_proton.sh |
+| groundbranchserver | Requires Wine or Proton-GE; Windows binary (GroundBranchServer-Win64-Shipping.exe) via SteamCMD app 476400; run scripts/install_proton.sh |
+| heatserver | Requires Wine or Proton-GE; Windows binary (HeatServer.exe) via SteamCMD app 996600; run scripts/install_proton.sh |
+| hellletlooseserver | Requires Wine or Proton-GE; Windows binary (HLLServer.exe) via SteamCMD app 822500; run scripts/install_proton.sh |
+| icarusserver | Requires Wine or Proton-GE; Windows binary (IcarusServer.exe) via SteamCMD app 2089300; run scripts/install_proton.sh |
+| lifeisfeudalserver | Requires Wine or Proton-GE; Windows binary (ddctd_cm_yo_server.exe) via SteamCMD app 320850; run scripts/install_proton.sh |
+| medievalengineersserver | Requires Wine or Proton-GE; Windows binary (MedievalEngineersDedicated.exe) via SteamCMD app 367970; run scripts/install_proton.sh |
+| miscreatedserver | Requires Wine or Proton-GE; Windows binary (MiscreatedServer.exe) via SteamCMD app 302200; run scripts/install_proton.sh |
+| motortownserver | Requires Wine or Proton-GE; Windows binary (MotorTownServer-Win64-Shipping.exe) via SteamCMD app 2223650; run scripts/install_proton.sh |
+| mw3server | Requires Wine or Proton-GE; Windows binary (iw5mp_server.exe) via SteamCMD app 115310; run scripts/install_proton.sh |
+| mythofempiresserver | Requires Wine or Proton-GE; Windows binary (MOEServer.exe) via SteamCMD app 1794810; run scripts/install_proton.sh |
+| noonesurvivedserver | Requires Wine or Proton-GE; Windows binary (WRSHServer.exe) via SteamCMD app 2329680; run scripts/install_proton.sh |
+| notdserver | Requires Wine or Proton-GE; Windows binary (LFServer.exe) via SteamCMD app 1420710; run scripts/install_proton.sh |
+| outpostzeroserver | Requires Wine or Proton-GE; Windows binary (OutpostZeroServer.exe) via SteamCMD app 762880; run scripts/install_proton.sh |
+| pixarkserver | Requires Wine or Proton-GE; Windows binary (PixARKServer.exe) via SteamCMD app 824360; run scripts/install_proton.sh |
+| primalcarnageextinctionserver | Requires Wine or Proton-GE; Windows binary (PCEdedicated.exe) via SteamCMD app 336400; run scripts/install_proton.sh |
+| readyornotserver | Requires Wine or Proton-GE; Windows binary (ReadyOrNotServer.exe) via SteamCMD app 950290; run scripts/install_proton.sh |
+| reignofdwarfserver | Requires Wine or Proton-GE; Windows binary (ReignOfDwarfServer.exe) via SteamCMD app 1999160; run scripts/install_proton.sh |
+| reignofkingsserver | Requires Wine or Proton-GE; Windows binary (Server.exe) via SteamCMD app 381690; run scripts/install_proton.sh |
+| remnantsserver | Requires Wine or Proton-GE; Windows binary (StartServer.bat) via SteamCMD app 1141420; run scripts/install_proton.sh |
+| returntomoriaserver | Requires Wine or Proton-GE; Windows binary (MoriaServer.exe) via SteamCMD app 3349480; run scripts/install_proton.sh |
+| ror2server | Requires Wine or Proton-GE; Windows binary (Risk of Rain 2.exe) via SteamCMD app 1180760; run scripts/install_proton.sh |
+| rs2server | Requires Wine or Proton-GE; Windows binary (VNGame.exe) via SteamCMD app 418480; run scripts/install_proton.sh |
+| saleblazersserver | Requires Wine or Proton-GE; Windows binary (Saleblazers.exe) via SteamCMD app 3099600; run scripts/install_proton.sh |
+| scumserver | Requires Wine or Proton-GE; Windows binary (SCUMServer.exe) via SteamCMD app 3792580; run scripts/install_proton.sh |
+| sniperelite4server | Requires Wine or Proton-GE; Windows binary (SniperElite4_DedicatedServer.exe) via SteamCMD app 568880; run scripts/install_proton.sh |
+| sonsoftheforestserver | Requires Wine or Proton-GE; Windows binary (SonsOfTheForestDS.exe) via SteamCMD app 2465200; run scripts/install_proton.sh |
+| starruptureserver | Requires Wine or Proton-GE; Windows binary (StarRuptureServerEOS.exe) via SteamCMD app 3809400; run scripts/install_proton.sh |
+| staxelserver | Requires Wine or Proton-GE; Windows binary (Staxel.ServerWizard.exe) via SteamCMD app 755170; run scripts/install_proton.sh |
+| subsistenceserver | Requires Wine or Proton-GE; Windows binary (run_dedicated_server.bat) via SteamCMD app 1362640; run scripts/install_proton.sh |
+| sunkenlandserver | Requires Wine or Proton-GE; Windows binary (Sunkenland-DedicatedServer.exe) via SteamCMD app 2667530; run scripts/install_proton.sh |
+| terratechworldsserver | Requires Wine or Proton-GE; Windows binary (TT2Server.exe) via SteamCMD app 2533070; run scripts/install_proton.sh |
+| theforestserver | Requires Wine or Proton-GE; Windows binary (TheForestDedicatedServer.exe) via SteamCMD app 556450; run scripts/install_proton.sh |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |

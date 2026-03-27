@@ -25,7 +25,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_mw3_get_start_command_builds_expected_args(tmp_path):
+def test_mw3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(mw3server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("mw3")
     exe = tmp_path / "iw5mp_server.exe"
     exe.write_text("")
@@ -42,12 +43,13 @@ def test_mw3_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = mw3server.get_start_command(server)
 
-    assert cmd[0] == "./iw5mp_server.exe"
+    assert cmd[0] == "iw5mp_server.exe"
     assert "sv_hostname" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_reignofdwarf_get_start_command_builds_expected_args(tmp_path):
+def test_reignofdwarf_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(reignofdwarfserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("rod")
     exe = tmp_path / "ReignOfDwarfServer.exe"
     exe.write_text("")
@@ -63,7 +65,7 @@ def test_reignofdwarf_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = reignofdwarfserver.get_start_command(server)
 
-    assert cmd[0] == "./ReignOfDwarfServer.exe"
+    assert cmd[0] == "ReignOfDwarfServer.exe"
     assert "-queryport" in cmd
     assert cwd == server.data["dir"]
 
@@ -78,7 +80,7 @@ def test_mw3_and_reignofdwarf_update_downloads_and_optionally_restart(monkeypatc
     monkeypatch.setattr(
         mw3server.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     mw3server.update(mw3, validate=True, restart=True)

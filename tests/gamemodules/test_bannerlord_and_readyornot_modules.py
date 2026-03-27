@@ -49,7 +49,8 @@ def test_bannerlord_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_readyornot_get_start_command_builds_expected_args(tmp_path):
+def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(readyornotserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("ron")
     exe = tmp_path / "ReadyOrNotServer.exe"
     exe.write_text("")
@@ -65,7 +66,7 @@ def test_readyornot_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = readyornotserver.get_start_command(server)
 
-    assert cmd[0] == "./ReadyOrNotServer.exe"
+    assert cmd[0] == "ReadyOrNotServer.exe"
     assert "-Port=7777" in cmd
     assert "-QueryPort=27015" in cmd
     assert cwd == server.data["dir"]
@@ -81,7 +82,7 @@ def test_bannerlord_and_readyornot_update_downloads_and_optionally_restart(monke
     monkeypatch.setattr(
         bannerlordserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     bannerlordserver.update(banner, validate=True, restart=True)

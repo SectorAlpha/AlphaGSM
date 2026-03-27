@@ -70,7 +70,8 @@ def test_battlebit_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_staxel_get_start_command_builds_expected_args(tmp_path):
+def test_staxel_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(staxelserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("staxel")
     exe_dir = tmp_path / "bin"
     exe_dir.mkdir()
@@ -85,7 +86,7 @@ def test_staxel_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = staxelserver.get_start_command(server)
 
-    assert cmd == ["./bin/Staxel.ServerWizard.exe"]
+    assert cmd == ["bin/Staxel.ServerWizard.exe"]
     assert cwd == server.data["dir"]
 
 
@@ -99,7 +100,7 @@ def test_citadel_and_battlebit_update_downloads_and_optionally_restart(monkeypat
     monkeypatch.setattr(
         citadelserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     citadelserver.update(citadel, validate=True, restart=True)

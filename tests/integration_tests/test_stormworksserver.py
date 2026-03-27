@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -18,9 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 1247090 is Windows-only (server64.exe)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
@@ -29,6 +28,7 @@ def test_stormworksserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     require_command("screen")
+    require_proton()
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

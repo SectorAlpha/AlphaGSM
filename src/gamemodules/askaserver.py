@@ -3,10 +3,13 @@
 import os
 
 import screen
+import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+
+from utils.platform_info import IS_LINUX
 
 steam_app_id = 3246670
 steam_anonymous_login_possible = True
@@ -81,6 +84,7 @@ def install(server):
         server.data["Steam_AppID"],
         server.data["Steam_anonymous_login_possible"],
         validate=False,
+        force_windows=IS_LINUX,
     )
 
 
@@ -117,7 +121,7 @@ def get_start_command(server):
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     command = [
-        "./" + server.data["exe_name"],
+        server.data["exe_name"],
         "-batchmode",
         "-nographics",
         "-Port",
@@ -133,6 +137,10 @@ def get_start_command(server):
     ]
     if server.data["password"]:
         command.extend(["-Password", server.data["password"]])
+    if IS_LINUX:
+        command = proton.wrap_command(
+            command, wineprefix=server.data.get("wineprefix")
+        )
     return (command, server.data["dir"])
 
 
