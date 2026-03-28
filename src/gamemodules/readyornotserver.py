@@ -112,13 +112,16 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    # -unattended prevents UE4 from opening dialogs or spawning GUI windows
+    # under Wine when the engine hits an error or requires user interaction.
     cmd = [
-            server.data["exe_name"],
-            "-Port=%s" % (server.data["port"],),
-            "-QueryPort=%s" % (server.data["queryport"],),
-            "-MaxPlayers=%s" % (server.data["maxplayers"],),
-            "-log",
-        ]
+        server.data["exe_name"],
+        "-Port=%s" % (server.data["port"],),
+        "-QueryPort=%s" % (server.data["queryport"],),
+        "-MaxPlayers=%s" % (server.data["maxplayers"],),
+        "-log",
+        "-unattended",
+    ]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]

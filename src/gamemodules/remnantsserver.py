@@ -38,7 +38,14 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="StartServer.bat"):
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    exe_name="RemSurvival/Binaries/Win64/RemSurvivalServer-Win64-Shipping.exe",
+):
     """Collect and store configuration values for a Remnants server."""
 
     server.data["Steam_AppID"] = steam_app_id
@@ -112,12 +119,16 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    # Run the UE4 shipping binary directly instead of StartServer.bat to avoid
+    # Wine spawning a cmd.exe console window for every server launch.
     cmd = [
-            server.data["exe_name"],
-            "-MultiHome=0.0.0.0",
-            "-Port=%s" % (server.data["port"],),
-            "-QueryPort=%s" % (server.data["queryport"],),
-        ]
+        server.data["exe_name"],
+        "-MultiHome=0.0.0.0",
+        "-Port=%s" % (server.data["port"],),
+        "-QueryPort=%s" % (server.data["queryport"],),
+        "-log",
+        "-unattended",
+    ]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]

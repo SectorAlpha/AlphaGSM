@@ -112,15 +112,19 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    # -batchmode -nographics suppress the Unity launcher GUI / splash screen so
+    # no X11 window appears when running under Wine.
     cmd = [
-            server.data["exe_name"],
-            "-port",
-            str(server.data["port"]),
-            "-queryport",
-            str(server.data["queryport"]),
-            "-maxplayers",
-            str(server.data["maxplayers"]),
-        ]
+        server.data["exe_name"],
+        "-batchmode",
+        "-nographics",
+        "-port",
+        str(server.data["port"]),
+        "-queryport",
+        str(server.data["queryport"]),
+        "-maxplayers",
+        str(server.data["maxplayers"]),
+    ]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]
