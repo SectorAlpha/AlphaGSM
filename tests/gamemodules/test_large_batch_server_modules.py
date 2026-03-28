@@ -69,6 +69,7 @@ def test_lifeisfeudal_get_start_command_builds_expected_args(tmp_path, monkeypat
 
 def test_medievalengineers_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     monkeypatch.setattr(medievalengineersserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(medievalengineersserver, "IS_LINUX", False)
     server = DummyServer("me")
     exe_dir = tmp_path / "DedicatedServer64"
     exe_dir.mkdir(parents=True)
@@ -81,7 +82,7 @@ def test_medievalengineers_get_start_command_builds_expected_args(tmp_path, monk
     cmd, cwd = medievalengineersserver.get_start_command(server)
 
     assert cmd[0] == "DedicatedServer64/MedievalEngineersDedicated.exe"
-    assert "console" in cmd
+    assert "-console" in cmd
     assert cwd == server.data["dir"]
 
 

@@ -44,7 +44,7 @@ def configure(
     port=None,
     dir=None,
     *,
-    exe_name="RemSurvival/Binaries/Win64/RemSurvivalServer-Win64-Shipping.exe",
+    exe_name="RemSurvivalServer.exe",
 ):
     """Collect and store configuration values for a Remnants server."""
 

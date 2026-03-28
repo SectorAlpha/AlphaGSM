@@ -1,15 +1,15 @@
 # Integration Test Status
 
-Last updated: 2026-04-02
+Last updated: 2026-03-28
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 73    |
-| DISABLED | 82    |
-| SKIPPED  | 79    |
-| RUNNABLE | 0     |
+| PASSED   | 73      |
+| DISABLED | 77      |
+| SKIPPED  | 79      |
+| RUNNABLE | 5       |
 
 ## Status Key
 
@@ -93,10 +93,10 @@ Last updated: 2026-04-02
 | askaserver | SteamCMD (Wine) |
 | blackops3server | SteamCMD (Wine) |
 | pixarkserver | SteamCMD (Wine) |
-| remnantsserver | SteamCMD (Wine) |
-| readyornotserver | SteamCMD (Wine) |
+| remnantsserver | SteamCMD (Wine) — exe changed to RemSurvivalServer.exe (root-level server binary, not subdirectory path); added -log -unattended; awaiting retest |
+| readyornotserver | SteamCMD (Wine) — -unattended added; **PASSED** 2026-03-28 |
 
-## DISABLED (82)
+## DISABLED (77)
 
 | Test | Reason |
 |------|--------|
@@ -123,7 +123,6 @@ Last updated: 2026-04-02
 | bfvserver | Download URL (GameFront) is dead or gated |
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing |
-| bsserver | Blade Symphony server layout changed; srcds_run.sh moved to bin/ subdirectory |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
 | ckserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
@@ -137,13 +136,10 @@ Last updated: 2026-04-02
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
-| dysserver | Dystopia server layout changed; srcds_run.sh moved to bin/ subdirectory |
 | ets2server | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
 | hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |
-| insserver | Insurgency srcds_run has CRLF line endings; cannot exec |
-| inssserver | exe_name fixed to Insurgency/Binaries/Linux/InsurgencyServer-Linux-Shipping; awaiting retest |
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | jc2server | SteamCMD app 261140 installs no Linux-compatible dedicated server binary (openjc2-server not present) |
 | jc3server | SteamCMD app 619960 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -174,7 +170,6 @@ Last updated: 2026-04-02
 | stationeersserver | Can't start server that is already running (process management issue during setup) |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | trackmaniaserver | TrackMania download URL returns 403 |
-| ts3server | version scraper fixed — page no longer has "Server 64-bit" text; now matches linux_amd64 URL in page; awaiting retest |
 | warbandserver | TaleWorlds download page blocks automated access (HTTP 403) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -192,8 +187,8 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
 | arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
 | astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
-| blackwakeserver | Wine: exe path fixed (was wrong path); needs individual retest to confirm — app 423410 |
-| darkandlightserver | Wine: server starts (runs at 39% CPU) but DNL/Saved/Logs/DNL.log not created within 300s under Wine; UE4 init is slow — needs extended START_TIMEOUT or additional Wine deps; app 630230 |
+| blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
+| darkandlightserver | Wine: server starts (runs at 39% CPU) but DNL/Saved/Logs/DNL.log not created within 300s under Wine; UE4 init is slow — START_TIMEOUT raised to 600s; needs retest |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | empyrionserver | Wine: exe path fixed (DedicatedServer/EmpyrionDedicated.exe); needs individual retest — app 530870 |
 | fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
@@ -207,20 +202,20 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
 | notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
 | outpostzeroserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 762880 — run individually to verify |
-| primalcarnageextinctionserver | Wine: server starts (no crash with vcrun2019+win10) but PrimalCarnageServer.exe writes no markers to stdout within 300s; UE3 engine logs go elsewhere; app 336400 |
+| primalcarnageextinctionserver | Wine: UE3 log path fixed (PrimalCarnageGame/Logs/Launch.log), -log flag added, START_TIMEOUT raised to 600s; awaiting retest — app 336400 |
 
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
-| rs2server | Wine: server (VNGame.exe, app 418480) starts and stops cleanly under Wine but does not write expected log markers within 300s; likely writes logs to game-internal paths (Unreal Engine 3), not stdout |
+| rs2server | Wine: server (VNGame.exe, app 418480) starts and stops cleanly under Wine but does not write expected log markers within 300s; likely writes logs to game-internal paths (Unreal Engine 3), not stdout; START_TIMEOUT raised to 600s — awaiting retest |
 | saleblazersserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3099600 — run individually to verify |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 568880 (Sniper Elite 4) is very large — run individually with extended timeout |
 | sonsoftheforestserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2465200 (Sons of the Forest) is large — run individually with extended timeout |
 | starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
-| subsistenceserver | Wine: exe now runs directly (bat bypass); server starts and writes UDKGame/Logs/Launch.log but crashes at D3D shader compilation (UE3/SM3 shaders fail under Wine); needs DXVK or D3D9 fix |
-| terratechworldsserver | Wine: server runs but Saved/Logs/TT2.log not created within 300–460s; UE4 init is slow under Wine; needs extended START_TIMEOUT or additional Wine deps; app 2533070 |
+| subsistenceserver | Wine: UE3 server D3D crash fixed with LIBGL_ALWAYS_SOFTWARE=1 (Mesa software renderer); -log flag added; test now checks */Logs/Launch.log via glob; START_TIMEOUT raised to 600s; awaiting retest — app 1141370 |
+| terratechworldsserver | Wine: server runs but Saved/Logs/TT2.log not created within 300–460s; UE4 init is slow under Wine — START_TIMEOUT raised to 600s; needs retest |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |
@@ -270,6 +265,16 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | vintagestoryserver | Download prerequisite |
 | vsserver | HLDS mod maps not available via SteamCMD |
 
-## RUNNABLE (0)
+## RUNNABLE (5)
+
+Tests with no skip marker and no known blocker — not yet confirmed passing.
+
+| Test | Type | Notes |
+|------|------|-------|
+| bsserver | SteamCMD (Source) | Blade Symphony: executable fixed to bin/srcds_run.sh; CRLF stripping added in valve_server.py install step |
+| dysserver | SteamCMD (Source) | Dystopia: executable fixed to bin/srcds_run.sh; CRLF stripping added in valve_server.py install step |
+| insserver | SteamCMD (Source) | Insurgency: CRLF line endings in srcds_run now stripped by valve_server.py install step |
+| inssserver | SteamCMD | Insurgency: Sandstorm: exe_name changed to Insurgency/Binaries/Linux/InsurgencyServer-Linux-Shipping |
+| ts3server | Direct download | TeamSpeak 3: version scraper fixed to match linux_amd64 URL pattern in downloads page |
 
 All integration tests have been tested and categorized. No untested servers remain.

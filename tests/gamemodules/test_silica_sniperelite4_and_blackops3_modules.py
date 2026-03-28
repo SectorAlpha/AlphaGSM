@@ -85,9 +85,10 @@ def test_blackops3_get_start_command_builds_expected_args(tmp_path, monkeypatch)
 
     cmd, cwd = blackops3server.get_start_command(server)
 
-    assert cmd[0] == "BlackOps3Server.exe"
+    assert cmd[0] == "BlackOps3_UnrankedDedicatedServer.exe"
     assert "sv_maxclients" in cmd
-    assert cwd == server.data["dir"]
+    import os
+    assert cwd == os.path.join(server.data["dir"], "UnrankedServer")
 
 
 def test_silica_and_blackops3_update_downloads_and_optionally_restart(monkeypatch):

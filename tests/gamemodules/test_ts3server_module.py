@@ -24,7 +24,7 @@ def test_resolve_teamspeak_download_uses_explicit_version():
 
 
 def test_resolve_teamspeak_download_parses_download_page(monkeypatch):
-    monkeypatch.setattr(ts3server, "_read_download_page", lambda: "Server 64-bit 3.13.7")
+    monkeypatch.setattr(ts3server, "_read_download_page", lambda: 'href="https://files.teamspeak-services.com/releases/server/3.13.7/teamspeak3-server_linux_amd64-3.13.7.tar.bz2"')
 
     version, url = ts3server.resolve_teamspeak_download()
 

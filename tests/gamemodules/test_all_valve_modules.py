@@ -183,7 +183,7 @@ def test_bbserver_configure(tmp_path):
 
 def test_bsserver_configure(tmp_path):
     _configure_and_check(
-        "bsserver", 228780, "berimbau", "srcds_run.sh", "duel_winter", tmp_path
+        "bsserver", 228780, "berimbau", "bin/srcds_run.sh", "duel_winter", tmp_path
     )
 
 
@@ -215,7 +215,7 @@ def test_csserver_configure(tmp_path):
 
 def test_dysserver_configure(tmp_path):
     _configure_and_check(
-        "dysserver", 17585, "dystopia", "srcds_run.sh", "dys_broadcast", tmp_path
+        "dysserver", 17585, "dystopia", "bin/srcds_run.sh", "dys_broadcast", tmp_path
     )
 
 

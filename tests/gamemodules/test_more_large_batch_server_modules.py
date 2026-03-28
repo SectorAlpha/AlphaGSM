@@ -37,7 +37,7 @@ def test_primalcarnage_get_start_command_builds_expected_args(tmp_path, monkeypa
 
     cmd, cwd = primalcarnageextinctionserver.get_start_command(server)
 
-    assert cmd == ["PCEdedicated.exe", "server"]
+    assert cmd == ["PCEdedicated.exe", "server", "-log"]
     assert cwd == server.data["dir"]
 
 

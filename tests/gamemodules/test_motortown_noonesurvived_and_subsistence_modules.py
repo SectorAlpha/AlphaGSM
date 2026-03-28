@@ -74,25 +74,27 @@ def test_noonesurvived_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 def test_subsistence_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     monkeypatch.setattr(subsistenceserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(subsistenceserver, "IS_LINUX", False)
     server = DummyServer("subs")
     exe_dir = tmp_path / "Binaries" / "Win32"
     exe_dir.mkdir(parents=True)
-    exe = exe_dir / "run_dedicated_server.bat"
+    exe = exe_dir / "Subsistence.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "Binaries/Win32/run_dedicated_server.bat",
+            "exe_name": "Binaries/Win32/Subsistence.exe",
             "port": 27015,
             "queryport": 27016,
             "maxplayers": 10,
         }
     )
+    import os
 
     cmd, cwd = subsistenceserver.get_start_command(server)
 
-    assert cmd == ["Binaries/Win32/run_dedicated_server.bat", "27015", "27016", "10"]
-    assert cwd == server.data["dir"]
+    assert cmd == ["Subsistence.exe", "server coldmap1?Port=27015?QueryPort=27016?MaxPlayers=10?steamsockets", "-log"]
+    assert cwd == os.path.join(server.data["dir"], "Binaries", "Win32")
 
 
 def test_motortown_noonesurvived_and_subsistence_update_downloads_and_optionally_restart(monkeypatch):

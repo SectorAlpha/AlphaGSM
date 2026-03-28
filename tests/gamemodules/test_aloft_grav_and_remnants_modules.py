@@ -92,7 +92,7 @@ def test_remnants_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
     cmd, cwd = remnantsserver.get_start_command(server)
 
-    assert cmd == ["StartServer.bat", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015"]
+    assert cmd == ["StartServer.bat", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015", "-log", "-unattended"]
     assert cwd == server.data["dir"]
 
 

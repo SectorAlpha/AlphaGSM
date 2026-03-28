@@ -1,8 +1,4 @@
-"""Integration test for ts3server.
-
-Disabled: TeamSpeak downloads page layout changed; the version scraper
-cannot locate the server download link automatically.
-"""
+"""Integration test for ts3server."""
 
 import pytest
 
@@ -21,10 +17,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(reason="TeamSpeak downloads page layout changed; version scraper broken"),
-]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
