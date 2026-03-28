@@ -5,3 +5,4 @@ alphagsm.conf
 env
 .coverage
 coverage.xml
+nohup.out

@@ -64,8 +64,8 @@ alphagsm myoutpostz backup
 
 ### Run File
 
-- **Executable**: `OutpostZeroServer.exe`
-- **Location**: `<install_dir>/OutpostZeroServer.exe`
+- **Executable**: `WindowsServer/SurvivalGameServer.exe`
+- **Location**: `<install_dir>/WindowsServer/SurvivalGameServer.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `762880`
 

@@ -69,7 +69,8 @@ def test_stnserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_notdserver_get_start_command_builds_expected_args(tmp_path):
+def test_notdserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(notdserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("notd")
     exe_dir = tmp_path / "LF" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -87,7 +88,7 @@ def test_notdserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = notdserver.get_start_command(server)
 
     assert cmd == [
-        "./LF/Binaries/Win64/LFServer.exe",
+        "LF/Binaries/Win64/LFServer.exe",
         "?listen",
         "-log",
         "-Port=7777",
@@ -108,7 +109,7 @@ def test_more_survival_modules_update_downloads_and_optionally_restart(monkeypat
     monkeypatch.setattr(
         soulmask.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     soulmask.update(soul, validate=True, restart=True)

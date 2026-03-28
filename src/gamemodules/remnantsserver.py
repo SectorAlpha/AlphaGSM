@@ -3,10 +3,13 @@
 import os
 
 import screen
+import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+
+from utils.platform_info import IS_LINUX
 
 steam_app_id = 1141420
 steam_anonymous_login_possible = True
@@ -35,7 +38,14 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="StartServer.bat"):
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    exe_name="RemSurvivalServer.exe",
+):
     """Collect and store configuration values for a Remnants server."""
 
     server.data["Steam_AppID"] = steam_app_id
@@ -78,6 +88,7 @@ def install(server):
         server.data["Steam_AppID"],
         server.data["Steam_anonymous_login_possible"],
         validate=False,
+        force_windows=IS_LINUX,
     )
 
 
@@ -88,7 +99,7 @@ def update(server, validate=False, restart=False):
         server.stop()
     except Exception:
         print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -108,15 +119,19 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return (
-        [
-            "./" + server.data["exe_name"],
-            "-MultiHome=0.0.0.0",
-            "-Port=%s" % (server.data["port"],),
-            "-QueryPort=%s" % (server.data["queryport"],),
-        ],
-        server.data["dir"],
-    )
+    # Run the UE4 shipping binary directly instead of StartServer.bat to avoid
+    # Wine spawning a cmd.exe console window for every server launch.
+    cmd = [
+        server.data["exe_name"],
+        "-MultiHome=0.0.0.0",
+        "-Port=%s" % (server.data["port"],),
+        "-QueryPort=%s" % (server.data["queryport"],),
+        "-log",
+        "-unattended",
+    ]
+    if IS_LINUX:
+        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+    return cmd, server.data["dir"]
 
 
 def do_stop(server, j):

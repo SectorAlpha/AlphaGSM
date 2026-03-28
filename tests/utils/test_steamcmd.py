@@ -144,6 +144,52 @@ def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch):
         steamcmd_module.download("/srv/game", 232250, False)
 
 
+def test_download_forces_windows_platform_when_flag_set(monkeypatch):
+    calls = []
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: (
+            calls.append(cmd)
+            or sp.CompletedProcess(cmd, 0, "Success! App '232250' fully installed.\n")
+        ),
+    )
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: "/abs/" + path)
+
+    steamcmd_module.download("srv/game", 232250, True, validate=False, force_windows=True)
+
+    cmd = calls[1]
+    assert "+@sSteamCmdForcePlatformType" in cmd
+    platform_idx = cmd.index("+@sSteamCmdForcePlatformType")
+    assert cmd[platform_idx + 1] == "windows"
+    # Platform override must come before app_update
+    assert platform_idx < cmd.index("+app_update")
+
+
+def test_download_does_not_add_platform_flag_by_default(monkeypatch):
+    calls = []
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: (
+            calls.append(cmd)
+            or sp.CompletedProcess(cmd, 0, "Success! App '232250' fully installed.\n")
+        ),
+    )
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: "/abs/" + path)
+
+    steamcmd_module.download("srv/game", 232250, True, validate=False)
+
+    cmd = calls[1]
+    assert "+@sSteamCmdForcePlatformType" not in cmd
+
+
 def test_get_autoupdate_script_writes_template(tmp_path, monkeypatch):
     scripts_dir = tmp_path / "scripts"
     template = tmp_path / "steamcmd_gamescript_template.txt"

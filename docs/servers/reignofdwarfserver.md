@@ -64,8 +64,8 @@ alphagsm myreignofd backup
 
 ### Run File
 
-- **Executable**: `ReignOfDwarfServer.exe`
-- **Location**: `<install_dir>/ReignOfDwarfServer.exe`
+- **Executable**: `Server.exe`
+- **Location**: `<install_dir>/Server.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `1999160`
 

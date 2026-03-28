@@ -38,7 +38,8 @@ def test_cryofall_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_fearthenight_get_start_command_builds_expected_args(tmp_path):
+def test_fearthenight_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(fearthenightserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("ftn")
     exe_dir = tmp_path / "Moonlight" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -54,7 +55,7 @@ def test_fearthenight_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = fearthenightserver.get_start_command(server)
 
-    assert cmd[0] == "./Moonlight/Binaries/Win64/MoonlightServer.exe"
+    assert cmd[0] == "Moonlight/Binaries/Win64/MoonlightServer.exe"
     assert "Pittsburgh_Overworld" in cmd
     assert cwd == server.data["dir"]
 
@@ -83,7 +84,7 @@ def test_three_updates_download_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         cryofallserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     cryofallserver.update(cryo, validate=True, restart=True)

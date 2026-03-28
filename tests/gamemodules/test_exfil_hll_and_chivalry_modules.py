@@ -47,7 +47,8 @@ def test_exfil_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_hellletloose_get_start_command_builds_expected_args(tmp_path):
+def test_hellletloose_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(hellletlooseserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("hll")
     exe = tmp_path / "HLLServer.exe"
     exe.write_text("")
@@ -61,7 +62,7 @@ def test_hellletloose_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = hellletlooseserver.get_start_command(server)
 
-    assert cmd == ["./HLLServer.exe", "/Game/Maps/hurtgenforest_warfare", "-log"]
+    assert cmd == ["HLLServer.exe", "/Game/Maps/hurtgenforest_warfare", "-log"]
     assert cwd == server.data["dir"]
 
 
@@ -96,12 +97,12 @@ def test_exfil_and_hll_update_downloads_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         exfilserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     exfilserver.update(exfil, validate=True, restart=True)
     hellletlooseserver.update(hll, validate=False, restart=False)
 
     assert ("/srv/exfil/", 3093190, True, True) in calls
-    assert ("/srv/hll/", 822500, True, False) in calls
+    assert ("/srv/hll/", 822500, False, False) in calls
     assert exfil.start_calls == 1

@@ -28,7 +28,8 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_primalcarnage_get_start_command_builds_expected_args(tmp_path):
+def test_primalcarnage_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(primalcarnageextinctionserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("pce")
     exe = tmp_path / "PCEdedicated.exe"
     exe.write_text("")
@@ -36,11 +37,12 @@ def test_primalcarnage_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = primalcarnageextinctionserver.get_start_command(server)
 
-    assert cmd == ["./PCEdedicated.exe", "server"]
+    assert cmd == ["PCEdedicated.exe", "server", "-log"]
     assert cwd == server.data["dir"]
 
 
-def test_returntomoria_get_start_command_builds_expected_args(tmp_path):
+def test_returntomoria_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(returntomoriaserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("moria")
     exe = tmp_path / "MoriaServer.exe"
     exe.write_text("")
@@ -48,11 +50,12 @@ def test_returntomoria_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = returntomoriaserver.get_start_command(server)
 
-    assert cmd == ["./MoriaServer.exe"]
+    assert cmd == ["MoriaServer.exe"]
     assert cwd == server.data["dir"]
 
 
-def test_saleblazers_get_start_command_builds_expected_args(tmp_path):
+def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(saleblazersserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("sale")
     exe_dir = tmp_path / "Default"
     exe_dir.mkdir(parents=True)
@@ -62,11 +65,12 @@ def test_saleblazers_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = saleblazersserver.get_start_command(server)
 
-    assert cmd == ["./Default/Saleblazers.exe"]
+    assert cmd == ["Default/Saleblazers.exe", "-batchmode", "-nographics", "-logFile", "./server.log"]
     assert cwd == server.data["dir"]
 
 
-def test_terratechworlds_get_start_command_builds_expected_args(tmp_path):
+def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(terratechworldsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("ttw")
     exe = tmp_path / "TT2Server.exe"
     exe.write_text("")
@@ -74,11 +78,12 @@ def test_terratechworlds_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = terratechworldsserver.get_start_command(server)
 
-    assert cmd == ["./TT2Server.exe", "-log"]
+    assert cmd == ["TT2Server.exe", "-batchmode", "-nographics", "-log"]
     assert cwd == server.data["dir"]
 
 
-def test_theforest_get_start_command_builds_expected_args(tmp_path):
+def test_theforest_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(theforestserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("forest")
     exe = tmp_path / "TheForestDedicatedServer.exe"
     exe.write_text("")
@@ -86,7 +91,7 @@ def test_theforest_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = theforestserver.get_start_command(server)
 
-    assert cmd[0] == "./TheForestDedicatedServer.exe"
+    assert cmd[0] == "TheForestDedicatedServer.exe"
     assert "-nosteamclient" in cmd
     assert cwd == server.data["dir"]
 
@@ -107,7 +112,7 @@ def test_more_large_batch_updates_download_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         primalcarnageextinctionserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     primalcarnageextinctionserver.update(pce, validate=True, restart=True)

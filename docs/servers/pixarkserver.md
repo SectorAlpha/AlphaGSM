@@ -64,8 +64,8 @@ alphagsm mypixarkse backup
 
 ### Run File
 
-- **Executable**: `PixARKServer.exe`
-- **Location**: `<install_dir>/PixARKServer.exe`
+- **Executable**: `ShooterGame/Binaries/Win64/PixARKServer.exe`
+- **Location**: `<install_dir>/ShooterGame/Binaries/Win64/PixARKServer.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `824360`
 

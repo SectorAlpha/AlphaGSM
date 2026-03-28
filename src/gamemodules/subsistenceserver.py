@@ -3,10 +3,13 @@
 import os
 
 import screen
+import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+
+from utils.platform_info import IS_LINUX
 
 steam_app_id = 1362640
 steam_anonymous_login_possible = True
@@ -35,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win32/run_dedicated_server.bat"):
+def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win32/Subsistence.exe"):
     """Collect and store configuration values for a Subsistence server."""
 
     server.data["Steam_AppID"] = steam_app_id
@@ -78,6 +81,7 @@ def install(server):
         server.data["Steam_AppID"],
         server.data["Steam_anonymous_login_possible"],
         validate=False,
+        force_windows=IS_LINUX,
     )
 
 
@@ -88,7 +92,7 @@ def update(server, validate=False, restart=False):
         server.stop()
     except Exception:
         print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -108,15 +112,35 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return (
-        [
-            "./" + server.data["exe_name"],
-            str(server.data["port"]),
-            str(server.data["queryport"]),
-            str(server.data["maxplayers"]),
-        ],
-        server.data["dir"],
+    # The bat file shipped with the server uses 'start /B Subsistence.exe server coldmap1'
+    # which fails under Wine (ShellExecuteEx not supported).  We run Subsistence.exe
+    # directly with the same UDK URL arguments inlined into the map string.
+    port = server.data.get("port", 27015)
+    queryport = server.data.get("queryport", 27016)
+    maxplayers = server.data.get("maxplayers", 10)
+    map_url = (
+        f"server coldmap1?Port={port}?QueryPort={queryport}"
+        f"?MaxPlayers={maxplayers}?steamsockets"
     )
+    # Work from the exe's own directory so DLL loading succeeds.
+    # Use the basename only (no path prefix) because cwd is already the exe dir.
+    binaries_dir = os.path.join(server.data["dir"], "Binaries", "Win32")
+    # -log writes UE3 engine output to UDKGame/Logs/Launch.log instead of a
+    # Window owned by the process.  LIBGL_ALWAYS_SOFTWARE forces Mesa software
+    # rendering so that wined3d SM3 shader compilation never hits GPU driver
+    # issues that crash UE3 combined client/server binaries under Wine.
+    cmd = ["Subsistence.exe", map_url, "-log"]
+    if IS_LINUX:
+        wine_cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        # Inject software-renderer env var after any existing env prefix so that
+        # Wine uses Mesa/llvmpipe instead of the GPU, preventing D3D SM3 shader
+        # compilation failures.
+        if wine_cmd and wine_cmd[0] == "env":
+            wine_cmd.insert(1, "LIBGL_ALWAYS_SOFTWARE=1")
+        else:
+            wine_cmd = ["env", "LIBGL_ALWAYS_SOFTWARE=1"] + wine_cmd
+        cmd = wine_cmd
+    return cmd, binaries_dir
 
 
 def do_stop(server, j):

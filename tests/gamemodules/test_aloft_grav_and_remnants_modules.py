@@ -76,7 +76,8 @@ def test_grav_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_remnants_get_start_command_builds_expected_args(tmp_path):
+def test_remnants_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(remnantsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("remnants")
     exe = tmp_path / "StartServer.bat"
     exe.write_text("")
@@ -91,7 +92,7 @@ def test_remnants_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = remnantsserver.get_start_command(server)
 
-    assert cmd == ["./StartServer.bat", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015"]
+    assert cmd == ["StartServer.bat", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015", "-log", "-unattended"]
     assert cwd == server.data["dir"]
 
 
@@ -103,7 +104,7 @@ def test_remnants_update_downloads_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         remnantsserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     remnantsserver.update(server, validate=True, restart=True)

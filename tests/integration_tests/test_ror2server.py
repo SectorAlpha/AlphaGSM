@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -18,9 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 1180760 is Windows-only (Risk of Rain 2.exe)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
@@ -28,6 +27,7 @@ STOP_TIMEOUT = 90
 def test_ror2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
+    require_proton()
     require_command("screen")
 
     home_dir = tmp_path / "home"
@@ -49,7 +49,14 @@ def test_ror2server_lifecycle(tmp_path):
         skip_for_known_steamcmd_issue(result)
 
     # start
-    run_and_assert_ok(env, server_name, "start")
+    result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm start", result)
+    if result.returncode != 0 and "Executable file not found" in result.stderr:
+        pytest.skip(
+            "Risk of Rain 2 dedicated server depot (1180760) is empty on Steam; "
+            "server executable requires owning the main game (632360)"
+        )
+    assert result.returncode == 0, result.stderr or result.stdout
 
     try:
         # wait for readiness

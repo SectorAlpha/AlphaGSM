@@ -64,8 +64,8 @@ alphagsm mysniperel backup
 
 ### Run File
 
-- **Executable**: `SniperElite4_DedicatedServer.exe`
-- **Location**: `<install_dir>/SniperElite4_DedicatedServer.exe`
+- **Executable**: `bin/SniperElite4_Dedicated.exe`
+- **Location**: `<install_dir>/bin/SniperElite4_Dedicated.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `568880`
 

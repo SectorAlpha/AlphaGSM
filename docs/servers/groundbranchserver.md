@@ -64,8 +64,8 @@ alphagsm mygroundbr backup
 
 ### Run File
 
-- **Executable**: `GroundBranchServer-Win64-Shipping.exe`
-- **Location**: `<install_dir>/GroundBranchServer-Win64-Shipping.exe`
+- **Executable**: `GroundBranch/Binaries/Win64/GroundBranchServer-Win64-Shipping.exe`
+- **Location**: `<install_dir>/GroundBranch/Binaries/Win64/GroundBranchServer-Win64-Shipping.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `476400`
 

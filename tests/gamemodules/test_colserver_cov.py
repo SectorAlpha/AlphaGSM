@@ -63,7 +63,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "ColonyServer.x86_64"
+    server.data["exe_name"] = "colonyserver.x86_64"
     server.data["Steam_AppID"] = 748090
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -108,8 +108,8 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "ColonyServer.x86_64"
-    (tmp_path / "ColonyServer.x86_64").write_text("")
+    server.data["exe_name"] = "colonyserver.x86_64"
+    (tmp_path / "colonyserver.x86_64").write_text("")
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["world"] = "test"

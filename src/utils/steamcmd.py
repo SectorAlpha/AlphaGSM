@@ -74,14 +74,35 @@ def install_steamcmd():
         url_download(STEAMCMD_DIR, (STEAMCMD_URL, "steamcmd_linux.tar.gz", "tar.gz"))
 
 
-def download(path, Steam_AppID, steam_anonymous_login_possible, validate=True, mod=None):
-    """Download a game server via SteamCMD, optionally setting a GoldSrc mod."""
+def download(
+    path,
+    Steam_AppID,
+    steam_anonymous_login_possible,
+    validate=True,
+    mod=None,
+    force_windows=False,
+):
+    """Download a game server via SteamCMD, optionally setting a GoldSrc mod.
+
+    Args:
+        path: Installation directory for the server files.
+        Steam_AppID: The Steam application ID to download.
+        steam_anonymous_login_possible: Whether the app allows anonymous login.
+        validate: If ``True`` pass ``validate`` to SteamCMD.
+        mod: Optional GoldSrc mod name (used for app 90).
+        force_windows: If ``True`` instruct SteamCMD to download the Windows
+            depot rather than the native Linux one.  Required for Windows-only
+            game servers that are launched via Wine or Proton on Linux.
+    """
     # check to see if steamcmd exists
     install_steamcmd()
     path = _normalise_install_path(path)
 
     print("Running SteamCMD")
-    proc_list = [STEAMCMD_EXE, "+force_install_dir", path]
+    proc_list = [STEAMCMD_EXE]
+    if force_windows:
+        proc_list.extend(["+@sSteamCmdForcePlatformType", "windows"])
+    proc_list.extend(["+force_install_dir", path])
     proc_list.extend(_get_login_args(steam_anonymous_login_possible))
     if mod is not None:
         proc_list.extend(["+app_set_config", "90", "mod", str(mod)])

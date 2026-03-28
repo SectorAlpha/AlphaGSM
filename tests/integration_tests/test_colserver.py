@@ -13,7 +13,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_glob_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -24,7 +24,6 @@ START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Colony Survival (app 748090) installs no Linux-compatible server binary (ColonyServer.x86_64 not present); module disabled")
 def test_colserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -52,11 +51,12 @@ def test_colserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
+        # Colony Survival logs to its own directory, not to stdout.
+        game_log_dir = install_dir / "gamedata" / "logs" / "server"
+        wait_for_glob_log_marker(
+            game_log_dir,
+            "*.txt",
+            ["Thread log (Re)started", "Current version:"],
             START_TIMEOUT,
         )
 

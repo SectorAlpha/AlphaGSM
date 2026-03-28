@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -18,16 +19,15 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 630230 is Windows-only (Win64/DNLServer.exe)"
-)]
-START_TIMEOUT = 300
+pytestmark = [pytest.mark.integration]
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
 def test_darkandlightserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
+    require_proton()
     require_command("screen")
 
     home_dir = tmp_path / "home"
@@ -53,10 +53,10 @@ def test_darkandlightserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        log_path = install_dir / "DNL" / "Saved" / "Logs" / "DNL.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["listening on port", "Engine is initialized"],
             START_TIMEOUT,
         )
 

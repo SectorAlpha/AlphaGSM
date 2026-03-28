@@ -64,8 +64,8 @@ alphagsm myblackwak backup
 
 ### Run File
 
-- **Executable**: `Blackwake Dedicated Server.exe`
-- **Location**: `<install_dir>/Blackwake Dedicated Server.exe`
+- **Executable**: `BlackwakeServer.exe`
+- **Location**: `<install_dir>/BlackwakeServer.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `423410`
 

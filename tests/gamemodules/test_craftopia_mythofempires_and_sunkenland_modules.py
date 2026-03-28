@@ -47,7 +47,8 @@ def test_craftopia_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_mythofempires_get_start_command_builds_expected_args(tmp_path):
+def test_mythofempires_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(mythofempiresserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("moe")
     exe_dir = tmp_path / "MOE" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -66,12 +67,13 @@ def test_mythofempires_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = mythofempiresserver.get_start_command(server)
 
-    assert cmd[0] == "./MOE/Binaries/Win64/MOEServer.exe"
+    assert cmd[0] == "MOE/Binaries/Win64/MOEServer.exe"
     assert "-ServerName=AlphaGSM moe" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_sunkenland_get_start_command_builds_expected_args(tmp_path):
+def test_sunkenland_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(sunkenlandserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("sunken")
     exe = tmp_path / "Sunkenland-DedicatedServer.exe"
     exe.write_text("")
@@ -87,7 +89,7 @@ def test_sunkenland_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = sunkenlandserver.get_start_command(server)
 
-    assert cmd[0] == "./Sunkenland-DedicatedServer.exe"
+    assert cmd[0] == "Sunkenland-DedicatedServer.exe"
     assert "-servername" in cmd
     assert cwd == server.data["dir"]
 
@@ -104,7 +106,7 @@ def test_craftopia_mythofempires_and_sunkenland_update_downloads_and_optionally_
     monkeypatch.setattr(
         craftopiaserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     craftopiaserver.update(craft, validate=True, restart=True)
