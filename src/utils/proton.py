@@ -97,11 +97,25 @@ def wrap_command(command, wineprefix=None):
     Raises:
         RuntimeError: If neither Wine nor Proton-GE is available.
     """
+    # Headless Wine env vars applied to every launch:
+    #   DISPLAY=             — no display; Wine uses its built-in null renderer
+    #   WINEDLLOVERRIDES=winex11.drv=
+    #                        — override the X11 driver with nothing, forcing the
+    #                          null/headless renderer even if DISPLAY is set in
+    #                          the outer environment
+    # Dedicated game servers never need a display; these vars ensure Wine never
+    # tries to open one regardless of the host environment.
+    _HEADLESS = [
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+    ]
+
     wine = find_wine()
     if wine is not None:
+        env_vars = list(_HEADLESS)
         if wineprefix:
-            return ["env", f"WINEPREFIX={wineprefix}", wine] + list(command)
-        return [wine] + list(command)
+            env_vars.append(f"WINEPREFIX={wineprefix}")
+        return ["env"] + env_vars + [wine] + list(command)
 
     proton = find_proton()
     if proton is not None:
@@ -109,6 +123,7 @@ def wrap_command(command, wineprefix=None):
         os.makedirs(compat_dir, exist_ok=True)
         return [
             "env",
+            *_HEADLESS,
             f"STEAM_COMPAT_DATA_PATH={compat_dir}",
             "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
             proton,

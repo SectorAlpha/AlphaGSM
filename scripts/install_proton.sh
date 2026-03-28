@@ -29,14 +29,29 @@ setup_wine_prefix() {
         sudo apt-get install -y winetricks -qq
     fi
 
+    # Force Wine to use its built-in null/headless renderer for all prefix
+    # initialisation work.  Dedicated game servers never need a display.
+    #   DISPLAY=                     — no X display
+    #   WINEDLLOVERRIDES=winex11.drv= — override X11 driver with nothing,
+    #                                   activating Wine's null renderer even
+    #                                   if DISPLAY is set in the outer env
+    #   WINEDEBUG=-all               — silence Wine's verbose debug chatter
+    export DISPLAY=""
+    export WINEDLLOVERRIDES="winex11.drv="
+    export WINEDEBUG=-all
+
+    echo "    Initialising Wine prefix..."
+    wineboot --init
+
     echo "    Setting Windows version to Windows 10..."
     # Default Wine prefix is Win7; many modern game servers need Win10 APIs.
     # This prevents 'kernelbase.dll bad index' crashes on newer binaries.
-    WINEDEBUG=-all winetricks win10
+    # -q suppresses any installer dialogs (null renderer makes this redundant
+    # but it is good practice regardless).
+    winetricks -q win10
 
     echo "    Installing Visual C++ 2019 runtime (vcrun2019)..."
-    # WINEDEBUG=-all suppresses Wine's verbose debug chatter on first-run.
-    WINEDEBUG=-all winetricks --unattended vcrun2019
+    winetricks -q --unattended vcrun2019
 
     echo "    Installing Wine Mono (.NET/CLR runtime for managed-code servers)..."
     # .NET-based servers (e.g. Medieval Engineers, Space Engineers) need Wine Mono.
@@ -47,7 +62,7 @@ setup_wine_prefix() {
     if ! ls ~/.wine/drive_c/windows/mono/mono-2.0 >/dev/null 2>&1; then
         echo "    Downloading Wine Mono MSI..."
         wget -q "$mono_msi_url" -O "$mono_msi"
-        WINEDEBUG=-all wine msiexec /i "$mono_msi" /qn
+        wine msiexec /i "$mono_msi" /qn
         rm -f "$mono_msi"
     else
         echo "    Wine Mono already installed — skipping."

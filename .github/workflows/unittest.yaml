@@ -230,18 +230,46 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          # screen   — required by all integration tests (AlphaGSM uses GNU
-          #            screen as the process supervisor; conftest writes screenrc
-          #            and launches game servers through it)
-          # lib32*   — 32-bit Steam runtime (Source engine servers)
-          # p7zip    — server archives distributed as .7z
-          sudo apt-get install -y screen lib32gcc-s1 lib32stdc++6 p7zip-full
-          # Wine / Proton-GE are NOT installed here.
-          # Windows-binary server integration tests call require_proton() which
-          # issues pytest.skip() when neither Wine nor Proton-GE is detected.
-          # Installing Wine + a working Wine prefix (winetricks + Xvfb) and
-          # Proton-GE (~500 MB) on a standard runner is impractical. Those
-          # tests are covered locally via scripts/install_proton.sh.
+          # screen     — AlphaGSM process supervisor (conftest writes screenrc
+          #              and launches game servers through screen)
+          # lib32*     — 32-bit Steam runtime (Source engine servers)
+          # p7zip      — server archives distributed as .7z
+          # wine64 / wine32:i386 / winetricks
+          #            — Windows-binary game server support; Wine runs headless
+          #              via DISPLAY= + WINEDLLOVERRIDES=winex11.drv= (null
+          #              renderer) — no display server required
+          sudo apt-get install -y \
+            screen \
+            lib32gcc-s1 lib32stdc++6 \
+            p7zip-full \
+            wine64 wine32:i386 winetricks
+      - name: Initialise Wine prefix
+        run: |
+          # Run Wine entirely headless — no display server needed.
+          # DISPLAY=  tells Wine not to connect to any X server.
+          # WINEDLLOVERRIDES=winex11.drv=  overrides the X11 driver with
+          # nothing, activating Wine's built-in null renderer so prefix
+          # init and winetricks installers run without any display at all.
+          export DISPLAY=""
+          export WINEDLLOVERRIDES="winex11.drv="
+          export WINEDEBUG=-all
+
+          echo "==> Initialising Wine prefix..."
+          wineboot --init
+
+          echo "==> Setting Windows version to Windows 10..."
+          winetricks -q win10
+
+          echo "==> Installing Visual C++ 2019 runtime..."
+          winetricks -q --unattended vcrun2019
+
+          echo "==> Wine prefix ready: $(wine --version)"
+      - name: Install Proton-GE
+        run: |
+          # Download and extract the latest Proton-GE release.
+          # The proton script lands in ~/.local/share/proton-ge/GE-ProtonX-Y/proton
+          # which is one of the search paths in src/utils/proton.py find_proton().
+          bash scripts/install_proton.sh proton
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
