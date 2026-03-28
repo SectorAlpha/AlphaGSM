@@ -38,6 +38,21 @@ setup_wine_prefix() {
     # WINEDEBUG=-all suppresses Wine's verbose debug chatter on first-run.
     WINEDEBUG=-all winetricks --unattended vcrun2019
 
+    echo "    Installing Wine Mono (.NET/CLR runtime for managed-code servers)..."
+    # .NET-based servers (e.g. Medieval Engineers, Space Engineers) need Wine Mono.
+    # The MSI is downloaded from WineHQ; winetricks verb 'mono' is unavailable
+    # in newer winetricks — we install directly via msiexec instead.
+    local mono_msi_url="https://dl.winehq.org/wine/wine-mono/8.1.0/wine-mono-8.1.0-x86.msi"
+    local mono_msi="/tmp/wine-mono-8.1.0.msi"
+    if ! ls ~/.wine/drive_c/windows/mono/mono-2.0 >/dev/null 2>&1; then
+        echo "    Downloading Wine Mono MSI..."
+        wget -q "$mono_msi_url" -O "$mono_msi"
+        WINEDEBUG=-all wine msiexec /i "$mono_msi" /qn
+        rm -f "$mono_msi"
+    else
+        echo "    Wine Mono already installed — skipping."
+    fi
+
     echo "    Wine prefix ready."
 }
 

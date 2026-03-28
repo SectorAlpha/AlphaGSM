@@ -52,11 +52,18 @@ def test_blackops3server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        # The server writes its own log to the game directory.
+        # console_mp.log appears once the dedicated lobby is ready.
+        log_path = (
+            install_dir
+            / "UnrankedServer"
+            / "identities"
+            / "dedicatedpc"
+            / "console_mp.log"
+        )
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["CreateDedicatedModsLobby: ready!"],
             START_TIMEOUT,
         )
 

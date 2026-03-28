@@ -201,7 +201,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
-| medievalengineersserver | Wine: server starts (no crash with vcrun2019+win10) but VRAGE engine writes no console output — logs go to AppData/Roaming; log path needs discovery; app 367970 |
+| medievalengineersserver | Wine: Mono required; .NET XML serializer tries to write temp files to a double-mapped drive path (TMPDIR on external mount + Wine Q: drive = double path); fixed with TEMP=C:\windows\temp env override; awaiting retest |
 | miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
@@ -219,7 +219,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | sonsoftheforestserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2465200 (Sons of the Forest) is large — run individually with extended timeout |
 | starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
-| subsistenceserver | Wine: run_dedicated_server.bat used Wine's 'start /B' which fails (ShellExecuteEx); fixed — exe now runs directly as Subsistence.exe with UDK map URL args; awaiting retest |
+| subsistenceserver | Wine: exe now runs directly (bat bypass); server starts and writes UDKGame/Logs/Launch.log but crashes at D3D shader compilation (UE3/SM3 shaders fail under Wine); needs DXVK or D3D9 fix |
 | terratechworldsserver | Wine: server runs but Saved/Logs/TT2.log not created within 300–460s; UE4 init is slow under Wine; needs extended START_TIMEOUT or additional Wine deps; app 2533070 |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |

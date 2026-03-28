@@ -123,8 +123,9 @@ def get_start_command(server):
         f"?MaxPlayers={maxplayers}?steamsockets"
     )
     # Work from the exe's own directory so DLL loading succeeds.
+    # Use the basename only (no path prefix) because cwd is already the exe dir.
     binaries_dir = os.path.join(server.data["dir"], "Binaries", "Win32")
-    cmd = [server.data["exe_name"], map_url]
+    cmd = ["Subsistence.exe", map_url]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, binaries_dir

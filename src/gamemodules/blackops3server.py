@@ -115,8 +115,9 @@ def get_start_command(server):
     # The bat file (Launch_Server.bat) uses 'BlackOps3_UnrankedDedicatedServer.exe'
     # as a bare name, which fails when cmd.exe runs from the parent install dir.
     # We run the exe directly from its own directory so DLL loading succeeds.
+    # Use the basename only (no path prefix) because cwd is already the exe dir.
     cmd = [
-        server.data["exe_name"],
+        "BlackOps3_UnrankedDedicatedServer.exe",
         "+set", "sv_playlist", "1",
         "+set", "fs_game", "usermaps",
         "+set", "logfile", "2",
