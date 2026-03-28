@@ -113,13 +113,15 @@ def get_start_command(server):
     cmd = [server.data["exe_name"], "console", "port", str(server.data["port"])]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
-        # ME's .NET runtime uses %TEMP% for dynamic compiler temp files.
-        # If TMPDIR is set to a Linux path on an external mount, Wine's drive
-        # mapping turns it into a double-path that doesn't exist (e.g.
-        # Q:\media\...\useme instead of Q:\useme).  Force TEMP/TMP to the
-        # Wine C: temp directory so the path stays Windows-native.
+        # ME uses Wine Mono whose Path.GetTempPath() reads the Unix TMPDIR env
+        # var rather than Windows TMP/TEMP.  If TMPDIR points to a Linux path on
+        # an external mount, Wine's drive mapping produces a double-path that
+        # doesn't exist (e.g. Q:\media\...\useme instead of Q:\useme).
+        # Force TMPDIR to /tmp (always accessible, maps cleanly to Z:\tmp in Wine)
+        # and also set TMP/TEMP for any Windows-native temp lookups.
         cmd = [
             "env",
+            "TMPDIR=/tmp",
             "TEMP=C:\\windows\\temp",
             "TMP=C:\\windows\\temp",
         ] + cmd
