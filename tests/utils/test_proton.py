@@ -96,19 +96,19 @@ def test_is_available_true_when_proton_found(tmp_path, monkeypatch):
 def test_wrap_command_with_wine_no_prefix(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe"])
-    assert result == ["/usr/bin/wine", "server.exe"]
+    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"]
 
 
 def test_wrap_command_with_wine_and_prefix(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe"], wineprefix="/srv/game/.wine")
-    assert result == ["env", "WINEPREFIX=/srv/game/.wine", "/usr/bin/wine", "server.exe"]
+    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "WINEPREFIX=/srv/game/.wine", "/usr/bin/wine", "server.exe"]
 
 
 def test_wrap_command_preserves_trailing_args(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe", "--port", "7000"])
-    assert result == ["/usr/bin/wine", "server.exe", "--port", "7000"]
+    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe", "--port", "7000"]
 
 
 # ---------------------------------------------------------------------------
