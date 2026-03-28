@@ -54,9 +54,9 @@ The goal is that a user can create and operate a new server type using the same 
 
 When adding a new game server, treat the lifecycle work as incomplete until it has appropriate test coverage across the repository's test layers:
 
-- unit tests for command parsing and module behaviour
-- integration tests for end-to-end pytest coverage
-- smoke tests for a streamed real-world lifecycle example
+- unit tests for command parsing and module behaviour — run with `make test`
+- integration tests for end-to-end pytest coverage — run with `make integration-test` (requires `ALPHAGSM_WORK_DIR`)
+- smoke tests for a streamed real-world lifecycle example — run with `make smoke-test SMOKE_TEST=run_<name>.sh`
 
 The smoke tests are not owned by this skill, but new server lifecycle work should still result in smoke coverage being added or updated.
 
@@ -64,14 +64,21 @@ The smoke tests are not owned by this skill, but new server lifecycle work shoul
 
 SteamCMD game servers can be very large (1–15 GB each). When disk space is limited:
 
-- Run tests **one at a time**, not in batches.
+- Use `make integration-test` — it runs one test at a time and cleans up between each automatically.
+- To run a single test: `make integration-test IT_TEST=tests/integration_tests/test_<name>.py`
+- Both require `ALPHAGSM_WORK_DIR` to be set to a directory with enough free space (~50 GB):
+  ```bash
+  export ALPHAGSM_WORK_DIR=/mnt/data/gsm-work
+  make integration-test
+  ```
 - After each test finishes, **delete the pytest temp directory** to reclaim space:
   ```bash
   rm -rf /tmp/pytest-of-$(whoami)/pytest-current/
   ```
+  (`make integration-test` does this automatically via `run_integration_tests.sh`.)
 - Check free space before each test with `df -h /`.
 - If a test installs a large game and fails, clean up before retrying.
-- Consider keeping a SteamCMD download cache (`~/Steam/steamapps/`) across runs to avoid re-downloading unchanged files — but delete per-server install dirs from `/tmp`.
+- Consider keeping a SteamCMD download cache (`~/Steam/steamapps/`) across runs to avoid re-downloading unchanged files — but delete per-server install dirs from the work dir.
 
 ## Files To Inspect
 
