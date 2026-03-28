@@ -190,7 +190,7 @@ Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guar
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
 | arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
 | astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
-| blackops3server | Requires Wine or Proton-GE; Windows binary (UnrankedServer/Launch_Server.bat) via SteamCMD app 545990; run scripts/install_proton.sh |
+| blackops3server | Wine: server (Launch_Server.bat, app 545990) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
 | blackwakeserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 423410 — run individually to verify |
 | darkandlightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 630230 — run individually to verify |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
@@ -203,17 +203,17 @@ Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guar
 | medievalengineersserver | Wine: server (MedievalEngineersDedicated.exe, app 367970) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
 | miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
-| noonesurvivedserver | Requires Wine or Proton-GE; Windows binary (WRSHServer.exe) via SteamCMD app 2329680; run scripts/install_proton.sh |
+| noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
 | notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
-| outpostzeroserver | Requires Wine or Proton-GE; Windows binary (WindowsServer/SurvivalGameServer.exe) via SteamCMD app 762880; run scripts/install_proton.sh |
-| pixarkserver | Requires Wine or Proton-GE; Windows binary (ShooterGame/Binaries/Win64/PixARKServer.exe) via SteamCMD app 824360; run scripts/install_proton.sh |
+| outpostzeroserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 762880 — run individually to verify |
+| pixarkserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 824360 — run individually to verify |
 | primalcarnageextinctionserver | Wine: server (PrimalCarnageServer.exe, app 336400) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
-| rs2server | Requires Wine or Proton-GE; Windows binary (VNGame.exe) via SteamCMD app 418480; run scripts/install_proton.sh |
+| rs2server | Wine: server (VNGame.exe, app 418480) starts and stops cleanly under Wine but does not write expected log markers within 300s; likely writes logs to game-internal paths (Unreal Engine 3), not stdout |
 | saleblazersserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3099600 — run individually to verify |
-| scumserver | Requires Wine or Proton-GE; Windows binary (SCUMServer.exe) via SteamCMD app 3792580; run scripts/install_proton.sh |
+| scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 568880 (Sniper Elite 4) is very large — run individually with extended timeout |
 | sonsoftheforestserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2465200 (Sons of the Forest) is large — run individually with extended timeout |
 | starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
