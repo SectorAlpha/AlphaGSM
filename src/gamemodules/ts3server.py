@@ -22,6 +22,7 @@ commands = ()
 command_args = {
     "setup": CmdSpec(
         optionalarguments=(
+            ArgSpec("PORT", "The voice port to use for the TeamSpeak 3 server", int),
             ArgSpec("DIR", "The directory to install TeamSpeak 3 in", str),
         ),
         options=(

@@ -41,7 +41,7 @@ def test_ts3server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "ts3server")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(install_dir))
+    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
 

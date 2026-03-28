@@ -6,19 +6,17 @@ Last updated: 2026-03-28
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 73      |
-| DISABLED | 77      |
+| PASSED   | 76      |
+| DISABLED | 79      |
 | SKIPPED  | 79      |
-| RUNNABLE | 5       |
 
 ## Status Key
 
 - **PASSED** — Test ran successfully in a prior session.
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
-- **RUNNABLE** — Test exists and has no skip marker but has not been confirmed passing yet.
 
-## PASSED (73)
+## PASSED (76)
 
 | Test | Type |
 |------|------|
@@ -93,14 +91,18 @@ Last updated: 2026-03-28
 | askaserver | SteamCMD (Wine) |
 | blackops3server | SteamCMD (Wine) |
 | pixarkserver | SteamCMD (Wine) |
-| remnantsserver | SteamCMD (Wine) — exe changed to RemSurvivalServer.exe (root-level server binary, not subdirectory path); added -log -unattended; awaiting retest |
-| readyornotserver | SteamCMD (Wine) — -unattended added; **PASSED** 2026-03-28 |
+| remnantsserver | SteamCMD (Wine) — exe changed to RemSurvivalServer.exe; added -log -unattended; awaiting retest |
+| readyornotserver | SteamCMD (Wine) — PASSED 2026-03-28 |
+| insserver | SteamCMD (Source) — PASSED 2026-03-28 |
+| inssserver | SteamCMD — PASSED 2026-03-28 |
+| ts3server | Direct download — PASSED 2026-03-28 |
 
-## DISABLED (77)
+## DISABLED (79)
 
 | Test | Reason |
 |------|--------|
-| abfserver | SteamCMD app 2857200 returns Invalid platform on Linux |
+| bsserver | Blade Symphony: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
+| dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | accserver | SteamCMD app 1430110 requires authentication (No subscription) |
 | alienarenaserver | SteamCMD app 629540 reports success but installs no game files (no Linux depot) |
 | argoserver | SteamCMD app 563930 installs no Linux-compatible executable |
@@ -264,17 +266,5 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | ut99server | Download prerequisite |
 | vintagestoryserver | Download prerequisite |
 | vsserver | HLDS mod maps not available via SteamCMD |
-
-## RUNNABLE (5)
-
-Tests with no skip marker and no known blocker — not yet confirmed passing.
-
-| Test | Type | Notes |
-|------|------|-------|
-| bsserver | SteamCMD (Source) | Blade Symphony: executable fixed to bin/srcds_run.sh; CRLF stripping added in valve_server.py install step |
-| dysserver | SteamCMD (Source) | Dystopia: executable fixed to bin/srcds_run.sh; CRLF stripping added in valve_server.py install step |
-| insserver | SteamCMD (Source) | Insurgency: CRLF line endings in srcds_run now stripped by valve_server.py install step |
-| inssserver | SteamCMD | Insurgency: Sandstorm: exe_name changed to Insurgency/Binaries/Linux/InsurgencyServer-Linux-Shipping |
-| ts3server | Direct download | TeamSpeak 3: version scraper fixed to match linux_amd64 URL pattern in downloads page |
 
 All integration tests have been tested and categorized. No untested servers remain.
