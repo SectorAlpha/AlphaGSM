@@ -201,7 +201,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
-| medievalengineersserver | Wine: Mono required; .NET XML serializer tries to write temp files to a double-mapped drive path (TMPDIR on external mount + Wine Q: drive = double path); fixed with TEMP=C:\windows\temp env override; awaiting retest |
+| medievalengineersserver | Wine: Mono required; .NET XML serializer reads Unix TMPDIR and creates a temp file which Wine maps to an invalid path via Q: drive; fixed by unsetting TMPDIR/TMP/TEMP so Wine Mono falls through to GetTempPathW(); awaiting retest |
 | miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
