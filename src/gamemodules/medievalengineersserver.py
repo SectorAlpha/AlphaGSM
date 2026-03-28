@@ -115,13 +115,15 @@ def get_start_command(server):
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
         # ME uses Wine Mono whose Path.GetTempPath() reads the Unix TMPDIR env
         # var rather than Windows TMP/TEMP.  If TMPDIR points to a Linux path on
-        # an external mount, Wine's drive mapping produces a double-path that
-        # doesn't exist (e.g. Q:\media\...\useme instead of Q:\useme).
-        # Force TMPDIR to /tmp (always accessible, maps cleanly to Z:\tmp in Wine)
-        # and also set TMP/TEMP for any Windows-native temp lookups.
+        # an external mount, Wine's Q: drive mapping produces an invalid path
+        # (e.g. Q:\media\...\useme).  Setting TMPDIR to a path inside the Wine
+        # C: drive (which Wine always resolves correctly) avoids this.
+        wine_prefix = server.data.get("wineprefix") or os.path.expanduser("~/.wine")
+        wine_temp = os.path.join(wine_prefix, "drive_c", "windows", "temp")
+        os.makedirs(wine_temp, exist_ok=True)
         cmd = [
             "env",
-            "TMPDIR=/tmp",
+            f"TMPDIR={wine_temp}",
             "TEMP=C:\\windows\\temp",
             "TMP=C:\\windows\\temp",
         ] + cmd
