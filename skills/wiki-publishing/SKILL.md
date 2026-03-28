@@ -23,7 +23,8 @@ Primary source files:
 - `README.md`
 - `DEVELOPERS.md`
 - `docs/README.md`
-- `docs/servers/*.md`
+- `docs/*.md` (all root docs)
+- `docs/servers/*.md` (all server guides, auto-discovered)
 
 ## Files To Inspect
 
@@ -42,8 +43,8 @@ Primary source files:
 
 ## When To Update
 
-If docs change substantially or new top-level guides are added, update:
-
-- the publish script page map
-- the link rewrite map
-- the generated wiki home page
+If docs change substantially or new top-level guides are added, no script changes are
+needed — `publish_wiki.sh` auto-discovers all `.md` files under `docs/` and
+`docs/servers/`. The fixed page-name overrides at the top of the script only need
+updating if the special top-level pages (`README.md`, `DEVELOPERS.md`, `docs/README.md`)
+are renamed.

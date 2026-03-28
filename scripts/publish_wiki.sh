@@ -31,23 +31,49 @@ repo_slug = sys.argv[3]
 default_branch = sys.argv[4]
 blob_root = f"https://github.com/{repo_slug}/blob/{default_branch}/"
 
+
+def to_wiki_name(stem: str) -> str:
+    """Convert a file stem to a hyphenated TitleCase wiki page name.
+
+    Examples:
+      'minecraft-vanilla' -> 'Minecraft-Vanilla'
+      'TEST_STATUS'       -> 'Test-Status'
+      'abfserver'         -> 'Abfserver'
+    """
+    parts = re.split(r"[-_]", stem)
+    return "-".join(p.capitalize() for p in parts)
+
+
+# Fixed mappings for top-level docs and docs/README.md (special names).
 page_map = {
     "README.md": "Getting-Started.md",
     "DEVELOPERS.md": "Developers.md",
     "docs/README.md": "Docs.md",
-    "docs/servers/minecraft-vanilla.md": "Minecraft-Vanilla.md",
-    "docs/servers/team-fortress-2.md": "Team-Fortress-2.md",
-    "docs/servers/counter-strike-global-offensive.md": "Counter-Strike-Global-Offensive.md",
 }
 
 link_map = {
     "README.md": "Getting-Started",
     "DEVELOPERS.md": "Developers",
     "docs/README.md": "Docs",
-    "docs/servers/minecraft-vanilla.md": "Minecraft-Vanilla",
-    "docs/servers/team-fortress-2.md": "Team-Fortress-2",
-    "docs/servers/counter-strike-global-offensive.md": "Counter-Strike-Global-Offensive",
 }
+
+# Auto-map every other .md file directly under docs/.
+for md_file in sorted((repo_root / "docs").glob("*.md")):
+    if md_file.name == "README.md":
+        continue
+    rel = f"docs/{md_file.name}"
+    wiki_name = to_wiki_name(md_file.stem)
+    page_map[rel] = f"{wiki_name}.md"
+    link_map[rel] = wiki_name
+
+# Auto-map every .md file under docs/servers/.
+server_wiki_names: list[str] = []
+for md_file in sorted((repo_root / "docs" / "servers").glob("*.md")):
+    rel = f"docs/servers/{md_file.name}"
+    wiki_name = to_wiki_name(md_file.stem)
+    page_map[rel] = f"{wiki_name}.md"
+    link_map[rel] = wiki_name
+    server_wiki_names.append(wiki_name)
 
 link_pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
@@ -72,7 +98,11 @@ for source, dest in page_map.items():
     rewritten = rewrite_links(content, source)
     (wiki_dir / dest).write_text(rewritten)
 
-home = """# AlphaGSM Wiki
+server_guide_lines = "\n".join(
+    f"- [[{name.replace('-', ' ')}]]" for name in server_wiki_names
+)
+
+home = f"""# AlphaGSM Wiki
 
 This wiki is published from the main repository documentation.
 
@@ -82,11 +112,16 @@ This wiki is published from the main repository documentation.
 - [[Docs]]
 - [[Developers]]
 
+## Server Information
+
+- [[Game Server Support]]
+- [[Platform Support]]
+- [[Manual Download Fallbacks]]
+- [[Test Status]]
+
 ## Server Guides
 
-- [[Minecraft Vanilla]]
-- [[Team Fortress 2]]
-- [[Counter-Strike Global Offensive]]
+{server_guide_lines}
 
 ## Source Repository
 
