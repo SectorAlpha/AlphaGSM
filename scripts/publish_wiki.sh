@@ -20,6 +20,7 @@ trap cleanup EXIT
 git clone "$WIKI_REMOTE" "$WIKI_DIR"
 
 python3 - <<'PY' "$REPO_ROOT" "$WIKI_DIR" "$REPO_SLUG" "$DEFAULT_BRANCH"
+import os
 from pathlib import Path
 import re
 import sys
@@ -51,22 +52,24 @@ link_map = {
 link_pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
-def rewrite_links(text: str) -> str:
+def rewrite_links(text: str, source: str) -> str:
+    source_dir = Path(source).parent
+
     def repl(match: re.Match[str]) -> str:
         label, target = match.group(1), match.group(2)
         if target.startswith(("http://", "https://", "#", "mailto:")):
             return match.group(0)
-        normalized = target.lstrip("./")
-        if normalized in link_map:
-            return f"[[{label}|{link_map[normalized]}]]"
-        return f"[{label}]({blob_root}{normalized})"
+        resolved = Path(os.path.normpath(source_dir / target)).as_posix()
+        if resolved in link_map:
+            return f"[[{label}|{link_map[resolved]}]]"
+        return f"[{label}]({blob_root}{resolved})"
 
     return link_pattern.sub(repl, text)
 
 
 for source, dest in page_map.items():
     content = (repo_root / source).read_text()
-    rewritten = rewrite_links(content)
+    rewritten = rewrite_links(content, source)
     (wiki_dir / dest).write_text(rewritten)
 
 home = """# AlphaGSM Wiki
