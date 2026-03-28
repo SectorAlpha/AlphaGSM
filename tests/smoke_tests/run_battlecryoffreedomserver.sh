@@ -41,6 +41,7 @@ trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
 require_cmd screen
+require_proton
 
 WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
