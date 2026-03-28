@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_mysql,
     require_proton,
     pick_free_tcp_port,
     write_config,
@@ -29,6 +30,7 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
     require_steamcmd_opt_in()
     require_proton()
     require_command("screen")
+    require_mysql()  # LiF exits immediately if MySQL is not running on localhost
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

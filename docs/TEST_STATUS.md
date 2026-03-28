@@ -1,14 +1,14 @@
 # Integration Test Status
 
-Last updated: 2026-03-28
+Last updated: 2026-04-02
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 71    |
+| PASSED   | 72    |
 | DISABLED | 82    |
-| SKIPPED  | 81    |
+| SKIPPED  | 80    |
 | RUNNABLE | 0     |
 
 ## Status Key
@@ -91,6 +91,7 @@ Last updated: 2026-03-28
 | sunkenlandserver | SteamCMD (Proton) |
 | theforestserver | SteamCMD (Proton) |
 | askaserver | SteamCMD (Wine) |
+| pixarkserver | SteamCMD (Wine) |
 | remnantsserver | SteamCMD (Wine) |
 | readyornotserver | SteamCMD (Wine) |
 
@@ -183,31 +184,31 @@ Last updated: 2026-03-28
 
 ## SKIPPED (81)
 
-Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
+Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
 | arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
 | astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
-| blackops3server | Wine: server (Launch_Server.bat, app 545990) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
-| blackwakeserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 423410 — run individually to verify |
-| darkandlightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 630230 — run individually to verify |
+| blackops3server | Wine: Launch_Server.bat ran the exe from the wrong working directory; fixed — exe now runs directly from UnrankedServer/ dir; awaiting retest confirmation |
+| blackwakeserver | Wine: exe path fixed (was wrong path); needs individual retest to confirm — app 423410 |
+| darkandlightserver | Wine: server starts (runs at 39% CPU) but DNL/Saved/Logs/DNL.log not created within 300s under Wine; UE4 init is slow — needs extended START_TIMEOUT or additional Wine deps; app 630230 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
-| empyrionserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 530870 — run individually to verify |
+| empyrionserver | Wine: exe path fixed (DedicatedServer/EmpyrionDedicated.exe); needs individual retest — app 530870 |
 | fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
-| heatserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 996600 — run individually to verify |
+| heatserver | Wine: exe path fixed (was wrong exe name); needs individual retest — app 996600 |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
-| lifeisfeudalserver | Wine: server (ddctd_cm_yo_server.exe, app 320850) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
-| medievalengineersserver | Wine: server (MedievalEngineersDedicated.exe, app 367970) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
+| lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
+| medievalengineersserver | Wine: server starts (no crash with vcrun2019+win10) but VRAGE engine writes no console output — logs go to AppData/Roaming; log path needs discovery; app 367970 |
 | miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
 | notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
 | outpostzeroserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 762880 — run individually to verify |
-| pixarkserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 824360 — run individually to verify |
-| primalcarnageextinctionserver | Wine: server (PrimalCarnageServer.exe, app 336400) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
+| primalcarnageextinctionserver | Wine: server starts (no crash with vcrun2019+win10) but PrimalCarnageServer.exe writes no markers to stdout within 300s; UE3 engine logs go elsewhere; app 336400 |
+
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
@@ -218,8 +219,8 @@ Tests with `pytest.mark.skip` or a `require_proton()` / `require_command()` guar
 | sonsoftheforestserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2465200 (Sons of the Forest) is large — run individually with extended timeout |
 | starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
-| subsistenceserver | Wine: server (run_dedicated_server.bat, app 1362640) crashes immediately under Wine before writing log markers; stop command fails with "Can't stop a server that isn't running" |
-| terratechworldsserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2533070 — run individually to verify |
+| subsistenceserver | Wine: run_dedicated_server.bat used Wine's 'start /B' which fails (ShellExecuteEx); fixed — exe now runs directly as Subsistence.exe with UDK map URL args; awaiting retest |
+| terratechworldsserver | Wine: server runs but Saved/Logs/TT2.log not created within 300–460s; UE4 init is slow under Wine; needs extended START_TIMEOUT or additional Wine deps; app 2533070 |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |

@@ -68,6 +68,18 @@ def require_proton():
         )
 
 
+def require_mysql(host="127.0.0.1", port=3306):
+    """Skip if a MySQL/MariaDB server is not reachable on *host*:*port*."""
+    try:
+        with socket.create_connection((host, port), timeout=2):
+            pass
+    except OSError:
+        pytest.skip(
+            f"MySQL/MariaDB is required but not reachable at {host}:{port}; "
+            "start a local database service before running this test"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Port helpers
 # ---------------------------------------------------------------------------

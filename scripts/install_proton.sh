@@ -15,6 +15,33 @@ set -euo pipefail
 MODE="${1:-full}"
 
 # ---------------------------------------------------------------------------
+# Wine prefix setup — installs required Windows runtimes via winetricks
+# ---------------------------------------------------------------------------
+# Many Windows game server binaries require the Microsoft Visual C++ runtime.
+# We install it into the default Wine prefix (~/.wine) once after Wine is first
+# set up.  winetricks is idempotent: it skips packages already installed.
+
+setup_wine_prefix() {
+    echo "==> Setting up Wine prefix (installing common Windows runtimes)..."
+
+    if ! command -v winetricks >/dev/null 2>&1; then
+        echo "    Installing winetricks..."
+        sudo apt-get install -y winetricks -qq
+    fi
+
+    echo "    Setting Windows version to Windows 10..."
+    # Default Wine prefix is Win7; many modern game servers need Win10 APIs.
+    # This prevents 'kernelbase.dll bad index' crashes on newer binaries.
+    WINEDEBUG=-all winetricks win10
+
+    echo "    Installing Visual C++ 2019 runtime (vcrun2019)..."
+    # WINEDEBUG=-all suppresses Wine's verbose debug chatter on first-run.
+    WINEDEBUG=-all winetricks --unattended vcrun2019
+
+    echo "    Wine prefix ready."
+}
+
+# ---------------------------------------------------------------------------
 # Wine
 # ---------------------------------------------------------------------------
 
@@ -87,6 +114,7 @@ EOF
 case "$MODE" in
     wine)
         install_wine
+        setup_wine_prefix
         ;;
     proton)
         install_proton_ge
@@ -94,6 +122,7 @@ case "$MODE" in
     full|*)
         install_wine
         install_proton_ge
+        setup_wine_prefix
         ;;
 esac
 
@@ -101,3 +130,4 @@ echo ""
 echo "==> Installation complete."
 echo "    To verify Wine:     wine --version"
 echo "    To verify Proton:   ls -la ${PROTON_GE_DIR:-$HOME/.local/share/proton-ge}/"
+echo "    To verify runtime:  ls ~/.wine/drive_c/windows/system32/vcruntime140.dll"

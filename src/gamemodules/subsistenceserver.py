@@ -38,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win32/run_dedicated_server.bat"):
+def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win32/Subsistence.exe"):
     """Collect and store configuration values for a Subsistence server."""
 
     server.data["Steam_AppID"] = steam_app_id
@@ -112,15 +112,22 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [
-            server.data["exe_name"],
-            str(server.data["port"]),
-            str(server.data["queryport"]),
-            str(server.data["maxplayers"]),
-        ]
+    # The bat file shipped with the server uses 'start /B Subsistence.exe server coldmap1'
+    # which fails under Wine (ShellExecuteEx not supported).  We run Subsistence.exe
+    # directly with the same UDK URL arguments inlined into the map string.
+    port = server.data.get("port", 27015)
+    queryport = server.data.get("queryport", 27016)
+    maxplayers = server.data.get("maxplayers", 10)
+    map_url = (
+        f"server coldmap1?Port={port}?QueryPort={queryport}"
+        f"?MaxPlayers={maxplayers}?steamsockets"
+    )
+    # Work from the exe's own directory so DLL loading succeeds.
+    binaries_dir = os.path.join(server.data["dir"], "Binaries", "Win32")
+    cmd = [server.data["exe_name"], map_url]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
-    return cmd, server.data["dir"]
+    return cmd, binaries_dir
 
 
 def do_stop(server, j):
