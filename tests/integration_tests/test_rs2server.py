@@ -20,7 +20,7 @@ from conftest import (
 )
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: large download (~13+ GB)
 

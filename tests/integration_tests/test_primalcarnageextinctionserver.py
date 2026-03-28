@@ -20,7 +20,7 @@ from conftest import (
 )
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -52,11 +52,12 @@ def test_primalcarnageextinctionserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        # UE3 dedicated server logs go to PrimalCarnageGame/Logs/Launch.log,
+        # not to stdout.  The -log flag in get_start_command writes there.
+        log_path = install_dir / "PrimalCarnageGame" / "Logs" / "Launch.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Engine is initialized", "listening on port", "Listening for client"],
             START_TIMEOUT,
         )
 

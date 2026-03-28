@@ -125,9 +125,21 @@ def get_start_command(server):
     # Work from the exe's own directory so DLL loading succeeds.
     # Use the basename only (no path prefix) because cwd is already the exe dir.
     binaries_dir = os.path.join(server.data["dir"], "Binaries", "Win32")
-    cmd = ["Subsistence.exe", map_url]
+    # -log writes UE3 engine output to UDKGame/Logs/Launch.log instead of a
+    # Window owned by the process.  LIBGL_ALWAYS_SOFTWARE forces Mesa software
+    # rendering so that wined3d SM3 shader compilation never hits GPU driver
+    # issues that crash UE3 combined client/server binaries under Wine.
+    cmd = ["Subsistence.exe", map_url, "-log"]
     if IS_LINUX:
-        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        wine_cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        # Inject software-renderer env var after any existing env prefix so that
+        # Wine uses Mesa/llvmpipe instead of the GPU, preventing D3D SM3 shader
+        # compilation failures.
+        if wine_cmd and wine_cmd[0] == "env":
+            wine_cmd.insert(1, "LIBGL_ALWAYS_SOFTWARE=1")
+        else:
+            wine_cmd = ["env", "LIBGL_ALWAYS_SOFTWARE=1"] + wine_cmd
+        cmd = wine_cmd
     return cmd, binaries_dir
 
 

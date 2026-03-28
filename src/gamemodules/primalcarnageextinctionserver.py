@@ -44,10 +44,10 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/Prim
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
     server.data.setdefault("queryport", "27015")
-    server.data.setdefault("backupfiles", ["UDKGame/Config", "UDKGame/Logs"])
+    server.data.setdefault("backupfiles", ["PrimalCarnageGame/Config", "PrimalCarnageGame/Logs"])
     if "backup" not in server.data:
         server.data["backup"] = {
-            "profiles": {"default": {"targets": ["UDKGame/Config", "UDKGame/Logs"]}},
+            "profiles": {"default": {"targets": ["PrimalCarnageGame/Config", "PrimalCarnageGame/Logs"]}},
             "schedule": [("default", 0, "days")],
         }
 
@@ -111,7 +111,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], "server"]
+    cmd = [server.data["exe_name"], "server", "-log"]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]
