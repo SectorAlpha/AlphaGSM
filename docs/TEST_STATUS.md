@@ -6,9 +6,9 @@ Last updated: 2026-04-02
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 72    |
+| PASSED   | 73    |
 | DISABLED | 82    |
-| SKIPPED  | 80    |
+| SKIPPED  | 79    |
 | RUNNABLE | 0     |
 
 ## Status Key
@@ -18,7 +18,7 @@ Last updated: 2026-04-02
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 - **RUNNABLE** — Test exists and has no skip marker but has not been confirmed passing yet.
 
-## PASSED (71)
+## PASSED (73)
 
 | Test | Type |
 |------|------|
@@ -91,6 +91,7 @@ Last updated: 2026-04-02
 | sunkenlandserver | SteamCMD (Proton) |
 | theforestserver | SteamCMD (Proton) |
 | askaserver | SteamCMD (Wine) |
+| blackops3server | SteamCMD (Wine) |
 | pixarkserver | SteamCMD (Wine) |
 | remnantsserver | SteamCMD (Wine) |
 | readyornotserver | SteamCMD (Wine) |
@@ -182,7 +183,7 @@ Last updated: 2026-04-02
 | zmrserver | Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (81)
+## SKIPPED (79)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -191,7 +192,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
 | arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
 | astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
-| blackops3server | Wine: Launch_Server.bat ran the exe from the wrong working directory; fixed — exe now runs directly from UnrankedServer/ dir; awaiting retest confirmation |
 | blackwakeserver | Wine: exe path fixed (was wrong path); needs individual retest to confirm — app 423410 |
 | darkandlightserver | Wine: server starts (runs at 39% CPU) but DNL/Saved/Logs/DNL.log not created within 300s under Wine; UE4 init is slow — needs extended START_TIMEOUT or additional Wine deps; app 630230 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
