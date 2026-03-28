@@ -108,30 +108,54 @@ install_proton_ge() {
     PROTON_INSTALL_DIR="${PROTON_GE_DIR:-$HOME/.local/share/proton-ge}"
     mkdir -p "$PROTON_INSTALL_DIR"
 
-    # Resolve the latest tarball URL via the GitHub releases API.
+    # Resolve the download URL for the latest Proton-GE tarball.
+    # Prefer the gh CLI (pre-installed and pre-authenticated in GitHub Actions)
+    # over raw curl to avoid unauthenticated API rate limits (60 req/h).
+    ASSET_URL=""
     RELEASE_API="https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest"
 
-    # Build auth header: authenticating avoids the 60 req/h rate limit.
-    AUTH_HEADER=()
-    if [ -n "${GITHUB_TOKEN:-}" ]; then
-        AUTH_HEADER=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    if command -v gh >/dev/null 2>&1; then
+        ASSET_URL=$(
+            gh release view --repo GloriousEggroll/proton-ge-custom \
+                --json assets \
+                --jq '[.assets[] | select(.name | endswith(".tar.gz")) | .browserDownloadUrl] | first' \
+                2>/dev/null || true
+        )
     fi
 
-    ASSET_URL=$(
-        curl -sf "$RELEASE_API" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "${AUTH_HEADER[@]}" |
-        python3 - <<'EOF'
+    # Fall back to curl + python when gh is unavailable (local installs).
+    if [ -z "${ASSET_URL:-}" ]; then
+        AUTH_HEADER=()
+        if [ -n "${GITHUB_TOKEN:-}" ]; then
+            AUTH_HEADER=(-H "Authorization: Bearer $GITHUB_TOKEN")
+        fi
+
+        ASSET_URL=$(
+            set +o pipefail  # don't abort if curl fails; handle below
+            curl -s "$RELEASE_API" \
+                -H "Accept: application/vnd.github.v3+json" \
+                "${AUTH_HEADER[@]}" |
+            python3 - <<'EOF'
 import json, sys
-data = json.load(sys.stdin)
+body = sys.stdin.read()
+try:
+    data = json.loads(body)
+except json.JSONDecodeError:
+    print(f"ERROR: GitHub API returned non-JSON: {body[:200]!r}", file=sys.stderr)
+    raise
+if "message" in data:
+    print(f"ERROR: GitHub API error: {data['message']}", file=sys.stderr)
+    raise SystemExit(1)
 for asset in data.get("assets", []):
     if asset["name"].endswith(".tar.gz"):
         print(asset["browser_download_url"])
         break
 EOF
-    )
+            set -o pipefail
+        )
+    fi
 
-    if [ -z "$ASSET_URL" ]; then
+    if [ -z "${ASSET_URL:-}" ]; then
         echo "ERROR: Could not resolve Proton-GE download URL from $RELEASE_API" >&2
         exit 1
     fi
