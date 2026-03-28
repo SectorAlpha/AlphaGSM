@@ -191,21 +191,53 @@ jobs:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
       - id: set-matrix
-        name: Split integration tests into max 20 batches
+        name: Split integration tests into batches (slow tests get solo batches)
         run: |
           python3 - <<'PY'
           import json, math, os
-          tests = sorted(f for f in os.listdir("tests/integration_tests") if f.startswith("test_") and f.endswith(".py"))
-          max_jobs = 20
-          batch_size = math.ceil(len(tests) / max_jobs)
+
+          # Tests with extended per-test timeouts (2400-3600s) get solo batches
+          # so they never block a batch of regular tests.
+          SLOW_TESTS = [
+              "test_rs2server.py",       # 3600s: ~13 GB download
+              "test_scumserver.py",      # 3600s: large download
+              "test_sevendaystodie.py",  # 3600s: ~12 GB + world gen
+              "test_palworld.py",        # 2400s: ~3.7 GB + UE5 startup
+              "test_rust.py",            # 2400s: ~2 GB + world gen
+          ]
+
+          all_tests = sorted(
+              f for f in os.listdir("tests/integration_tests")
+              if f.startswith("test_") and f.endswith(".py")
+          )
+          slow_set = set(SLOW_TESTS)
+          regular_tests = [t for t in all_tests if t not in slow_set]
+
           batches = []
-          for i in range(0, len(tests), batch_size):
-              chunk = tests[i:i+batch_size]
-              batches.append({
-                  "batch": i // batch_size + 1,
-                  "files": " ".join(f"tests/integration_tests/{t}" for t in chunk),
-                  "label": f"batch-{i // batch_size + 1}-of-{math.ceil(len(tests) / batch_size)}"
-              })
+
+          # Solo batch per slow test
+          for t in SLOW_TESTS:
+              if t in all_tests:
+                  batches.append({
+                      "batch": len(batches) + 1,
+                      "files": f"tests/integration_tests/{t}",
+                      "label": f"slow-{t[5:-3]}",
+                  })
+
+          # Remaining tests split across up to max_jobs batches
+          max_jobs = 20
+          if regular_tests:
+              batch_size = math.ceil(len(regular_tests) / max_jobs)
+              for i in range(0, len(regular_tests), batch_size):
+                  chunk = regular_tests[i:i+batch_size]
+                  n = i // batch_size + 1
+                  total = math.ceil(len(regular_tests) / batch_size)
+                  batches.append({
+                      "batch": len(batches) + 1,
+                      "files": " ".join(f"tests/integration_tests/{t}" for t in chunk),
+                      "label": f"batch-{n}-of-{total}",
+                  })
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f'matrix={json.dumps({"include": batches})}\n')
           PY
@@ -459,7 +491,7 @@ jobs:
       - name: Summarize test results
         run: |
           python3 - <<'PYEOF'
-          import glob, xml.etree.ElementTree as ET
+          import glob, sys, xml.etree.ElementTree as ET
 
           smoke_passed, smoke_failed = [], []
           int_passed, int_skipped, int_failed = [], [], []
@@ -534,4 +566,7 @@ jobs:
           print("\n" + SEP)
           print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")
           print(SEP)
+
+          if total_f > 0:
+              sys.exit(1)
           PYEOF
