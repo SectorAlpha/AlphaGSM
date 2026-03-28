@@ -271,10 +271,14 @@ jobs:
 
           echo "==> Wine prefix ready: $(wine --version)"
       - name: Install Proton-GE
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Download and extract the latest Proton-GE release.
           # The proton script lands in ~/.local/share/proton-ge/GE-ProtonX-Y/proton
           # which is one of the search paths in src/utils/proton.py find_proton().
+          # GITHUB_TOKEN is forwarded so the GitHub API call is authenticated
+          # (avoids the 60 req/hour rate limit for unauthenticated runners).
           bash scripts/install_proton.sh proton
       - name: Set up Java
         uses: actions/setup-java@v4

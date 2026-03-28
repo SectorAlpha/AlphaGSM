@@ -110,9 +110,17 @@ install_proton_ge() {
 
     # Resolve the latest tarball URL via the GitHub releases API.
     RELEASE_API="https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest"
+
+    # Build auth header: authenticating avoids the 60 req/h rate limit.
+    AUTH_HEADER=()
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        AUTH_HEADER=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    fi
+
     ASSET_URL=$(
         curl -sf "$RELEASE_API" \
-            -H "Accept: application/vnd.github.v3+json" |
+            -H "Accept: application/vnd.github.v3+json" \
+            "${AUTH_HEADER[@]}" |
         python3 - <<'EOF'
 import json, sys
 data = json.load(sys.stdin)
