@@ -31,6 +31,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -51,6 +52,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -70,6 +72,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -131,6 +134,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -206,9 +210,56 @@ jobs:
               f.write(f'matrix={json.dumps({"include": batches})}\n')
           PY
 
+  # ---------------------------------------------------------------------------
+  # setup-integration-env: prepare the Wine prefix and Proton-GE install ONCE
+  # per commit and save them to the Actions cache.  All 20 integration-test
+  # batches then restore from that single cache entry instead of each spending
+  # ~3 minutes repeating the same setup on 20 separate runners.
+  # ---------------------------------------------------------------------------
+  setup-integration-env:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Cache Wine prefix and Proton-GE
+        id: cache-wine-proton
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.wine
+            ~/.local/share/proton-ge
+          # Key tied to the workflow file + install script so any change to
+          # setup steps automatically invalidates and regenerates the cache.
+          key: wine-proton-${{ runner.os }}-v1-${{ hashFiles('.github/workflows/unittest.yaml', 'scripts/install_proton.sh') }}
+
+      - name: Install Wine apt packages
+        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y wine64 wine32:i386 winetricks
+
+      - name: Initialise Wine prefix
+        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
+        run: |
+          export DISPLAY="" WINEDLLOVERRIDES="winex11.drv=" WINEDEBUG=-all
+          wineboot --init
+          winetricks -q win10
+          # --force bypasses the stale SHA256 check; || true keeps it non-fatal
+          winetricks -q --force vcrun2019 || true
+          echo "==> Wine prefix ready: $(wine --version)"
+
+      - name: Install Proton-GE
+        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/install_proton.sh proton
+
   integration-test:
     runs-on: ubuntu-latest
-    needs: discover-integration-tests
+    needs: [discover-integration-tests, setup-integration-env]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.matrix) }}
@@ -222,10 +273,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Restore Wine prefix and Proton-GE from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.wine
+            ~/.local/share/proton-ge
+          key: wine-proton-${{ runner.os }}-v1-${{ hashFiles('.github/workflows/unittest.yaml', 'scripts/install_proton.sh') }}
+          # fail-on-cache-miss ensures setup-integration-env ran successfully;
+          # if the cache is somehow absent the batch would fail in an obvious way.
+          fail-on-cache-miss: true
       - name: Install system dependencies
         run: |
           sudo dpkg --add-architecture i386
@@ -235,51 +297,13 @@ jobs:
           # lib32*     — 32-bit Steam runtime (Source engine servers)
           # p7zip      — server archives distributed as .7z
           # wine64 / wine32:i386 / winetricks
-          #            — Windows-binary game server support; Wine runs headless
-          #              via DISPLAY= + WINEDLLOVERRIDES=winex11.drv= (null
-          #              renderer) — no display server required
+          #            — Wine BINARY needed even though the prefix comes from
+          #              cache; the exe itself must be on PATH on every runner
           sudo apt-get install -y \
             screen \
             lib32gcc-s1 lib32stdc++6 \
             p7zip-full \
             wine64 wine32:i386 winetricks
-      - name: Initialise Wine prefix
-        run: |
-          # Run Wine entirely headless — no display server needed.
-          # DISPLAY=  tells Wine not to connect to any X server.
-          # WINEDLLOVERRIDES=winex11.drv=  overrides the X11 driver with
-          # nothing, activating Wine's built-in null renderer so prefix
-          # init and winetricks installers run without any display at all.
-          export DISPLAY=""
-          export WINEDLLOVERRIDES="winex11.drv="
-          export WINEDEBUG=-all
-
-          echo "==> Initialising Wine prefix..."
-          wineboot --init
-
-          echo "==> Setting Windows version to Windows 10..."
-          winetricks -q win10
-
-          echo "==> Installing Visual C++ 2019 runtime..."
-          # --force bypasses SHA256 verification for the VC redist installer.
-          # Microsoft periodically updates the file at the same URL, causing
-          # winetricks' expected hash to become stale. The URL itself is trusted
-          # (aka.ms/vs/16/release/vc_redist.x86.exe → visualstudio.microsoft.com).
-          # || true keeps the step non-fatal so the batch can still run even if
-          # vcrun2019 fails — not every server needs it.
-          winetricks -q --force vcrun2019 || true
-
-          echo "==> Wine prefix ready: $(wine --version)"
-      - name: Install Proton-GE
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Download and extract the latest Proton-GE release.
-          # The proton script lands in ~/.local/share/proton-ge/GE-ProtonX-Y/proton
-          # which is one of the search paths in src/utils/proton.py find_proton().
-          # GITHUB_TOKEN is forwarded so the GitHub API call is authenticated
-          # (avoids the 60 req/hour rate limit for unauthenticated runners).
-          bash scripts/install_proton.sh proton
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
