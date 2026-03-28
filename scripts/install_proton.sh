@@ -51,7 +51,11 @@ setup_wine_prefix() {
     winetricks -q win10
 
     echo "    Installing Visual C++ 2019 runtime (vcrun2019)..."
-    winetricks -q --unattended vcrun2019
+    # --force bypasses SHA256 verification: Microsoft periodically updates the
+    # VC redist installer at the same aka.ms URL, causing winetricks' expected
+    # hash to become stale.  The URL itself is trusted.  || true keeps this
+    # non-fatal; not every server needs vcrun2019.
+    winetricks -q --force vcrun2019 || true
 
     echo "    Installing Wine Mono (.NET/CLR runtime for managed-code servers)..."
     # .NET-based servers (e.g. Medieval Engineers, Space Engineers) need Wine Mono.

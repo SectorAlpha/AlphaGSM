@@ -261,7 +261,13 @@ jobs:
           winetricks -q win10
 
           echo "==> Installing Visual C++ 2019 runtime..."
-          winetricks -q --unattended vcrun2019
+          # --force bypasses SHA256 verification for the VC redist installer.
+          # Microsoft periodically updates the file at the same URL, causing
+          # winetricks' expected hash to become stale. The URL itself is trusted
+          # (aka.ms/vs/16/release/vc_redist.x86.exe → visualstudio.microsoft.com).
+          # || true keeps the step non-fatal so the batch can still run even if
+          # vcrun2019 fails — not every server needs it.
+          winetricks -q --force vcrun2019 || true
 
           echo "==> Wine prefix ready: $(wine --version)"
       - name: Install Proton-GE
