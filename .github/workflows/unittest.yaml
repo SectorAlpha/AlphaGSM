@@ -135,11 +135,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Install SteamCMD runtime dependencies
+      - name: Install system dependencies
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
+          # screen   — required by all smoke tests (AlphaGSM uses GNU screen as
+          #            the process supervisor; smoke runners call require_cmd screen)
+          # lib32*   — 32-bit Steam runtime (Source engine servers: TF2, CS:GO, …)
+          # p7zip    — server archives distributed as .7z
+          sudo apt-get install -y screen lib32gcc-s1 lib32stdc++6 p7zip-full
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -222,11 +226,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Install SteamCMD runtime dependencies
+      - name: Install system dependencies
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
+          # screen   — required by all integration tests (AlphaGSM uses GNU
+          #            screen as the process supervisor; conftest writes screenrc
+          #            and launches game servers through it)
+          # lib32*   — 32-bit Steam runtime (Source engine servers)
+          # p7zip    — server archives distributed as .7z
+          sudo apt-get install -y screen lib32gcc-s1 lib32stdc++6 p7zip-full
+          # Wine / Proton-GE are NOT installed here.
+          # Windows-binary server integration tests call require_proton() which
+          # issues pytest.skip() when neither Wine nor Proton-GE is detected.
+          # Installing Wine + a working Wine prefix (winetricks + Xvfb) and
+          # Proton-GE (~500 MB) on a standard runner is impractical. Those
+          # tests are covered locally via scripts/install_proton.sh.
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
