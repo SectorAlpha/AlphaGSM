@@ -254,6 +254,7 @@ jobs:
       - name: Install Proton-GE
         if: steps.cache-wine-proton.outputs.cache-hit != 'true'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/install_proton.sh proton
 

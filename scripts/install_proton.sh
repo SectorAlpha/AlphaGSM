@@ -108,51 +108,71 @@ install_proton_ge() {
     PROTON_INSTALL_DIR="${PROTON_GE_DIR:-$HOME/.local/share/proton-ge}"
     mkdir -p "$PROTON_INSTALL_DIR"
 
-    # Resolve the download URL for the latest Proton-GE tarball.
-    # Prefer the gh CLI (pre-installed and pre-authenticated in GitHub Actions)
-    # over raw curl to avoid unauthenticated API rate limits (60 req/h).
     ASSET_URL=""
     RELEASE_API="https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest"
 
+    # --- Try gh CLI with retry (pre-installed + pre-authenticated on GitHub Actions).
+    # gh avoids the 60 req/h unauthenticated rate limit; retries handle transient
+    # 202/empty responses that GitHub sometimes returns under load.
     if command -v gh >/dev/null 2>&1; then
-        ASSET_URL=$(
-            gh release view --repo GloriousEggroll/proton-ge-custom \
-                --json assets \
-                --jq '[.assets[] | select(.name | endswith(".tar.gz")) | .browserDownloadUrl] | first' \
-                2>/dev/null || true
-        )
+        echo "    Using gh CLI to resolve download URL..."
+        for attempt in 1 2 3; do
+            ASSET_URL=$(
+                gh release view --repo GloriousEggroll/proton-ge-custom \
+                    --json assets \
+                    --jq '[.assets[] | select(.name | endswith(".tar.gz")) | .browserDownloadUrl] | first' \
+                    2>&1 || true
+            )
+            # Strip any error lines gh may have printed to stdout on failure.
+            ASSET_URL=$(echo "${ASSET_URL:-}" | grep '^https://' | head -1 || true)
+            [ -n "${ASSET_URL:-}" ] && break
+            if [ "$attempt" -lt 3 ]; then
+                echo "    Attempt $attempt/3 failed; waiting 15s before retry..." >&2
+                sleep 15
+            fi
+        done
+        ASSET_URL="${ASSET_URL:-}"
     fi
 
-    # Fall back to curl + python when gh is unavailable (local installs).
+    # --- Fall back to curl + python with retry (local installs without gh).
+    # Rate-limited responses return empty or a JSON {message:...} body; we detect
+    # both and retry with progressively longer waits (30 s, then 60 s).
     if [ -z "${ASSET_URL:-}" ]; then
-        AUTH_HEADER=()
-        if [ -n "${GITHUB_TOKEN:-}" ]; then
-            AUTH_HEADER=(-H "Authorization: Bearer $GITHUB_TOKEN")
-        fi
+        echo "    Falling back to curl+python to resolve download URL..."
+        AUTH_ARGS=(-H "Accept: application/vnd.github.v3+json")
+        [ -n "${GITHUB_TOKEN:-}" ] && AUTH_ARGS+=(-H "Authorization: Bearer $GITHUB_TOKEN")
 
-        ASSET_URL=$(
-            set +o pipefail  # don't abort if curl fails; handle below
-            curl -s "$RELEASE_API" \
-                -H "Accept: application/vnd.github.v3+json" \
-                "${AUTH_HEADER[@]}" |
-            python3 - <<'EOF'
+        for attempt in 1 2 3; do
+            ASSET_URL=$(
+                curl -s "${AUTH_ARGS[@]}" "$RELEASE_API" |
+                python3 -c "
 import json, sys
 body = sys.stdin.read()
+if not body.strip():
+    print('    Empty response (possibly rate-limited)', file=sys.stderr)
+    sys.exit(1)
 try:
     data = json.loads(body)
 except json.JSONDecodeError:
-    print(f"ERROR: GitHub API returned non-JSON: {body[:200]!r}", file=sys.stderr)
-    raise
-if "message" in data:
-    print(f"ERROR: GitHub API error: {data['message']}", file=sys.stderr)
-    raise SystemExit(1)
-for asset in data.get("assets", []):
-    if asset["name"].endswith(".tar.gz"):
-        print(asset["browser_download_url"])
+    print(f'    Non-JSON response: {body[:120]!r}', file=sys.stderr)
+    sys.exit(1)
+if 'message' in data:
+    print(f'    API error: {data[\"message\"]}', file=sys.stderr)
+    sys.exit(1)
+for a in data.get('assets', []):
+    if a['name'].endswith('.tar.gz'):
+        print(a['browser_download_url'])
         break
-EOF
-            set -o pipefail
-        )
+" || true
+            )
+            [ -n "${ASSET_URL:-}" ] && break
+            if [ "$attempt" -lt 3 ]; then
+                local wait_s=$(( attempt * 30 ))
+                echo "    Attempt $attempt/3 failed; waiting ${wait_s}s before retry..." >&2
+                sleep "$wait_s"
+            fi
+        done
+        ASSET_URL="${ASSET_URL:-}"
     fi
 
     if [ -z "${ASSET_URL:-}" ]; then
