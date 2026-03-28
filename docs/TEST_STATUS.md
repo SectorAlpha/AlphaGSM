@@ -143,7 +143,7 @@ Last updated: 2026-04-02
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
 | hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |
 | insserver | Insurgency srcds_run has CRLF line endings; cannot exec |
-| inssserver | Insurgency: Sandstorm (app 581330) module uses incorrect executable path; binary is at Insurgency/Binaries/Linux/ not install root |
+| inssserver | exe_name fixed to Insurgency/Binaries/Linux/InsurgencyServer-Linux-Shipping; awaiting retest |
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | jc2server | SteamCMD app 261140 installs no Linux-compatible dedicated server binary (openjc2-server not present) |
 | jc3server | SteamCMD app 619960 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -174,7 +174,7 @@ Last updated: 2026-04-02
 | stationeersserver | Can't start server that is already running (process management issue during setup) |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | trackmaniaserver | TrackMania download URL returns 403 |
-| ts3server | TeamSpeak downloads page layout changed; version scraper broken |
+| ts3server | version scraper fixed — page no longer has "Server 64-bit" text; now matches linux_amd64 URL in page; awaiting retest |
 | warbandserver | TaleWorlds download page blocks automated access (HTTP 403) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |

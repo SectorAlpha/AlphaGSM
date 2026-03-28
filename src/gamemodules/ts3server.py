@@ -51,7 +51,7 @@ def resolve_teamspeak_download(version=None):
     if version not in (None, "", "latest"):
         return version, TEAMSPEAK_URL_TEMPLATE % (version, version)
     page = _read_download_page()
-    match = re.search(r"Server 64-bit ([0-9]+(?:\.[0-9]+)+)", page)
+    match = re.search(r"releases/server/([0-9]+(?:\.[0-9]+)+)/teamspeak3-server_linux_amd64", page)
     if match is None:
         raise ServerError("Unable to locate the latest TeamSpeak 3 server version")
     version = match.group(1)
