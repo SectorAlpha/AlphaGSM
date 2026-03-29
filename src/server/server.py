@@ -592,10 +592,12 @@ class Server(object):
         get_addr = getattr(self.module, "get_query_address", None)
         if callable(get_addr):
             host, port, protocol = get_addr(self)
+            _explicit = True
         else:
             host = "127.0.0.1"
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
+            _explicit = False
 
         if protocol == "a2s":
             try:
@@ -612,8 +614,12 @@ class Server(object):
                 else:
                     print("Server is responding (A2S query on port {}).".format(port))
                 return
-            except query_utils.QueryError:
-                # A2S failed — fall back to TCP ping on the main game port.
+            except query_utils.QueryError as exc:
+                if _explicit:
+                    raise ServerError(
+                        "Server does not appear to be responding: " + str(exc)
+                    )
+                # Default heuristic: fall back to TCP ping on the main game port.
                 host = "127.0.0.1"
                 port = self.data["port"]
                 protocol = "tcp"
@@ -661,10 +667,12 @@ class Server(object):
         get_addr = getattr(self.module, "get_info_address", None)
         if callable(get_addr):
             host, port, protocol = get_addr(self)
+            _explicit = True
         else:
             host = "127.0.0.1"
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
+            _explicit = False
 
         if protocol == "slp":
             try:
@@ -708,8 +716,10 @@ class Server(object):
                     print("Server is responding (A2S on port {}), "
                           "but details could not be parsed.".format(port))
                 return
-            except query_utils.QueryError:
-                # Fall through to TCP
+            except query_utils.QueryError as exc:
+                if _explicit:
+                    raise ServerError("Info query failed: " + str(exc))
+                # Default heuristic: fall through to TCP
                 host = "127.0.0.1"
                 port = self.data["port"]
 
