@@ -248,7 +248,7 @@ class Server(object):
                     "Output result as JSON instead of human-readable text",
                     "as_json",
                     None,
-                    False,
+                    True,
                 ),
             )
         ),
