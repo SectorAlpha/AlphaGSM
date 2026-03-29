@@ -110,20 +110,6 @@ def _run_and_assert_ok(env, *args, timeout=TEST_TIMEOUT_SECONDS):
     return result
 
 
-def _run_soft_query(env, server_name, timeout=TEST_TIMEOUT_SECONDS):
-    """Run alphagsm query; skip (not fail) when server is not reachable."""
-    result = _run_alphagsm(env, server_name, "query", timeout=timeout)
-    _log_command_result(f"alphagsm {server_name} query", result)
-    if result.returncode == 0:
-        return result
-    if result.returncode == 1:
-        pytest.skip(
-            "Server not responding to query — skipping in this environment: "
-            + repr((result.stderr or result.stdout).strip())
-        )
-    assert result.returncode == 0, result.stderr or result.stdout
-
-
 def _skip_for_known_tf2_setup_issue(result):
     combined = "\n".join(part for part in (result.stdout, result.stderr) if part)
     known_markers = (
@@ -225,7 +211,7 @@ def test_tf2_download_install_and_start(tmp_path):
         assert "Server is running" in status_cmd.stdout
 
         # query — TF2 is Source engine; expects A2S (or TCP fallback)
-        query_result = _run_soft_query(env, server_name)
+        query_result = _run_and_assert_ok(env, server_name, "query")
         print("\n=== query ===")
         print(query_result.stdout.strip())
         assert (

@@ -125,20 +125,6 @@ def _run_and_assert_ok(env, *args, timeout=TEST_TIMEOUT_SECONDS):
     return result
 
 
-def _run_soft_query(env, server_name, timeout=TEST_TIMEOUT_SECONDS):
-    """Run alphagsm query; skip (not fail) when server is not reachable."""
-    result = _run_alphagsm(env, server_name, "query", timeout=timeout)
-    _log_command_result(f"alphagsm {server_name} query", result)
-    if result.returncode == 0:
-        return result
-    if result.returncode == 1:
-        pytest.skip(
-            "Server not responding to query — skipping in this environment: "
-            + repr((result.stderr or result.stdout).strip())
-        )
-    assert result.returncode == 0, result.stderr or result.stdout
-
-
 def _encode_varint(value):
     buf = bytearray()
     while True:
@@ -269,7 +255,7 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         _run_and_assert_ok(env, server_name, "message", "hello world")
 
         # query — Minecraft doesn't implement A2S; expects TCP ping fallback
-        query_result = _run_soft_query(env, server_name)
+        query_result = _run_and_assert_ok(env, server_name, "query")
         print("\n=== query ===")
         print(query_result.stdout.strip())
         assert "Server port is open" in query_result.stdout, (

@@ -178,32 +178,6 @@ def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
     return result
 
 
-def run_soft_query(env, server_name, timeout=DEFAULT_TIMEOUT):
-    """Run alphagsm query; skip (not fail) when the server is not reachable.
-
-    Many game servers that pass the start/status checks do not expose a
-    network-accessible query endpoint in the CI environment (wrong default
-    port, OS-level restrictions, etc.).  Rather than failing the whole test
-    for what is effectively an environment limitation, this helper skips the
-    remaining assertions when the server is simply not answering on the
-    expected port (returncode 1).
-
-    Hard code-bugs such as a Python KeyError crash (returncode 3) are *not*
-    silenced — those still count as a test failure.
-    """
-    result = run_alphagsm(env, server_name, "query", timeout=timeout)
-    log_command_result(f"alphagsm {server_name} query", result)
-    if result.returncode == 0:
-        return result
-    if result.returncode == 1:
-        pytest.skip(
-            "Server not responding to query — skipping in this environment: "
-            + repr((result.stderr or result.stdout).strip())
-        )
-    # returncode 3 (Python exception) or other unexpected code → hard failure
-    assert result.returncode == 0, result.stderr or result.stdout
-
-
 # ---------------------------------------------------------------------------
 # Wait helpers
 # ---------------------------------------------------------------------------

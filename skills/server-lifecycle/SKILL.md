@@ -60,6 +60,36 @@ When adding a new game server, treat the lifecycle work as incomplete until it h
 
 The smoke tests are not owned by this skill, but new server lifecycle work should still result in smoke coverage being added or updated.
 
+## Integration Test Helper Rules
+
+Integration tests use helpers from `tests/integration_tests/conftest.py`.
+
+### No soft skips for query
+
+**Rule**: the `query` command must either pass or fail the test — never silently skip.
+
+Use `run_and_assert_ok(env, server_name, "query")` for the query step. There is no
+`run_soft_query` helper and there should never be one. If a server legitimately
+does not support query, the module should be designed so that `query` reports a
+clear result (e.g. TCP ping fallback), not so that the test tolerates a failure.
+
+The only acceptable reason to skip an integration test is when the server
+**cannot be installed or started** at all in the current environment (e.g.
+Windows-only binary, no login credentials, dead download URL). Skips for those
+cases go through `skip_for_known_steamcmd_issue` inside `run_and_assert_ok`, or
+via `pytest.mark.skip` on the whole test.
+
+### Pattern for query in a standard integration test
+
+```python
+# query
+query_result = run_and_assert_ok(env, server_name, "query")
+assert (
+    "Server is responding" in query_result.stdout
+    or "Server port is open" in query_result.stdout
+), f"Unexpected query output: {query_result.stdout!r}"
+```
+
 ## Running Integration Tests On Low Disk Space
 
 SteamCMD game servers can be very large (1–15 GB each). When disk space is limited:
