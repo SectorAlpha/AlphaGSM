@@ -451,3 +451,275 @@ def test_logs_raises_if_tail_fails(monkeypatch, tmp_path):
     with pytest.raises(server_module.ServerError, match="Failed to read"):
         srv.logs()
 
+
+# ---------------------------------------------------------------------------
+# restore
+# ---------------------------------------------------------------------------
+
+def _make_backup_entry(tag, dt_str, fname):
+    import datetime
+    return (tag, datetime.datetime.fromisoformat(dt_str), fname)
+
+
+def test_restore_lists_backups_when_no_argument(monkeypatch, capsys):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "default 2024.01.01 00:00:00.000000.zip"),
+        _make_backup_entry("default", "2024-06-15 12:00:00", "default 2024.06.15 12:00:00.000000.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore()
+
+    out = capsys.readouterr().out
+    assert "[0]" in out
+    assert "[1]" in out
+    assert "2024-01-01" in out
+
+
+def test_restore_prints_message_when_no_backups_exist(monkeypatch, capsys):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: []
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore()
+
+    assert "No backups found" in capsys.readouterr().out
+
+
+def test_restore_by_index_stops_running_server(monkeypatch):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "default 2024.01.01 00:00:00.000000.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    calls = []
+
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: True)
+    monkeypatch.setattr(srv, "stop", lambda: calls.append("stop"))
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    fake_bu.restore = lambda d, f: calls.append(("restore", f))
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore(backup="0")
+
+    assert "stop" in calls
+    assert ("restore", "default 2024.01.01 00:00:00.000000.zip") in calls
+
+
+def test_restore_by_filename_skips_stop_when_not_running(monkeypatch):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "snap.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    calls = []
+
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    fake_bu.restore = lambda d, f: calls.append(("restore", f))
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore(backup="snap.zip")
+
+    assert calls == [("restore", "snap.zip")]
+
+
+def test_restore_raises_for_out_of_range_index(monkeypatch):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "snap.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    with pytest.raises(server_module.ServerError, match="out of range"):
+        srv.restore(backup="5")
+
+
+# ---------------------------------------------------------------------------
+# wipe
+# ---------------------------------------------------------------------------
+
+def test_wipe_raises_if_server_running(monkeypatch):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: True)
+
+    with pytest.raises(server_module.ServerError, match="Cannot wipe a running server"):
+        srv.wipe()
+
+
+def test_wipe_raises_if_no_wipe_support(monkeypatch):
+    module = DummyModule()
+    # DummyModule has no wipe or wipe_paths
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    with pytest.raises(server_module.ServerError, match="not supported"):
+        srv.wipe()
+
+
+def test_wipe_calls_module_wipe_callable(monkeypatch):
+    calls = []
+    module = DummyModule()
+    module.wipe = lambda server: calls.append("wipe")
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    srv.wipe()
+
+    assert calls == ["wipe"]
+
+
+def test_wipe_removes_wipe_paths(monkeypatch, tmp_path):
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    world_dir = game_dir / "Saves"
+    world_dir.mkdir()
+
+    module = DummyModule()
+    module.wipe_paths = ["Saves"]
+
+    srv = make_server(module=module, data=DummyData({"dir": str(game_dir), "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+    # Allow real sp.run so rm -rf actually runs
+    srv.wipe()
+
+    assert not world_dir.exists()
+
+
+def test_wipe_raises_if_rm_fails(monkeypatch, tmp_path):
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "Saves").mkdir()
+
+    module = DummyModule()
+    module.wipe_paths = ["Saves"]
+
+    srv = make_server(module=module, data=DummyData({"dir": str(game_dir), "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+    monkeypatch.setattr(
+        server_module.sp,
+        "run",
+        lambda cmd, check: type("R", (), {"returncode": 1})(),
+    )
+
+    with pytest.raises(server_module.ServerError, match="Failed to remove"):
+        srv.wipe()
+
+
+# ---------------------------------------------------------------------------
+# query
+# ---------------------------------------------------------------------------
+
+def test_query_succeeds_via_a2s(monkeypatch, capsys):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_a2s(host, port, timeout=2.0):
+        pass  # success
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.tcp_ping = None
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert "A2S" in capsys.readouterr().out
+
+
+def test_query_falls_back_to_tcp_when_a2s_fails(monkeypatch, capsys):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_a2s(host, port, timeout=2.0):
+        raise OSError("no udp")
+
+    def fake_tcp(host, port, timeout=2.0):
+        return 3.14
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.tcp_ping = fake_tcp
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert "TCP" in capsys.readouterr().out
+
+
+def test_query_raises_server_error_when_both_fail(monkeypatch):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    fake_q.a2s_info = lambda host, port, timeout=2.0: (_ for _ in ()).throw(OSError("udp"))
+    fake_q.tcp_ping = lambda host, port, timeout=2.0: (_ for _ in ()).throw(OSError("tcp"))
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    with pytest.raises(server_module.ServerError, match="not appear to be responding"):
+        srv.query()
+
+
+def test_query_uses_module_get_query_address(monkeypatch, capsys):
+    calls = []
+    module = DummyModule()
+    module.get_query_address = lambda server: ("10.0.0.1", 27016, "tcp")
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_tcp(host, port, timeout=2.0):
+        calls.append((host, port))
+        return 1.0
+
+    fake_q.tcp_ping = fake_tcp
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert ("10.0.0.1", 27016) in calls

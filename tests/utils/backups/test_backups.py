@@ -117,3 +117,96 @@ def test_checkdatavalue_rejects_invalid_values():
         backups_module.checkdatavalue(data, ("schedule", "0"), "base", "1", "hour")
     with pytest.raises(backups_module.BackupError, match="Invalid key"):
         backups_module.checkdatavalue(data, ("unknown",), "x")
+
+
+# ---------------------------------------------------------------------------
+# list_backups
+# ---------------------------------------------------------------------------
+
+def test_list_backups_returns_empty_when_dir_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(backups_module, "BACKUPDIR", "backup")
+    # No backup subdir
+    result = backups_module.list_backups(str(tmp_path))
+    assert result == []
+
+
+def test_list_backups_parses_and_sorts_entries(tmp_path, monkeypatch):
+    monkeypatch.setattr(backups_module, "BACKUPDIR", "backup")
+    monkeypatch.setattr(backups_module, "TIMESTAMPFORMAT", "%Y.%m.%d %H:%M:%S.%f")
+    backup_dir = tmp_path / "backup"
+    backup_dir.mkdir()
+    names = [
+        "default 2024.06.15 12:00:00.000000.zip",
+        "default 2024.01.01 00:00:00.000000.zip",
+    ]
+    for n in names:
+        (backup_dir / n).write_text("")
+
+    result = backups_module.list_backups(str(tmp_path))
+
+    assert len(result) == 2
+    # sorted ascending by date
+    assert result[0][2] == "default 2024.01.01 00:00:00.000000.zip"
+    assert result[1][2] == "default 2024.06.15 12:00:00.000000.zip"
+
+
+def test_list_backups_skips_malformed_files(tmp_path, monkeypatch):
+    monkeypatch.setattr(backups_module, "BACKUPDIR", "backup")
+    monkeypatch.setattr(backups_module, "TIMESTAMPFORMAT", "%Y.%m.%d %H:%M:%S.%f")
+    backup_dir = tmp_path / "backup"
+    backup_dir.mkdir()
+    (backup_dir / "corrupt.zip").write_text("")
+    (backup_dir / "default 2024.01.01 00:00:00.000000.zip").write_text("")
+
+    result = backups_module.list_backups(str(tmp_path))
+
+    assert len(result) == 1
+
+
+# ---------------------------------------------------------------------------
+# restore
+# ---------------------------------------------------------------------------
+
+def test_restore_extracts_zip_to_dir(tmp_path, monkeypatch):
+    monkeypatch.setattr(backups_module, "BACKUPDIR", "backup")
+    backup_dir = tmp_path / "backup"
+    backup_dir.mkdir()
+    zip_name = "default 2024.01.01 00:00:00.000000.zip"
+    (backup_dir / zip_name).write_text("fake-zip")
+
+    calls = []
+    monkeypatch.setattr(
+        backups_module.sp,
+        "run",
+        lambda cmd, check: (calls.append(cmd), type("R", (), {"returncode": 0})())[1],
+    )
+
+    backups_module.restore(str(tmp_path), zip_name)
+
+    assert calls[0][:3] == ["unzip", "-o", str(backup_dir / zip_name)]
+    assert calls[0][4] == str(tmp_path)
+
+
+def test_restore_raises_if_file_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(backups_module, "BACKUPDIR", "backup")
+    (tmp_path / "backup").mkdir()
+
+    with pytest.raises(backups_module.BackupError, match="not found"):
+        backups_module.restore(str(tmp_path), "ghost.zip")
+
+
+def test_restore_raises_if_unzip_fails(tmp_path, monkeypatch):
+    monkeypatch.setattr(backups_module, "BACKUPDIR", "backup")
+    backup_dir = tmp_path / "backup"
+    backup_dir.mkdir()
+    zip_name = "snap.zip"
+    (backup_dir / zip_name).write_text("bad-zip")
+
+    monkeypatch.setattr(
+        backups_module.sp,
+        "run",
+        lambda cmd, check: type("R", (), {"returncode": 1})(),
+    )
+
+    with pytest.raises(backups_module.BackupError, match="Failed to restore"):
+        backups_module.restore(str(tmp_path), zip_name)

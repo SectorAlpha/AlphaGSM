@@ -130,6 +130,9 @@ class Server(object):
         "dump",
         "set",
         "backup",
+        "restore",
+        "wipe",
+        "query",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -223,6 +226,18 @@ class Server(object):
             repeatable=True,
         ),
         "backup": CmdSpec(),
+        "restore": CmdSpec(
+            optionalarguments=(
+                ArgSpec(
+                    "BACKUP",
+                    "Backup file name or index to restore. "
+                    "If omitted, available backups are listed.",
+                    str,
+                ),
+            )
+        ),
+        "wipe": CmdSpec(),
+        "query": CmdSpec(),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -245,6 +260,16 @@ class Server(object):
         "entry at the end of the list. Also for some keys value 'DELETE' is a value that causes the entry to be deleted.\n\n"
         "Which values are changable is game module dependent",
         "backup": "Backup the game server",
+        "restore": "Restore the game server from a backup.\n"
+        "With no argument, lists available backups with their index numbers.\n"
+        "Pass an index or the exact filename to restore that backup.\n"
+        "The server will be stopped first if it is running.",
+        "wipe": "Delete game-world data for supported server types.\n"
+        "The server must be stopped before wiping. "
+        "Which files are removed is defined by the game module.",
+        "query": "Query the game server to check whether it is responding.\n"
+        "Uses the Source A2S protocol when a query port is configured, "
+        "otherwise falls back to a TCP ping on the game port.",
     }
 
     def __init__(self, name, module=None):
@@ -352,6 +377,12 @@ class Server(object):
                 self.doset(*args, **kwargs)
             elif command == "backup":
                 self.module.backup(self, *args, **kwargs)
+            elif command == "restore":
+                self.restore(*args, **kwargs)
+            elif command == "wipe":
+                self.wipe(*args, **kwargs)
+            elif command == "query":
+                self.query(*args, **kwargs)
         elif command in self.module.commands:
             self.module.command_functions[command](self, *args, **kwargs)
         else:
@@ -455,6 +486,117 @@ class Server(object):
         result = sp.run(["tail", "-n", str(lines), log], check=False)
         if result.returncode != 0:
             raise ServerError("Failed to read log file: " + log)
+
+    def restore(self, backup=None, **kwargs):
+        """Restore the server from a backup archive.
+
+        With no argument, lists available backups with index numbers.
+        Pass an index (int string) or the exact filename to restore that backup.
+        The server is stopped automatically if it is running.
+        """
+        from utils.backups import backups as backup_utils
+
+        game_dir = self.data["dir"]
+        available = backup_utils.list_backups(game_dir)
+        if backup is None:
+            if not available:
+                print("No backups found.")
+                return
+            for i, (tag, ts, fname) in enumerate(available):
+                print(
+                    "[{}]  {}  {}  ({})".format(
+                        i, tag, ts.strftime("%Y-%m-%d %H:%M:%S"), fname
+                    )
+                )
+            return
+        # Resolve index or filename.
+        try:
+            idx = int(backup)
+            if idx < 0 or idx >= len(available):
+                raise ServerError(
+                    "Backup index {} out of range (0–{})".format(
+                        idx, len(available) - 1
+                    )
+                )
+            filename = available[idx][2]
+        except ValueError:
+            filename = backup
+        if screen.check_screen_exists(self.name):
+            print("Stopping server before restore...")
+            self.stop()
+        backup_utils.restore(game_dir, filename)
+        print("Restore complete: " + filename)
+
+    def wipe(self, **kwargs):
+        """Delete game-world data for this server.
+
+        The server must not be running.  The game module must expose a
+        ``wipe_paths`` attribute (list of paths relative to the game
+        directory) or a ``wipe(server)`` callable; otherwise a ServerError
+        is raised.
+        """
+        if screen.check_screen_exists(self.name):
+            raise ServerError(
+                "Error: Cannot wipe a running server. Stop it first."
+            )
+        wipe_fn = getattr(self.module, "wipe", None)
+        if callable(wipe_fn):
+            wipe_fn(self)
+            return
+        wipe_paths = getattr(self.module, "wipe_paths", None)
+        if wipe_paths is None:
+            raise ServerError(
+                "Wipe is not supported for this server type."
+            )
+        game_dir = self.data["dir"]
+        for rel_path in wipe_paths:
+            target = os.path.join(game_dir, rel_path)
+            if not os.path.exists(target):
+                continue
+            result = sp.run(["rm", "-rf", target], check=False)
+            if result.returncode != 0:
+                raise ServerError("Failed to remove: " + target)
+            print("Removed: " + target)
+
+    def query(self, **kwargs):
+        """Query the game server to check whether it is responding.
+
+        If the game module provides ``get_query_address(server)`` returning
+        ``(host, port, protocol)`` that is used; otherwise the method falls
+        back to a TCP ping on ``server.data["port"]``.  Protocol may be
+        ``"a2s"`` (Source/Steam UDP) or ``"tcp"``.
+        """
+        from utils import query as query_utils
+
+        get_addr = getattr(self.module, "get_query_address", None)
+        if callable(get_addr):
+            host, port, protocol = get_addr(self)
+        else:
+            host = "127.0.0.1"
+            port = self.data.get("queryport", self.data["port"])
+            protocol = "a2s"
+
+        if protocol == "a2s":
+            try:
+                query_utils.a2s_info(host, port)
+                print("Server is responding (A2S query on port {}).".format(port))
+                return
+            except query_utils.QueryError:
+                # A2S failed — fall back to TCP ping on the main game port.
+                host = "127.0.0.1"
+                port = self.data["port"]
+                protocol = "tcp"
+
+        # TCP ping — either explicitly requested or after A2S fallback.
+        try:
+            ms = query_utils.tcp_ping(host, port)
+            print(
+                "Server port is open (TCP ping on port {} \u2014 {:.1f} ms).".format(
+                    port, ms
+                )
+            )
+        except query_utils.QueryError as exc:
+            raise ServerError("Server does not appear to be responding: " + str(exc))
 
     def dump(self):
         """Dump of the data in the data store"""
