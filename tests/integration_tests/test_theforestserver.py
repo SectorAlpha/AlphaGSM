@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -18,9 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 556450 is Windows-only (TheForestDedicatedServer.exe)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
@@ -28,6 +27,7 @@ STOP_TIMEOUT = 90
 def test_theforestserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
+    require_proton()
     require_command("screen")
 
     home_dir = tmp_path / "home"
@@ -52,11 +52,13 @@ def test_theforestserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        # The Forest writes its Steam CM log to logs/connection_log_27015.txt
+        # (port 27015 is the hardcoded game-server Steam auth port).
+        # "[Logged On" appears when Steam auth succeeds and the server is ready.
+        server_log = install_dir / "logs" / "connection_log_27015.txt"
         wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
+            server_log,
+            ["[Logged On"],
             START_TIMEOUT,
         )
 

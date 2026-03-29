@@ -3,13 +3,16 @@
 import os
 
 import screen
+import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+from utils.platform_info import IS_LINUX
+
 steam_app_id = 2223650
-steam_anonymous_login_possible = True
+steam_anonymous_login_possible = False
 
 commands = ("update", "restart")
 command_args = {
@@ -85,6 +88,7 @@ def install(server):
         server.data["Steam_AppID"],
         server.data["Steam_anonymous_login_possible"],
         validate=False,
+        force_windows=IS_LINUX,
     )
 
 
@@ -95,7 +99,7 @@ def update(server, validate=False, restart=False):
         server.stop()
     except Exception:
         print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -115,18 +119,18 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return (
-        [
-            "./" + server.data["exe_name"],
+    cmd = [
+            server.data["exe_name"],
             "%s?listen?" % (server.data["startmap"],),
             "-server",
             "-log",
             "-Port=%s" % (server.data["port"],),
             "-QueryPort=%s" % (server.data["queryport"],),
             "-useperfthreads",
-        ],
-        server.data["dir"],
-    )
+        ]
+    if IS_LINUX:
+        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+    return cmd, server.data["dir"]
 
 
 def do_stop(server, j):

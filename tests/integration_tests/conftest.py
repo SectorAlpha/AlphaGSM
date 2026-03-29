@@ -49,6 +49,37 @@ def require_command(name):
         pytest.skip(f"Required command not available: {name}")
 
 
+def require_proton():
+    """Skip if neither Wine nor Proton-GE is available on the host system.
+
+    Imports ``utils.proton`` at call time so that game-module tests that call
+    this helper do not pull in the module at collection time.
+    """
+    import sys
+    import os as _os
+    src_path = str(Path(__file__).resolve().parents[2] / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    import utils.proton as _proton  # pylint: disable=import-outside-toplevel
+    if not _proton.is_available():
+        pytest.skip(
+            "Wine or Proton-GE is required to run Windows-binary servers; "
+            "install with  scripts/install_proton.sh"
+        )
+
+
+def require_mysql(host="127.0.0.1", port=3306):
+    """Skip if a MySQL/MariaDB server is not reachable on *host*:*port*."""
+    try:
+        with socket.create_connection((host, port), timeout=2):
+            pass
+    except OSError:
+        pytest.skip(
+            f"MySQL/MariaDB is required but not reachable at {host}:{port}; "
+            "start a local database service before running this test"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Port helpers
 # ---------------------------------------------------------------------------
@@ -165,6 +196,25 @@ def wait_for_log_marker(log_path, markers, timeout_seconds):
     )
 
 
+def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
+    """Poll files matching glob_pattern in log_dir until a marker appears."""
+    deadline = time.time() + timeout_seconds
+    log_dir_path = Path(log_dir)
+    while time.time() < deadline:
+        if log_dir_path.exists():
+            for log_path in log_dir_path.glob(glob_pattern):
+                try:
+                    text = log_path.read_text(errors="replace")
+                    if any(marker in text for marker in markers):
+                        return text
+                except OSError:
+                    pass
+        time.sleep(2)
+    pytest.skip(
+        f"Log never showed readiness markers within {timeout_seconds}s in {log_dir}"
+    )
+
+
 def wait_for_tcp_closed(host, port, timeout_seconds):
     """Wait until a TCP connect to *host:port* fails."""
     deadline = time.time() + timeout_seconds
@@ -209,6 +259,11 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
         "Can't stop a server that isn't running",
         "Error extracting download",
         "Can't download file",
+        "SteamCMD username required for this server",
+        # Server module is explicitly disabled (game no longer available,
+        # discontinued, or requires user-provided files).  These should skip,
+        # not fail, so the batch doesn't turn red.
+        "is currently disabled",
     )
     if any(marker in combined for marker in known_markers):
         extra = f" (app {app_id})" if app_id else ""

@@ -1,8 +1,4 @@
-"""Integration test for ts3server.
-
-Disabled: TeamSpeak downloads page layout changed; the version scraper
-cannot locate the server download link automatically.
-"""
+"""Integration test for ts3server."""
 
 import pytest
 
@@ -21,10 +17,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(reason="TeamSpeak downloads page layout changed; version scraper broken"),
-]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
@@ -48,7 +41,7 @@ def test_ts3server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "ts3server")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(install_dir))
+    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
 

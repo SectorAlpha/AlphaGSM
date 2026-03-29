@@ -18,7 +18,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(reason="Insurgency srcds_run has CRLF line endings; cannot exec")]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

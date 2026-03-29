@@ -3,10 +3,13 @@
 import os
 
 import screen
+import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+
+from utils.platform_info import IS_LINUX
 
 steam_app_id = 2430930
 steam_anonymous_login_possible = True
@@ -89,6 +92,7 @@ def install(server):
         server.data["Steam_AppID"],
         server.data["Steam_anonymous_login_possible"],
         validate=False,
+        force_windows=IS_LINUX,
     )
 
 
@@ -99,7 +103,7 @@ def update(server, validate=False, restart=False):
         server.stop()
     except Exception:
         print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -132,10 +136,10 @@ def get_start_command(server):
     )
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
-    return (
-        ["./" + server.data["exe_name"], map_args, "-server", "-log"],
-        server.data["dir"],
-    )
+    cmd = [server.data["exe_name"], map_args, "-server", "-log"]
+    if IS_LINUX:
+        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+    return cmd, server.data["dir"]
 
 
 def do_stop(server, j):

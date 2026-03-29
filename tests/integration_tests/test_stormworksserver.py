@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -18,9 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 1247090 is Windows-only (server64.exe)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
@@ -29,6 +28,7 @@ def test_stormworksserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     require_command("screen")
+    require_proton()
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -52,13 +52,21 @@ def test_stormworksserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
+        # Stormworks app 1247090 is now a stub that prints a redirect message
+        # ("dedicated server has been moved") and exits; the real server ships
+        # with the purchased game.  Detect that message early so the test skips
+        # in seconds rather than waiting out the full START_TIMEOUT.
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
+        log_text = wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["ready", "started", "listening", "Done", "has been moved"],
             START_TIMEOUT,
         )
+        if "has been moved" in log_text:
+            pytest.skip(
+                "Stormworks dedicated-server app (1247090) is now a redirect stub; "
+                "the real server requires purchasing the game."
+            )
 
         # status
         run_and_assert_ok(env, server_name, "status")

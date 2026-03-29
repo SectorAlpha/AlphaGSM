@@ -3,10 +3,13 @@
 import os
 
 import screen
+import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+
+from utils.platform_info import IS_LINUX
 
 steam_app_id = 545990
 steam_anonymous_login_possible = True
@@ -35,7 +38,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="BlackOps3Server.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name="UnrankedServer/BlackOps3_UnrankedDedicatedServer.exe"):
     """Collect and store configuration values for a Black Ops III server."""
 
     server.data["Steam_AppID"] = steam_app_id
@@ -78,6 +81,7 @@ def install(server):
         server.data["Steam_AppID"],
         server.data["Steam_anonymous_login_possible"],
         validate=False,
+        force_windows=IS_LINUX,
     )
 
 
@@ -88,7 +92,7 @@ def update(server, validate=False, restart=False):
         server.stop()
     except Exception:
         print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -108,17 +112,22 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return (
-        [
-            "./" + server.data["exe_name"],
-            "-port",
-            str(server.data["port"]),
-            "+set",
-            "sv_maxclients",
-            str(server.data["maxplayers"]),
-        ],
-        server.data["dir"],
-    )
+    # The bat file (Launch_Server.bat) uses 'BlackOps3_UnrankedDedicatedServer.exe'
+    # as a bare name, which fails when cmd.exe runs from the parent install dir.
+    # We run the exe directly from its own directory so DLL loading succeeds.
+    # Use the basename only (no path prefix) because cwd is already the exe dir.
+    cmd = [
+        "BlackOps3_UnrankedDedicatedServer.exe",
+        "+set", "sv_playlist", "1",
+        "+set", "fs_game", "usermaps",
+        "+set", "logfile", "2",
+        "-port", str(server.data["port"]),
+        "+set", "sv_maxclients", str(server.data["maxplayers"]),
+    ]
+    if IS_LINUX:
+        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+    unranked_dir = os.path.join(server.data["dir"], "UnrankedServer")
+    return cmd, unranked_dir
 
 
 def do_stop(server, j):

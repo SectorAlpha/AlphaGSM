@@ -42,11 +42,10 @@ Update these in order when relevant:
 
 ## Quality Gates
 
-- lint with `bash ./lint.sh`
-- keep the lint score at `10.00/10`
-- keep unit tests in `tests/` green
-- keep integration tests in `tests/integration_tests/` green
-- keep smoke tests in `tests/smoke_tests/` accurate
+- lint: `make lint` (or `bash ./lint.sh` directly) — must score `10.00/10`
+- unit tests: `make test` — keep green
+- integration tests: `make integration-test` (needs `ALPHAGSM_WORK_DIR` set) — keep green
+- smoke tests: `make smoke-test` (or `make smoke-test SMOKE_TEST=run_<name>.sh`) — keep accurate
 
 ## Known Exception
 

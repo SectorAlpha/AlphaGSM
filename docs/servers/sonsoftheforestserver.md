@@ -64,8 +64,8 @@ alphagsm mysonsofth backup
 
 ### Run File
 
-- **Executable**: `SonsOfTheForestDS.exe`
-- **Location**: `<install_dir>/SonsOfTheForestDS.exe`
+- **Executable**: `StartSOTFDedicated.bat`
+- **Location**: `<install_dir>/StartSOTFDedicated.bat`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `2465200`
 

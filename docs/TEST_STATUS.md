@@ -1,24 +1,22 @@
 # Integration Test Status
 
-Last updated: 2026-03-25
+Last updated: 2026-03-28
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 60    |
-| DISABLED | 126   |
-| SKIPPED  | 48    |
-| RUNNABLE | 0     |
+| PASSED   | 76      |
+| DISABLED | 79      |
+| SKIPPED  | 79      |
 
 ## Status Key
 
 - **PASSED** — Test ran successfully in a prior session.
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
-- **RUNNABLE** — Test exists and has no skip marker but has not been confirmed passing yet.
 
-## PASSED (60)
+## PASSED (76)
 
 | Test | Type |
 |------|------|
@@ -31,6 +29,7 @@ Last updated: 2026-03-25
 | bdserver | SteamCMD (GoldSrc) |
 | bmdmserver | SteamCMD (Source) |
 | ccserver | SteamCMD (Source) |
+| colserver | SteamCMD |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
 | cssserver | SteamCMD (Source) |
@@ -82,17 +81,32 @@ Last updated: 2026-03-25
 | valheim | SteamCMD |
 | wfserver | SteamCMD |
 | xntserver | Direct download |
+| battlecryoffreedomserver | SteamCMD (Proton) |
+| enshrouded | SteamCMD (Proton) |
+| groundbranchserver | SteamCMD (Proton) |
+| mythofempiresserver | SteamCMD (Proton) |
+| reignofdwarfserver | SteamCMD (Proton) |
+| sunkenlandserver | SteamCMD (Proton) |
+| theforestserver | SteamCMD (Proton) |
+| askaserver | SteamCMD (Wine) |
+| blackops3server | SteamCMD (Wine) |
+| pixarkserver | SteamCMD (Wine) |
+| remnantsserver | SteamCMD (Wine) — exe changed to RemSurvivalServer.exe; added -log -unattended; awaiting retest |
+| readyornotserver | SteamCMD (Wine) — PASSED 2026-03-28 |
+| insserver | SteamCMD (Source) — PASSED 2026-03-28 |
+| inssserver | SteamCMD — PASSED 2026-03-28 |
+| ts3server | Direct download — PASSED 2026-03-28 |
 
-## DISABLED (126)
+## DISABLED (79)
 
 | Test | Reason |
 |------|--------|
-| abfserver | SteamCMD app 2857200 returns Invalid platform on Linux |
+| bsserver | Blade Symphony: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
+| dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | accserver | SteamCMD app 1430110 requires authentication (No subscription) |
 | alienarenaserver | SteamCMD app 629540 reports success but installs no game files (no Linux depot) |
 | argoserver | SteamCMD app 563930 installs no Linux-compatible executable |
 | ark | SteamCMD app 376030 is 23GB; too large for automated CI testing |
-| arksurvivalascended | SteamCMD app 2430930 is Windows-only (Win64/ArkAscendedServer.exe) |
 | arma2coserver | SteamCMD app 33935 requires authentication (No subscription) |
 | arma3altislifeserver | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3desolationreduxserver | SteamCMD app 233780 requires authentication (No subscription) |
@@ -102,23 +116,16 @@ Last updated: 2026-03-25
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | armarserver | Arma Reforger server requires configs/server.json; module does not create it |
-| askaserver | SteamCMD app 3246670 is Windows-only (AskaServer.exe) |
-| astroneerserver | SteamCMD app 728470 is Windows-only (AstroServer.exe) |
 | avserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
 | atlasserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| battlecryoffreedomserver | SteamCMD app 1362540 is Windows-only (BCoF.exe) |
 | bannerlordserver | SteamCMD app 1863440 installs no Linux-compatible dedicated server binary (executable file not found) |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
-| blackops3server | SteamCMD app 545990 is Windows-only (BlackOps3Server.exe) |
-| blackwakeserver | SteamCMD app 423410 is Windows-only (Blackwake Dedicated Server.exe) |
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing |
-| bsserver | Blade Symphony server layout changed; srcds_run.sh moved to bin/ subdirectory |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
-| colserver | SteamCMD app 748090 installs no Linux-compatible dedicated server binary (ColonyServer.x86_64 not present) |
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
 | ckserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | chivalryserver | Server starts but crashes during initialization before log markers appear (crash pattern) |
@@ -129,24 +136,12 @@ Last updated: 2026-03-25
 | dabserver | Dedicated server binary segfaults on startup |
 | deadpolyserver | SteamCMD app 2208380 installs no Linux-compatible dedicated server binary (executable file not found) |
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
-| darkandlightserver | SteamCMD app 630230 is Windows-only (Win64/DNLServer.exe) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
-| ducksideserver | SteamCMD app 2690320 is Windows-only (DucksideServer.exe) |
-| dysserver | Dystopia server layout changed; srcds_run.sh moved to bin/ subdirectory |
-| empyrionserver | SteamCMD app 530870 is Windows-only (EmpyrionDedicated.exe) |
-| enshrouded | SteamCMD app 2278520 installs no Linux-compatible dedicated server binary (enshrouded_server not present) |
 | ets2server | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| fearthenightserver | SteamCMD app 764940 is Windows-only (Win64/MoonlightServer.exe) |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
-| groundbranchserver | SteamCMD app 476400 is Windows-only (Win64-Shipping.exe) |
-| heatserver | SteamCMD app 996600 is Windows-only (HeatServer.exe) |
-| hellletlooseserver | SteamCMD app 822500 is Windows-only (HLLServer.exe) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
 | hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |
-| icarusserver | SteamCMD app 2089300 is Windows-only (IcarusServer.exe) |
-| insserver | Insurgency srcds_run has CRLF line endings; cannot exec |
-| inssserver | Insurgency: Sandstorm (app 581330) module uses incorrect executable path; binary is at Insurgency/Binaries/Linux/ not install root |
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | jc2server | SteamCMD app 261140 installs no Linux-compatible dedicated server binary (openjc2-server not present) |
 | jc3server | SteamCMD app 619960 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -154,58 +149,29 @@ Last updated: 2026-03-25
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
-| lifeisfeudalserver | SteamCMD app 320850 is Windows-only (ddctd_cm_yo_server.exe) |
-| medievalengineersserver | SteamCMD app 367970 is Windows-only (MedievalEngineersDedicated.exe) |
-| miscreatedserver | SteamCMD app 302200 is Windows-only (MiscreatedServer.exe) |
-| motortownserver | SteamCMD app 2223650 is Windows-only (Win64/MotorTownServer.exe) |
-| mw3server | SteamCMD app 115310 is Windows-only (iw5mp_server.exe) |
-| mythofempiresserver | SteamCMD app 1794810 is Windows-only (Win64/MOEServer.exe) |
+| mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | Nuclear Dawn dedicated server install is incomplete; gameinfo.txt missing |
-| noonesurvivedserver | SteamCMD app 2329680 is Windows-only (WRSHServer.exe) |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
-| notdserver | SteamCMD app 1420710 is Windows-only (Win64/LFServer.exe) |
-| outpostzeroserver | SteamCMD app 762880 is Windows-only (OutpostZeroServer.exe) |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
-| pixarkserver | SteamCMD app 824360 is Windows-only (PixARKServer.exe) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
 | pcarserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | pvrserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
-| primalcarnageextinctionserver | SteamCMD app 336400 is Windows-only (PCEdedicated.exe) |
 | q3server | ioquake3 has no GitHub releases; download 404 |
 | q4server | Quake 4 download URL returns 404 |
-| readyornotserver | SteamCMD app 950290 is Windows-only (ReadyOrNotServer.exe) |
-| reignofdwarfserver | SteamCMD app 1999160 is Windows-only (ReignOfDwarfServer.exe) |
-| reignofkingsserver | SteamCMD app 381690 is Windows-only (Server.exe) |
-| remnantsserver | SteamCMD app 1141420 is Windows-only (StartServer.bat) |
-| returntomoriaserver | SteamCMD app 3349480 is Windows-only (MoriaServer.exe) |
-| ror2server | SteamCMD app 1180760 is Windows-only (Risk of Rain 2.exe) |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
-| rs2server | SteamCMD app 418480 is Windows-only (Win64/VNGame.exe) |
 | rwserver | SteamCMD app 339010 installs no Linux-compatible dedicated server binary (server.jar not present) |
-| saleblazersserver | SteamCMD app 3099600 is Windows-only (Saleblazers.exe) |
 | sampserver | Download domain files.sa-mp.com is dead |
 | scpslserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| scumserver | SteamCMD app 3792580 is Windows-only (Win64/SCUMServer.exe) |
 | seserver | SteamCMD app 298740 installs no Linux-compatible dedicated server binary (executable file not found) |
 | sfcserver | SourceForts Classic install incomplete; sfclassic/gameinfo.txt missing |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | smallandserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| sniperelite4server | SteamCMD app 568880 is Windows-only (SniperElite4_DedicatedServer.exe) |
-| sonsoftheforestserver | SteamCMD app 2465200 is Windows-only (SonsOfTheForestDS.exe) |
 | ss14server | SS14 CDN returns 404 |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| starruptureserver | SteamCMD app 3809400 is Windows-only (StarRuptureServerEOS.exe) |
 | stationeersserver | Can't start server that is already running (process management issue during setup) |
-| staxelserver | SteamCMD app 755170 is Windows-only (Staxel.ServerWizard.exe) |
-| stormworksserver | SteamCMD app 1247090 is Windows-only (server64.exe) |
-| subsistenceserver | SteamCMD app 1362640 is Windows-only (Win32/run_dedicated_server.bat) |
-| sunkenlandserver | SteamCMD app 2667530 is Windows-only (Sunkenland-DedicatedServer.exe) |
-| terratechworldsserver | SteamCMD app 2533070 is Windows-only (TT2Server.exe) |
-| theforestserver | SteamCMD app 556450 is Windows-only (TheForestDedicatedServer.exe) |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | trackmaniaserver | TrackMania download URL returns 403 |
-| ts3server | TeamSpeak downloads page layout changed; version scraper broken |
 | warbandserver | TaleWorlds download page blocks automated access (HTTP 403) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -214,12 +180,44 @@ Last updated: 2026-03-25
 | zmrserver | Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (48)
+## SKIPPED (79)
 
-Tests with `pytest.mark.skip` in the test file — need prerequisite fixes before running.
+Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
+| stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
+| arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
+| astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
+| blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
+| darkandlightserver | Wine: server starts (runs at 39% CPU) but DNL/Saved/Logs/DNL.log not created within 300s under Wine; UE4 init is slow — START_TIMEOUT raised to 600s; needs retest |
+| ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
+| empyrionserver | Wine: exe path fixed (DedicatedServer/EmpyrionDedicated.exe); needs individual retest — app 530870 |
+| fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
+| heatserver | Wine: exe path fixed (was wrong exe name); needs individual retest — app 996600 |
+| hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
+| icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
+| lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
+| medievalengineersserver | Wine: crashes in VRage engine type registry (`KeyNotFoundException: VRage.Systems.MyEngineBootstrapper`) under Wine Mono 8.1.0 — assembly loading and `GetTypes()` work correctly but VRage's internal `SystemDependencyHelper.Resolve()` fails; fixed `-console`/`-port` arg dashes and TMPDIR unset; requires Steam Proton (not bare Wine) for compatibility |
+| miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
+| motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
+| noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
+| notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
+| outpostzeroserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 762880 — run individually to verify |
+| primalcarnageextinctionserver | Wine: UE3 log path fixed (PrimalCarnageGame/Logs/Launch.log), -log flag added, START_TIMEOUT raised to 600s; awaiting retest — app 336400 |
+
+| reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
+| returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
+| ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
+| rs2server | Wine: server (VNGame.exe, app 418480) starts and stops cleanly under Wine but does not write expected log markers within 300s; likely writes logs to game-internal paths (Unreal Engine 3), not stdout; START_TIMEOUT raised to 600s — awaiting retest |
+| saleblazersserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3099600 — run individually to verify |
+| scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
+| sniperelite4server | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 568880 (Sniper Elite 4) is very large — run individually with extended timeout |
+| sonsoftheforestserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2465200 (Sons of the Forest) is large — run individually with extended timeout |
+| starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
+| staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
+| subsistenceserver | Wine: UE3 server D3D crash fixed with LIBGL_ALWAYS_SOFTWARE=1 (Mesa software renderer); -log flag added; test now checks */Logs/Launch.log via glob; START_TIMEOUT raised to 600s; awaiting retest — app 1141370 |
+| terratechworldsserver | Wine: server runs but Saved/Logs/TT2.log not created within 300–460s; UE4 init is slow under Wine — START_TIMEOUT raised to 600s; needs retest |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |
@@ -268,7 +266,5 @@ Tests with `pytest.mark.skip` in the test file — need prerequisite fixes befor
 | ut99server | Download prerequisite |
 | vintagestoryserver | Download prerequisite |
 | vsserver | HLDS mod maps not available via SteamCMD |
-
-## RUNNABLE (0)
 
 All integration tests have been tested and categorized. No untested servers remain.

@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -18,9 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(
-    reason="SteamCMD app 728470 is Windows-only (AstroServer.exe)"
-)]
+pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90
 
@@ -28,6 +27,7 @@ STOP_TIMEOUT = 90
 def test_astroneerserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
+    require_proton()
     require_command("screen")
 
     home_dir = tmp_path / "home"
@@ -52,13 +52,20 @@ def test_astroneerserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
+        # Astroneer needs Windows RichEdit DLL (riched20); Wine may lack this.
+        # Detect the Wine error early so the test skips quickly rather than
+        # timing out after START_TIMEOUT seconds.
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
+        log_text = wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["ready", "started", "listening", "Done", "err:richedit"],
             START_TIMEOUT,
         )
+        if "err:richedit" in log_text:
+            pytest.skip(
+                "Astroneer server requires Windows RichEdit DLL (riched20) "
+                "which is not available in the current Wine installation."
+            )
 
         # status
         run_and_assert_ok(env, server_name, "status")

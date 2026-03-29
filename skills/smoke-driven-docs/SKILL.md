@@ -35,6 +35,26 @@ Read these first:
 - If the smoke test uses an important `set` step, include it.
 - If the smoke test shows a full working lifecycle, summarize that lifecycle in the docs.
 
+## Running Smoke Tests
+
+Run all smoke tests:
+
+```bash
+make smoke-test
+```
+
+Run a single smoke test:
+
+```bash
+make smoke-test SMOKE_TEST=run_minecraft_vanilla.sh
+```
+
+Or run the script directly:
+
+```bash
+bash tests/smoke_tests/run_minecraft_vanilla.sh
+```
+
 ## Main Targets
 
 - `README.md`

@@ -70,7 +70,8 @@ def test_lastoasis_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_miscreated_get_start_command_builds_expected_args(tmp_path):
+def test_miscreated_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(miscreatedserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("mis")
     exe_dir = tmp_path / "Bin64_dedicated"
     exe_dir.mkdir(parents=True)
@@ -90,7 +91,7 @@ def test_miscreated_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = miscreatedserver.get_start_command(server)
 
-    assert cmd[0] == "./Bin64_dedicated/MiscreatedServer.exe"
+    assert cmd[0] == "Bin64_dedicated/MiscreatedServer.exe"
     assert "+sv_servername" in cmd
     assert cwd == server.data["dir"]
 
@@ -107,7 +108,7 @@ def test_hurtworld_lastoasis_and_miscreated_update_downloads_and_optionally_rest
     monkeypatch.setattr(
         hurtworldserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
 
     hurtworldserver.update(hurt, validate=True, restart=True)

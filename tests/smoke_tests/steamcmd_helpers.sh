@@ -2,6 +2,20 @@
 # Shared helpers for smoke tests.
 # Source this after defining run_alphagsm().
 
+# require_proton
+# Skip this smoke test gracefully if Wine (or Proton-GE) is not installed.
+# Windows-binary game servers need Wine at start time; when Wine is absent the
+# server reports "Neither Wine nor Proton-GE is available" and exits non-zero,
+# which would mark the smoke test as FAILED rather than SKIPPED.  Call this
+# helper right after "require_cmd screen" in any smoke test for a Windows-binary
+# server to get a clean skip instead.
+require_proton() {
+  if ! command -v wine >/dev/null 2>&1; then
+    echo "Wine not installed — skipping Windows-binary smoke test (CI)" >&2
+    exit 0
+  fi
+}
+
 run_setup_or_skip_steamcmd() {
   local output_file
   output_file="$(mktemp)"

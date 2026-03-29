@@ -64,8 +64,8 @@ alphagsm myprimalca backup
 
 ### Run File
 
-- **Executable**: `PCEdedicated.exe`
-- **Location**: `<install_dir>/PCEdedicated.exe`
+- **Executable**: `Binaries/Win64/PrimalCarnageServer.exe`
+- **Location**: `<install_dir>/Binaries/Win64/PrimalCarnageServer.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `336400`
 

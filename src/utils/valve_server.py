@@ -262,6 +262,18 @@ def define_valve_server_module(
         if server.data["exe_name"] == "srcds_run" and os.path.isfile(server.data["dir"] + "srcds_run_64"):
             server.data["exe_name"] = "srcds_run_64"
 
+        # Strip Windows CRLF line endings from srcds startup scripts.  Some
+        # older games (e.g. Insurgency) ship srcds_run with \r\n endings which
+        # prevents the kernel from executing the script on Linux.
+        for _script in ("srcds_run", "srcds_run.sh", os.path.join("bin", "srcds_run.sh")):
+            _path = os.path.join(server.data["dir"], _script)
+            if os.path.isfile(_path):
+                with open(_path, "rb") as _fh:
+                    _content = _fh.read()
+                if _content.startswith(b"#!") and b"\r\n" in _content:
+                    with open(_path, "wb") as _fh:
+                        _fh.write(_content.replace(b"\r\n", b"\n"))
+
         cfg_dir = os.path.join(server.data["dir"], game_dir)
         if config_subdir:
             cfg_dir = os.path.join(cfg_dir, config_subdir)

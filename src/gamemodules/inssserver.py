@@ -35,7 +35,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="InsurgencyServer-Linux-Shipping"):
+def configure(server, ask, port=None, dir=None, *, exe_name="Insurgency/Binaries/Linux/InsurgencyServer-Linux-Shipping"):
     """Collect and store configuration values for an Insurgency: Sandstorm server."""
 
     server.data["Steam_AppID"] = steam_app_id

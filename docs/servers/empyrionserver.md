@@ -64,8 +64,8 @@ alphagsm myempyrion backup
 
 ### Run File
 
-- **Executable**: `EmpyrionDedicated.exe`
-- **Location**: `<install_dir>/EmpyrionDedicated.exe`
+- **Executable**: `EmpyrionLauncher.exe`
+- **Location**: `<install_dir>/EmpyrionLauncher.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `530870`
 

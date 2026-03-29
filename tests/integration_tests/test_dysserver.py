@@ -18,7 +18,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.skip(reason="Dystopia server layout changed; srcds_run.sh moved to bin/ subdirectory")]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 300
 STOP_TIMEOUT = 90

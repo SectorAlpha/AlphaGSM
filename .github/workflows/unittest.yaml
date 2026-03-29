@@ -31,6 +31,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -51,6 +52,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -70,6 +72,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -131,15 +134,20 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Install SteamCMD runtime dependencies
+      - name: Install system dependencies
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
+          # screen   — required by all smoke tests (AlphaGSM uses GNU screen as
+          #            the process supervisor; smoke runners call require_cmd screen)
+          # lib32*   — 32-bit Steam runtime (Source engine servers: TF2, CS:GO, …)
+          # p7zip    — server archives distributed as .7z
+          sudo apt-get install -y screen lib32gcc-s1 lib32stdc++6 p7zip-full
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -183,28 +191,108 @@ jobs:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
       - id: set-matrix
-        name: Split integration tests into max 20 batches
+        name: Split integration tests into batches (slow tests get solo batches)
         run: |
           python3 - <<'PY'
           import json, math, os
-          tests = sorted(f for f in os.listdir("tests/integration_tests") if f.startswith("test_") and f.endswith(".py"))
-          max_jobs = 20
-          batch_size = math.ceil(len(tests) / max_jobs)
+
+          # Tests with extended per-test timeouts (2400-3600s) get solo batches
+          # so they never block a batch of regular tests.
+          SLOW_TESTS = [
+              "test_rs2server.py",       # 3600s: ~13 GB download
+              "test_scumserver.py",      # 3600s: large download
+              "test_sevendaystodie.py",  # 3600s: ~12 GB + world gen
+              "test_palworld.py",        # 2400s: ~3.7 GB + UE5 startup
+              "test_rust.py",            # 2400s: ~2 GB + world gen
+          ]
+
+          all_tests = sorted(
+              f for f in os.listdir("tests/integration_tests")
+              if f.startswith("test_") and f.endswith(".py")
+          )
+          slow_set = set(SLOW_TESTS)
+          regular_tests = [t for t in all_tests if t not in slow_set]
+
           batches = []
-          for i in range(0, len(tests), batch_size):
-              chunk = tests[i:i+batch_size]
-              batches.append({
-                  "batch": i // batch_size + 1,
-                  "files": " ".join(f"tests/integration_tests/{t}" for t in chunk),
-                  "label": f"batch-{i // batch_size + 1}-of-{math.ceil(len(tests) / batch_size)}"
-              })
+
+          # Solo batch per slow test
+          for t in SLOW_TESTS:
+              if t in all_tests:
+                  batches.append({
+                      "batch": len(batches) + 1,
+                      "files": f"tests/integration_tests/{t}",
+                      "label": f"slow-{t[5:-3]}",
+                  })
+
+          # Remaining tests split across up to max_jobs batches
+          max_jobs = 20
+          if regular_tests:
+              batch_size = math.ceil(len(regular_tests) / max_jobs)
+              for i in range(0, len(regular_tests), batch_size):
+                  chunk = regular_tests[i:i+batch_size]
+                  n = i // batch_size + 1
+                  total = math.ceil(len(regular_tests) / batch_size)
+                  batches.append({
+                      "batch": len(batches) + 1,
+                      "files": " ".join(f"tests/integration_tests/{t}" for t in chunk),
+                      "label": f"batch-{n}-of-{total}",
+                  })
+
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f'matrix={json.dumps({"include": batches})}\n')
           PY
 
+  # ---------------------------------------------------------------------------
+  # setup-integration-env: prepare the Wine prefix and Proton-GE install ONCE
+  # per commit and save them to the Actions cache.  All 20 integration-test
+  # batches then restore from that single cache entry instead of each spending
+  # ~3 minutes repeating the same setup on 20 separate runners.
+  # ---------------------------------------------------------------------------
+  setup-integration-env:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Cache Wine prefix and Proton-GE
+        id: cache-wine-proton
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.wine
+            ~/.local/share/proton-ge
+          # Key tied to the workflow file + install script so any change to
+          # setup steps automatically invalidates and regenerates the cache.
+          key: wine-proton-${{ runner.os }}-v1-${{ hashFiles('.github/workflows/unittest.yaml', 'scripts/install_proton.sh') }}
+
+      - name: Install Wine apt packages
+        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y wine64 wine32:i386 winetricks
+
+      - name: Initialise Wine prefix
+        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
+        run: |
+          export DISPLAY="" WINEDLLOVERRIDES="winex11.drv=" WINEDEBUG=-all
+          wineboot --init
+          winetricks -q win10
+          # --force bypasses the stale SHA256 check; || true keeps it non-fatal
+          winetricks -q --force vcrun2019 || true
+          echo "==> Wine prefix ready: $(wine --version)"
+
+      - name: Install Proton-GE
+        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/install_proton.sh proton
+
   integration-test:
     runs-on: ubuntu-latest
-    needs: discover-integration-tests
+    needs: [discover-integration-tests, setup-integration-env]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.matrix) }}
@@ -218,15 +306,37 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Install SteamCMD runtime dependencies
+      - name: Restore Wine prefix and Proton-GE from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.wine
+            ~/.local/share/proton-ge
+          key: wine-proton-${{ runner.os }}-v1-${{ hashFiles('.github/workflows/unittest.yaml', 'scripts/install_proton.sh') }}
+          # fail-on-cache-miss ensures setup-integration-env ran successfully;
+          # if the cache is somehow absent the batch would fail in an obvious way.
+          fail-on-cache-miss: true
+      - name: Install system dependencies
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y lib32gcc-s1 lib32stdc++6 p7zip-full
+          # screen     — AlphaGSM process supervisor (conftest writes screenrc
+          #              and launches game servers through screen)
+          # lib32*     — 32-bit Steam runtime (Source engine servers)
+          # p7zip      — server archives distributed as .7z
+          # wine64 / wine32:i386 / winetricks
+          #            — Wine BINARY needed even though the prefix comes from
+          #              cache; the exe itself must be on PATH on every runner
+          sudo apt-get install -y \
+            screen \
+            lib32gcc-s1 lib32stdc++6 \
+            p7zip-full \
+            wine64 wine32:i386 winetricks
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -381,7 +491,7 @@ jobs:
       - name: Summarize test results
         run: |
           python3 - <<'PYEOF'
-          import glob, xml.etree.ElementTree as ET
+          import glob, sys, xml.etree.ElementTree as ET
 
           smoke_passed, smoke_failed = [], []
           int_passed, int_skipped, int_failed = [], [], []
@@ -456,4 +566,7 @@ jobs:
           print("\n" + SEP)
           print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")
           print(SEP)
+
+          if total_f > 0:
+              sys.exit(1)
           PYEOF

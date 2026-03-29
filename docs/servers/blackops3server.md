@@ -64,8 +64,8 @@ alphagsm myblackops backup
 
 ### Run File
 
-- **Executable**: `BlackOps3Server.exe`
-- **Location**: `<install_dir>/BlackOps3Server.exe`
+- **Executable**: `UnrankedServer/Launch_Server.bat`
+- **Location**: `<install_dir>/UnrankedServer/Launch_Server.bat`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `545990`
 
