@@ -6,6 +6,7 @@ We also define in here the constants that specify the path where server data sto
 For details of how to write a game server module see the gamemodules module in this package.
 """
 
+import json
 import os
 import subprocess as sp
 from . import data
@@ -239,7 +240,18 @@ class Server(object):
         ),
         "wipe": CmdSpec(),
         "query": CmdSpec(),
-        "info": CmdSpec(),
+        "info": CmdSpec(
+            options=(
+                OptSpec(
+                    "j",
+                    ["json"],
+                    "Output result as JSON instead of human-readable text",
+                    "as_json",
+                    None,
+                    False,
+                ),
+            )
+        ),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -274,7 +286,8 @@ class Server(object):
         "otherwise falls back to a TCP ping on the game port.",
         "info": "Retrieve detailed server information: player count, map, version, etc.\n"
         "For Minecraft servers uses the Server List Ping (SLP) protocol.\n"
-        "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.",
+        "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.\n"
+        "Use -j / --json to emit the result as a JSON object.",
     }
 
     def __init__(self, name, module=None):
@@ -615,7 +628,7 @@ class Server(object):
         except query_utils.QueryError as exc:
             raise ServerError("Server does not appear to be responding: " + str(exc))
 
-    def info(self, **kwargs):
+    def info(self, as_json=False, **kwargs):
         """Retrieve detailed server information (player count, map, version, etc.).
 
         The game module may define ``get_info_address(server)`` returning
@@ -623,6 +636,9 @@ class Server(object):
         Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), or ``"tcp"``
         (TCP ping only).  When the hook is absent the method falls back to
         an A2S query on the game port, then TCP.
+
+        When *as_json* is ``True`` the result is printed as a JSON object
+        instead of human-readable text.
         """
         from utils import query as query_utils
 
@@ -637,6 +653,9 @@ class Server(object):
         if protocol == "slp":
             try:
                 result = query_utils.slp_info(host, port)
+                if as_json:
+                    print(json.dumps({"protocol": "slp", "port": port, **result}))
+                    return
                 print(
                     "Server info (SLP on port {port}):\n"
                     "  Description : {description}\n"
@@ -655,6 +674,9 @@ class Server(object):
                 raw = query_utils.a2s_info(host, port)
                 parsed = query_utils.parse_a2s_info(raw)
                 if parsed:
+                    if as_json:
+                        print(json.dumps({"protocol": "a2s", "port": port, **parsed}))
+                        return
                     print(
                         "Server info (A2S on port {port}):\n"
                         "  Name        : {name}\n"
@@ -664,6 +686,9 @@ class Server(object):
                         " ({bots} bots)".format(port=port, **parsed)
                     )
                 else:
+                    if as_json:
+                        print(json.dumps({"protocol": "a2s", "port": port}))
+                        return
                     print("Server is responding (A2S on port {}), "
                           "but details could not be parsed.".format(port))
                 return
@@ -675,6 +700,9 @@ class Server(object):
         # TCP fallback
         try:
             ms = query_utils.tcp_ping(host, port)
+            if as_json:
+                print(json.dumps({"protocol": "tcp", "port": port, "latency_ms": round(ms, 1)}))
+                return
             print(
                 "Server port is open (TCP ping on port {} \u2014 {:.1f} ms)."
                 "  No further details available.".format(port, ms)

@@ -850,3 +850,37 @@ def test_run_command_dispatches_info(monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "Server info (SLP" in out
+
+
+def test_info_json_output(monkeypatch, capsys):
+    """info(as_json=True) emits a valid JSON object instead of human-readable text."""
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 25565, "module": "minecraft.vanilla"}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.slp_info = lambda host, port, timeout=5.0: {
+        "description": "A test server",
+        "players_online": 3,
+        "players_max": 20,
+        "version": "1.20.4",
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(srv.module, "get_info_address",
+                        lambda s: ("127.0.0.1", 25565, "slp"), raising=False)
+
+    srv.info(as_json=True)
+
+    out = capsys.readouterr().out.strip()
+    data = _json.loads(out)
+    assert data["protocol"] == "slp"
+    assert data["port"] == 25565
+    assert data["players_online"] == 3
+    assert data["players_max"] == 20
+    assert "Server info" not in out
