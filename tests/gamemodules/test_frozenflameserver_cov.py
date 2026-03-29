@@ -108,6 +108,8 @@ def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "FrozenFlameServer.sh"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
     (tmp_path / "FrozenFlameServer.sh").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)

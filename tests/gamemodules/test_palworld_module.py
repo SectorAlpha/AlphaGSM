@@ -67,11 +67,12 @@ def test_palworld_get_start_command_supports_community_flag(tmp_path):
     server = DummyServer("palalpha")
     exe = tmp_path / "PalServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "PalServer.sh", "publiclobby": True})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "PalServer.sh",
+                        "port": 8211, "queryport": 27015, "publiclobby": True})
 
     cmd, cwd = palworld.get_start_command(server)
 
-    assert cmd == ["./PalServer.sh", "-publiclobby"]
+    assert cmd == ["./PalServer.sh", "-port=8211", "-queryport=27015", "-publiclobby"]
     assert cwd == server.data["dir"]
 
 

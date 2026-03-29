@@ -108,6 +108,8 @@ def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "PalServer.sh"
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
     (tmp_path / "PalServer.sh").write_text("")
     server.data["publiclobby"] = True
     cmd, cwd = mod.get_start_command(server)

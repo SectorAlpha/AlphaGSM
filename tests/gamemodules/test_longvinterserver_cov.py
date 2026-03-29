@@ -109,6 +109,8 @@ def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "LongvinterServer.sh"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27016
     (tmp_path / "LongvinterServer.sh").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)

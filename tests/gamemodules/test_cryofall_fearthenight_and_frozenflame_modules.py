@@ -64,11 +64,12 @@ def test_frozenflame_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("ff")
     exe = tmp_path / "FrozenFlameServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "FrozenFlameServer.sh"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "FrozenFlameServer.sh",
+                        "port": 7777, "queryport": 27015})
 
     cmd, cwd = frozenflameserver.get_start_command(server)
 
-    assert cmd == ["./FrozenFlameServer.sh"]
+    assert cmd == ["./FrozenFlameServer.sh", "-Port=7777", "-QueryPort=27015", "-log"]
     assert cwd == server.data["dir"]
 
 

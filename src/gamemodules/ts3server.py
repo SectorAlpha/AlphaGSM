@@ -159,6 +159,21 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """Return the TCP address used to query the TeamSpeak 3 server.
+
+    TeamSpeak 3 exposes a TCP server query interface on ``queryport``
+    (default 10011); a TCP connect on that port is a reliable liveness
+    check without needing the TS3 query protocol.
+    """
+    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP address used by the ``info`` command for this server."""
+    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "tcp")
+
+
 def do_stop(server, j):
     """Send the standard stop command to TeamSpeak 3."""
 

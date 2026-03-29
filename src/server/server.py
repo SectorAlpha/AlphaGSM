@@ -584,7 +584,8 @@ class Server(object):
         If the game module provides ``get_query_address(server)`` returning
         ``(host, port, protocol)`` that is used; otherwise the method falls
         back to a TCP ping on ``server.data["port"]``.  Protocol may be
-        ``"a2s"`` (Source/Steam UDP) or ``"tcp"``.
+        ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP), or
+        ``"tcp"``.
         """
         from utils import query as query_utils
 
@@ -617,6 +618,20 @@ class Server(object):
                 port = self.data["port"]
                 protocol = "tcp"
 
+        if protocol == "quake":
+            try:
+                qinfo = query_utils.quake_status(host, port)
+                print(
+                    "Server is responding (Quake status on port {port}): "
+                    "{name!r}  map={map!r}  "
+                    "players={players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
         # TCP ping — either explicitly requested or after A2S fallback.
         try:
             ms = query_utils.tcp_ping(host, port)
@@ -633,9 +648,10 @@ class Server(object):
 
         The game module may define ``get_info_address(server)`` returning
         ``(host, port, protocol)`` where *protocol* is ``"slp"`` (Minecraft
-        Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), or ``"tcp"``
-        (TCP ping only).  When the hook is absent the method falls back to
-        an A2S query on the game port, then TCP.
+        Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
+        (Quake3/QFusion UDP getstatus), or ``"tcp"`` (TCP ping only).  When
+        the hook is absent the method falls back to an A2S query on the game
+        port, then TCP.
 
         When *as_json* is ``True`` the result is printed as a JSON object
         instead of human-readable text.
@@ -696,6 +712,22 @@ class Server(object):
                 # Fall through to TCP
                 host = "127.0.0.1"
                 port = self.data["port"]
+
+        if protocol == "quake":
+            try:
+                qinfo = query_utils.quake_status(host, port)
+                if as_json:
+                    print(json.dumps({"protocol": "quake", "port": port, **qinfo}))
+                    return
+                print(
+                    "Server info (Quake status on port {port}):\n"
+                    "  Name    : {name}\n"
+                    "  Map     : {map}\n"
+                    "  Players : {players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         # TCP fallback
         try:

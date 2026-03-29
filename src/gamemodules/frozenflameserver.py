@@ -107,7 +107,15 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return ["./" + server.data["exe_name"]], server.data["dir"]
+    return (
+        [
+            "./" + server.data["exe_name"],
+            "-Port=%s" % (server.data["port"],),
+            "-QueryPort=%s" % (server.data["queryport"],),
+            "-log",
+        ],
+        server.data["dir"],
+    )
 
 
 def do_stop(server, j):

@@ -1,24 +1,30 @@
 """Lightweight server query utilities used by the 'query' command.
 
-Provides two probing strategies:
+Provides three probing strategies:
 
 * :func:`a2s_info` — Source/Steam A2S_INFO UDP query.
+* :func:`quake_status` — Quake3/QFusion UDP getstatus query.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
 
 Game modules may optionally define ``get_query_address(server)`` returning a
-``(host, port, protocol)`` tuple where *protocol* is ``"a2s"`` or ``"tcp"``.
-When that hook is absent the caller falls back to a TCP ping on the main port.
+``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
+or ``"tcp"``.  When that hook is absent the caller falls back to a TCP ping
+on the main port.
 """
 
 import socket
 import struct
 import time
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "slp_info", "tcp_ping"]
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "tcp_ping"]
 
 # Source/Steam A2S_INFO challenge bytes and expected response header.
 _A2S_REQUEST = b"\xff\xff\xff\xffTSource Engine Query\x00"
 _A2S_HEADER = b"\xff\xff\xff\xff\x49"
+# Challenge response header (0x41 = 'A').  Modern Steam servers may send this
+# instead of info directly, requiring the client to resend the request with the
+# 4-byte challenge appended.
+_A2S_CHALLENGE_HEADER = b"\xff\xff\xff\xff\x41"
 
 
 class QueryError(OSError):
@@ -28,14 +34,27 @@ class QueryError(OSError):
 def a2s_info(host, port, timeout=2.0):
     """Send an A2S_INFO packet to *host*:*port* and return the raw response.
 
+    Handles the modern Steam challenge-response handshake: if the server
+    responds with a challenge (header byte 0x41) the request is re-sent with
+    the 4-byte challenge appended and the final info response is returned.
+
     Raises :class:`QueryError` on timeout, socket error, or an unexpected
     response header.
     """
+
+    def _send_recv(sock, payload):
+        sock.sendto(payload, (host, int(port)))
+        data, _ = sock.recvfrom(4096)
+        return data
+
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.settimeout(timeout)
-            sock.sendto(_A2S_REQUEST, (host, int(port)))
-            data, _ = sock.recvfrom(4096)
+            data = _send_recv(sock, _A2S_REQUEST)
+            # Some modern servers respond with a challenge before sending info.
+            if data.startswith(_A2S_CHALLENGE_HEADER) and len(data) >= 9:
+                challenge = data[5:9]
+                data = _send_recv(sock, _A2S_REQUEST + challenge)
     except OSError as exc:
         raise QueryError("A2S query failed: " + str(exc)) from exc
     if not data.startswith(_A2S_HEADER):
@@ -173,6 +192,39 @@ def slp_info(host, port, timeout=5.0):
         return result
     except (KeyError, TypeError, ValueError) as exc:
         raise QueryError("Unexpected SLP response structure: " + str(exc)) from exc
+
+
+def quake_status(host, port, timeout=2.0):
+    """Send a Quake3/QFusion ``getstatus`` UDP packet and parse the response.
+
+    Used by servers based on the Quake3/QFusion engine (e.g. Warfork/Warsow).
+    Returns a dict with keys ``name``, ``map``, ``players``, and
+    ``max_players``.  Raises :class:`QueryError` if no valid response arrives.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(b"\xff\xff\xff\xffgetstatus\n", (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("Quake status query failed: " + str(exc)) from exc
+    if not data.startswith(b"\xff\xff\xff\xff"):
+        raise QueryError("Unexpected Quake status response header")
+    # Response format: \xff\xff\xff\xffstatusResponse\n\cvars\n<player lines>
+    text = data[4:].decode("utf-8", errors="replace")
+    lines = text.split("\n")
+    info = {"name": "", "map": "", "players": 0, "max_players": 0}
+    if len(lines) >= 2:
+        parts = lines[1].strip("\\").split("\\")
+        cvars = dict(zip(parts[::2], parts[1::2]))
+        info["name"] = cvars.get("sv_hostname", "")
+        info["map"] = cvars.get("mapname", "")
+        try:
+            info["max_players"] = int(cvars.get("sv_maxclients", 0))
+        except ValueError:
+            info["max_players"] = 0
+        info["players"] = sum(1 for line in lines[2:] if line.strip())
+    return info
 
 
 def tcp_ping(host, port, timeout=2.0):

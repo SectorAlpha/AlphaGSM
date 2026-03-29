@@ -30,11 +30,12 @@ def test_dayofdragons_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("dod")
     exe = tmp_path / "DragonsServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "DragonsServer.sh"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "DragonsServer.sh",
+                        "port": 7777, "queryport": 27015})
 
     cmd, cwd = dayofdragonsserver.get_start_command(server)
 
-    assert cmd == ["./DragonsServer.sh"]
+    assert cmd == ["./DragonsServer.sh", "-Port=7777", "-QueryPort=27015", "-log"]
     assert cwd == server.data["dir"]
 
 
@@ -55,11 +56,12 @@ def test_memoriesofmars_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("mom")
     exe = tmp_path / "MemoriesOfMarsServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "MemoriesOfMarsServer.sh"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "MemoriesOfMarsServer.sh",
+                        "port": 7777, "queryport": 27015})
 
     cmd, cwd = memoriesofmarsserver.get_start_command(server)
 
-    assert cmd == ["./MemoriesOfMarsServer.sh"]
+    assert cmd == ["./MemoriesOfMarsServer.sh", "-Port=7777", "-QueryPort=27015", "-log"]
     assert cwd == server.data["dir"]
 
 

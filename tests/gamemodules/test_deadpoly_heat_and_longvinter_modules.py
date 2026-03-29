@@ -74,11 +74,12 @@ def test_longvinter_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("longvinter")
     exe = tmp_path / "LongvinterServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "LongvinterServer.sh"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "LongvinterServer.sh",
+                        "port": 7777, "queryport": 27016})
 
     cmd, cwd = longvinterserver.get_start_command(server)
 
-    assert cmd == ["./LongvinterServer.sh"]
+    assert cmd == ["./LongvinterServer.sh", "-Port=7777", "-QueryPort=27016"]
     assert cwd == server.data["dir"]
 
 

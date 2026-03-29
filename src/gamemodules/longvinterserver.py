@@ -40,6 +40,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="LongvinterServer.sh
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
+    server.data.setdefault("queryport", "27016")
     server.data.setdefault("maxplayers", "32")
     server.data.setdefault("servername", "Unnamed Island")
     server.data.setdefault("backupfiles", ["Longvinter/Saved/Config/LinuxServer", "Longvinter/Saved/SaveGames"])
@@ -108,7 +109,14 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return ["./" + server.data["exe_name"]], server.data["dir"]
+    return (
+        [
+            "./" + server.data["exe_name"],
+            "-Port=%s" % (server.data["port"],),
+            "-QueryPort=%s" % (server.data["queryport"],),
+        ],
+        server.data["dir"],
+    )
 
 
 def do_stop(server, j):
@@ -144,6 +152,6 @@ def checkvalue(server, key, *value):
         raise ServerError("No value specified")
     if key[0] == "port":
         return int(value[0])
-    if key[0] in ("maxplayers", "servername", "exe_name", "dir"):
+    if key[0] in ("maxplayers", "servername", "exe_name", "dir", "queryport"):
         return str(value[0])
     raise ServerError("Unsupported key")

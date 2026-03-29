@@ -51,6 +51,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PalServer.sh", publ
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
+    server.data.setdefault("queryport", "27015")
     server.data.setdefault("publiclobby", bool(publiclobby))
     server.data.setdefault("backupfiles", ["Pal/Saved", "PalWorldSettings.ini", "PalServer.sh"])
     if "backup" not in server.data:
@@ -136,7 +137,11 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = ["./" + server.data["exe_name"]]
+    cmd = [
+        "./" + server.data["exe_name"],
+        "-port=%s" % (server.data["port"],),
+        "-queryport=%s" % (server.data["queryport"],),
+    ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
     return cmd, server.data["dir"]
@@ -175,7 +180,7 @@ def checkvalue(server, key, *value):
         raise ServerError("No value specified")
     if key[0] == "port":
         return int(value[0])
-    if key[0] in ("exe_name", "dir"):
+    if key[0] in ("exe_name", "dir", "queryport"):
         return str(value[0])
     if key[0] == "publiclobby":
         return str(value[0]).lower() in ("1", "true", "yes", "on")
