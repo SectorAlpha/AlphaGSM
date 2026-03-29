@@ -83,13 +83,12 @@ def test_q2server_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] in ("a2s", "tcp"), (
-            f"Unexpected protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
-        if _info_data["protocol"] == "a2s":
-            assert _info_data.get("players") == 0, (
-                f"Expected 0 players on fresh server: {_info_data!r}"
-            )
+        assert _info_data.get("players") == 0, (
+            f"Expected 0 players on fresh server: {_info_data!r}"
+        )
     finally:
         # stop
         run_and_assert_ok(env, server_name, "stop")
