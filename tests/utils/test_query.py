@@ -144,3 +144,101 @@ def test_parse_a2s_info_extracts_all_fields():
 def test_parse_a2s_info_returns_none_on_truncated_data():
     result = query_module.parse_a2s_info(b"\xff\xff\xff\xff\x49\x11")
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# slp_info
+# ---------------------------------------------------------------------------
+
+def _build_slp_response(
+    description="A Minecraft Server",
+    players_online=3,
+    players_max=20,
+    version_name="1.20.1",
+    sample=None,
+):
+    """Build a minimal Minecraft SLP JSON status payload as bytes."""
+    import json, struct
+
+    payload_dict = {
+        "description": {"text": description},
+        "players": {"online": players_online, "max": players_max},
+        "version": {"name": version_name, "protocol": 763},
+    }
+    if sample is not None:
+        payload_dict["players"]["sample"] = sample
+    payload_bytes = json.dumps(payload_dict).encode("utf-8")
+
+    def _encode_varint(value):
+        buf = bytearray()
+        while True:
+            temp = value & 0x7F
+            value >>= 7
+            if value != 0:
+                temp |= 0x80
+            buf.append(temp)
+            if value == 0:
+                return bytes(buf)
+
+    # packet: length(varint) + packet_id(varint 0) + string_length(varint) + payload
+    inner = _encode_varint(0) + _encode_varint(len(payload_bytes)) + payload_bytes
+    packet = _encode_varint(len(inner)) + inner
+    return packet
+
+
+def test_slp_info_extracts_all_fields(monkeypatch):
+    import socket as _socket
+
+    packet = _build_slp_response(
+        description="Hello World",
+        players_online=5,
+        players_max=25,
+        version_name="1.20.4",
+        sample=[{"name": "Alice", "id": "uuid1"}, {"name": "Bob", "id": "uuid2"}],
+    )
+
+    class _FakeSock:
+        def __init__(self):
+            self._data = packet
+            self._pos = 0
+            self._sent = []
+
+        def sendall(self, data):
+            self._sent.append(data)
+
+        def recv(self, n):
+            chunk = self._data[self._pos:self._pos + n]
+            self._pos += n
+            return chunk
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+    monkeypatch.setattr(
+        _socket,
+        "create_connection",
+        lambda addr, timeout=None: _FakeSock(),
+    )
+
+    result = query_module.slp_info("127.0.0.1", 25565)
+    assert result["description"] == "Hello World"
+    assert result["players_online"] == 5
+    assert result["players_max"] == 25
+    assert result["version"] == "1.20.4"
+    assert result["player_names"] == ["Alice", "Bob"]
+
+
+def test_slp_info_raises_on_connection_error(monkeypatch):
+    import socket as _socket
+
+    monkeypatch.setattr(
+        _socket,
+        "create_connection",
+        lambda addr, timeout=None: (_ for _ in ()).throw(OSError("refused")),
+    )
+    with pytest.raises(query_module.QueryError, match="SLP query failed"):
+        query_module.slp_info("127.0.0.1", 25565)
+

@@ -133,6 +133,7 @@ class Server(object):
         "restore",
         "wipe",
         "query",
+        "info",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -238,6 +239,7 @@ class Server(object):
         ),
         "wipe": CmdSpec(),
         "query": CmdSpec(),
+        "info": CmdSpec(),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -270,6 +272,9 @@ class Server(object):
         "query": "Query the game server to check whether it is responding.\n"
         "Uses the Source A2S protocol when a query port is configured, "
         "otherwise falls back to a TCP ping on the game port.",
+        "info": "Retrieve detailed server information: player count, map, version, etc.\n"
+        "For Minecraft servers uses the Server List Ping (SLP) protocol.\n"
+        "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.",
     }
 
     def __init__(self, name, module=None):
@@ -604,6 +609,73 @@ class Server(object):
                 "Server port is open (TCP ping on port {} \u2014 {:.1f} ms).".format(
                     port, ms
                 )
+            )
+        except query_utils.QueryError as exc:
+            raise ServerError("Server does not appear to be responding: " + str(exc))
+
+    def info(self, **kwargs):
+        """Retrieve detailed server information (player count, map, version, etc.).
+
+        The game module may define ``get_info_address(server)`` returning
+        ``(host, port, protocol)`` where *protocol* is ``"slp"`` (Minecraft
+        Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), or ``"tcp"``
+        (TCP ping only).  When the hook is absent the method falls back to
+        an A2S query on the game port, then TCP.
+        """
+        from utils import query as query_utils
+
+        get_addr = getattr(self.module, "get_info_address", None)
+        if callable(get_addr):
+            host, port, protocol = get_addr(self)
+        else:
+            host = "127.0.0.1"
+            port = self.data.get("queryport", self.data["port"])
+            protocol = "a2s"
+
+        if protocol == "slp":
+            try:
+                result = query_utils.slp_info(host, port)
+                print(
+                    "Server info (SLP on port {port}):\n"
+                    "  Description : {description}\n"
+                    "  Players     : {players_online}/{players_max}\n"
+                    "  Version     : {version}".format(port=port, **result)
+                )
+                names = result.get("player_names")
+                if names:
+                    print("  Online      : " + ", ".join(names))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "a2s":
+            try:
+                raw = query_utils.a2s_info(host, port)
+                parsed = query_utils.parse_a2s_info(raw)
+                if parsed:
+                    print(
+                        "Server info (A2S on port {port}):\n"
+                        "  Name        : {name}\n"
+                        "  Map         : {map}\n"
+                        "  Game        : {game}\n"
+                        "  Players     : {players}/{max_players}"
+                        " ({bots} bots)".format(port=port, **parsed)
+                    )
+                else:
+                    print("Server is responding (A2S on port {}), "
+                          "but details could not be parsed.".format(port))
+                return
+            except query_utils.QueryError:
+                # Fall through to TCP
+                host = "127.0.0.1"
+                port = self.data["port"]
+
+        # TCP fallback
+        try:
+            ms = query_utils.tcp_ping(host, port)
+            print(
+                "Server port is open (TCP ping on port {} \u2014 {:.1f} ms)."
+                "  No further details available.".format(port, ms)
             )
         except query_utils.QueryError as exc:
             raise ServerError("Server does not appear to be responding: " + str(exc))

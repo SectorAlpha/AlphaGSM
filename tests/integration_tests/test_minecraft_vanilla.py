@@ -252,11 +252,26 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
 
-        # query — Minecraft doesn't implement A2S; falls back to TCP ping
+        _run_and_assert_ok(env, server_name, "message", "hello world")
+
+        # query — Minecraft doesn't implement A2S; expects TCP ping fallback
         query_result = _run_and_assert_ok(env, server_name, "query")
         print("\n=== query ===")
         print(query_result.stdout.strip())
-        _run_and_assert_ok(env, server_name, "message", "hello world")
+        assert "Server port is open" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
+
+        # info — Minecraft uses SLP; expects player count and description
+        info_result = _run_and_assert_ok(env, server_name, "info")
+        print("\n=== info ===")
+        print(info_result.stdout.strip())
+        assert "Server info (SLP" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
+        assert "Players" in info_result.stdout, (
+            f"Missing player count in info output: {info_result.stdout!r}"
+        )
     finally:
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
         _wait_for_port_to_close("127.0.0.1", port, STOP_TIMEOUT_SECONDS)

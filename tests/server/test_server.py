@@ -728,3 +728,97 @@ def test_query_uses_module_get_query_address(monkeypatch, capsys):
     srv.query()
 
     assert ("10.0.0.1", 27016) in calls
+
+
+# info
+# ---------------------------------------------------------------------------
+
+
+def test_info_succeeds_via_slp(monkeypatch, capsys):
+    """info() uses slp_info when module returns protocol='slp'."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 25565, "module": "minecraft.vanilla"}))
+
+    slp_data = {
+        "description": "A test server",
+        "players_online": 2,
+        "players_max": 10,
+        "version": "1.20.4",
+        "player_names": ["Alice", "Bob"],
+    }
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.slp_info = lambda host, port, timeout=5.0: slp_data
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(srv.module, "get_info_address",
+                        lambda s: ("127.0.0.1", 25565, "slp"), raising=False)
+
+    srv.info()
+
+    out = capsys.readouterr().out
+    assert "Server info (SLP" in out
+    assert "Players" in out
+    assert "2/10" in out
+
+
+def test_info_succeeds_via_a2s(monkeypatch, capsys):
+    """info() parses A2S_INFO when protocol='a2s'."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 27015, "module": "teamfortress2"}))
+
+    a2s_parsed = {
+        "name": "My TF2 Server",
+        "map": "cp_badlands",
+        "folder": "tf",
+        "game": "Team Fortress",
+        "appid": 440,
+        "players": 4,
+        "max_players": 24,
+        "bots": 0,
+    }
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_info = lambda host, port, timeout=2.0: b"\xff\xff\xff\xff\x49stub"
+    fake_q.parse_a2s_info = lambda data: a2s_parsed
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info()
+
+    out = capsys.readouterr().out
+    assert "Server info (A2S" in out
+    assert "cp_badlands" in out
+    assert "4/24" in out
+
+
+def test_info_falls_back_to_tcp(monkeypatch, capsys):
+    """info() falls back to TCP when A2S fails."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 27015, "module": "teamfortress2"}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_info = lambda host, port, timeout=2.0: (_ for _ in ()).throw(OSError("udp"))
+    fake_q.tcp_ping = lambda host, port, timeout=2.0: 5.4
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info()
+
+    out = capsys.readouterr().out
+    assert "Server port is open" in out

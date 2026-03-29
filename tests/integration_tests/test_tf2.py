@@ -209,10 +209,23 @@ def test_tf2_download_install_and_start(tmp_path):
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
 
-        # query
+        # query — TF2 is Source engine; expects A2S (or TCP fallback)
         query_result = _run_and_assert_ok(env, server_name, "query")
         print("\n=== query ===")
         print(query_result.stdout.strip())
+        assert (
+            "Server is responding" in query_result.stdout
+            or "Server port is open" in query_result.stdout
+        ), f"Unexpected query output: {query_result.stdout!r}"
+
+        # info — TF2 uses A2S_INFO; expects name/map/players
+        info_result = _run_and_assert_ok(env, server_name, "info")
+        print("\n=== info ===")
+        print(info_result.stdout.strip())
+        assert (
+            "Server info" in info_result.stdout
+            or "Server port is open" in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
     finally:
         _wait_for_screen_exit(log_path, START_TIMEOUT_SECONDS)
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)

@@ -453,3 +453,12 @@ def deop(server, *users):
 
 
 command_functions["deop"] = deop
+
+
+def get_info_address(server):
+    """Return the SLP address for the ``info`` command.
+
+    Minecraft uses the Server List Ping (SLP) protocol on its main TCP port,
+    which reports player count, max players, server description, and version.
+    """
+    return ("127.0.0.1", server.data["port"], "slp")

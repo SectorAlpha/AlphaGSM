@@ -14,7 +14,7 @@ import socket
 import struct
 import time
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "tcp_ping"]
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "slp_info", "tcp_ping"]
 
 # Source/Steam A2S_INFO challenge bytes and expected response header.
 _A2S_REQUEST = b"\xff\xff\xff\xffTSource Engine Query\x00"
@@ -83,6 +83,96 @@ def parse_a2s_info(data):
         }
     except Exception:  # noqa: BLE001
         return None
+
+
+def slp_info(host, port, timeout=5.0):
+    """Send a Minecraft Server List Ping to *host*:*port* and return a dict.
+
+    The returned dict contains at minimum: ``description`` (str),
+    ``players_online`` (int), ``players_max`` (int), ``version`` (str).
+    When online players are listed, ``player_names`` (list[str]) is also
+    included.
+
+    Raises :class:`QueryError` on connection failure or unexpected response.
+    """
+    import json as _json
+
+    def _encode_varint(value):
+        buf = bytearray()
+        while True:
+            temp = value & 0x7F
+            value >>= 7
+            if value != 0:
+                temp |= 0x80
+            buf.append(temp)
+            if value == 0:
+                return bytes(buf)
+
+    def _read_varint(sock):
+        num_read = 0
+        result = 0
+        while True:
+            raw = sock.recv(1)
+            if not raw:
+                raise QueryError("Connection closed while reading VarInt")
+            byte = raw[0]
+            result |= (byte & 0x7F) << (7 * num_read)
+            num_read += 1
+            if num_read > 5:
+                raise QueryError("VarInt too large")
+            if (byte & 0x80) == 0:
+                return result
+
+    try:
+        with socket.create_connection((host, int(port)), timeout=timeout) as sock:
+            host_bytes = host.encode("utf-8")
+            handshake = b"".join([
+                _encode_varint(0),        # packet id 0 = handshake
+                _encode_varint(760),      # protocol version (servers accept any)
+                _encode_varint(len(host_bytes)),
+                host_bytes,
+                struct.pack(">H", int(port)),
+                _encode_varint(1),        # next state = status
+            ])
+            sock.sendall(_encode_varint(len(handshake)) + handshake)
+            sock.sendall(_encode_varint(1) + _encode_varint(0))  # status request
+            _read_varint(sock)   # packet length (ignored)
+            packet_id = _read_varint(sock)
+            if packet_id != 0:
+                raise QueryError(f"Unexpected SLP packet id: {packet_id}")
+            payload_length = _read_varint(sock)
+            payload = bytearray()
+            while len(payload) < payload_length:
+                chunk = sock.recv(payload_length - len(payload))
+                if not chunk:
+                    raise QueryError("Connection closed while reading SLP payload")
+                payload.extend(chunk)
+    except QueryError:
+        raise
+    except OSError as exc:
+        raise QueryError("SLP query failed: " + str(exc)) from exc
+
+    try:
+        raw = _json.loads(payload.decode("utf-8"))
+    except Exception as exc:
+        raise QueryError("Failed to parse SLP JSON: " + str(exc)) from exc
+
+    try:
+        desc = raw.get("description", "")
+        if isinstance(desc, dict):
+            desc = desc.get("text", "")
+        result = {
+            "description": str(desc),
+            "players_online": int(raw["players"]["online"]),
+            "players_max": int(raw["players"]["max"]),
+            "version": str(raw["version"]["name"]),
+        }
+        sample = raw.get("players", {}).get("sample", [])
+        if sample:
+            result["player_names"] = [p["name"] for p in sample if "name" in p]
+        return result
+    except (KeyError, TypeError, ValueError) as exc:
+        raise QueryError("Unexpected SLP response structure: " + str(exc)) from exc
 
 
 def tcp_ping(host, port, timeout=2.0):
