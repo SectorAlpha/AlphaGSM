@@ -11,9 +11,10 @@ When that hook is absent the caller falls back to a TCP ping on the main port.
 """
 
 import socket
+import struct
 import time
 
-__all__ = ["QueryError", "a2s_info", "tcp_ping"]
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "tcp_ping"]
 
 # Source/Steam A2S_INFO challenge bytes and expected response header.
 _A2S_REQUEST = b"\xff\xff\xff\xffTSource Engine Query\x00"
@@ -40,6 +41,48 @@ def a2s_info(host, port, timeout=2.0):
     if not data.startswith(_A2S_HEADER):
         raise QueryError("Unexpected A2S response header")
     return data
+
+
+def _read_cstring(data, pos):
+    """Read a null-terminated UTF-8 string from *data* at *pos*.
+
+    Returns ``(string, next_pos)``.
+    """
+    end = data.index(b"\x00", pos)
+    return data[pos:end].decode("utf-8", errors="replace"), end + 1
+
+
+def parse_a2s_info(data):
+    """Parse a raw A2S_INFO response into a dict.
+
+    Returns a dict with keys ``name``, ``map``, ``folder``, ``game``,
+    ``appid``, ``players``, ``max_players``, and ``bots``, or ``None``
+    if parsing fails (e.g. truncated or malformed packet).
+    """
+    try:
+        pos = 5  # skip 4-byte FF prefix + 0x49 type byte
+        pos += 1  # protocol version byte
+        name, pos = _read_cstring(data, pos)
+        map_, pos = _read_cstring(data, pos)
+        folder, pos = _read_cstring(data, pos)
+        game, pos = _read_cstring(data, pos)
+        (appid,) = struct.unpack_from("<H", data, pos)
+        pos += 2
+        players = data[pos]
+        max_players = data[pos + 1]
+        bots = data[pos + 2]
+        return {
+            "name": name,
+            "map": map_,
+            "folder": folder,
+            "game": game,
+            "appid": appid,
+            "players": players,
+            "max_players": max_players,
+            "bots": bots,
+        }
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def tcp_ping(host, port, timeout=2.0):

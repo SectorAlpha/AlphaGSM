@@ -62,6 +62,9 @@ def test_sniperelite4server_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        # query
+        run_and_assert_ok(env, server_name, "query")
     finally:
         # stop
         run_and_assert_ok(env, server_name, "stop")

@@ -641,13 +641,15 @@ def test_wipe_raises_if_rm_fails(monkeypatch, tmp_path):
 def test_query_succeeds_via_a2s(monkeypatch, capsys):
     srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
 
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
     import utils
     import sys, types
     fake_q = types.ModuleType("utils.query")
     fake_q.QueryError = OSError
+    fake_q.parse_a2s_info = lambda data: None  # no details
 
     def fake_a2s(host, port, timeout=2.0):
-        pass  # success
+        return b"\xff\xff\xff\xff\x49"  # minimal valid-looking response
 
     fake_q.a2s_info = fake_a2s
     fake_q.tcp_ping = None
@@ -662,6 +664,7 @@ def test_query_succeeds_via_a2s(monkeypatch, capsys):
 def test_query_falls_back_to_tcp_when_a2s_fails(monkeypatch, capsys):
     srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
 
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
     import utils
     import sys, types
     fake_q = types.ModuleType("utils.query")
@@ -686,6 +689,7 @@ def test_query_falls_back_to_tcp_when_a2s_fails(monkeypatch, capsys):
 def test_query_raises_server_error_when_both_fail(monkeypatch):
     srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
 
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
     import utils
     import sys, types
     fake_q = types.ModuleType("utils.query")
@@ -707,6 +711,7 @@ def test_query_uses_module_get_query_address(monkeypatch, capsys):
 
     srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
 
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
     import utils
     import sys, types
     fake_q = types.ModuleType("utils.query")

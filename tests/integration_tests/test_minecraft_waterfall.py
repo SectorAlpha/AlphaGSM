@@ -60,6 +60,9 @@ def test_minecraft_waterfall_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        # query
+        run_and_assert_ok(env, server_name, "query")
     finally:
         # stop
         run_and_assert_ok(env, server_name, "stop")

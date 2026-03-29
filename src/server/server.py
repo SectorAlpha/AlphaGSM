@@ -578,8 +578,18 @@ class Server(object):
 
         if protocol == "a2s":
             try:
-                query_utils.a2s_info(host, port)
-                print("Server is responding (A2S query on port {}).".format(port))
+                raw = query_utils.a2s_info(host, port)
+                info = query_utils.parse_a2s_info(raw)
+                if info:
+                    print(
+                        "Server is responding (A2S on port {port}): "
+                        "{name!r}  map={map!r}  "
+                        "players={players}/{max_players}  game={game!r}".format(
+                            port=port, **info
+                        )
+                    )
+                else:
+                    print("Server is responding (A2S query on port {}).".format(port))
                 return
             except query_utils.QueryError:
                 # A2S failed — fall back to TCP ping on the main game port.

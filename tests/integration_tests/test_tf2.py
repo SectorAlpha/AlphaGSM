@@ -208,6 +208,11 @@ def test_tf2_download_install_and_start(tmp_path):
         assert "SV_ActivateServer: setting tickrate" in log_text
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
+
+        # query
+        query_result = _run_and_assert_ok(env, server_name, "query")
+        print("\n=== query ===")
+        print(query_result.stdout.strip())
     finally:
         _wait_for_screen_exit(log_path, START_TIMEOUT_SECONDS)
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)

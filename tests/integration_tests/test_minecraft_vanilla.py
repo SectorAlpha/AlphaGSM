@@ -251,6 +251,11 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         assert release_id.split(".")[0] in status["version"]["name"]
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
+
+        # query — Minecraft doesn't implement A2S; falls back to TCP ping
+        query_result = _run_and_assert_ok(env, server_name, "query")
+        print("\n=== query ===")
+        print(query_result.stdout.strip())
         _run_and_assert_ok(env, server_name, "message", "hello world")
     finally:
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
