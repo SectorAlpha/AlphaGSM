@@ -91,7 +91,7 @@ def test_proxy_family_modules_resolve_download_and_delegate_to_bungeecord(
     monkeypatch.setattr(
         velocity.proxy_base,
         "configure",
-        lambda server_obj, ask, dir=None, exe_name=None: calls.append(
+        lambda server_obj, ask, port=None, dir=None, exe_name=None: calls.append(
             (server_obj.name, dir, exe_name)
         )
         or ((), {}),

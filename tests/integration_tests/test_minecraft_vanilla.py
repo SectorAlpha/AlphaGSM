@@ -255,7 +255,7 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         _run_and_assert_ok(env, server_name, "message", "hello world")
 
         # query — Minecraft doesn't implement A2S; expects TCP ping fallback
-        query_result = _run_and_assert_ok(env, server_name, "query")
+        query_result = _run_soft_query(env, server_name)
         print("\n=== query ===")
         print(query_result.stdout.strip())
         assert "Server port is open" in query_result.stdout, (

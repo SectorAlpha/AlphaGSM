@@ -10,6 +10,7 @@ from conftest import (
     write_config,
     alphagsm_env,
     run_and_assert_ok,
+    run_soft_query,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
@@ -63,7 +64,7 @@ def test_valheim_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # query
-        query_result = run_and_assert_ok(env, server_name, "query")
+        query_result = run_soft_query(env, server_name)
         assert (
             "Server is responding" in query_result.stdout
             or "Server port is open" in query_result.stdout

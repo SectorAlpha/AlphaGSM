@@ -26,8 +26,16 @@ command_descriptions = {}
 command_functions = {}
 
 
+# Regex to locate the first listener's host line in config.yml
+_BUNGEE_HOST_RE = re.compile(r'^(\s+host:\s*)(\S+):(\d+)', re.MULTILINE)
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
     """Collect and store configuration values for a Bungeecord server."""
+    if port is None:
+        port = server.data.get("port", 25565)
+    server.data["port"] = int(port)
+
     if dir is None:
         if "dir" in server.data and server.data["dir"] is not None:
             dir = server.data["dir"]
@@ -59,7 +67,46 @@ def install(server, *, eula=False):
                 mcjar
             )
         )
+    config_file = os.path.join(server.data["dir"], "config.yml")
+    if not os.path.isfile(config_file):
+        javapath = server.data.get("javapath", "java")
+        print("Running server briefly to generate config.yml …")
+        proc = sp.Popen(
+            [javapath, "-Xmx256M", "-jar", server.data["exe_name"]],
+            cwd=server.data["dir"],
+            stdout=sp.DEVNULL,
+            stderr=sp.DEVNULL,
+        )
+        deadline = time.time() + 30
+        try:
+            while time.time() < deadline and not os.path.isfile(config_file):
+                if proc.poll() is not None:
+                    break
+                time.sleep(0.5)
+        finally:
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=5)
+                except sp.TimeoutExpired:
+                    proc.kill()
+                    proc.wait()
+    if os.path.isfile(config_file):
+        _update_bungee_host_port(config_file, server.data.get("port", 25565))
     server.data.save()
+
+
+def _update_bungee_host_port(config_path, port):
+    """Update the first listener host entry in a BungeeCord/Waterfall config.yml."""
+    with open(config_path, "r") as fh:
+        content = fh.read()
+    updated = _BUNGEE_HOST_RE.sub(
+        lambda m: m.group(1) + m.group(2) + ":" + str(port),
+        content,
+        count=1,
+    )
+    with open(config_path, "w") as fh:
+        fh.write(updated)
 
 
 def get_start_command(server):

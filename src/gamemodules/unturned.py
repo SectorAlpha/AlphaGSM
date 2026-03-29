@@ -49,6 +49,10 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ServerHelper.sh"):
             "schedule": [("default", 0, "days")],
         }
 
+    if port is None:
+        port = server.data.get("port", 27015)
+    server.data["port"] = int(port)
+
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
         if ask:
