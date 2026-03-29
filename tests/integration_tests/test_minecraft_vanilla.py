@@ -269,8 +269,8 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         assert "Server info (SLP" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
-        assert "Players" in info_result.stdout, (
-            f"Missing player count in info output: {info_result.stdout!r}"
+        assert "Players     : 0/20" in info_result.stdout, (
+            f"Expected 0/20 player count (Minecraft default) in info output: {info_result.stdout!r}"
         )
     finally:
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)

@@ -218,14 +218,19 @@ def test_tf2_download_install_and_start(tmp_path):
             or "Server port is open" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
-        # info — TF2 uses A2S_INFO; expects name/map/players
+        # info — TF2 is Source engine; A2S_INFO should report 0 players and game
         info_result = _run_and_assert_ok(env, server_name, "info")
         print("\n=== info ===")
         print(info_result.stdout.strip())
-        assert (
-            "Server info" in info_result.stdout
-            or "Server port is open" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
+        assert "Server info (A2S" in info_result.stdout, (
+            f"Expected A2S info output from TF2: {info_result.stdout!r}"
+        )
+        assert "Players     : 0/" in info_result.stdout, (
+            f"Expected 0 players in fresh TF2 server: {info_result.stdout!r}"
+        )
+        assert "Team Fortress" in info_result.stdout, (
+            f"Expected 'Team Fortress' game name in A2S info: {info_result.stdout!r}"
+        )
     finally:
         _wait_for_screen_exit(log_path, START_TIMEOUT_SECONDS)
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
