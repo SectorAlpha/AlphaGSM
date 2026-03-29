@@ -80,6 +80,17 @@ def test_minecraft_bungeecord_lifecycle(tmp_path):
             "Players     : 0/" in info_result.stdout
             or "Server port is open" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "slp", (
+            f"Expected SLP protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data.get("players_online") == 0, (
+            f"Expected 0 players on fresh server: {_info_data!r}"
+        )
     finally:
         # stop
         run_and_assert_ok(env, server_name, "stop")

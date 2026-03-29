@@ -3,6 +3,7 @@
 Requires SteamCMD (app_id 232250) — gated behind ALPHAGSM_RUN_STEAMCMD=1.
 """
 
+import json
 import os
 from pathlib import Path
 import shutil
@@ -230,6 +231,22 @@ def test_tf2_download_install_and_start(tmp_path):
         )
         assert "Team Fortress" in info_result.stdout, (
             f"Expected 'Team Fortress' game name in A2S info: {info_result.stdout!r}"
+        )
+
+        # info --json — verify structured JSON matches known TF2 A2S values
+        info_json_result = _run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected A2S protocol for TF2: {_info_data!r}"
+        )
+        assert _info_data.get("players") == 0, (
+            f"Expected 0 players on fresh TF2 server: {_info_data!r}"
+        )
+        assert _info_data.get("bots") == 0, (
+            f"Expected 0 bots on fresh TF2 server: {_info_data!r}"
+        )
+        assert "Team Fortress" in (_info_data.get("game") or ""), (
+            f"Expected 'Team Fortress' in game field: {_info_data!r}"
         )
     finally:
         _wait_for_screen_exit(log_path, START_TIMEOUT_SECONDS)

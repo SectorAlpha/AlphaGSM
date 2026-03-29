@@ -272,6 +272,19 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         assert "Players     : 0/20" in info_result.stdout, (
             f"Expected 0/20 player count (Minecraft default) in info output: {info_result.stdout!r}"
         )
+
+        # info --json — verify structured JSON matches known Minecraft SLP values
+        info_json_result = _run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "slp", (
+            f"Expected SLP protocol for Minecraft: {_info_data!r}"
+        )
+        assert _info_data.get("players_online") == 0, (
+            f"Expected 0 players on fresh Minecraft server: {_info_data!r}"
+        )
+        assert _info_data.get("players_max") == 20, (
+            f"Expected max-players=20 (Minecraft vanilla default): {_info_data!r}"
+        )
     finally:
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
         _wait_for_port_to_close("127.0.0.1", port, STOP_TIMEOUT_SECONDS)

@@ -75,6 +75,18 @@ def test_exfilserver_lifecycle(tmp_path):
             "Players     : 0/" in info_result.stdout
             or "Server port is open" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] in ("a2s", "tcp"), (
+            f"Unexpected protocol in info JSON: {_info_data!r}"
+        )
+        if _info_data["protocol"] == "a2s":
+            assert _info_data.get("players") == 0, (
+                f"Expected 0 players on fresh server: {_info_data!r}"
+            )
     finally:
         # stop
         run_and_assert_ok(env, server_name, "stop")
