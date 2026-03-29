@@ -343,3 +343,111 @@ def test_deactivate_removes_or_updates_jobs_and_can_stop_server(monkeypatch):
     assert cron.written is True
     assert stopped == [True]
     assert job.command == "/usr/bin/alphagsm 1 beta start"
+
+
+# ---------------------------------------------------------------------------
+# Tests for restart, kill, send, and logs commands
+# ---------------------------------------------------------------------------
+
+
+def test_restart_stops_then_starts(monkeypatch):
+    srv = make_server()
+    calls = []
+    monkeypatch.setattr(srv, "stop", lambda *a, **kw: calls.append("stop"))
+    monkeypatch.setattr(srv, "start", lambda *a, **kw: calls.append("start"))
+
+    srv.restart()
+
+    assert calls == ["stop", "start"]
+
+
+def test_kill_sends_quit_and_succeeds(monkeypatch):
+    srv = make_server()
+    sent = []
+    states = iter([True, False])
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: next(states))
+    monkeypatch.setattr(server_module.screen, "send_to_screen", lambda name, cmd: sent.append((name, cmd)))
+    monkeypatch.setattr(server_module.time, "sleep", lambda s: None)
+
+    srv.kill()
+
+    assert sent == [("alpha", ["quit"])]
+
+
+def test_kill_raises_if_server_not_running(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: False)
+
+    with pytest.raises(server_module.ServerError, match="isn't running"):
+        srv.kill()
+
+
+def test_kill_raises_if_session_persists_after_quit(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)
+    monkeypatch.setattr(server_module.screen, "send_to_screen", lambda name, cmd: None)
+    monkeypatch.setattr(server_module.time, "sleep", lambda s: None)
+
+    with pytest.raises(server_module.ServerError, match="Could not kill"):
+        srv.kill()
+
+
+def test_send_sends_input_to_running_server(monkeypatch):
+    srv = make_server()
+    sent = []
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)
+    monkeypatch.setattr(server_module.screen, "send_to_server", lambda name, text: sent.append((name, text)))
+
+    srv.send("say hello")
+
+    assert sent == [("alpha", "say hello\n")]
+
+
+def test_send_raises_if_server_not_running(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: False)
+
+    with pytest.raises(server_module.ServerError, match="isn't running"):
+        srv.send("say hello")
+
+
+def test_logs_tails_logfile(monkeypatch, tmp_path):
+    srv = make_server()
+    log_file = tmp_path / "alpha.log"
+    log_file.write_text("line1\nline2\nline3\n")
+    monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(log_file))
+    ran = []
+
+    def fake_run(cmd, check):
+        ran.append(cmd)
+        return type("R", (), {"returncode": 0})()
+
+    monkeypatch.setattr(server_module.sp, "run", fake_run)
+
+    srv.logs(lines=10)
+
+    assert ran == [["tail", "-n", "10", str(log_file)]]
+
+
+def test_logs_raises_if_no_log_file(monkeypatch, tmp_path):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(tmp_path / "missing.log"))
+
+    with pytest.raises(server_module.ServerError, match="No log file"):
+        srv.logs()
+
+
+def test_logs_raises_if_tail_fails(monkeypatch, tmp_path):
+    srv = make_server()
+    log_file = tmp_path / "alpha.log"
+    log_file.write_text("data")
+    monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(log_file))
+
+    def fake_run(cmd, check):
+        return type("R", (), {"returncode": 1})()
+
+    monkeypatch.setattr(server_module.sp, "run", fake_run)
+
+    with pytest.raises(server_module.ServerError, match="Failed to read"):
+        srv.logs()
+

@@ -7,6 +7,7 @@ For details of how to write a game server module see the gamemodules module in t
 """
 
 import os
+import subprocess as sp
 from . import data
 from importlib import import_module
 import screen
@@ -117,11 +118,15 @@ class Server(object):
         "setup",
         "start",
         "stop",
+        "restart",
+        "kill",
         "activate",
         "deactivate",
         "status",
+        "send",
         "message",
         "connect",
+        "logs",
         "dump",
         "set",
         "backup",
@@ -177,10 +182,29 @@ class Server(object):
                 ),
             )
         ),
+        "restart": CmdSpec(),
+        "kill": CmdSpec(),
+        "send": CmdSpec(
+            requiredarguments=(
+                ArgSpec("INPUT", "The text to send to the server console", str),
+            )
+        ),
         "message": CmdSpec(
             requiredarguments=(ArgSpec("MESSAGE", "The message to send", str),)
         ),
         "connect": CmdSpec(),
+        "logs": CmdSpec(
+            options=(
+                OptSpec(
+                    "n",
+                    ["lines"],
+                    "Number of lines to show (default 50)",
+                    "lines",
+                    "N",
+                    int,
+                ),
+            )
+        ),
         "dump": CmdSpec(),
         "set": CmdSpec(
             requiredarguments=(
@@ -207,11 +231,15 @@ class Server(object):
         "game server dependant settings are not provided.",
         "start": "Start the server.",
         "stop": "Stop the server.",
+        "restart": "Stop the server and start it again.",
+        "kill": "Force-kill the server process immediately without a graceful shutdown.",
         "activate": "Set the server to restart on reboots and start now unless --delay is specified.",
         "deactivate": "Stop the server from restarting on reboots and stop now unless --delay is specified.",
         "status": "Check the status of the server. At the minimum will report if the server is running.",
+        "send": "Send a line of text directly to the server console (for admin commands, not player chat).",
         "message": "Message the server. By default sends the message to all users.",
         "connect": "Connect to the server's console session.",
+        "logs": "Show the last lines of the server console log (default 50). Use -n to change the count.",
         "dump": "Dump the servers data store.",
         "set": "Set a parameter in data store to a new value.\nFor keys that index into lists the special entry 'APPEND' my be used to create a new "
         "entry at the end of the list. Also for some keys value 'DELETE' is a value that causes the entry to be deleted.\n\n"
@@ -300,16 +328,24 @@ class Server(object):
                 self.start(*args, **kwargs)
             elif command == "stop":
                 self.stop(*args, **kwargs)
+            elif command == "restart":
+                self.restart(*args, **kwargs)
+            elif command == "kill":
+                self.kill(*args, **kwargs)
             elif command == "activate":
                 self.activate(*args, **kwargs)
             elif command == "deactivate":
                 self.deactivate(*args, **kwargs)
             elif command == "status":
                 self.status(*args, **kwargs)
+            elif command == "send":
+                self.send(*args, **kwargs)
             elif command == "message":
                 self.module.message(self, *args, **kwargs)
             elif command == "connect":
                 self.connect(*args, **kwargs)
+            elif command == "logs":
+                self.logs(*args, **kwargs)
             elif command == "dump":
                 self.dump(*args, **kwargs)
             elif command == "set":
@@ -377,6 +413,21 @@ class Server(object):
         if screen.check_screen_exists(self.name):
             raise ServerError("Error can't kill server")
 
+    def restart(self, *args, **kwargs):
+        """Stop then start the server."""
+        self.stop(*args, **kwargs)
+        self.start(*args, **kwargs)
+
+    def kill(self):
+        """Force-kill the server by terminating the screen session immediately."""
+        if not screen.check_screen_exists(self.name):
+            raise ServerError("Error: Can't kill a server that isn't running")
+        screen.send_to_screen(self.name, ["quit"])
+        time.sleep(1)
+        if screen.check_screen_exists(self.name):
+            raise ServerError("Error: Could not kill server")
+        print("Server killed")
+
     def status(self, *args, verbose=0, **kwargs):
         """Print the status of the server. At the least shows if there is a server screen session running"""
         if not screen.check_screen_exists(self.name):
@@ -389,6 +440,21 @@ class Server(object):
     def connect(self):
         """Connect to the screen session to manually interact with the server"""
         screen.connect_to_screen(self.name)
+
+    def send(self, input, **kwargs):
+        """Send a line of text directly to the server console."""
+        if not screen.check_screen_exists(self.name):
+            raise ServerError("Error: Can't send to a server that isn't running")
+        screen.send_to_server(self.name, input + "\n")
+
+    def logs(self, lines=50, **kwargs):
+        """Print the last *lines* lines of the server console log."""
+        log = screen.logpath(self.name)
+        if not os.path.isfile(log):
+            raise ServerError("No log file found at: " + log)
+        result = sp.run(["tail", "-n", str(lines), log], check=False)
+        if result.returncode != 0:
+            raise ServerError("Failed to read log file: " + log)
 
     def dump(self):
         """Dump of the data in the data store"""
