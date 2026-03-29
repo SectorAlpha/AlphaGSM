@@ -145,3 +145,68 @@ Add this section to each `docs/servers/<module>.md`:
 3. Create config templates from defaults
 4. Add the section to existing docs
 5. Verify with lint and unit tests
+
+## Integration Test Requirements for `info`
+
+Every integration test must verify `info` and `info --json` with strict,
+protocol-specific assertions. This section is the authoritative reference for
+how to determine and assert the correct protocol.
+
+### How to determine a server's info protocol
+
+Look at the game module for a `get_info_address()` function:
+
+```python
+# If present, this determines the protocol used by Server.info()
+def get_info_address(server):
+    return ("127.0.0.1", server.data["port"], "<protocol>")
+```
+
+If `get_info_address()` is **absent**, `Server.info()` tries A2S first and
+falls back to TCP. This fallback means the test cannot assert a stable protocol —
+the right fix is to **add `get_info_address()`** to the module, not to
+use `in ("a2s", "tcp")` in the test.
+
+### Protocol reference
+
+| Protocol string | When used |
+|---|---|
+| `"a2s"` | Valve A2S_INFO — Source and GoldSrc engines |
+| `"slp"` | Minecraft Server List Ping — Vanilla, Spigot, Paper, BungeeCord, Waterfall, Velocity |
+| `"tcp"` | Raw TCP ping — last-resort fallback only; should never appear if the module has `get_info_address()` |
+
+### Adding `get_info_address()` to a module
+
+For Source/GoldSrc servers the `define_valve_server_module()` call already
+configures A2S automatically — do not add `get_info_address()` for those.
+
+For all other modules that speak a known protocol, add:
+
+```python
+def get_info_address(server):
+    """Return the address tuple for the ``info`` command."""
+    return ("127.0.0.1", server.data["port"], "slp")  # or "a2s"
+```
+
+### Strict protocol assertion in integration tests
+
+```python
+# info --json — assert the EXACT protocol, never a union
+import json as _info_json
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "a2s", (   # replace with the actual protocol
+    f"Expected a2s protocol in info JSON: {_info_data!r}"
+)
+assert _info_data.get("players") == 0, (
+    f"Expected 0 players on fresh server: {_info_data!r}"
+)
+```
+
+If the test fails because `"tcp"` was returned instead of the expected protocol:
+
+1. Check whether the module has `get_info_address()` — add it if missing.
+2. Check whether the server is actually listening on the expected port by the
+   time the test reaches `info`.
+3. Do **not** change the assertion to `in ("a2s", "tcp")`.
+

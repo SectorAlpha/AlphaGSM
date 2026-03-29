@@ -60,26 +60,91 @@ When adding a new game server, treat the lifecycle work as incomplete until it h
 
 The smoke tests are not owned by this skill, but new server lifecycle work should still result in smoke coverage being added or updated.
 
-## Integration Test Helper Rules
+## Integration Test Standards
 
 Integration tests use helpers from `tests/integration_tests/conftest.py`.
 
-### No soft skips for query
+### Minimum required coverage
 
-**Rule**: the `query` command must either pass or fail the test — never silently skip.
+Every integration test for a game server module **must** exercise all of these
+steps, in order, without any of them being silently skipped:
 
-Use `run_and_assert_ok(env, server_name, "query")` for the query step. There is no
-`run_soft_query` helper and there should never be one. If a server legitimately
-does not support query, the module should be designed so that `query` reports a
-clear result (e.g. TCP ping fallback), not so that the test tolerates a failure.
+1. **`create`** — create the server entry
+2. **`setup`** — install/configure the server (SteamCMD download, config write, etc.)
+3. **start + readiness** — start the server and wait for a log marker that
+   confirms it is actually ready to accept connections
+4. **`status`** — assert the server reports running
+5. **`query`** — assert the server responds to network query
+6. **`info`** — assert the server returns human-readable info
+7. **`info --json`** — assert valid JSON with correct protocol field
+8. **`stop`** — stop the server
+9. **shutdown verification** — wait for the port to close
 
-The only acceptable reason to skip an integration test is when the server
-**cannot be installed or started** at all in the current environment (e.g.
-Windows-only binary, no login credentials, dead download URL). Skips for those
-cases go through `skip_for_known_steamcmd_issue` inside `run_and_assert_ok`, or
-via `pytest.mark.skip` on the whole test.
+If a game server module genuinely does not implement one of these commands,
+the module itself needs to be fixed to provide a meaningful result (e.g. TCP
+ping fallback for query), not the test skipped.
 
-### Pattern for query in a standard integration test
+### No soft skips — ever
+
+**Rule**: a test must either pass or be explicitly disabled at the whole-test
+level. Silent mid-test skips are forbidden.
+
+- Do **not** write `pytest.skip(...)` inside a passing test body to paper over
+  a command that does not work.
+- Do **not** use `if result.returncode != 0: pytest.skip(...)` for any command.
+- Do **not** guard `query` or `info` assertions with optional `if` branches
+  (e.g. `if _info_data["protocol"] == "a2s": ...` to avoid checking when TCP
+  falls back).
+- There is no `run_soft_query` helper and there should never be one again.
+
+The **only** acceptable skip is when the server cannot be installed or started
+at all in the current environment (Windows-only binary, no credentials, dead
+download URL). Those cases go through `skip_for_known_steamcmd_issue` inside
+`run_and_assert_ok`, or via `pytest.mark.skip` on the whole test function.
+
+### Fix the issue, not the test
+
+If an integration test fails, the correct response is:
+
+1. Diagnose the root cause in the server module or AlphaGSM code.
+2. Fix the code so the server actually works.
+3. Keep the test assertion strict.
+
+Do **not** loosen assertions to make a broken server appear to pass.  
+Do **not** add soft skips to hide failures.
+
+### Protocol certainty for `info --json`
+
+Every server has exactly one network protocol that `info` should use.
+The integration test must assert the **exact** protocol, not a union:
+
+```python
+# CORRECT — assert the one protocol this server uses
+assert _info_data["protocol"] == "a2s", ...
+
+# WRONG — "in" disguises uncertainty about what protocol was actually used
+assert _info_data["protocol"] in ("a2s", "tcp"), ...
+```
+
+If the test fails because the wrong protocol was returned, the root cause is
+almost always one of:
+
+- The game module is missing a `get_info_address()` hook → add one returning
+  `("127.0.0.1", server.data["port"], "<protocol>")` so `Server.info()` does
+  not fall back to TCP.
+- The wrong protocol string was used in the assertion → correct the assertion
+  to match what the server actually speaks.
+
+Never widen the assertion to include both the correct protocol and the TCP
+fallback.
+
+Known protocol strings used by `info --json`:
+- `"a2s"` — Valve A2S_INFO (Source / GoldSrc engines)
+- `"slp"` — Minecraft Server List Ping
+- `"tcp"` — raw TCP ping (last-resort fallback; should not appear if the
+  module has a proper `get_info_address()` hook)
+
+### Canonical integration test pattern
 
 ```python
 # query
@@ -88,6 +153,23 @@ assert (
     "Server is responding" in query_result.stdout
     or "Server port is open" in query_result.stdout
 ), f"Unexpected query output: {query_result.stdout!r}"
+
+# info
+info_result = run_and_assert_ok(env, server_name, "info")
+assert "Players" in info_result.stdout, (
+    f"Unexpected info output: {info_result.stdout!r}"
+)
+
+# info --json
+import json as _info_json
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "a2s", (   # replace with the actual protocol
+    f"Expected a2s protocol in info JSON: {_info_data!r}"
+)
+assert _info_data.get("players") == 0, (
+    f"Expected 0 players on fresh server: {_info_data!r}"
+)
 ```
 
 ## Running Integration Tests On Low Disk Space
