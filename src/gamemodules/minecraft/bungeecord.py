@@ -139,3 +139,12 @@ def checkvalue(server, key, value):
 def backup(server):
     """Explain that this server type has no dedicated backup implementation here."""
     print("This server doesn't have anything to backup")
+
+
+def get_info_address(server):
+    """Return the SLP address for the ``info`` command.
+
+    BungeeCord-based proxies (BungeeCord, Waterfall, Velocity) implement
+    Minecraft's Server List Ping protocol on their main TCP port.
+    """
+    return ("127.0.0.1", server.data["port"], "slp")
