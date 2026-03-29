@@ -388,6 +388,8 @@ class Server(object):
                 self.wipe(*args, **kwargs)
             elif command == "query":
                 self.query(*args, **kwargs)
+            elif command == "info":
+                self.info(*args, **kwargs)
         elif command in self.module.commands:
             self.module.command_functions[command](self, *args, **kwargs)
         else:

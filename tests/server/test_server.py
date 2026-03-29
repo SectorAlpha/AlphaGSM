@@ -822,3 +822,31 @@ def test_info_falls_back_to_tcp(monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "Server port is open" in out
+
+
+def test_run_command_dispatches_info(monkeypatch, capsys):
+    """run_command('info') must reach Server.info(), not silently do nothing."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 25565, "module": "minecraft.vanilla"}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.slp_info = lambda host, port, timeout=5.0: {
+        "description": "Test",
+        "players_online": 0,
+        "players_max": 20,
+        "version": "1.20",
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(srv.module, "get_info_address",
+                        lambda s: ("127.0.0.1", 25565, "slp"), raising=False)
+
+    srv.run_command("info")
+
+    out = capsys.readouterr().out
+    assert "Server info (SLP" in out
