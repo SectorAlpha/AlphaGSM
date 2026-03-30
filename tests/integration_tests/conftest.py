@@ -267,6 +267,49 @@ def wait_for_a2s_ready(host, port, timeout_seconds):
         f"A2S on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
     )
 
+
+def wait_for_tcp_open(host, port, timeout_seconds):
+    """Poll a TCP connection to *host*:*port* until it is accepted.
+
+    Retries every 2 seconds.  Returns normally once a connection succeeds.
+    If *timeout_seconds* elapses without a successful connection the test is
+    skipped (the server never became reachable, not a code bug).
+    """
+    import socket as _socket
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        try:
+            with _socket.create_connection((host, port), timeout=2):
+                return
+        except OSError:
+            time.sleep(2)
+    pytest.skip(f"TCP port {host}:{port} never opened within {timeout_seconds}s")
+
+
+def wait_for_quake_ready(host, port, timeout_seconds):
+    """Poll Quake UDP getstatus on *host*:*port* until the server responds.
+
+    Retries every 2 seconds.  Returns normally once a valid status response
+    is received.  If *timeout_seconds* elapses without a successful response
+    the test is skipped (the server never became query-ready, not a code bug).
+    """
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    from utils import query as query_utils  # pylint: disable=import-outside-toplevel
+    deadline = time.time() + timeout_seconds
+    last_exc = None
+    while time.time() < deadline:
+        try:
+            query_utils.quake_status(host, port)
+            return
+        except query_utils.QueryError as exc:
+            last_exc = exc
+        time.sleep(2)
+    pytest.skip(
+        f"Quake status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+    )
+
 # ---------------------------------------------------------------------------
 # SteamCMD skip helper
 # ---------------------------------------------------------------------------

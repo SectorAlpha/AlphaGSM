@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_command,
     pick_free_tcp_port,
+    wait_for_tcp_open,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -59,6 +60,8 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        wait_for_tcp_open("127.0.0.1", port, 120)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

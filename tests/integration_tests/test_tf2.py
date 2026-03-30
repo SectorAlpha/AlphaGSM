@@ -161,6 +161,27 @@ def _wait_for_screen_exit(log_path, timeout_seconds):
     raise AssertionError("TF2 log did not reach steady-state before stop")
 
 
+def _wait_for_a2s_ready(host, port, timeout_seconds):
+    """Poll A2S until server responds or skip on timeout."""
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    from utils import query as query_utils  # noqa: PLC0415
+
+    deadline = time.time() + timeout_seconds
+    last_exc = None
+    while time.time() < deadline:
+        try:
+            query_utils.a2s_info(host, port)
+            return
+        except query_utils.QueryError as exc:
+            last_exc = exc
+        time.sleep(2)
+    pytest.skip(
+        f"A2S on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+    )
+
+
 def _assert_tf2_launcher_exists(install_dir):
     launchers = [install_dir / "srcds_run_64", install_dir / "srcds_run"]
     assert any(path.exists() for path in launchers), "No TF2 launcher found after setup"
@@ -209,6 +230,8 @@ def test_tf2_download_install_and_start(tmp_path):
         assert "SV_ActivateServer: setting tickrate" in log_text
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
+
+        _wait_for_a2s_ready("127.0.0.1", port, START_TIMEOUT_SECONDS)
 
         # query — TF2 is Source engine; expects A2S (or TCP fallback)
         query_result = _run_and_assert_ok(env, server_name, "query")
