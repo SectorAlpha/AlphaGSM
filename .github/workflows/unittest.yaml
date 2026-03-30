@@ -243,61 +243,75 @@ jobs:
           PY
 
   # ---------------------------------------------------------------------------
-  # setup-integration-env: prepare the Wine prefix and Proton-GE install ONCE
-  # per commit and save them to the Actions cache.  All 20 integration-test
-  # batches then restore from that single cache entry instead of each spending
-  # ~3 minutes repeating the same setup on 20 separate runners.
+  # build-integration-image: build (once) and push to GHCR a Docker image that
+  # has Wine, the Wine prefix, Proton-GE, screen, lib32, and p7zip baked in.
+  # Each run reuses the image when the tag already exists (tag is a hash of the
+  # Dockerfile + install_proton.sh), so a build only happens when those files
+  # actually change.
   # ---------------------------------------------------------------------------
-  setup-integration-env:
+  build-integration-image:
     runs-on: ubuntu-latest
     needs: unit-test
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
 
-      - name: Cache Wine prefix and Proton-GE
-        id: cache-wine-proton
-        uses: actions/cache@v4
+      - name: Compute image tag from content hash
+        id: meta
+        run: |
+          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh | sha256sum | cut -c1-12)
+          echo "image=ghcr.io/${{ github.repository_owner }}/alphagsm-integration-env:${hash}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          path: |
-            ~/.wine
-            ~/.local/share/proton-ge
-          # Key tied to the workflow file + install script so any change to
-          # setup steps automatically invalidates and regenerates the cache.
-          key: wine-proton-${{ runner.os }}-v1-${{ hashFiles('.github/workflows/unittest.yaml', 'scripts/install_proton.sh') }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Wine apt packages
-        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
+      - name: Check whether image tag already exists
+        id: check
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y wine64 wine32:i386 winetricks
+          if docker manifest inspect "${{ steps.meta.outputs.image }}" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Initialise Wine prefix
-        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
-        run: |
-          export DISPLAY="" WINEDLLOVERRIDES="winex11.drv=" WINEDEBUG=-all
-          wineboot --init
-          winetricks -q win10
-          # --force bypasses the stale SHA256 check; || true keeps it non-fatal
-          winetricks -q --force vcrun2019 || true
-          echo "==> Wine prefix ready: $(wine --version)"
+      - name: Set up Docker Buildx
+        if: steps.check.outputs.exists != 'true'
+        uses: docker/setup-buildx-action@v3
 
-      - name: Install Proton-GE
-        if: steps.cache-wine-proton.outputs.cache-hit != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash scripts/install_proton.sh proton
+      - name: Build and push integration environment image
+        if: steps.check.outputs.exists != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .github/docker/integration-env/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          secrets: |
+            gh_token=${{ secrets.GITHUB_TOKEN }}
 
   integration-test:
     runs-on: ubuntu-latest
-    needs: [discover-integration-tests, setup-integration-env]
+    needs: [discover-integration-tests, build-integration-image]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.matrix) }}
+    container:
+      image: ${{ needs.build-integration-image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     env:
       PYTHONPATH: .:src
+      WINEPREFIX: /opt/wine
     name: integration-test (${{ matrix.label }})
     steps:
       - name: Checkout AlphaGSM code
@@ -311,32 +325,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Restore Wine prefix and Proton-GE from cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.wine
-            ~/.local/share/proton-ge
-          key: wine-proton-${{ runner.os }}-v1-${{ hashFiles('.github/workflows/unittest.yaml', 'scripts/install_proton.sh') }}
-          # fail-on-cache-miss ensures setup-integration-env ran successfully;
-          # if the cache is somehow absent the batch would fail in an obvious way.
-          fail-on-cache-miss: true
-      - name: Install system dependencies
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          # screen     — AlphaGSM process supervisor (conftest writes screenrc
-          #              and launches game servers through screen)
-          # lib32*     — 32-bit Steam runtime (Source engine servers)
-          # p7zip      — server archives distributed as .7z
-          # wine64 / wine32:i386 / winetricks
-          #            — Wine BINARY needed even though the prefix comes from
-          #              cache; the exe itself must be on PATH on every runner
-          sudo apt-get install -y \
-            screen \
-            lib32gcc-s1 lib32stdc++6 \
-            p7zip-full \
-            wine64 wine32:i386 winetricks
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
