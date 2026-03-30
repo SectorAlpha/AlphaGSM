@@ -10,6 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   screen                              — AlphaGSM's process supervisor
 #   lib32gcc-s1 lib32stdc++6           — 32-bit runtime (Source engine servers)
 #   p7zip-full                          — .7z archive support
+#   unzip bzip2                         — archive formats used by some servers
 #   curl python3 wget ca-certificates  — used by install_proton.sh fallback path
 RUN dpkg --add-architecture i386 \
  && apt-get update -qq \
@@ -18,8 +19,26 @@ RUN dpkg --add-architecture i386 \
         screen \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
+        unzip bzip2 \
         curl python3 python3-pip python3-venv wget ca-certificates \
-        openjdk-21-jdk-headless \
+ && rm -rf /var/lib/apt/lists/*
+
+# screen stores its session sockets in /run/screen.  Ubuntu's tmpfiles.d
+# creates that directory on boot, but tmpfiles.d does not run in Docker.
+# Create it explicitly so screen -dmS succeeds inside the container.
+RUN mkdir -p /run/screen && chmod 777 /run/screen
+
+# Install Temurin 25 (Java 25) — required by the current Minecraft server
+# bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 22.04's
+# openjdk-21-jdk-headless only handles class files up to version 65 (Java 21).
+RUN wget -q -O /usr/share/keyrings/adoptium.asc \
+        https://packages.adoptium.net/artifactory/api/gpg/key/public \
+ && printf 'deb [arch=%s signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb %s main\n' \
+        "$(dpkg --print-architecture)" \
+        "$(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release)" \
+        > /etc/apt/sources.list.d/adoptium.list \
+ && apt-get update -qq \
+ && apt-get install -y --no-install-recommends temurin-25-jdk \
  && rm -rf /var/lib/apt/lists/*
 
 # Put the Wine prefix at a fixed, HOME-agnostic path.  GitHub Actions sets HOME

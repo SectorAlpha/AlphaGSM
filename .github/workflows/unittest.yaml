@@ -242,75 +242,14 @@ jobs:
               f.write(f'matrix={json.dumps({"include": batches})}\n')
           PY
 
-  # ---------------------------------------------------------------------------
-  # build-integration-image: build (once) and push to GHCR a Docker image that
-  # has Wine, the Wine prefix, Proton-GE, screen, lib32, and p7zip baked in.
-  # Each run reuses the image when the tag already exists (tag is a hash of the
-  # Dockerfile + install_proton.sh), so a build only happens when those files
-  # actually change.
-  # ---------------------------------------------------------------------------
-  build-integration-image:
-    runs-on: ubuntu-latest
-    needs: unit-test
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      image: ${{ steps.meta.outputs.image }}
-    steps:
-      - name: Checkout AlphaGSM code
-        uses: actions/checkout@v4
-
-      - name: Compute image tag from content hash
-        id: meta
-        run: |
-          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh | sha256sum | cut -c1-12)
-          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          repo="ghcr.io/${owner}/alphagsm-integration-test"
-          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
-          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check whether image tag already exists
-        id: check
-        run: |
-          if docker manifest inspect "${{ steps.meta.outputs.image }}" > /dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Set up Docker Buildx
-        if: steps.check.outputs.exists != 'true'
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push integration environment image
-        if: steps.check.outputs.exists != 'true'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: .github/docker/integration-env/Dockerfile
-          push: true
-          tags: |
-            ${{ steps.meta.outputs.image }}
-            ${{ steps.meta.outputs.latest }}
-          secrets: |
-            gh_token=${{ secrets.GITHUB_TOKEN }}
-
   integration-test:
     runs-on: ubuntu-latest
-    needs: [discover-integration-tests, build-integration-image]
+    needs: discover-integration-tests
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.matrix) }}
     container:
-      image: ${{ needs.build-integration-image.outputs.image }}
+      image: ghcr.io/sectoralpha/alphagsm-integration-test:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
