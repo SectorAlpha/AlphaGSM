@@ -1,22 +1,25 @@
 """Lightweight server query utilities used by the 'query' command.
 
-Provides three probing strategies:
+Provides query strategies:
 
 * :func:`a2s_info` — Source/Steam A2S_INFO UDP query.
 * :func:`quake_status` — Quake3/QFusion UDP getstatus query.
+* :func:`slp_info` — Minecraft Server List Ping.
+* :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
 * :func:`tcp_ping` — TCP connect to prove a port is open.
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-or ``"tcp"``.  When that hook is absent the caller falls back to a TCP ping
-on the main port.
+``"ts3"``, or ``"tcp"``.  When that hook is absent the caller falls back to a
+TCP ping on the main port.
 """
 
 import socket
 import struct
 import time
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "tcp_ping"]
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "tcp_ping",
+           "ts3_serverinfo"]
 
 # Source/Steam A2S_INFO challenge bytes and expected response header.
 _A2S_REQUEST = b"\xff\xff\xff\xffTSource Engine Query\x00"
@@ -240,3 +243,130 @@ def tcp_ping(host, port, timeout=2.0):
     except OSError as exc:
         raise QueryError("TCP ping failed: " + str(exc)) from exc
     return (time.monotonic() - t0) * 1000
+
+
+def _ts3_unescape(value):
+    """Decode a TeamSpeak 3 ServerQuery escaped string."""
+    return (
+        value
+        .replace("\\s", " ")
+        .replace("\\p", "|")
+        .replace("\\n", "\n")
+        .replace("\\/", "/")
+        .replace("\\\\", "\\")
+    )
+
+
+def ts3_serverinfo(host, port, timeout=5.0):
+    """Connect to a TeamSpeak 3 ServerQuery interface and return server info.
+
+    Opens a raw TCP session to the TS3 ServerQuery port (default 10011),
+    sends ``serverinfo`` and ``channellist``, then parses and returns a dict
+    with the following keys:
+
+    * ``name`` — virtual server name (str)
+    * ``clients_online`` — current number of connected clients (int)
+    * ``max_clients`` — maximum allowed clients (int)
+    * ``uptime`` — server uptime in seconds (int)
+    * ``platform`` — host platform string (str)
+    * ``version`` — server software version (str)
+    * ``channels`` — list of channel dicts, each with ``id`` (int) and
+      ``name`` (str)
+
+    Raises :class:`QueryError` on connection failure, unexpected banner, or
+    malformed response.
+    """
+    try:
+        conn = socket.create_connection((host, int(port)), timeout=timeout)
+    except OSError as exc:
+        raise QueryError("TS3 ServerQuery connection failed: " + str(exc)) from exc
+
+    def _recvline():
+        """Read bytes until a newline (LF), decode, and strip whitespace."""
+        buf = bytearray()
+        while True:
+            chunk = conn.recv(1)
+            if not chunk:
+                raise QueryError("TS3 ServerQuery: connection closed unexpectedly")
+            buf.extend(chunk)
+            if buf.endswith(b"\n"):
+                return buf.decode("utf-8", errors="replace").strip()
+
+    def _send(cmd):
+        conn.sendall((cmd + "\n").encode("utf-8"))
+
+    def _read_until_ok():
+        """Collect lines until an 'error id=0' line; return non-error lines."""
+        lines = []
+        while True:
+            line = _recvline()
+            if line.startswith("error "):
+                if "id=0" not in line:
+                    raise QueryError("TS3 ServerQuery error: " + line)
+                return lines
+            if line:
+                lines.append(line)
+
+    def _parse_kv(line):
+        """Parse a TS3 key=value space-separated line into a dict."""
+        result = {}
+        for token in line.split(" "):
+            if "=" in token:
+                k, _, v = token.partition("=")
+                result[k] = _ts3_unescape(v)
+            elif token:
+                result[token] = ""
+        return result
+
+    try:
+        # Expect the TS3 welcome banner: "TS3" on first line.
+        banner = _recvline()
+        if not banner.startswith("TS3"):
+            raise QueryError("TS3 ServerQuery: unexpected banner: " + banner)
+        # Read and discard the second welcome line (hostname info).
+        _recvline()
+
+        # Retrieve virtual server info.
+        _send("serverinfo")
+        si_lines = _read_until_ok()
+
+        # Retrieve channel list.
+        _send("channellist")
+        cl_lines = _read_until_ok()
+
+        _send("quit")
+    finally:
+        conn.close()
+
+    # Parse serverinfo response.
+    if not si_lines:
+        raise QueryError("TS3 ServerQuery: empty serverinfo response")
+    si = _parse_kv(si_lines[0])
+
+    def _int(d, k):
+        try:
+            return int(d.get(k, 0))
+        except (ValueError, TypeError):
+            return 0
+
+    result = {
+        "name": si.get("virtualserver_name", ""),
+        "clients_online": _int(si, "virtualserver_clientsonline"),
+        "max_clients": _int(si, "virtualserver_maxclients"),
+        "uptime": _int(si, "virtualserver_uptime"),
+        "platform": si.get("virtualserver_platform", ""),
+        "version": si.get("virtualserver_version", ""),
+    }
+
+    # Parse channellist response (entries separated by "|").
+    channels = []
+    if cl_lines:
+        for entry in cl_lines[0].split("|"):
+            ch = _parse_kv(entry)
+            try:
+                channels.append({"id": int(ch.get("cid", 0)), "name": ch.get("channel_name", "")})
+            except (ValueError, TypeError):
+                pass
+    result["channels"] = channels
+
+    return result

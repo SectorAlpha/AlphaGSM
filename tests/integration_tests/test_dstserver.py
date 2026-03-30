@@ -16,6 +16,7 @@ from conftest import (
     wait_for_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
+    wait_for_a2s_ready,
 )
 
 pytestmark = pytest.mark.integration
@@ -63,29 +64,50 @@ def test_dstserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
+        wait_for_a2s_ready("127.0.0.1", port, 120)
+
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
-            or "Server port is open" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        assert "Server is responding" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "Players     : 0/" in info_result.stdout
-            or "Server port is open" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
+        assert "Players     : 0/" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] in ("a2s", "tcp"), (
-            f"Expected a2s or tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
+        assert _info_data["players"] == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"
+        )
+        assert _info_data["bots"] == 0, (
+            f"Expected 0 bots on fresh server: {_info_data!r}"
+        )
+        assert isinstance(_info_data["name"], str) and _info_data["name"], (
+            f"Expected non-empty server name: {_info_data!r}"
+        )
+        assert isinstance(_info_data["map"], str), (
+            f"Expected map string: {_info_data!r}"
+        )
+        assert isinstance(_info_data["folder"], str) and _info_data["folder"], (
+            f"Expected non-empty game folder: {_info_data!r}"
+        )
+        assert isinstance(_info_data["game"], str), (
+            f"Expected game string: {_info_data!r}"
+        )
+        assert isinstance(_info_data["appid"], int) and _info_data["appid"] > 0, (
+            f"Expected positive appid: {_info_data!r}"
+        )
+        assert _info_data["max_players"] > 0, (
+            f"Expected positive max_players: {_info_data!r}"
         )
     finally:
         # stop

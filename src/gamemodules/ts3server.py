@@ -160,18 +160,19 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return the TCP address used to query the TeamSpeak 3 server.
+    """Return the TS3 ServerQuery address used to query the TeamSpeak 3 server.
 
-    TeamSpeak 3 exposes a TCP server query interface on ``queryport``
-    (default 10011); a TCP connect on that port is a reliable liveness
-    check without needing the TS3 query protocol.
+    TeamSpeak 3 exposes a TCP ServerQuery interface on ``queryport``
+    (default 10011).  Using the ``"ts3"`` protocol allows AlphaGSM to retrieve
+    real server information (name, client count, channel list) via the TS3
+    ServerQuery protocol rather than a plain TCP ping.
     """
-    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "tcp")
+    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "ts3")
 
 
 def get_info_address(server):
-    """Return the TCP address used by the ``info`` command for this server."""
-    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "tcp")
+    """Return the TS3 ServerQuery address used by the ``info`` command."""
+    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "ts3")
 
 
 def do_stop(server, j):

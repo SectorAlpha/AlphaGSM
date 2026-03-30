@@ -1,5 +1,7 @@
 """Integration test for ts3server."""
 
+import json as _info_json
+
 import pytest
 
 from conftest import (
@@ -49,37 +51,61 @@ def test_ts3server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
+        # wait for readiness — TS3 prints "ServerQuery created" once the query port is live
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["ServerQuery created", "TeamSpeak 3 Server started", "listening", "started"],
             START_TIMEOUT,
         )
 
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # query
+        # query — TS3 ServerQuery protocol
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
-            or "Server port is open" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        assert "Server is responding" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
 
-        # info
+        # info — human-readable TS3 info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "Players     : 0/" in info_result.stdout
-            or "Server port is open" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
+        assert "Clients  :" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
 
-        # info --json
-        import json as _info_json
+        # info --json — full TS3 property verification
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "ts3", (
+            f"Expected ts3 protocol in info JSON: {_info_data!r}"
+        )
+        assert isinstance(_info_data["name"], str) and _info_data["name"], (
+            f"Expected non-empty server name: {_info_data!r}"
+        )
+        assert isinstance(_info_data["clients_online"], int), (
+            f"Expected clients_online integer: {_info_data!r}"
+        )
+        assert _info_data["clients_online"] == 0, (
+            f"Expected 0 clients on fresh server: {_info_data!r}"
+        )
+        assert isinstance(_info_data["max_clients"], int) and _info_data["max_clients"] > 0, (
+            f"Expected positive max_clients: {_info_data!r}"
+        )
+        assert isinstance(_info_data["uptime"], int), (
+            f"Expected uptime integer: {_info_data!r}"
+        )
+        assert isinstance(_info_data["platform"], str) and _info_data["platform"], (
+            f"Expected non-empty platform string: {_info_data!r}"
+        )
+        assert isinstance(_info_data["version"], str) and _info_data["version"], (
+            f"Expected non-empty version string: {_info_data!r}"
+        )
+        assert isinstance(_info_data["channels"], list) and len(_info_data["channels"]) > 0, (
+            f"Expected non-empty channels list (TS3 always has Default Channel): {_info_data!r}"
+        )
+        assert all(isinstance(ch.get("name"), str) for ch in _info_data["channels"]), (
+            f"Expected all channels to have name strings: {_info_data!r}"
         )
     finally:
         # stop

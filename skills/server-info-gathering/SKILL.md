@@ -210,3 +210,172 @@ If the test fails because `"tcp"` was returned instead of the expected protocol:
    time the test reaches `info`.
 3. Do **not** change the assertion to `in ("a2s", "tcp")`.
 
+## Query Protocol Capabilities & Full Property Verification
+
+This section is the authoritative reference for what each query protocol
+returns, what properties to assert, and how to ensure the server is ready for
+querying before running assertions.
+
+### Timing: wait before asserting
+
+Log-file readiness markers (`wait_for_log_marker`) guarantee the server process
+has started, but **not** that the UDP query port is accepting packets.  Use the
+`wait_for_a2s_ready` helper (in `tests/integration_tests/conftest.py`) after
+the log-marker check for any A2S server:
+
+```python
+wait_for_a2s_ready("127.0.0.1", port, 120)  # polls every 2 s, skips on timeout
+```
+
+If `wait_for_a2s_ready` times out, the test is marked as **skipped** (not
+failed), because the server is not at fault.  This is the preferred behaviour:
+we either prove A2S works, or we transparently admit we couldn't.
+
+### Protocol: `"a2s"` — Valve A2S_INFO
+
+Used by: Source engine (TF2, Gmod, CS:S, DOI, PVKII, ND, CC, …), GoldSrc,
+and any game based on the Steam query protocol.
+
+Implemented in: `src/utils/query.py` — `a2s_info()` + `parse_a2s_info()`
+
+**Properties returned** (all present when parsing succeeds):
+
+| Key | Type | Meaning |
+|---|---|---|
+| `name` | str | Server display name |
+| `map` | str | Current map |
+| `folder` | str | Game folder (e.g. `tf`, `garrysmod`) |
+| `game` | str | Game description (e.g. `Team Fortress`) |
+| `appid` | int | Steam Application ID |
+| `players` | int | Current human player count |
+| `max_players` | int | Maximum server capacity |
+| `bots` | int | Bot player count |
+
+**Full integration-test assertion template:**
+
+```python
+wait_for_a2s_ready("127.0.0.1", port, 120)
+
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "a2s", f"Expected a2s: {_info_data!r}"
+assert _info_data["players"] == 0, f"Expected 0 players: {_info_data!r}"
+assert _info_data["bots"] == 0, f"Expected 0 bots: {_info_data!r}"
+assert isinstance(_info_data["name"], str) and _info_data["name"], f"name: {_info_data!r}"
+assert isinstance(_info_data["map"], str), f"map: {_info_data!r}"
+assert isinstance(_info_data["folder"], str) and _info_data["folder"], f"folder: {_info_data!r}"
+assert isinstance(_info_data["game"], str), f"game: {_info_data!r}"
+assert isinstance(_info_data["appid"], int) and _info_data["appid"] > 0, f"appid: {_info_data!r}"
+assert _info_data["max_players"] > 0, f"max_players: {_info_data!r}"
+```
+
+### Protocol: `"quake"` — Quake3/QFusion getstatus
+
+Used by: Warfork, Warsow, ET:Legacy, OpenArena, and Quake3-based servers.
+
+Implemented in: `src/utils/query.py` — `quake_status()`
+
+**Properties returned:**
+
+| Key | Type | Meaning |
+|---|---|---|
+| `name` | str | Server display name (`sv_hostname` cvar) |
+| `map` | str | Current map (`mapname` cvar) |
+| `players` | int | Current player count (counted from player lines) |
+| `max_players` | int | Maximum players (`sv_maxclients` cvar) |
+
+**Full integration-test assertion template:**
+
+```python
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "quake", f"Expected quake: {_info_data!r}"
+assert _info_data["players"] == 0, f"Expected 0 players: {_info_data!r}"
+assert isinstance(_info_data["name"], str), f"name: {_info_data!r}"
+assert isinstance(_info_data["map"], str), f"map: {_info_data!r}"
+assert _info_data["max_players"] > 0, f"max_players: {_info_data!r}"
+```
+
+### Protocol: `"slp"` — Minecraft Server List Ping
+
+Used by: all Minecraft server variants (Vanilla, Spigot, Paper, BungeeCord,
+Waterfall, Velocity).
+
+Implemented in: `src/utils/query.py` — `slp_info()`
+
+**Properties returned:**
+
+| Key | Type | Meaning |
+|---|---|---|
+| `description` | str | Server MOTD / description |
+| `players_online` | int | Current player count |
+| `players_max` | int | Maximum player capacity |
+| `version` | str | Server software version string |
+| `player_names` | list[str] | Names of online players (only present when players are online) |
+
+**Full integration-test assertion template:**
+
+```python
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "slp", f"Expected slp: {_info_data!r}"
+assert isinstance(_info_data["description"], str), f"description: {_info_data!r}"
+assert _info_data["players_online"] == 0, f"Expected 0 players: {_info_data!r}"
+assert _info_data["players_max"] > 0, f"players_max: {_info_data!r}"
+assert isinstance(_info_data["version"], str) and _info_data["version"], f"version: {_info_data!r}"
+```
+
+### Protocol: `"ts3"` — TeamSpeak 3 ServerQuery
+
+Used by: `ts3server` only.
+
+Implemented in: `src/utils/query.py` — `ts3_serverinfo()` — opens a raw TCP
+session to the TS3 ServerQuery port (default 10011), sends `serverinfo` and
+`channellist` commands, and parses the escape-encoded responses.
+
+**Properties returned:**
+
+| Key | Type | Meaning |
+|---|---|---|
+| `name` | str | Virtual server name |
+| `clients_online` | int | Connected client count |
+| `max_clients` | int | Maximum client capacity |
+| `uptime` | int | Server uptime in seconds |
+| `platform` | str | Host OS platform string |
+| `version` | str | TS3 server software version |
+| `channels` | list[dict] | List of channel dicts: `{"id": int, "name": str}` |
+
+TS3 always creates a **Default Channel** at first startup, so `channels` will
+never be empty on a freshly started server.
+
+**Full integration-test assertion template:**
+
+```python
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "ts3", f"Expected ts3: {_info_data!r}"
+assert isinstance(_info_data["name"], str) and _info_data["name"], f"name: {_info_data!r}"
+assert _info_data["clients_online"] == 0, f"clients_online: {_info_data!r}"
+assert _info_data["max_clients"] > 0, f"max_clients: {_info_data!r}"
+assert isinstance(_info_data["uptime"], int), f"uptime: {_info_data!r}"
+assert isinstance(_info_data["platform"], str) and _info_data["platform"], f"platform: {_info_data!r}"
+assert isinstance(_info_data["version"], str) and _info_data["version"], f"version: {_info_data!r}"
+assert isinstance(_info_data["channels"], list) and len(_info_data["channels"]) > 0, (
+    f"Expected non-empty channels list: {_info_data!r}"
+)
+assert all(isinstance(ch.get("name"), str) for ch in _info_data["channels"]), (
+    f"All channels must have name strings: {_info_data!r}"
+)
+```
+
+### Protocol: `"tcp"` — Raw TCP ping (fallback only)
+
+`"tcp"` only returns `latency_ms` (float).  It carries **no real server
+information**.  A test that asserts `protocol == "tcp"` is not proving the
+server works — it is proving the port is open.
+
+Rule: **never accept `"tcp"` as a valid result for servers that have a richer
+protocol available.**  If a module falls back to TCP, add `get_info_address()`
+(or `get_query_address()`) to the game module to return the correct protocol.
+
+

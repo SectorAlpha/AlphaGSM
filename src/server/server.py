@@ -584,8 +584,8 @@ class Server(object):
         If the game module provides ``get_query_address(server)`` returning
         ``(host, port, protocol)`` that is used; otherwise the method falls
         back to a TCP ping on ``server.data["port"]``.  Protocol may be
-        ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP), or
-        ``"tcp"``.
+        ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP),
+        ``"ts3"`` (TeamSpeak 3 ServerQuery), or ``"tcp"``.
         """
         from utils import query as query_utils
 
@@ -638,6 +638,21 @@ class Server(object):
                     "Server does not appear to be responding: " + str(exc)
                 )
 
+        if protocol == "ts3":
+            try:
+                ts3info = query_utils.ts3_serverinfo(host, port)
+                print(
+                    "Server is responding (TS3 ServerQuery on port {port}): "
+                    "{name!r}  clients={clients_online}/{max_clients}".format(
+                        port=port, **ts3info
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
         # TCP ping — either explicitly requested or after A2S fallback.
         try:
             ms = query_utils.tcp_ping(host, port)
@@ -655,9 +670,9 @@ class Server(object):
         The game module may define ``get_info_address(server)`` returning
         ``(host, port, protocol)`` where *protocol* is ``"slp"`` (Minecraft
         Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
-        (Quake3/QFusion UDP getstatus), or ``"tcp"`` (TCP ping only).  When
-        the hook is absent the method falls back to an A2S query on the game
-        port, then TCP.
+        (Quake3/QFusion UDP getstatus), ``"ts3"`` (TeamSpeak 3 ServerQuery),
+        or ``"tcp"`` (TCP ping only).  When the hook is absent the method
+        falls back to an A2S query on the game port, then TCP.
 
         When *as_json* is ``True`` the result is printed as a JSON object
         instead of human-readable text.
@@ -734,6 +749,30 @@ class Server(object):
                     "  Name    : {name}\n"
                     "  Map     : {map}\n"
                     "  Players : {players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "ts3":
+            try:
+                ts3info = query_utils.ts3_serverinfo(host, port)
+                if as_json:
+                    print(json.dumps({"protocol": "ts3", "port": port, **ts3info}))
+                    return
+                channels_desc = ", ".join(
+                    ch["name"] for ch in ts3info.get("channels", [])
+                ) or "(none)"
+                print(
+                    "Server info (TS3 ServerQuery on port {port}):\n"
+                    "  Name     : {name}\n"
+                    "  Clients  : {clients_online}/{max_clients}\n"
+                    "  Version  : {version}\n"
+                    "  Platform : {platform}\n"
+                    "  Uptime   : {uptime}s\n"
+                    "  Channels : {channels}".format(
+                        port=port, channels=channels_desc, **ts3info
+                    )
                 )
                 return
             except query_utils.QueryError as exc:

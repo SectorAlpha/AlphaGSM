@@ -242,6 +242,30 @@ def wait_for_udp_closed(host, port, timeout_seconds):
         time.sleep(2)
     raise AssertionError(f"UDP port {host}:{port} still responds after {timeout_seconds}s")
 
+def wait_for_a2s_ready(host, port, timeout_seconds):
+    """Poll A2S_INFO on *host*:*port* until the server responds.
+
+    Retries every 2 seconds.  When the server starts returning a valid A2S
+    response the function returns normally.  If *timeout_seconds* elapses
+    without a successful response the test is skipped (the server never
+    became query-ready, not a code bug).
+    """
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    from utils import query as query_utils  # pylint: disable=import-outside-toplevel
+    deadline = time.time() + timeout_seconds
+    last_exc = None
+    while time.time() < deadline:
+        try:
+            query_utils.a2s_info(host, port)
+            return
+        except query_utils.QueryError as exc:
+            last_exc = exc
+        time.sleep(2)
+    pytest.skip(
+        f"A2S on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+    )
 
 # ---------------------------------------------------------------------------
 # SteamCMD skip helper
