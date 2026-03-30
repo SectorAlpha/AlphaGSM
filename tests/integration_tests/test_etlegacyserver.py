@@ -75,7 +75,7 @@ def test_etlegacyserver_lifecycle(tmp_path):
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "Players : 0/" in info_result.stdout
             or "Server port is open" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
@@ -83,8 +83,8 @@ def test_etlegacyserver_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "quake", (
+            f"Expected quake protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"

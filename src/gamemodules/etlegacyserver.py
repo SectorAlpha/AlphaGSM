@@ -173,6 +173,16 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """ET: Legacy uses the Quake3/ioquake3 getstatus query on the game port."""
+    return ("127.0.0.1", int(server.data["port"]), "quake")
+
+
+def get_info_address(server):
+    """Return the Quake3 address used by the info command."""
+    return ("127.0.0.1", int(server.data["port"]), "quake")
+
+
 def do_stop(server, j):
     """Stop ET: Legacy using the standard quit command."""
 

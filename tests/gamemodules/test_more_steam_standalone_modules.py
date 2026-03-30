@@ -41,11 +41,11 @@ def test_projectzomboid_get_start_command_uses_server_name(tmp_path):
     server = DummyServer("pzalpha")
     exe = tmp_path / "start-server.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "start-server.sh", "servername": "pzalpha"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "start-server.sh", "servername": "pzalpha", "port": "16261"})
 
     cmd, cwd = projectzomboid.get_start_command(server)
 
-    assert cmd == ["./start-server.sh", "pzalpha"]
+    assert cmd == ["./start-server.sh", "-port", "16261", "pzalpha"]
     assert cwd == server.data["dir"]
 
 

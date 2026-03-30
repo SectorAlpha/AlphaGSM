@@ -42,7 +42,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="enshrouded_server.e
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "15638")
     server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
     server.data.setdefault("savegame", server.name)
     server.data.setdefault("backupfiles", ["savegame"])
@@ -59,6 +58,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="enshrouded_server.e
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -110,6 +110,16 @@ def restart(server):
 
     server.stop()
     server.start()
+
+
+def get_query_address(server):
+    """Enshrouded uses Steam A2S on the dedicated query port."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
 
 
 def get_start_command(server):

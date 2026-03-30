@@ -1,6 +1,7 @@
 """Wreckfest dedicated server lifecycle helpers."""
 
 import os
+import re
 
 import screen
 import utils.steamcmd as steamcmd
@@ -68,6 +69,30 @@ def configure(server, ask, port=None, dir=None, *, exe_name="WreckfestServer"):
     return (), {}
 
 
+def _patch_wreckfest_port(server):
+    """Update server_port in the server config file to match server.data."""
+    port = server.data.get("port")
+    if port is None:
+        return
+    config_path = os.path.join(
+        server.data["dir"],
+        server.data.get("configfile", "server_config.cfg"),
+    )
+    if not os.path.isfile(config_path):
+        return
+    with open(config_path, encoding="utf-8") as fh:
+        content = fh.read()
+    new_content = re.sub(
+        r"^(server_port\s*=)\s*\d+",
+        r"\g<1>" + str(port),
+        content,
+        flags=re.MULTILINE,
+    )
+    if new_content != content:
+        with open(config_path, "w", encoding="utf-8") as fh:
+            fh.write(new_content)
+
+
 def install(server):
     """Download the Wreckfest server files via SteamCMD."""
 
@@ -78,6 +103,7 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    _patch_wreckfest_port(server)
 
 
 def update(server, validate=False, restart=False):
@@ -88,6 +114,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    _patch_wreckfest_port(server)
     print("Server up to date")
     if restart:
         print("Starting the server up")

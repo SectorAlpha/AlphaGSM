@@ -110,6 +110,7 @@ def test_get_start_command(tmp_path):
     server.data["exe_name"] = "start-server.sh"
     (tmp_path / "start-server.sh").write_text("")
     server.data["servername"] = "test"
+    server.data["port"] = "16261"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
 

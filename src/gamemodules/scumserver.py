@@ -43,8 +43,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="SCUM/Binaries/Win64
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "7779")
-    server.data.setdefault("rawudpport", "7778")
     server.data.setdefault("maxplayers", "64")
     server.data.setdefault("backupfiles", ["SCUM/Saved", "SCUM/Saved/Config/WindowsServer"])
     if "backup" not in server.data:
@@ -60,6 +58,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="SCUM/Binaries/Win64
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("rawudpport", str(int(server.data["port"]) + 1))
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 2))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -105,6 +105,16 @@ def restart(server):
 
     server.stop()
     server.start()
+
+
+def get_query_address(server):
+    """SCUM uses Steam A2S on the dedicated query port."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
 
 
 def get_start_command(server):

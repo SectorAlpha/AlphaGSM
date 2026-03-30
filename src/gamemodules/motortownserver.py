@@ -50,7 +50,6 @@ def configure(
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
     server.data.setdefault("startmap", "Jeju_World")
     server.data.setdefault("backupfiles", ["Saved", "Config"])
     if "backup" not in server.data:
@@ -66,6 +65,7 @@ def configure(
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -111,6 +111,16 @@ def restart(server):
 
     server.stop()
     server.start()
+
+
+def get_query_address(server):
+    """Motor Town uses Steam A2S on the dedicated query port."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
 
 
 def get_start_command(server):

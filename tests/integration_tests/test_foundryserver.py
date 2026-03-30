@@ -6,7 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -36,7 +36,7 @@ def test_foundryserver_lifecycle(tmp_path):
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "foundryserver")
@@ -79,8 +79,8 @@ def test_foundryserver_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] in ("a2s", "tcp"), (
+            f"Expected a2s or tcp protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"

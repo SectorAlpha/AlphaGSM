@@ -32,7 +32,7 @@ def test_inssserver_configure_sets_defaults(tmp_path):
     inssserver.configure(server, ask=False, port=27102, dir=str(tmp_path))
 
     assert server.data["Steam_AppID"] == 581330
-    assert server.data["queryport"] == "27131"
+    assert server.data["queryport"] == "27103"  # port+1
     assert server.data["maxplayers"] == "28"
 
 
