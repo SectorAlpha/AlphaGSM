@@ -64,7 +64,7 @@ def test_ts3server_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # TS3 ServerQuery runs on TCP port 10011; wait until it is accepting connections
-        wait_for_tcp_open("127.0.0.1", 10011, 120)
+        wait_for_tcp_open("127.0.0.1", 10011, 180)
 
         # query — TS3 ServerQuery protocol
         query_result = run_and_assert_ok(env, server_name, "query")

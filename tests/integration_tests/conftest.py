@@ -315,23 +315,26 @@ def wait_for_quake_ready(host, port, timeout_seconds):
 # ---------------------------------------------------------------------------
 
 def skip_for_known_steamcmd_issue(result, app_id=None):
-    """Skip the test if SteamCMD fails with a known transient issue."""
+    """Skip the test only for expected, non-fixable reasons.
+
+    All other failures (download errors, missing files, non-zero exit) are
+    allowed to propagate to ``assert result.returncode == 0`` so they show up
+    as visible test FAILURES rather than silent skips.  Tests listed as PASSED
+    in ``docs/TEST_STATUS.md`` must not be silently hidden.
+    """
     combined = "\n".join(part for part in (result.stdout, result.stderr) if part)
-    known_markers = (
-        "No such file or directory",
-        "Failed to install app",
-        "Missing configuration",
+    # Only markers that make it impossible to run the test in CI at all
+    # (authentication required, or module intentionally disabled) warrant a
+    # skip.  Download/install failures should be visible as test failures.
+    skip_markers = (
         "No subscription",
-        "returned non-zero exit status",
-        "Can't stop a server that isn't running",
-        "Error extracting download",
-        "Can't download file",
         "SteamCMD username required for this server",
-        # Server module is explicitly disabled (game no longer available,
-        # discontinued, or requires user-provided files).  These should skip,
-        # not fail, so the batch doesn't turn red.
         "is currently disabled",
     )
-    if any(marker in combined for marker in known_markers):
-        extra = f" (app {app_id})" if app_id else ""
-        pytest.skip(f"SteamCMD setup failed with known issue{extra}")
+    for marker in skip_markers:
+        if marker in combined:
+            extra = f" (app {app_id})" if app_id else ""
+            snippet = combined[:300].replace("\n", " | ")
+            pytest.skip(
+                f"Setup skipped — {marker!r} in output{extra}: {snippet}"
+            )
