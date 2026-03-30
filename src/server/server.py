@@ -250,6 +250,14 @@ class Server(object):
                     None,
                     True,
                 ),
+                OptSpec(
+                    "d",
+                    ["detailed"],
+                    "Include extended details (e.g. TeamSpeak 3 channel list)",
+                    "detailed",
+                    None,
+                    True,
+                ),
             )
         ),
     }
@@ -287,7 +295,8 @@ class Server(object):
         "info": "Retrieve detailed server information: player count, map, version, etc.\n"
         "For Minecraft servers uses the Server List Ping (SLP) protocol.\n"
         "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.\n"
-        "Use -j / --json to emit the result as a JSON object.",
+        "Use -j / --json to emit the result as a JSON object.\n"
+        "Use -d / --detailed to include extended data (e.g. TeamSpeak 3 channel list).",
     }
 
     def __init__(self, name, module=None):
@@ -664,7 +673,7 @@ class Server(object):
         except query_utils.QueryError as exc:
             raise ServerError("Server does not appear to be responding: " + str(exc))
 
-    def info(self, as_json=False, **kwargs):
+    def info(self, as_json=False, detailed=False, **kwargs):
         """Retrieve detailed server information (player count, map, version, etc.).
 
         The game module may define ``get_info_address(server)`` returning
@@ -675,7 +684,8 @@ class Server(object):
         falls back to an A2S query on the game port, then TCP.
 
         When *as_json* is ``True`` the result is printed as a JSON object
-        instead of human-readable text.
+        instead of human-readable text.  When *detailed* is ``True`` extended
+        information (e.g. the TeamSpeak 3 channel list) is included.
         """
         from utils import query as query_utils
 
@@ -720,7 +730,9 @@ class Server(object):
                         "Server info (A2S on port {port}):\n"
                         "  Name        : {name}\n"
                         "  Map         : {map}\n"
+                        "  Folder      : {folder}\n"
                         "  Game        : {game}\n"
+                        "  App ID      : {appid}\n"
                         "  Players     : {players}/{max_players}"
                         " ({bots} bots)".format(port=port, **parsed)
                     )
@@ -746,9 +758,9 @@ class Server(object):
                     return
                 print(
                     "Server info (Quake status on port {port}):\n"
-                    "  Name    : {name}\n"
-                    "  Map     : {map}\n"
-                    "  Players : {players}/{max_players}".format(port=port, **qinfo)
+                    "  Name       : {name}\n"
+                    "  Map        : {map}\n"
+                    "  Players    : {players}/{max_players}".format(port=port, **qinfo)
                 )
                 return
             except query_utils.QueryError as exc:
@@ -757,23 +769,36 @@ class Server(object):
         if protocol == "ts3":
             try:
                 ts3info = query_utils.ts3_serverinfo(host, port)
+                channels = ts3info.get("channels", [])
+                channels_count = len(channels)
                 if as_json:
-                    print(json.dumps({"protocol": "ts3", "port": port, **ts3info}))
+                    if detailed:
+                        print(json.dumps({"protocol": "ts3", "port": port, **ts3info}))
+                    else:
+                        summary = {k: v for k, v in ts3info.items() if k != "channels"}
+                        summary["channels_count"] = channels_count
+                        print(json.dumps({"protocol": "ts3", "port": port, **summary}))
                     return
-                channels_desc = ", ".join(
-                    ch["name"] for ch in ts3info.get("channels", [])
-                ) or "(none)"
                 print(
                     "Server info (TS3 ServerQuery on port {port}):\n"
                     "  Name     : {name}\n"
                     "  Clients  : {clients_online}/{max_clients}\n"
                     "  Version  : {version}\n"
                     "  Platform : {platform}\n"
-                    "  Uptime   : {uptime}s\n"
-                    "  Channels : {channels}".format(
-                        port=port, channels=channels_desc, **ts3info
-                    )
+                    "  Uptime   : {uptime}s".format(port=port, **ts3info)
                 )
+                if detailed:
+                    if channels:
+                        print("  Channels : {} channel(s)".format(channels_count))
+                        for ch in channels:
+                            print("    [{id}] {name}".format(**ch))
+                    else:
+                        print("  Channels : (none)")
+                else:
+                    print(
+                        "  Channels : {} channel(s)  "
+                        "(use --detailed to list)".format(channels_count)
+                    )
                 return
             except query_utils.QueryError as exc:
                 raise ServerError("Info query failed: " + str(exc))

@@ -68,13 +68,22 @@ def test_ts3server_lifecycle(tmp_path):
             f"Unexpected query output: {query_result.stdout!r}"
         )
 
-        # info — human-readable TS3 info
+        # info — human-readable TS3 info (channels shown as count + hint without --detailed)
         info_result = run_and_assert_ok(env, server_name, "info")
         assert "Clients  :" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
+        assert "--detailed" in info_result.stdout, (
+            f"Expected --detailed hint in info text output: {info_result.stdout!r}"
+        )
 
-        # info --json — full TS3 property verification
+        # info --detailed — channel list shown in text
+        info_det_text = run_and_assert_ok(env, server_name, "info", "--detailed")
+        assert "Channels :" in info_det_text.stdout, (
+            f"Expected Channels line with --detailed: {info_det_text.stdout!r}"
+        )
+
+        # info --json — full TS3 property verification (channels omitted without --detailed)
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "ts3", (
@@ -101,11 +110,24 @@ def test_ts3server_lifecycle(tmp_path):
         assert isinstance(_info_data["version"], str) and _info_data["version"], (
             f"Expected non-empty version string: {_info_data!r}"
         )
-        assert isinstance(_info_data["channels"], list) and len(_info_data["channels"]) > 0, (
-            f"Expected non-empty channels list (TS3 always has Default Channel): {_info_data!r}"
+        assert "channels" not in _info_data, (
+            f"channels list should be omitted without --detailed: {_info_data!r}"
         )
-        assert all(isinstance(ch.get("name"), str) for ch in _info_data["channels"]), (
-            f"Expected all channels to have name strings: {_info_data!r}"
+        assert isinstance(_info_data["channels_count"], int), (
+            f"Expected channels_count integer in summary JSON: {_info_data!r}"
+        )
+
+        # info --json --detailed — full channel list included
+        info_detailed_result = run_and_assert_ok(
+            env, server_name, "info", "--json", "--detailed"
+        )
+        _info_det = _info_json.loads(info_detailed_result.stdout.strip())
+        assert isinstance(_info_det["channels"], list) and len(_info_det["channels"]) > 0, (
+            f"Expected non-empty channels list with --detailed (TS3 always has Default Channel):"
+            f" {_info_det!r}"
+        )
+        assert all(isinstance(ch.get("name"), str) for ch in _info_det["channels"]), (
+            f"Expected all channels to have name strings: {_info_det!r}"
         )
     finally:
         # stop
