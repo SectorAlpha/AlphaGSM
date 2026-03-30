@@ -18,7 +18,8 @@ RUN dpkg --add-architecture i386 \
         screen \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
-        curl python3 wget ca-certificates \
+        curl python3 python3-pip python3-venv wget ca-certificates \
+        openjdk-21-jdk-headless \
  && rm -rf /var/lib/apt/lists/*
 
 # Put the Wine prefix at a fixed, HOME-agnostic path.  GitHub Actions sets HOME
