@@ -265,7 +265,8 @@ jobs:
         id: meta
         run: |
           hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh | sha256sum | cut -c1-12)
-          repo="ghcr.io/${{ github.repository_owner }}/alphagsm-integration-test"
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-integration-test"
           echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
           echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
 
