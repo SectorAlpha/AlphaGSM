@@ -16,5 +16,5 @@ All repo-local skills live under [skills](skills).
 
 ## Related Guidance
 
-- [AGENTS.md](AGENTS.md)
+- [AGENTS.md](AGENTS.md) — includes integration test timeout policy
 - [skills/README.md](skills/README.md)

@@ -47,6 +47,26 @@ Update these in order when relevant:
 - integration tests: `make integration-test` (needs `ALPHAGSM_WORK_DIR` set) — keep green
 - smoke tests: `make smoke-test` (or `make smoke-test SMOKE_TEST=run_<name>.sh`) — keep accurate
 
+## Integration Test Timeout Policy
+
+Timeout-related skips in integration tests are **not acceptable** as a permanent
+state. They indicate a real problem that must be diagnosed and fixed.
+
+When a test skips due to timeout:
+
+1. **Never** add the server to `disabled_servers.conf` to hide the skip.
+2. Read the log tail printed by the `[diagnostic]` lines in the CI output.
+3. Determine the root cause — download failure, startup crash, wrong readiness
+   marker, or query port mismatch — and fix it.
+4. If the server genuinely needs more time (e.g. large SteamCMD download),
+   raise the timeout in the test rather than disabling the server.
+5. `disabled_servers.conf` is only for servers that **cannot** run in CI at
+   all (requires auth, dead download URL, known broken binary, etc.).
+
+The wait helpers in `tests/integration_tests/conftest.py` print the last 150
+lines of the server log and the last query error before calling
+`pytest.skip()`. Use that output to understand what actually happened.
+
 ## Known Exception
 
 `src/downloadermodules/steamcmd.py` is legacy parser-broken code and is intentionally outside the active lint/docstring verification surface.
