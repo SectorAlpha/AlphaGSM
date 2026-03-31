@@ -102,6 +102,29 @@ at all in the current environment (Windows-only binary, no credentials, dead
 download URL). Those cases go through `skip_for_known_steamcmd_issue` inside
 `run_and_assert_ok`, or via `pytest.mark.skip` on the whole test function.
 
+### Timeouts are FAILURES, not skips
+
+The wait helpers (`wait_for_log_marker`, `wait_for_a2s_ready`,
+`wait_for_quake_ready`, `wait_for_tcp_open`) all call `pytest.fail()` on
+timeout — **not** `pytest.skip()`. This is intentional.
+
+A timeout means the server did not become ready within the allowed window.
+That is a real problem requiring a real fix:
+
+- **Wrong readiness marker** — update the marker string to match what the
+  server actually prints.
+- **Server crashes on startup** — fix the crash; read the `[diagnostic]` log
+  tail printed before the failure.
+- **Wrong query port** — ensure the test passes the port the server actually
+  listens on for A2S / Quake / TCP queries.
+- **Timeout genuinely too short** — raise the `timeout_seconds` argument in
+  the test (e.g. for servers that take >5 minutes to load their world).
+
+**Never** respond to a timeout failure by:
+- Changing `pytest.fail()` back to `pytest.skip()`
+- Adding the server to `disabled_servers.conf`
+- Wrapping the wait call in a `try/except`
+
 ### Fix the issue, not the test
 
 If an integration test fails, the correct response is:

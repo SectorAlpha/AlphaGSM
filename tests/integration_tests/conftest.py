@@ -218,8 +218,8 @@ def _dump_log(log_path, context="", max_lines=150):
 def wait_for_log_marker(log_path, markers, timeout_seconds):
     """Poll a log file until one of *markers* appears; return the log text.
 
-    On timeout dumps the full log tail to captured stdout so CI logs show
-    exactly what the server printed before giving up.
+    On timeout dumps the full log tail to captured stdout and raises a test
+    FAILURE so the problem is visible and must be fixed.
     """
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
@@ -229,7 +229,7 @@ def wait_for_log_marker(log_path, markers, timeout_seconds):
                 return log_text
         time.sleep(2)
     _dump_log(log_path, context=f"looking for {markers!r}")
-    pytest.skip(
+    pytest.fail(
         f"Log never showed readiness markers {markers!r} within {timeout_seconds}s: {log_path}"
     )
 
@@ -261,7 +261,7 @@ def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
             print(f"[diagnostic] No files matching {glob_pattern!r} in {log_dir}")
     else:
         print(f"[diagnostic] Log dir not found: {log_dir}")
-    pytest.skip(
+    pytest.fail(
         f"Log never showed readiness markers {markers!r} within {timeout_seconds}s in {log_dir}"
     )
 
@@ -298,8 +298,8 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
 
     Retries every 2 seconds.  When the server starts returning a valid A2S
     response the function returns normally.  If *timeout_seconds* elapses
-    without a successful response the test is skipped (the server never
-    became query-ready, not a code bug).
+    without a successful response the test FAILS — the server must be fixed
+    so it becomes query-ready within the allowed window.
 
     Optional *log_path* is printed (tail) on timeout for CI diagnostics.
     """
@@ -322,7 +322,7 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     )
     if log_path is not None:
         _dump_log(log_path, context=f"A2S timeout on port {port}")
-    pytest.skip(
+    pytest.fail(
         f"A2S on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
     )
 
@@ -331,8 +331,8 @@ def wait_for_tcp_open(host, port, timeout_seconds, log_path=None):
     """Poll a TCP connection to *host*:*port* until it is accepted.
 
     Retries every 2 seconds.  Returns normally once a connection succeeds.
-    If *timeout_seconds* elapses without a successful connection the test is
-    skipped (the server never became reachable, not a code bug).
+    If *timeout_seconds* elapses without a successful connection the test
+    FAILS — the server must be fixed so the port opens within the window.
 
     Optional *log_path* is printed (tail) on timeout for CI diagnostics.
     """
@@ -352,7 +352,7 @@ def wait_for_tcp_open(host, port, timeout_seconds, log_path=None):
     )
     if log_path is not None:
         _dump_log(log_path, context=f"TCP open timeout on port {port}")
-    pytest.skip(f"TCP port {host}:{port} never opened within {timeout_seconds}s")
+    pytest.fail(f"TCP port {host}:{port} never opened within {timeout_seconds}s")
 
 
 def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
@@ -360,7 +360,8 @@ def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
 
     Retries every 2 seconds.  Returns normally once a valid status response
     is received.  If *timeout_seconds* elapses without a successful response
-    the test is skipped (the server never became query-ready, not a code bug).
+    the test FAILS — the server must be fixed so it becomes query-ready
+    within the allowed window.
 
     Optional *log_path* is printed (tail) on timeout for CI diagnostics.
     """
@@ -383,7 +384,7 @@ def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
     )
     if log_path is not None:
         _dump_log(log_path, context=f"Quake timeout on port {port}")
-    pytest.skip(
+    pytest.fail(
         f"Quake status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
     )
 

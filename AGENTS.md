@@ -52,9 +52,14 @@ Update these in order when relevant:
 Timeout-related skips in integration tests are **not acceptable** as a permanent
 state. They indicate a real problem that must be diagnosed and fixed.
 
-When a test skips due to timeout:
+The wait helpers (`wait_for_log_marker`, `wait_for_a2s_ready`,
+`wait_for_quake_ready`, `wait_for_tcp_open`) call `pytest.fail()` on timeout —
+this surfaces as a red **FAILURE**, not a yellow skip. That is the intended
+behaviour.
 
-1. **Never** add the server to `disabled_servers.conf` to hide the skip.
+When a test fails due to timeout:
+
+1. **Never** add the server to `disabled_servers.conf` to hide the failure.
 2. Read the log tail printed by the `[diagnostic]` lines in the CI output.
 3. Determine the root cause — download failure, startup crash, wrong readiness
    marker, or query port mismatch — and fix it.
