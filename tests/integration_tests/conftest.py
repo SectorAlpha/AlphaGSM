@@ -179,11 +179,48 @@ def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
 
 
 # ---------------------------------------------------------------------------
+# Diagnostic helpers
+# ---------------------------------------------------------------------------
+
+def _dump_log(log_path, context="", max_lines=150):
+    """Print the tail of *log_path* to captured stdout for CI diagnostics.
+
+    Called before ``pytest.skip()`` so that developers can see exactly what
+    the server printed (or nothing if the log was never created) without
+    having to re-run the test locally.
+    """
+    try:
+        p = Path(log_path)
+        if not p.exists():
+            print(f"[diagnostic] Log file not found ({context}): {log_path}")
+            return
+        text = p.read_text(errors="replace")
+        lines = text.splitlines()
+        size = p.stat().st_size
+        print(
+            f"[diagnostic] Log tail — {len(lines)} total lines, {size} bytes"
+            + (f" [{context}]" if context else "")
+            + f": {log_path}"
+        )
+        shown = lines[-max_lines:]
+        for line in shown:
+            print(f"  {line}")
+        if len(lines) > max_lines:
+            print(f"  ... ({len(lines) - max_lines} earlier lines omitted)")
+    except OSError as exc:
+        print(f"[diagnostic] Could not read log ({context}): {exc}")
+
+
+# ---------------------------------------------------------------------------
 # Wait helpers
 # ---------------------------------------------------------------------------
 
 def wait_for_log_marker(log_path, markers, timeout_seconds):
-    """Poll a log file until one of *markers* appears; return the log text."""
+    """Poll a log file until one of *markers* appears; return the log text.
+
+    On timeout dumps the full log tail to captured stdout so CI logs show
+    exactly what the server printed before giving up.
+    """
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
         if log_path.exists():
@@ -191,13 +228,17 @@ def wait_for_log_marker(log_path, markers, timeout_seconds):
             if any(marker in log_text for marker in markers):
                 return log_text
         time.sleep(2)
+    _dump_log(log_path, context=f"looking for {markers!r}")
     pytest.skip(
-        f"Log never showed readiness markers within {timeout_seconds}s: {log_path}"
+        f"Log never showed readiness markers {markers!r} within {timeout_seconds}s: {log_path}"
     )
 
 
 def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
-    """Poll files matching glob_pattern in log_dir until a marker appears."""
+    """Poll files matching glob_pattern in log_dir until a marker appears.
+
+    On timeout dumps the tail of every matching log file found.
+    """
     deadline = time.time() + timeout_seconds
     log_dir_path = Path(log_dir)
     while time.time() < deadline:
@@ -210,8 +251,18 @@ def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
                 except OSError:
                     pass
         time.sleep(2)
+    # Dump all matching log files for diagnostics.
+    if log_dir_path.exists():
+        matched = list(log_dir_path.glob(glob_pattern))
+        if matched:
+            for lp in matched:
+                _dump_log(lp, context=f"glob timeout, looking for {markers!r}")
+        else:
+            print(f"[diagnostic] No files matching {glob_pattern!r} in {log_dir}")
+    else:
+        print(f"[diagnostic] Log dir not found: {log_dir}")
     pytest.skip(
-        f"Log never showed readiness markers within {timeout_seconds}s in {log_dir}"
+        f"Log never showed readiness markers {markers!r} within {timeout_seconds}s in {log_dir}"
     )
 
 
@@ -242,13 +293,15 @@ def wait_for_udp_closed(host, port, timeout_seconds):
         time.sleep(2)
     raise AssertionError(f"UDP port {host}:{port} still responds after {timeout_seconds}s")
 
-def wait_for_a2s_ready(host, port, timeout_seconds):
+def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     """Poll A2S_INFO on *host*:*port* until the server responds.
 
     Retries every 2 seconds.  When the server starts returning a valid A2S
     response the function returns normally.  If *timeout_seconds* elapses
     without a successful response the test is skipped (the server never
     became query-ready, not a code bug).
+
+    Optional *log_path* is printed (tail) on timeout for CI diagnostics.
     """
     src_path = str(REPO_ROOT / "src")
     if src_path not in sys.path:
@@ -263,35 +316,53 @@ def wait_for_a2s_ready(host, port, timeout_seconds):
         except query_utils.QueryError as exc:
             last_exc = exc
         time.sleep(2)
+    print(
+        f"[diagnostic] A2S on {host}:{port} never responded within {timeout_seconds}s"
+        f" — last error: {last_exc}"
+    )
+    if log_path is not None:
+        _dump_log(log_path, context=f"A2S timeout on port {port}")
     pytest.skip(
         f"A2S on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
     )
 
 
-def wait_for_tcp_open(host, port, timeout_seconds):
+def wait_for_tcp_open(host, port, timeout_seconds, log_path=None):
     """Poll a TCP connection to *host*:*port* until it is accepted.
 
     Retries every 2 seconds.  Returns normally once a connection succeeds.
     If *timeout_seconds* elapses without a successful connection the test is
     skipped (the server never became reachable, not a code bug).
+
+    Optional *log_path* is printed (tail) on timeout for CI diagnostics.
     """
     import socket as _socket
     deadline = time.time() + timeout_seconds
+    last_exc = None
     while time.time() < deadline:
         try:
             with _socket.create_connection((host, port), timeout=2):
                 return
-        except OSError:
+        except OSError as exc:
+            last_exc = exc
             time.sleep(2)
+    print(
+        f"[diagnostic] TCP port {host}:{port} never opened within {timeout_seconds}s"
+        f" — last error: {last_exc}"
+    )
+    if log_path is not None:
+        _dump_log(log_path, context=f"TCP open timeout on port {port}")
     pytest.skip(f"TCP port {host}:{port} never opened within {timeout_seconds}s")
 
 
-def wait_for_quake_ready(host, port, timeout_seconds):
+def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
     """Poll Quake UDP getstatus on *host*:*port* until the server responds.
 
     Retries every 2 seconds.  Returns normally once a valid status response
     is received.  If *timeout_seconds* elapses without a successful response
     the test is skipped (the server never became query-ready, not a code bug).
+
+    Optional *log_path* is printed (tail) on timeout for CI diagnostics.
     """
     src_path = str(REPO_ROOT / "src")
     if src_path not in sys.path:
@@ -306,6 +377,12 @@ def wait_for_quake_ready(host, port, timeout_seconds):
         except query_utils.QueryError as exc:
             last_exc = exc
         time.sleep(2)
+    print(
+        f"[diagnostic] Quake status on {host}:{port} never responded within {timeout_seconds}s"
+        f" — last error: {last_exc}"
+    )
+    if log_path is not None:
+        _dump_log(log_path, context=f"Quake timeout on port {port}")
     pytest.skip(
         f"Quake status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
     )

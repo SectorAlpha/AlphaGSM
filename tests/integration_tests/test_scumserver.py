@@ -67,7 +67,7 @@ def test_scumserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # SCUM A2S runs on queryport = port + 2
-        wait_for_a2s_ready("127.0.0.1", port + 2, 300)
+        wait_for_a2s_ready("127.0.0.1", port + 2, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

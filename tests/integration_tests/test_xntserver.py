@@ -63,12 +63,12 @@ def test_xntserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Xonotic uses the Quake UDP getstatus protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 300)
+        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # Give the server additional time to stabilise — it can respond to one
         # Quake probe then crash if a runtime library loads lazily and fails.
         time.sleep(10)
-        wait_for_quake_ready("127.0.0.1", port, 30)
+        wait_for_quake_ready("127.0.0.1", port, 30, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

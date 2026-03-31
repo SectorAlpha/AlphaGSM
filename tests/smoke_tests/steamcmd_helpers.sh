@@ -60,10 +60,9 @@ run_setup_or_skip_steamcmd() {
   return 0
 }
 
-# wait_for_ready LOG_PATH TIMEOUT_SECONDS
+# wait_for_ready LOG_PATH TIMEOUT_SECONDS [PATTERN]
 # Waits for readiness markers in a server log.  Returns 0 on success.
-# On timeout prints a warning and exits 0 (skip), because many game-server
-# binaries do not run properly inside CI containers.
+# On timeout prints the log tail for diagnostics then exits 0 (skip).
 wait_for_ready() {
   local log_path="$1"
   local timeout_seconds="$2"
@@ -75,6 +74,16 @@ wait_for_ready() {
     fi
     sleep 2
   done
+  echo "[diagnostic] Server log did not show readiness markers in ${timeout_seconds}s" >&2
+  echo "[diagnostic] Pattern: ${pattern}" >&2
+  if [[ -f "$log_path" ]]; then
+    local line_count
+    line_count=$(wc -l < "$log_path")
+    echo "[diagnostic] Log tail (${line_count} total lines): ${log_path}" >&2
+    tail -100 "$log_path" >&2
+  else
+    echo "[diagnostic] Log file not found: ${log_path}" >&2
+  fi
   echo "Server log did not show readiness markers in ${timeout_seconds}s — skipping smoke test (CI)" >&2
   exit 0
 }

@@ -63,7 +63,7 @@ def test_wfserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_quake_ready("127.0.0.1", port, 300)
+        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

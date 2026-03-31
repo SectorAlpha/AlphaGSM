@@ -65,7 +65,7 @@ def test_enshrouded_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Enshrouded A2S is on queryport = game_port + 1
-        wait_for_a2s_ready("127.0.0.1", port + 1, 300)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
