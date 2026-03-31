@@ -16,6 +16,7 @@ from conftest import (
     wait_for_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
+    wait_for_a2s_ready,
 )
 
 pytestmark = pytest.mark.integration
@@ -62,6 +63,9 @@ def test_valheim_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
+        # wait for A2S on port+1 (Valheim query port) before issuing query
+        wait_for_a2s_ready("127.0.0.1", port + 1, 180)
+
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
@@ -90,5 +94,5 @@ def test_valheim_lifecycle(tmp_path):
         # stop
         run_and_assert_ok(env, server_name, "stop")
 
-    # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    # verify stopped — Valheim is UDP-only; wait for A2S on port+1 to stop responding
+    wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

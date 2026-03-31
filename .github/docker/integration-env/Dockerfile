@@ -11,6 +11,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   lib32gcc-s1 lib32stdc++6           — 32-bit runtime (Source engine servers)
 #   p7zip-full                          — .7z archive support
 #   unzip bzip2                         — archive formats used by some servers
+#   libatomic1                          — GCC atomics used by UE4 / Unity servers
+#   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
 #   curl python3 wget ca-certificates  — used by install_proton.sh fallback path
 RUN dpkg --add-architecture i386 \
  && apt-get update -qq \
@@ -20,6 +22,7 @@ RUN dpkg --add-architecture i386 \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
         unzip bzip2 \
+        libatomic1 libsdl2-2.0-0 \
         curl python3 python3-pip python3-venv wget ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
@@ -49,6 +52,12 @@ ENV WINEPREFIX=/opt/wine
 ENV DISPLAY=""
 ENV WINEDLLOVERRIDES="winex11.drv="
 ENV WINEDEBUG=-all
+# UE4 / Unity dedicated-server binaries call SDL2 at startup even in headless
+# mode.  Setting SDL_VIDEODRIVER=offscreen tells SDL2 to use a null video driver
+# so the process doesn't crash trying to open an X11 display.  Wine/Proton are
+# unaffected because their display path goes through winex11.drv / WINE vars.
+ENV SDL_VIDEODRIVER=offscreen
+ENV SDL_AUDIODRIVER=dummy
 
 # Initialise the Wine prefix and install common Windows runtimes.
 # wineserver --kill ensures the background wineserver exits cleanly before

@@ -49,6 +49,10 @@ def test_rust_lifecycle(tmp_path):
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
 
+    # Use a small world so generation completes quickly in CI (default 3000 can OOM or
+    # exceed the 900s START_TIMEOUT on GitHub-hosted 2-CPU / 7-GB runners).
+    run_and_assert_ok(env, server_name, "set", "worldsize", "1000")
+
     # start
     run_and_assert_ok(env, server_name, "start")
 
