@@ -648,8 +648,10 @@ class Server(object):
                 )
 
         if protocol == "ts3":
+            get_creds = getattr(self.module, "get_query_credentials", None)
+            login_creds = get_creds(self) if callable(get_creds) else None
             try:
-                ts3info = query_utils.ts3_serverinfo(host, port)
+                ts3info = query_utils.ts3_serverinfo(host, port, login=login_creds)
                 print(
                     "Server is responding (TS3 ServerQuery on port {port}): "
                     "{name!r}  clients={clients_online}/{max_clients}".format(
@@ -767,8 +769,10 @@ class Server(object):
                 raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "ts3":
+            get_creds = getattr(self.module, "get_query_credentials", None)
+            login_creds = get_creds(self) if callable(get_creds) else None
             try:
-                ts3info = query_utils.ts3_serverinfo(host, port)
+                ts3info = query_utils.ts3_serverinfo(host, port, login=login_creds)
                 channels = ts3info.get("channels", [])
                 channels_count = len(channels)
                 if as_json:

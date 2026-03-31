@@ -257,7 +257,7 @@ def _ts3_unescape(value):
     )
 
 
-def ts3_serverinfo(host, port, timeout=5.0):
+def ts3_serverinfo(host, port, timeout=5.0, login=None):
     """Connect to a TeamSpeak 3 ServerQuery interface and return server info.
 
     Opens a raw TCP session to the TS3 ServerQuery port (default 10011),
@@ -272,6 +272,11 @@ def ts3_serverinfo(host, port, timeout=5.0):
     * ``version`` — server software version (str)
     * ``channels`` — list of channel dicts, each with ``id`` (int) and
       ``name`` (str)
+
+    Optional *login* is a ``(username, password)`` tuple.  When provided a
+    ``login`` command is sent before ``use 1``, which is required for
+    TeamSpeak 3 server 3.13+ where anonymous ServerQuery connections no longer
+    receive elevated permissions.
 
     Raises :class:`QueryError` on connection failure, unexpected banner, or
     malformed response.
@@ -325,6 +330,11 @@ def ts3_serverinfo(host, port, timeout=5.0):
             raise QueryError("TS3 ServerQuery: unexpected banner: " + banner)
         # Read and discard the second welcome line (hostname info).
         _recvline()
+
+        # Authenticate if credentials were supplied (required for TS3 3.13+).
+        if login is not None:
+            _send("login %s %s" % (login[0], login[1]))
+            _read_until_ok()
 
         # Select virtual server 1 (required by TS3 3.13+ for per-server queries).
         _send("use 1")

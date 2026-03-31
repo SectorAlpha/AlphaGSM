@@ -1,6 +1,7 @@
 """TeamSpeak 3 server lifecycle helpers."""
 
 import os
+import pathlib
 import re
 import shutil
 import urllib.request
@@ -195,6 +196,37 @@ def backup(server, profile=None):
     """Run the shared backup implementation for a TeamSpeak 3 server."""
 
     backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+
+
+def get_query_credentials(server):
+    """Return TS3 ServerQuery admin credentials as (username, password) or None.
+
+    Checks for the ``serverquery_admin_password.txt`` file written by
+    TeamSpeak 3 server 3.13.3+ on first run, then falls back to parsing the
+    admin password from the AlphaGSM screen log (where TS3 prints it at
+    first startup).
+    """
+    server_dir = pathlib.Path(server.data["dir"])
+    # TS3 3.13.3+ writes the admin password to this file on first run.
+    pw_file = server_dir / "serverquery_admin_password.txt"
+    if pw_file.exists():
+        password = pw_file.read_text(errors="replace").strip()
+        if password:
+            return ("serveradmin", password)
+
+    # Fallback: parse the AlphaGSM screen log for the TS3 admin password line.
+    # TS3 prints: loginname= "serveradmin", password= "<pw>" on first startup.
+    try:
+        log_file = pathlib.Path(screen.logpath(server.name))
+        if log_file.exists():
+            log_text = log_file.read_text(errors="replace")
+            match = re.search(r'loginname= "serveradmin", password= "([^"]+)"', log_text)
+            if match:
+                return ("serveradmin", match.group(1))
+    except Exception:  # noqa: BLE001
+        pass
+
+    return None
 
 
 def checkvalue(server, key, *value):
