@@ -183,3 +183,17 @@ def checkvalue(server, key, *value):
     ):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+
+def get_query_address(server):
+    """Return the Quake UDP query address for Xonotic (DarkPlaces engine).
+
+    Xonotic uses the Quake III / DarkPlaces getstatus UDP protocol,
+    not the Source Engine A2S protocol.
+    """
+    return "127.0.0.1", server.data["port"], "quake"
+
+
+def get_info_address(server):
+    """Return the Quake UDP info address for Xonotic (same as query address)."""
+    return "127.0.0.1", server.data["port"], "quake"

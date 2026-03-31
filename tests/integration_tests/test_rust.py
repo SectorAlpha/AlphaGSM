@@ -21,11 +21,11 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 900  # Rust generates a new world on first start, which takes 5-15 minutes
+START_TIMEOUT = 1800  # Rust generates a new world on first start; CI runners (2 CPU / 7 GB) can take up to 25 min
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.timeout(2400)  # 40 min: download (~2 GB) + world generation on first start
+@pytest.mark.timeout(4800)  # 80 min: download (~2 GB) + world generation on first start on slow CI runners
 def test_rust_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

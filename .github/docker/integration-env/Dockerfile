@@ -13,6 +13,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   unzip bzip2                         — archive formats used by some servers
 #   libatomic1                          — GCC atomics used by UE4 / Unity servers
 #   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
+#   libpulse0                           — PulseAudio client; Unity loads it dynamically
+#                                         even in -batchmode, crashes if not present
 #   curl python3 wget ca-certificates  — used by install_proton.sh fallback path
 RUN dpkg --add-architecture i386 \
  && apt-get update -qq \
@@ -23,6 +25,7 @@ RUN dpkg --add-architecture i386 \
         p7zip-full \
         unzip bzip2 \
         libatomic1 libsdl2-2.0-0 \
+        libpulse0 \
         curl python3 python3-pip python3-venv wget ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
@@ -30,6 +33,15 @@ RUN dpkg --add-architecture i386 \
 # creates that directory on boot, but tmpfiles.d does not run in Docker.
 # Create it explicitly so screen -dmS succeeds inside the container.
 RUN mkdir -p /run/screen && chmod 777 /run/screen
+
+# libssl1.1 — many UE4 dedicated server binaries are linked against OpenSSL 1.1.
+# Ubuntu 22.04 ships only libssl3; we backport the .deb from the Ubuntu 20.04
+# archive so they can open their required libssl.so.1.1 at runtime.
+RUN wget -q \
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb" \
+        -O /tmp/libssl1.1.deb \
+ && dpkg -i /tmp/libssl1.1.deb \
+ && rm -f /tmp/libssl1.1.deb
 
 # Install Temurin 25 (Java 25) — required by the current Minecraft server
 # bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 22.04's
@@ -65,6 +77,7 @@ ENV SDL_AUDIODRIVER=dummy
 RUN wineboot --init \
  && winetricks -q win10 \
  && (winetricks -q --force vcrun2019 || true) \
+ && (winetricks -q --force vcrun2022 || true) \
  && (wineserver --kill || true)
 
 # Wine Mono (.NET/CLR runtime required by .NET-based game servers such as

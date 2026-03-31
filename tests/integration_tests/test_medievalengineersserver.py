@@ -20,7 +20,7 @@ from conftest import (
 )
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 300
+START_TIMEOUT = 600  # ME initialises slowly under Proton on GitHub-hosted 2-CPU runners
 STOP_TIMEOUT = 90
 
 
