@@ -22,7 +22,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 

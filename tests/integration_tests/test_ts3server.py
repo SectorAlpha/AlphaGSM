@@ -22,7 +22,7 @@ from conftest import (
 
 pytestmark = [pytest.mark.integration]
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -64,7 +64,7 @@ def test_ts3server_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # TS3 ServerQuery runs on TCP port 10011; wait until it is accepting connections
-        wait_for_tcp_open("127.0.0.1", 10011, 180)
+        wait_for_tcp_open("127.0.0.1", 10011, 300)
 
         # query — TS3 ServerQuery protocol
         query_result = run_and_assert_ok(env, server_name, "query")

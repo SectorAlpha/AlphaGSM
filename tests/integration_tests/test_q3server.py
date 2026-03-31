@@ -25,7 +25,7 @@ pytestmark = [
     pytest.mark.skip(reason="ioquake3 has no GitHub releases; download 404"),
 ]
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 

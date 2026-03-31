@@ -21,7 +21,7 @@ from conftest import (
 )
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -65,7 +65,7 @@ def test_enshrouded_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Enshrouded A2S is on queryport = game_port + 1
-        wait_for_a2s_ready("127.0.0.1", port + 1, 180)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 300)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

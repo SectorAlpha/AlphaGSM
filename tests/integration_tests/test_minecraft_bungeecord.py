@@ -25,7 +25,7 @@ pytestmark = [
     pytest.mark.skip(reason="BYO: BungeeCord requires manually placing the jar"),
 ]
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 

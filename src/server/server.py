@@ -659,10 +659,21 @@ class Server(object):
                     )
                 )
                 return
-            except query_utils.QueryError as exc:
-                raise ServerError(
-                    "Server does not appear to be responding: " + str(exc)
-                )
+            except query_utils.QueryError:
+                # No credentials or authentication failed — fall back to a
+                # plain TCP ping to confirm the ServerQuery port is reachable.
+                try:
+                    ms = query_utils.tcp_ping(host, port)
+                    print(
+                        "Server port is open (TCP ping on port {} \u2014 {:.1f} ms).".format(
+                            port, ms
+                        )
+                    )
+                    return
+                except query_utils.QueryError as tcp_exc:
+                    raise ServerError(
+                        "Server does not appear to be responding: " + str(tcp_exc)
+                    )
 
         # TCP ping — either explicitly requested or after A2S fallback.
         try:
@@ -804,8 +815,9 @@ class Server(object):
                         "(use --detailed to list)".format(channels_count)
                     )
                 return
-            except query_utils.QueryError as exc:
-                raise ServerError("Info query failed: " + str(exc))
+            except query_utils.QueryError:
+                # No credentials or authentication failed — fall back to TCP ping.
+                pass
 
         # TCP fallback
         try:

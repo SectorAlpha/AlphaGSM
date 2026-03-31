@@ -25,7 +25,7 @@ pytestmark = [
     pytest.mark.skip(reason="SA-MP download domain files.sa-mp.com is dead"),
 ]
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 

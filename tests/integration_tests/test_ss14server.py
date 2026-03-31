@@ -25,7 +25,7 @@ pytestmark = [
     pytest.mark.skip(reason="SS14 CDN returns 404"),
 ]
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 

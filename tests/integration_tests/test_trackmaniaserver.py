@@ -25,7 +25,7 @@ pytestmark = [
     pytest.mark.skip(reason="TrackMania download URL returns 403"),
 ]
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 

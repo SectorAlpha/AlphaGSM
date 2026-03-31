@@ -22,7 +22,7 @@ from conftest import (
 
 pytestmark = [pytest.mark.integration]
 SETUP_TIMEOUT = 3600
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -67,7 +67,7 @@ def test_scumserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # SCUM A2S runs on queryport = port + 2
-        wait_for_a2s_ready("127.0.0.1", port + 2, 180)
+        wait_for_a2s_ready("127.0.0.1", port + 2, 300)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

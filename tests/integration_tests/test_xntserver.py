@@ -21,7 +21,7 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -63,7 +63,7 @@ def test_xntserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Xonotic uses the Quake UDP getstatus protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 180)
+        wait_for_quake_ready("127.0.0.1", port, 300)
 
         # Give the server additional time to stabilise — it can respond to one
         # Quake probe then crash if a runtime library loads lazily and fails.

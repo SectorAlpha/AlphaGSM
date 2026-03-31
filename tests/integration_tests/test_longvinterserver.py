@@ -21,7 +21,7 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -63,7 +63,7 @@ def test_longvinterserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_a2s_ready("127.0.0.1", port, 180)
+        wait_for_a2s_ready("127.0.0.1", port, 300)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

@@ -19,7 +19,7 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 

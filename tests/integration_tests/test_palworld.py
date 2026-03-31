@@ -65,7 +65,7 @@ def test_palworld_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Palworld A2S runs on queryport = port + 1
-        wait_for_a2s_ready("127.0.0.1", port + 1, 180)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 300)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

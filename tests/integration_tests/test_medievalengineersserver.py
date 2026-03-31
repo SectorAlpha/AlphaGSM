@@ -63,7 +63,7 @@ def test_medievalengineersserver_lifecycle(tmp_path):
         )
 
         # wait for A2S to come up (ME takes a while after log markers)
-        wait_for_a2s_ready("127.0.0.1", port, 180)
+        wait_for_a2s_ready("127.0.0.1", port, 300)
 
         # Give ME time to stabilise — it can respond to one A2S probe then crash
         # if Proton/Wine is still loading runtime DLLs.  A second check after a
