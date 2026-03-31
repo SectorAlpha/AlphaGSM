@@ -326,6 +326,10 @@ def ts3_serverinfo(host, port, timeout=5.0):
         # Read and discard the second welcome line (hostname info).
         _recvline()
 
+        # Select virtual server 1 (required by TS3 3.13+ for per-server queries).
+        _send("use 1")
+        _read_until_ok()
+
         # Retrieve virtual server info.
         _send("serverinfo")
         si_lines = _read_until_ok()
