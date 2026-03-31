@@ -43,6 +43,15 @@ RUN wget -q \
  && dpkg -i /tmp/libssl1.1.deb \
  && rm -f /tmp/libssl1.1.deb
 
+# libssl1.0.0 — older UE4 servers (2017-2019, e.g. Battalion 1944, built against
+# UE4.18-4.20) link against OpenSSL 1.0.x (libssl.so.1.0.0 / libcrypto.so.1.0.0).
+# Ubuntu 18.04 (Bionic) is the last release to ship this package.
+RUN wget -q \
+        "http://security.ubuntu.com/ubuntu/pool/main/o/openssl1.0/libssl1.0.0_1.0.2n-1ubuntu5_amd64.deb" \
+        -O /tmp/libssl1.0.0.deb \
+ && dpkg -i /tmp/libssl1.0.0.deb \
+ && rm -f /tmp/libssl1.0.0.deb
+
 # Install Temurin 25 (Java 25) — required by the current Minecraft server
 # bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 22.04's
 # openjdk-21-jdk-headless only handles class files up to version 65 (Java 21).

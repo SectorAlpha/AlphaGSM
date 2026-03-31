@@ -92,7 +92,7 @@ def test_valheim_lifecycle(tmp_path):
         )
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped — Valheim is UDP-only; wait for A2S on port+1 to stop responding
     wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

@@ -14,6 +14,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
+    wait_for_a2s_ready,
     wait_for_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
@@ -60,6 +61,9 @@ def test_medievalengineersserver_lifecycle(tmp_path):
             START_TIMEOUT,
         )
 
+        # wait for A2S to come up (ME takes a while after log markers)
+        wait_for_a2s_ready("127.0.0.1", port, 180)
+
         # status
         run_and_assert_ok(env, server_name, "status")
 
@@ -89,7 +93,7 @@ def test_medievalengineersserver_lifecycle(tmp_path):
         )
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

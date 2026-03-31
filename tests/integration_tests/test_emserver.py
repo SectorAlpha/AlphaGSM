@@ -91,7 +91,7 @@ def test_emserver_lifecycle(tmp_path):
         )
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
     wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
