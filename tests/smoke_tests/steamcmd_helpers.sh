@@ -16,6 +16,30 @@ require_proton() {
   fi
 }
 
+# run_create_or_skip_disabled SERVER_NAME create MODULE_NAME
+# Runs "alphagsm create" and exits 0 if the module is currently disabled.
+# Call this instead of plain run_alphagsm for the create step so that servers
+# listed in disabled_servers.conf produce a graceful skip rather than a failure.
+run_create_or_skip_disabled() {
+  local output_file
+  output_file="$(mktemp)"
+  set +e
+  run_alphagsm "$@" 2>&1 | tee "$output_file"
+  local rc=${PIPESTATUS[0]}
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    if grep -q 'is currently disabled' "$output_file"; then
+      echo "Server module is currently disabled — skipping smoke test (CI)" >&2
+      rm -f "$output_file"
+      exit 0
+    fi
+    rm -f "$output_file"
+    return $rc
+  fi
+  rm -f "$output_file"
+  return 0
+}
+
 run_setup_or_skip_steamcmd() {
   local output_file
   output_file="$(mktemp)"

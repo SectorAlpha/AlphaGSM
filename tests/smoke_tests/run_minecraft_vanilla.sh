@@ -88,7 +88,7 @@ echo "Using server URL: $SERVER_URL"
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
-run_alphagsm "$SERVER_NAME" create minecraft.vanilla
+run_create_or_skip_disabled "$SERVER_NAME" create minecraft.vanilla
 run_alphagsm "$SERVER_NAME" set javapath "$JAVA_WRAPPER"
 run_alphagsm "$SERVER_NAME" setup -n -l "$PORT" "$INSTALL_DIR" -u "$SERVER_URL"
 

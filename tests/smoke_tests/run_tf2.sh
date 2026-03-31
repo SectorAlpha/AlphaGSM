@@ -115,7 +115,7 @@ EOF
 echo "Using install dir: $INSTALL_DIR"
 echo "Using UDP port: $PORT"
 
-run_alphagsm "$SERVER_NAME" create teamfortress2
+run_create_or_skip_disabled "$SERVER_NAME" create teamfortress2
 if ! run_alphagsm_capture "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"; then
   skip_for_known_tf2_setup_issue "$RUN_CAPTURED_OUTPUT"
   exit 1

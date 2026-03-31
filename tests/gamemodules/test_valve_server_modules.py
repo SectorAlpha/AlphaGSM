@@ -15,10 +15,10 @@ class FakeSection(dict):
 def test_findmodule_loads_real_valve_module():
     server_module = importlib.import_module("server.server")
 
-    true_name, module = server_module._findmodule("hl2dmserver")
+    true_name, module = server_module._findmodule("csczserver")
 
-    assert true_name == "hl2dmserver"
-    assert module.__name__ == "gamemodules.hl2dmserver"
+    assert true_name == "csczserver"
+    assert module.__name__ == "gamemodules.csczserver"
 
 
 def test_source_module_configure_and_start_command(tmp_path):
