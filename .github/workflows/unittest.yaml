@@ -99,12 +99,12 @@ jobs:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
       - id: set-matrix
-        name: Split smoke scripts into max 20 batches
+        name: Split smoke scripts into max 40 batches
         run: |
           python3 - <<'PY'
           import json, math, os
           scripts = sorted(f for f in os.listdir("tests/smoke_tests") if f.startswith("run_") and f.endswith(".sh") and not f.startswith("run_backend_"))
-          max_jobs = 20
+          max_jobs = 40
           batch_size = math.ceil(len(scripts) / max_jobs)
           batches = []
           for i in range(0, len(scripts), batch_size):
@@ -225,7 +225,7 @@ jobs:
                   })
 
           # Remaining tests split across up to max_jobs batches
-          max_jobs = 20
+          max_jobs = 40
           if regular_tests:
               batch_size = math.ceil(len(regular_tests) / max_jobs)
               for i in range(0, len(regular_tests), batch_size):

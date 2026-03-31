@@ -67,8 +67,10 @@ def test_xntserver_lifecycle(tmp_path):
 
         # Give the server additional time to stabilise — it can respond to one
         # Quake probe then crash if a runtime library loads lazily and fails.
+        # Use a full 300s window: Xonotic spends significant time loading
+        # configs and assets, during which it may be temporarily non-responsive.
         time.sleep(10)
-        wait_for_quake_ready("127.0.0.1", port, 30, log_path=log_path)
+        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

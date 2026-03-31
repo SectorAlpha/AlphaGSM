@@ -7,6 +7,7 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -39,6 +40,7 @@ def test_kf2server_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    query_port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "kf2server")
@@ -47,6 +49,9 @@ def test_kf2server_lifecycle(tmp_path):
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+
+    # configure KF2's separate A2S query port (different from the game port)
+    run_and_assert_ok(env, server_name, "set", "queryport", str(query_port))
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -63,7 +68,7 @@ def test_kf2server_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_a2s_ready("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", query_port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -93,5 +98,5 @@ def test_kf2server_lifecycle(tmp_path):
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
-    # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    # verify stopped — check the A2S query port (UDP) since KF2 game traffic is UDP
+    wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)

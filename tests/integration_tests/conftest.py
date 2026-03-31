@@ -416,3 +416,19 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
             pytest.skip(
                 f"Setup skipped — {marker!r} in output{extra}: {snippet}"
             )
+
+
+# ---------------------------------------------------------------------------
+# Source engine sv_lan helper
+# ---------------------------------------------------------------------------
+
+def add_svlan_config(config_path, module_name):
+    """Append sv_lan 1 to the server module's servercfg section in alphagsm.conf.
+
+    Source engine (srcds_run) servers require sv_lan 1 in CI to respond to
+    A2S queries without Steam Game Server Authentication.  Writing this to
+    the [gamemodules.<module>.servercfg] section causes valve_server.py's
+    install() to include it in the server's server.cfg via updateconfig().
+    """
+    with open(config_path, "a", encoding="utf-8") as fh:
+        fh.write(f"\n[gamemodules.{module_name}.servercfg]\nsv_lan 1\n")
