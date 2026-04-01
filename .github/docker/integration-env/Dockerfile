@@ -15,7 +15,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
 #   libpulse0                           — PulseAudio client; Unity loads it dynamically
 #                                         even in -batchmode, crashes if not present
-#   libcurl4-gnutls                     — GnuTLS-flavoured libcurl; Mordhau (and
+#   libcurl3-gnutls                     — GnuTLS-flavoured libcurl; Mordhau (and
 #                                         similar CryEngine servers) link against
 #                                         libcurl-gnutls.so.4 specifically
 #   curl python3 wget ca-certificates  — used by install_proton.sh fallback path
@@ -29,7 +29,7 @@ RUN dpkg --add-architecture i386 \
         unzip bzip2 \
         libatomic1 libsdl2-2.0-0 \
         libpulse0 \
-        libcurl4-gnutls \
+        libcurl3-gnutls \
         curl python3 python3-pip python3-venv wget ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
