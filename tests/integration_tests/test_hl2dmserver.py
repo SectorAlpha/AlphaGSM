@@ -8,7 +8,6 @@ from conftest import (
     require_command,
     pick_free_udp_port,
     write_config,
-    add_svlan_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
@@ -38,7 +37,6 @@ def test_hl2dmserver_lifecycle(tmp_path):
     server_name = "ithl2dmserver"
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
-    add_svlan_config(config_path, "hl2dmserver")
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
 
