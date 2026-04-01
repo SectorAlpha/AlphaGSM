@@ -3,7 +3,6 @@
 import pytest
 
 from conftest import (
-from gamemodules.starruptureserver import steam_app_id
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -19,6 +18,7 @@ from gamemodules.starruptureserver import steam_app_id
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
+from gamemodules.starruptureserver import steam_app_id
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600

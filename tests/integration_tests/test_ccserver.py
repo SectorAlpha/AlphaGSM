@@ -3,7 +3,6 @@
 import pytest
 
 from conftest import (
-from gamemodules.ccserver import steam_app_id
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -19,6 +18,7 @@ from gamemodules.ccserver import steam_app_id
     wait_for_udp_closed,
     wait_for_a2s_ready,
 )
+from gamemodules.ccserver import steam_app_id
 
 pytestmark = pytest.mark.integration
 

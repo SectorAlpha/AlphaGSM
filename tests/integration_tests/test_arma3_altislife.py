@@ -7,7 +7,6 @@ Awaiting further support.
 import pytest
 
 from conftest import (
-from gamemodules.arma3altislifeserver import steam_app_id
     require_integration_opt_in,
     require_command,
     pick_free_tcp_port,
@@ -21,6 +20,7 @@ from gamemodules.arma3altislifeserver import steam_app_id
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
+from gamemodules.arma3altislifeserver import steam_app_id
 
 pytestmark = pytest.mark.integration
 
