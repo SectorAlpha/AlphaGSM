@@ -14,6 +14,8 @@ import time
 
 import pytest
 
+from conftest import write_config
+
 pytestmark = pytest.mark.integration
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -43,32 +45,6 @@ def _pick_free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return sock.getsockname()[1]
-
-
-def _write_config(config_path, home_dir):
-    config_path.write_text(
-        "\n".join(
-            [
-                "[core]",
-                f"alphagsm_path = {home_dir}",
-                f"userconf = {home_dir}",
-                "",
-                "[downloader]",
-                f"db_path = {home_dir / 'downloads' / 'downloads.txt'}",
-                f"target_path = {home_dir / 'downloads' / 'downloads'}",
-                "",
-                "[server]",
-                f"datapath = {home_dir / 'conf'}",
-                "",
-                "[screen]",
-                f"screenlog_path = {home_dir / 'logs'}",
-                "sessiontag = AlphaGSM-TF2-IT#",
-                "keeplogs = 1",
-                "",
-            ]
-        )
-        + "\n"
-    )
 
 
 def _alphagsm_env(config_path):
@@ -207,7 +183,7 @@ def test_tf2_download_install_and_start(tmp_path):
     port = _pick_free_port()
 
     home_dir.mkdir()
-    _write_config(config_path, home_dir)
+    write_config(config_path, home_dir, session_tag="AlphaGSM-TF2-IT#")
     env = _alphagsm_env(config_path)
     log_path = home_dir / "logs" / "AlphaGSM-TF2-IT#ittf2.log"
 

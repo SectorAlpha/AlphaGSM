@@ -145,6 +145,16 @@ def _get_int_setting(module_settings, key, default):
     return int(value)
 
 
+def _should_force_sv_lan():
+    """Return True when Valve srcds servers should force LAN mode.
+
+    In integration tests Source-engine servers can refuse unauthenticated A2S
+    queries unless ``sv_lan 1`` is set. Applying the cvar at startup keeps the
+    behavior in the implementation rather than in individual tests.
+    """
+    return os.environ.get("ALPHAGSM_RUN_INTEGRATION") == "1"
+
+
 def define_valve_server_module(
     *,
     game_name,
@@ -361,6 +371,8 @@ def define_valve_server_module(
                 str(server.data["maxplayers"]),
             ]
         )
+        if _should_force_sv_lan():
+            cmd.extend(["+sv_lan", "1"])
         return cmd, server.data["dir"]
 
     def do_stop(server, j):
