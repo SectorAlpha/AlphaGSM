@@ -315,11 +315,16 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     if src_path not in sys.path:
         sys.path.insert(0, src_path)
     from utils import query as query_utils  # pylint: disable=import-outside-toplevel
+    # Use a longer per-query socket timeout than the default 2s so that Source
+    # engine servers running in hibernation mode (tick rate ~0.2 Hz, i.e. one
+    # tick every ~5 s) have enough time to process an incoming A2S packet and
+    # send their response before the socket times out.
+    _A2S_SOCKET_TIMEOUT = 6.0
     deadline = time.time() + timeout_seconds
     last_exc = None
     while time.time() < deadline:
         try:
-            query_utils.a2s_info(host, port)
+            query_utils.a2s_info(host, port, timeout=_A2S_SOCKET_TIMEOUT)
             return
         except query_utils.QueryError as exc:
             last_exc = exc
