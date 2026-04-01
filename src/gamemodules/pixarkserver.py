@@ -43,7 +43,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ShooterGame/Binarie
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
     server.data.setdefault("maxplayers", "70")
     server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
     server.data.setdefault("map", "CubeWorld_Light")
@@ -61,6 +60,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ShooterGame/Binarie
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(int(port) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
