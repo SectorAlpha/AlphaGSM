@@ -62,6 +62,30 @@ def _get_login_args(steam_anonymous_login_possible):
     return ["+login", str(username), str(password)]
 
 
+def _ensure_steamclient_symlinks():
+    """Create ~/.steam/sdk{32,64}/steamclient.so symlinks expected by many
+    dedicated server binaries.
+
+    Many Steamworks-SDK game servers look for steamclient.so in the well-known
+    paths ``~/.steam/sdk64/steamclient.so`` (64-bit) and
+    ``~/.steam/sdk32/steamclient.so`` (32-bit).  SteamCMD standalone creates
+    these files inside its own runtime directory but does *not* automatically
+    create the ~/.steam/sdk* symlinks that the full Steam client would create.
+    We create them here so that game servers relying on them start correctly.
+    """
+    home = os.path.expanduser("~")
+    for bits in ("32", "64"):
+        src = os.path.join(STEAMCMD_DIR, f"linux{bits}", "steamclient.so")
+        if not os.path.isfile(src):
+            continue
+        dst_dir = os.path.join(home, ".steam", f"sdk{bits}")
+        dst = os.path.join(dst_dir, "steamclient.so")
+        if os.path.isfile(dst) or os.path.islink(dst):
+            continue
+        os.makedirs(dst_dir, exist_ok=True)
+        os.symlink(src, dst)
+
+
 def install_steamcmd():
     """Ensure the SteamCMD runtime exists in the configured installation path."""
 
@@ -117,6 +141,7 @@ def download(
         print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
         last_output = proc.stdout
         if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
+            _ensure_steamclient_symlinks()
             return
         if attempt + 1 < STEAMCMD_RETRIES:
             print("SteamCMD did not complete install cleanly, retrying...")
