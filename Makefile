@@ -174,7 +174,7 @@ lint:
 	bash lint.sh
 
 test:
-	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests -n auto
+	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests -n auto
 
 # ------------------------------------------------------------------------------
 # Integration tests — run all integration tests one at a time via the
