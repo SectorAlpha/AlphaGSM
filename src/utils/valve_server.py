@@ -148,9 +148,9 @@ def _get_int_setting(module_settings, key, default):
 def _should_force_sv_lan():
     """Return True when Valve srcds servers should force LAN mode.
 
-    In integration tests Source-engine servers can refuse unauthenticated A2S
-    queries unless ``sv_lan 1`` is set. Applying the cvar at startup keeps the
-    behavior in the implementation rather than in individual tests.
+    In integration tests we set sv_lan 1 so the server does not try to
+    register with the Steam master server, keeping startup fast and avoiding
+    network-dependent failures in CI.
     """
     return os.environ.get("ALPHAGSM_RUN_INTEGRATION") == "1"
 

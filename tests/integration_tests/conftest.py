@@ -34,7 +34,7 @@ def pytest_collection_modifyitems(items):
 def require_integration_opt_in():
     """Skip unless the integration flag is set."""
     if os.environ.get("ALPHAGSM_RUN_INTEGRATION") != "1":
-        pytest.skip("Set ALPHAGSM_RUN_INTEGRATION=1 to run integration tests")
+        pytest.fail("Set ALPHAGSM_RUN_INTEGRATION=1 to run integration tests")
 
 
 def require_steamcmd_opt_in():
@@ -333,17 +333,6 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     pytest.fail(
         f"A2S on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
     )
-
-
-def source_engine_a2s_available():
-    """Return True when Source engine A2S queries are expected to work.
-
-    Source engine servers (srcds_run) require SteamAPI_Init() to succeed in
-    order to handle A2S queries.  In CI, SteamAPI_Init() fails because there
-    is no Steam process, so A2S never initialises even with +sv_lan 1 active.
-    Lifecycle checks (create/setup/start/log-marker/status/stop) still run.
-    """
-    return os.environ.get("ALPHAGSM_RUN_INTEGRATION") != "1"
 
 
 def wait_for_tcp_open(host, port, timeout_seconds, log_path=None):

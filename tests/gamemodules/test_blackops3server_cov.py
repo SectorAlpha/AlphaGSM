@@ -176,12 +176,6 @@ def test_checkvalue_port():
     assert result == 12345
 
 
-def test_checkvalue_queryport():
-    server = DummyServer()
-    result = mod.checkvalue(server, ("queryport",), "12345")
-    assert result == 12345
-
-
 def test_checkvalue_maxplayers():
     server = DummyServer()
     result = mod.checkvalue(server, ("maxplayers",), "12345")

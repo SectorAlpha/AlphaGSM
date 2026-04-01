@@ -15,7 +15,6 @@ from conftest import (
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
     wait_for_a2s_ready,
-    source_engine_a2s_available,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -64,33 +63,32 @@ def test_cssserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        if source_engine_a2s_available():
-            wait_for_a2s_ready("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", port, 300, log_path=log_path)
 
-            # query
-            query_result = run_and_assert_ok(env, server_name, "query")
-            assert (
-                "Server is responding" in query_result.stdout
-                or "Server port is open" in query_result.stdout
-            ), f"Unexpected query output: {query_result.stdout!r}"
+        # query
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert (
+            "Server is responding" in query_result.stdout
+            or "Server port is open" in query_result.stdout
+        ), f"Unexpected query output: {query_result.stdout!r}"
 
-            # info
-            info_result = run_and_assert_ok(env, server_name, "info")
-            assert (
-                "Players     : 0/" in info_result.stdout
-                or "Server port is open" in info_result.stdout
-            ), f"Unexpected info output: {info_result.stdout!r}"
+        # info
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert (
+            "Players     : 0/" in info_result.stdout
+            or "Server port is open" in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
 
-            # info --json
-            import json as _info_json
-            info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-            _info_data = _info_json.loads(info_json_result.stdout.strip())
-            assert _info_data["protocol"] == "a2s", (
-                f"Expected a2s protocol in info JSON: {_info_data!r}"
-            )
-            assert _info_data.get("players") == 0, (
-                f"Expected 0 players on fresh server: {_info_data!r}"
-            )
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data.get("players") == 0, (
+            f"Expected 0 players on fresh server: {_info_data!r}"
+        )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))

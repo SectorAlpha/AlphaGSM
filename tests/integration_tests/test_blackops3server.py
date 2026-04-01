@@ -71,6 +71,7 @@ def test_blackops3server_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
+        # BO3 IW engine serves A2S on the game port
         wait_for_a2s_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query

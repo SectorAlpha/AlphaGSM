@@ -78,6 +78,12 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    # Write the port to ServerConfig.txt so the server uses the configured port.
+    config_dir = os.path.join(server.data["dir"], "Config")
+    os.makedirs(config_dir, exist_ok=True)
+    config_path = os.path.join(server.data["dir"], server.data["configfile"])
+    with open(config_path, "w") as f:
+        f.write("Port=%s\n" % server.data["port"])
 
 
 def update(server, validate=False, restart=False):

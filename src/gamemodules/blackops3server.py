@@ -43,7 +43,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="UnrankedServer/Blac
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
     server.data.setdefault("maxplayers", "18")
     server.data.setdefault("backupfiles", ["players", "zone", "mods"])
     if "backup" not in server.data:
@@ -130,6 +129,16 @@ def get_start_command(server):
     return cmd, unranked_dir
 
 
+def get_query_address(server):
+    """Return A2S query address for Black Ops III (IW engine uses game port)."""
+    return "127.0.0.1", int(server.data["port"]), "a2s"
+
+
+def get_info_address(server):
+    """Return A2S info address for Black Ops III (IW engine uses game port)."""
+    return "127.0.0.1", int(server.data["port"]), "a2s"
+
+
 def do_stop(server, j):
     """Stop Black Ops III by interrupting the foreground server process."""
 
@@ -161,7 +170,7 @@ def checkvalue(server, key, *value):
         return backup_utils.checkdatavalue(server.data["backup"], key, *value)
     if len(value) == 0:
         raise ServerError("No value specified")
-    if key[0] in ("port", "queryport", "maxplayers"):
+    if key[0] in ("port", "maxplayers"):
         return int(value[0])
     if key[0] in ("exe_name", "dir"):
         return str(value[0])
