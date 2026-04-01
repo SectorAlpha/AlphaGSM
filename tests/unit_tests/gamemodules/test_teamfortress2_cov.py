@@ -116,21 +116,6 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
-def test_get_start_command_forces_sv_lan_during_integration(tmp_path, monkeypatch):
-    server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "srcds_run"
-    (tmp_path / "srcds_run").write_text("")
-    server.data["maxplayers"] = 27015
-    server.data["port"] = 27015
-    monkeypatch.setenv("ALPHAGSM_RUN_INTEGRATION", "1")
-
-    cmd, _ = mod.get_start_command(server)
-
-    assert "+sv_lan" in cmd
-    assert "1" in cmd[cmd.index("+sv_lan") + 1:cmd.index("+sv_lan") + 2]
-
-
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

@@ -145,16 +145,6 @@ def _get_int_setting(module_settings, key, default):
     return int(value)
 
 
-def _should_force_sv_lan():
-    """Return True when Valve srcds servers should force LAN mode.
-
-    In integration tests we set sv_lan 1 so the server does not try to
-    register with the Steam master server, keeping startup fast and avoiding
-    network-dependent failures in CI.
-    """
-    return os.environ.get("ALPHAGSM_RUN_INTEGRATION") == "1"
-
-
 def define_valve_server_module(
     *,
     game_name,
@@ -371,8 +361,6 @@ def define_valve_server_module(
                 str(server.data["maxplayers"]),
             ]
         )
-        if _should_force_sv_lan():
-            cmd.extend(["+sv_lan", "1"])
         return cmd, server.data["dir"]
 
     def do_stop(server, j):

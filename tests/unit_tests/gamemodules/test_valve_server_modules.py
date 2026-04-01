@@ -131,18 +131,3 @@ def test_valve_module_install_updates_server_cfg_from_settings(monkeypatch, tmp_
     assert 'hostname "Configured CSS"' in cfg_text
     assert "sv_pure 1" in cfg_text
 
-
-def test_source_module_start_command_forces_sv_lan_during_integration(monkeypatch, tmp_path):
-    module = importlib.import_module("gamemodules.cssserver")
-    server = SimpleNamespace(name="cssalpha", data={})
-    monkeypatch.setenv("ALPHAGSM_RUN_INTEGRATION", "1")
-
-    module.configure(server, False, 28015, str(tmp_path / "css"))
-    install_dir = tmp_path / "css"
-    install_dir.mkdir()
-    (install_dir / "srcds_run").write_text("")
-
-    cmd, _ = module.get_start_command(server)
-
-    assert "+sv_lan" in cmd
-    assert "1" in cmd[cmd.index("+sv_lan") + 1:cmd.index("+sv_lan") + 2]

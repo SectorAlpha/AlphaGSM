@@ -55,11 +55,6 @@ max_stop_wait = 1
 _confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 
 
-def _should_force_sv_lan():
-    """Return True when TF2 should force LAN mode in integration tests."""
-    return os.environ.get("ALPHAGSM_RUN_INTEGRATION") == "1"
-
-
 def updateconfig(filename, settings):
     """Rewrite a simple key/value config file with the provided settings."""
     lines = []
@@ -300,7 +295,7 @@ def get_start_command(server):
         steam_updatescript,
         "+sv_shutdown_timeout_minutes",
         "2",
-    ] + (["+sv_lan", "1"] if _should_force_sv_lan() else []), server.data["dir"]
+    ], server.data["dir"]
 
 
 def do_stop(server, j):
