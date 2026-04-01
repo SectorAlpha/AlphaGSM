@@ -167,6 +167,14 @@ def define_valve_server_module(
     default_port = port
     module_name = inspect.currentframe().f_back.f_globals["__name__"].split(".")[-1]
     default_server_config = {} if default_server_config is None else default_server_config.copy()
+    # For Source Engine servers, ensure sv_hibernate 0 appears in server.cfg.
+    # The +sv_hibernate 0 command-line argument is processed before the game
+    # DLL fully initialises and registers the convar, so it silently fails
+    # ("Unknown command sv_hibernate").  Writing it into server.cfg guarantees
+    # the setting is applied after DLL init, preventing the server from
+    # hibernating and thus allowing A2S queries to succeed.
+    if engine == "source":
+        default_server_config.setdefault("sv_hibernate", "0")
     default_backupfiles = _default_backupfiles(game_dir, config_subdir, config_default)
 
     def configure(server, ask, port=None, dir=None, *, exe_name=None):
