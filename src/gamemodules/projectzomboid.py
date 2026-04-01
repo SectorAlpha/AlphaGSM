@@ -71,6 +71,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    # Project Zomboid's Steam query port is game port + 1, not the game port itself.
+    server.data.setdefault("queryport", str(int(port) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
