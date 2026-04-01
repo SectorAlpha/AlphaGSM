@@ -119,3 +119,11 @@ RUN --mount=type=secret,id=gh_token \
     PROTON_GE_DIR=/opt/proton-ge \
     bash /tmp/install_proton.sh proton \
  && rm -f /tmp/install_proton.sh
+
+# Install Python test dependencies (pytest, pylint, coverage, etc.) so that
+# integration-test runners can use them without a per-job pip install.
+# --break-system-packages is required on Ubuntu 24.04 because the system Python
+# is marked externally-managed (PEP 668).  This is safe in a throwaway CI image.
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --break-system-packages -r /tmp/requirements.txt \
+ && rm /tmp/requirements.txt

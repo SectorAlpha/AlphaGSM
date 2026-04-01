@@ -257,7 +257,7 @@ jobs:
       - name: Compute image tags from content hash
         id: meta
         run: |
-          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh | sha256sum | cut -c1-12)
+          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh requirements.txt | sha256sum | cut -c1-12)
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           repo="ghcr.io/${owner}/alphagsm-integration-test"
           echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
@@ -314,8 +314,6 @@ jobs:
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
-      - name: Install dependencies
-        run: python3 -m pip install -r requirements.txt
       - name: AlphaGSM Pytest Integration Tests
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
