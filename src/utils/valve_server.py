@@ -361,6 +361,8 @@ def define_valve_server_module(
                 str(server.data["maxplayers"]),
             ]
         )
+        if engine == "source":
+            cmd.extend(["+sv_hibernate", "0"])
         return cmd, server.data["dir"]
 
     def do_stop(server, j):
