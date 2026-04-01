@@ -31,6 +31,9 @@ class _FakeUDPSocket:
         if self._raise_on_send:
             raise self._raise_on_send
 
+    def recv(self, bufsize):
+        return self._response
+
     def recvfrom(self, bufsize):
         return self._response, ("127.0.0.1", 27015)
 

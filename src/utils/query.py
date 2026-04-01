@@ -14,6 +14,7 @@ Game modules may optionally define ``get_query_address(server)`` returning a
 TCP ping on the main port.
 """
 
+import bz2
 import socket
 import struct
 import time
@@ -21,17 +22,70 @@ import time
 __all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "tcp_ping",
            "ts3_serverinfo"]
 
-# Source/Steam A2S_INFO challenge bytes and expected response header.
-_A2S_REQUEST = b"\xff\xff\xff\xffTSource Engine Query\x00"
-_A2S_HEADER = b"\xff\xff\xff\xff\x49"
-# Challenge response header (0x41 = 'A').  Modern Steam servers may send this
-# instead of info directly, requiring the client to resend the request with the
+# Source/Steam A2S_INFO request payload and response headers.
+_A2S_PAYLOAD = b"\x54Source Engine Query\x00"
+_A2S_REQUEST = b"\xff\xff\xff\xff" + _A2S_PAYLOAD
+# Simple-packet header (single UDP datagram).
+_HEADER_SIMPLE = b"\xff\xff\xff\xff"
+# Multi-packet header: response is split across several datagrams.
+_HEADER_MULTI = b"\xfe\xff\xff\xff"
+# Expected first byte of a valid A2S_INFO response after stripping the header.
+_A2S_RESPONSE_TYPE = 0x49
+# Challenge-response byte (0x41 = 'A').  Modern Steam servers may send this
+# before the actual info, requiring the request to be re-sent with the
 # 4-byte challenge appended.
-_A2S_CHALLENGE_HEADER = b"\xff\xff\xff\xff\x41"
+_A2S_CHALLENGE_TYPE = 0x41
 
 
 class QueryError(OSError):
     """Raised when a query attempt fails or returns an unexpected result."""
+
+
+def _recv_a2s_packet(sock):
+    """Receive one A2S UDP response, reassembling multi-packet fragments.
+
+    Uses a 65535-byte buffer (maximum UDP payload) so that large single-packet
+    responses are never silently truncated.  Multi-packet responses (indicated
+    by the ``\\xfe\\xff\\xff\\xff`` header) are fully reassembled from all
+    fragments before returning.
+
+    Returns the raw payload bytes with the 4-byte simple-packet header stripped.
+    """
+    data = sock.recv(65535)
+    if data[:4] == _HEADER_SIMPLE:
+        return data[4:]
+    if data[:4] == _HEADER_MULTI:
+        # Fragment header layout (all little-endian):
+        #   uint32  message_id   – high bit set when payload is bz2-compressed
+        #   uint8   total        – total number of fragments
+        #   uint8   frag_id      – zero-based index of this fragment
+        #   uint16  mtu          – max fragment size (informational)
+        # If compressed, two more fields follow before the payload:
+        #   uint32  decompressed_size
+        #   uint32  crc32
+        _FRAG_HDR = struct.Struct("<IBBH")
+
+        def _parse_fragment(raw):
+            msg_id, total, frag_id, _ = _FRAG_HDR.unpack_from(raw)
+            offset = _FRAG_HDR.size
+            if msg_id & (1 << 15):  # compressed
+                offset += 8  # skip decompressed_size + crc32
+                payload = bz2.decompress(raw[offset:])
+            else:
+                payload = raw[offset:]
+            return total, frag_id, payload
+
+        total, frag_id, payload = _parse_fragment(data[4:])
+        fragments = {frag_id: payload}
+        while len(fragments) < total:
+            pkt = sock.recv(65535)
+            _, fid, fpayload = _parse_fragment(pkt[4:])
+            fragments[fid] = fpayload
+        reassembled = b"".join(fragments[i] for i in range(total))
+        if reassembled[:4] == _HEADER_SIMPLE:
+            reassembled = reassembled[4:]
+        return reassembled
+    raise QueryError("A2S query failed: Unexpected response header " + repr(data[:4]))
 
 
 def a2s_info(host, port, timeout=2.0):
@@ -40,29 +94,26 @@ def a2s_info(host, port, timeout=2.0):
     Handles the modern Steam challenge-response handshake: if the server
     responds with a challenge (header byte 0x41) the request is re-sent with
     the 4-byte challenge appended and the final info response is returned.
+    Multi-packet (fragmented) responses are automatically reassembled.
 
     Raises :class:`QueryError` on timeout, socket error, or an unexpected
     response header.
     """
-
-    def _send_recv(sock, payload):
-        sock.sendto(payload, (host, int(port)))
-        data, _ = sock.recvfrom(4096)
-        return data
-
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.settimeout(timeout)
-            data = _send_recv(sock, _A2S_REQUEST)
+            sock.sendto(_A2S_REQUEST, (host, int(port)))
+            data = _recv_a2s_packet(sock)
             # Some modern servers respond with a challenge before sending info.
-            if data.startswith(_A2S_CHALLENGE_HEADER) and len(data) >= 9:
-                challenge = data[5:9]
-                data = _send_recv(sock, _A2S_REQUEST + challenge)
+            if len(data) >= 5 and data[0] == _A2S_CHALLENGE_TYPE:
+                challenge = data[1:5]
+                sock.sendto(_A2S_REQUEST + challenge, (host, int(port)))
+                data = _recv_a2s_packet(sock)
     except OSError as exc:
         raise QueryError("A2S query failed: " + str(exc)) from exc
-    if not data.startswith(_A2S_HEADER):
+    if not data or data[0] != _A2S_RESPONSE_TYPE:
         raise QueryError("Unexpected A2S response header")
-    return data
+    return b"\xff\xff\xff\xff" + data
 
 
 def _read_cstring(data, pos):

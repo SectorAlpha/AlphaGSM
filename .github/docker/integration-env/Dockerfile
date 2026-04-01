@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Prevent apt from asking questions
 ARG DEBIAN_FRONTEND=noninteractive
@@ -15,9 +15,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
 #   libpulse0                           — PulseAudio client; Unity loads it dynamically
 #                                         even in -batchmode, crashes if not present
-#   libcurl3-gnutls                     — GnuTLS-flavoured libcurl; Mordhau (and
+#   libcurl3t64-gnutls                  — GnuTLS-flavoured libcurl; Mordhau (and
 #                                         similar CryEngine servers) link against
 #                                         libcurl-gnutls.so.4 specifically
+#                                         (Ubuntu 24.04 renamed this package from
+#                                         libcurl3-gnutls to libcurl3t64-gnutls)
 #   curl python3 wget ca-certificates  — used by install_proton.sh fallback path
 RUN dpkg --add-architecture i386 \
  && apt-get update -qq \
@@ -29,7 +31,7 @@ RUN dpkg --add-architecture i386 \
         unzip bzip2 \
         libatomic1 libsdl2-2.0-0 \
         libpulse0 \
-        libcurl3-gnutls \
+        libcurl3t64-gnutls \
         curl python3 python3-pip python3-venv wget ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
@@ -39,7 +41,7 @@ RUN dpkg --add-architecture i386 \
 RUN mkdir -p /run/screen && chmod 777 /run/screen
 
 # libssl1.1 — many UE4 dedicated server binaries are linked against OpenSSL 1.1.
-# Ubuntu 22.04 ships only libssl3; we backport the .deb from the Ubuntu 20.04
+# Ubuntu 24.04 ships only libssl3; we backport the .deb from the Ubuntu 20.04
 # archive so they can open their required libssl.so.1.1 at runtime.
 RUN wget -q \
         "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb" \
@@ -57,7 +59,7 @@ RUN wget -q \
  && rm -f /tmp/libssl1.0.0.deb
 
 # Install Temurin 25 (Java 25) — required by the current Minecraft server
-# bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 22.04's
+# bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 24.04's
 # openjdk-21-jdk-headless only handles class files up to version 65 (Java 21).
 RUN wget -q -O /usr/share/keyrings/adoptium.asc \
         https://packages.adoptium.net/artifactory/api/gpg/key/public \
