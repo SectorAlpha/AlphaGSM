@@ -32,25 +32,25 @@ def pytest_collection_modifyitems(items):
 # ---------------------------------------------------------------------------
 
 def require_integration_opt_in():
-    """Skip unless the integration flag is set."""
+    """Fail unless the integration flag is set."""
     if os.environ.get("ALPHAGSM_RUN_INTEGRATION") != "1":
         pytest.fail("Set ALPHAGSM_RUN_INTEGRATION=1 to run integration tests")
 
 
 def require_steamcmd_opt_in():
-    """Skip unless the SteamCMD integration flag is set."""
+    """Fail unless the SteamCMD integration flag is set."""
     if os.environ.get("ALPHAGSM_RUN_STEAMCMD") != "1":
-        pytest.skip("Set ALPHAGSM_RUN_STEAMCMD=1 to run SteamCMD integration tests")
+        pytest.fail("Set ALPHAGSM_RUN_STEAMCMD=1 to run SteamCMD integration tests")
 
 
 def require_command(name):
-    """Skip if a required system command is not available."""
+    """Fail if a required system command is not available."""
     if shutil.which(name) is None:
-        pytest.skip(f"Required command not available: {name}")
+        pytest.fail(f"Required command not available: {name}")
 
 
 def require_proton():
-    """Skip if neither Wine nor Proton-GE is available on the host system.
+    """Fail if neither Wine nor Proton-GE is available on the host system.
 
     Imports ``utils.proton`` at call time so that game-module tests that call
     this helper do not pull in the module at collection time.
@@ -62,7 +62,7 @@ def require_proton():
         sys.path.insert(0, src_path)
     import utils.proton as _proton  # pylint: disable=import-outside-toplevel
     if not _proton.is_available():
-        pytest.skip(
+        pytest.fail(
             "Wine or Proton-GE is required to run Windows-binary servers; "
             "install with  scripts/install_proton.sh"
         )
@@ -74,7 +74,7 @@ def require_mysql(host="127.0.0.1", port=3306):
         with socket.create_connection((host, port), timeout=2):
             pass
     except OSError:
-        pytest.skip(
+        pytest.fail(
             f"MySQL/MariaDB is required but not reachable at {host}:{port}; "
             "start a local database service before running this test"
         )
