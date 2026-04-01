@@ -1,6 +1,7 @@
 """Integration test for Team Fortress 2.
 
-Requires SteamCMD (app_id 232250) — gated behind ALPHAGSM_RUN_STEAMCMD=1.
+Requires SteamCMD — gated behind ALPHAGSM_RUN_STEAMCMD=1.
+App ID is read from gamemodules.teamfortress2.steam_app_id.
 """
 
 import json
@@ -15,6 +16,7 @@ import time
 import pytest
 
 from conftest import write_config, wait_for_a2s_ready
+from gamemodules.teamfortress2 import steam_app_id
 
 pytestmark = pytest.mark.integration
 
@@ -91,7 +93,7 @@ def _skip_for_known_tf2_setup_issue(result):
     known_markers = (
         "tf/cfg/server.cfg",
         "No such file or directory",
-        "Failed to install app '232250' (Missing configuration)",
+        f"Failed to install app '{steam_app_id}' (Missing configuration)",
     )
     if all(marker in combined for marker in known_markers):
         pytest.skip(

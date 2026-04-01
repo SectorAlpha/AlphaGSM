@@ -3,6 +3,7 @@
 import pytest
 
 from conftest import (
+from gamemodules.rust import steam_app_id
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -47,7 +48,7 @@ def test_rust_lifecycle(tmp_path):
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
     # Use a small world so generation completes quickly in CI (default 3000 can OOM or
     # exceed the 900s START_TIMEOUT on GitHub-hosted 2-CPU / 7-GB runners).

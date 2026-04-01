@@ -400,6 +400,7 @@ def define_valve_server_module(
         _raise_server_error("Unsupported key for Valve server module: %s" % (key[0],))
 
     return SimpleNamespace(
+        steam_app_id=steam_app_id,
         commands=("update", "restart"),
         command_args=_COMMAND_ARGS,
         command_descriptions=_COMMAND_DESCRIPTIONS,

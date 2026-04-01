@@ -20,6 +20,7 @@ MODULE = define_valve_server_module(
     config_default='server.cfg',
 )
 
+steam_app_id = MODULE.steam_app_id
 commands = MODULE.commands
 command_args = MODULE.command_args
 command_descriptions = MODULE.command_descriptions

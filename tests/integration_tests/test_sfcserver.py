@@ -3,6 +3,7 @@
 import pytest
 
 from conftest import (
+from gamemodules.sfcserver import steam_app_id
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -45,7 +46,7 @@ def test_sfcserver_lifecycle(tmp_path):
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
     # start
     run_and_assert_ok(env, server_name, "start")
