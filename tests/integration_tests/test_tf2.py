@@ -186,7 +186,11 @@ def test_tf2_download_install_and_start(tmp_path):
     assert setup_result.returncode == 0, setup_result.stderr or setup_result.stdout
 
     _assert_tf2_launcher_exists(install_dir)
-    assert (install_dir / "tf" / "cfg" / "server.cfg").exists()
+    server_cfg = install_dir / "tf" / "cfg" / "server.cfg"
+    assert server_cfg.exists()
+    # Disable hibernation for the test so A2S always responds
+    with server_cfg.open("a") as _f:
+        _f.write("sv_hibernate 0\n")
 
     _run_and_assert_ok(env, server_name, "start", timeout=60)
 
@@ -198,40 +202,37 @@ def test_tf2_download_install_and_start(tmp_path):
 
         wait_for_a2s_ready("127.0.0.1", port, START_TIMEOUT_SECONDS, log_path=log_path)
 
-        # query — TF2 is Source engine; expects A2S (or TCP fallback)
+        # query — TF2 is Source engine with sv_hibernate 0; expects full A2S response
         query_result = _run_and_assert_ok(env, server_name, "query")
         print("\n=== query ===")
         print(query_result.stdout.strip())
-        assert (
-            "Server is responding" in query_result.stdout
-            or "Server port is open" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        assert "Server is responding" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
 
-        # info — TF2 is Source engine; A2S_INFO should report 0 players and game.
+        # info — A2S_INFO should report 0 players and game name
         info_result = _run_and_assert_ok(env, server_name, "info")
         print("\n=== info ===")
         print(info_result.stdout.strip())
-        assert (
-            "Server info" in info_result.stdout
-            or "Server port is open" in info_result.stdout
-        ), f"Expected info output from TF2: {info_result.stdout!r}"
+        assert "Server info" in info_result.stdout, (
+            f"Expected info output from TF2: {info_result.stdout!r}"
+        )
 
         # info --json — verify structured JSON output
         info_json_result = _run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] in ("a2s", "tcp"), (
-            f"Expected a2s or tcp protocol for TF2: {_info_data!r}"
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol for TF2 (sv_hibernate 0 set): {_info_data!r}"
         )
-        if _info_data["protocol"] == "a2s":
-            assert _info_data.get("players") == 0, (
-                f"Expected 0 players on fresh TF2 server: {_info_data!r}"
-            )
-            assert _info_data.get("bots") == 0, (
-                f"Expected 0 bots on fresh TF2 server: {_info_data!r}"
-            )
-            assert "Team Fortress" in (_info_data.get("game") or ""), (
-                f"Expected 'Team Fortress' in game field: {_info_data!r}"
-            )
+        assert _info_data.get("players") == 0, (
+            f"Expected 0 players on fresh TF2 server: {_info_data!r}"
+        )
+        assert _info_data.get("bots") == 0, (
+            f"Expected 0 bots on fresh TF2 server: {_info_data!r}"
+        )
+        assert "Team Fortress" in (_info_data.get("game") or ""), (
+            f"Expected 'Team Fortress' in game field: {_info_data!r}"
+        )
     finally:
         _wait_for_screen_exit(log_path, 30)
         _log_command_result(

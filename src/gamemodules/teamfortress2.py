@@ -295,8 +295,6 @@ def get_start_command(server):
         steam_updatescript,
         "+sv_shutdown_timeout_minutes",
         "2",
-        "+sv_hibernate",
-        "0",
     ], server.data["dir"]
 
 
