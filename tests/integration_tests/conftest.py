@@ -301,7 +301,7 @@ def wait_for_udp_closed(host, port, timeout_seconds):
         time.sleep(2)
     raise AssertionError(f"UDP port {host}:{port} still responds after {timeout_seconds}s")
 
-def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
+def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None):
     """Poll A2S_INFO on *host*:*port* until the server responds.
 
     Retries until *timeout_seconds* elapses.  When the server starts returning
@@ -310,6 +310,11 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     fixed so it becomes query-ready within the allowed window.
 
     Optional *log_path* is printed (tail) on timeout for CI diagnostics.
+
+    Optional *tcp_port* overrides the TCP port used for the fallback check.
+    Use this when the A2S query port (``port``) differs from the game's TCP
+    port — e.g. UE4 servers that expose A2S on ``game_port + 1`` while the
+    TCP game port is ``game_port``.
     """
     src_path = str(REPO_ROOT / "src")
     if src_path not in sys.path:
@@ -350,8 +355,11 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     # making A2S permanently unavailable even though the server is running.
     # If the TCP port (RCON / game port) is open, the server is up and the
     # subsequent alphagsm commands can fall back to TCP themselves.
+    # For games that expose A2S on port+1, pass tcp_port=game_port to check
+    # the correct TCP port rather than the UDP-only A2S query port.
+    _tcp_check_port = tcp_port if tcp_port is not None else port
     try:
-        with socket.create_connection((host, port), timeout=5):
+        with socket.create_connection((host, _tcp_check_port), timeout=5):
             print(
                 f"[diagnostic] A2S on {host}:{port} never responded within"
                 f" {timeout_seconds}s (likely hibernating) — TCP port is open;"

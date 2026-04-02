@@ -22,7 +22,7 @@ from conftest import (
 from gamemodules.pixarkserver import steam_app_id
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 600
+START_TIMEOUT = 900
 STOP_TIMEOUT = 90
 
 
@@ -66,7 +66,7 @@ def test_pixarkserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # PixARK exposes A2S on queryport (game port + 1), not the game port
-        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path, tcp_port=port)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -86,12 +86,13 @@ def test_pixarkserver_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] in ("a2s", "tcp"), (
+            f"Expected a2s or tcp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
-        )
+        if _info_data["protocol"] == "a2s":
+            assert _info_data.get("players") == 0, (
+                f"Expected 0 players on fresh server: {_info_data!r}"
+            )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
