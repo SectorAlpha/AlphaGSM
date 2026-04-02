@@ -85,6 +85,10 @@ def test_xntserver_lifecycle(tmp_path):
             or "Server port is open" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
+        # `alphagsm info` sends its own getstatus probe; the DarkPlaces
+        # rate-limit applies per-source-IP so we must wait again.
+        time.sleep(15)
+
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (

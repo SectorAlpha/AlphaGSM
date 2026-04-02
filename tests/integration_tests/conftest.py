@@ -318,17 +318,19 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     # Asymmetric Phase 1 / Phase 2 timeouts for hibernating Source servers.
     #
     # Current SRCDS builds treat sv_hibernate as an unknown command, so the
-    # server hibernates with an unknown inter-tick interval.  The A2S protocol
-    # uses a two-phase challenge-response handshake: Phase 1 sends the initial
-    # request and receives a challenge; Phase 2 immediately re-sends the
-    # request with the challenge and waits for the final info response.
+    # server hibernates with an inter-tick interval that varies by game.
+    # Measured hibernation tick intervals in Docker CI range from ~5 s to
+    # ~12 s.  The A2S protocol uses a two-phase challenge-response handshake:
+    # Phase 1 sends the initial request and receives a challenge; Phase 2
+    # immediately re-sends the request with the challenge and waits for the
+    # final info response.
     #
-    # Strategy: use a very short Phase 1 timeout (5 s) so retries happen
-    # frequently — maximising the chance of catching the server during one of
-    # its brief wake windows.  Once Phase 1 succeeds (server awake), Phase 2
-    # uses a long timeout (120 s) to cover the full hibernation cycle before
-    # the server wakes again to process the challenge response.
-    _A2S_PHASE1_TIMEOUT = 5.0
+    # Strategy: use a Phase 1 timeout (15 s) long enough to catch the server
+    # during one hibernation tick (up to ~12 s) — maximising the chance of
+    # receiving the challenge reply.  Once Phase 1 succeeds (server awake),
+    # Phase 2 uses a long timeout (120 s) to cover the full hibernation cycle
+    # before the server wakes again to process the challenge response.
+    _A2S_PHASE1_TIMEOUT = 15.0
     _A2S_PHASE2_TIMEOUT = 120.0
     deadline = time.time() + timeout_seconds
     last_exc = None
