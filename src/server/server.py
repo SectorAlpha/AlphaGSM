@@ -635,7 +635,7 @@ class Server(object):
 
         if protocol == "quake":
             try:
-                qinfo = query_utils.quake_status(host, port)
+                qinfo = query_utils.quake_status(host, port, timeout=10.0)
                 print(
                     "Server is responding (Quake status on port {port}): "
                     "{name!r}  map={map!r}  "
@@ -765,7 +765,7 @@ class Server(object):
 
         if protocol == "quake":
             try:
-                qinfo = query_utils.quake_status(host, port)
+                qinfo = query_utils.quake_status(host, port, timeout=10.0)
                 if as_json:
                     print(json.dumps({"protocol": "quake", "port": port, **qinfo}))
                     return

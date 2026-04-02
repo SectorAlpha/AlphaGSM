@@ -319,10 +319,18 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     # engine servers running in hibernation mode have enough time to process an
     # incoming A2S packet and send their response before the socket times out.
     # Current SRCDS builds treat sv_hibernate as an unknown command, so the
-    # server uses the engine's built-in hibernation tick rate which is much
-    # slower than the ~0.2 Hz (5 s/tick) assumed previously.  30 s covers the
-    # observed ~20 s inter-tick interval with a comfortable margin.
-    _A2S_SOCKET_TIMEOUT = 30.0
+    # server uses the engine's built-in hibernation tick rate (~20–35 s in CI).
+    #
+    # The A2S protocol uses a two-phase challenge-response handshake: the
+    # client sends a query, receives a challenge, immediately re-sends the
+    # query with the challenge appended, then waits for the final info
+    # response.  Because the server goes back to sleep right after sending the
+    # challenge, the second recv() must wait a *full* hibernation cycle before
+    # the server wakes again to process and answer this challenge response.
+    # The per-recv timeout must therefore cover at least one full inter-tick
+    # interval.  60 s is twice the observed CI tick interval and leaves a
+    # comfortable margin over the measured upper bound of ~35 s.
+    _A2S_SOCKET_TIMEOUT = 60.0
     deadline = time.time() + timeout_seconds
     last_exc = None
     while time.time() < deadline:
@@ -387,9 +395,13 @@ def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
     from utils import query as query_utils  # pylint: disable=import-outside-toplevel
     deadline = time.time() + timeout_seconds
     last_exc = None
+    # Use a 10 s per-query timeout so that servers still loading their map
+    # and assets have time to process and respond to the getstatus packet
+    # without the query prematurely timing out at the default 2 s.
+    _QUAKE_SOCKET_TIMEOUT = 10.0
     while time.time() < deadline:
         try:
-            query_utils.quake_status(host, port)
+            query_utils.quake_status(host, port, timeout=_QUAKE_SOCKET_TIMEOUT)
             return
         except query_utils.QueryError as exc:
             last_exc = exc
