@@ -119,6 +119,13 @@ That is a real problem requiring a real fix:
   listens on for A2S / Quake / TCP queries.
 - **Timeout genuinely too short** — raise the `timeout_seconds` argument in
   the test (e.g. for servers that take >5 minutes to load their world).
+  Long timeouts (30–60 minutes) are acceptable in CI for servers that
+  require large SteamCMD downloads, world generation, or slow UE4/Proton
+  initialisation.  Add `@pytest.mark.timeout(3600)` and increase both
+  `START_TIMEOUT` and `wait_for_a2s_ready()` `timeout_seconds` accordingly.
+  Also add the test file to the `SLOW_TESTS` list in
+  `.github/workflows/unittest.yaml` so CI schedules it as a solo batch rather
+  than blocking other tests.
 
 **Never** respond to a timeout failure by:
 - Changing `pytest.fail()` back to `pytest.skip()`

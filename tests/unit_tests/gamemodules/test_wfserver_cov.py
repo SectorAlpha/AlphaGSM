@@ -67,6 +67,7 @@ def test_install(tmp_path):
     server.data["exe_name"] = "wf_server.x86_64"
     server.data["Steam_AppID"] = 1136510
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 44400
     mod.install(server)
 
 

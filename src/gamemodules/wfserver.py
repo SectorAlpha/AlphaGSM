@@ -80,6 +80,14 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    # SteamCMD ships a basewf/dedicated_autoexec.cfg that hard-codes
+    # net_port 44400.  Overwrite it with the configured port so that
+    # the server binds the port specified during setup.
+    autoexec_dir = os.path.join(server.data["dir"], "basewf")
+    os.makedirs(autoexec_dir, exist_ok=True)
+    autoexec_path = os.path.join(autoexec_dir, "dedicated_autoexec.cfg")
+    with open(autoexec_path, "w", encoding="utf-8") as fh:
+        fh.write(f'set net_port {server.data["port"]}\n')
 
 
 def update(server, validate=False, restart=False):

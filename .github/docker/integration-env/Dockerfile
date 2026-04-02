@@ -127,3 +127,18 @@ RUN --mount=type=secret,id=gh_token \
 COPY requirements.txt /tmp/requirements.txt
 RUN pip3 install --break-system-packages -r /tmp/requirements.txt \
  && rm /tmp/requirements.txt
+
+# Create a non-root user so that game servers that refuse to start as root
+# (e.g. Insurgency: Sandstorm, Mordhau, Squad, Palworld, Satisfactory, …) work
+# correctly inside the CI container.  The integration-test runner switches to
+# this user with `su - gsmuser` before launching pytest.
+#
+# uid 1001 matches the GitHub-hosted-runner `runner` user that owns the checked-
+# out workspace volume, so the integration-test step does not need a separate
+# `chown` pass over the repository tree.
+#
+# /opt/wine (the pre-built Wine prefix) is transferred to gsmuser so that Wine
+# and Proton processes spawned by AlphaGSM under that account can write lock
+# files and temporary state into the prefix without permission errors.
+RUN useradd --create-home --shell /bin/bash --uid 1001 gsmuser \
+ && chown -R gsmuser:gsmuser /opt/wine

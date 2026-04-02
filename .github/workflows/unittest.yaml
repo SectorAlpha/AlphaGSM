@@ -199,11 +199,16 @@ jobs:
           # Tests with extended per-test timeouts (2400-3600s) get solo batches
           # so they never block a batch of regular tests.
           SLOW_TESTS = [
-              "test_rs2server.py",       # 3600s: ~13 GB download
-              "test_scumserver.py",      # 3600s: large download
-              "test_sevendaystodie.py",  # 3600s: ~12 GB + world gen
-              "test_palworld.py",        # 2400s: ~3.7 GB + UE5 startup
-              "test_rust.py",            # 2400s: ~2 GB + world gen
+              "test_rs2server.py",           # 3600s: ~13 GB download
+              "test_scumserver.py",          # 3600s: large download
+              "test_sevendaystodie.py",      # 3600s: ~12 GB + world gen
+              "test_palworld.py",            # 2400s: ~3.7 GB + UE5 startup
+              "test_rust.py",               # 2400s: ~2 GB + world gen
+              "test_arksurvivalascended.py", # 3600s: UE4/Proton, very slow startup
+              "test_btserver.py",           # 3600s: slow SteamManager init
+              "test_enshrouded.py",         # 3600s: UE4/Proton, slow A2S
+              "test_readyornotserver.py",   # 3600s: UE4/Proton, full map load + A2S
+              "test_valheim.py",            # 3600s: Steam relay + A2S on port+1
           ]
 
           all_tests = sorted(
@@ -318,7 +323,28 @@ jobs:
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
           ALPHAGSM_RUN_STEAMCMD: "1"
-        run: pytest -rs --junit-xml=results.xml ${{ matrix.files }}
+        run: |
+          # Game servers that refuse to run as root (Insurgency: Sandstorm,
+          # Mordhau, Squad, Palworld, Satisfactory, …) require a non-root uid.
+          # Run the full pytest session as gsmuser (uid 1001) so every server
+          # started by the tests inherits the non-root uid via screen.
+          #
+          # uid 1001 matches the GitHub Actions runner user that owns the
+          # checked-out workspace, so no chown pass is needed.
+          su - gsmuser -c "
+            set -e
+            cd '$GITHUB_WORKSPACE'
+            export PYTHONPATH=.:src
+            export ALPHAGSM_RUN_INTEGRATION=1
+            export ALPHAGSM_RUN_STEAMCMD=1
+            export WINEPREFIX=/opt/wine
+            export WINEDEBUG=-all
+            export WINEDLLOVERRIDES='winex11.drv='
+            export SDL_VIDEODRIVER=offscreen
+            export SDL_AUDIODRIVER=dummy
+            export DISPLAY=
+            pytest -rs --junit-xml=results.xml ${{ matrix.files }}
+          "
       - name: Upload integration test results
         if: always()
         uses: actions/upload-artifact@v4

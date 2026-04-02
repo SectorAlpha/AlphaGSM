@@ -72,6 +72,8 @@ def test_install(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
+    server.data["userdir"] = "user"
+    server.data["hostname"] = "Test Server"
     mod.install(server)
 
 def test_install_resolves_download(tmp_path):
@@ -79,6 +81,8 @@ def test_install_resolves_download(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "xonotic-linux64-dedicated"
     server.data["download_name"] = "test.zip"
+    server.data["userdir"] = "user"
+    server.data["hostname"] = "Test Server"
     with patch.object(mod, 'resolve_download', return_value=('0.8.6', 'https://example.com/xonotic.zip')):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/xonotic.zip'

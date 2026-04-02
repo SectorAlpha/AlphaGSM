@@ -21,10 +21,11 @@ from conftest import (
 from gamemodules.arksurvivalascended import steam_app_id
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 600
+START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(3600)  # 60 min: UE4/Proton download + very slow first-launch init
 def test_arksurvivalascended_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

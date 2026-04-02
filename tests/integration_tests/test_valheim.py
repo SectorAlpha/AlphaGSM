@@ -22,10 +22,11 @@ from gamemodules.valheim import steam_app_id
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 600
+START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(3600)  # 60 min: large download + world load + Steam relay init + A2S on port+1
 def test_valheim_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -65,7 +66,7 @@ def test_valheim_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # wait for A2S on port+1 (Valheim query port) before issuing query
-        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 900, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

@@ -70,7 +70,7 @@ def test_rust_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # wait for A2S to be ready before querying (Rust A2S can lag behind log markers)
-        wait_for_a2s_ready("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", port, 900, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

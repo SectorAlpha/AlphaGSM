@@ -62,6 +62,7 @@ def test_install(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
+    server.data["port"] = 25555
     mod.install(server)
 
 def test_get_start_command(tmp_path):

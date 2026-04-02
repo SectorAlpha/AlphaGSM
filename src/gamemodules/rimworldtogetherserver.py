@@ -1,5 +1,6 @@
 """RimWorld Together dedicated server lifecycle helpers."""
 
+import json
 import os
 
 import screen
@@ -105,6 +106,23 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(server.data["url"]))
     install_archive(server, detect_compression(server.data["download_name"]))
+    # The GameServer binary ignores the --port command-line argument and
+    # always reads its listen port from Config/ServerSettings.json.  Write
+    # (or update) that file so the server binds the port chosen during setup.
+    config_dir = os.path.join(server.data["dir"], "Config")
+    os.makedirs(config_dir, exist_ok=True)
+    settings_path = os.path.join(config_dir, "ServerSettings.json")
+    settings: dict = {}
+    if os.path.exists(settings_path):
+        try:
+            with open(settings_path, encoding="utf-8") as fh:
+                settings = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            settings = {}
+    settings["Port"] = server.data["port"]
+    with open(settings_path, "w", encoding="utf-8") as fh:
+        json.dump(settings, fh, indent=2)
+        fh.write("\n")
 
 
 def get_start_command(server):

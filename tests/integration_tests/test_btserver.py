@@ -22,10 +22,11 @@ from gamemodules.btserver import steam_app_id
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 600
+START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(3600)  # 60 min: SteamCMD download + slow SteamManager initialisation
 def test_btserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -65,7 +66,7 @@ def test_btserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Barotrauma's Steam query port is game port + 1, not the game port itself.
-        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 900, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

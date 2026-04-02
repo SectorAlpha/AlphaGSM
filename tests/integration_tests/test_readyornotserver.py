@@ -22,10 +22,11 @@ from conftest import (
 from gamemodules.readyornotserver import steam_app_id
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 600
+START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(3600)  # 60 min: large UE4/Proton download + full map load + A2S
 def test_readyornotserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -66,7 +67,7 @@ def test_readyornotserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # RoN exposes A2S on queryport (game port + 1), not the game port
-        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 900, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

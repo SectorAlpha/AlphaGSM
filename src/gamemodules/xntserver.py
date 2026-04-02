@@ -112,6 +112,15 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
     install_archive(server, detect_compression(server.data["download_name"]))
+    # The Xonotic dedicated server exits with "Dedicated server requires
+    # server.cfg in your config directory" if the file does not exist in
+    # the -userdir path.  Create a minimal one so the server starts.
+    userdir = os.path.join(server.data["dir"], server.data["userdir"])
+    os.makedirs(userdir, exist_ok=True)
+    server_cfg = os.path.join(userdir, "server.cfg")
+    if not os.path.exists(server_cfg):
+        with open(server_cfg, "w", encoding="utf-8") as fh:
+            fh.write(f'hostname "{server.data["hostname"]}"\n')
 
 
 def get_start_command(server):
