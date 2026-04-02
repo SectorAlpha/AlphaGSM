@@ -114,10 +114,12 @@ def install(server):
     install_archive(server, detect_compression(server.data["download_name"]))
     # The Xonotic dedicated server exits with "Dedicated server requires
     # server.cfg in your config directory" if the file does not exist in
-    # the -userdir path.  Create a minimal one so the server starts.
-    userdir = os.path.join(server.data["dir"], server.data["userdir"])
-    os.makedirs(userdir, exist_ok=True)
-    server_cfg = os.path.join(userdir, "server.cfg")
+    # the -userdir/data/ path.  Create a minimal one so the server starts.
+    # Xonotic (DarkPlaces engine) stores user data under <userdir>/data/,
+    # so server.cfg must live at <userdir>/data/server.cfg, not <userdir>/server.cfg.
+    userdir_data = os.path.join(server.data["dir"], server.data["userdir"], "data")
+    os.makedirs(userdir_data, exist_ok=True)
+    server_cfg = os.path.join(userdir_data, "server.cfg")
     if not os.path.exists(server_cfg):
         with open(server_cfg, "w", encoding="utf-8") as fh:
             fh.write(f'hostname "{server.data["hostname"]}"\n')

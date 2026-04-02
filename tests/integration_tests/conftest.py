@@ -316,10 +316,13 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
         sys.path.insert(0, src_path)
     from utils import query as query_utils  # pylint: disable=import-outside-toplevel
     # Use a longer per-query socket timeout than the default 2s so that Source
-    # engine servers running in hibernation mode (tick rate ~0.2 Hz, i.e. one
-    # tick every ~5 s) have enough time to process an incoming A2S packet and
-    # send their response before the socket times out.
-    _A2S_SOCKET_TIMEOUT = 6.0
+    # engine servers running in hibernation mode have enough time to process an
+    # incoming A2S packet and send their response before the socket times out.
+    # Current SRCDS builds treat sv_hibernate as an unknown command, so the
+    # server uses the engine's built-in hibernation tick rate which is much
+    # slower than the ~0.2 Hz (5 s/tick) assumed previously.  30 s covers the
+    # observed ~20 s inter-tick interval with a comfortable margin.
+    _A2S_SOCKET_TIMEOUT = 30.0
     deadline = time.time() + timeout_seconds
     last_exc = None
     while time.time() < deadline:

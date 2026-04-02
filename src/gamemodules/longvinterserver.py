@@ -40,7 +40,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="LongvinterServer.sh
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27016")
     server.data.setdefault("maxplayers", "32")
     server.data.setdefault("servername", "Unnamed Island")
     server.data.setdefault("backupfiles", ["Longvinter/Saved/Config/LinuxServer", "Longvinter/Saved/SaveGames"])
@@ -57,6 +56,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="LongvinterServer.sh
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(server.data["port"] + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -117,6 +117,11 @@ def get_start_command(server):
         ],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the A2S query address for the Longvinter dedicated query port."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
 
 
 def do_stop(server, j):

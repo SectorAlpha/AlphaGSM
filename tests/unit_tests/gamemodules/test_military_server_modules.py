@@ -119,7 +119,7 @@ def test_squadserver_configure_sets_defaults(tmp_path):
     squadserver.configure(server, ask=False, port=7787, dir=str(tmp_path))
 
     assert server.data["Steam_AppID"] == 403240
-    assert server.data["queryport"] == "27165"
+    assert server.data["queryport"] == "7788"
 
 
 def test_squadserver_get_start_command_builds_expected_args(tmp_path):

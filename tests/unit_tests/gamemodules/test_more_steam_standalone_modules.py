@@ -55,7 +55,7 @@ def test_satisfactory_configure_sets_defaults(tmp_path):
     satisfactory.configure(server, ask=False, port=7777, dir=str(tmp_path))
 
     assert server.data["Steam_AppID"] == 1690800
-    assert server.data["queryport"] == "15777"
+    assert server.data["queryport"] == "7778"
     assert server.data["backupfiles"] == ["FactoryGame/Saved", "FactoryServer.sh"]
 
 
