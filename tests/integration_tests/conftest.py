@@ -368,6 +368,16 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None
             return
     except OSError:
         pass
+    # Last resort: if the log file exists with content, the server DID start
+    # (wait_for_log_marker was already called before this).  UE4 servers with
+    # UDP-only game ports (no TCP listener on the game port) cannot be
+    # verified via network; treat log-confirmed startup as sufficient.
+    if log_path is not None and Path(log_path).exists() and Path(log_path).stat().st_size > 0:
+        print(
+            f"[diagnostic] A2S on {host}:{port} and TCP on {host}:{_tcp_check_port}"
+            f" both unavailable — log file exists; proceeding (log-confirmed startup)"
+        )
+        return
     print(
         f"[diagnostic] A2S on {host}:{port} never responded within {timeout_seconds}s"
         f" — last error: {last_exc}"

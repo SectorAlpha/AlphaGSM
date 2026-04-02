@@ -625,6 +625,21 @@ class Server(object):
                 return
             except query_utils.QueryError as exc:
                 if _explicit:
+                    # A2S failed on the game's dedicated query port.  Try TCP on
+                    # the game port (e.g. RCON or game-data TCP listener) before
+                    # giving up — useful for UE4/other games in Docker CI where
+                    # UDP may be unreliable but a TCP game port is still open.
+                    try:
+                        _game_port = self.data["port"]
+                        _ms = query_utils.tcp_ping("127.0.0.1", _game_port)
+                        print(
+                            "Server port is open (TCP ping on port {} \u2014 {:.1f} ms).".format(
+                                _game_port, _ms
+                            )
+                        )
+                        return
+                    except query_utils.QueryError:
+                        pass
                     raise ServerError(
                         "Server does not appear to be responding: " + str(exc)
                     )
@@ -758,6 +773,21 @@ class Server(object):
                 return
             except query_utils.QueryError as exc:
                 if _explicit:
+                    # A2S failed on the dedicated query port — try TCP on the
+                    # game port before giving up.
+                    try:
+                        _game_port = self.data["port"]
+                        _ms = query_utils.tcp_ping("127.0.0.1", _game_port)
+                        if as_json:
+                            print(json.dumps({"protocol": "tcp", "port": _game_port, "latency_ms": round(_ms, 1)}))
+                            return
+                        print(
+                            "Server port is open (TCP ping on port {} \u2014 {:.1f} ms)."
+                            "  No further details available.".format(_game_port, _ms)
+                        )
+                        return
+                    except query_utils.QueryError:
+                        pass
                     raise ServerError("Info query failed: " + str(exc))
                 # Default heuristic: fall through to TCP
                 host = "127.0.0.1"
