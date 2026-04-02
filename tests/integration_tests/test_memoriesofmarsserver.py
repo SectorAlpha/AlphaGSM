@@ -65,7 +65,7 @@ def test_memoriesofmarsserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Memories of Mars exposes A2S on queryport (game port + 1), not the game port
-        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path)
+        wait_for_a2s_ready("127.0.0.1", port + 1, 600, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

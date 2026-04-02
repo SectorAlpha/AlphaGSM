@@ -72,6 +72,12 @@ def test_xntserver_lifecycle(tmp_path):
         time.sleep(10)
         wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
 
+        # DarkPlaces (Xonotic's engine) rate-limits getstatus responses by
+        # source IP.  Wait long enough for the rate-limit window to expire
+        # before running `alphagsm query` so that request is not silently
+        # dropped by the server.
+        time.sleep(15)
+
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (

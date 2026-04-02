@@ -88,7 +88,7 @@ def _recv_a2s_packet(sock):
     raise QueryError("A2S query failed: Unexpected response header " + repr(data[:4]))
 
 
-def a2s_info(host, port, timeout=2.0):
+def a2s_info(host, port, timeout=2.0, phase2_timeout=None):
     """Send an A2S_INFO packet to *host*:*port* and return the raw response.
 
     Handles the modern Steam challenge-response handshake: if the server
@@ -96,9 +96,19 @@ def a2s_info(host, port, timeout=2.0):
     the 4-byte challenge appended and the final info response is returned.
     Multi-packet (fragmented) responses are automatically reassembled.
 
+    *timeout* is the socket timeout for Phase 1 (waiting for the initial
+    challenge or response).  *phase2_timeout* is the socket timeout for
+    Phase 2 (waiting for the info response after sending the challenge);
+    defaults to *timeout* when not specified.  Use a longer *phase2_timeout*
+    when querying Source/SRCDS servers in hibernation mode: Phase 1 catches
+    the server during a brief wake window, while Phase 2 must wait an entire
+    hibernation cycle for the server to wake again.
+
     Raises :class:`QueryError` on timeout, socket error, or an unexpected
     response header.
     """
+    if phase2_timeout is None:
+        phase2_timeout = timeout
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.settimeout(timeout)
@@ -107,6 +117,7 @@ def a2s_info(host, port, timeout=2.0):
             # Some modern servers respond with a challenge before sending info.
             if len(data) >= 5 and data[0] == _A2S_CHALLENGE_TYPE:
                 challenge = data[1:5]
+                sock.settimeout(phase2_timeout)
                 sock.sendto(_A2S_REQUEST + challenge, (host, int(port)))
                 data = _recv_a2s_packet(sock)
     except OSError as exc:

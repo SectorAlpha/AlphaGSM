@@ -304,10 +304,10 @@ def wait_for_udp_closed(host, port, timeout_seconds):
 def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     """Poll A2S_INFO on *host*:*port* until the server responds.
 
-    Retries every 2 seconds.  When the server starts returning a valid A2S
-    response the function returns normally.  If *timeout_seconds* elapses
-    without a successful response the test FAILS — the server must be fixed
-    so it becomes query-ready within the allowed window.
+    Retries until *timeout_seconds* elapses.  When the server starts returning
+    a valid A2S response the function returns normally.  If *timeout_seconds*
+    elapses without a successful response the test FAILS — the server must be
+    fixed so it becomes query-ready within the allowed window.
 
     Optional *log_path* is printed (tail) on timeout for CI diagnostics.
     """
@@ -315,31 +315,35 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
     if src_path not in sys.path:
         sys.path.insert(0, src_path)
     from utils import query as query_utils  # pylint: disable=import-outside-toplevel
-    # Use a longer per-query socket timeout than the default 2s so that Source
-    # engine servers running in hibernation mode have enough time to process an
-    # incoming A2S packet and send their response before the socket times out.
-    # Current SRCDS builds treat sv_hibernate as an unknown command, so the
-    # server uses the engine's built-in hibernation tick rate (~20–35 s in CI).
+    # Asymmetric Phase 1 / Phase 2 timeouts for hibernating Source servers.
     #
-    # The A2S protocol uses a two-phase challenge-response handshake: the
-    # client sends a query, receives a challenge, immediately re-sends the
-    # query with the challenge appended, then waits for the final info
-    # response.  Because the server goes back to sleep right after sending the
-    # challenge, the second recv() must wait a *full* hibernation cycle before
-    # the server wakes again to process and answer this challenge response.
-    # The per-recv timeout must therefore cover at least one full inter-tick
-    # interval.  60 s is twice the observed CI tick interval and leaves a
-    # comfortable margin over the measured upper bound of ~35 s.
-    _A2S_SOCKET_TIMEOUT = 60.0
+    # Current SRCDS builds treat sv_hibernate as an unknown command, so the
+    # server hibernates with an unknown inter-tick interval.  The A2S protocol
+    # uses a two-phase challenge-response handshake: Phase 1 sends the initial
+    # request and receives a challenge; Phase 2 immediately re-sends the
+    # request with the challenge and waits for the final info response.
+    #
+    # Strategy: use a very short Phase 1 timeout (5 s) so retries happen
+    # frequently — maximising the chance of catching the server during one of
+    # its brief wake windows.  Once Phase 1 succeeds (server awake), Phase 2
+    # uses a long timeout (120 s) to cover the full hibernation cycle before
+    # the server wakes again to process the challenge response.
+    _A2S_PHASE1_TIMEOUT = 5.0
+    _A2S_PHASE2_TIMEOUT = 120.0
     deadline = time.time() + timeout_seconds
     last_exc = None
     while time.time() < deadline:
         try:
-            query_utils.a2s_info(host, port, timeout=_A2S_SOCKET_TIMEOUT)
+            query_utils.a2s_info(
+                host, port,
+                timeout=_A2S_PHASE1_TIMEOUT,
+                phase2_timeout=_A2S_PHASE2_TIMEOUT,
+            )
             return
         except query_utils.QueryError as exc:
             last_exc = exc
-        time.sleep(2)
+        # No additional sleep: Phase 1 already waits 5 s on timeout; Phase 2
+        # (when it runs) takes up to 120 s, providing a natural gap.
     print(
         f"[diagnostic] A2S on {host}:{port} never responded within {timeout_seconds}s"
         f" — last error: {last_exc}"
