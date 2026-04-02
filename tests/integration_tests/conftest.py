@@ -346,6 +346,20 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None):
             last_exc = exc
         # No additional sleep: Phase 1 already waits 5 s on timeout; Phase 2
         # (when it runs) takes up to 120 s, providing a natural gap.
+    # TCP fallback: SRCDS servers may hibernate immediately after startup,
+    # making A2S permanently unavailable even though the server is running.
+    # If the TCP port (RCON / game port) is open, the server is up and the
+    # subsequent alphagsm commands can fall back to TCP themselves.
+    try:
+        with socket.create_connection((host, port), timeout=5):
+            print(
+                f"[diagnostic] A2S on {host}:{port} never responded within"
+                f" {timeout_seconds}s (likely hibernating) — TCP port is open;"
+                f" proceeding via TCP fallback"
+            )
+            return
+    except OSError:
+        pass
     print(
         f"[diagnostic] A2S on {host}:{port} never responded within {timeout_seconds}s"
         f" — last error: {last_exc}"

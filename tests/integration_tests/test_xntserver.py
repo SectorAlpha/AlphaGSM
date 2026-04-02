@@ -97,6 +97,10 @@ def test_xntserver_lifecycle(tmp_path):
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
+        # `alphagsm info --json` also sends its own getstatus probe; the
+        # DarkPlaces rate-limit applies per-source-IP so we must wait again.
+        time.sleep(15)
+
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
