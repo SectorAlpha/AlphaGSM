@@ -47,6 +47,40 @@ Update these in order when relevant:
 - integration tests: `make integration-test` (needs `ALPHAGSM_WORK_DIR` set) — keep green
 - smoke tests: `make smoke-test` (or `make smoke-test SMOKE_TEST=run_<name>.sh`) — keep accurate
 
+## New Module Test Contract
+
+Every new game module is incomplete until it lands with:
+
+- at least one unit test under `tests/unit_tests/` covering module behaviour
+  or hooks
+- one integration test under `tests/integration_tests/test_<module>.py`
+
+The integration test must drive the lifecycle through **AlphaGSM commands**,
+not by launching the binary directly. At minimum it must prove the ordered
+AlphaGSM flow of `create`, `setup`, `start`, readiness, `query`, `info`, and
+`stop`. In practice the canonical flow also includes `status`,
+`info --json`, and explicit shutdown verification.
+
+For Source-based servers, a hibernating server is **not** sufficient for new
+module coverage. The integration path must keep the server awake enough that
+`query` and `info` succeed via the real protocol rather than passing because
+the log reached "Server is hibernating" or because TCP fallback happened to
+work.
+
+## Server Enablement Goal
+
+Aim to keep as many server modules **enabled** as possible.
+
+- A server is considered enabled only when its integration test passes.
+- A failing integration test is a debugging task, not a reason to leave the
+  server broken indefinitely.
+- Before accepting a skip or disablement, search the web for the upstream
+  server's required config, startup flags, tokens, runtime dependencies,
+  package requirements, shared libraries, Wine/Proton notes, and known
+  dedicated-server quirks.
+- Prefer official documentation, vendor docs, release notes, and upstream
+  issue trackers over forum guesswork when researching fixes.
+
 ## Integration Test Timeout Policy
 
 Timeout-related skips in integration tests are **not acceptable** as a permanent
@@ -63,14 +97,17 @@ When a test fails due to timeout:
 2. Read the log tail printed by the `[diagnostic]` lines in the CI output.
 3. Determine the root cause — download failure, startup crash, wrong readiness
    marker, or query port mismatch — and fix it.
-4. If the server genuinely needs more time (e.g. large SteamCMD download),
+4. Search the web for upstream documentation or issue reports that explain
+   missing dependencies, required startup flags, config files, auth tokens, or
+   engine/runtime prerequisites.
+5. If the server genuinely needs more time (e.g. large SteamCMD download),
    raise the timeout in the test rather than disabling the server.
-5. `disabled_servers.conf` is only for servers that **cannot** run in CI at
+6. `disabled_servers.conf` is only for servers that **cannot** run in CI at
    all (requires auth, dead download URL, known broken binary, etc.).
 
 The wait helpers in `tests/integration_tests/conftest.py` print the last 150
-lines of the server log and the last query error before calling
-`pytest.skip()`. Use that output to understand what actually happened.
+lines of the server log and the last query error before failing the test. Use
+that output to understand what actually happened.
 
 ## Known Exception
 

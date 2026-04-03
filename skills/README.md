@@ -7,9 +7,11 @@ Each skill lives in its own directory and exposes a `SKILL.md` file.
 ## Current Skills
 
 - [disabled-server-gate](disabled-server-gate/SKILL.md)
+- [install-layout](install-layout/SKILL.md)
 - [server-info-gathering](server-info-gathering/SKILL.md)
 - [server-lifecycle](server-lifecycle/SKILL.md)
 - [smoke-driven-docs](smoke-driven-docs/SKILL.md)
+- [system-install-validation](system-install-validation/SKILL.md)
 - [wiki-publishing](wiki-publishing/SKILL.md)
 
 ## Related Files

@@ -72,6 +72,23 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_install_disables_hibernation_during_integration(tmp_path, monkeypatch):
+    monkeypatch.setenv("ALPHAGSM_RUN_INTEGRATION", "1")
+    monkeypatch.setattr(mod, "make_empty_file", lambda path: open(path, "a", encoding="utf-8").close())
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "srcds_run"
+    server.data["Steam_AppID"] = 740
+    server.data["Steam_anonymous_login_possible"] = True
+
+    cfg_dir = tmp_path / "csgo" / "cfg"
+    cfg_dir.mkdir(parents=True)
+    mod.install(server)
+
+    cfg_text = (cfg_dir / "server.cfg").read_text()
+    assert "sv_hibernate_when_empty 0" in cfg_text
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -147,4 +164,3 @@ def test_do_stop():
 def test_status():
     server = DummyServer()
     mod.status(server, verbose=True)
-

@@ -1,6 +1,5 @@
-from types import SimpleNamespace
-
 import importlib
+from types import SimpleNamespace
 
 
 class FakeSection(dict):
@@ -131,3 +130,18 @@ def test_valve_module_install_updates_server_cfg_from_settings(monkeypatch, tmp_
     assert 'hostname "Configured CSS"' in cfg_text
     assert "sv_pure 1" in cfg_text
 
+
+def test_valve_source_install_disables_hibernation_for_integration(monkeypatch, tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    monkeypatch.setenv("ALPHAGSM_RUN_INTEGRATION", "1")
+    monkeypatch.setattr(valve_server.steamcmd, "download", lambda *args, **kwargs: None)
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={"dir": str(tmp_path) + "/", "exe_name": "srcds_run", "server_cfg": "server.cfg"},
+    )
+
+    module.install(server)
+
+    cfg_path = tmp_path / "cstrike" / "cfg" / "server.cfg"
+    assert "sv_hibernate_when_empty 0" in cfg_path.read_text()

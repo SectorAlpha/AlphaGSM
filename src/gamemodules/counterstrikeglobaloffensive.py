@@ -17,6 +17,7 @@ from utils import updatefs
 import random
 
 from utils.fileutils import make_empty_file
+from utils.valve_server import integration_source_server_config
 
 import utils.steamcmd as steamcmd
 
@@ -188,6 +189,9 @@ def install(server):
     cfg_exists = os.path.isfile(server_cfg)
     if cfg_exists == False:
         make_empty_file(server_cfg)
+    integration_cfg = integration_source_server_config()
+    if integration_cfg:
+        updateconfig(server_cfg, integration_cfg)
 
 
 # technically this command is not needed, but leaving it commented as an example

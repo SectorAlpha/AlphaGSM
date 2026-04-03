@@ -8,6 +8,7 @@ import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
+from utils.valve_server import integration_source_server_config
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
@@ -183,6 +184,9 @@ def install(server):
 hostname "AlphaGSM TF2 Server"
 sv_pure 1
 """)
+    integration_cfg = integration_source_server_config()
+    if integration_cfg:
+        updateconfig(server_cfg, integration_cfg)
     server.data.save()
 
 

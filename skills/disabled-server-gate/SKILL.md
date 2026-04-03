@@ -52,6 +52,9 @@ Disable a server module when:
 - Its version scraper is broken and there is no quick fix.
 - The upstream project has no release assets.
 - The module requires a runtime or toolchain that cannot be auto-installed.
+- You have already exhausted reasonable fixes, including web research into
+  upstream docs, runtime dependencies, config files, startup flags, and
+  dedicated-server requirements.
 
 Do **not** disable a server just because:
 
@@ -66,6 +69,9 @@ Remove or comment out the line in `disabled_servers.conf` once:
 - The download URL is confirmed working again.
 - The scraper or installer code has been fixed.
 - An integration test passes for the server.
+
+Keep the disabled list lean. The project goal is to maximise the number of
+servers whose integration tests pass, not to normalise long-term disablement.
 
 ## Keeping Tests In Sync
 

@@ -69,6 +69,20 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_install_disables_hibernation_during_integration(tmp_path, monkeypatch):
+    monkeypatch.setenv("ALPHAGSM_RUN_INTEGRATION", "1")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "srcds_run"
+    server.data["Steam_AppID"] = 232250
+    server.data["Steam_anonymous_login_possible"] = True
+
+    mod.install(server)
+
+    cfg_text = (tmp_path / "tf" / "cfg" / "server.cfg").read_text()
+    assert "sv_hibernate_when_empty 0" in cfg_text
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

@@ -152,6 +152,9 @@ Every integration test must verify `info` and `info --json` with strict,
 protocol-specific assertions. This section is the authoritative reference for
 how to determine and assert the correct protocol.
 
+These `info` checks belong inside the full AlphaGSM lifecycle test, after
+`create`, `setup`, `start`, readiness verification, and `status`.
+
 ### How to determine a server's info protocol
 
 Look at the game module for a `get_info_address()` function:
@@ -172,7 +175,9 @@ use `in ("a2s", "tcp")` in the test.
 | Protocol string | When used |
 |---|---|
 | `"a2s"` | Valve A2S_INFO — Source and GoldSrc engines |
+| `"quake"` | Quake-family UDP status queries — Quake 2/3/4, QuakeWorld, Quake Live, ET:Legacy, Xonotic, Warfork, similar id-tech servers |
 | `"slp"` | Minecraft Server List Ping — Vanilla, Spigot, Paper, BungeeCord, Waterfall, Velocity |
+| `"ts3"` | TeamSpeak 3 ServerQuery over TCP |
 | `"tcp"` | Raw TCP ping — last-resort fallback only; should never appear if the module has `get_info_address()` |
 
 ### Adding `get_info_address()` to a module
@@ -185,7 +190,7 @@ For all other modules that speak a known protocol, add:
 ```python
 def get_info_address(server):
     """Return the address tuple for the ``info`` command."""
-    return ("127.0.0.1", server.data["port"], "slp")  # or "a2s"
+    return ("127.0.0.1", server.data["port"], "slp")  # or "quake" / "ts3" / "a2s"
 ```
 
 ### Strict protocol assertion in integration tests
@@ -208,7 +213,9 @@ If the test fails because `"tcp"` was returned instead of the expected protocol:
 1. Check whether the module has `get_info_address()` — add it if missing.
 2. Check whether the server is actually listening on the expected port by the
    time the test reaches `info`.
-3. Do **not** change the assertion to `in ("a2s", "tcp")`.
+3. For Source-based modules, make sure the integration path keeps the server
+   out of hibernation so A2S can answer consistently.
+4. Do **not** change the assertion to `in ("a2s", "tcp")`.
 
 ## Query Protocol Capabilities & Full Property Verification
 
@@ -219,17 +226,30 @@ querying before running assertions.
 ### Timing: wait before asserting
 
 Log-file readiness markers (`wait_for_log_marker`) guarantee the server process
-has started, but **not** that the UDP query port is accepting packets.  Use the
-`wait_for_a2s_ready` helper (in `tests/integration_tests/conftest.py`) after
-the log-marker check for any A2S server:
+has started, but **not** that the query port is accepting packets. Use the
+protocol-specific readiness helper from `tests/integration_tests/conftest.py`
+after the log-marker check:
 
 ```python
-wait_for_a2s_ready("127.0.0.1", port, 120)  # polls every 2 s, skips on timeout
+wait_for_a2s_ready("127.0.0.1", port, 120)
+wait_for_quake_ready("127.0.0.1", port, 120)
+wait_for_tcp_open("127.0.0.1", port, 120)
 ```
 
-If `wait_for_a2s_ready` times out, the test is marked as **skipped** (not
-failed), because the server is not at fault.  This is the preferred behaviour:
-we either prove A2S works, or we transparently admit we couldn't.
+Use the helper that matches the server's actual wire protocol:
+
+- `wait_for_a2s_ready` for Source / GoldSrc / other A2S servers
+- `wait_for_quake_ready` for Quake-family UDP status servers
+- `wait_for_tcp_open` for TCP-only query surfaces such as TS3 ServerQuery
+
+If the readiness helper times out, treat it as a real failure and fix the
+server, test timing, or protocol hook. Do **not** convert that timeout into a
+mid-test skip.
+
+For new Source-engine module coverage, do not accept hibernation as the final
+state. If the server goes idle before `query` / `info`, add the integration-only
+config needed to keep it awake so the test proves real A2S behaviour rather
+than a TCP fallback or a log-only readiness check.
 
 ### Protocol: `"a2s"` — Valve A2S_INFO
 
@@ -256,6 +276,16 @@ Implemented in: `src/utils/query.py` — `a2s_info()` + `parse_a2s_info()`
 ```python
 wait_for_a2s_ready("127.0.0.1", port, 120)
 
+query_result = run_and_assert_ok(env, server_name, "query")
+assert "Server is responding" in query_result.stdout, (
+    f"Expected A2S query success, not fallback: {query_result.stdout!r}"
+)
+
+info_result = run_and_assert_ok(env, server_name, "info")
+assert "Server info (A2S" in info_result.stdout, (
+    f"Expected A2S info output, not fallback: {info_result.stdout!r}"
+)
+
 info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
 _info_data = _info_json.loads(info_json_result.stdout.strip())
 assert _info_data["protocol"] == "a2s", f"Expected a2s: {_info_data!r}"
@@ -269,9 +299,13 @@ assert isinstance(_info_data["appid"], int) and _info_data["appid"] > 0, f"appid
 assert _info_data["max_players"] > 0, f"max_players: {_info_data!r}"
 ```
 
+If the server is Source-based and hibernates before these assertions pass, fix
+the integration setup so the server stays awake enough for A2S to answer.
+
 ### Protocol: `"quake"` — Quake3/QFusion getstatus
 
-Used by: Warfork, Warsow, ET:Legacy, OpenArena, and Quake3-based servers.
+Used by: Quake 2, Quake 3, Quake 4, QuakeWorld, Quake Live, ET:Legacy,
+Xonotic, Warfork, Warsow, OpenArena, and similar id-tech servers.
 
 Implemented in: `src/utils/query.py` — `quake_status()`
 
@@ -377,5 +411,3 @@ server works — it is proving the port is open.
 Rule: **never accept `"tcp"` as a valid result for servers that have a richer
 protocol available.**  If a module falls back to TCP, add `get_info_address()`
 (or `get_query_address()`) to the game module to return the correct protocol.
-
-

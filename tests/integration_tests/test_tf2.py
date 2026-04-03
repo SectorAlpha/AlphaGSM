@@ -25,7 +25,7 @@ ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 TEST_TIMEOUT_SECONDS = 1200
 START_TIMEOUT_SECONDS = 600
 STOP_TIMEOUT_SECONDS = 90
-READY_LOG_MARKERS = ("SV_ActivateServer: setting tickrate", "Server is hibernating")
+READY_LOG_MARKERS = ("SV_ActivateServer: setting tickrate")
 
 
 def _require_integration_opt_in():
@@ -125,25 +125,8 @@ def _wait_for_log_ready(log_path, timeout_seconds):
             if any(marker in log_text for marker in READY_LOG_MARKERS):
                 return log_text
         time.sleep(2)
-    pytest.skip(
+    pytest.fail(
         f"TF2 server log never showed readiness markers within {timeout_seconds}s: {log_path}"
-    )
-
-
-def _wait_for_screen_exit(log_path, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    while time.time() < deadline:
-        if log_path.exists():
-            log_text = log_path.read_text(errors="replace")
-            if "Server is hibernating" in log_text:
-                return
-        time.sleep(2)
-    # Log but do not raise — hibernation timing varies on CI runners.
-    # The test assertions (query, info) already verified the server worked;
-    # failing here would mask real pass results and turn them into failures.
-    print(
-        "Warning: TF2 log did not show 'Server is hibernating' "
-        f"within {timeout_seconds}s; proceeding with stop anyway."
     )
 
 
@@ -198,44 +181,38 @@ def test_tf2_download_install_and_start(tmp_path):
 
         wait_for_a2s_ready("127.0.0.1", port, START_TIMEOUT_SECONDS, log_path=log_path)
 
-        # query — TF2/SRCDS hibernates; query falls back to TCP if A2S misses
-        # the wake window.
+        # query
         query_result = _run_and_assert_ok(env, server_name, "query")
         print("\n=== query ===")
         print(query_result.stdout.strip())
-        assert (
-            "Server is responding" in query_result.stdout
-            or "Server port is open" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        assert "Server is responding" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
 
-        # info — A2S reports full details when server is awake; TCP fallback
-        # when hibernating.
+        # info
         info_result = _run_and_assert_ok(env, server_name, "info")
         print("\n=== info ===")
         print(info_result.stdout.strip())
-        assert (
-            "Server info" in info_result.stdout
-            or "Server port is open" in info_result.stdout
-        ), f"Expected info output from TF2: {info_result.stdout!r}"
+        assert "Server info (A2S" in info_result.stdout, (
+            f"Expected A2S info output from TF2: {info_result.stdout!r}"
+        )
 
         # info --json — verify structured JSON output
         info_json_result = _run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] in ("a2s", "tcp"), (
-            f"Expected a2s or tcp protocol for TF2: {_info_data!r}"
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol for TF2: {_info_data!r}"
         )
-        if _info_data["protocol"] == "a2s":
-            assert _info_data.get("players") == 0, (
-                f"Expected 0 players on fresh TF2 server: {_info_data!r}"
-            )
-            assert _info_data.get("bots") == 0, (
-                f"Expected 0 bots on fresh TF2 server: {_info_data!r}"
-            )
-            assert "Team Fortress" in (_info_data.get("game") or ""), (
-                f"Expected 'Team Fortress' in game field: {_info_data!r}"
-            )
+        assert _info_data.get("players") == 0, (
+            f"Expected 0 players on fresh TF2 server: {_info_data!r}"
+        )
+        assert _info_data.get("bots") == 0, (
+            f"Expected 0 bots on fresh TF2 server: {_info_data!r}"
+        )
+        assert "Team Fortress" in (_info_data.get("game") or ""), (
+            f"Expected 'Team Fortress' in game field: {_info_data!r}"
+        )
     finally:
-        _wait_for_screen_exit(log_path, 30)
         _log_command_result(
             "alphagsm stop",
             _run_alphagsm(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS),

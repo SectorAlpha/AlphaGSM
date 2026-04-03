@@ -82,6 +82,20 @@ def _default_backupfiles(game_dir, config_subdir, config_default):
     return backupfiles
 
 
+def integration_source_server_config():
+    """Return Source-engine config overrides used only in integration tests.
+
+    Idle SRCDS instances can hibernate fast enough that strict A2S-based
+    integration checks become flaky. During integration runs, explicitly keep
+    Source servers awake so `wait_for_a2s_ready()` can stay fail-fast without
+    papering over readiness problems via TCP or log-only fallbacks.
+    """
+
+    if os.environ.get("ALPHAGSM_RUN_INTEGRATION") != "1":
+        return {}
+    return {"sv_hibernate_when_empty": "0"}
+
+
 def _save_data_store(server):
     """Persist the server datastore when it provides a save method."""
 
@@ -288,6 +302,8 @@ def define_valve_server_module(
         config_values = {"hostname": "\"AlphaGSM %s\"" % (game_name,)}
         config_values.update(default_server_config)
         config_values.update(dict(module_settings.getsection("servercfg").items()))
+        if engine == "source":
+            config_values.update(integration_source_server_config())
         updateconfig(cfg_path, config_values)
         _save_data_store(server)
 

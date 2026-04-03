@@ -282,12 +282,30 @@ def quake_status(host, port, timeout=2.0):
     if len(lines) >= 2:
         parts = lines[1].strip("\\").split("\\")
         cvars = dict(zip(parts[::2], parts[1::2]))
-        info["name"] = cvars.get("sv_hostname", "")
-        info["map"] = cvars.get("mapname", "")
-        try:
-            info["max_players"] = int(cvars.get("sv_maxclients", 0))
-        except ValueError:
-            info["max_players"] = 0
+
+        for key in ("sv_hostname", "hostname", "si_name"):
+            value = cvars.get(key, "")
+            if value:
+                info["name"] = value
+                break
+
+        for key in ("mapname", "map"):
+            value = cvars.get(key, "")
+            if value:
+                info["map"] = value
+                break
+
+        for key in ("sv_maxclients", "maxclients", "si_maxPlayers"):
+            value = cvars.get(key)
+            if value in (None, ""):
+                continue
+            try:
+                parsed = int(value)
+            except ValueError:
+                continue
+            if parsed > 0:
+                info["max_players"] = parsed
+                break
         info["players"] = sum(1 for line in lines[2:] if line.strip())
     return info
 

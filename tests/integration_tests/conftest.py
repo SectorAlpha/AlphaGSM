@@ -311,10 +311,10 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None
 
     Optional *log_path* is printed (tail) on timeout for CI diagnostics.
 
-    Optional *tcp_port* overrides the TCP port used for the fallback check.
+    Optional *tcp_port* overrides the TCP port used for timeout diagnostics.
     Use this when the A2S query port (``port``) differs from the game's TCP
-    port — e.g. UE4 servers that expose A2S on ``game_port + 1`` while the
-    TCP game port is ``game_port``.
+    port so the failure message can report whether the game's TCP listener is
+    reachable while A2S is still failing.
     """
     src_path = str(REPO_ROOT / "src")
     if src_path not in sys.path:
@@ -349,38 +349,26 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None
             return
         except query_utils.QueryError as exc:
             last_exc = exc
-        # No additional sleep: Phase 1 already waits 5 s on timeout; Phase 2
+        # No additional sleep: Phase 1 already waits 15 s on timeout; Phase 2
         # (when it runs) takes up to 120 s, providing a natural gap.
-    # TCP fallback: SRCDS servers may hibernate immediately after startup,
-    # making A2S permanently unavailable even though the server is running.
-    # If the TCP port (RCON / game port) is open, the server is up and the
-    # subsequent alphagsm commands can fall back to TCP themselves.
-    # For games that expose A2S on port+1, pass tcp_port=game_port to check
-    # the correct TCP port rather than the UDP-only A2S query port.
+
     _tcp_check_port = tcp_port if tcp_port is not None else port
+    tcp_diag = None
     try:
         with socket.create_connection((host, _tcp_check_port), timeout=5):
-            print(
-                f"[diagnostic] A2S on {host}:{port} never responded within"
-                f" {timeout_seconds}s (likely hibernating) — TCP port is open;"
-                f" proceeding via TCP fallback"
-            )
-            return
-    except OSError:
-        pass
-    # Last resort: if the log file exists with content, the server DID start
-    # (wait_for_log_marker was already called before this).  UE4 servers with
-    # UDP-only game ports (no TCP listener on the game port) cannot be
-    # verified via network; treat log-confirmed startup as sufficient.
+            tcp_diag = f"TCP port {host}:{_tcp_check_port} is open"
+    except OSError as exc:
+        tcp_diag = f"TCP probe on {host}:{_tcp_check_port} failed: {exc}"
+
     if log_path is not None and Path(log_path).exists() and Path(log_path).stat().st_size > 0:
         print(
-            f"[diagnostic] A2S on {host}:{port} and TCP on {host}:{_tcp_check_port}"
-            f" both unavailable — log file exists; proceeding (log-confirmed startup)"
+            f"[diagnostic] Log file exists for failed A2S readiness check: {log_path}"
+            f" ({Path(log_path).stat().st_size} bytes)"
         )
-        return
     print(
         f"[diagnostic] A2S on {host}:{port} never responded within {timeout_seconds}s"
         f" — last error: {last_exc}"
+        + (f" — {tcp_diag}" if tcp_diag else "")
     )
     if log_path is not None:
         _dump_log(log_path, context=f"A2S timeout on port {port}")

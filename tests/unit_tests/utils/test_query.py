@@ -245,3 +245,71 @@ def test_slp_info_raises_on_connection_error(monkeypatch):
     with pytest.raises(query_module.QueryError, match="SLP query failed"):
         query_module.slp_info("127.0.0.1", 25565)
 
+
+# ---------------------------------------------------------------------------
+# quake_status
+# ---------------------------------------------------------------------------
+
+
+def test_quake_status_parses_q3_style_cvars(monkeypatch):
+    payload = (
+        b"\xff\xff\xff\xffstatusResponse\n"
+        b"\\sv_hostname\\AlphaGSM Q3\\mapname\\q3dm17\\sv_maxclients\\16\n"
+        b"0 50 \"Player1\"\n"
+    )
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    result = query_module.quake_status("127.0.0.1", 27960)
+
+    assert result == {
+        "name": "AlphaGSM Q3",
+        "map": "q3dm17",
+        "players": 1,
+        "max_players": 16,
+    }
+
+
+def test_quake_status_parses_legacy_cvar_aliases(monkeypatch):
+    payload = (
+        b"\xff\xff\xff\xffstatusResponse\n"
+        b"\\hostname\\AlphaGSM Q2\\map\\q2dm1\\maxclients\\12\n"
+    )
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    result = query_module.quake_status("127.0.0.1", 27910)
+
+    assert result == {
+        "name": "AlphaGSM Q2",
+        "map": "q2dm1",
+        "players": 0,
+        "max_players": 12,
+    }
+
+
+def test_quake_status_parses_q4_style_cvar_aliases(monkeypatch):
+    payload = (
+        b"\xff\xff\xff\xffstatusResponse\n"
+        b"\\si_name\\AlphaGSM Q4\\map\\q4dm1\\si_maxPlayers\\8\n"
+    )
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    result = query_module.quake_status("127.0.0.1", 28004)
+
+    assert result == {
+        "name": "AlphaGSM Q4",
+        "map": "q4dm1",
+        "players": 0,
+        "max_players": 8,
+    }
