@@ -65,6 +65,34 @@ def _load_disabled_servers():
     return disabled
 
 
+def _get_a2s_wake_hook(module):
+    """Return an optional hook that wakes a hibernating A2S server."""
+
+    for owner in (module, getattr(module, "MODULE", None)):
+        hook = getattr(owner, "wake_a2s_query", None)
+        if callable(hook):
+            return hook
+    return None
+
+
+def _a2s_request_kwargs(wake_hook):
+    """Return A2S timeout kwargs, extending timeouts for hibernating servers."""
+
+    if wake_hook is None:
+        return {}
+    return {"timeout": 15.0, "phase2_timeout": 120.0}
+
+
+def _get_hibernating_console_info_hook(module):
+    """Return an optional hook that provides console-derived info when idle."""
+
+    for owner in (module, getattr(module, "MODULE", None)):
+        hook = getattr(owner, "get_hibernating_console_info", None)
+        if callable(hook):
+            return hook
+    return None
+
+
 def _findmodule(name):
     """Resolve a game module name, following namespace and alias indirection."""
     disabled = _load_disabled_servers()
@@ -594,7 +622,8 @@ class Server(object):
         ``(host, port, protocol)`` that is used; otherwise the method falls
         back to a TCP ping on ``server.data["port"]``.  Protocol may be
         ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP),
-        ``"ts3"`` (TeamSpeak 3 ServerQuery), or ``"tcp"``.
+        ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"udp"`` (generic UDP reachability),
+        or ``"tcp"``.
         """
         from utils import query as query_utils
 
@@ -609,8 +638,17 @@ class Server(object):
             _explicit = False
 
         if protocol == "a2s":
+            wake_hook = _get_a2s_wake_hook(self.module)
+            a2s_kwargs = _a2s_request_kwargs(wake_hook)
+            if wake_hook is not None:
+                try:
+                    delay = wake_hook(self)
+                except Exception:
+                    delay = None
+                else:
+                    time.sleep(delay if isinstance(delay, (int, float)) else 1.0)
             try:
-                raw = query_utils.a2s_info(host, port)
+                raw = query_utils.a2s_info(host, port, **a2s_kwargs)
                 info = query_utils.parse_a2s_info(raw)
                 if info:
                     print(
@@ -624,6 +662,29 @@ class Server(object):
                     print("Server is responding (A2S query on port {}).".format(port))
                 return
             except query_utils.QueryError as exc:
+                if wake_hook is not None:
+                    try:
+                        delay = wake_hook(self)
+                    except Exception:
+                        delay = None
+                    else:
+                        time.sleep(delay if isinstance(delay, (int, float)) else 1.0)
+                    try:
+                        raw = query_utils.a2s_info(host, port, **a2s_kwargs)
+                        info = query_utils.parse_a2s_info(raw)
+                        if info:
+                            print(
+                                "Server is responding (A2S on port {port}): "
+                                "{name!r}  map={map!r}  "
+                                "players={players}/{max_players}  game={game!r}".format(
+                                    port=port, **info
+                                )
+                            )
+                        else:
+                            print("Server is responding (A2S query on port {}).".format(port))
+                        return
+                    except query_utils.QueryError as retry_exc:
+                        exc = retry_exc
                 if _explicit:
                     # A2S failed on the game's dedicated query port.  Try TCP on
                     # the game port (e.g. RCON or game-data TCP listener) before
@@ -690,6 +751,20 @@ class Server(object):
                         "Server does not appear to be responding: " + str(tcp_exc)
                     )
 
+        if protocol == "udp":
+            try:
+                ms = query_utils.udp_ping(host, port)
+                print(
+                    "Server port is open (UDP ping on port {} - {:.1f} ms).".format(
+                        port, ms
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
         # TCP ping — either explicitly requested or after A2S fallback.
         try:
             ms = query_utils.tcp_ping(host, port)
@@ -708,7 +783,7 @@ class Server(object):
         ``(host, port, protocol)`` where *protocol* is ``"slp"`` (Minecraft
         Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
         (Quake3/QFusion UDP getstatus), ``"ts3"`` (TeamSpeak 3 ServerQuery),
-        or ``"tcp"`` (TCP ping only).  When the hook is absent the method
+        ``"udp"`` (generic UDP reachability), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
 
         When *as_json* is ``True`` the result is printed as a JSON object
@@ -747,8 +822,36 @@ class Server(object):
                 raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "a2s":
+            console_info_hook = _get_hibernating_console_info_hook(self.module)
+            if console_info_hook is not None:
+                try:
+                    console_info = console_info_hook(self)
+                except Exception:
+                    console_info = None
+                if console_info:
+                    if as_json:
+                        print(json.dumps({"protocol": "console", "port": port, **console_info}))
+                        return
+                    print(
+                        "Server info (console status on port {port}):\n"
+                        "  Name        : {name}\n"
+                        "  Map         : {map}\n"
+                        "  Version     : {version}\n"
+                        "  Players     : {players}/{max_players}"
+                        " ({bots} bots)".format(port=port, **console_info)
+                    )
+                    return
+            wake_hook = _get_a2s_wake_hook(self.module)
+            a2s_kwargs = _a2s_request_kwargs(wake_hook)
+            if wake_hook is not None:
+                try:
+                    delay = wake_hook(self)
+                except Exception:
+                    delay = None
+                else:
+                    time.sleep(delay if isinstance(delay, (int, float)) else 1.0)
             try:
-                raw = query_utils.a2s_info(host, port)
+                raw = query_utils.a2s_info(host, port, **a2s_kwargs)
                 parsed = query_utils.parse_a2s_info(raw)
                 if parsed:
                     if as_json:
@@ -772,6 +875,39 @@ class Server(object):
                           "but details could not be parsed.".format(port))
                 return
             except query_utils.QueryError as exc:
+                if wake_hook is not None:
+                    try:
+                        delay = wake_hook(self)
+                    except Exception:
+                        delay = None
+                    else:
+                        time.sleep(delay if isinstance(delay, (int, float)) else 1.0)
+                    try:
+                        raw = query_utils.a2s_info(host, port, **a2s_kwargs)
+                        parsed = query_utils.parse_a2s_info(raw)
+                        if parsed:
+                            if as_json:
+                                print(json.dumps({"protocol": "a2s", "port": port, **parsed}))
+                                return
+                            print(
+                                "Server info (A2S on port {port}):\n"
+                                "  Name        : {name}\n"
+                                "  Map         : {map}\n"
+                                "  Folder      : {folder}\n"
+                                "  Game        : {game}\n"
+                                "  App ID      : {appid}\n"
+                                "  Players     : {players}/{max_players}"
+                                " ({bots} bots)".format(port=port, **parsed)
+                            )
+                        else:
+                            if as_json:
+                                print(json.dumps({"protocol": "a2s", "port": port}))
+                                return
+                            print("Server is responding (A2S on port {}), "
+                                  "but details could not be parsed.".format(port))
+                        return
+                    except query_utils.QueryError as retry_exc:
+                        exc = retry_exc
                 if _explicit:
                     # A2S failed on the dedicated query port — try TCP on the
                     # game port before giving up.
@@ -848,6 +984,20 @@ class Server(object):
             except query_utils.QueryError:
                 # No credentials or authentication failed — fall back to TCP ping.
                 pass
+
+        if protocol == "udp":
+            try:
+                ms = query_utils.udp_ping(host, port)
+                if as_json:
+                    print(json.dumps({"protocol": "udp", "port": port, "latency_ms": round(ms, 1)}))
+                    return
+                print(
+                    "Server port is open (UDP ping on port {} - {:.1f} ms)."
+                    "  No further details available.".format(port, ms)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Server does not appear to be responding: " + str(exc))
 
         # TCP fallback
         try:

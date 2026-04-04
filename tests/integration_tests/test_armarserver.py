@@ -14,6 +14,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_a2s_ready,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -38,6 +39,7 @@ def test_armarserver_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    queryport = port + 1
 
     # create
     run_and_assert_ok(env, server_name, "create", "armarserver")
@@ -55,12 +57,19 @@ def test_armarserver_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            [
+                "JSON is Valid",
+                "Starting dedicated server using command line args.",
+                "Starting RPL server, listening on address",
+                "Server registered with address:",
+            ],
             START_TIMEOUT,
         )
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        wait_for_a2s_ready("127.0.0.1", queryport, START_TIMEOUT, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -90,3 +99,4 @@ def test_armarserver_lifecycle(tmp_path):
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)

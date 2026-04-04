@@ -118,7 +118,7 @@ Before marking a new game module complete, verify all of these:
 - [ ] at least one unit test exists under `tests/unit_tests/` for the module or its shared helper surface
 - [ ] one integration test exists at `tests/integration_tests/test_<module>.py`
 - [ ] the integration test exercises the AlphaGSM lifecycle, including `create`, `setup`, `start`, readiness, `status`, `query`, `info`, `info --json`, and `stop`
-- [ ] Source-engine integration coverage keeps the server awake rather than accepting hibernation as "good enough"
+- [ ] Source-engine integration coverage either keeps the server awake or wires an explicit wake-on-query/info hook rather than accepting hibernation as "good enough"
 - [ ] The module passes `make lint` with a score of `10.00/10`
 
 ## Test Expectations For New Server Types
@@ -191,9 +191,13 @@ query and info protocol succeeds.
   new Source-engine module.
 - Do **not** accept TCP fallback as proof that a new A2S-based module is
   healthy.
-- If a Source server hibernates by default, add the integration-only config or
-  startup adjustment needed to keep it queryable during the test
-  (for example `sv_hibernate_when_empty 0` in integration mode).
+- If a Source server hibernates by default, first prefer a supported
+  integration-only config or startup adjustment that keeps it queryable during
+  the test.
+- If the current build ignores that config, add a module wake hook for
+  `query` / `info` that sends a harmless console command such as `status`, lets
+  the server answer A2S, and then allows the engine to re-enter hibernation
+  naturally.
 - Run the protocol-specific readiness helper before `query` / `info`, then
   assert the exact protocol in `info --json`.
 

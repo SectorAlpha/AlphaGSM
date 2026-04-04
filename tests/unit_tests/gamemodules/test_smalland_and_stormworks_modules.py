@@ -27,13 +27,21 @@ class DummyServer:
 
 def test_smallandserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("small")
-    exe = tmp_path / "start-server.sh"
+    exe = tmp_path / "SMALLANDServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "start-server.sh"})
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "SMALLANDServer.sh",
+        "port": 7777,
+        "worldname": "World",
+        "servername": "AlphaGSM small",
+        "serverpassword": "",
+    })
 
     cmd, cwd = smallandserver.get_start_command(server)
 
-    assert cmd == ["./start-server.sh"]
+    assert cmd[0] == "./SMALLANDServer.sh"
+    assert cmd[-3:] == ["-port=7777", "-NOSTEAM", "-log"]
     assert cwd == server.data["dir"]
 
 

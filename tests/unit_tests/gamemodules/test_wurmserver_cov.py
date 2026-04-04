@@ -39,6 +39,10 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=3724, dir=str(tmp_path))
     assert server.data['port'] == 3724
+    assert server.data['worldname'] == 'Adventure'
+    assert server.data['queryport'] == 27016
+    assert server.data['internalport'] == 7220
+    assert server.data['rmiport'] == 7221
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -48,10 +52,11 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = "test"
     server.data["Steam_anonymous_login_possible"] = "test"
-    server.data["internalport"] = "test"
-    server.data["javapath"] = "test"
+    server.data["internalport"] = 7220
+    server.data["rmiport"] = 7221
     server.data["queryport"] = 27015
     server.data["servername"] = "test"
+    server.data["worldname"] = "Adventure"
     mod.configure(server, ask=True)
 
 
@@ -68,7 +73,20 @@ def test_install(tmp_path):
     server.data["exe_name"] = "WurmServerLauncher"
     server.data["Steam_AppID"] = 402370
     server.data["Steam_anonymous_login_possible"] = True
+    linux64 = tmp_path / "linux64"
+    linux64.mkdir()
+    (linux64 / "steamclient.so").write_text("steamclient")
+    dist_adventure = tmp_path / "dist" / "Adventure"
+    dist_adventure.mkdir(parents=True)
+    (dist_adventure / "wurm.ini").write_text("adventure")
+    dist_creative = tmp_path / "dist" / "Creative"
+    dist_creative.mkdir(parents=True)
+    (dist_creative / "wurm.ini").write_text("creative")
     mod.install(server)
+    assert (tmp_path / "nativelibs" / "steamclient.so").read_text() == "steamclient"
+    assert (tmp_path / "LaunchConfig.ini").read_text() == mod.DEFAULT_LAUNCH_CONFIG
+    assert (tmp_path / "Adventure" / "wurm.ini").read_text() == "adventure"
+    assert (tmp_path / "Creative" / "wurm.ini").read_text() == "creative"
 
 
 def test_update_with_restart(tmp_path):
@@ -112,16 +130,42 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "WurmServerLauncher"
     (tmp_path / "WurmServerLauncher").write_text("")
-    server.data["javapath"] = "test"
+    server.data["worldname"] = "Adventure"
+    server.data["port"] = 3724
+    server.data["queryport"] = 27016
+    server.data["internalport"] = 7220
+    server.data["rmiport"] = 7221
+    server.data["servername"] = "AlphaGSM testserver"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./WurmServerLauncher",
+        "start=Adventure",
+        "ip=127.0.0.1",
+        "externalport=3724",
+        "queryport=27016",
+        "rmiregport=7220",
+        "rmiport=7221",
+        "servername=AlphaGSM testserver",
+    ]
+    assert cwd == str(tmp_path) + "/"
+
+
+def test_get_query_address():
+    server = DummyServer()
+    server.data["port"] = 3724
+    assert mod.get_query_address(server) == ("127.0.0.1", 3724, "tcp")
+
+
+def test_get_info_address():
+    server = DummyServer()
+    server.data["port"] = 3724
+    assert mod.get_info_address(server) == ("127.0.0.1", 3724, "tcp")
 
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    server.data["javapath"] = "test"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
 
@@ -173,6 +217,12 @@ def test_checkvalue_port():
     assert result == 12345
 
 
+def test_checkvalue_port_rejects_out_of_range():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",), "58747")
+
+
 def test_checkvalue_queryport():
     server = DummyServer()
     result = mod.checkvalue(server, ("queryport",), "12345")
@@ -193,8 +243,8 @@ def test_checkvalue_servername():
 
 def test_checkvalue_javapath():
     server = DummyServer()
-    result = mod.checkvalue(server, ("javapath",), "/test/value")
-    assert result == "/test/value"
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("javapath",), "/test/value")
 
 
 def test_checkvalue_exe_name():
@@ -207,6 +257,18 @@ def test_checkvalue_dir():
     server = DummyServer()
     result = mod.checkvalue(server, ("dir",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_rmiport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("rmiport",), "12346")
+    assert result == 12346
+
+
+def test_checkvalue_worldname():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("worldname",), "Creative")
+    assert result == "Creative"
 
 
 def test_checkvalue_backup():

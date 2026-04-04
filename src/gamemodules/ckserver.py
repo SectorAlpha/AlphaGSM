@@ -41,11 +41,12 @@ def configure(server, ask, port=None, dir=None, *, exe_name="CoreKeeperServer"):
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
     server.data.setdefault("world", server.name)
+    server.data.setdefault("worldindex", "0")
     server.data.setdefault("maxplayers", "8")
-    server.data.setdefault("backupfiles", ["DedicatedServer", "saves"])
+    server.data.setdefault("backupfiles", ["DedicatedServer", "GameInfo.txt", "GameID.txt"])
     if "backup" not in server.data:
         server.data["backup"] = {
-            "profiles": {"default": {"targets": ["DedicatedServer", "saves"]}},
+            "profiles": {"default": {"targets": ["DedicatedServer", "GameInfo.txt", "GameID.txt"]}},
             "schedule": [("default", 0, "days")],
         }
 
@@ -64,7 +65,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="CoreKeeperServer"):
             if inp:
                 dir = inp
     server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
+    server.data["exe_name"] = server.data.get("exe_name", "_launch.sh")
     server.data.save()
     return (), {}
 
@@ -112,14 +113,30 @@ def get_start_command(server):
         [
             "./" + server.data["exe_name"],
             "-world",
+            str(server.data["worldindex"]),
+            "-worldname",
             server.data["world"],
             "-port",
             str(server.data["port"]),
             "-maxplayers",
             str(server.data["maxplayers"]),
+            "-datapath",
+            os.path.join(server.data["dir"], "DedicatedServer"),
         ],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the UDP endpoint used for Core Keeper reachability checks."""
+
+    return ("127.0.0.1", int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the UDP endpoint used for Core Keeper info output."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -153,7 +170,7 @@ def checkvalue(server, key, *value):
         return backup_utils.checkdatavalue(server.data["backup"], key, *value)
     if len(value) == 0:
         raise ServerError("No value specified")
-    if key[0] in ("port", "maxplayers"):
+    if key[0] in ("port", "maxplayers", "worldindex"):
         return int(value[0])
     if key[0] in ("world", "exe_name", "dir"):
         return str(value[0])

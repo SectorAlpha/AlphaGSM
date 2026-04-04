@@ -730,6 +730,69 @@ def test_query_uses_module_get_query_address(monkeypatch, capsys):
     assert ("10.0.0.1", 27016) in calls
 
 
+def test_query_uses_explicit_udp_protocol(monkeypatch, capsys):
+    module = DummyModule()
+    module.get_query_address = lambda server: ("10.0.0.1", 27016, "udp")
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.udp_ping = lambda host, port, timeout=2.0: 1.5
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert "UDP ping" in capsys.readouterr().out
+
+
+def test_query_retries_a2s_after_wake_hook(monkeypatch, capsys):
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    wake_calls = []
+    attempts = []
+    module = DummyModule()
+    module.wake_a2s_query = lambda server: wake_calls.append(server.name) or 0
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_a2s(host, port, timeout=2.0, phase2_timeout=None):
+        attempts.append((host, port, timeout, phase2_timeout))
+        if len(attempts) == 1:
+            raise OSError("udp")
+        return b"\xff\xff\xff\xff\x49stub"
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.parse_a2s_info = lambda data: {
+        "name": "Wake Test",
+        "map": "cp_dustbowl",
+        "game": "TF2",
+        "players": 0,
+        "max_players": 24,
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(server_module.time, "sleep", lambda *_args: None)
+
+    srv.query()
+
+    assert wake_calls == ["alpha", "alpha"]
+    assert attempts == [
+        ("127.0.0.1", 27015, 15.0, 120.0),
+        ("127.0.0.1", 27015, 15.0, 120.0),
+    ]
+    assert "Wake Test" in capsys.readouterr().out
+
+
 # info
 # ---------------------------------------------------------------------------
 
@@ -884,3 +947,105 @@ def test_info_json_output(monkeypatch, capsys):
     assert data["players_online"] == 3
     assert data["players_max"] == 20
     assert "Server info" not in out
+
+
+def test_info_uses_explicit_udp_protocol(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.get_info_address = lambda server: ("127.0.0.1", 7777, "udp")
+    srv = make_server(module=module, data=DummyData({"port": 7777}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.udp_ping = lambda host, port, timeout=2.0: 4.2
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert data["protocol"] == "udp"
+    assert data["port"] == 7777
+
+
+def test_info_uses_module_namespace_wake_hook(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    wake_calls = []
+    module = DummyModule()
+    module.MODULE = SimpleNamespace(
+        wake_a2s_query=lambda server: wake_calls.append(server.name) or 0
+    )
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_calls = []
+
+    def fake_a2s(host, port, timeout=2.0, phase2_timeout=None):
+        fake_q.a2s_calls.append((host, port, timeout, phase2_timeout))
+        return b"\xff\xff\xff\xff\x49stub"
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.parse_a2s_info = lambda data: {
+        "name": "My TF2 Server",
+        "map": "cp_badlands",
+        "folder": "tf",
+        "game": "Team Fortress",
+        "appid": 440,
+        "players": 0,
+        "max_players": 24,
+        "bots": 0,
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(server_module.time, "sleep", lambda *_args: None)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert wake_calls == ["alpha"]
+    assert fake_q.a2s_calls == [("127.0.0.1", 27015, 15.0, 120.0)]
+    assert data["protocol"] == "a2s"
+
+
+def test_info_uses_console_hook_for_hibernating_server(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.get_hibernating_console_info = lambda server: {
+        "name": "Hibernate TF2",
+        "map": "cp_dustbowl",
+        "version": "10515055/24 10515055 secure",
+        "players": 0,
+        "max_players": 16,
+        "bots": 0,
+    }
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_info = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError("A2S should not be used when console info is available")
+    )
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert data["protocol"] == "console"
+    assert data["name"] == "Hibernate TF2"
+    assert data["map"] == "cp_dustbowl"

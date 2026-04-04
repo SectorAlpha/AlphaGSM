@@ -213,9 +213,12 @@ If the test fails because `"tcp"` was returned instead of the expected protocol:
 1. Check whether the module has `get_info_address()` — add it if missing.
 2. Check whether the server is actually listening on the expected port by the
    time the test reaches `info`.
-3. For Source-based modules, make sure the integration path keeps the server
-   out of hibernation so A2S can answer consistently.
-4. Do **not** change the assertion to `in ("a2s", "tcp")`.
+3. For Source-based modules, first try the documented integration-only setting
+    that keeps the server out of hibernation so A2S can answer consistently.
+4. If the build still hibernates, wire a module wake hook for `query` / `info`
+    that nudges the server via console input such as `status`; do not weaken the
+    protocol assertion to accept TCP fallback instead.
+5. Do **not** change the assertion to `in ("a2s", "tcp")`.
 
 ## Query Protocol Capabilities & Full Property Verification
 

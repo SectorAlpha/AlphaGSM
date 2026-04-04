@@ -7,6 +7,7 @@ This guide covers the `stationeersserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
+- A host/runtime that can start the Unity dedicated server cleanly in headless mode
 
 ## Quick Start
 
@@ -74,6 +75,7 @@ alphagsm mystatione backup
 - **Config file**: See game module source
 - **Max players**: `10`
 - **Template**: See [server-templates/stationeersserver/](../server-templates/stationeersserver/) if available
+- **Current status**: Disabled in CI. The Linux dedicated server starts under Unity `NullGfxDevice`, throws a `SetConsoleOutputCP` startup exception, and never opens its game port in headless CI.
 
 ### Maps and Mods
 

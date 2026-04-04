@@ -39,6 +39,8 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8787, dir=str(tmp_path))
     assert server.data['port'] == 8787
+    assert server.data['queryport'] == 8787
+    assert server.data['backupfiles'] == ['DedicatedServerSave', 'ServerSetting.ini']
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -67,7 +69,18 @@ def test_install(tmp_path):
     server.data["exe_name"] = "Craftopia.x86_64"
     server.data["Steam_AppID"] = 1670340
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 8787
+    server.data["maxplayers"] = 8
+    server.data["worldname"] = "AlphaGSM World"
+    (tmp_path / "Craftopia.x86_64").write_text("")
+    (tmp_path / "DefaultServerSetting.ini").write_text("[GameWorld]\nname=NoName\n\n[Host]\nport=6587\nmaxPlayerNumber=7\nusePassword=0\nserverPassword=00000000\nbindAddress=0.0.0.0\n\n[Save]\nsavePath=DedicatedServerSave/\n")
     mod.install(server)
+    settings = (tmp_path / "ServerSetting.ini").read_text()
+    assert "name=AlphaGSM World" in settings
+    assert "port=8787" in settings
+    assert "maxPlayerNumber=8" in settings
+    assert f"savePath={tmp_path / 'DedicatedServerSave'}" in settings
+    assert (tmp_path / "DedicatedServerSave").is_dir()
 
 
 def test_update_with_restart(tmp_path):
@@ -111,11 +124,29 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "Craftopia.x86_64"
     (tmp_path / "Craftopia.x86_64").write_text("")
+    (tmp_path / "DefaultServerSetting.ini").write_text("[GameWorld]\nname=NoName\n\n[Host]\nport=6587\nmaxPlayerNumber=7\nusePassword=0\nserverPassword=00000000\nbindAddress=0.0.0.0\n\n[Save]\nsavePath=DedicatedServerSave/\n")
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     server.data["worldname"] = "test"
+    server.data["maxplayers"] = 8
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == ["./Craftopia.x86_64", "-batchmode", "-nographics"]
+    assert cwd == str(tmp_path) + "/"
+    settings = (tmp_path / "ServerSetting.ini").read_text()
+    assert "name=test" in settings
+    assert "port=27015" in settings
+
+
+def test_get_query_address():
+    server = DummyServer()
+    server.data["port"] = 27015
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "udp")
+
+
+def test_get_info_address():
+    server = DummyServer()
+    server.data["port"] = 27015
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "udp")
 
 
 def test_get_start_command_missing_exe(tmp_path):

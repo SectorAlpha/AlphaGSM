@@ -34,6 +34,9 @@ def test_avserver_configure_sets_defaults(tmp_path):
 
     assert server.data["Steam_AppID"] == 565060
     assert server.data["galaxy"] == "avorion"
+    assert server.data["servername"] == "AlphaGSM avorion"
+    assert server.data["queryport"] == 27003
+    assert server.data["steamqueryport"] == 27020
 
 
 def test_boserver_get_start_command_builds_expected_args(tmp_path):

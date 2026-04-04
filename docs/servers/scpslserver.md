@@ -44,8 +44,10 @@ alphagsm myscpslser stop
 
 Setup configures:
 
-- the game port (default 7778)
+- the game port (default 7777)
+- the query port (default `port + 1`)
 - the install directory
+- optional `contactemail` for the public-list contact field
 - SteamCMD downloads the server files
 
 ## Useful Commands
@@ -58,7 +60,10 @@ alphagsm myscpslser backup
 ## Notes
 
 - Module name: `scpslserver`
-- Default port: 7778
+- Default port: 7777
+- AlphaGSM launches SCP:SL through `LocalAdmin`, not by invoking `SCPSL.x86_64` directly
+- AlphaGSM seeds `home/.config/SCP Secret Laboratory/` inside the server install so the EULA/config wizard stays noninteractive
+- Query is enabled in the generated gameplay config, with `query_port_shift: 1`
 
 ## Developer Notes
 
@@ -71,8 +76,11 @@ alphagsm myscpslser backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config root**: `<install_dir>/home/.config/SCP Secret Laboratory/`
+- **Gameplay config**: `<install_dir>/home/.config/SCP Secret Laboratory/config/<port>/config_gameplay.txt`
+- **Optional property**: `contactemail` maps to SCP:SL `contact_email`
 - **Template**: See [server-templates/scpslserver/](../server-templates/scpslserver/) if available
+- **Current status**: The dedicated server can be launched headlessly on Linux through `LocalAdmin` once its EULA/config state is preseeded.
 
 ### Maps and Mods
 

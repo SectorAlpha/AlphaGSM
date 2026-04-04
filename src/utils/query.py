@@ -6,11 +6,12 @@ Provides query strategies:
 * :func:`quake_status` — Quake3/QFusion UDP getstatus query.
 * :func:`slp_info` — Minecraft Server List Ping.
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
+* :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-``"ts3"``, or ``"tcp"``.  When that hook is absent the caller falls back to a
+``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook is absent the caller falls back to a
 TCP ping on the main port.
 """
 
@@ -19,7 +20,7 @@ import socket
 import struct
 import time
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "udp_ping", "tcp_ping",
            "ts3_serverinfo"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -257,6 +258,32 @@ def slp_info(host, port, timeout=5.0):
         return result
     except (KeyError, TypeError, ValueError) as exc:
         raise QueryError("Unexpected SLP response structure: " + str(exc)) from exc
+
+
+def udp_ping(host, port, timeout=2.0, payload=b"\x00"):
+    """Probe a UDP port and return latency in milliseconds when reachable.
+
+    This is a generic reachability check for servers that bind a UDP game port
+    but do not expose a documented query protocol. After sending *payload* to a
+    connected UDP socket, either a response packet or a read timeout counts as
+    success. A timeout means the kernel did not receive ICMP port-unreachable
+    during the probe window, which is sufficient to treat the port as open for
+    AlphaGSM's local health checks. Explicit connection-refused errors are
+    reported as failures.
+    """
+    start = time.time()
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.connect((host, int(port)))
+            sock.send(payload)
+            try:
+                sock.recv(1)
+            except socket.timeout:
+                pass
+    except OSError as exc:
+        raise QueryError("UDP ping failed: " + str(exc)) from exc
+    return (time.time() - start) * 1000.0
 
 
 def quake_status(host, port, timeout=2.0):

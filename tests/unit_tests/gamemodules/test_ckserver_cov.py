@@ -39,6 +39,8 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
     assert server.data['port'] == 27015
+    assert server.data['exe_name'] == '_launch.sh'
+    assert server.data['worldindex'] == '0'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -108,24 +110,51 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "CoreKeeperServer"
-    (tmp_path / "CoreKeeperServer").write_text("")
-    server.data["maxplayers"] = 27015
+    server.data["exe_name"] = "_launch.sh"
+    (tmp_path / "_launch.sh").write_text("")
+    server.data["maxplayers"] = 8
     server.data["port"] = 27015
     server.data["world"] = "test"
+    server.data["worldindex"] = 0
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./_launch.sh",
+        "-world",
+        "0",
+        "-worldname",
+        "test",
+        "-port",
+        "27015",
+        "-maxplayers",
+        "8",
+        "-datapath",
+        str(tmp_path / "DedicatedServer"),
+    ]
+    assert cwd == str(tmp_path) + "/"
 
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    server.data["maxplayers"] = 27015
+    server.data["maxplayers"] = 8
     server.data["port"] = 27015
     server.data["world"] = "test"
+    server.data["worldindex"] = 0
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_get_query_address():
+    server = DummyServer()
+    server.data["port"] = 27015
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "udp")
+
+
+def test_get_info_address():
+    server = DummyServer()
+    server.data["port"] = 27015
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "udp")
 
 
 def test_do_stop():
@@ -185,6 +214,12 @@ def test_checkvalue_world():
     server = DummyServer()
     result = mod.checkvalue(server, ("world",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_worldindex():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("worldindex",), "3")
+    assert result == 3
 
 
 def test_checkvalue_exe_name():

@@ -45,6 +45,8 @@ alphagsm myavserver stop
 Setup configures:
 
 - the game port (default 27000)
+- the internal query port (default `port + 3`)
+- the Steam query and master ports (defaults `port + 20` and `port + 21`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -59,6 +61,12 @@ alphagsm myavserver backup
 
 - Module name: `avserver`
 - Default port: 27000
+- Default query port: 27003
+- Default Steam query port: 27020
+- Default Steam master port: 27021
+- AlphaGSM starts Avorion with `--datapath ./galaxies` so galaxy state stays under the install directory
+- AlphaGSM `query` and `info` use generic UDP reachability on the Steam query port
+- The `administration` datastore key is optional and maps to Avorion's `--admin` CLI argument, not an `admin.xml` file path
 
 ## Developer Notes
 
@@ -68,10 +76,11 @@ alphagsm myavserver backup
 - **Location**: `<install_dir>/server.sh`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `565060`
+- **Headless launch**: `./server.sh --datapath ./galaxies --galaxy-name <name> --server-name <name> --port <port> --query-port <port+3> --steam-query-port <port+20> --steam-master-port <port+21>`
 
 ### Server Configuration
 
-- **Config files**: `admin.xml`
+- **Galaxy data path**: `<install_dir>/galaxies/<galaxy-name>`
 - **Template**: See [server-templates/avserver/](../server-templates/avserver/) if available
 
 ### Maps and Mods

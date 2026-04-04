@@ -81,6 +81,7 @@ def test_install_disables_hibernation_during_integration(tmp_path, monkeypatch):
 
     cfg_text = (tmp_path / "tf" / "cfg" / "server.cfg").read_text()
     assert "sv_hibernate_when_empty 0" in cfg_text
+    assert "tf_allow_server_hibernation 0" in cfg_text
 
 
 def test_update_with_restart(tmp_path):
@@ -124,10 +125,13 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "srcds_run"
     (tmp_path / "srcds_run").write_text("")
+    server.data["startmap"] = "cp_dustbowl"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert "+tv_port" in cmd
+    assert "27020" in cmd
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -155,3 +159,23 @@ def test_prestart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     mod.prestart(server)
+
+
+def test_tf2_exposes_hibernating_console_info_hook():
+    server = DummyServer()
+
+    with patch.object(mod, '_tf2_hibernation_allowed', return_value=True), patch.object(
+        mod, 'source_console_status', return_value={'name': 'AlphaGSM TF2 Server'}
+    ):
+        assert mod.get_hibernating_console_info(server) == {'name': 'AlphaGSM TF2 Server'}
+
+    with patch.object(mod, '_tf2_hibernation_allowed', return_value=False):
+        assert mod.get_hibernating_console_info(server) is None
+
+
+def test_tf2_query_and_info_address_use_source_query_address():
+    server = DummyServer()
+
+    with patch.object(mod, 'source_query_address', return_value=('192.168.0.30', 27015, 'a2s')):
+        assert mod.get_query_address(server) == ('192.168.0.30', 27015, 'a2s')
+        assert mod.get_info_address(server) == ('192.168.0.30', 27015, 'a2s')

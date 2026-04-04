@@ -39,6 +39,15 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['exe_name'] == 'LocalAdmin'
+    assert server.data['queryport'] == 7778
+
+
+def test_configure_custom_queryport_follows_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=9000, dir=str(tmp_path / 'install'))
+    assert server.data['port'] == 9000
+    assert server.data['queryport'] == 9001
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -65,7 +74,17 @@ def test_install(tmp_path):
     server.data["exe_name"] = "LocalAdmin"
     server.data["Steam_AppID"] = 996560
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 7777
+    server.data["queryport"] = 7778
+    server.data["contactemail"] = ""
+    (tmp_path / "SCPSL.x86_64").write_text("")
+    (tmp_path / "LocalAdmin").write_text("")
     mod.install(server)
+    assert (tmp_path / "home/.config/SCP Secret Laboratory/config/localadmin_internal_data.json").is_file()
+    gameplay = (tmp_path / "home/.config/SCP Secret Laboratory/config/7777/config_gameplay.txt").read_text()
+    assert "enable_query: true" in gameplay
+    assert "contact_email: default" in gameplay
+    assert "query_administrator_password: alphagsmquery" in gameplay
 
 
 def test_update_with_restart(tmp_path):
@@ -110,9 +129,21 @@ def test_get_start_command(tmp_path):
     server.data["exe_name"] = "LocalAdmin"
     (tmp_path / "LocalAdmin").write_text("")
     server.data["port"] = 27015
-    server.data["queryport"] = 27015
+    server.data["queryport"] = 27016
+    server.data["contactemail"] = "ops@example.com"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "env",
+        "HOME=" + str(tmp_path / "home"),
+        "XDG_CONFIG_HOME=" + str(tmp_path / "home/.config"),
+        "./LocalAdmin",
+        "27015",
+    ]
+    assert cwd == str(tmp_path) + "/"
+    gameplay = (tmp_path / "home/.config/SCP Secret Laboratory/config/27015/config_gameplay.txt").read_text()
+    assert "enable_query: true" in gameplay
+    assert "contact_email: ops@example.com" in gameplay
+    assert "query_administrator_password: alphagsmquery" in gameplay
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -123,6 +154,18 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["queryport"] = 27015
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_get_query_address():
+    server = DummyServer()
+    server.data["queryport"] = 7778
+    assert mod.get_query_address(server) == ("127.0.0.1", 7778, "tcp")
+
+
+def test_get_info_address():
+    server = DummyServer()
+    server.data["queryport"] = 7778
+    assert mod.get_info_address(server) == ("127.0.0.1", 7778, "tcp")
 
 
 def test_do_stop():
@@ -182,6 +225,12 @@ def test_checkvalue_exe_name():
     server = DummyServer()
     result = mod.checkvalue(server, ("exe_name",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_contactemail():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("contactemail",), "ops@example.com")
+    assert result == "ops@example.com"
 
 
 def test_checkvalue_dir():

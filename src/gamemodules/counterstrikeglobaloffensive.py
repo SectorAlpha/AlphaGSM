@@ -17,7 +17,7 @@ from utils import updatefs
 import random
 
 from utils.fileutils import make_empty_file
-from utils.valve_server import integration_source_server_config
+from utils.valve_server import integration_source_server_config, wake_source_server_for_a2s
 
 import utils.steamcmd as steamcmd
 
@@ -65,6 +65,8 @@ command_descriptions = {
 # required still
 command_descriptions = {}
 command_functions = {}  # will have elements added as the functions are defined
+
+wake_a2s_query = wake_source_server_for_a2s
 
 max_stop_wait = 1
 

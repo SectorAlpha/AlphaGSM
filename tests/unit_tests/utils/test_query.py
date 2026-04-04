@@ -31,6 +31,13 @@ class _FakeUDPSocket:
         if self._raise_on_send:
             raise self._raise_on_send
 
+    def connect(self, addr):
+        pass
+
+    def send(self, data):
+        if self._raise_on_send:
+            raise self._raise_on_send
+
     def recv(self, bufsize):
         return self._response
 
@@ -99,6 +106,32 @@ def test_tcp_ping_raises_on_connection_error(monkeypatch):
 
     with pytest.raises(query_module.QueryError, match="TCP ping failed"):
         query_module.tcp_ping("127.0.0.1", 27015)
+
+
+def test_udp_ping_returns_positive_latency_on_silent_listener(monkeypatch):
+    class _SilentUDPSocket(_FakeUDPSocket):
+        def recv(self, bufsize):
+            raise socket.timeout()
+
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _SilentUDPSocket(),
+    )
+
+    ms = query_module.udp_ping("127.0.0.1", 27015)
+    assert ms >= 0.0
+
+
+def test_udp_ping_raises_on_socket_error(monkeypatch):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(raise_on_send=OSError("refused")),
+    )
+
+    with pytest.raises(query_module.QueryError, match="UDP ping failed"):
+        query_module.udp_ping("127.0.0.1", 27015)
 
 
 # ---------------------------------------------------------------------------

@@ -7,6 +7,7 @@ This guide covers the `zmrserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
+- Manual Zombie Master: Reborn server content; SteamCMD app `244310` only installs `Source SDK Base 2013 Dedicated Server`
 
 ## Quick Start
 
@@ -70,6 +71,7 @@ alphagsm myzmrserve backup
 - **Location**: `<install_dir>/srcds_run`
 - **Engine**: Source
 - **SteamCMD App ID**: `244310`
+- **SteamCMD App Name**: `Source SDK Base 2013 Dedicated Server`
 
 ### Server Configuration
 
@@ -92,5 +94,6 @@ alphagsm myzmrserve backup
 - **Map directory**: `zombie_master_reborn/maps/`
 - **Mod directory**: `zombie_master_reborn/addons/`
 - **Workshop support**: No
+- **Current status**: Anonymous SteamCMD only provides the generic Source SDK 2013 dedicated server scaffold. It does not include the `zombie_master_reborn` mod payload, so this module remains disabled until a real content source or additional install step is implemented.
 - **Map install**: Copy `.bsp` files into `zombie_master_reborn/maps/` and add to `zombie_master_reborn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `zombie_master_reborn/addons/`.

@@ -1,5 +1,6 @@
 """Craftopia dedicated server lifecycle helpers."""
 
+import configparser
 import os
 
 import screen
@@ -35,18 +36,100 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _server_setting_path(server):
+    return os.path.join(server.data["dir"], "ServerSetting.ini")
+
+
+def _default_server_setting_path(server):
+    return os.path.join(server.data["dir"], "DefaultServerSetting.ini")
+
+
+def _save_dir(server):
+    return os.path.join(server.data["dir"], "DedicatedServerSave")
+
+
+def _seed_server_setting(server):
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.optionxform = str
+
+    default_path = _default_server_setting_path(server)
+    target_path = _server_setting_path(server)
+    if os.path.isfile(default_path):
+        parser.read(default_path, encoding="utf-8")
+    elif os.path.isfile(target_path):
+        parser.read(target_path, encoding="utf-8")
+
+    defaults = {
+        "GameWorld": {
+            "name": str(server.data.get("worldname", server.name)),
+            "difficulty": "1",
+            "gameMode": "1",
+            "enemyPoolSizeRate": "1",
+        },
+        "Host": {
+            "port": str(server.data["port"]),
+            "maxPlayerNumber": str(server.data.get("maxplayers", 8)),
+            "usePassword": "0",
+            "serverPassword": "00000000",
+            "bindAddress": "0.0.0.0",
+        },
+        "Graphics": {
+            "vSyncCount": "0",
+            "maxFPS": "60",
+            "grassBend": "0",
+            "clothSimOption": "2",
+        },
+        "Save": {
+            "autoSaveSec": "300",
+            "autoSavePerHour": "1",
+            "savePath": _save_dir(server) + os.sep,
+        },
+        "CreativeModeSetting": {
+            "quickCraft": "1",
+            "ageLevel": "9",
+            "islandLevel": "-1",
+            "noDeath": "1",
+            "noDamage": "1",
+            "noHunger": "1",
+            "infinitStamina": "1",
+            "forceDayTime": "-1",
+            "buildingIgnoreDamage": "0",
+            "noBuild": "0",
+        },
+        "CreativeModePlStatus": {
+            "Level": "0",
+            "Health": "0",
+            "Mana": "0",
+            "Stamina": "0",
+            "Money": "1000",
+            "SkillPoint": "0",
+            "EnchantPoint": "0",
+        },
+    }
+
+    for section, values in defaults.items():
+        if not parser.has_section(section):
+            parser.add_section(section)
+        for key, value in values.items():
+            parser.set(section, key, value)
+
+    os.makedirs(_save_dir(server), exist_ok=True)
+    with open(target_path, "w", encoding="utf-8") as handle:
+        parser.write(handle, space_around_delimiters=False)
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="Craftopia.x86_64"):
     """Collect and store configuration values for a Craftopia server."""
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
-    server.data.setdefault("maxplayers", "8")
+    server.data.setdefault("queryport", 8787)
+    server.data.setdefault("maxplayers", 8)
     server.data.setdefault("worldname", server.name)
-    server.data.setdefault("backupfiles", ["Save", "DedicatedServerSetting.ini"])
+    server.data.setdefault("backupfiles", ["DedicatedServerSave", "ServerSetting.ini"])
     if "backup" not in server.data:
         server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Save", "DedicatedServerSetting.ini"]}},
+            "profiles": {"default": {"targets": ["DedicatedServerSave", "ServerSetting.ini"]}},
             "schedule": [("default", 0, "days")],
         }
 
@@ -57,6 +140,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Craftopia.x86_64"):
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data["queryport"] = int(server.data.get("queryport", server.data["port"]))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -80,6 +164,11 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if os.path.isfile(exe_path):
+        os.chmod(exe_path, os.stat(exe_path).st_mode | 0o111)
+    _seed_server_setting(server)
+    server.data.save()
 
 
 def update(server, validate=False, restart=False):
@@ -103,23 +192,30 @@ def restart(server):
     server.start()
 
 
+def get_query_address(server):
+    """Return the Craftopia UDP game endpoint used for health checks."""
+
+    return ("127.0.0.1", int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the Craftopia UDP endpoint used for info output."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Craftopia dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    _seed_server_setting(server)
     return (
         [
             "./" + server.data["exe_name"],
             "-batchmode",
             "-nographics",
-            "-port",
-            str(server.data["port"]),
-            "-queryport",
-            str(server.data["queryport"]),
-            "-worldname",
-            str(server.data["worldname"]),
         ],
         server.data["dir"],
     )

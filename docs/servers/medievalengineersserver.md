@@ -7,6 +7,7 @@ This guide covers the `medievalengineersserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
+- Proton compatibility runtime on Linux; bare Wine is not sufficient for the current dedicated server build
 
 ## Quick Start
 
@@ -73,6 +74,7 @@ alphagsm mymedieval backup
 
 - **Config files**: `global.cfg`
 - **Template**: See [server-templates/medievalengineersserver/](../server-templates/medievalengineersserver/) if available
+- **Current status**: Disabled in CI. With Proton installed, the dedicated server now gets past the old bare-Wine startup failure but still exits before producing any Medieval Engineers server log or readiness marker. By cleanup time there is no running process left for `stop`, so more runtime-specific investigation is still required.
 
 ### Maps and Mods
 

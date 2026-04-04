@@ -8,7 +8,13 @@ import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
-from utils.valve_server import integration_source_server_config
+from utils.valve_server import (
+    send_console_command_and_collect_response,
+    integration_source_server_config,
+    source_console_status,
+    source_query_address,
+    wake_source_server_for_a2s,
+)
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
@@ -54,6 +60,7 @@ command_descriptions = {
 max_stop_wait = 1
 
 _confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
+_SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
 
 
 def updateconfig(filename, settings):
@@ -186,6 +193,8 @@ sv_pure 1
 """)
     integration_cfg = integration_source_server_config()
     if integration_cfg:
+        integration_cfg = dict(integration_cfg)
+        integration_cfg["tf_allow_server_hibernation"] = "0"
         updateconfig(server_cfg, integration_cfg)
     server.data.save()
 
@@ -253,9 +262,9 @@ def update(server, validate=False, restart=False):
 def get_start_command(server):
     """Build the command list used to launch the TF2 dedicated server."""
     # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
-    # TODO define a map using the -m optional argument
     exe_name = server.data["exe_name"]
     client_port = min(int(server.data["port"]) + 1, 65535)
+    sourcetv_port = min(int(server.data["port"]) + 5, 65535)
 
     if not os.path.isfile(server.data["dir"] + exe_name):
         for fallback in ("srcds_run_64", "srcds_run"):
@@ -269,42 +278,74 @@ def get_start_command(server):
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
 
-    steam_updatescript = steamcmd.get_autoupdate_script(
-        server.name, server.data["dir"], steam_app_id
-    )
-    steamcmd_dir = steamcmd.STEAMCMD_DIR
-
     return [
         exe_name,
         "-game",
         "tf",
-        "-port",
-        str(server.data["port"]),
-        "-clientport",
-        str(client_port),
-        "+maxplayers",
-        str(server.data["maxplayers"]),
-        "+sv_pure",
-        "1",
+        "-strictportbind",
         "+ip",
         "0.0.0.0",
-        "-secured",
-        "-timeout 0",
-        "-strictportbind",
-        "+randommap",
-        "-autoupdate",
-        "-steam_dir",
-        steamcmd_dir,
-        "-steamcmd_script",
-        steam_updatescript,
-        "+sv_shutdown_timeout_minutes",
-        "2",
+        "-port",
+        str(server.data["port"]),
+        "+clientport",
+        str(client_port),
+        "+tv_port",
+        str(sourcetv_port),
+        "+map",
+        str(server.data["startmap"]),
+        "+servercfgfile",
+        "server.cfg",
+        "+maxplayers",
+        str(server.data["maxplayers"]),
     ], server.data["dir"]
 
 
 def do_stop(server, j):
     """Send the console command used to stop a running TF2 server."""
     screen.send_to_server(server.name, "\nquit\n")
+
+
+def _parse_bool_cvar(output, cvar_name):
+    """Extract a boolean Source cvar value from console output."""
+
+    for line in reversed(output.splitlines()):
+        match = _SOURCE_BOOL_CVAR_RE.search(line.strip())
+        if match is None:
+            continue
+        if match.group("name").strip() == cvar_name:
+            return match.group("value") == "1"
+    return None
+
+
+def _tf2_hibernation_allowed(server):
+    """Return whether TF2 currently allows empty-server hibernation."""
+
+    return send_console_command_and_collect_response(
+        server,
+        "tf_allow_server_hibernation",
+        lambda output: _parse_bool_cvar(output, "tf_allow_server_hibernation"),
+        timeout=5.0,
+    )
+
+
+def get_hibernating_console_info(server):
+    """Return console-derived info only when TF2 hibernation is enabled."""
+
+    if not _tf2_hibernation_allowed(server):
+        return None
+    return source_console_status(server)
+
+
+def get_query_address(server):
+    """Return the live TF2 query endpoint."""
+
+    return source_query_address(server)
+
+
+def get_info_address(server):
+    """Return the live TF2 info endpoint."""
+
+    return source_query_address(server)
 
 
 def status(server, verbose):
@@ -358,3 +399,5 @@ command_functions = {
     "update": update,
     "restart": restart,
 }  # will have elements added as the functions are defined
+
+wake_a2s_query = wake_source_server_for_a2s

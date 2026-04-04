@@ -70,6 +70,7 @@ alphagsm myndserver backup
 - **Location**: `<install_dir>/srcds_run`
 - **Engine**: Source
 - **SteamCMD App ID**: `111710`
+- **SteamCMD App Name**: `Nuclear Dawn - Dedicated Server`
 
 ### Server Configuration
 
@@ -92,5 +93,6 @@ alphagsm myndserver backup
 - **Map directory**: `nucleardawn/maps/`
 - **Mod directory**: `nucleardawn/addons/`
 - **Workshop support**: No
+- **Current status**: The anonymous dedicated-server app currently installs only a partial `nucleardawn` tree in CI. It is missing the core game payload needed for a working server, so this module remains disabled until the missing content source is identified.
 - **Map install**: Copy `.bsp` files into `nucleardawn/maps/` and add to `nucleardawn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `nucleardawn/addons/`.

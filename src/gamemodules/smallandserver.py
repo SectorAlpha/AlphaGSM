@@ -35,12 +35,48 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
+def _build_launch_args(server):
+    """Build the Smalland world and runtime arguments passed to the UE server."""
+
+    world_arg = (
+        '/Game/Maps/WorldGame/WorldGame_Smalland'
+        '?SERVERNAME="%s"'
+        '?WORLDNAME="%s"'
+        % (server.data["servername"], server.data["worldname"])
+    )
+    if server.data.get("serverpassword"):
+        world_arg += '?PASSWORD="%s"' % (server.data["serverpassword"],)
+    world_arg += "?CROSSPLAY"
+    world_arg += "?lengthofdayseconds=1800"
+    world_arg += "?lengthofseasonseconds=10800"
+    world_arg += "?creaturehealthmodifier=100"
+    world_arg += "?creaturedamagemodifier=100"
+    world_arg += "?creaturerespawnratemodifier=100"
+    world_arg += "?resourcerespawnratemodifier=100"
+    world_arg += "?creaturespawnchancemodifier=100"
+    world_arg += "?craftingtimemodifier=100"
+    world_arg += "?craftingfuelmodifier=100"
+    world_arg += "?stormfrequencymodifier=100"
+    world_arg += "?nourishmentlossmodifier=100"
+    world_arg += "?falldamagemodifier=100"
+    world_arg += "?SESSIONPLATFORM=pc"
+    return [
+        world_arg,
+        "-ini:Engine:[EpicOnlineServices]:DeploymentId=50f2b148496e4cbbbdeefbecc2ccd6a3",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientId=xyza78918KT08TkA6emolUay8yhvAAy2",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientSecret=aN2GtVw7aHb6hx66HwohNM+qktFaO3vtrLSbGdTzZWk",
+        "-port=%s" % (server.data["port"],),
+        "-NOSTEAM",
+        "-log",
+    ]
+
+
+def configure(server, ask, port=None, dir=None, *, exe_name="SMALLANDServer.sh"):
     """Collect and store configuration values for a Smalland server."""
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "7778")
+    server.data.setdefault("worldname", "World")
     server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
     server.data.setdefault("serverpassword", "")
     server.data.setdefault("backupfiles", ["Saved", "Config"])
@@ -57,6 +93,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", int(server.data["port"]))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -80,6 +117,10 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    for script_name in ("start-server.sh", "SMALLANDServer.sh"):
+        script_path = os.path.join(server.data["dir"], script_name)
+        if os.path.isfile(script_path):
+            os.chmod(script_path, os.stat(script_path).st_mode | 0o111)
 
 
 def update(server, validate=False, restart=False):
@@ -110,11 +151,21 @@ def get_start_command(server):
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     return (
-        [
-            "./" + server.data["exe_name"],
-        ],
+        ["./" + server.data["exe_name"], *_build_launch_args(server)],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Smalland exposes a silent UDP listener on the main game port."""
+
+    return ("127.0.0.1", int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Smalland's info surface is the same UDP listener as its query surface."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -150,6 +201,6 @@ def checkvalue(server, key, *value):
         raise ServerError("No value specified")
     if key[0] in ("port", "queryport"):
         return int(value[0])
-    if key[0] in ("servername", "serverpassword", "exe_name", "dir"):
+    if key[0] in ("servername", "worldname", "serverpassword", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")

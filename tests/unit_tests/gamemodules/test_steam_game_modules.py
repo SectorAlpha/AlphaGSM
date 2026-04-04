@@ -92,19 +92,29 @@ def test_tf2_get_start_command_prefixes_executable_and_uses_steamcmd(tmp_path, m
     server = DummyServer("blue")
     exe_path = tmp_path / "srcds_run"
     exe_path.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "srcds_run", "port": 27015, "maxplayers": "24"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "srcds_run",
+            "port": 27015,
+            "maxplayers": "24",
+            "startmap": "cp_dustbowl",
+        }
+    )
 
     monkeypatch.setattr(tf2.os.path, "isfile", lambda path: True)
-    monkeypatch.setattr(tf2.steamcmd, "get_autoupdate_script", lambda name, path, app_id: "/tmp/update.txt")
-    monkeypatch.setattr(tf2.steamcmd, "STEAMCMD_DIR", "/tmp/steamcmd")
 
     command, cwd = tf2.get_start_command(server)
 
     assert command[0] == "./srcds_run"
-    assert "-clientport" in command
+    assert "+clientport" in command
     assert "27016" in command
-    assert "-steam_dir" in command
-    assert "/tmp/update.txt" in command
+    assert "+tv_port" in command
+    assert "27020" in command
+    assert "+map" in command
+    assert "cp_dustbowl" in command
+    assert "+servercfgfile" in command
+    assert "server.cfg" in command
     assert cwd == server.data["dir"]
 
 
@@ -112,16 +122,23 @@ def test_tf2_get_start_command_falls_back_to_64_bit_launcher(tmp_path, monkeypat
     server = DummyServer("blue")
     launcher = tmp_path / "srcds_run_64"
     launcher.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "srcds_run", "port": 27015, "maxplayers": "24"})
-
-    monkeypatch.setattr(tf2.steamcmd, "get_autoupdate_script", lambda name, path, app_id: "/tmp/update.txt")
-    monkeypatch.setattr(tf2.steamcmd, "STEAMCMD_DIR", "/tmp/steamcmd")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "srcds_run",
+            "port": 27015,
+            "maxplayers": "24",
+            "startmap": "cp_dustbowl",
+        }
+    )
 
     command, cwd = tf2.get_start_command(server)
 
     assert command[0] == "./srcds_run_64"
     assert server.data["exe_name"] == "srcds_run_64"
     assert "27016" in command
+    assert "27020" in command
+    assert "cp_dustbowl" in command
     assert cwd == server.data["dir"]
 
 

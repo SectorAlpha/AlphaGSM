@@ -39,6 +39,8 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['queryport'] == 7777
+    assert server.data['worldname'] == 'World'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -48,7 +50,8 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = "test"
     server.data["Steam_anonymous_login_possible"] = "test"
-    server.data["queryport"] = 27015
+    server.data["queryport"] = 7777
+    server.data["worldname"] = "World"
     server.data["servername"] = "test"
     server.data["serverpassword"] = "test"
     mod.configure(server, ask=True)
@@ -64,9 +67,11 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "start-server.sh"
+    server.data["exe_name"] = "SMALLANDServer.sh"
     server.data["Steam_AppID"] = 808040
     server.data["Steam_anonymous_login_possible"] = True
+    (tmp_path / "start-server.sh").write_text("#!/bin/sh\n")
+    (tmp_path / "SMALLANDServer.sh").write_text("#!/bin/sh\n")
     mod.install(server)
 
 
@@ -109,10 +114,17 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "start-server.sh"
-    (tmp_path / "start-server.sh").write_text("")
+    server.data["exe_name"] = "SMALLANDServer.sh"
+    server.data["port"] = 7777
+    server.data["worldname"] = "World"
+    server.data["servername"] = "AlphaGSM testserver"
+    server.data["serverpassword"] = ""
+    (tmp_path / "SMALLANDServer.sh").write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd[0] == "./SMALLANDServer.sh"
+    assert cmd[-3:] == ["-port=7777", "-NOSTEAM", "-log"]
+    assert 'SERVERNAME="AlphaGSM testserver"' in cmd[1]
+    assert '?WORLDNAME="World"' in cmd[1]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -127,6 +139,18 @@ def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
     mod.screen.send_to_server.assert_called()
+
+
+def test_get_query_address_uses_main_port():
+    server = DummyServer()
+    server.data["port"] = 7777
+    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "udp")
+
+
+def test_get_info_address_matches_query():
+    server = DummyServer()
+    server.data["port"] = 7777
+    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "udp")
 
 
 def test_status():
@@ -180,6 +204,12 @@ def test_checkvalue_servername():
     server = DummyServer()
     result = mod.checkvalue(server, ("servername",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_worldname():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("worldname",), "World")
+    assert result == "World"
 
 
 def test_checkvalue_serverpassword():

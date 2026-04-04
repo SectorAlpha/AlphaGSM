@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.medievalengineersserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.medievalengineersserver as mod
     from server import ServerError
@@ -116,6 +116,27 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    wrap_mock = MagicMock(return_value=["proton", "run", "DedicatedServer64/MedievalEngineersDedicated.exe"])
+    monkeypatch.setattr(mod.proton, "wrap_command", wrap_mock)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DedicatedServer64/MedievalEngineersDedicated.exe"
+    exe_path = tmp_path / "DedicatedServer64/MedievalEngineersDedicated.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["port"] = 27015
+
+    mod.get_start_command(server)
+
+    wrap_mock.assert_called_with(
+        ["DedicatedServer64/MedievalEngineersDedicated.exe", "-console", "-port", "27015"],
+        wineprefix=None,
+        prefer_proton=True,
+    )
 
 
 def test_get_start_command_missing_exe(tmp_path):

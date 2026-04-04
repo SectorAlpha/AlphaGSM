@@ -105,6 +105,22 @@ def test_wrap_command_with_wine_and_prefix(monkeypatch):
     assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "WINEPREFIX=/srv/game/.wine", "/usr/bin/wine", "server.exe"]
 
 
+def test_wrap_command_prefers_proton_when_requested(tmp_path, monkeypatch):
+    monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
+    tool_dir = tmp_path / "compat" / "GE-Proton9-27"
+    tool_dir.mkdir(parents=True)
+    proton_exe = tool_dir / "proton"
+    proton_exe.write_text("#!/bin/bash\n")
+    monkeypatch.setattr(proton_module, "_PROTON_SEARCH_DIRS", [str(tmp_path / "compat")])
+
+    result = proton_module.wrap_command(["server.exe"], prefer_proton=True)
+
+    assert result[0] == "env"
+    assert str(proton_exe) in result
+    assert "run" in result
+    assert "/usr/bin/wine" not in result
+
+
 def test_wrap_command_preserves_trailing_args(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe", "--port", "7000"])

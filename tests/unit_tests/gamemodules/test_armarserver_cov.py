@@ -39,6 +39,9 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=2001, dir=str(tmp_path))
     assert server.data['port'] == 2001
+    assert server.data['queryport'] == 2002
+    assert server.data['scenarioid'] == mod.DEFAULT_SCENARIO_ID
+    assert server.data['maxplayers'] == 8
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -63,11 +66,27 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 
 def test_install(tmp_path):
     server = DummyServer()
+    server.name = "armar-alpha"
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "ArmaReforgerServer"
     server.data["Steam_AppID"] = 1874900
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["configfile"] = "configs/server.json"
+    server.data["profilesdir"] = "profile"
+    server.data["bindaddress"] = "0.0.0.0"
+    server.data["port"] = 2001
+    server.data["queryport"] = 2002
+    server.data["scenarioid"] = mod.DEFAULT_SCENARIO_ID
+    server.data["maxplayers"] = 8
     mod.install(server)
+    assert (tmp_path / "configs" / "server.json").is_file()
+    assert (tmp_path / "profile").is_dir()
+    config = (tmp_path / "configs" / "server.json").read_text()
+    assert '"a2s": {' in config
+    assert '"address": "0.0.0.0"' in config
+    assert '"port": 2002' in config
+    assert '"scenarioId": "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"' in config
+    assert '"maxPlayers": 8' in config
 
 
 def test_update_with_restart(tmp_path):
@@ -112,11 +131,15 @@ def test_get_start_command(tmp_path):
     server.data["exe_name"] = "ArmaReforgerServer"
     (tmp_path / "ArmaReforgerServer").write_text("")
     server.data["bindaddress"] = "test"
-    server.data["configfile"] = "test"
+    server.data["configfile"] = "configs/server.json"
     server.data["port"] = 27015
-    server.data["profilesdir"] = "test"
+    server.data["profilesdir"] = "profile"
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "configs" / "server.json").write_text("{}\n")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[2] == str(tmp_path / "configs" / "server.json")
+    assert cmd[4] == str(tmp_path / "profile")
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -124,9 +147,22 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
     server.data["bindaddress"] = "test"
-    server.data["configfile"] = "test"
+    server.data["configfile"] = "configs/server.json"
     server.data["port"] = 27015
-    server.data["profilesdir"] = "test"
+    server.data["profilesdir"] = "profile"
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_missing_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ArmaReforgerServer"
+    (tmp_path / "ArmaReforgerServer").write_text("")
+    server.data["bindaddress"] = "test"
+    server.data["configfile"] = "configs/server.json"
+    server.data["port"] = 27015
+    server.data["profilesdir"] = "profile"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
 
@@ -135,6 +171,20 @@ def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
     mod.screen.send_to_server.assert_called()
+
+
+def test_get_query_address():
+    server = DummyServer()
+    server.data["port"] = 2302
+    server.data["queryport"] = 17777
+    assert mod.get_query_address(server) == ("127.0.0.1", 17777, "a2s")
+
+
+def test_get_info_address_matches_query():
+    server = DummyServer()
+    server.data["port"] = 2302
+    server.data["queryport"] = 17777
+    assert mod.get_info_address(server) == ("127.0.0.1", 17777, "a2s")
 
 
 def test_status():
@@ -178,6 +228,12 @@ def test_checkvalue_port():
     assert result == 12345
 
 
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "17777")
+    assert result == 17777
+
+
 def test_checkvalue_configfile():
     server = DummyServer()
     result = mod.checkvalue(server, ("configfile",), "/test/value")
@@ -212,4 +268,15 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    assert mod.checkvalue(server, ("maxplayers",), "12") == 12
+
+
+def test_checkvalue_scenarioid():
+    server = DummyServer()
+    value = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
+    assert mod.checkvalue(server, ("scenarioid",), value) == value
 

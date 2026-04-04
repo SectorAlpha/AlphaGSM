@@ -3,6 +3,8 @@
 import os
 import re
 import inspect
+import socket
+import time
 from types import SimpleNamespace
 from typing import NoReturn
 
@@ -16,6 +18,9 @@ import utils.steamcmd as steamcmd
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 STEAMCLIENT_32_DST = os.path.expanduser("~/.steam/sdk32/steamclient.so")
 _CONFPAT = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
+_SOURCE_STATUS_PLAYERS_RE = re.compile(
+    r"(?P<players>\d+) humans, (?P<bots>\d+) bots \((?P<max_players>\d+) max\)"
+)
 
 _COMMAND_ARGS = {
     "setup": CmdSpec(
@@ -94,6 +99,136 @@ def integration_source_server_config():
     if os.environ.get("ALPHAGSM_RUN_INTEGRATION") != "1":
         return {}
     return {"sv_hibernate_when_empty": "0"}
+
+
+def wake_source_server_for_a2s(server):
+    """Nudge a Source server out of hibernation before an A2S query.
+
+    Sending a harmless console command is enough to make affected Source
+    builds tick again. If the game still allows idle hibernation, it will
+    naturally return to that state once the query completes and the server is
+    empty.
+    """
+
+    screen.send_to_server(server.name, "\nstatus\n")
+    return 1.0
+
+
+def send_console_command_and_collect_response(server, command, parser, timeout=5.0):
+    """Send a console command and parse only the newly appended log output."""
+
+    log_file = screen.logpath(server.name)
+    if not os.path.isfile(log_file):
+        _raise_server_error("No log file found at: " + log_file)
+
+    with open(log_file, "r", encoding="utf-8", errors="replace") as handle:
+        handle.seek(0, os.SEEK_END)
+        start_offset = handle.tell()
+
+    screen.send_to_server(server.name, "\n{}\n".format(command.strip()))
+
+    deadline = time.time() + timeout
+    collected = ""
+    with open(log_file, "r", encoding="utf-8", errors="replace") as handle:
+        handle.seek(start_offset)
+        while time.time() < deadline:
+            chunk = handle.read()
+            if chunk:
+                collected += chunk
+                parsed = parser(collected)
+                if parsed is not None:
+                    return parsed
+            time.sleep(0.1)
+
+    parsed = parser(collected)
+    if parsed is None:
+        _raise_server_error(
+            "Timed out waiting for console response to {!r}".format(command)
+        )
+    return parsed
+
+
+def parse_source_console_status(output):
+    """Parse the latest Source ``status`` block from console log output."""
+
+    lines = output.splitlines()
+    status_indexes = [index for index, line in enumerate(lines) if line.strip() == "status"]
+    if not status_indexes:
+        status_indexes = [0]
+
+    for start in reversed(status_indexes):
+        parsed = {}
+        for raw_line in lines[start + 1 :]:
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line == "status" and parsed:
+                break
+            if line.startswith("hostname:"):
+                parsed["name"] = line.split(":", 1)[1].strip()
+            elif line.startswith("version :"):
+                parsed["version"] = line.split(":", 1)[1].strip()
+            elif line.startswith("udp/ip  :"):
+                parsed["address"] = line.split(":", 1)[1].strip()
+            elif line.startswith("map     :"):
+                map_value = line.split(":", 1)[1].strip()
+                parsed["map"] = map_value.split(" at:", 1)[0].strip()
+            elif line.startswith("players :"):
+                match = _SOURCE_STATUS_PLAYERS_RE.search(line.split(":", 1)[1].strip())
+                if match is not None:
+                    parsed.update(
+                        {
+                            "players": int(match.group("players")),
+                            "bots": int(match.group("bots")),
+                            "max_players": int(match.group("max_players")),
+                        }
+                    )
+            elif line.startswith("tags    :"):
+                parsed["tags"] = line.split(":", 1)[1].strip()
+            elif line.startswith("steamid :"):
+                parsed["steamid"] = line.split(":", 1)[1].strip()
+
+        if {"name", "version", "map", "players", "bots", "max_players"}.issubset(parsed):
+            return parsed
+    return None
+
+
+def source_console_status(server, timeout=5.0):
+    """Request and parse a Source ``status`` block from the live console."""
+
+    return send_console_command_and_collect_response(
+        server, "status", parse_source_console_status, timeout=timeout
+    )
+
+
+def detect_query_host(default="127.0.0.1"):
+    """Return the best local IPv4 address for querying a bound game server."""
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            host = sock.getsockname()[0]
+            if host and not host.startswith("127."):
+                return host
+    except OSError:
+        pass
+    return default
+
+
+def source_query_address(server):
+    """Return the preferred host/port/protocol tuple for Source A2S queries."""
+
+    return detect_query_host(), int(server.data.get("queryport", server.data["port"])), "a2s"
+
+
+def hibernating_source_console_info(server, timeout=5.0):
+    """Return console status info only when the Source server looks hibernating."""
+
+    parsed = source_console_status(server, timeout=timeout)
+    address = parsed.get("address", "")
+    if address.startswith("?.?.?.?:?"):
+        return parsed
+    return None
 
 
 def _save_data_store(server):
@@ -435,4 +570,5 @@ def define_valve_server_module(
         backup=backup,
         checkvalue=checkvalue,
         updateconfig=updateconfig,
+        wake_a2s_query=wake_source_server_for_a2s if engine == "source" else None,
     )

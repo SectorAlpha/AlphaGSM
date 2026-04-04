@@ -15,7 +15,6 @@ from conftest import (
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.smallandserver import steam_app_id
 
@@ -55,7 +54,11 @@ def test_smallandserver_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            [
+                "Match State Changed from EnteringMap to WaitingToStart",
+                "Engine is initialized. Leaving FEngineLoop::Init()",
+                "GameSession::RegisterServer",
+            ],
             START_TIMEOUT,
         )
 
@@ -65,24 +68,24 @@ def test_smallandserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            f"Server port is open (UDP ping on port {port}" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            f"Server port is open (UDP ping on port {port}" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+        assert _info_data.get("port") == port, (
+            f"Expected game port in info JSON: {_info_data!r}"
         )
     finally:
         # stop

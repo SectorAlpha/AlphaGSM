@@ -6,6 +6,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 import pytest
@@ -84,11 +85,24 @@ def require_mysql(host="127.0.0.1", port=3306):
 # Port helpers
 # ---------------------------------------------------------------------------
 
-def pick_free_tcp_port():
-    """Return an ephemeral TCP port on localhost."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
+def pick_free_tcp_port(min_port=None, max_port=None):
+    """Return a free TCP port on localhost, optionally constrained to a range."""
+
+    if min_port is None and max_port is None:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind(("127.0.0.1", 0))
+            return sock.getsockname()[1]
+
+    min_port = 1024 if min_port is None else int(min_port)
+    max_port = 65535 if max_port is None else int(max_port)
+    for port in range(min_port, max_port + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind(("127.0.0.1", port))
+            except OSError:
+                continue
+            return port
+    raise RuntimeError(f"No free TCP port found in range {min_port}-{max_port}")
 
 
 def pick_free_udp_port():
@@ -140,6 +154,23 @@ def alphagsm_env(config_path):
     env["ALPHAGSM_CONFIG_LOCATION"] = str(config_path)
     env["PYTHONPATH"] = str(REPO_ROOT / "src")
     return env
+
+
+def build_integration_tmp_path(test_name, tmp_path_factory):
+    """Return the temp directory root for an integration test."""
+    work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
+    if not work_dir:
+        return tmp_path_factory.mktemp(test_name)
+
+    root = Path(work_dir).expanduser() / "pytest-integration"
+    root.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix=f"{test_name}-", dir=str(root)))
+
+
+@pytest.fixture
+def tmp_path(request, tmp_path_factory):
+    """Create integration-test temp dirs under ``ALPHAGSM_WORK_DIR`` when set."""
+    return build_integration_tmp_path(request.node.name, tmp_path_factory)
 
 
 # ---------------------------------------------------------------------------
@@ -403,6 +434,37 @@ def wait_for_tcp_open(host, port, timeout_seconds, log_path=None):
     if log_path is not None:
         _dump_log(log_path, context=f"TCP open timeout on port {port}")
     pytest.fail(f"TCP port {host}:{port} never opened within {timeout_seconds}s")
+
+
+def wait_for_udp_open(host, port, timeout_seconds, log_path=None):
+    """Poll a generic UDP reachability probe until *host*:*port* responds.
+
+    Retries every 2 seconds. Returns normally once the UDP listener is deemed
+    reachable. If *timeout_seconds* elapses first the test FAILS.
+
+    Optional *log_path* is printed (tail) on timeout for CI diagnostics.
+    """
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    from utils import query as query_utils  # pylint: disable=import-outside-toplevel
+
+    deadline = time.time() + timeout_seconds
+    last_exc = None
+    while time.time() < deadline:
+        try:
+            query_utils.udp_ping(host, port)
+            return
+        except query_utils.QueryError as exc:
+            last_exc = exc
+            time.sleep(2)
+    print(
+        f"[diagnostic] UDP port {host}:{port} never opened within {timeout_seconds}s"
+        f" — last error: {last_exc}"
+    )
+    if log_path is not None:
+        _dump_log(log_path, context=f"UDP open timeout on port {port}")
+    pytest.fail(f"UDP port {host}:{port} never opened within {timeout_seconds}s")
 
 
 def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):

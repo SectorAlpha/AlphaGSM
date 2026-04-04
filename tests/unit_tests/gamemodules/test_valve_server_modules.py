@@ -145,3 +145,102 @@ def test_valve_source_install_disables_hibernation_for_integration(monkeypatch, 
 
     cfg_path = tmp_path / "cstrike" / "cfg" / "server.cfg"
     assert "sv_hibernate_when_empty 0" in cfg_path.read_text()
+
+
+def test_valve_source_module_exposes_wake_hook(monkeypatch):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    calls = []
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    monkeypatch.setattr(
+        valve_server.screen,
+        "send_to_server",
+        lambda name, payload: calls.append((name, payload)),
+    )
+
+    delay = module.MODULE.wake_a2s_query(server)
+
+    assert delay == 1.0
+    assert calls == [("cssalpha", "\nstatus\n")]
+
+
+def test_parse_source_console_status_returns_latest_complete_block():
+    valve_server = importlib.import_module("utils.valve_server")
+
+    parsed = valve_server.parse_source_console_status(
+        """
+status
+hostname: Old Server
+map     : de_dust2 at: 0 x, 0 y, 0 z
+players : 1 humans, 0 bots (16 max)
+status
+hostname: AlphaGSM TF2 Server
+version : 10515055/24 10515055 secure
+udp/ip  : ?.?.?.?:?  (public IP from Steam: 82.10.131.108)
+steamid : [A:1:1244653586:49343] (90283920363350034)
+map     : cp_dustbowl at: 0 x, 0 y, 0 z
+players : 0 humans, 0 bots (16 max)
+"""
+    )
+
+    assert parsed == {
+        "name": "AlphaGSM TF2 Server",
+        "version": "10515055/24 10515055 secure",
+        "address": "?.?.?.?:?  (public IP from Steam: 82.10.131.108)",
+        "steamid": "[A:1:1244653586:49343] (90283920363350034)",
+        "map": "cp_dustbowl",
+        "players": 0,
+        "bots": 0,
+        "max_players": 16,
+    }
+
+
+def test_source_console_status_collects_new_log_output(monkeypatch, tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    log_file = tmp_path / "server.log"
+    log_file.write_text("existing\n", encoding="utf-8")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    def fake_send_to_server(_name, _payload):
+        with open(log_file, "a", encoding="utf-8") as handle:
+            handle.write(
+                "status\n"
+                "hostname: AlphaGSM TF2 Server\n"
+                "version : 10515055/24 10515055 secure\n"
+                "udp/ip  : ?.?.?.?:?  (public IP from Steam: 82.10.131.108)\n"
+                "steamid : [A:1:1244653586:49343] (90283920363350034)\n"
+                "map     : cp_dustbowl at: 0 x, 0 y, 0 z\n"
+                "players : 0 humans, 0 bots (16 max)\n"
+            )
+
+    monkeypatch.setattr(valve_server.screen, "logpath", lambda _name: str(log_file))
+    monkeypatch.setattr(valve_server.screen, "send_to_server", fake_send_to_server)
+    monkeypatch.setattr(valve_server.time, "sleep", lambda *_args: None)
+
+    parsed = valve_server.source_console_status(server, timeout=1.0)
+
+    assert parsed["name"] == "AlphaGSM TF2 Server"
+    assert parsed["map"] == "cp_dustbowl"
+    assert parsed["players"] == 0
+
+
+def test_hibernating_source_console_info_returns_none_when_address_is_bound(monkeypatch):
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    monkeypatch.setattr(
+        valve_server,
+        "source_console_status",
+        lambda _server, timeout=5.0: {
+            "name": "AlphaGSM TF2 Server",
+            "version": "10515055/24 10515055 secure",
+            "address": "0.0.0.0:27015",
+            "map": "cp_dustbowl",
+            "players": 0,
+            "bots": 0,
+            "max_players": 16,
+        },
+    )
+
+    assert valve_server.hibernating_source_console_info(server) is None
