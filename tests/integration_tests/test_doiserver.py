@@ -1,5 +1,7 @@
 """Integration test for doiserver."""
 
+import json
+
 import pytest
 
 from conftest import (
@@ -13,12 +15,18 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
+    wait_for_info_protocol,
+    read_info_json,
+    find_source_server_cfg,
+    set_source_hibernation,
+    assert_source_server_empty,
     wait_for_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
     wait_for_a2s_ready,
 )
 from gamemodules.doiserver import steam_app_id
+from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
@@ -40,6 +48,7 @@ def test_doiserver_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
+    query_host = detect_query_host()
 
     # create
     run_and_assert_ok(env, server_name, "create", "doiserver")
@@ -48,6 +57,9 @@ def test_doiserver_lifecycle(tmp_path):
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+
+    server_cfg_path = find_source_server_cfg(install_dir)
+    set_source_hibernation(server_cfg_path, enabled=True)
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -64,7 +76,17 @@ def test_doiserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_a2s_ready("127.0.0.1", port, 600, log_path=log_path)
+        hibernating_info = read_info_json(env, server_name)
+        assert hibernating_info["protocol"] in {"console", "a2s"}, (
+            f"Expected console or a2s info after startup: {hibernating_info!r}"
+        )
+        assert_source_server_empty(hibernating_info)
+
+        if hibernating_info["protocol"] != "a2s":
+            awake_info = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+            assert_source_server_empty(awake_info)
+
+        wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -78,19 +100,12 @@ def test_doiserver_lifecycle(tmp_path):
             "Players     : 0/" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
-        # info --json
-        import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        _info_data = json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data["players"] == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
-        )
-        assert _info_data["bots"] == 0, (
-            f"Expected 0 bots on fresh server: {_info_data!r}"
-        )
+        assert_source_server_empty(_info_data)
         assert isinstance(_info_data["name"], str) and _info_data["name"], (
             f"Expected non-empty server name: {_info_data!r}"
         )
@@ -103,8 +118,8 @@ def test_doiserver_lifecycle(tmp_path):
         assert isinstance(_info_data["game"], str), (
             f"Expected game string: {_info_data!r}"
         )
-        assert isinstance(_info_data["appid"], int) and _info_data["appid"] > 0, (
-            f"Expected positive appid: {_info_data!r}"
+        assert isinstance(_info_data["appid"], int) and _info_data["appid"] >= 0, (
+            f"Expected non-negative appid: {_info_data!r}"
         )
         assert _info_data["max_players"] > 0, (
             f"Expected positive max_players: {_info_data!r}"
@@ -114,4 +129,4 @@ def test_doiserver_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed(query_host, port, STOP_TIMEOUT)

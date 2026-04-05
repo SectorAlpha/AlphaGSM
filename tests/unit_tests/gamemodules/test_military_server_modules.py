@@ -72,7 +72,11 @@ def test_armarserver_configure_sets_defaults(tmp_path):
 def test_armarserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("armar")
     exe = tmp_path / "ArmaReforgerServer"
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    config = config_dir / "server.json"
     exe.write_text("")
+    config.write_text("{}")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -87,6 +91,8 @@ def test_armarserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = armarserver.get_start_command(server)
 
     assert cmd[0] == "./ArmaReforgerServer"
+    assert str(config) in cmd
+    assert str(tmp_path / "profile") in cmd
     assert "2001" in cmd
     assert cwd == server.data["dir"]
 

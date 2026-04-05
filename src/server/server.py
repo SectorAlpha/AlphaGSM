@@ -6,6 +6,8 @@ We also define in here the constants that specify the path where server data sto
 For details of how to write a game server module see the gamemodules module in this package.
 """
 
+# pylint: disable=too-many-lines
+
 import json
 import os
 import subprocess as sp
@@ -68,11 +70,7 @@ def _load_disabled_servers():
 def _get_a2s_wake_hook(module):
     """Return an optional hook that wakes a hibernating A2S server."""
 
-    for owner in (module, getattr(module, "MODULE", None)):
-        hook = getattr(owner, "wake_a2s_query", None)
-        if callable(hook):
-            return hook
-    return None
+    return _get_module_hook(module, "wake_a2s_query")
 
 
 def _a2s_request_kwargs(wake_hook):
@@ -86,8 +84,14 @@ def _a2s_request_kwargs(wake_hook):
 def _get_hibernating_console_info_hook(module):
     """Return an optional hook that provides console-derived info when idle."""
 
+    return _get_module_hook(module, "get_hibernating_console_info")
+
+
+def _get_module_hook(module, hook_name):
+    """Return a callable hook from a module or its shared MODULE namespace."""
+
     for owner in (module, getattr(module, "MODULE", None)):
-        hook = getattr(owner, "get_hibernating_console_info", None)
+        hook = getattr(owner, hook_name, None)
         if callable(hook):
             return hook
     return None
@@ -627,7 +631,7 @@ class Server(object):
         """
         from utils import query as query_utils
 
-        get_addr = getattr(self.module, "get_query_address", None)
+        get_addr = _get_module_hook(self.module, "get_query_address")
         if callable(get_addr):
             host, port, protocol = get_addr(self)
             _explicit = True
@@ -792,7 +796,7 @@ class Server(object):
         """
         from utils import query as query_utils
 
-        get_addr = getattr(self.module, "get_info_address", None)
+        get_addr = _get_module_hook(self.module, "get_info_address")
         if callable(get_addr):
             host, port, protocol = get_addr(self)
             _explicit = True

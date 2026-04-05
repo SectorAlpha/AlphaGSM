@@ -39,11 +39,32 @@ def test_ckserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("ck")
     exe = tmp_path / "CoreKeeperServer"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "CoreKeeperServer", "world": "ck", "port": 27015, "maxplayers": "8"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "CoreKeeperServer",
+            "world": "ck",
+            "worldindex": "0",
+            "port": 27015,
+            "maxplayers": "8",
+        }
+    )
 
     cmd, cwd = ckserver.get_start_command(server)
 
-    assert cmd == ["./CoreKeeperServer", "-world", "ck", "-port", "27015", "-maxplayers", "8"]
+    assert cmd == [
+        "./CoreKeeperServer",
+        "-world",
+        "0",
+        "-worldname",
+        "ck",
+        "-port",
+        "27015",
+        "-maxplayers",
+        "8",
+        "-datapath",
+        str(tmp_path / "DedicatedServer"),
+    ]
     assert cwd == server.data["dir"]
 
 

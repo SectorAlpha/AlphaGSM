@@ -48,6 +48,7 @@ Setup configures:
 - the install directory
 - the executable name
 - SteamCMD downloads the server files
+- SteamCMD also downloads common mountable Source content into `_gmod_content/`
 - default configuration and backup settings
 
 ## Useful Commands
@@ -74,6 +75,8 @@ alphagsm mygmodserv backup
 ### Server Configuration
 
 - **Config file**: `garrysmod/cfg/server.cfg`
+- **Mount config**: `garrysmod/cfg/mount.cfg`
+- **Depot config**: `garrysmod/cfg/mountdepots.txt`
 - **Key settings**:
   - `hostname` — Server name
   - `sv_maxrate` — Max network rate
@@ -91,6 +94,15 @@ alphagsm mygmodserv backup
 
 - **Map directory**: `garrysmod/maps/`
 - **Mod directory**: `garrysmod/addons/`
+- **Mounted base content**: AlphaGSM installs common Source content under `_gmod_content/`
+  and writes default mounts for Counter-Strike: Source, Half-Life 2: Deathmatch,
+  and Team Fortress 2.
 - **Workshop support**: No
 - **Map install**: Copy `.bsp` files into `garrysmod/maps/` and add to `garrysmod/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `garrysmod/addons/`.
+
+### Extra Content Notes
+
+- Facepunch recommends installing extra mounted content outside the server root; AlphaGSM follows that pattern with `_gmod_content/`.
+- `mountdepots.txt` is seeded with the default Garry's Mod depot set, including `hl1`, `hl1_hd`, `hl2`, `episodic`, `ep2`, and `lostcoast`.
+- Single-player Valve games such as Episode One, Episode Two, and Lost Coast still require an owned Steam account if you want to download their content manually.

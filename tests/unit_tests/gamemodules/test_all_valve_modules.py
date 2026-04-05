@@ -5,6 +5,7 @@ verify that ``configure`` populates expected data-store fields and
 ``get_start_command`` builds the correct launch command.
 """
 
+import os
 from types import SimpleNamespace
 
 import importlib
@@ -57,6 +58,38 @@ def test_gmodserver_start_command(tmp_path):
     )
     cmd = _start_command_check(mod, server, tmp_path, "srcds_run")
     assert "-game" in cmd and "garrysmod" in cmd
+
+
+def test_gmodserver_install_downloads_mountable_source_content(monkeypatch, tmp_path):
+    mod = importlib.import_module("gamemodules.gmodserver")
+    server = _make_server()
+    calls = []
+
+    mod.configure(server, False, 27015, str(tmp_path))
+
+    def fake_download(path, app_id, anonymous, validate=True, mod=None, force_windows=False):
+        calls.append((os.path.abspath(path), app_id, anonymous, validate))
+
+    monkeypatch.setattr(mod.steamcmd, "download", fake_download)
+
+    mod.install(server)
+
+    assert calls == [
+        (os.path.abspath(str(tmp_path) + "/"), 4020, True, False),
+        (os.path.abspath(str(tmp_path / "_gmod_content" / "cstrike")), 232330, True, False),
+        (os.path.abspath(str(tmp_path / "_gmod_content" / "hl2mp")), 232370, True, False),
+        (os.path.abspath(str(tmp_path / "_gmod_content" / "tf")), 232250, True, False),
+    ]
+
+    mount_cfg = (tmp_path / "garrysmod" / "cfg" / "mount.cfg").read_text(encoding="utf-8")
+    assert '"cstrike"' in mount_cfg
+    assert '"hl2mp"' in mount_cfg
+    assert '"tf"' in mount_cfg
+
+    mountdepots = (tmp_path / "garrysmod" / "cfg" / "mountdepots.txt").read_text(encoding="utf-8")
+    assert '"cstrike"' in mountdepots
+    assert '"hl2mp"' in mountdepots
+    assert '"ep2"' in mountdepots
 
 
 # ── Counter-Strike: Source ───────────────────────────────────────────────────

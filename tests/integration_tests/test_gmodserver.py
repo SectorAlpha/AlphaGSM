@@ -1,5 +1,8 @@
 """Integration test for gmodserver."""
 
+import json
+import time
+
 import pytest
 
 from conftest import (
@@ -18,12 +21,117 @@ from conftest import (
     wait_for_udp_closed,
     wait_for_a2s_ready,
 )
-from gamemodules.gmodserver import steam_app_id
+from gamemodules.gmodserver import _GMOD_CONTENT_INSTALLS, _GMOD_MOUNTDEPOTS_DEFAULTS, steam_app_id
+from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 3600
+
+
+def _wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds):
+    deadline = time.time() + timeout_seconds
+    last_result = None
+    last_data = None
+    while time.time() < deadline:
+        result = run_alphagsm(env, server_name, "info", "--json", timeout=120)
+        last_result = result
+        if result.returncode == 0:
+            try:
+                data = json.loads(result.stdout.strip())
+            except json.JSONDecodeError:
+                data = None
+            else:
+                last_data = data
+                if data.get("protocol") == expected_protocol:
+                    return data
+        time.sleep(5)
+
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "info", "--json")),
+        last_result,
+    )
+    pytest.fail(
+        f"gmodserver info --json never returned protocol {expected_protocol!r} within {timeout_seconds}s: "
+        f"last payload={last_data!r}"
+    )
+
+
+def _read_info_json(env, server_name):
+    result = run_and_assert_ok(env, server_name, "info", "--json")
+    return json.loads(result.stdout.strip())
+
+
+def _set_source_hibernation(server_cfg_path, enabled):
+    cfg_text = server_cfg_path.read_text(encoding="utf-8")
+    target = "sv_hibernate_when_empty 0"
+    replacement = "sv_hibernate_when_empty 1" if enabled else target
+    if enabled:
+        if target in cfg_text:
+            cfg_text = cfg_text.replace(target, replacement)
+        elif replacement not in cfg_text:
+            cfg_text += "\nsv_hibernate_when_empty 1\n"
+    else:
+        cfg_text = cfg_text.replace("sv_hibernate_when_empty 1", target)
+        if target not in cfg_text:
+            cfg_text += "\nsv_hibernate_when_empty 0\n"
+    server_cfg_path.write_text(cfg_text, encoding="utf-8")
+
+
+def _assert_common_gmod_info(data):
+    assert data["players"] == 0, f"Expected 0 players on fresh server: {data!r}"
+    assert data["bots"] == 0, f"Expected 0 bots on fresh server: {data!r}"
+    assert data["map"] == "gm_construct", f"Expected gm_construct map: {data!r}"
+    assert data["name"] == "AlphaGSM Garrys Mod", f"Unexpected Garry's Mod name: {data!r}"
+    assert isinstance(data["folder"], str) and data["folder"], (
+        f"Expected non-empty game folder: {data!r}"
+    )
+    assert isinstance(data["game"], str), f"Expected game string: {data!r}"
+    assert isinstance(data["appid"], int) and data["appid"] > 0, (
+        f"Expected positive appid: {data!r}"
+    )
+    assert data["max_players"] > 0, f"Expected positive max_players: {data!r}"
+
+
+def _parse_keyvalue_file(path):
+    lines = path.read_text(encoding="utf-8").splitlines()
+    mapping = {}
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped in {'{', '}'} or stripped.startswith('"mountcfg"') or stripped.startswith('"gamedepotsystem"'):
+            continue
+        parts = stripped.split('"')
+        if len(parts) >= 4:
+            mapping[parts[1]] = parts[3]
+    return mapping
+
+
+def _assert_gmod_mount_files(install_dir):
+    cfg_dir = install_dir / "garrysmod" / "cfg"
+    mount_cfg_path = cfg_dir / "mount.cfg"
+    mountdepots_path = cfg_dir / "mountdepots.txt"
+
+    assert mount_cfg_path.exists(), f"Expected mount config to exist: {mount_cfg_path}"
+    assert mountdepots_path.exists(), f"Expected mount depots config to exist: {mountdepots_path}"
+
+    mount_cfg = _parse_keyvalue_file(mount_cfg_path)
+    for mount_key, _app_id, game_dir in _GMOD_CONTENT_INSTALLS:
+        expected_path = str(install_dir / "_gmod_content" / mount_key / game_dir)
+        assert mount_cfg.get(mount_key) == expected_path, (
+            f"Expected {mount_key!r} mount path {expected_path!r}, got {mount_cfg.get(mount_key)!r}"
+        )
+        assert (install_dir / "_gmod_content" / mount_key / game_dir).is_dir(), (
+            f"Expected downloaded content directory for {mount_key!r}: "
+            f"{install_dir / '_gmod_content' / mount_key / game_dir}"
+        )
+
+    mountdepots = _parse_keyvalue_file(mountdepots_path)
+    for depot_name in _GMOD_MOUNTDEPOTS_DEFAULTS:
+        assert mountdepots.get(depot_name) == "1", (
+            f"Expected mount depot {depot_name!r} to be enabled: {mountdepots!r}"
+        )
 
 
 def test_gmodserver_lifecycle(tmp_path):
@@ -40,14 +148,28 @@ def test_gmodserver_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
+    query_host = detect_query_host()
 
     # create
     run_and_assert_ok(env, server_name, "create", "gmodserver")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_and_assert_ok(
+        env,
+        server_name,
+        "setup",
+        "-n",
+        str(port),
+        str(install_dir),
+        timeout=SETUP_TIMEOUT,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+
+    server_cfg_path = install_dir / "garrysmod" / "cfg" / "server.cfg"
+    assert server_cfg_path.exists()
+    _assert_gmod_mount_files(install_dir)
+    _set_source_hibernation(server_cfg_path, enabled=True)
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -64,7 +186,17 @@ def test_gmodserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_a2s_ready("127.0.0.1", port, 600, log_path=log_path)
+        hibernating_info = _read_info_json(env, server_name)
+        assert hibernating_info["protocol"] in {"console", "a2s"}, (
+            f"Expected console or a2s info after startup: {hibernating_info!r}"
+        )
+        _assert_common_gmod_info(hibernating_info)
+
+        if hibernating_info["protocol"] != "a2s":
+            awake_info = _wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+            _assert_common_gmod_info(awake_info)
+
+        wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -79,39 +211,15 @@ def test_gmodserver_lifecycle(tmp_path):
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
-        import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        _info_data = json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data["players"] == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
-        )
-        assert _info_data["bots"] == 0, (
-            f"Expected 0 bots on fresh server: {_info_data!r}"
-        )
-        assert isinstance(_info_data["name"], str) and _info_data["name"], (
-            f"Expected non-empty server name: {_info_data!r}"
-        )
-        assert isinstance(_info_data["map"], str), (
-            f"Expected map string: {_info_data!r}"
-        )
-        assert isinstance(_info_data["folder"], str) and _info_data["folder"], (
-            f"Expected non-empty game folder: {_info_data!r}"
-        )
-        assert isinstance(_info_data["game"], str), (
-            f"Expected game string: {_info_data!r}"
-        )
-        assert isinstance(_info_data["appid"], int) and _info_data["appid"] > 0, (
-            f"Expected positive appid: {_info_data!r}"
-        )
-        assert _info_data["max_players"] > 0, (
-            f"Expected positive max_players: {_info_data!r}"
-        )
+        _assert_common_gmod_info(_info_data)
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed(query_host, port, STOP_TIMEOUT)

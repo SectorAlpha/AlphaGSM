@@ -1,5 +1,6 @@
 """Shared fixtures and helpers for AlphaGSM integration tests."""
 
+import json
 import os
 from pathlib import Path
 import shutil
@@ -215,6 +216,72 @@ def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
         skip_for_known_steamcmd_issue(result)
     assert result.returncode == 0, result.stderr or result.stdout
     return result
+
+
+def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds):
+    """Poll ``info --json`` until it returns *expected_protocol*."""
+    deadline = time.time() + timeout_seconds
+    last_result = None
+    last_data = None
+    while time.time() < deadline:
+        result = run_alphagsm(env, server_name, "info", "--json", timeout=120)
+        last_result = result
+        if result.returncode == 0:
+            try:
+                data = json.loads(result.stdout.strip())
+            except json.JSONDecodeError:
+                data = None
+            else:
+                last_data = data
+                if data.get("protocol") == expected_protocol:
+                    return data
+        time.sleep(5)
+
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "info", "--json")),
+        last_result,
+    )
+    pytest.fail(
+        f"info --json never returned protocol {expected_protocol!r} within {timeout_seconds}s: "
+        f"last payload={last_data!r}"
+    )
+
+
+def read_info_json(env, server_name):
+    """Run ``info --json`` and return the parsed payload."""
+    result = run_and_assert_ok(env, server_name, "info", "--json")
+    return json.loads(result.stdout.strip())
+
+
+def find_source_server_cfg(install_dir):
+    """Return the single Source ``cfg/server.cfg`` under *install_dir*."""
+    candidates = sorted(Path(install_dir).glob("**/cfg/server.cfg"))
+    assert candidates, f"Expected cfg/server.cfg under {install_dir}"
+    return candidates[0]
+
+
+def set_source_hibernation(server_cfg_path, enabled):
+    """Force Source hibernation on or off in ``server.cfg``."""
+    cfg_text = Path(server_cfg_path).read_text(encoding="utf-8")
+    target = "sv_hibernate_when_empty 0"
+    replacement = "sv_hibernate_when_empty 1" if enabled else target
+    if enabled:
+        if target in cfg_text:
+            cfg_text = cfg_text.replace(target, replacement)
+        elif replacement not in cfg_text:
+            cfg_text += "\nsv_hibernate_when_empty 1\n"
+    else:
+        cfg_text = cfg_text.replace("sv_hibernate_when_empty 1", target)
+        if target not in cfg_text:
+            cfg_text += "\nsv_hibernate_when_empty 0\n"
+    Path(server_cfg_path).write_text(cfg_text, encoding="utf-8")
+
+
+def assert_source_server_empty(data):
+    """Assert a fresh Source server reports no human players or bots."""
+    assert data.get("players") == 0, f"Expected 0 players on fresh server: {data!r}"
+    if "bots" in data:
+        assert data.get("bots") == 0, f"Expected 0 bots on fresh server: {data!r}"
 
 
 # ---------------------------------------------------------------------------

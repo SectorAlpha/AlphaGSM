@@ -42,8 +42,7 @@ def test_craftopia_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = craftopiaserver.get_start_command(server)
 
-    assert cmd[0] == "./Craftopia.x86_64"
-    assert "-worldname" in cmd
+    assert cmd == ["./Craftopia.x86_64", "-batchmode", "-nographics"]
     assert cwd == server.data["dir"]
 
 

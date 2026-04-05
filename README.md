@@ -21,6 +21,8 @@ You need:
 - `screen`
 - the Python packages in `requirements.txt`
 
+`gmodserver` note: setup also downloads common mountable Source content into a separate `_gmod_content/` directory and writes `garrysmod/cfg/mount.cfg` plus `mountdepots.txt` defaults.
+
 Some server types need one extra thing:
 
 - Minecraft needs Java:

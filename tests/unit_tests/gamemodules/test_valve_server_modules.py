@@ -165,6 +165,14 @@ def test_valve_source_module_exposes_wake_hook(monkeypatch):
     assert calls == [("cssalpha", "\nstatus\n")]
 
 
+def test_valve_source_module_exposes_source_info_hooks():
+    module = importlib.import_module("gamemodules.cssserver")
+
+    assert callable(module.MODULE.get_query_address)
+    assert callable(module.MODULE.get_info_address)
+    assert callable(module.MODULE.get_hibernating_console_info)
+
+
 def test_parse_source_console_status_returns_latest_complete_block():
     valve_server = importlib.import_module("utils.valve_server")
 
@@ -225,22 +233,110 @@ def test_source_console_status_collects_new_log_output(monkeypatch, tmp_path):
     assert parsed["players"] == 0
 
 
-def test_hibernating_source_console_info_returns_none_when_address_is_bound(monkeypatch):
+def test_parse_source_bool_cvar_returns_boolean_for_named_cvar():
+    valve_server = importlib.import_module("utils.valve_server")
+
+    assert (
+        valve_server.parse_source_bool_cvar(
+            'hostname = "AlphaGSM"\nsv_hibernate_when_empty = "1"\n',
+            "sv_hibernate_when_empty",
+        )
+        is True
+    )
+    assert (
+        valve_server.parse_source_bool_cvar(
+            'sv_hibernate_when_empty = "0"\n',
+            "sv_hibernate_when_empty",
+        )
+        is False
+    )
+
+
+def test_source_hibernation_allowed_returns_none_when_probe_is_unsupported(monkeypatch):
     valve_server = importlib.import_module("utils.valve_server")
     server = SimpleNamespace(name="cssalpha", data={})
 
     monkeypatch.setattr(
         valve_server,
+        "send_console_command_and_collect_response",
+        lambda _server, _command, parser, timeout=5.0: parser(
+            'sv_hibernate_when_empty\nUnknown command "sv_hibernate_when_empty"\n'
+        ),
+    )
+
+    assert valve_server.source_hibernation_allowed(server) is None
+
+
+def test_hibernating_source_console_info_returns_none_when_hibernation_disabled(monkeypatch):
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    monkeypatch.setattr(
+        valve_server,
+        "source_hibernation_allowed",
+        lambda _server, timeout=5.0: False,
+    )
+
+    assert valve_server.hibernating_source_console_info(server) is None
+
+
+def test_hibernating_source_console_info_uses_console_status_when_hibernation_enabled(
+    monkeypatch,
+):
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    monkeypatch.setattr(
+        valve_server,
+        "source_hibernation_allowed",
+        lambda _server, timeout=5.0: True,
+    )
+    monkeypatch.setattr(
+        valve_server,
         "source_console_status",
         lambda _server, timeout=5.0: {
-            "name": "AlphaGSM TF2 Server",
-            "version": "10515055/24 10515055 secure",
-            "address": "0.0.0.0:27015",
-            "map": "cp_dustbowl",
+            "name": "AlphaGSM CSS Server",
+            "version": "6630498 secure",
+            "map": "de_dust2",
             "players": 0,
             "bots": 0,
             "max_players": 16,
         },
     )
 
-    assert valve_server.hibernating_source_console_info(server) is None
+    assert valve_server.hibernating_source_console_info(server) == {
+        "name": "AlphaGSM CSS Server",
+        "version": "6630498 secure",
+        "map": "de_dust2",
+        "players": 0,
+        "bots": 0,
+        "max_players": 16,
+    }
+
+
+def test_hibernating_source_console_info_falls_back_to_status_heuristic_when_probe_is_unsupported(
+    monkeypatch,
+):
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    monkeypatch.setattr(
+        valve_server,
+        "source_hibernation_allowed",
+        lambda _server, timeout=5.0: None,
+    )
+    monkeypatch.setattr(
+        valve_server,
+        "source_console_status",
+        lambda _server, timeout=5.0: {
+            "name": "AlphaGSM CSS Server",
+            "version": "6630498 secure",
+            "address": "?.?.?.?:?  (public IP from Steam: 82.10.131.108)",
+            "map": "de_dust2",
+            "players": 0,
+            "bots": 0,
+            "max_players": 16,
+        },
+    )
+
+    assert valve_server.hibernating_source_console_info(server)["name"] == "AlphaGSM CSS Server"

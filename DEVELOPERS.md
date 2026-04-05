@@ -200,6 +200,11 @@ The smoke runners are the best repository examples of the real lifecycle a user 
 - [smoke_tests/run_minecraft_vanilla.sh](smoke_tests/run_minecraft_vanilla.sh)
 - [smoke_tests/run_tf2.sh](smoke_tests/run_tf2.sh)
 
+`gmodserver` install behaviour:
+- download common mountable Source content into `<install_dir>/_gmod_content/` instead of the server root
+- write `garrysmod/cfg/mount.cfg` entries for `cstrike`, `hl2mp`, and `tf`
+- seed `garrysmod/cfg/mountdepots.txt` with Facepunch's default depot list
+
  [tests/smoke_tests/run_minecraft_vanilla.sh](tests/smoke_tests/run_minecraft_vanilla.sh)
  [tests/smoke_tests/run_tf2.sh](tests/smoke_tests/run_tf2.sh)
 - create isolated temporary configs

@@ -18,7 +18,12 @@ from conftest import (
 )
 from gamemodules.craftopiaserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="SteamCMD app 1670340 anonymous install repeatedly returns state 0x202; dedicated server payload is not installable in CI"
+    ),
+]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 

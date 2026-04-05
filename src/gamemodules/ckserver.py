@@ -35,6 +35,30 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _patch_launch_script(server):
+    launch_path = os.path.join(server.data["dir"], "_launch.sh")
+    if not os.path.isfile(launch_path):
+        return
+    original = open(launch_path, encoding="utf-8", errors="replace").read()
+    old = (
+        "    set -m\n\n"
+        "    rm -f /tmp/.X99-lock\n\n"
+        "    Xvfb :99 -screen 0 1x1x24 -nolisten tcp &\n"
+        "    xvfbpid=$!\n\n"
+        "    DISPLAY=:99 LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$installdir/linux64/\" \\\n"
+        "\t   \"$exepath\" -batchmode -logfile CoreKeeperServerLog.txt \"$@\" &\n"
+    )
+    new = (
+        "    xvfb-run -a --server-args=\"-screen 0 1x1x24 -nolisten tcp\" \\\n"
+        "        env LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$installdir/linux64/\" \\\n"
+        "        \"$exepath\" -batchmode -logfile CoreKeeperServerLog.txt \"$@\" &\n"
+    )
+    if old not in original:
+        return
+    with open(launch_path, "w", encoding="utf-8") as handle:
+        handle.write(original.replace(old, new))
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="CoreKeeperServer"):
     """Collect and store configuration values for a Core Keeper server."""
 
@@ -80,6 +104,7 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    _patch_launch_script(server)
 
 
 def update(server, validate=False, restart=False):
@@ -90,6 +115,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    _patch_launch_script(server)
     print("Server up to date")
     if restart:
         print("Starting the server up")

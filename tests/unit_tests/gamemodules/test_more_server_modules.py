@@ -106,7 +106,13 @@ def test_scpslserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = scpslserver.get_start_command(server)
 
-    assert cmd == ["./LocalAdmin", "-batchmode", "-nographics", "-port", "7777", "-queryport", "7778"]
+    assert cmd == [
+        "env",
+        f"HOME={tmp_path / 'home'}",
+        f"XDG_CONFIG_HOME={tmp_path / 'home' / '.config'}",
+        "./LocalAdmin",
+        "7777",
+    ]
     assert cwd == server.data["dir"]
 
 

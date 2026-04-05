@@ -19,7 +19,12 @@ from conftest import (
 )
 from gamemodules.stationeersserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="Stationeers dedicated server stalls under Unity NullGfxDevice in headless CI after SetConsoleOutputCP startup exception; game port never opens"
+    ),
+]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 

@@ -62,13 +62,27 @@ def test_wurmserver_get_start_command_builds_expected_args(tmp_path):
         {
             "dir": str(tmp_path) + "/",
             "exe_name": "WurmServerLauncher",
-            "javapath": "java",
+            "worldname": "Adventure",
+            "port": 3724,
+            "queryport": 27016,
+            "internalport": 7220,
+            "rmiport": 7221,
+            "servername": "AlphaGSM wurm",
         }
     )
 
     cmd, cwd = wurmserver.get_start_command(server)
 
-    assert cmd == ["java", "-jar", "WurmServerLauncher", "nogui"]
+    assert cmd == [
+        "./WurmServerLauncher",
+        "start=Adventure",
+        "ip=127.0.0.1",
+        "externalport=3724",
+        "queryport=27016",
+        "rmiregport=7220",
+        "rmiport=7221",
+        "servername=AlphaGSM wurm",
+    ]
     assert cwd == server.data["dir"]
 
 

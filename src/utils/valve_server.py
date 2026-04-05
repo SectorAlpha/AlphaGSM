@@ -21,6 +21,8 @@ _CONFPAT = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 _SOURCE_STATUS_PLAYERS_RE = re.compile(
     r"(?P<players>\d+) humans, (?P<bots>\d+) bots \((?P<max_players>\d+) max\)"
 )
+_SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
+_SOURCE_UNKNOWN_COMMAND_RE = re.compile(r'^Unknown command "(?P<name>[^"]+)"$', re.MULTILINE)
 
 _COMMAND_ARGS = {
     "setup": CmdSpec(
@@ -221,12 +223,55 @@ def source_query_address(server):
     return detect_query_host(), int(server.data.get("queryport", server.data["port"])), "a2s"
 
 
+def parse_source_bool_cvar(output, cvar_name):
+    """Parse a Source boolean cvar response from console log output."""
+
+    for raw_line in reversed(output.splitlines()):
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = _SOURCE_BOOL_CVAR_RE.search(line)
+        if match is None:
+            continue
+        if match.group("name").strip() != cvar_name:
+            continue
+        return match.group("value") == "1"
+    return None
+
+
+def source_hibernation_allowed(server, timeout=5.0):
+    """Return whether a Source server currently allows empty-server hibernation."""
+
+    def _parse_probe(output):
+        parsed = parse_source_bool_cvar(output, "sv_hibernate_when_empty")
+        if parsed is not None:
+            return parsed
+        for match in _SOURCE_UNKNOWN_COMMAND_RE.finditer(output):
+            if match.group("name") == "sv_hibernate_when_empty":
+                return "unsupported"
+        return None
+
+    probe = send_console_command_and_collect_response(
+        server,
+        "sv_hibernate_when_empty",
+        _parse_probe,
+        timeout=timeout,
+    )
+    if probe == "unsupported":
+        return None
+    return probe
+
+
 def hibernating_source_console_info(server, timeout=5.0):
     """Return console status info only when the Source server looks hibernating."""
 
+    hibernation_allowed = source_hibernation_allowed(server, timeout=timeout)
+    if hibernation_allowed is False:
+        return None
     parsed = source_console_status(server, timeout=timeout)
-    address = parsed.get("address", "")
-    if address.startswith("?.?.?.?:?"):
+    if hibernation_allowed is True:
+        return parsed
+    if parsed.get("address", "").startswith("?.?.?.?:?"):
         return parsed
     return None
 
@@ -571,4 +616,9 @@ def define_valve_server_module(
         checkvalue=checkvalue,
         updateconfig=updateconfig,
         wake_a2s_query=wake_source_server_for_a2s if engine == "source" else None,
+        get_query_address=source_query_address if engine == "source" else None,
+        get_info_address=source_query_address if engine == "source" else None,
+        get_hibernating_console_info=(
+            hibernating_source_console_info if engine == "source" else None
+        ),
     )

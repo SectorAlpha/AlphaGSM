@@ -730,6 +730,35 @@ def test_query_uses_module_get_query_address(monkeypatch, capsys):
     assert ("10.0.0.1", 27016) in calls
 
 
+def test_query_uses_module_namespace_get_query_address(monkeypatch, capsys):
+    calls = []
+    module = DummyModule()
+    module.MODULE = SimpleNamespace(
+        get_query_address=lambda server: ("10.0.0.2", 27017, "tcp")
+    )
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_tcp(host, port, timeout=2.0):
+        calls.append((host, port))
+        return 1.0
+
+    fake_q.tcp_ping = fake_tcp
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert calls == [("10.0.0.2", 27017)]
+
+
 def test_query_uses_explicit_udp_protocol(monkeypatch, capsys):
     module = DummyModule()
     module.get_query_address = lambda server: ("10.0.0.1", 27016, "udp")
@@ -1049,3 +1078,42 @@ def test_info_uses_console_hook_for_hibernating_server(monkeypatch, capsys):
     assert data["protocol"] == "console"
     assert data["name"] == "Hibernate TF2"
     assert data["map"] == "cp_dustbowl"
+
+
+def test_info_uses_module_namespace_console_hook_for_hibernating_server(
+    monkeypatch, capsys
+):
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.MODULE = SimpleNamespace(
+        get_info_address=lambda server: ("10.0.0.5", 27015, "a2s"),
+        get_hibernating_console_info=lambda server: {
+            "name": "Hibernate CSS",
+            "map": "de_dust2",
+            "version": "6630498 secure",
+            "players": 0,
+            "max_players": 16,
+            "bots": 0,
+        },
+    )
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_info = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError("A2S should not be used when module namespace console info is available")
+    )
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert data["protocol"] == "console"
+    assert data["port"] == 27015
+    assert data["name"] == "Hibernate CSS"

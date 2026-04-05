@@ -22,7 +22,12 @@ from conftest import (
 )
 from gamemodules.medievalengineersserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query"
+    ),
+]
 START_TIMEOUT = 600  # ME initialises slowly under Proton on GitHub-hosted 2-CPU runners
 STOP_TIMEOUT = 90
 
