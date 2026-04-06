@@ -119,14 +119,12 @@ def pick_free_udp_port():
 
 def write_config(config_path, home_dir, session_tag="AlphaGSM-IT#"):
     """Write a minimal AlphaGSM config file pointing at *home_dir*."""
+    download_root = home_dir / "downloads"
     work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
-    if work_dir:
-        download_root = Path(work_dir).expanduser()
-        db_path = download_root / "downloads" / "downloads.txt"
-        target_path = download_root / "downloads" / "downloads"
-    else:
-        db_path = home_dir / "downloads" / "downloads.txt"
-        target_path = home_dir / "downloads" / "downloads"
+    if work_dir and os.environ.get("ALPHAGSM_SHARE_DOWNLOAD_CACHE") == "1":
+        download_root = Path(work_dir).expanduser() / "downloads"
+    db_path = download_root / "downloads.txt"
+    target_path = download_root / "downloads"
     config_path.write_text(
         "\n".join([
             "[core]",

@@ -134,3 +134,36 @@ def test_build_integration_tmp_path_falls_back_to_pytest_factory(monkeypatch, tm
     result = helpers.build_integration_tmp_path("ndserver", _Factory())
 
     assert result == Path(expected)
+
+
+def test_write_config_keeps_downloads_inside_test_home_by_default(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+    config_path = tmp_path / "alphagsm.conf"
+
+    monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(tmp_path / "shared-work"))
+    monkeypatch.delenv("ALPHAGSM_SHARE_DOWNLOAD_CACHE", raising=False)
+
+    helpers.write_config(config_path, home_dir)
+
+    text = config_path.read_text(encoding="utf-8")
+    assert f"db_path = {home_dir / 'downloads' / 'downloads.txt'}" in text
+    assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
+
+
+def test_write_config_can_use_shared_download_cache_when_opted_in(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+    config_path = tmp_path / "alphagsm.conf"
+    shared_root = tmp_path / "shared-work"
+
+    monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(shared_root))
+    monkeypatch.setenv("ALPHAGSM_SHARE_DOWNLOAD_CACHE", "1")
+
+    helpers.write_config(config_path, home_dir)
+
+    text = config_path.read_text(encoding="utf-8")
+    assert f"db_path = {shared_root / 'downloads' / 'downloads.txt'}" in text
+    assert f"target_path = {shared_root / 'downloads' / 'downloads'}" in text

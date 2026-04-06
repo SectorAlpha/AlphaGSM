@@ -17,9 +17,25 @@ def test_write_config_uses_home_download_paths_by_default(tmp_path, monkeypatch)
     assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
 
 
-def test_write_config_uses_shared_download_root_when_work_dir_is_set(tmp_path, monkeypatch):
+def test_write_config_keeps_downloads_under_home_when_work_dir_is_set(tmp_path, monkeypatch):
     shared_root = tmp_path / "shared-download-root"
     monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(shared_root))
+    monkeypatch.delenv("ALPHAGSM_SHARE_DOWNLOAD_CACHE", raising=False)
+
+    config_path = tmp_path / "alphagsm.conf"
+    home_dir = tmp_path / "home"
+    write_config(config_path, home_dir, session_tag="AlphaGSM-TF2-IT#")
+
+    text = config_path.read_text()
+    assert f"db_path = {home_dir / 'downloads' / 'downloads.txt'}" in text
+    assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
+    assert "sessiontag = AlphaGSM-TF2-IT#" in text
+
+
+def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypatch):
+    shared_root = tmp_path / "shared-download-root"
+    monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(shared_root))
+    monkeypatch.setenv("ALPHAGSM_SHARE_DOWNLOAD_CACHE", "1")
 
     config_path = tmp_path / "alphagsm.conf"
     home_dir = tmp_path / "home"
