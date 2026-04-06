@@ -57,6 +57,28 @@ def test_custom_install_updates_generated_config_files(tmp_path, monkeypatch):
     assert server.data.saved == 1
 
 
+def test_custom_install_writes_eula_before_first_boot(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update({"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565})
+    (tmp_path / "minecraft_server.jar").write_text("")
+
+    observed = {}
+
+    def fake_check_call(*args, **kwargs):
+        eula_path = tmp_path / "eula.txt"
+        observed["exists"] = eula_path.exists()
+        observed["content"] = eula_path.read_text(encoding="utf-8") if eula_path.exists() else ""
+        (tmp_path / "server.properties").write_text("server-port=25565\n", encoding="utf-8")
+        return 0
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: None)
+    monkeypatch.setattr(custom.sp, "check_call", fake_check_call)
+
+    custom.install(server, eula=True)
+
+    assert observed == {"exists": True, "content": "eula=true\n"}
+
+
 def test_custom_message_sends_tellraw_to_all_players(monkeypatch):
     server = DummyServer("hub")
     calls = []

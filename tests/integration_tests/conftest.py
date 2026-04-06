@@ -170,8 +170,14 @@ def build_integration_tmp_path(test_name, tmp_path_factory):
 
 @pytest.fixture
 def tmp_path(request, tmp_path_factory):
-    """Create integration-test temp dirs under ``ALPHAGSM_WORK_DIR`` when set."""
-    return build_integration_tmp_path(request.node.name, tmp_path_factory)
+    """Create and clean integration-test temp dirs under ``ALPHAGSM_WORK_DIR``."""
+    path = build_integration_tmp_path(request.node.name, tmp_path_factory)
+    try:
+        yield path
+    finally:
+        if os.environ.get("ALPHAGSM_KEEP_INTEGRATION_TMP") == "1":
+            return
+        shutil.rmtree(path, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
