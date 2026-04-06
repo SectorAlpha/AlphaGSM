@@ -39,6 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=16261, dir=str(tmp_path))
     assert server.data['port'] == 16261
+    assert server.data['queryport'] == 16262
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -110,6 +111,7 @@ def test_get_start_command(tmp_path):
     server.data["exe_name"] = "start-server.sh"
     (tmp_path / "start-server.sh").write_text("")
     server.data["servername"] = "test"
+    server.data["adminpassword"] = "alphagsm"
     server.data["port"] = "16261"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
@@ -171,9 +173,21 @@ def test_checkvalue_port():
     assert result == 12345
 
 
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "16262")
+    assert result == 16262
+
+
 def test_checkvalue_servername():
     server = DummyServer()
     result = mod.checkvalue(server, ("servername",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_adminpassword():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("adminpassword",), "/test/value")
     assert result == "/test/value"
 
 

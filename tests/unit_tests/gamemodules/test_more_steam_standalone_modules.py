@@ -34,6 +34,8 @@ def test_projectzomboid_configure_sets_defaults(tmp_path):
     assert kwargs == {}
     assert server.data["Steam_AppID"] == 380870
     assert server.data["servername"] == "pzalpha"
+    assert server.data["adminpassword"] == "alphagsm"
+    assert server.data["queryport"] == 16262
     assert server.data["backupfiles"] == ["Zomboid", "Server", "start-server.sh"]
 
 
@@ -41,11 +43,11 @@ def test_projectzomboid_get_start_command_uses_server_name(tmp_path):
     server = DummyServer("pzalpha")
     exe = tmp_path / "start-server.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "start-server.sh", "servername": "pzalpha", "port": "16261"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "start-server.sh", "servername": "pzalpha", "adminpassword": "alphagsm", "port": "16261"})
 
     cmd, cwd = projectzomboid.get_start_command(server)
 
-    assert cmd == ["./start-server.sh", "-port", "16261", "pzalpha"]
+    assert cmd == ["./start-server.sh", "-servername", "pzalpha", "-adminpassword", "alphagsm", "-port", "16261"]
     assert cwd == server.data["dir"]
 
 
