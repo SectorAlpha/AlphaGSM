@@ -8,8 +8,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 #
 #   wine64 / wine32:i386 / winetricks  — run Windows-only game server binaries
 #   screen                              — AlphaGSM's process supervisor
-#   xvfb                                — headless X server wrapper required by
-#                                         Core Keeper's launcher (xvfb-run)
+#   xvfb xauth                          — headless X server wrapper required by
+#                                         Core Keeper's launcher (xvfb-run);
+#                                         xauth is needed by xvfb-run itself
 #   lib32gcc-s1 lib32stdc++6           — 32-bit runtime (Source engine servers)
 #   p7zip-full                          — .7z archive support
 #   unzip bzip2                         — archive formats used by some servers
@@ -27,8 +28,8 @@ RUN dpkg --add-architecture i386 \
  && apt-get update -qq \
  && apt-get install -y --no-install-recommends \
         wine64 wine32:i386 winetricks \
-        screen \
-       xvfb \
+       screen \
+       xvfb xauth \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
         unzip bzip2 \
