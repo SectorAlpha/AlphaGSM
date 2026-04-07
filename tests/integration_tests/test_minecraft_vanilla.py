@@ -125,6 +125,26 @@ def _run_and_assert_ok(env, *args, timeout=TEST_TIMEOUT_SECONDS):
     return result
 
 
+def _run_setup_with_download_retry(env, *args, timeout=TEST_TIMEOUT_SECONDS, attempts=3):
+    last_result = None
+    for attempt in range(1, attempts + 1):
+        result = _run_alphagsm(env, *args, timeout=timeout)
+        _log_command_result("alphagsm " + " ".join(args), result)
+        if result.returncode == 0:
+            return result
+        combined = (result.stdout or "") + "\n" + (result.stderr or "")
+        is_transient_download_failure = (
+            "Network is unreachable" in combined
+            or "can't download requested version" in combined
+        )
+        last_result = result
+        if not is_transient_download_failure or attempt == attempts:
+            break
+        time.sleep(5)
+    assert last_result is not None
+    assert last_result.returncode == 0, last_result.stderr or last_result.stdout
+
+
 def _encode_varint(value):
     buf = bytearray()
     while True:
@@ -225,7 +245,7 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
 
     _run_and_assert_ok(env, server_name, "create", "minecraft.vanilla")
     _run_and_assert_ok(env, server_name, "set", "javapath", str(wrapper_path))
-    _run_and_assert_ok(
+    _run_setup_with_download_retry(
         env,
         server_name,
         "setup",
@@ -251,7 +271,40 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         assert release_id.split(".")[0] in status["version"]["name"]
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
+
         _run_and_assert_ok(env, server_name, "message", "hello world")
+
+        # query — Minecraft doesn't implement A2S; expects TCP ping fallback
+        query_result = _run_and_assert_ok(env, server_name, "query")
+        print("\n=== query ===")
+        print(query_result.stdout.strip())
+        assert "Server port is open" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
+
+        # info — Minecraft uses SLP; expects player count and description
+        info_result = _run_and_assert_ok(env, server_name, "info")
+        print("\n=== info ===")
+        print(info_result.stdout.strip())
+        assert "Server info (SLP" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
+        assert "Players     : 0/20" in info_result.stdout, (
+            f"Expected 0/20 player count (Minecraft default) in info output: {info_result.stdout!r}"
+        )
+
+        # info --json — verify structured JSON matches known Minecraft SLP values
+        info_json_result = _run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "slp", (
+            f"Expected SLP protocol for Minecraft: {_info_data!r}"
+        )
+        assert _info_data.get("players_online") == 0, (
+            f"Expected 0 players on fresh Minecraft server: {_info_data!r}"
+        )
+        assert _info_data.get("players_max") == 20, (
+            f"Expected max-players=20 (Minecraft vanilla default): {_info_data!r}"
+        )
     finally:
         _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
         _wait_for_port_to_close("127.0.0.1", port, STOP_TIMEOUT_SECONDS)

@@ -133,6 +133,18 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """Return the Quake UDP query address used by the q3server module."""
+
+    return ("127.0.0.1", int(server.data["port"]), "quake")
+
+
+def get_info_address(server):
+    """Return the Quake UDP info address used by the q3server module."""
+
+    return ("127.0.0.1", int(server.data["port"]), "quake")
+
+
 def do_stop(server, j):
     """Stop Quake 3 using the standard quit command."""
 

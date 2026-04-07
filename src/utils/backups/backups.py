@@ -48,7 +48,7 @@ TIMESTAMPFORMAT = settings.user.getsection("backup").get(
     "timestamptformat", "%Y.%m.%d %H:%M:%S.%f"
 )
 
-__all__ = ["BackupError", "backup", "checkdatavalue"]
+__all__ = ["BackupError", "backup", "checkdatavalue", "list_backups", "restore"]
 
 
 class BackupError(Exception):
@@ -246,3 +246,36 @@ def checkdatavalue(data, key, *value):
         return [profile, amount, unit]
     else:
         raise BackupError("Invalid key")
+
+
+def list_backups(dir):
+    """Return a sorted list of (tag, datetime, filename) for all backups in *dir*."""
+    result = []
+    backup_dir = os.path.join(dir, BACKUPDIR)
+    if not os.path.isdir(backup_dir):
+        return result
+    for f in os.listdir(backup_dir):
+        if not f.endswith(".zip") or f.startswith("."):
+            continue
+        try:
+            tag, timestamp_str = f[:-4].split(" ", 1)
+            timestamp = datetime.datetime.strptime(timestamp_str, TIMESTAMPFORMAT)
+        except ValueError:
+            continue
+        result.append((tag, timestamp, f))
+    result.sort(key=lambda x: x[1])
+    return result
+
+
+def restore(dir, filename):
+    """Restore the backup archive *filename* (basename only) into *dir*.
+
+    Raises BackupError if the file does not exist or extraction fails.
+    """
+    backup_dir = os.path.join(dir, BACKUPDIR)
+    filepath = os.path.join(backup_dir, filename)
+    if not os.path.isfile(filepath):
+        raise BackupError("Backup file not found: " + filename)
+    result = sp.run(["unzip", "-o", filepath, "-d", dir], check=False)
+    if result.returncode != 0:
+        raise BackupError("Failed to restore backup: " + filename)

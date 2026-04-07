@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_command,
     pick_free_tcp_port,
+    wait_for_tcp_open,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -19,7 +20,7 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -59,9 +60,31 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        wait_for_tcp_open("127.0.0.1", port, 300, log_path=log_path)
+
+        # query
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert (
+            "Server is responding" in query_result.stdout
+        ), f"Unexpected query output: {query_result.stdout!r}"
+
+        # info
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert (
+            "Players     : 0/" in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        )
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

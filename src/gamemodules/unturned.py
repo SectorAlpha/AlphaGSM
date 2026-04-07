@@ -49,6 +49,10 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ServerHelper.sh"):
             "schedule": [("default", 0, "days")],
         }
 
+    if port is None:
+        port = server.data.get("port", 27015)
+    server.data["port"] = int(port)
+
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
         if ask:
@@ -72,6 +76,13 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    # Write the port to Commands.dat so the server uses the configured port.
+    # Unturned reads startup commands from Servers/<serverid>/Commands.dat.
+    server_dir = os.path.join(server.data["dir"], "Servers", server.data["serverid"])
+    os.makedirs(server_dir, exist_ok=True)
+    commands_dat = os.path.join(server_dir, "Commands.dat")
+    with open(commands_dat, "w") as f:
+        f.write("Port %s\n" % server.data["port"])
 
 
 def update(server, validate=False, restart=False):

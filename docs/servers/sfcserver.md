@@ -7,6 +7,7 @@ This guide covers the `sfcserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
+- A legitimate copy of Half-Life 2: Deathmatch and Source SDK Base 2013 Multiplayer
 
 ## Quick Start
 
@@ -70,6 +71,7 @@ alphagsm mysfcserve backup
 - **Location**: `<install_dir>/srcds_run`
 - **Engine**: Source
 - **SteamCMD App ID**: `244310`
+- **SteamCMD App Name**: `Source SDK Base 2013 Dedicated Server`
 
 ### Server Configuration
 
@@ -92,5 +94,6 @@ alphagsm mysfcserve backup
 - **Map directory**: `sfclassic/maps/`
 - **Mod directory**: `sfclassic/addons/`
 - **Workshop support**: No
+- **Current status**: Disabled in CI. The public SourceForts payload can be downloaded, but its own `gameinfo.txt` declares `SteamAppId 243750` and requires a legitimate Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer install. Anonymous SteamCMD app `244310` is not enough; the combined server exits at `soundemittersystem.so` before readiness.
 - **Map install**: Copy `.bsp` files into `sfclassic/maps/` and add to `sfclassic/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `sfclassic/addons/`.

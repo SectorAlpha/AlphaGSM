@@ -1,0 +1,1129 @@
+from types import SimpleNamespace
+
+import pytest
+
+import server.server as server_module
+
+
+class DummyData(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.saved = 0
+
+    def save(self):
+        self.saved += 1
+
+    def prettydump(self):
+        return '{"ok": true}'
+
+
+class DummyModule:
+    commands = ("custom",)
+    command_args = {
+        "setup": None,
+        "custom": "custom-args",
+    }
+    command_descriptions = {
+        "setup": "extra setup details",
+        "custom": "custom description",
+    }
+    max_stop_wait = 1
+
+    def __init__(self):
+        self.calls = []
+
+    def configure(self, server, ask, *args, **kwargs):
+        self.calls.append(("configure", ask, args, kwargs))
+        return ("configured",), {"flag": True}
+
+    def install(self, server, *args, **kwargs):
+        self.calls.append(("install", args, kwargs))
+
+    def get_start_command(self, server, *args, **kwargs):
+        self.calls.append(("get_start_command", args, kwargs))
+        return ["run", "server"], "/srv/server"
+
+    def do_stop(self, server, minute, *args, **kwargs):
+        self.calls.append(("do_stop", minute, args, kwargs))
+
+    def status(self, server, verbose, *args, **kwargs):
+        self.calls.append(("status", verbose, args, kwargs))
+
+    def message(self, server, *args, **kwargs):
+        self.calls.append(("message", args, kwargs))
+
+    def backup(self, server, *args, **kwargs):
+        self.calls.append(("backup", args, kwargs))
+
+    def checkvalue(self, server, key, *args, **kwargs):
+        self.calls.append(("checkvalue", key, args, kwargs))
+        return "value"
+
+
+def make_server(module=None, data=None, name="alpha"):
+    srv = server_module.Server.__new__(server_module.Server)
+    srv.name = name
+    srv.module = module or DummyModule()
+    srv.data = data or DummyData()
+    return srv
+
+
+def test_findmodule_returns_module_after_alias_resolution(monkeypatch):
+    alias_module = SimpleNamespace(__file__="/tmp/alias.py", ALIAS_TARGET="real")
+    real_module = SimpleNamespace(__file__="/tmp/real.py")
+    imports = []
+
+    def fake_import(name):
+        imports.append(name)
+        if name.endswith(".alias"):
+            return alias_module
+        if name.endswith(".real"):
+            return real_module
+        raise ImportError("missing")
+
+    monkeypatch.setattr(server_module, "import_module", fake_import)
+    monkeypatch.setattr(server_module, "SERVERMODULEPACKAGE", "gamemodules.")
+
+    resolved_name, resolved_module = server_module._findmodule("alias")
+
+    assert resolved_name == "real"
+    assert resolved_module is real_module
+    assert imports == ["gamemodules.alias", "gamemodules.real"]
+
+
+def test_server_init_creates_new_datastore_and_saves(monkeypatch, tmp_path):
+    created = {}
+
+    class FakeStore(DummyData):
+        def __init__(self, filename, payload=None):
+            super().__init__(payload or {})
+            created["filename"] = filename
+
+    monkeypatch.setattr(server_module, "DATAPATH", str(tmp_path))
+    monkeypatch.setattr(server_module.data, "JSONDataStore", FakeStore)
+    monkeypatch.setattr(server_module, "_findmodule", lambda name: (name, SimpleNamespace(commands=(), command_args={}, command_descriptions={})))
+
+    srv = server_module.Server("alpha", "minecraft.vanilla")
+
+    assert created["filename"].endswith("alpha.json")
+    assert srv.data["module"] == "minecraft.vanilla"
+    assert srv.data.saved == 1
+
+
+def test_server_init_updates_redirected_module_name(monkeypatch, tmp_path, capsys):
+    class FakeStore(DummyData):
+        def __init__(self, filename, payload=None):
+            super().__init__({"module": "alias"})
+
+    monkeypatch.setattr(server_module, "DATAPATH", str(tmp_path))
+    monkeypatch.setattr(server_module.data, "JSONDataStore", FakeStore)
+    monkeypatch.setattr(server_module, "_findmodule", lambda name: ("real.module", SimpleNamespace(commands=(), command_args={}, command_descriptions={})))
+
+    srv = server_module.Server("alpha")
+
+    assert srv.data["module"] == "real.module"
+    assert srv.data.saved == 1
+    assert "Module has been redirected" in capsys.readouterr().out
+
+
+def test_get_commands_args_and_descriptions_merge_module_data():
+    srv = make_server()
+
+    commands = srv.get_commands()
+    description = srv.get_command_description("setup")
+
+    assert "custom" in commands
+    assert "extra setup details" in description
+    assert srv.get_command_args("custom") == "custom-args"
+
+
+def test_run_command_dispatches_builtin_and_custom_methods(monkeypatch):
+    srv = make_server()
+    calls = []
+    monkeypatch.setattr(srv, "setup", lambda *args, **kwargs: calls.append(("setup", args, kwargs)))
+    monkeypatch.setattr(srv, "connect", lambda *args, **kwargs: calls.append(("connect", args, kwargs)))
+    monkeypatch.setattr(srv, "dump", lambda *args, **kwargs: calls.append(("dump", args, kwargs)))
+    monkeypatch.setattr(srv, "doset", lambda *args, **kwargs: calls.append(("set", args, kwargs)))
+    srv.module.command_functions = {"custom": lambda server, *args, **kwargs: calls.append(("custom", args, kwargs))}
+
+    srv.run_command("setup", 1, flag=True)
+    srv.run_command("message", "hello")
+    srv.run_command("backup", "nightly")
+    srv.run_command("connect")
+    srv.run_command("dump")
+    srv.run_command("set", "path", "value")
+    srv.run_command("custom", 9)
+
+    assert ("setup", (1,), {"flag": True}) in calls
+    assert ("custom", (9,), {}) in calls
+    assert ("set", ("path", "value"), {}) in calls
+    assert ("message", (("hello",), {})) not in calls
+    assert any(call[0] == "connect" for call in calls)
+    assert any(entry[0] == "message" for entry in srv.module.calls)
+    assert any(entry[0] == "backup" for entry in srv.module.calls)
+
+
+def test_run_command_rejects_unknown_command():
+    srv = make_server()
+    srv.module.command_functions = {}
+
+    with pytest.raises(server_module.ServerError, match="Unknown command"):
+        srv.run_command("missing")
+
+
+def test_setup_passes_configure_results_to_install():
+    srv = make_server()
+
+    srv.setup("arg", ask=False, extra=True)
+
+    assert srv.module.calls[0] == ("configure", False, ("arg",), {"extra": True})
+    assert srv.module.calls[1] == ("install", ("configured",), {"flag": True})
+
+
+def test_start_runs_pre_and_post_hooks_and_starts_screen(monkeypatch):
+    events = []
+    srv = make_server()
+    srv.module.prestart = lambda *args, **kwargs: events.append(("prestart", args, kwargs))
+    srv.module.poststart = lambda *args, **kwargs: events.append(("poststart", args, kwargs))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: False)
+    monkeypatch.setattr(server_module.screen, "start_screen", lambda name, cmd, cwd=None: events.append(("start_screen", name, cmd, cwd)))
+
+    srv.start("now", force=True)
+
+    assert events[0] == ("prestart", (srv, "now"), {"force": True})
+    assert events[1] == ("start_screen", "alpha", ["run", "server"], "/srv/server")
+    assert events[2] == ("poststart", (srv, "now"), {"force": True})
+
+
+def test_start_rejects_already_running_server(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)
+
+    with pytest.raises(server_module.ServerError, match="already running"):
+        srv.start()
+
+
+def test_stop_requests_module_stop_until_server_exits(monkeypatch):
+    srv = make_server()
+    states = iter([True, False])
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: next(states))
+    monkeypatch.setattr(server_module.time, "sleep", lambda seconds: None)
+
+    srv.stop()
+
+    assert srv.module.calls == [("do_stop", 0, (), {})]
+
+
+def test_stop_kills_server_after_timeout(monkeypatch):
+    srv = make_server()
+    states = iter([True] * 20)
+    sent = []
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: next(states))
+    monkeypatch.setattr(server_module.screen, "send_to_screen", lambda name, cmd: sent.append((name, cmd)))
+    monkeypatch.setattr(server_module.time, "sleep", lambda seconds: None)
+
+    with pytest.raises(server_module.ServerError, match="can't kill server"):
+        srv.stop()
+
+    assert sent == [("alpha", ["quit"])]
+
+
+def test_status_connect_and_dump_use_screen_and_output(monkeypatch, capsys):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)
+    monkeypatch.setattr(server_module.screen, "connect_to_screen", lambda name: capsys.readouterr() or None)
+
+    srv.status(verbose=1)
+    srv.dump()
+
+    out = capsys.readouterr().out
+    assert "Server is running as screen session exists" in out
+    assert '{"ok": true}' in out
+    assert any(entry[0] == "status" for entry in srv.module.calls)
+
+
+def test_doset_updates_nested_data_and_saves():
+    srv = make_server(data=DummyData({"existing": {"items": []}}))
+
+    srv.doset("existing.items.APPEND", "new")
+
+    assert srv.data["existing"]["items"] == ["value"]
+    assert srv.data.saved == 1
+
+
+def test_parse_helpers_cover_keys_and_multi_server_commands():
+    assert server_module._parsekeyelement("APPEND") == (list, None)
+    assert server_module._parsekeyelement("2") == (list, 2)
+    assert server_module._parsekeyelement("name") == (dict, "name")
+    assert list(server_module._parsekey("root.0.APPEND")) == [(dict, list, list), ("root", 0, None)]
+    assert server_module._parsecmd(["alphagsm", "2", "a", "b", "start"]) == ["alphagsm", ["a", "b"], "start"]
+    assert server_module._parsecmd(["alphagsm", "solo", "start"]) == ["alphagsm", ["solo"], "start"]
+
+
+def test_activate_updates_crontab_and_can_start_server(monkeypatch):
+    srv = make_server()
+    started = []
+
+    class FakeJob:
+        def __init__(self, command):
+            self.command = command
+            self.slices = SimpleNamespace(special="@reboot")
+
+        def is_enabled(self):
+            return True
+
+        def every_reboot(self):
+            return None
+
+    class FakeCronTab(list):
+        def __init__(self, jobs):
+            super().__init__(jobs)
+            self.written = False
+            self.new_job = None
+
+        def write(self):
+            self.written = True
+
+        def new(self, command):
+            self.new_job = FakeJob(command)
+            self.append(self.new_job)
+            return self.new_job
+
+    cron = FakeCronTab([FakeJob("/usr/bin/alphagsm 1 other start")])
+    monkeypatch.setattr(server_module.crontab, "CronTab", lambda user=True: cron)
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: False)
+    monkeypatch.setattr(server_module, "_parsecmd", lambda cmd: [cmd[0], [cmd[2]], cmd[3]])
+    monkeypatch.setattr("core.program.PATH", "/usr/bin/alphagsm")
+    monkeypatch.setattr(srv, "start", lambda: started.append(True))
+
+    srv.activate(start=True)
+
+    assert cron.written is True
+    assert cron.new_job is None
+    assert "alpha" in cron[0].command
+    assert started == [True]
+
+
+def test_deactivate_removes_or_updates_jobs_and_can_stop_server(monkeypatch):
+    srv = make_server()
+    stopped = []
+
+    class FakeJob:
+        def __init__(self, command, servers):
+            self.command = command
+            self._servers = servers
+            self.slices = SimpleNamespace(special="@reboot")
+
+        def is_enabled(self):
+            return True
+
+    class FakeCronTab(list):
+        def __init__(self, jobs):
+            super().__init__(jobs)
+            self.removed = []
+            self.written = False
+
+        def remove(self, job):
+            self.removed.append(job)
+            self[:] = [entry for entry in self if entry is not job]
+
+        def write(self):
+            self.written = True
+
+    job = FakeJob("/usr/bin/alphagsm 2 alpha beta start", ["alpha", "beta"])
+    cron = FakeCronTab([job])
+    monkeypatch.setattr(server_module.crontab, "CronTab", lambda user=True: cron)
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)
+    monkeypatch.setattr("core.program.PATH", "/usr/bin/alphagsm")
+    monkeypatch.setattr(server_module, "_parsecmd", lambda cmd: [cmd[0], ["alpha", "beta"], "start"])
+    monkeypatch.setattr(srv, "stop", lambda: stopped.append(True))
+
+    srv.deactivate(stop=True)
+
+    assert cron.written is True
+    assert stopped == [True]
+    assert job.command == "/usr/bin/alphagsm 1 beta start"
+
+
+# ---------------------------------------------------------------------------
+# Tests for restart, kill, send, and logs commands
+# ---------------------------------------------------------------------------
+
+
+def test_restart_stops_then_starts(monkeypatch):
+    srv = make_server()
+    calls = []
+    monkeypatch.setattr(srv, "stop", lambda *a, **kw: calls.append("stop"))
+    monkeypatch.setattr(srv, "start", lambda *a, **kw: calls.append("start"))
+
+    srv.restart()
+
+    assert calls == ["stop", "start"]
+
+
+def test_kill_sends_quit_and_succeeds(monkeypatch):
+    srv = make_server()
+    sent = []
+    states = iter([True, False])
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: next(states))
+    monkeypatch.setattr(server_module.screen, "send_to_screen", lambda name, cmd: sent.append((name, cmd)))
+    monkeypatch.setattr(server_module.time, "sleep", lambda s: None)
+
+    srv.kill()
+
+    assert sent == [("alpha", ["quit"])]
+
+
+def test_kill_raises_if_server_not_running(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: False)
+
+    with pytest.raises(server_module.ServerError, match="isn't running"):
+        srv.kill()
+
+
+def test_kill_raises_if_session_persists_after_quit(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)
+    monkeypatch.setattr(server_module.screen, "send_to_screen", lambda name, cmd: None)
+    monkeypatch.setattr(server_module.time, "sleep", lambda s: None)
+
+    with pytest.raises(server_module.ServerError, match="Could not kill"):
+        srv.kill()
+
+
+def test_send_sends_input_to_running_server(monkeypatch):
+    srv = make_server()
+    sent = []
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)
+    monkeypatch.setattr(server_module.screen, "send_to_server", lambda name, text: sent.append((name, text)))
+
+    srv.send("say hello")
+
+    assert sent == [("alpha", "say hello\n")]
+
+
+def test_send_raises_if_server_not_running(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: False)
+
+    with pytest.raises(server_module.ServerError, match="isn't running"):
+        srv.send("say hello")
+
+
+def test_logs_tails_logfile(monkeypatch, tmp_path):
+    srv = make_server()
+    log_file = tmp_path / "alpha.log"
+    log_file.write_text("line1\nline2\nline3\n")
+    monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(log_file))
+    ran = []
+
+    def fake_run(cmd, check):
+        ran.append(cmd)
+        return type("R", (), {"returncode": 0})()
+
+    monkeypatch.setattr(server_module.sp, "run", fake_run)
+
+    srv.logs(lines=10)
+
+    assert ran == [["tail", "-n", "10", str(log_file)]]
+
+
+def test_logs_raises_if_no_log_file(monkeypatch, tmp_path):
+    srv = make_server()
+    monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(tmp_path / "missing.log"))
+
+    with pytest.raises(server_module.ServerError, match="No log file"):
+        srv.logs()
+
+
+def test_logs_raises_if_tail_fails(monkeypatch, tmp_path):
+    srv = make_server()
+    log_file = tmp_path / "alpha.log"
+    log_file.write_text("data")
+    monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(log_file))
+
+    def fake_run(cmd, check):
+        return type("R", (), {"returncode": 1})()
+
+    monkeypatch.setattr(server_module.sp, "run", fake_run)
+
+    with pytest.raises(server_module.ServerError, match="Failed to read"):
+        srv.logs()
+
+
+# ---------------------------------------------------------------------------
+# restore
+# ---------------------------------------------------------------------------
+
+def _make_backup_entry(tag, dt_str, fname):
+    import datetime
+    return (tag, datetime.datetime.fromisoformat(dt_str), fname)
+
+
+def test_restore_lists_backups_when_no_argument(monkeypatch, capsys):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "default 2024.01.01 00:00:00.000000.zip"),
+        _make_backup_entry("default", "2024-06-15 12:00:00", "default 2024.06.15 12:00:00.000000.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore()
+
+    out = capsys.readouterr().out
+    assert "[0]" in out
+    assert "[1]" in out
+    assert "2024-01-01" in out
+
+
+def test_restore_prints_message_when_no_backups_exist(monkeypatch, capsys):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: []
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore()
+
+    assert "No backups found" in capsys.readouterr().out
+
+
+def test_restore_by_index_stops_running_server(monkeypatch):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "default 2024.01.01 00:00:00.000000.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    calls = []
+
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: True)
+    monkeypatch.setattr(srv, "stop", lambda: calls.append("stop"))
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    fake_bu.restore = lambda d, f: calls.append(("restore", f))
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore(backup="0")
+
+    assert "stop" in calls
+    assert ("restore", "default 2024.01.01 00:00:00.000000.zip") in calls
+
+
+def test_restore_by_filename_skips_stop_when_not_running(monkeypatch):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "snap.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    calls = []
+
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    fake_bu.restore = lambda d, f: calls.append(("restore", f))
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    srv.restore(backup="snap.zip")
+
+    assert calls == [("restore", "snap.zip")]
+
+
+def test_restore_raises_for_out_of_range_index(monkeypatch):
+    entries = [
+        _make_backup_entry("default", "2024-01-01 00:00:00", "snap.zip"),
+    ]
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    import utils.backups
+    import sys, types
+    fake_bu = types.ModuleType("utils.backups.backups")
+    fake_bu.list_backups = lambda d: entries
+    monkeypatch.setattr(utils.backups, "backups", fake_bu)
+    monkeypatch.setitem(sys.modules, "utils.backups.backups", fake_bu)
+
+    with pytest.raises(server_module.ServerError, match="out of range"):
+        srv.restore(backup="5")
+
+
+# ---------------------------------------------------------------------------
+# wipe
+# ---------------------------------------------------------------------------
+
+def test_wipe_raises_if_server_running(monkeypatch):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: True)
+
+    with pytest.raises(server_module.ServerError, match="Cannot wipe a running server"):
+        srv.wipe()
+
+
+def test_wipe_raises_if_no_wipe_support(monkeypatch):
+    module = DummyModule()
+    # DummyModule has no wipe or wipe_paths
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    with pytest.raises(server_module.ServerError, match="not supported"):
+        srv.wipe()
+
+
+def test_wipe_calls_module_wipe_callable(monkeypatch):
+    calls = []
+    module = DummyModule()
+    module.wipe = lambda server: calls.append("wipe")
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+
+    srv.wipe()
+
+    assert calls == ["wipe"]
+
+
+def test_wipe_removes_wipe_paths(monkeypatch, tmp_path):
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    world_dir = game_dir / "Saves"
+    world_dir.mkdir()
+
+    module = DummyModule()
+    module.wipe_paths = ["Saves"]
+
+    srv = make_server(module=module, data=DummyData({"dir": str(game_dir), "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+    # Allow real sp.run so rm -rf actually runs
+    srv.wipe()
+
+    assert not world_dir.exists()
+
+
+def test_wipe_raises_if_rm_fails(monkeypatch, tmp_path):
+    game_dir = tmp_path / "game"
+    game_dir.mkdir()
+    (game_dir / "Saves").mkdir()
+
+    module = DummyModule()
+    module.wipe_paths = ["Saves"]
+
+    srv = make_server(module=module, data=DummyData({"dir": str(game_dir), "port": "27015"}))
+    monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
+    monkeypatch.setattr(
+        server_module.sp,
+        "run",
+        lambda cmd, check: type("R", (), {"returncode": 1})(),
+    )
+
+    with pytest.raises(server_module.ServerError, match="Failed to remove"):
+        srv.wipe()
+
+
+# ---------------------------------------------------------------------------
+# query
+# ---------------------------------------------------------------------------
+
+def test_query_succeeds_via_a2s(monkeypatch, capsys):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.parse_a2s_info = lambda data: None  # no details
+
+    def fake_a2s(host, port, timeout=2.0):
+        return b"\xff\xff\xff\xff\x49"  # minimal valid-looking response
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.tcp_ping = None
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert "A2S" in capsys.readouterr().out
+
+
+def test_query_falls_back_to_tcp_when_a2s_fails(monkeypatch, capsys):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_a2s(host, port, timeout=2.0):
+        raise OSError("no udp")
+
+    def fake_tcp(host, port, timeout=2.0):
+        return 3.14
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.tcp_ping = fake_tcp
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert "TCP" in capsys.readouterr().out
+
+
+def test_query_raises_server_error_when_both_fail(monkeypatch):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    fake_q.a2s_info = lambda host, port, timeout=2.0: (_ for _ in ()).throw(OSError("udp"))
+    fake_q.tcp_ping = lambda host, port, timeout=2.0: (_ for _ in ()).throw(OSError("tcp"))
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    with pytest.raises(server_module.ServerError, match="not appear to be responding"):
+        srv.query()
+
+
+def test_query_uses_module_get_query_address(monkeypatch, capsys):
+    calls = []
+    module = DummyModule()
+    module.get_query_address = lambda server: ("10.0.0.1", 27016, "tcp")
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_tcp(host, port, timeout=2.0):
+        calls.append((host, port))
+        return 1.0
+
+    fake_q.tcp_ping = fake_tcp
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert ("10.0.0.1", 27016) in calls
+
+
+def test_query_uses_module_namespace_get_query_address(monkeypatch, capsys):
+    calls = []
+    module = DummyModule()
+    module.MODULE = SimpleNamespace(
+        get_query_address=lambda server: ("10.0.0.2", 27017, "tcp")
+    )
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_tcp(host, port, timeout=2.0):
+        calls.append((host, port))
+        return 1.0
+
+    fake_q.tcp_ping = fake_tcp
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert calls == [("10.0.0.2", 27017)]
+
+
+def test_query_uses_explicit_udp_protocol(monkeypatch, capsys):
+    module = DummyModule()
+    module.get_query_address = lambda server: ("10.0.0.1", 27016, "udp")
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported
+    import utils
+    import sys, types
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.udp_ping = lambda host, port, timeout=2.0: 1.5
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert "UDP ping" in capsys.readouterr().out
+
+
+def test_query_retries_a2s_after_wake_hook(monkeypatch, capsys):
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    wake_calls = []
+    attempts = []
+    module = DummyModule()
+    module.wake_a2s_query = lambda server: wake_calls.append(server.name) or 0
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_a2s(host, port, timeout=2.0, phase2_timeout=None):
+        attempts.append((host, port, timeout, phase2_timeout))
+        if len(attempts) == 1:
+            raise OSError("udp")
+        return b"\xff\xff\xff\xff\x49stub"
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.parse_a2s_info = lambda data: {
+        "name": "Wake Test",
+        "map": "cp_dustbowl",
+        "game": "TF2",
+        "players": 0,
+        "max_players": 24,
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(server_module.time, "sleep", lambda *_args: None)
+
+    srv.query()
+
+    assert wake_calls == ["alpha", "alpha"]
+    assert attempts == [
+        ("127.0.0.1", 27015, 15.0, 120.0),
+        ("127.0.0.1", 27015, 15.0, 120.0),
+    ]
+    assert "Wake Test" in capsys.readouterr().out
+
+
+# info
+# ---------------------------------------------------------------------------
+
+
+def test_info_succeeds_via_slp(monkeypatch, capsys):
+    """info() uses slp_info when module returns protocol='slp'."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 25565, "module": "minecraft.vanilla"}))
+
+    slp_data = {
+        "description": "A test server",
+        "players_online": 2,
+        "players_max": 10,
+        "version": "1.20.4",
+        "player_names": ["Alice", "Bob"],
+    }
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.slp_info = lambda host, port, timeout=5.0: slp_data
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(srv.module, "get_info_address",
+                        lambda s: ("127.0.0.1", 25565, "slp"), raising=False)
+
+    srv.info()
+
+    out = capsys.readouterr().out
+    assert "Server info (SLP" in out
+    assert "Players" in out
+    assert "2/10" in out
+
+
+def test_info_succeeds_via_a2s(monkeypatch, capsys):
+    """info() parses A2S_INFO when protocol='a2s'."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 27015, "module": "teamfortress2"}))
+
+    a2s_parsed = {
+        "name": "My TF2 Server",
+        "map": "cp_badlands",
+        "folder": "tf",
+        "game": "Team Fortress",
+        "appid": 440,
+        "players": 4,
+        "max_players": 24,
+        "bots": 0,
+    }
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_info = lambda host, port, timeout=2.0: b"\xff\xff\xff\xff\x49stub"
+    fake_q.parse_a2s_info = lambda data: a2s_parsed
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info()
+
+    out = capsys.readouterr().out
+    assert "Server info (A2S" in out
+    assert "cp_badlands" in out
+    assert "4/24" in out
+
+
+def test_info_falls_back_to_tcp(monkeypatch, capsys):
+    """info() falls back to TCP when A2S fails."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 27015, "module": "teamfortress2"}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_info = lambda host, port, timeout=2.0: (_ for _ in ()).throw(OSError("udp"))
+    fake_q.tcp_ping = lambda host, port, timeout=2.0: 5.4
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info()
+
+    out = capsys.readouterr().out
+    assert "Server port is open" in out
+
+
+def test_run_command_dispatches_info(monkeypatch, capsys):
+    """run_command('info') must reach Server.info(), not silently do nothing."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 25565, "module": "minecraft.vanilla"}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.slp_info = lambda host, port, timeout=5.0: {
+        "description": "Test",
+        "players_online": 0,
+        "players_max": 20,
+        "version": "1.20",
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(srv.module, "get_info_address",
+                        lambda s: ("127.0.0.1", 25565, "slp"), raising=False)
+
+    srv.run_command("info")
+
+    out = capsys.readouterr().out
+    assert "Server info (SLP" in out
+
+
+def test_info_json_output(monkeypatch, capsys):
+    """info(as_json=True) emits a valid JSON object instead of human-readable text."""
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 25565, "module": "minecraft.vanilla"}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.slp_info = lambda host, port, timeout=5.0: {
+        "description": "A test server",
+        "players_online": 3,
+        "players_max": 20,
+        "version": "1.20.4",
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(srv.module, "get_info_address",
+                        lambda s: ("127.0.0.1", 25565, "slp"), raising=False)
+
+    srv.info(as_json=True)
+
+    out = capsys.readouterr().out.strip()
+    data = _json.loads(out)
+    assert data["protocol"] == "slp"
+    assert data["port"] == 25565
+    assert data["players_online"] == 3
+    assert data["players_max"] == 20
+    assert "Server info" not in out
+
+
+def test_info_uses_explicit_udp_protocol(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.get_info_address = lambda server: ("127.0.0.1", 7777, "udp")
+    srv = make_server(module=module, data=DummyData({"port": 7777}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.udp_ping = lambda host, port, timeout=2.0: 4.2
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert data["protocol"] == "udp"
+    assert data["port"] == 7777
+
+
+def test_info_uses_module_namespace_wake_hook(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    wake_calls = []
+    module = DummyModule()
+    module.MODULE = SimpleNamespace(
+        wake_a2s_query=lambda server: wake_calls.append(server.name) or 0
+    )
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_calls = []
+
+    def fake_a2s(host, port, timeout=2.0, phase2_timeout=None):
+        fake_q.a2s_calls.append((host, port, timeout, phase2_timeout))
+        return b"\xff\xff\xff\xff\x49stub"
+
+    fake_q.a2s_info = fake_a2s
+    fake_q.parse_a2s_info = lambda data: {
+        "name": "My TF2 Server",
+        "map": "cp_badlands",
+        "folder": "tf",
+        "game": "Team Fortress",
+        "appid": 440,
+        "players": 0,
+        "max_players": 24,
+        "bots": 0,
+    }
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(server_module.time, "sleep", lambda *_args: None)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert wake_calls == ["alpha"]
+    assert fake_q.a2s_calls == [("127.0.0.1", 27015, 15.0, 120.0)]
+    assert data["protocol"] == "a2s"
+
+
+def test_info_uses_console_hook_for_hibernating_server(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.get_hibernating_console_info = lambda server: {
+        "name": "Hibernate TF2",
+        "map": "cp_dustbowl",
+        "version": "10515055/24 10515055 secure",
+        "players": 0,
+        "max_players": 16,
+        "bots": 0,
+    }
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    a2s_calls = []
+
+    def fake_a2s_info(*args, **kwargs):
+        a2s_calls.append((args, kwargs))
+        raise OSError("A2S not available while idle")
+
+    fake_q.a2s_info = fake_a2s_info
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert len(a2s_calls) == 1
+    assert data["protocol"] == "console"
+    assert data["name"] == "Hibernate TF2"
+    assert data["map"] == "cp_dustbowl"
+
+
+def test_info_uses_module_namespace_console_hook_for_hibernating_server(
+    monkeypatch, capsys
+):
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.MODULE = SimpleNamespace(
+        get_info_address=lambda server: ("10.0.0.5", 27015, "a2s"),
+        get_hibernating_console_info=lambda server: {
+            "name": "Hibernate CSS",
+            "map": "de_dust2",
+            "version": "6630498 secure",
+            "players": 0,
+            "max_players": 16,
+            "bots": 0,
+        },
+    )
+    srv = make_server(module=module, data=DummyData({"port": 27015}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    a2s_calls = []
+
+    def fake_a2s_info(*args, **kwargs):
+        a2s_calls.append((args, kwargs))
+        raise OSError("A2S not available while idle")
+
+    fake_q.a2s_info = fake_a2s_info
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert len(a2s_calls) == 1
+    assert data["protocol"] == "console"
+    assert data["port"] == 27015
+    assert data["name"] == "Hibernate CSS"

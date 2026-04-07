@@ -44,8 +44,9 @@ alphagsm mycraftopi stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 8787)
 - the install directory
+- a generated `ServerSetting.ini` with the selected world name, max player count, and save path
 - SteamCMD downloads the server files
 
 ## Useful Commands
@@ -58,7 +59,9 @@ alphagsm mycraftopi backup
 ## Notes
 
 - Module name: `craftopiaserver`
-- Default port: 27015
+- Default port: 8787
+- AlphaGSM seeds `ServerSetting.ini` because the Linux dedicated server reads its actual host settings from the ini file rather than the CLI flags
+- AlphaGSM `query` and `info` use generic UDP reachability on the main game port
 
 ## Developer Notes
 
@@ -71,8 +74,9 @@ alphagsm mycraftopi backup
 
 ### Server Configuration
 
-- **Config files**: `DedicatedServerSetting.ini`
+- **Config file**: `ServerSetting.ini`
 - **Max players**: `8`
+- **Save directory**: `DedicatedServerSave/`
 - **Template**: See [server-templates/craftopiaserver/](../server-templates/craftopiaserver/) if available
 
 ### Maps and Mods

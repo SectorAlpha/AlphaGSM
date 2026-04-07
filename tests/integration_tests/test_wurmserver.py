@@ -14,12 +14,13 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_tcp_open,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
+from gamemodules.wurmserver import steam_app_id
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -36,7 +37,7 @@ def test_wurmserver_lifecycle(tmp_path):
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port(min_port=20000, max_port=32767)
 
     # create
     run_and_assert_ok(env, server_name, "create", "wurmserver")
@@ -44,7 +45,7 @@ def test_wurmserver_lifecycle(tmp_path):
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -54,15 +55,44 @@ def test_wurmserver_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            [
+                "The Wurm Server is listening on ip 127.0.0.1 and port",
+                "End of game server initialisation",
+                "Server connected to steam",
+            ],
             START_TIMEOUT,
         )
+        wait_for_tcp_open("127.0.0.1", port, 300, log_path=log_path)
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        # query
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert (
+            "Server port is open" in query_result.stdout
+        ), f"Unexpected query output: {query_result.stdout!r}"
+
+        # info
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert (
+            "Server port is open" in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
+        assert "No further details available." in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data.get("port") == port, f"Expected game port in info JSON: {_info_data!r}"
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

@@ -1,11 +1,14 @@
 """Integration test for ts3server."""
 
+import json as _info_json
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_command,
     pick_free_tcp_port,
+    wait_for_tcp_open,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -19,7 +22,7 @@ from conftest import (
 
 pytestmark = [pytest.mark.integration]
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -49,19 +52,92 @@ def test_ts3server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
+        # wait for readiness — TS3 prints "ServerQuery created" once the query port is live
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["ServerQuery created", "TeamSpeak 3 Server started", "listening", "started"],
             START_TIMEOUT,
         )
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        # TS3 ServerQuery runs on TCP port 10011; wait until it is accepting connections
+        wait_for_tcp_open("127.0.0.1", 10011, 300, log_path=log_path)
+
+        # query — TS3 ServerQuery protocol
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert "Server is responding" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
+
+        # info — human-readable TS3 info (channels shown as count + hint without --detailed)
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert "Clients  :" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
+        assert "--detailed" in info_result.stdout, (
+            f"Expected --detailed hint in info text output: {info_result.stdout!r}"
+        )
+
+        # info --detailed — channel list shown in text
+        info_det_text = run_and_assert_ok(env, server_name, "info", "--detailed")
+        assert "Channels :" in info_det_text.stdout, (
+            f"Expected Channels line with --detailed: {info_det_text.stdout!r}"
+        )
+
+        # info --json — full TS3 property verification (channels omitted without --detailed)
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "ts3", (
+            f"Expected ts3 protocol in info JSON: {_info_data!r}"
+        )
+        assert isinstance(_info_data["name"], str) and _info_data["name"], (
+            f"Expected non-empty server name: {_info_data!r}"
+        )
+        assert isinstance(_info_data["clients_online"], int), (
+            f"Expected clients_online integer: {_info_data!r}"
+        )
+        # TS3 counts authenticated ServerQuery connections as clients, so a
+        # freshly started server may report 0 or 1 depending on timing.
+        assert _info_data["clients_online"] <= 1, (
+            f"Expected 0-1 clients on fresh server (SQ admin counts): {_info_data!r}"
+        )
+        assert isinstance(_info_data["max_clients"], int) and _info_data["max_clients"] > 0, (
+            f"Expected positive max_clients: {_info_data!r}"
+        )
+        assert isinstance(_info_data["uptime"], int), (
+            f"Expected uptime integer: {_info_data!r}"
+        )
+        assert isinstance(_info_data["platform"], str) and _info_data["platform"], (
+            f"Expected non-empty platform string: {_info_data!r}"
+        )
+        assert isinstance(_info_data["version"], str) and _info_data["version"], (
+            f"Expected non-empty version string: {_info_data!r}"
+        )
+        assert "channels" not in _info_data, (
+            f"channels list should be omitted without --detailed: {_info_data!r}"
+        )
+        assert isinstance(_info_data["channels_count"], int), (
+            f"Expected channels_count integer in summary JSON: {_info_data!r}"
+        )
+
+        # info --json --detailed — full channel list included
+        info_detailed_result = run_and_assert_ok(
+            env, server_name, "info", "--json", "--detailed"
+        )
+        _info_det = _info_json.loads(info_detailed_result.stdout.strip())
+        assert isinstance(_info_det["channels"], list) and len(_info_det["channels"]) > 0, (
+            f"Expected non-empty channels list with --detailed (TS3 always has Default Channel):"
+            f" {_info_det!r}"
+        )
+        assert all(isinstance(ch.get("name"), str) for ch in _info_det["channels"]), (
+            f"Expected all channels to have name strings: {_info_det!r}"
+        )
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

@@ -127,6 +127,16 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """Necesse is a Java game server; use a TCP ping on the game port."""
+    return ("127.0.0.1", int(server.data["port"]), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP address used by the info command."""
+    return ("127.0.0.1", int(server.data["port"]), "tcp")
+
+
 def do_stop(server, j):
     """Stop Necesse using the standard console command."""
 

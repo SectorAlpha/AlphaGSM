@@ -52,7 +52,7 @@ def configure(
         server.data["version"] = version
     server.data["url"] = url
     server.data["download_name"] = download_name
-    return proxy_base.configure(server, ask, dir=dir, exe_name=exe_name)
+    return proxy_base.configure(server, ask, port=port, dir=dir, exe_name=exe_name)
 
 
 def install(server, *, eula=False):

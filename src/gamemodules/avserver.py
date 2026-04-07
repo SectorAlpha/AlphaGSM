@@ -42,11 +42,12 @@ def configure(server, ask, port=None, dir=None, *, exe_name="server.sh"):
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
     server.data.setdefault("galaxy", server.name)
     server.data.setdefault("seed", "AlphaGSM")
-    server.data.setdefault("administration", "admin.xml")
-    server.data.setdefault("backupfiles", ["galaxies", "server.sh", "admin.xml"])
+    server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
+    server.data.setdefault("administration", "")
+    server.data.setdefault("backupfiles", ["galaxies", "server.sh"])
     if "backup" not in server.data:
         server.data["backup"] = {
-            "profiles": {"default": {"targets": ["galaxies", "admin.xml"]}},
+            "profiles": {"default": {"targets": ["galaxies"]}},
             "schedule": [("default", 0, "days")],
         }
 
@@ -57,6 +58,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="server.sh"):
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", int(server.data["port"]) + 3)
+    server.data.setdefault("steamqueryport", int(server.data["port"]) + 20)
+    server.data.setdefault("steammasterport", int(server.data["port"]) + 21)
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -109,20 +113,40 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return (
-        [
-            "./" + server.data["exe_name"],
-            "--galaxy-name",
-            server.data["galaxy"],
-            "--port",
-            str(server.data["port"]),
-            "--seed",
-            server.data["seed"],
-            "--admin",
-            server.data["administration"],
-        ],
-        server.data["dir"],
-    )
+    command = [
+        "./" + server.data["exe_name"],
+        "--datapath",
+        "./galaxies",
+        "--galaxy-name",
+        server.data["galaxy"],
+        "--server-name",
+        server.data["servername"],
+        "--port",
+        str(server.data["port"]),
+        "--query-port",
+        str(server.data["queryport"]),
+        "--steam-query-port",
+        str(server.data["steamqueryport"]),
+        "--steam-master-port",
+        str(server.data["steammasterport"]),
+        "--seed",
+        server.data["seed"],
+    ]
+    if server.data.get("administration"):
+        command.extend(["--admin", server.data["administration"]])
+    return (command, server.data["dir"])
+
+
+def get_query_address(server):
+    """Return the UDP endpoint used for Avorion reachability checks."""
+
+    return ("127.0.0.1", int(server.data["steamqueryport"]), "udp")
+
+
+def get_info_address(server):
+    """Return the UDP endpoint used for Avorion info output."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -156,8 +180,8 @@ def checkvalue(server, key, *value):
         return backup_utils.checkdatavalue(server.data["backup"], key, *value)
     if len(value) == 0:
         raise ServerError("No value specified")
-    if key[0] == "port":
+    if key[0] in ("port", "queryport", "steamqueryport", "steammasterport"):
         return int(value[0])
-    if key[0] in ("galaxy", "seed", "administration", "exe_name", "dir"):
+    if key[0] in ("galaxy", "seed", "administration", "servername", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")

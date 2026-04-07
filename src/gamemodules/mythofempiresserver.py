@@ -43,7 +43,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="MOE/Binaries/Win64/
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
     server.data.setdefault("maxplayers", "100")
     server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
     server.data.setdefault("backupfiles", ["MOE/Saved", "MOE/Config"])
@@ -60,6 +59,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="MOE/Binaries/Win64/
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(int(port) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -146,6 +146,16 @@ def backup(server, profile=None):
     """Run the shared backup implementation for a Myth of Empires server."""
 
     backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+
+
+def get_query_address(server):
+    """Return A2S query address for Myth of Empires (queryport, not game port)."""
+    return "127.0.0.1", int(server.data["queryport"]), "a2s"
+
+
+def get_info_address(server):
+    """Return A2S info address for Myth of Empires (same as query address)."""
+    return "127.0.0.1", int(server.data["queryport"]), "a2s"
 
 
 def checkvalue(server, key, *value):

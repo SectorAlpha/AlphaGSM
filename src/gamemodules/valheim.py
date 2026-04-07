@@ -178,6 +178,20 @@ def backup(server, profile=None):
     backup_utils.backup(server.data["dir"], server.data["backup"], profile)
 
 
+def get_query_address(server):
+    """Return the A2S query address for Valheim.
+
+    Valheim's dedicated server exposes the Steam A2S query interface on
+    game-port + 1 (e.g. game on UDP 2456, A2S on UDP 2457).
+    """
+    return "127.0.0.1", server.data["port"] + 1, "a2s"
+
+
+def get_info_address(server):
+    """Return the A2S info address for Valheim (same as query address)."""
+    return "127.0.0.1", server.data["port"] + 1, "a2s"
+
+
 def checkvalue(server, key, *value):
     """Validate supported Valheim datastore edits."""
 

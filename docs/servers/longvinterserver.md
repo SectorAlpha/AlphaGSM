@@ -59,6 +59,9 @@ alphagsm mylongvint backup
 
 - Module name: `longvinterserver`
 - Default port: 7777
+- Current CI status: disabled. The current SteamCMD build crashes during startup
+	with missing `BlueprintableOnlineBeacons` and `DiscordRpc` packaged script
+	dependencies before either the game port or query port opens.
 
 ## Developer Notes
 

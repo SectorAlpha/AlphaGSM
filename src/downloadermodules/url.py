@@ -1,6 +1,7 @@
 """HTTP and archive-based download helpers used by the shared downloader cache."""
 
 from downloader import DownloaderError
+from datetime import date
 import urllib.request
 import os.path
 import shutil

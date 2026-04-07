@@ -43,7 +43,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ReadyOrNotServer.ex
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
     server.data.setdefault("maxplayers", "16")
     server.data.setdefault("backupfiles", ["ReadyOrNot/Config", "ReadyOrNot/Saved"])
     if "backup" not in server.data:
@@ -59,6 +58,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ReadyOrNotServer.ex
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(int(port) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -125,6 +125,16 @@ def get_start_command(server):
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]
+
+
+def get_query_address(server):
+    """Return A2S query address for Ready or Not (queryport, not game port)."""
+    return "127.0.0.1", int(server.data["queryport"]), "a2s"
+
+
+def get_info_address(server):
+    """Return A2S info address for Ready or Not (same as query address)."""
+    return "127.0.0.1", int(server.data["queryport"]), "a2s"
 
 
 def do_stop(server, j):

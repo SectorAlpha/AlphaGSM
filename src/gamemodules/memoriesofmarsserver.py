@@ -40,7 +40,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="MemoriesOfMarsServe
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
     server.data.setdefault("backupfiles", ["Saved", "Config"])
     if "backup" not in server.data:
         server.data["backup"] = {
@@ -55,6 +54,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="MemoriesOfMarsServe
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(server.data["port"] + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -107,7 +107,20 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return ["./" + server.data["exe_name"]], server.data["dir"]
+    return (
+        [
+            "./" + server.data["exe_name"],
+            "-Port=%s" % (server.data["port"],),
+            "-QueryPort=%s" % (server.data["queryport"],),
+            "-log",
+        ],
+        server.data["dir"],
+    )
+
+
+def get_query_address(server):
+    """Return the A2S query address for the Memories of Mars dedicated query port."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
 
 
 def do_stop(server, j):

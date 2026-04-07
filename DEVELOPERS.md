@@ -82,33 +82,63 @@ The server object merges these module-level definitions with the defaults at run
 
 ## Game Module Contract
 
-A game module typically implements some or all of:
+A game module is a Python file under `src/gamemodules/`.  The `Server` class
+dispatches user commands by calling named attributes on the module.  The full
+specification lives in [src/server/gamemodules.py](src/server/gamemodules.py).
+The skill-level checklist lives in
+[skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
 
-- `configure(server, ask, ...)`
-- `install(server, ...)`
-- `get_start_command(server)`
-- `do_stop(server, ...)`
-- `status(server, verbose)`
-- `message(...)`
-- `update(...)`
-- `restart(...)`
-- `prestart(...)`
-- `backup(...)`
+### Required module attributes
 
-Operational expectations:
+| Attribute | Notes |
+|---|---|
+| `commands` | Tuple of extra command names beyond the default set (e.g. `("update", "restart")`).  Use `()` if none. |
+| `command_args` | Dict mapping command name → `CmdSpec` for all extra commands and any built-in commands whose arg spec the module extends. |
+| `command_descriptions` | Dict mapping command name → description string for all extra commands. |
+| `command_functions` | Dict mapping command name → callable for all extra commands. |
 
-- `configure(...)` stores resolved user choices in `server.data`
-- `install(...)` ensures the server filesystem is in a runnable state
-- `get_start_command(...)` returns the command tuple the default `start` path consumes
-- `prestart(...)` is optional and performs just-in-time environment setup
+### Required module functions
 
-Representative implementations:
+| Function | Signature | Backs user command |
+|---|---|---|
+| `configure` | `(server, ask, *args, **kwargs)` | `setup` |
+| `install` | `(server, *args, **kwargs)` | `setup` |
+| `get_start_command` | `(server, *args, **kwargs)` | `start` |
+| `do_stop` | `(server, time, *args, **kwargs)` | `stop` |
+| `status` | `(server, verbose, *args, **kwargs)` | `status` |
+| `message` | `(server, message, *args, **kwargs)` | `message` |
+| `backup` | `(server, *args, **kwargs)` | `backup` |
+| `checkvalue` | `(server, key, *values, **kwargs)` | `set` |
+
+### Optional module functions
+
+| Function | Signature | Purpose |
+|---|---|---|
+| `prestart` | `(server, *args, **kwargs)` | Run before the screen session starts (e.g. symlink Steam libraries) |
+| `poststart` | `(server, *args, **kwargs)` | Run after the screen session starts (e.g. send init commands) |
+| `postset` | `(server, key, **kwargs)` | React after a `set` data-store change |
+| `get_query_address` | `(server)` | Return `(host, port, protocol)` for `query`; protocols: `"a2s"`, `"quake"`, `"ts3"`, `"tcp"` |
+| `get_info_address` | `(server)` | Return `(host, port, protocol)` for `info`; protocols: `"a2s"`, `"slp"`, `"tcp"`.  Always add this unless the module uses `define_valve_server_module()`. |
+| `update` | `(server, validate=False, restart=False, ...)` | In-place server update; wire into `commands` / `command_functions` |
+| `restart` | `(server, ...)` | Custom restart logic if the default stop+start is insufficient |
+| `wipe` | `(server)` | Delete world/save data; alternatively set `wipe_paths` attribute |
+| `max_stop_wait` | attribute `int` | Max minutes to wait for graceful stop (default 5, capped at 5) |
+
+### Operational expectations
+
+- `configure(...)` stores at minimum `port` and `dir` in `server.data`, initialises the backup data structure, and returns `(args, kwargs)` to forward to `install`
+- `install(...)` ensures the server filesystem is in a runnable state and calls `server.data.save()`
+- `get_start_command(...)` returns `(argv_list, working_dir)`
+- `checkvalue(...)` delegates `"backup"` key paths to `backup_utils.checkdatavalue`
+- `get_info_address(...)` prevents `Server.info()` from falling back to the TCP ping last resort
+
+### Representative implementations
 
 - [src/gamemodules/minecraft/vanilla.py](src/gamemodules/minecraft/vanilla.py)
 - [src/gamemodules/teamfortress2.py](src/gamemodules/teamfortress2.py)
+- [src/gamemodules/projectzomboid.py](src/gamemodules/projectzomboid.py)
 - [src/gamemodules/counterstrikeglobaloffensive.py](src/gamemodules/counterstrikeglobaloffensive.py)
-- [src/gamemodules/cssserver.py](src/gamemodules/cssserver.py)
-- [src/gamemodules/csserver.py](src/gamemodules/csserver.py)
+- [src/gamemodules/readyornotserver.py](src/gamemodules/readyornotserver.py) — example with `get_query_address` and `get_info_address`
 
 ## Datastore Model
 
@@ -169,6 +199,11 @@ The smoke runners are the best repository examples of the real lifecycle a user 
 
 - [smoke_tests/run_minecraft_vanilla.sh](smoke_tests/run_minecraft_vanilla.sh)
 - [smoke_tests/run_tf2.sh](smoke_tests/run_tf2.sh)
+
+`gmodserver` install behaviour:
+- download common mountable Source content into `<install_dir>/_gmod_content/` instead of the server root
+- write `garrysmod/cfg/mount.cfg` entries for `cstrike`, `hl2mp`, and `tf`
+- seed `garrysmod/cfg/mountdepots.txt` with Facepunch's default depot list
 
  [tests/smoke_tests/run_minecraft_vanilla.sh](tests/smoke_tests/run_minecraft_vanilla.sh)
  [tests/smoke_tests/run_tf2.sh](tests/smoke_tests/run_tf2.sh)

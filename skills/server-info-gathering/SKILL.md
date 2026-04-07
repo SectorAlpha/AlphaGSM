@@ -145,3 +145,272 @@ Add this section to each `docs/servers/<module>.md`:
 3. Create config templates from defaults
 4. Add the section to existing docs
 5. Verify with lint and unit tests
+
+## Integration Test Requirements for `info`
+
+Every integration test must verify `info` and `info --json` with strict,
+protocol-specific assertions. This section is the authoritative reference for
+how to determine and assert the correct protocol.
+
+These `info` checks belong inside the full AlphaGSM lifecycle test, after
+`create`, `setup`, `start`, readiness verification, and `status`.
+
+### How to determine a server's info protocol
+
+Look at the game module for a `get_info_address()` function:
+
+```python
+# If present, this determines the protocol used by Server.info()
+def get_info_address(server):
+    return ("127.0.0.1", server.data["port"], "<protocol>")
+```
+
+If `get_info_address()` is **absent**, `Server.info()` tries A2S first and
+falls back to TCP. This fallback means the test cannot assert a stable protocol —
+the right fix is to **add `get_info_address()`** to the module, not to
+use `in ("a2s", "tcp")` in the test.
+
+### Protocol reference
+
+| Protocol string | When used |
+|---|---|
+| `"a2s"` | Valve A2S_INFO — Source and GoldSrc engines |
+| `"quake"` | Quake-family UDP status queries — Quake 2/3/4, QuakeWorld, Quake Live, ET:Legacy, Xonotic, Warfork, similar id-tech servers |
+| `"slp"` | Minecraft Server List Ping — Vanilla, Spigot, Paper, BungeeCord, Waterfall, Velocity |
+| `"ts3"` | TeamSpeak 3 ServerQuery over TCP |
+| `"tcp"` | Raw TCP ping — last-resort fallback only; should never appear if the module has `get_info_address()` |
+
+### Adding `get_info_address()` to a module
+
+For Source/GoldSrc servers the `define_valve_server_module()` call already
+configures A2S automatically — do not add `get_info_address()` for those.
+
+For all other modules that speak a known protocol, add:
+
+```python
+def get_info_address(server):
+    """Return the address tuple for the ``info`` command."""
+    return ("127.0.0.1", server.data["port"], "slp")  # or "quake" / "ts3" / "a2s"
+```
+
+### Strict protocol assertion in integration tests
+
+```python
+# info --json — assert the EXACT protocol, never a union
+import json as _info_json
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "a2s", (   # replace with the actual protocol
+    f"Expected a2s protocol in info JSON: {_info_data!r}"
+)
+assert _info_data.get("players") == 0, (
+    f"Expected 0 players on fresh server: {_info_data!r}"
+)
+```
+
+If the test fails because `"tcp"` was returned instead of the expected protocol:
+
+1. Check whether the module has `get_info_address()` — add it if missing.
+2. Check whether the server is actually listening on the expected port by the
+   time the test reaches `info`.
+3. For Source-based modules, first try the documented integration-only setting
+    that keeps the server out of hibernation so A2S can answer consistently.
+4. If the build still hibernates, wire a module wake hook for `query` / `info`
+    that nudges the server via console input such as `status`; do not weaken the
+    protocol assertion to accept TCP fallback instead.
+5. Do **not** change the assertion to `in ("a2s", "tcp")`.
+
+## Query Protocol Capabilities & Full Property Verification
+
+This section is the authoritative reference for what each query protocol
+returns, what properties to assert, and how to ensure the server is ready for
+querying before running assertions.
+
+### Timing: wait before asserting
+
+Log-file readiness markers (`wait_for_log_marker`) guarantee the server process
+has started, but **not** that the query port is accepting packets. Use the
+protocol-specific readiness helper from `tests/integration_tests/conftest.py`
+after the log-marker check:
+
+```python
+wait_for_a2s_ready("127.0.0.1", port, 120)
+wait_for_quake_ready("127.0.0.1", port, 120)
+wait_for_tcp_open("127.0.0.1", port, 120)
+```
+
+Use the helper that matches the server's actual wire protocol:
+
+- `wait_for_a2s_ready` for Source / GoldSrc / other A2S servers
+- `wait_for_quake_ready` for Quake-family UDP status servers
+- `wait_for_tcp_open` for TCP-only query surfaces such as TS3 ServerQuery
+
+If the readiness helper times out, treat it as a real failure and fix the
+server, test timing, or protocol hook. Do **not** convert that timeout into a
+mid-test skip.
+
+For new Source-engine module coverage, do not accept hibernation as the final
+state. If the server goes idle before `query` / `info`, add the integration-only
+config needed to keep it awake so the test proves real A2S behaviour rather
+than a TCP fallback or a log-only readiness check.
+
+### Protocol: `"a2s"` — Valve A2S_INFO
+
+Used by: Source engine (TF2, Gmod, CS:S, DOI, PVKII, ND, CC, …), GoldSrc,
+and any game based on the Steam query protocol.
+
+Implemented in: `src/utils/query.py` — `a2s_info()` + `parse_a2s_info()`
+
+**Properties returned** (all present when parsing succeeds):
+
+| Key | Type | Meaning |
+|---|---|---|
+| `name` | str | Server display name |
+| `map` | str | Current map |
+| `folder` | str | Game folder (e.g. `tf`, `garrysmod`) |
+| `game` | str | Game description (e.g. `Team Fortress`) |
+| `appid` | int | Steam Application ID |
+| `players` | int | Current human player count |
+| `max_players` | int | Maximum server capacity |
+| `bots` | int | Bot player count |
+
+**Full integration-test assertion template:**
+
+```python
+wait_for_a2s_ready("127.0.0.1", port, 120)
+
+query_result = run_and_assert_ok(env, server_name, "query")
+assert "Server is responding" in query_result.stdout, (
+    f"Expected A2S query success, not fallback: {query_result.stdout!r}"
+)
+
+info_result = run_and_assert_ok(env, server_name, "info")
+assert "Server info (A2S" in info_result.stdout, (
+    f"Expected A2S info output, not fallback: {info_result.stdout!r}"
+)
+
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "a2s", f"Expected a2s: {_info_data!r}"
+assert _info_data["players"] == 0, f"Expected 0 players: {_info_data!r}"
+assert _info_data["bots"] == 0, f"Expected 0 bots: {_info_data!r}"
+assert isinstance(_info_data["name"], str) and _info_data["name"], f"name: {_info_data!r}"
+assert isinstance(_info_data["map"], str), f"map: {_info_data!r}"
+assert isinstance(_info_data["folder"], str) and _info_data["folder"], f"folder: {_info_data!r}"
+assert isinstance(_info_data["game"], str), f"game: {_info_data!r}"
+assert isinstance(_info_data["appid"], int) and _info_data["appid"] > 0, f"appid: {_info_data!r}"
+assert _info_data["max_players"] > 0, f"max_players: {_info_data!r}"
+```
+
+If the server is Source-based and hibernates before these assertions pass, fix
+the integration setup so the server stays awake enough for A2S to answer.
+
+### Protocol: `"quake"` — Quake3/QFusion getstatus
+
+Used by: Quake 2, Quake 3, Quake 4, QuakeWorld, Quake Live, ET:Legacy,
+Xonotic, Warfork, Warsow, OpenArena, and similar id-tech servers.
+
+Implemented in: `src/utils/query.py` — `quake_status()`
+
+**Properties returned:**
+
+| Key | Type | Meaning |
+|---|---|---|
+| `name` | str | Server display name (`sv_hostname` cvar) |
+| `map` | str | Current map (`mapname` cvar) |
+| `players` | int | Current player count (counted from player lines) |
+| `max_players` | int | Maximum players (`sv_maxclients` cvar) |
+
+**Full integration-test assertion template:**
+
+```python
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "quake", f"Expected quake: {_info_data!r}"
+assert _info_data["players"] == 0, f"Expected 0 players: {_info_data!r}"
+assert isinstance(_info_data["name"], str), f"name: {_info_data!r}"
+assert isinstance(_info_data["map"], str), f"map: {_info_data!r}"
+assert _info_data["max_players"] > 0, f"max_players: {_info_data!r}"
+```
+
+### Protocol: `"slp"` — Minecraft Server List Ping
+
+Used by: all Minecraft server variants (Vanilla, Spigot, Paper, BungeeCord,
+Waterfall, Velocity).
+
+Implemented in: `src/utils/query.py` — `slp_info()`
+
+**Properties returned:**
+
+| Key | Type | Meaning |
+|---|---|---|
+| `description` | str | Server MOTD / description |
+| `players_online` | int | Current player count |
+| `players_max` | int | Maximum player capacity |
+| `version` | str | Server software version string |
+| `player_names` | list[str] | Names of online players (only present when players are online) |
+
+**Full integration-test assertion template:**
+
+```python
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "slp", f"Expected slp: {_info_data!r}"
+assert isinstance(_info_data["description"], str), f"description: {_info_data!r}"
+assert _info_data["players_online"] == 0, f"Expected 0 players: {_info_data!r}"
+assert _info_data["players_max"] > 0, f"players_max: {_info_data!r}"
+assert isinstance(_info_data["version"], str) and _info_data["version"], f"version: {_info_data!r}"
+```
+
+### Protocol: `"ts3"` — TeamSpeak 3 ServerQuery
+
+Used by: `ts3server` only.
+
+Implemented in: `src/utils/query.py` — `ts3_serverinfo()` — opens a raw TCP
+session to the TS3 ServerQuery port (default 10011), sends `serverinfo` and
+`channellist` commands, and parses the escape-encoded responses.
+
+**Properties returned:**
+
+| Key | Type | Meaning |
+|---|---|---|
+| `name` | str | Virtual server name |
+| `clients_online` | int | Connected client count |
+| `max_clients` | int | Maximum client capacity |
+| `uptime` | int | Server uptime in seconds |
+| `platform` | str | Host OS platform string |
+| `version` | str | TS3 server software version |
+| `channels` | list[dict] | List of channel dicts: `{"id": int, "name": str}` |
+
+TS3 always creates a **Default Channel** at first startup, so `channels` will
+never be empty on a freshly started server.
+
+**Full integration-test assertion template:**
+
+```python
+info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+_info_data = _info_json.loads(info_json_result.stdout.strip())
+assert _info_data["protocol"] == "ts3", f"Expected ts3: {_info_data!r}"
+assert isinstance(_info_data["name"], str) and _info_data["name"], f"name: {_info_data!r}"
+assert _info_data["clients_online"] == 0, f"clients_online: {_info_data!r}"
+assert _info_data["max_clients"] > 0, f"max_clients: {_info_data!r}"
+assert isinstance(_info_data["uptime"], int), f"uptime: {_info_data!r}"
+assert isinstance(_info_data["platform"], str) and _info_data["platform"], f"platform: {_info_data!r}"
+assert isinstance(_info_data["version"], str) and _info_data["version"], f"version: {_info_data!r}"
+assert isinstance(_info_data["channels"], list) and len(_info_data["channels"]) > 0, (
+    f"Expected non-empty channels list: {_info_data!r}"
+)
+assert all(isinstance(ch.get("name"), str) for ch in _info_data["channels"]), (
+    f"All channels must have name strings: {_info_data!r}"
+)
+```
+
+### Protocol: `"tcp"` — Raw TCP ping (fallback only)
+
+`"tcp"` only returns `latency_ms` (float).  It carries **no real server
+information**.  A test that asserts `protocol == "tcp"` is not proving the
+server works — it is proving the port is open.
+
+Rule: **never accept `"tcp"` as a valid result for servers that have a richer
+protocol available.**  If a module falls back to TCP, add `get_info_address()`
+(or `get_query_address()`) to the game module to return the correct protocol.

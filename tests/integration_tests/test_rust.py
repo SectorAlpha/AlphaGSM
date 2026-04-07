@@ -14,17 +14,19 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_a2s_ready,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
+from gamemodules.rust import steam_app_id
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 900  # Rust generates a new world on first start, which takes 5-15 minutes
+START_TIMEOUT = 1800  # Rust generates a new world on first start; CI runners (2 CPU / 7 GB) can take up to 25 min
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.timeout(2400)  # 40 min: download (~2 GB) + world generation on first start
+@pytest.mark.timeout(4800)  # 80 min: download (~2 GB) + world generation on first start on slow CI runners
 def test_rust_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -46,7 +48,11 @@ def test_rust_lifecycle(tmp_path):
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+
+    # Use a small world so generation completes quickly in CI (default 3000 can OOM or
+    # exceed the 900s START_TIMEOUT on GitHub-hosted 2-CPU / 7-GB runners).
+    run_and_assert_ok(env, server_name, "set", "worldsize", "1000")
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -62,9 +68,35 @@ def test_rust_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        # wait for A2S to be ready before querying (Rust A2S can lag behind log markers)
+        wait_for_a2s_ready("127.0.0.1", port, 900, log_path=log_path)
+
+        # query
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert (
+            "Server is responding" in query_result.stdout
+        ), f"Unexpected query output: {query_result.stdout!r}"
+
+        # info
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert (
+            "Players     : 0/" in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data.get("players") == 0, (
+            f"Expected 0 players on fresh server: {_info_data!r}"
+        )
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

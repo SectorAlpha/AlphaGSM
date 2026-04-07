@@ -1,0 +1,56 @@
+name: Build Integration Test Image
+
+# Manually triggered by code owners whenever the Docker image needs to be
+# rebuilt (e.g. after changes to the Dockerfile or install_proton.sh).
+#
+# The built image is pushed to GHCR under two tags:
+#   ghcr.io/sectoralpha/alphagsm-integration-test:<content-hash>
+#   ghcr.io/sectoralpha/alphagsm-integration-test:latest
+#
+# The PR workflow (unittest.yaml) always pulls :latest, so triggering this
+# workflow is the only way to update the image used by integration tests.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute image tags from content hash
+        id: meta
+        run: |
+          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh | sha256sum | cut -c1-12)
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-integration-test"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+          echo "Building: ${repo}:${hash} and ${repo}:latest"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push integration test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .github/docker/integration-env/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+          secrets: |
+            gh_token=${{ secrets.GITHUB_TOKEN }}

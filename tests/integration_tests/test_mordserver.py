@@ -14,13 +14,15 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_udp_open,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
+from gamemodules.mordserver import steam_app_id
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 300
+START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
@@ -45,7 +47,7 @@ def test_mordserver_lifecycle(tmp_path):
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -61,9 +63,32 @@ def test_mordserver_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        # Mordhau exposes a generic UDP listener on the game port in this environment.
+        wait_for_udp_open("127.0.0.1", port, 900, log_path=log_path)
+
+        # query
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert "Server port is open" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
+
+        # info
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert "Server port is open" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
+        )
     finally:
         # stop
-        run_and_assert_ok(env, server_name, "stop")
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

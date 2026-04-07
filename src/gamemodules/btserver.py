@@ -40,7 +40,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServer"):
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27016")
     server.data.setdefault("gamemode", "Sandbox")
     server.data.setdefault("maxplayers", "16")
     server.data.setdefault("backupfiles", ["Data", "serversettings.xml", "config_player.xml"])
@@ -57,6 +56,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServer"):
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    # Barotrauma's Steam query port is game port + 1 by default.
+    server.data.setdefault("queryport", str(int(port) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))

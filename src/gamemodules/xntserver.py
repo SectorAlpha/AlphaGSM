@@ -112,6 +112,17 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
     install_archive(server, detect_compression(server.data["download_name"]))
+    # The Xonotic dedicated server exits with "Dedicated server requires
+    # server.cfg in your config directory" if the file does not exist in
+    # the -userdir/data/ path.  Create a minimal one so the server starts.
+    # Xonotic (DarkPlaces engine) stores user data under <userdir>/data/,
+    # so server.cfg must live at <userdir>/data/server.cfg, not <userdir>/server.cfg.
+    userdir_data = os.path.join(server.data["dir"], server.data["userdir"], "data")
+    os.makedirs(userdir_data, exist_ok=True)
+    server_cfg = os.path.join(userdir_data, "server.cfg")
+    if not os.path.exists(server_cfg):
+        with open(server_cfg, "w", encoding="utf-8") as fh:
+            fh.write(f'hostname "{server.data["hostname"]}"\n')
 
 
 def get_start_command(server):
@@ -183,3 +194,17 @@ def checkvalue(server, key, *value):
     ):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+
+def get_query_address(server):
+    """Return the Quake UDP query address for Xonotic (DarkPlaces engine).
+
+    Xonotic uses the Quake III / DarkPlaces getstatus UDP protocol,
+    not the Source Engine A2S protocol.
+    """
+    return "127.0.0.1", server.data["port"], "quake"
+
+
+def get_info_address(server):
+    """Return the Quake UDP info address for Xonotic (same as query address)."""
+    return "127.0.0.1", server.data["port"], "quake"

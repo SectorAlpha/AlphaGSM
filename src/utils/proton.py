@@ -76,10 +76,11 @@ def is_available():
 # Command wrapping
 # ---------------------------------------------------------------------------
 
-def wrap_command(command, wineprefix=None):
+def wrap_command(command, wineprefix=None, prefer_proton=False):
     """Wrap *command* so that a Windows executable runs on Linux.
 
-    Prefers Wine when both Wine and Proton-GE are installed.  When
+    Prefers Wine when both Wine and Proton-GE are installed unless
+    *prefer_proton* is ``True``.  When
     *wineprefix* is provided it is forwarded via the ``WINEPREFIX`` (Wine) or
     ``STEAM_COMPAT_DATA_PATH`` (Proton) environment variable using the
     ``env(1)`` utility, so the existing screen/subprocess backends need no
@@ -90,6 +91,8 @@ def wrap_command(command, wineprefix=None):
             element must be the Windows executable name or relative path.
         wineprefix: Optional path to a Wine prefix directory or Proton
             compatibility data directory.
+        prefer_proton: When ``True`` choose Proton-GE before Wine if both are
+            available. Use this for Windows servers known to require Proton.
 
     Returns:
         A new list of strings representing the wrapped command.
@@ -110,14 +113,27 @@ def wrap_command(command, wineprefix=None):
         "WINEDLLOVERRIDES=winex11.drv=",
     ]
 
+    proton = find_proton()
     wine = find_wine()
+
+    if prefer_proton and proton is not None:
+        compat_dir = wineprefix or os.path.expanduser("~/.proton")
+        os.makedirs(compat_dir, exist_ok=True)
+        return [
+            "env",
+            *_HEADLESS,
+            f"STEAM_COMPAT_DATA_PATH={compat_dir}",
+            "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
+            proton,
+            "run",
+        ] + list(command)
+
     if wine is not None:
         env_vars = list(_HEADLESS)
         if wineprefix:
             env_vars.append(f"WINEPREFIX={wineprefix}")
         return ["env"] + env_vars + [wine] + list(command)
 
-    proton = find_proton()
     if proton is not None:
         compat_dir = wineprefix or os.path.expanduser("~/.proton")
         os.makedirs(compat_dir, exist_ok=True)

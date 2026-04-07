@@ -84,7 +84,7 @@ EOF
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
-run_alphagsm "$SERVER_NAME" create zpsserver
+run_create_or_skip_disabled "$SERVER_NAME" create zpsserver
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start

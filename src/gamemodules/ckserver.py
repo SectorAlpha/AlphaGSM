@@ -1,6 +1,7 @@
 """Core Keeper dedicated server lifecycle helpers."""
 
 import os
+import re
 
 import screen
 import utils.steamcmd as steamcmd
@@ -35,17 +36,45 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _patch_launch_script(server):
+    launch_path = os.path.join(server.data["dir"], "_launch.sh")
+    if not os.path.isfile(launch_path):
+        return
+    original = open(launch_path, encoding="utf-8", errors="replace").read()
+    new = (
+        "    xvfb-run -a --server-args=\"-screen 0 1x1x24 -nolisten tcp\" \\\n"
+        "        env SDL_VIDEODRIVER=x11 SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 \\\n"
+        "        LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$installdir/linux64/\" \\\n"
+        "        \"$exepath\" -batchmode -logfile CoreKeeperServerLog.txt \"$@\" &\n"
+    )
+    pattern = re.compile(
+        r"^\s*set -m\n\n"
+        r"\s*rm -f /tmp/\.X99-lock\n\n"
+        r"\s*Xvfb :99 -screen 0 1x1x24 -nolisten tcp &\n"
+        r"\s*xvfbpid=\$!\n\n"
+        r"\s*DISPLAY=:99 LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:\$installdir/linux64/\" \\\n"
+        r"\s*\"\$exepath\" -batchmode -logfile CoreKeeperServerLog.txt \"\$@\" &\n",
+        re.MULTILINE,
+    )
+    updated, count = pattern.subn(new, original, count=1)
+    if count == 0:
+        return
+    with open(launch_path, "w", encoding="utf-8") as handle:
+        handle.write(updated)
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="CoreKeeperServer"):
     """Collect and store configuration values for a Core Keeper server."""
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
     server.data.setdefault("world", server.name)
+    server.data.setdefault("worldindex", "0")
     server.data.setdefault("maxplayers", "8")
-    server.data.setdefault("backupfiles", ["DedicatedServer", "saves"])
+    server.data.setdefault("backupfiles", ["DedicatedServer", "GameInfo.txt", "GameID.txt"])
     if "backup" not in server.data:
         server.data["backup"] = {
-            "profiles": {"default": {"targets": ["DedicatedServer", "saves"]}},
+            "profiles": {"default": {"targets": ["DedicatedServer", "GameInfo.txt", "GameID.txt"]}},
             "schedule": [("default", 0, "days")],
         }
 
@@ -64,7 +93,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="CoreKeeperServer"):
             if inp:
                 dir = inp
     server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
+    server.data["exe_name"] = server.data.get("exe_name", "_launch.sh")
     server.data.save()
     return (), {}
 
@@ -79,6 +108,7 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    _patch_launch_script(server)
 
 
 def update(server, validate=False, restart=False):
@@ -89,6 +119,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    _patch_launch_script(server)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -112,14 +143,30 @@ def get_start_command(server):
         [
             "./" + server.data["exe_name"],
             "-world",
+            str(server.data["worldindex"]),
+            "-worldname",
             server.data["world"],
             "-port",
             str(server.data["port"]),
             "-maxplayers",
             str(server.data["maxplayers"]),
+            "-datapath",
+            os.path.join(server.data["dir"], "DedicatedServer"),
         ],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the UDP endpoint used for Core Keeper reachability checks."""
+
+    return ("127.0.0.1", int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the UDP endpoint used for Core Keeper info output."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -153,7 +200,7 @@ def checkvalue(server, key, *value):
         return backup_utils.checkdatavalue(server.data["backup"], key, *value)
     if len(value) == 0:
         raise ServerError("No value specified")
-    if key[0] in ("port", "maxplayers"):
+    if key[0] in ("port", "maxplayers", "worldindex"):
         return int(value[0])
     if key[0] in ("world", "exe_name", "dir"):
         return str(value[0])

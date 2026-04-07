@@ -44,7 +44,7 @@ alphagsm mysmalland stop
 
 Setup configures:
 
-- the game port (default 7778)
+- the game port (default 7777)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,14 +58,14 @@ alphagsm mysmalland backup
 ## Notes
 
 - Module name: `smallandserver`
-- Default port: 7778
+- Default port: 7777
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `start-server.sh`
-- **Location**: `<install_dir>/start-server.sh`
+- **Executable**: `SMALLANDServer.sh`
+- **Location**: `<install_dir>/SMALLANDServer.sh`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `808040`
 
@@ -73,6 +73,7 @@ alphagsm mysmalland backup
 
 - **Config file**: See game module source
 - **Template**: See [server-templates/smallandserver/](../server-templates/smallandserver/) if available
+- **Query/info behavior**: AlphaGSM uses a generic UDP reachability probe on the main game port because the dedicated server binds a silent UDP listener rather than exposing A2S details
 
 ### Maps and Mods
 

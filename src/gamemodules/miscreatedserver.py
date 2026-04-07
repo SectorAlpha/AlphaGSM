@@ -108,6 +108,16 @@ def restart(server):
     server.start()
 
 
+def get_query_address(server):
+    """Miscreated (CryEngine) exposes Steam A2S on game port + 1."""
+    return ("127.0.0.1", int(server.data["port"]) + 1, "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+    return ("127.0.0.1", int(server.data["port"]) + 1, "a2s")
+
+
 def get_start_command(server):
     """Build the command used to launch a Miscreated dedicated server."""
 

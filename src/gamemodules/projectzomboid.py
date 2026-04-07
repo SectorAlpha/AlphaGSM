@@ -55,6 +55,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
     server.data.setdefault("servername", server.name)
+    server.data.setdefault("adminpassword", "alphagsm")
     server.data.setdefault("backupfiles", ["Zomboid", "Server", "start-server.sh"])
     if "backup" not in server.data:
         server.data["backup"] = {
@@ -71,6 +72,10 @@ def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    # Build 41 dedicated servers expose their direct-connection listener on the
+    # fixed UDP port configured in SERVERNAME.ini. Without module-managed config
+    # files this remains the upstream default 16262.
+    server.data.setdefault("queryport", 16262)
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -131,7 +136,30 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return ["./" + server.data["exe_name"], server.data["servername"]], server.data["dir"]
+    return (
+        [
+            "./" + server.data["exe_name"],
+            "-servername",
+            str(server.data["servername"]),
+            "-adminpassword",
+            str(server.data["adminpassword"]),
+            "-port",
+            str(server.data["port"]),
+        ],
+        server.data["dir"],
+    )
+
+
+def get_query_address(server):
+    """Return the Project Zomboid direct-connection UDP listener."""
+
+    return ("127.0.0.1", int(server.data.get("queryport", 16262)), "udp")
+
+
+def get_info_address(server):
+    """Return the Project Zomboid direct-connection UDP listener."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -165,8 +193,8 @@ def checkvalue(server, key, *value):
         return backup_utils.checkdatavalue(server.data["backup"], key, *value)
     if len(value) == 0:
         raise ServerError("No value specified")
-    if key[0] == "port":
+    if key[0] in ("port", "queryport"):
         return int(value[0])
-    if key[0] in ("servername", "exe_name", "dir"):
+    if key[0] in ("servername", "adminpassword", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")

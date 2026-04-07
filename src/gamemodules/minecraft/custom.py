@@ -244,6 +244,9 @@ def install(server, *, eula=False):
     eulafile = os.path.join(server.data["dir"], "eula.txt")
     configfile = os.path.join(server.data["dir"], "server.properties")
     javapath = server.data.get("javapath", "java")
+    if eula and not os.path.isfile(eulafile):
+        with open(eulafile, "w", encoding="utf-8") as handle:
+            handle.write("eula=true\n")
     if not os.path.isfile(configfile) or (
         eula and not os.path.isfile(eulafile)
     ):  # use as flag for has the server created it's files
@@ -453,3 +456,12 @@ def deop(server, *users):
 
 
 command_functions["deop"] = deop
+
+
+def get_info_address(server):
+    """Return the SLP address for the ``info`` command.
+
+    Minecraft uses the Server List Ping (SLP) protocol on its main TCP port,
+    which reports player count, max players, server description, and version.
+    """
+    return ("127.0.0.1", server.data["port"], "slp")

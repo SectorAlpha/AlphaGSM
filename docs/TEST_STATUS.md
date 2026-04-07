@@ -1,13 +1,13 @@
 # Integration Test Status
 
-Last updated: 2026-03-28
+Last updated: 2026-04-07
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 76      |
-| DISABLED | 79      |
+| PASSED   | 81      |
+| DISABLED | 74      |
 | SKIPPED  | 79      |
 
 ## Status Key
@@ -16,12 +16,14 @@ Last updated: 2026-03-28
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 
-## PASSED (76)
+## PASSED (81)
 
 | Test | Type |
 |------|------|
 | acserver | SteamCMD |
 | ahl2server | SteamCMD (Source) |
+| armarserver | SteamCMD |
+| avserver | SteamCMD |
 | archive_backed_installs | Archive |
 | bb2server | SteamCMD (Source) |
 | btlserver | SteamCMD |
@@ -33,6 +35,7 @@ Last updated: 2026-03-28
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
 | cssserver | SteamCMD (Source) |
+| craftopiaserver | SteamCMD |
 | dayofdragonsserver | SteamCMD |
 | dmcserver | SteamCMD (GoldSrc) |
 | dodserver | SteamCMD (GoldSrc) |
@@ -49,7 +52,6 @@ Last updated: 2026-03-28
 | hldmsserver | SteamCMD (Source) |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
-| longvinterserver | SteamCMD |
 | minecraft_paper | Direct download |
 | minecraft_vanilla | Direct download |
 | minecraft_velocity | Direct download |
@@ -67,6 +69,8 @@ Last updated: 2026-03-28
 | rust | SteamCMD |
 | satisfactory | SteamCMD |
 | silicaserver | SteamCMD |
+| scpslserver | SteamCMD |
+| smallandserver | SteamCMD |
 | sevendaystodie | SteamCMD |
 | solserver | SteamCMD |
 | squad44server | SteamCMD |
@@ -80,8 +84,10 @@ Last updated: 2026-03-28
 | unturned | SteamCMD |
 | valheim | SteamCMD |
 | wfserver | SteamCMD |
+| wurmserver | SteamCMD |
 | xntserver | Direct download |
 | battlecryoffreedomserver | SteamCMD (Proton) |
+| ckserver | SteamCMD |
 | enshrouded | SteamCMD (Proton) |
 | groundbranchserver | SteamCMD (Proton) |
 | mythofempiresserver | SteamCMD (Proton) |
@@ -97,7 +103,7 @@ Last updated: 2026-03-28
 | inssserver | SteamCMD — PASSED 2026-03-28 |
 | ts3server | Direct download — PASSED 2026-03-28 |
 
-## DISABLED (79)
+## DISABLED (74)
 
 | Test | Reason |
 |------|--------|
@@ -115,8 +121,6 @@ Last updated: 2026-03-28
 | arma3headlessserver | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
-| armarserver | Arma Reforger server requires configs/server.json; module does not create it |
-| avserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
 | atlasserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | bannerlordserver | SteamCMD app 1863440 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -127,12 +131,10 @@ Last updated: 2026-03-28
 | bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
-| ckserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | chivalryserver | Server starts but crashes during initialization before log markers appear (crash pattern) |
 | conanexiles | SteamCMD app 443030 installs no Linux-compatible dedicated server binary (ConanSandboxServer not present) |
 | counterstrikeglobaloffensive | CS2/CS:GO (app 740) server binary fails to load; bundled libgcc_s.so.1 lacks GCC_7.0.0 required by system libstdc++.so.6 (Ubuntu 24.04) |
 | cryofallserver | SteamCMD app 1061710 installs no Linux-compatible dedicated server binary (CryoFall_Server not present) |
-| craftopiaserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | dabserver | Dedicated server binary segfaults on startup |
 | deadpolyserver | SteamCMD app 2208380 installs no Linux-compatible dedicated server binary (executable file not found) |
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
@@ -149,8 +151,9 @@ Last updated: 2026-03-28
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
+| longvinterserver | Longvinter dedicated server (Steam app 1639880) crashes during startup with missing BlueprintableOnlineBeacons/DiscordRpc packaged scripts; game and query ports never open |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
-| ndserver | Nuclear Dawn dedicated server install is incomplete; gameinfo.txt missing |
+| ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
@@ -162,22 +165,19 @@ Last updated: 2026-03-28
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
 | rwserver | SteamCMD app 339010 installs no Linux-compatible dedicated server binary (server.jar not present) |
 | sampserver | Download domain files.sa-mp.com is dead |
-| scpslserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | seserver | SteamCMD app 298740 installs no Linux-compatible dedicated server binary (executable file not found) |
-| sfcserver | SourceForts Classic install incomplete; sfclassic/gameinfo.txt missing |
+| sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
-| smallandserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | ss14server | SS14 CDN returns 404 |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| stationeersserver | Can't start server that is already running (process management issue during setup) |
+| stationeersserver | Stationeers dedicated server stalls under Unity NullGfxDevice in headless CI after SetConsoleOutputCP startup exception; game port never opens |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | trackmaniaserver | TrackMania download URL returns 403 |
 | warbandserver | TaleWorlds download page blocks automated access (HTTP 403) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
 | wreckfestserver | SteamCMD app 361580 installs no Linux-compatible dedicated server binary (WreckfestServer not present) |
-| wurmserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| zmrserver | Zombie Master Reborn install incomplete; zmr/gameinfo.txt missing |
+| zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
 ## SKIPPED (79)
@@ -198,7 +198,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
-| medievalengineersserver | Wine: crashes in VRage engine type registry (`KeyNotFoundException: VRage.Systems.MyEngineBootstrapper`) under Wine Mono 8.1.0 — assembly loading and `GetTypes()` work correctly but VRage's internal `SystemDependencyHelper.Resolve()` fails; fixed `-console`/`-port` arg dashes and TMPDIR unset; requires Steam Proton (not bare Wine) for compatibility |
+| medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
 | miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |

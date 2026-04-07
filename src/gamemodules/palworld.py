@@ -66,6 +66,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PalServer.sh", publ
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -136,10 +137,24 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = ["./" + server.data["exe_name"]]
+    cmd = [
+        "./" + server.data["exe_name"],
+        "-port=%s" % (server.data["port"],),
+        "-queryport=%s" % (server.data["queryport"],),
+    ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
     return cmd, server.data["dir"]
+
+
+def get_query_address(server):
+    """Palworld uses Steam A2S on the dedicated queryport."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
 
 
 def do_stop(server, j):
@@ -175,7 +190,7 @@ def checkvalue(server, key, *value):
         raise ServerError("No value specified")
     if key[0] == "port":
         return int(value[0])
-    if key[0] in ("exe_name", "dir"):
+    if key[0] in ("exe_name", "dir", "queryport"):
         return str(value[0])
     if key[0] == "publiclobby":
         return str(value[0]).lower() in ("1", "true", "yes", "on")

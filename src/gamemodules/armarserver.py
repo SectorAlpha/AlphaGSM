@@ -1,5 +1,6 @@
 """Arma Reforger dedicated server lifecycle helpers."""
 
+import json
 import os
 
 import screen
@@ -10,6 +11,7 @@ from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 steam_app_id = 1874900
 steam_anonymous_login_possible = True
+DEFAULT_SCENARIO_ID = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
 
 commands = ("update", "restart")
 command_args = {
@@ -43,6 +45,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ArmaReforgerServer"
     server.data.setdefault("configfile", "configs/server.json")
     server.data.setdefault("profilesdir", "profile")
     server.data.setdefault("bindaddress", "0.0.0.0")
+    server.data.setdefault("scenarioid", DEFAULT_SCENARIO_ID)
+    server.data.setdefault("maxplayers", 8)
     server.data.setdefault("backupfiles", ["configs", "profile"])
     if "backup" not in server.data:
         server.data["backup"] = {
@@ -57,6 +61,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ArmaReforgerServer"
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("queryport", int(server.data["port"]) + 1)
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -80,6 +85,37 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    config_dir = os.path.join(server.data["dir"], os.path.dirname(server.data["configfile"]))
+    if config_dir:
+        os.makedirs(config_dir, exist_ok=True)
+    os.makedirs(os.path.join(server.data["dir"], server.data["profilesdir"]), exist_ok=True)
+
+    config_path = os.path.join(server.data["dir"], server.data["configfile"])
+    if not os.path.isfile(config_path):
+        with open(config_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "a2s": {
+                        "address": server.data.get("bindaddress", "0.0.0.0"),
+                        "port": int(server.data.get("queryport", int(server.data.get("port", 2001)) + 1)),
+                    },
+                    "game": {
+                        "name": server.name,
+                        "admins": [],
+                        "passwordAdmin": "",
+                        "maxPlayers": int(server.data.get("maxplayers", 8)),
+                        "crossPlatform": False,
+                        "supportedPlatforms": ["PLATFORM_PC"],
+                        "scenarioId": server.data.get(
+                            "scenarioid", DEFAULT_SCENARIO_ID
+                        ),
+                    }
+                },
+                handle,
+                indent=2,
+            )
+            handle.write("\n")
+    server.data.save()
 
 
 def update(server, validate=False, restart=False):
@@ -107,15 +143,19 @@ def get_start_command(server):
     """Build the command used to launch an Arma Reforger dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    config_path = os.path.join(server.data["dir"], server.data["configfile"])
+    profile_path = os.path.join(server.data["dir"], server.data["profilesdir"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    if not os.path.isfile(config_path):
+        raise ServerError("Config file not found")
     return (
         [
             "./" + server.data["exe_name"],
             "-config",
-            server.data["configfile"],
+            config_path,
             "-profile",
-            server.data["profilesdir"],
+            profile_path,
             "-bindAddress",
             server.data["bindaddress"],
             "-bindPort",
@@ -123,6 +163,18 @@ def get_start_command(server):
         ],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the A2S query address used by Arma Reforger."""
+
+    return ("127.0.0.1", int(server.data.get("queryport", int(server.data["port"]) + 1)), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S info address used by the info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -158,6 +210,12 @@ def checkvalue(server, key, *value):
         raise ServerError("No value specified")
     if key[0] == "port":
         return int(value[0])
+    if key[0] == "queryport":
+        return int(value[0])
+    if key[0] == "maxplayers":
+        return int(value[0])
+    if key[0] == "scenarioid":
+        return str(value[0])
     if key[0] in ("configfile", "profilesdir", "bindaddress", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")
