@@ -43,7 +43,8 @@ def _patch_launch_script(server):
     original = open(launch_path, encoding="utf-8", errors="replace").read()
     new = (
         "    xvfb-run -a --server-args=\"-screen 0 1x1x24 -nolisten tcp\" \\\n"
-        "        env LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$installdir/linux64/\" \\\n"
+        "        env SDL_VIDEODRIVER=x11 SDL_AUDIODRIVER=dummy LIBGL_ALWAYS_SOFTWARE=1 \\\n"
+        "        LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$installdir/linux64/\" \\\n"
         "        \"$exepath\" -batchmode -logfile CoreKeeperServerLog.txt \"$@\" &\n"
     )
     pattern = re.compile(

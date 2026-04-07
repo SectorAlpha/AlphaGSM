@@ -93,6 +93,8 @@ def test_patch_launch_script_rewrites_upstream_xvfb_block(tmp_path):
 
     updated = launch.read_text(encoding="utf-8")
     assert "xvfb-run -a" in updated
+    assert "SDL_VIDEODRIVER=x11" in updated
+    assert "LIBGL_ALWAYS_SOFTWARE=1" in updated
     assert "Xvfb :99 -screen 0 1x1x24 -nolisten tcp &" not in updated
 
 
