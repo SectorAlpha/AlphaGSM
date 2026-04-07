@@ -125,6 +125,26 @@ def _run_and_assert_ok(env, *args, timeout=TEST_TIMEOUT_SECONDS):
     return result
 
 
+def _run_setup_with_download_retry(env, *args, timeout=TEST_TIMEOUT_SECONDS, attempts=3):
+    last_result = None
+    for attempt in range(1, attempts + 1):
+        result = _run_alphagsm(env, *args, timeout=timeout)
+        _log_command_result("alphagsm " + " ".join(args), result)
+        if result.returncode == 0:
+            return result
+        combined = (result.stdout or "") + "\n" + (result.stderr or "")
+        is_transient_download_failure = (
+            "Network is unreachable" in combined
+            or "can't download requested version" in combined
+        )
+        last_result = result
+        if not is_transient_download_failure or attempt == attempts:
+            break
+        time.sleep(5)
+    assert last_result is not None
+    assert last_result.returncode == 0, last_result.stderr or last_result.stdout
+
+
 def _encode_varint(value):
     buf = bytearray()
     while True:
@@ -225,7 +245,7 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
 
     _run_and_assert_ok(env, server_name, "create", "minecraft.vanilla")
     _run_and_assert_ok(env, server_name, "set", "javapath", str(wrapper_path))
-    _run_and_assert_ok(
+    _run_setup_with_download_retry(
         env,
         server_name,
         "setup",

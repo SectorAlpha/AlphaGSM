@@ -71,6 +71,31 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_patch_launch_script_rewrites_upstream_xvfb_block(tmp_path):
+    launch = tmp_path / "_launch.sh"
+    launch.write_text(
+        "#!/bin/bash\n\n"
+        "if [[ -z \"${PRESSURE_VESSEL_RUNTIME}\" ]]\n"
+        "then\n"
+        "    set -m\n\n"
+        "    rm -f /tmp/.X99-lock\n\n"
+        "    Xvfb :99 -screen 0 1x1x24 -nolisten tcp &\n"
+        "    xvfbpid=$!\n\n"
+        "    DISPLAY=:99 LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:$installdir/linux64/\" \\\n"
+        "           \"$exepath\" -batchmode -logfile CoreKeeperServerLog.txt \"$@\" &\n"
+        "fi\n",
+        encoding="utf-8",
+    )
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+
+    mod._patch_launch_script(server)
+
+    updated = launch.read_text(encoding="utf-8")
+    assert "xvfb-run -a" in updated
+    assert "Xvfb :99 -screen 0 1x1x24 -nolisten tcp &" not in updated
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
