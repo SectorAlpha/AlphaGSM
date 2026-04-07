@@ -827,24 +827,12 @@ class Server(object):
 
         if protocol == "a2s":
             console_info_hook = _get_hibernating_console_info_hook(self.module)
+            console_info = None
             if console_info_hook is not None:
                 try:
                     console_info = console_info_hook(self)
                 except Exception:
                     console_info = None
-                if console_info:
-                    if as_json:
-                        print(json.dumps({"protocol": "console", "port": port, **console_info}))
-                        return
-                    print(
-                        "Server info (console status on port {port}):\n"
-                        "  Name        : {name}\n"
-                        "  Map         : {map}\n"
-                        "  Version     : {version}\n"
-                        "  Players     : {players}/{max_players}"
-                        " ({bots} bots)".format(port=port, **console_info)
-                    )
-                    return
             wake_hook = _get_a2s_wake_hook(self.module)
             a2s_kwargs = _a2s_request_kwargs(wake_hook)
             if wake_hook is not None:
@@ -912,6 +900,19 @@ class Server(object):
                         return
                     except query_utils.QueryError as retry_exc:
                         exc = retry_exc
+                if console_info:
+                    if as_json:
+                        print(json.dumps({"protocol": "console", "port": port, **console_info}))
+                        return
+                    print(
+                        "Server info (console status on port {port}):\n"
+                        "  Name        : {name}\n"
+                        "  Map         : {map}\n"
+                        "  Version     : {version}\n"
+                        "  Players     : {players}/{max_players}"
+                        " ({bots} bots)".format(port=port, **console_info)
+                    )
+                    return
                 if _explicit:
                     # A2S failed on the dedicated query port — try TCP on the
                     # game port before giving up.

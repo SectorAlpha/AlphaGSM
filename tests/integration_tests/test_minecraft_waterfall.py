@@ -13,6 +13,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_tcp_open,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -57,6 +58,7 @@ def test_minecraft_waterfall_lifecycle(tmp_path):
             ["Listening on"],
             START_TIMEOUT,
         )
+        wait_for_tcp_open("127.0.0.1", port, START_TIMEOUT, log_path=log_path)
 
         # status
         run_and_assert_ok(env, server_name, "status")

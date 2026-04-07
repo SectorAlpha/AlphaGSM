@@ -1065,9 +1065,13 @@ def test_info_uses_console_hook_for_hibernating_server(monkeypatch, capsys):
 
     fake_q = types.ModuleType("utils.query")
     fake_q.QueryError = OSError
-    fake_q.a2s_info = lambda *args, **kwargs: (_ for _ in ()).throw(
-        AssertionError("A2S should not be used when console info is available")
-    )
+    a2s_calls = []
+
+    def fake_a2s_info(*args, **kwargs):
+        a2s_calls.append((args, kwargs))
+        raise OSError("A2S not available while idle")
+
+    fake_q.a2s_info = fake_a2s_info
 
     monkeypatch.setattr(utils, "query", fake_q)
     monkeypatch.setitem(sys.modules, "utils.query", fake_q)
@@ -1075,6 +1079,7 @@ def test_info_uses_console_hook_for_hibernating_server(monkeypatch, capsys):
     srv.info(as_json=True)
 
     data = _json.loads(capsys.readouterr().out.strip())
+    assert len(a2s_calls) == 1
     assert data["protocol"] == "console"
     assert data["name"] == "Hibernate TF2"
     assert data["map"] == "cp_dustbowl"
@@ -1104,9 +1109,13 @@ def test_info_uses_module_namespace_console_hook_for_hibernating_server(
 
     fake_q = types.ModuleType("utils.query")
     fake_q.QueryError = OSError
-    fake_q.a2s_info = lambda *args, **kwargs: (_ for _ in ()).throw(
-        AssertionError("A2S should not be used when module namespace console info is available")
-    )
+    a2s_calls = []
+
+    def fake_a2s_info(*args, **kwargs):
+        a2s_calls.append((args, kwargs))
+        raise OSError("A2S not available while idle")
+
+    fake_q.a2s_info = fake_a2s_info
 
     monkeypatch.setattr(utils, "query", fake_q)
     monkeypatch.setitem(sys.modules, "utils.query", fake_q)
@@ -1114,6 +1123,7 @@ def test_info_uses_module_namespace_console_hook_for_hibernating_server(
     srv.info(as_json=True)
 
     data = _json.loads(capsys.readouterr().out.strip())
+    assert len(a2s_calls) == 1
     assert data["protocol"] == "console"
     assert data["port"] == 27015
     assert data["name"] == "Hibernate CSS"
