@@ -13,7 +13,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_udp_open,
     wait_for_udp_closed,
 )
 from gamemodules.ckserver import steam_app_id
@@ -52,11 +52,7 @@ def test_ckserver_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["Steam GameID:", "Paste to ip-field in \"join via IP\" menu to easily fill all values"],
-            START_TIMEOUT,
-        )
+        wait_for_udp_open("127.0.0.1", port, START_TIMEOUT, log_path=log_path)
 
         # status
         run_and_assert_ok(env, server_name, "status")

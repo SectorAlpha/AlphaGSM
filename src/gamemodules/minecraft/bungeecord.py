@@ -27,7 +27,7 @@ command_functions = {}
 
 
 # Regex to locate the first listener's host line in config.yml
-_BUNGEE_HOST_RE = re.compile(r'^(\s+host:\s*)(\S+):(\d+)', re.MULTILINE)
+_BUNGEE_HOST_RE = re.compile(r'^(\s*host:\s*)(\S+):(\d+)', re.MULTILINE)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):

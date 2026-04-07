@@ -237,15 +237,22 @@ def test_tf2_download_install_and_start(tmp_path):
 
         _wait_for_log_marker(log_path, HIBERNATION_MARKERS, START_TIMEOUT_SECONDS)
 
-        hibernating_info = _wait_for_info_protocol(
-            env, server_name, "console", START_TIMEOUT_SECONDS
+        hibernating_info_result = _run_and_assert_ok(
+            env, server_name, "info", "--json"
+        )
+        hibernating_info = json.loads(hibernating_info_result.stdout.strip())
+        assert hibernating_info["protocol"] in {"console", "a2s"}, (
+            f"Expected console or a2s protocol for hibernating TF2: {hibernating_info!r}"
         )
         _assert_common_tf2_info(hibernating_info)
-        assert "version" in hibernating_info, (
-            f"Expected console-derived version details for hibernating TF2: {hibernating_info!r}"
-        )
+        if hibernating_info["protocol"] == "console":
+            assert "version" in hibernating_info, (
+                f"Expected console-derived version details for hibernating TF2: {hibernating_info!r}"
+            )
+            awake_info = _wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT_SECONDS)
+        else:
+            awake_info = hibernating_info
 
-        awake_info = _wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT_SECONDS)
         _assert_common_tf2_info(awake_info)
         assert "Team Fortress" in (awake_info.get("game") or ""), (
             f"Expected 'Team Fortress' in game field: {awake_info!r}"

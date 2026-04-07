@@ -176,6 +176,15 @@ def test_bungeecord_install_requires_existing_jar(tmp_path):
         bungeecord.install(server)
 
 
+def test_bungeecord_updates_unindented_host_line(tmp_path):
+    config_path = tmp_path / "config.yml"
+    config_path.write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
+
+    bungeecord._update_bungee_host_port(str(config_path), 31234)
+
+    assert config_path.read_text(encoding="utf-8") == "host: 0.0.0.0:31234\n"
+
+
 def test_vanilla_configure_prefers_explicit_version_url_and_download_metadata(tmp_path, monkeypatch):
     server = DummyServer()
     responses = {
