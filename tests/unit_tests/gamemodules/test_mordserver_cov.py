@@ -128,6 +128,15 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_get_query_and_info_address_use_udp_game_port():
+    server = DummyServer()
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "udp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "udp")
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)

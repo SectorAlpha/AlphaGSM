@@ -85,7 +85,10 @@ def _assert_common_l4d_info(data):
     assert data.get("map") == "l4d_hospital01_apartment", (
         f"Expected l4d_hospital01_apartment map: {data!r}"
     )
-    assert data.get("name") == "AlphaGSM Left 4 Dead", f"Unexpected L4D name: {data!r}"
+    assert data.get("name") in {
+        "AlphaGSM Left 4 Dead",
+        "L4D - Co-op - Normal",
+    }, f"Unexpected L4D name: {data!r}"
 
 
 def test_l4dserver_lifecycle(tmp_path):

@@ -47,6 +47,14 @@ def test_mordserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_mordserver_query_addresses_use_udp_game_port():
+    server = DummyServer("mord")
+    server.data.update({"port": 7777, "queryport": "27015"})
+
+    assert mordserver.get_query_address(server) == ("127.0.0.1", 7777, "udp")
+    assert mordserver.get_info_address(server) == ("127.0.0.1", 7777, "udp")
+
+
 def test_pvrserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("pvr")
     exe = tmp_path / "PavlovServer.sh"

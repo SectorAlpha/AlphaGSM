@@ -1,13 +1,13 @@
 # Integration Test Status
 
-Last updated: 2026-04-04
+Last updated: 2026-04-07
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 83      |
-| DISABLED | 72      |
+| PASSED   | 81      |
+| DISABLED | 74      |
 | SKIPPED  | 79      |
 
 ## Status Key
@@ -16,7 +16,7 @@ Last updated: 2026-04-04
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 
-## PASSED (82)
+## PASSED (81)
 
 | Test | Type |
 |------|------|
@@ -52,7 +52,6 @@ Last updated: 2026-04-04
 | hldmsserver | SteamCMD (Source) |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
-| longvinterserver | SteamCMD |
 | minecraft_paper | Direct download |
 | minecraft_vanilla | Direct download |
 | minecraft_velocity | Direct download |
@@ -104,7 +103,7 @@ Last updated: 2026-04-04
 | inssserver | SteamCMD — PASSED 2026-03-28 |
 | ts3server | Direct download — PASSED 2026-03-28 |
 
-## DISABLED (73)
+## DISABLED (74)
 
 | Test | Reason |
 |------|--------|
@@ -152,6 +151,7 @@ Last updated: 2026-04-04
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
+| longvinterserver | Longvinter dedicated server (Steam app 1639880) crashes during startup with missing BlueprintableOnlineBeacons/DiscordRpc packaged scripts; game and query ports never open |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |

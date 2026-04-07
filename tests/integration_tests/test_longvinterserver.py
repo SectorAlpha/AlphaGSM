@@ -20,7 +20,16 @@ from conftest import (
 )
 from gamemodules.longvinterserver import steam_app_id
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "Longvinter dedicated server (Steam app 1639880) crashes during startup "
+            "with missing BlueprintableOnlineBeacons/DiscordRpc packaged scripts; "
+            "game and query ports never open"
+        )
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90

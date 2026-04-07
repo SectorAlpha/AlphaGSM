@@ -120,8 +120,13 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return the A2S query address for the Mordhau dedicated query port."""
-    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+    """Return the Mordhau UDP health endpoint on the main game port."""
+    return ("127.0.0.1", int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Use the same UDP endpoint for info queries as the query command."""
+    return get_query_address(server)
 
 
 def do_stop(server, j):

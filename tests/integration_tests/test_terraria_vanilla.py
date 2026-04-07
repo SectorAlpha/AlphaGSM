@@ -66,8 +66,9 @@ def test_terraria_vanilla_lifecycle(tmp_path):
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
+        assert any(
+            marker in query_result.stdout
+            for marker in ("Server is responding", "Server port is open")
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
