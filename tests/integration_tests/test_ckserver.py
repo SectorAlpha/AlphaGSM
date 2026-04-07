@@ -6,7 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -36,7 +36,7 @@ def test_ckserver_lifecycle(tmp_path):
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "ckserver")

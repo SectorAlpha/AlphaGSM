@@ -13,6 +13,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_open,
     wait_for_tcp_closed,
     wait_for_udp_closed,
@@ -76,9 +77,7 @@ def test_minecraft_waterfall_lifecycle(tmp_path):
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
-        import json as _info_json
-        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        _info_data = wait_for_info_protocol(env, server_name, "slp", START_TIMEOUT)
         assert _info_data["protocol"] == "slp", (
             f"Expected SLP protocol in info JSON: {_info_data!r}"
         )
