@@ -100,6 +100,46 @@ def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path, monkey
     assert cwd == server.data["dir"]
 
 
+def test_sonsoftheforest_runtime_requirements_use_wine_proton_family(tmp_path, monkeypatch):
+    monkeypatch.setattr(sonsoftheforestserver, "IS_LINUX", True)
+    monkeypatch.setattr(
+        sonsoftheforestserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "/usr/bin/wine",
+        ]
+        + list(cmd),
+    )
+    server = DummyServer("sotf")
+    exe = tmp_path / "SonsOfTheForestDS.exe"
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "SonsOfTheForestDS.exe",
+            "port": 8766,
+            "queryport": 27015,
+        }
+    )
+
+    requirements = sonsoftheforestserver.get_runtime_requirements(server)
+    spec = sonsoftheforestserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "wine-proton"
+    assert requirements["ports"] == [
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27015, "container": 27015, "protocol": "tcp"},
+        {"host": 8766, "container": 8766, "protocol": "udp"},
+        {"host": 8766, "container": 8766, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "SonsOfTheForestDS.exe"
+
+
 def test_large_batch_updates_download_and_optionally_restart(monkeypatch):
     bcof = DummyServer("bcof")
     bcof.data["dir"] = "/srv/bcof/"

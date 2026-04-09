@@ -157,17 +157,14 @@ def checkvalue(server, key, *value):
     raise ServerError("Unsupported key")
 
 def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return proton.get_runtime_requirements(
         server,
-        family='steamcmd-linux',
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
     )
 
 def get_container_spec(server):
-    return runtime_module.build_container_spec(
+    return proton.get_container_spec(
         server,
-        family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
     )
