@@ -64,7 +64,7 @@ def test_counterstrike2_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["SV_ActivateServer", "Server is hibernating", "VAC secure mode"],
+            ["SV_ActivateServer", "VAC secure mode"],
             START_TIMEOUT,
         )
 

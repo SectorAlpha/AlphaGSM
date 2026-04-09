@@ -15,6 +15,7 @@ import copy
 from . import data
 from . import port_manager
 from . import runtime as runtime_module
+from .errors import ServerError
 from importlib import import_module
 import screen
 import time
@@ -37,14 +38,6 @@ DATAPATH = os.path.expanduser(
 SERVERMODULEPACKAGE = settings.system.getsection("server").get(
     "servermodulespackage", "gamemodules."
 )
-
-
-class ServerError(Exception):
-    """An Exception thrown when there is an error with the server"""
-
-    pass
-
-
 _DISABLED_SERVERS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "disabled_servers.conf",
@@ -131,6 +124,12 @@ def _findmodule(name):
         except AttributeError:
             runtime_module.ensure_runtime_hooks(module)
             return name, module
+
+
+def find_module(name):
+    """Public wrapper around module resolution for non-server helpers."""
+
+    return _findmodule(name)
 
 
 class Server(object):
@@ -566,10 +565,11 @@ class Server(object):
 
     def send(self, input, **kwargs):
         """Send a line of text directly to the server console."""
-        if not runtime_module.check_server_running(self):
+        runtime = runtime_module.get_runtime(self)
+        if not runtime.is_running(self):
             raise ServerError("Error: Can't send to a server that isn't running")
         try:
-            runtime_module.send_to_server(self, input + "\n")
+            runtime.send_input(self, input + "\n")
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
 

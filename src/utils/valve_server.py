@@ -3,13 +3,14 @@
 import os
 import re
 import inspect
+from importlib import import_module
 import socket
 import time
 from types import SimpleNamespace
 from typing import NoReturn
 
 import screen
-import server.runtime as runtime_module
+from server.errors import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
@@ -64,9 +65,22 @@ _COMMAND_DESCRIPTIONS = {
 def _raise_server_error(*args) -> NoReturn:
     """Raise AlphaGSM's ServerError lazily to avoid import cycles."""
 
-    from server import ServerError
-
     raise ServerError(*args)
+
+
+def _runtime_module():
+    """Import the runtime helper lazily to avoid module import cycles."""
+
+    return import_module("server.runtime")
+
+
+def _send_console_input(server, text):
+    """Send console input through screen for process servers and runtime for containers."""
+
+    runtime_name = getattr(getattr(server, "data", None), "get", lambda *_: None)("runtime")
+    if runtime_name == "docker":
+        return _runtime_module().send_to_server(server, text)
+    return screen.send_to_server(server.name, text)
 
 
 def _default_backup_config(game_dir):
@@ -113,7 +127,7 @@ def wake_source_server_for_a2s(server):
     empty.
     """
 
-    runtime_module.send_to_server(server, "\nstatus\n")
+    _send_console_input(server, "\nstatus\n")
     return 1.0
 
 
@@ -128,7 +142,7 @@ def send_console_command_and_collect_response(server, command, parser, timeout=5
         handle.seek(0, os.SEEK_END)
         start_offset = handle.tell()
 
-    runtime_module.send_to_server(server, "\n{}\n".format(command.strip()))
+    _send_console_input(server, "\n{}\n".format(command.strip()))
 
     deadline = time.time() + timeout
     collected = ""
@@ -601,7 +615,7 @@ def define_valve_server_module(
     def do_stop(server, j):
         """Send the generic Valve-engine shutdown command."""
 
-        runtime_module.send_to_server(server, "\nquit\n")
+        _send_console_input(server, "\nquit\n")
 
     def status(server, verbose):
         """Detailed engine-specific status is not implemented yet."""
@@ -610,7 +624,7 @@ def define_valve_server_module(
     def message(server, msg):
         """Broadcast a message using the generic Valve-engine chat command."""
 
-        runtime_module.send_to_server(server, "\nsay %s\n" % (msg,))
+        _send_console_input(server, "\nsay %s\n" % (msg,))
 
     def backup(server, profile=None):
         """Run the shared backup helper against the install directory."""

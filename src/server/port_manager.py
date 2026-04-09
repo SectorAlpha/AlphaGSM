@@ -5,15 +5,35 @@ from __future__ import annotations
 import errno
 import copy
 from dataclasses import dataclass
+from importlib import import_module
 import os
 import socket
+import sys
 from types import SimpleNamespace
+
+from utils.settings import settings
+
+from . import data as data_module
+from .errors import ServerError
+from . import runtime as runtime_module
 
 
 LOCAL_WILDCARD_IP = "0.0.0.0"
 EXTERNAL_IP_KEYS = ("publicip", "externalip", "hostip")
 _WILDCARD_IPS = {LOCAL_WILDCARD_IP, "::"}
 _LOCAL_IPS = _WILDCARD_IPS | {"127.0.0.1", "::1"}
+DATAPATH = os.path.expanduser(
+    settings.user.getsection("server").get(
+        "datapath",
+        os.path.join(
+            settings.user.getsection("core").get("alphagsm_path", "~/.alphagsm"),
+            "conf",
+        ),
+    )
+)
+SERVERMODULEPACKAGE = settings.system.getsection("server").get(
+    "servermodulespackage", "gamemodules."
+)
 
 
 @dataclass(frozen=True)
@@ -102,12 +122,29 @@ def _resolve_module_name(module_name):
 
     if not module_name:
         return None
-    from . import server as server_module
+    server_module = sys.modules.get("server.server")
+    if server_module is not None and hasattr(server_module, "find_module"):
+        try:
+            _resolved_name, module = server_module.find_module(module_name)
+        except (ServerError, ImportError):
+            return None
+        return module
+    return _resolve_module_name_fallback(str(module_name))
+
+
+def _resolve_module_name_fallback(name):
+    """Resolve a module name recursively when the canonical server resolver is unavailable."""
 
     try:
-        _resolved_name, module = server_module._findmodule(module_name)
-    except (server_module.ServerError, ImportError):
+        module = import_module(SERVERMODULEPACKAGE + name)
+    except ImportError:
         return None
+    if not hasattr(module, "__file__"):
+        return _resolve_module_name_fallback(name + ".DEFAULT")
+    alias_target = getattr(module, "ALIAS_TARGET", None)
+    if alias_target:
+        return _resolve_module_name_fallback(alias_target)
+    runtime_module.ensure_runtime_hooks(module)
     return module
 
 
@@ -199,7 +236,6 @@ def _runtime_port_endpoints(server, module, payload, allow_stale_saved_ports):
     """Return runtime/container-derived port claims for *server*."""
 
     from . import runtime as runtime_module
-    from . import server as server_module
 
     temp_server = SimpleNamespace(
         name=getattr(server, "name", "<unknown>"),
@@ -211,7 +247,7 @@ def _runtime_port_endpoints(server, module, payload, allow_stale_saved_ports):
     except (
         AttributeError,
         FileNotFoundError,
-        server_module.ServerError,
+        ServerError,
         KeyError,
         RuntimeError,
         TypeError,
@@ -330,9 +366,7 @@ def collect_claim_set(server, overrides=None):
 def iter_managed_servers(server):
     """Yield other AlphaGSM servers from the datastore directory."""
 
-    from . import server as server_module
-
-    datapath = getattr(server_module, "DATAPATH", None)
+    datapath = _managed_server_datapath()
     if not datapath or not os.path.isdir(datapath):
         return
 
@@ -344,11 +378,20 @@ def iter_managed_servers(server):
             continue
         path = os.path.join(datapath, filename)
         try:
-            store = server_module.data.JSONDataStore(path)
+            store = data_module.JSONDataStore(path)
         except Exception:
             continue
         module = _load_server_module(SimpleNamespace(data=store, module=None))
         yield SimpleNamespace(name=other_name, data=store, module=module)
+
+
+def _managed_server_datapath():
+    """Return the live AlphaGSM datastore path, honoring server module overrides."""
+
+    server_module = sys.modules.get("server.server")
+    if server_module is not None:
+        return getattr(server_module, "DATAPATH", DATAPATH)
+    return DATAPATH
 
 
 def probe_live_listener(ip, port):
