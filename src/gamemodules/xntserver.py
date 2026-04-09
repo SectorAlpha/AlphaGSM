@@ -10,6 +10,8 @@ from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
 XONOTIC_DOWNLOAD_PAGE = "https://xonotic.org/download/"
 XONOTIC_DOWNLOAD_TEMPLATE = "https://dl.xonotic.org/xonotic-%s.zip"
 
@@ -208,3 +210,19 @@ def get_query_address(server):
 def get_info_address(server):
     """Return the Quake UDP info address for Xonotic (same as query address)."""
     return "127.0.0.1", server.data["port"], "quake"
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='quake-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='quake-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

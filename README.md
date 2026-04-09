@@ -13,6 +13,10 @@ AlphaGSM can:
 - update it
 - back it up
 
+It can run directly on the host, or optionally run as a Docker "manager"
+container that launches Docker-backed game-server containers through the host
+daemon.
+
 ## What You Need
 
 You need:
@@ -70,10 +74,10 @@ Team Fortress 2:
 ./alphagsm mytf2 create teamfortress2
 ```
 
-CS:GO:
+Counter-Strike 2:
 
 ```bash
-./alphagsm mycsgo create csgo
+./alphagsm mycs2 create counterstrike2
 ```
 
 ### 4. Run setup
@@ -154,6 +158,7 @@ These scripts are useful because they show a full real flow:
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Run AlphaGSM In Docker](docs/docker-manager.md)
 - [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
 - [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
 - [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)

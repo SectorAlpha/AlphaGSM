@@ -8,6 +8,7 @@ import urllib.request
 
 import downloader
 import screen
+import server.runtime as runtime_module
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.archive_install import resolve_archive_root, sync_tree
@@ -183,6 +184,42 @@ def get_start_command(server):
     )
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for native Linux Quake-family servers."""
+
+    requirements = {
+        "engine": "docker",
+        "family": "quake-linux",
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    if "port" in server.data:
+        requirements["ports"] = [
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "udp",
+            }
+        ]
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Quake 2."""
+
+    cmd, _cwd = get_start_command(server)
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": cmd,
+    }
+
+
 def get_query_address(server):
     """Return the Quake UDP query address used by the q2server module."""
 
@@ -198,7 +235,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Quake 2 using the standard quit command."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

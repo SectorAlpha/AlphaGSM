@@ -1,0 +1,21 @@
+[core]
+alphagsm_path = /srv/alphagsm/home
+userconf = /srv/alphagsm/home
+
+[downloader]
+db_path = /srv/alphagsm/home/downloads/downloads.txt
+target_path = /srv/alphagsm/home/downloads/downloads
+
+[server]
+datapath = /srv/alphagsm/home/conf
+
+[screen]
+screenlog_path = /srv/alphagsm/home/logs
+sessiontag = AlphaGSM#
+keeplogs = 5
+
+[runtime]
+backend = docker
+
+[process]
+backend = subprocess

@@ -48,6 +48,32 @@ def test_wfserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_wfserver_runtime_requirements_use_steamcmd_linux_family(tmp_path):
+    (tmp_path / "wf_server.x86_64").write_text("")
+    server = DummyServer("wf")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "wf_server.x86_64",
+            "fs_game": "basewf",
+            "hostname": "AlphaGSM wf",
+            "port": 44400,
+            "startmap": "wfa1",
+        }
+    )
+
+    requirements = wfserver.get_runtime_requirements(server)
+    spec = wfserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 44400, "container": 44400, "protocol": "udp"}
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./wf_server.x86_64"
+
+
 def test_ecoserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("eco")
     exe = tmp_path / "EcoServer"

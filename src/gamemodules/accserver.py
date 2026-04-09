@@ -8,6 +8,10 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
+import utils.proton as proton
+
 steam_app_id = 1430110
 steam_anonymous_login_possible = True
 
@@ -172,3 +176,16 @@ def checkvalue(server, key, *value):
     ):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return proton.get_runtime_requirements(
+        server,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return proton.get_container_spec(
+        server,
+        get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )

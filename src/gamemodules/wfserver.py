@@ -3,6 +3,7 @@
 import os
 
 import screen
+import server.runtime as runtime_module
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
@@ -139,6 +140,42 @@ def get_start_command(server):
     )
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for SteamCMD-backed Linux-native servers."""
+
+    requirements = {
+        "engine": "docker",
+        "family": "steamcmd-linux",
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    if "port" in server.data:
+        requirements["ports"] = [
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "udp",
+            }
+        ]
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Warfork."""
+
+    cmd, _cwd = get_start_command(server)
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": cmd,
+    }
+
+
 def get_query_address(server):
     """Warfork uses the Quake3/QFusion UDP getstatus query on the game port."""
     return ("127.0.0.1", int(server.data["port"]), "quake")
@@ -152,7 +189,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Warfork using the standard quit command."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

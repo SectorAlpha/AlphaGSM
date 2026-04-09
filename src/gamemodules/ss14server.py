@@ -11,6 +11,8 @@ from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.github_releases import HTTP_USER_AGENT
 
+import server.runtime as runtime_module
+
 SS14_BUILDS_PAGE = "https://wizards.cdn.spacestation14.com/fork/wizards"
 SS14_DOWNLOAD_URL = (
     "https://wizards.cdn.spacestation14.com/fork/wizards/version/%s/file/SS14.Server_linux-x64.zip"
@@ -165,3 +167,19 @@ def checkvalue(server, key, *value):
     if key[0] in ("url", "download_name", "exe_name", "dir", "version"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

@@ -21,6 +21,8 @@ from utils.valve_server import integration_source_server_config, wake_source_ser
 
 import utils.steamcmd as steamcmd
 
+import server.runtime as runtime_module
+
 steam_app_id = 740
 steam_anonymous_login_possible = True
 
@@ -135,8 +137,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
         server.data["backup"]["schedule"].append((profile, 0, "days"))
 
     # assign the port to the server
-    if port is None and "port" in server.data:
-        port = server.data["port"]
+    if port is None:
+        port = server.data.get("port", 27015)
     if ask:
         while True:
             inp = input(
@@ -237,6 +239,23 @@ def update(server, validate=False, restart=False):
         server.start()
 
 
+def _disable_incompatible_bundled_libgcc(server):
+    """Move the bundled libgcc aside so Source uses the host runtime copy."""
+
+    libgcc_path = os.path.join(server.data["dir"], "bin", "libgcc_s.so.1")
+    disabled_path = libgcc_path + ".alphagsm-disabled"
+    if os.path.isfile(libgcc_path):
+        try:
+            os.replace(libgcc_path, disabled_path)
+        except FileNotFoundError:
+            return disabled_path
+        print(
+            "Disabled bundled libgcc_s.so.1 for CS:GO/CS2 compatibility: "
+            + disabled_path
+        )
+    return disabled_path
+
+
 def get_start_command(server):
     """Build the command list used to launch the CS:GO dedicated server."""
     # sample start command
@@ -247,6 +266,8 @@ def get_start_command(server):
 
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
+
+    _disable_incompatible_bundled_libgcc(server)
 
     steamcmd_dir = steamcmd.STEAMCMD_DIR
     steam_updatescript = steamcmd.get_autoupdate_script(
@@ -303,3 +324,19 @@ command_functions = {
     "update": update,
     "restart": restart,
 }  # will have elements added as the functions are defined
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

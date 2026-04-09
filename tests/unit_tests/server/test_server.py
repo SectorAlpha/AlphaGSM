@@ -126,6 +126,43 @@ def test_server_init_updates_redirected_module_name(monkeypatch, tmp_path, capsy
     assert "Module has been redirected" in capsys.readouterr().out
 
 
+def test_server_init_syncs_runtime_metadata_from_module_hook(monkeypatch, tmp_path):
+    class FakeSection(dict):
+        def getsection(self, key):
+            return self.get(key, FakeSection())
+
+    class FakeStore(DummyData):
+        def __init__(self, filename, payload=None):
+            super().__init__(payload or {})
+
+    module = SimpleNamespace(
+        commands=(),
+        command_args={},
+        command_descriptions={},
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "minecraft",
+            "java": 17,
+        },
+    )
+
+    monkeypatch.setattr(server_module, "DATAPATH", str(tmp_path))
+    monkeypatch.setattr(server_module.data, "JSONDataStore", FakeStore)
+    monkeypatch.setattr(server_module, "_findmodule", lambda name: (name, module))
+    monkeypatch.setattr(
+        server_module.runtime_module.settings,
+        "_user",
+        FakeSection({"runtime": FakeSection({"backend": "docker"})}),
+        raising=False,
+    )
+
+    srv = server_module.Server("alpha", "minecraft.vanilla")
+
+    assert srv.data["runtime"] == "docker"
+    assert srv.data["runtime_family"] == "java"
+    assert srv.data["java_major"] == 17
+
+
 def test_get_commands_args_and_descriptions_merge_module_data():
     srv = make_server()
 
@@ -177,7 +214,31 @@ def test_setup_passes_configure_results_to_install():
     srv.setup("arg", ask=False, extra=True)
 
     assert srv.module.calls[0] == ("configure", False, ("arg",), {"extra": True})
-    assert srv.module.calls[1] == ("install", ("configured",), {"flag": True})
+    assert ("install", ("configured",), {"flag": True}) in srv.module.calls
+
+
+def test_setup_syncs_runtime_metadata_after_port_resolution_and_before_install(monkeypatch):
+    events = []
+    srv = make_server()
+
+    srv.module.configure = lambda server, ask, *args, **kwargs: (
+        events.append("configure") or (("configured",), {"flag": True})
+    )
+    srv.module.install = lambda server, *args, **kwargs: events.append("install")
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "sync_runtime_metadata",
+        lambda server, save=False: events.append("sync"),
+    )
+    monkeypatch.setattr(
+        srv,
+        "_resolve_setup_port_claims",
+        lambda explicit_keys: events.append("resolve"),
+    )
+
+    srv.setup("arg", ask=False, extra=True)
+
+    assert events == ["configure", "sync", "resolve", "sync", "install", "sync"]
 
 
 def test_start_runs_pre_and_post_hooks_and_starts_screen(monkeypatch):
@@ -249,6 +310,339 @@ def test_doset_updates_nested_data_and_saves():
 
     assert srv.data["existing"]["items"] == ["value"]
     assert srv.data.saved == 1
+
+
+def test_doset_rejects_colliding_port_change_and_recommends_group_shift(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015, "queryport": 27016}))
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: int(args[0])
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", lambda server, overrides=None, include_live=True: [conflict])
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "recommend_shift",
+        lambda server, max_offset=100, base_overrides=None: server_module.port_manager.PortShiftRecommendation(
+            offset=2,
+            values={"port": 27017, "queryport": 27018},
+        ),
+    )
+
+    with pytest.raises(server_module.ServerError, match="Recommended free port set"):
+        srv.doset("port", "27015")
+
+
+def test_doset_marks_port_keys_as_explicit(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015}))
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: int(args[0])
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", lambda server, overrides=None, include_live=True: [])
+    monkeypatch.setattr(server_module.port_manager, "recommend_shift", lambda server, max_offset=100, base_overrides=None: None)
+
+    srv.doset("port", "27030")
+
+    assert srv.data["port"] == 27030
+    assert srv.data["port_claim_policy"]["port"] == "explicit"
+
+
+def test_doset_uses_runtime_validation_for_runtime_metadata(monkeypatch):
+    srv = make_server(data=DummyData({"runtime": "docker", "runtime_family": "java"}))
+
+    def fail_checkvalue(server, key, *args, **kwargs):
+        raise AssertionError("module.checkvalue should not be used for runtime keys")
+
+    srv.module.checkvalue = fail_checkvalue
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "sync_runtime_metadata",
+        lambda server, save=False: server.data.update({"env": {"ALPHAGSM_JAVA_MAJOR": "25"}}),
+    )
+
+    srv.doset("image", "eclipse-temurin:25-jre")
+    srv.doset("java_major", "25")
+
+    assert srv.data["image"] == "eclipse-temurin:25-jre"
+    assert srv.data["java_major"] == 25
+    assert srv.data["env"] == {"ALPHAGSM_JAVA_MAJOR": "25"}
+
+
+def test_doset_rejects_invalid_runtime_metadata_value():
+    srv = make_server(data=DummyData({"runtime": "docker", "runtime_family": "java"}))
+
+    with pytest.raises(server_module.ServerError, match="Unsupported stop_mode"):
+        srv.doset("stop_mode", "halt-now")
+
+
+def test_doset_rejects_colliding_bindaddress_change(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015, "bindaddress": "127.0.0.1"}))
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: args[0]
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    seen = {}
+
+    def fake_detect_conflicts(server, overrides=None, include_live=True):
+        seen["bindaddress"] = server.data["bindaddress"]
+        return [conflict]
+
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", fake_detect_conflicts)
+    monkeypatch.setattr(server_module.port_manager, "recommend_shift", lambda server, max_offset=100, base_overrides=None: None)
+
+    with pytest.raises(server_module.ServerError, match="conflicts"):
+        srv.doset("bindaddress", "0.0.0.0")
+
+    assert seen["bindaddress"] == "0.0.0.0"
+
+
+def test_doset_rejects_colliding_runtime_ports_append(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015, "ports": []}))
+    runtime_port = {"host": 27016, "container": 27016, "protocol": "udp"}
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: runtime_port
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("external", "0.0.0.0", 27016, "runtime:ports"),
+        "runtime:ports conflicts with bravo:runtime:ports on 0.0.0.0:27016",
+        managed_server="bravo",
+    )
+    seen = {}
+
+    def fake_detect_conflicts(server, overrides=None, include_live=True):
+        seen["ports"] = list(server.data["ports"])
+        return [conflict]
+
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", fake_detect_conflicts)
+    monkeypatch.setattr(server_module.port_manager, "recommend_shift", lambda server, max_offset=100, base_overrides=None: None)
+
+    with pytest.raises(server_module.ServerError, match="runtime:ports"):
+        srv.doset("ports.APPEND", runtime_port)
+
+    assert seen["ports"] == [runtime_port]
+    assert srv.data["ports"] == []
+
+
+def test_setup_auto_shifts_default_owned_port_group_and_prints_warning(monkeypatch, capsys):
+    srv = make_server(
+        data=DummyData({"port": 27015, "queryport": 27016}),
+        module=DummyModule(),
+    )
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", lambda server, overrides=None, include_live=True: [conflict])
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "recommend_shift",
+        lambda server, max_offset=100, base_overrides=None: server_module.port_manager.PortShiftRecommendation(
+            offset=2,
+            values={"port": 27017, "queryport": 27018},
+        ),
+    )
+
+    srv.setup(ask=False)
+
+    assert srv.data["port"] == 27017
+    assert srv.data["queryport"] == 27018
+    assert srv.data["port_claim_policy"] == {
+        "port": "default",
+        "queryport": "default",
+    }
+    assert "shifted claimed port set" in capsys.readouterr().out
+
+
+def test_setup_marks_port_arguments_as_explicit_and_rejects_collision(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015, "queryport": 27016}), module=DummyModule())
+    srv.get_command_args = lambda command: server_module.CmdSpec(
+        optionalarguments=(
+            server_module.ArgSpec("port", "Primary server port", int),
+            server_module.ArgSpec("dir", "Install directory", str),
+        )
+    )
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", lambda server, overrides=None, include_live=True: [conflict])
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "recommend_shift",
+        lambda server, max_offset=100, base_overrides=None: server_module.port_manager.PortShiftRecommendation(
+            offset=2,
+            values={"port": 27017, "queryport": 27018},
+        ),
+    )
+
+    with pytest.raises(server_module.ServerError, match="Recommended free port set"):
+        srv.setup(27015, "/srv/test", ask=False)
+
+    assert srv.data["port_claim_policy"]["port"] == "explicit"
+
+
+def test_setup_treats_interactively_changed_port_as_explicit(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27014, "queryport": 27016}), module=DummyModule())
+
+    def configure(server, ask, *args, **kwargs):
+        server.data["port"] = 27015
+        return (), {}
+
+    srv.module.configure = configure
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "detect_conflicts",
+        lambda server, overrides=None, include_live=True: [conflict],
+    )
+    monkeypatch.setattr(server_module.port_manager, "recommend_shift", lambda server, max_offset=100, base_overrides=None: None)
+
+    with pytest.raises(server_module.ServerError, match="explicit port choices conflict"):
+        srv.setup(ask=True)
+
+    assert srv.data["port_claim_policy"]["port"] == "explicit"
+
+
+def test_setup_persists_explicit_policy_before_raising_on_explicit_conflict(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015, "queryport": 27016}), module=DummyModule())
+    srv.get_command_args = lambda command: server_module.CmdSpec(
+        optionalarguments=(server_module.ArgSpec("port", "Primary server port", int),)
+    )
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "detect_conflicts",
+        lambda server, overrides=None, include_live=True: [conflict],
+    )
+    monkeypatch.setattr(server_module.port_manager, "recommend_shift", lambda server, max_offset=100, base_overrides=None: None)
+
+    with pytest.raises(server_module.ServerError):
+        srv.setup(27015, ask=False)
+
+    assert srv.data["port_claim_policy"]["port"] == "explicit"
+    assert srv.data.saved >= 1
+
+
+def test_setup_preserves_existing_explicit_port_policy_when_args_omitted(monkeypatch):
+    srv = make_server(
+        data=DummyData(
+            {
+                "port": 27015,
+                "queryport": 27016,
+                "port_claim_policy": {"port": "explicit"},
+            }
+        ),
+        module=DummyModule(),
+    )
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "detect_conflicts",
+        lambda server, overrides=None, include_live=True: [],
+    )
+
+    srv.setup(ask=False)
+
+    assert srv.data["port_claim_policy"] == {
+        "port": "explicit",
+        "queryport": "default",
+    }
+
+
+def test_setup_rejects_conflict_for_previously_explicit_port_even_without_current_arg(monkeypatch):
+    srv = make_server(
+        data=DummyData(
+            {
+                "port": 27015,
+                "queryport": 27016,
+                "port_claim_policy": {"port": "explicit"},
+            }
+        ),
+        module=DummyModule(),
+    )
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "detect_conflicts",
+        lambda server, overrides=None, include_live=True: [conflict],
+    )
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "recommend_shift",
+        lambda server, max_offset=100, base_overrides=None: server_module.port_manager.PortShiftRecommendation(
+            offset=2,
+            values={"port": 27017, "queryport": 27018},
+        ),
+    )
+
+    with pytest.raises(server_module.ServerError, match="explicit port choices conflict"):
+        srv.setup(ask=False)
+
+
+def test_start_checks_port_manager_before_prestart(monkeypatch):
+    events = []
+    srv = make_server()
+    srv.module.prestart = lambda *args, **kwargs: events.append("prestart")
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "get_runtime",
+        lambda server: SimpleNamespace(
+            is_running=lambda current: False,
+            start=lambda current, *args, **kwargs: events.append("runtime.start"),
+        ),
+    )
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "detect_conflicts",
+        lambda server, overrides=None, include_live=True: events.append("port-check") or [],
+    )
+
+    srv.start()
+
+    assert events == ["port-check", "prestart", "runtime.start"]
+
+
+def test_start_fails_when_claimed_ports_are_busy(monkeypatch):
+    srv = make_server()
+    conflict = server_module.port_manager.PortConflict(
+        "managed",
+        server_module.port_manager.PortEndpoint("internal", "0.0.0.0", 27015, "port"),
+        "port conflicts with bravo:port on 0.0.0.0:27015",
+        managed_server="bravo",
+    )
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "get_runtime",
+        lambda server: SimpleNamespace(
+            is_running=lambda current: False,
+            start=lambda current, *args, **kwargs: None,
+        ),
+    )
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", lambda server, overrides=None, include_live=True: [conflict])
+    monkeypatch.setattr(server_module.port_manager, "describe_conflicts", lambda conflicts: "managed server bravo")
+
+    with pytest.raises(server_module.ServerError, match="managed server bravo"):
+        srv.start()
 
 
 def test_parse_helpers_cover_keys_and_multi_server_commands():

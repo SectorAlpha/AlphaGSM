@@ -150,6 +150,8 @@ def test_write_config_keeps_downloads_inside_test_home_by_default(monkeypatch, t
     text = config_path.read_text(encoding="utf-8")
     assert f"db_path = {home_dir / 'downloads' / 'downloads.txt'}" in text
     assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
+    assert "[runtime]" in text
+    assert "backend = process" in text
 
 
 def test_write_config_can_use_shared_download_cache_when_opted_in(monkeypatch, tmp_path):
@@ -167,3 +169,5 @@ def test_write_config_can_use_shared_download_cache_when_opted_in(monkeypatch, t
     text = config_path.read_text(encoding="utf-8")
     assert f"db_path = {shared_root / 'downloads' / 'downloads.txt'}" in text
     assert f"target_path = {shared_root / 'downloads' / 'downloads'}" in text
+    assert "[runtime]" in text
+    assert "backend = process" in text

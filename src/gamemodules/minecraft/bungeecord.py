@@ -9,6 +9,7 @@ import subprocess as sp
 from server import ServerError
 import re
 import screen
+import server.runtime as runtime_module
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
@@ -114,9 +115,55 @@ def get_start_command(server):
     return ["java", "-Xmx256M", "-jar", server.data["exe_name"]], server.data["dir"]
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for Java-based Minecraft proxies."""
+
+    java_major = int(server.data.get("java_major", 17))
+    requirements = {
+        "engine": "docker",
+        "family": "java",
+        "java": java_major,
+        "env": {
+            "ALPHAGSM_JAVA_MAJOR": str(java_major),
+            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "BungeeCord.jar"),
+        },
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    if "port" in server.data:
+        requirements["ports"] = [
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "tcp",
+            }
+        ]
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Java-based Minecraft proxies."""
+
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            'exec java -Xmx256M -jar "$ALPHAGSM_SERVER_JAR"',
+        ],
+    }
+
+
 def do_stop(server, j):
     """Send the console command used to stop a running Bungeecord server."""
-    screen.send_to_server(server.name, "\nend\n")
+    runtime_module.send_to_server(server, "\nend\n")
 
 
 def status(server, verbose):

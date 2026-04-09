@@ -156,3 +156,59 @@ def test_tshock_start_command_uses_dotnet(tmp_path):
 
     assert cmd == ["/usr/bin/dotnet", "TShock.Server.dll", "-port", "7777"]
     assert cwd == str(tmp_path)
+
+
+def test_terraria_vanilla_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
+    server = DummyServer("terra")
+    exe_path = tmp_path / "Linux" / "TerrariaServer.bin.x86_64"
+    exe_path.parent.mkdir()
+    exe_path.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Linux/TerrariaServer.bin.x86_64",
+            "port": 7777,
+            "maxplayers": "8",
+            "worldname": "terra",
+            "world": "terra.wld",
+            "worldsize": "2",
+        }
+    )
+
+    requirements = vanilla.get_runtime_requirements(server)
+    spec = vanilla.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7777, "container": 7777, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./Linux/TerrariaServer.bin.x86_64"
+
+
+def test_tshock_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
+    server = DummyServer("shock")
+    dll_path = tmp_path / "TShock.Server.dll"
+    dll_path.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "TShock.Server.dll",
+            "dotnetpath": "/usr/bin/dotnet",
+            "port": 7778,
+        }
+    )
+
+    requirements = tshock.get_runtime_requirements(server)
+    spec = tshock.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 7778, "container": 7778, "protocol": "udp"},
+        {"host": 7778, "container": 7778, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"] == ["/usr/bin/dotnet", "TShock.Server.dll", "-port", "7778"]

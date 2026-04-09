@@ -25,7 +25,7 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="CS2/CS:GO (app 740) server binary fails to load due to bundled libgcc_s.so.1 missing GCC_7.0.0 symbol on Ubuntu 24.04 (module disabled)")
+@pytest.mark.skip(reason="SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730.")
 def test_counterstrikeglobaloffensive_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

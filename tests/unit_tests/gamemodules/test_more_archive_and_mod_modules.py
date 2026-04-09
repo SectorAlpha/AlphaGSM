@@ -1,6 +1,7 @@
 import gamemodules.mtaserver as mtaserver
 import gamemodules.q4server as q4server
 import gamemodules.sampserver as sampserver
+import gamemodules.alienarenaserver as alienarenaserver
 
 
 class DummyData(dict):
@@ -49,3 +50,55 @@ def test_q4server_get_start_command_builds_expected_args(tmp_path):
     assert cmd[0] == "./q4ded.x86"
     assert "si_name" in cmd
     assert cwd == server.data["dir"]
+
+
+def test_q4server_runtime_requirements_use_quake_linux_family(tmp_path):
+    (tmp_path / "q4ded.x86").write_text("")
+    server = DummyServer("q4")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "q4ded.x86",
+            "fs_game": "q4base",
+            "hostname": "AlphaGSM q4",
+            "port": 28004,
+            "startmap": "q4dm1",
+        }
+    )
+
+    requirements = q4server.get_runtime_requirements(server)
+    spec = q4server.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "quake-linux"
+    assert requirements["ports"] == [
+        {"host": 28004, "container": 28004, "protocol": "udp"}
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./q4ded.x86"
+
+
+def test_alienarenaserver_runtime_requirements_use_steamcmd_linux_family(tmp_path):
+    (tmp_path / "crx-dedicated").write_text("")
+    server = DummyServer("alien")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "crx-dedicated",
+            "game": "arena",
+            "hostname": "AlphaGSM alien",
+            "port": 27910,
+            "startmap": "dm-deathvalley",
+        }
+    )
+
+    requirements = alienarenaserver.get_runtime_requirements(server)
+    spec = alienarenaserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 27910, "container": 27910, "protocol": "udp"}
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./crx-dedicated"

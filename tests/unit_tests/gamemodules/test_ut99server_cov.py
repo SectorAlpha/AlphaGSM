@@ -69,6 +69,84 @@ def test_install(tmp_path):
     server.data["download_mode"] = "test"
     mod.install(server)
 
+def test_install_installer_requires_7z(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = mod.UT99_INSTALLER_URL
+    server.data["download_name"] = mod.UT99_INSTALLER_NAME
+    server.data["download_mode"] = "installer"
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+
+    with pytest.raises(ServerError, match="7z"):
+        mod.install(server)
+
+def test_install_installer_accepts_terms_non_interactively(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = mod.UT99_INSTALLER_URL
+    server.data["download_name"] = mod.UT99_INSTALLER_NAME
+    server.data["download_mode"] = "installer"
+
+    installer_root = tmp_path / "downloads"
+    installer_root.mkdir()
+    installer_path = installer_root / mod.UT99_INSTALLER_NAME
+    installer_path.write_text("#!/bin/sh\n")
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/7z")
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(installer_root))
+    monkeypatch.setattr(mod.os, "chmod", lambda *_args, **_kwargs: None)
+
+    calls = []
+
+    def _fake_run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return None
+
+    monkeypatch.setattr(mod.sp, "run", _fake_run)
+
+    mod.install(server)
+
+    assert calls, "Expected installer subprocess to run"
+    _argv, kwargs = calls[0]
+    assert kwargs["check"] is True
+    assert kwargs["input"] == "y\n"
+    assert kwargs["text"] is True
+
+def test_install_installer_updates_exe_name_to_installed_binary(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["configfile"] = "System/UnrealTournament.ini"
+    server.data["url"] = mod.UT99_INSTALLER_URL
+    server.data["download_name"] = mod.UT99_INSTALLER_NAME
+    server.data["download_mode"] = "installer"
+
+    installer_root = tmp_path / "downloads"
+    installer_root.mkdir()
+    installer_path = installer_root / mod.UT99_INSTALLER_NAME
+    installer_path.write_text("#!/bin/sh\n")
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/7z")
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(installer_root))
+    monkeypatch.setattr(mod.os, "chmod", lambda *_args, **_kwargs: None)
+
+    def _fake_run(_argv, **_kwargs):
+        installed = tmp_path / "System64" / "ucc-bin-amd64"
+        installed.parent.mkdir(parents=True, exist_ok=True)
+        installed.write_text("")
+        (tmp_path / "System64" / "UnrealTournament.ini").write_text("")
+        return None
+
+    monkeypatch.setattr(mod.sp, "run", _fake_run)
+
+    mod.install(server)
+
+    assert server.data["exe_name"] == "System64/ucc-bin-amd64"
+    assert server.data["configfile"] == "System64/UnrealTournament.ini"
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -96,10 +174,41 @@ def test_get_start_command_missing_exe(tmp_path):
     with pytest.raises(ServerError):
         mod.get_start_command(server)
 
+def test_get_container_spec_does_not_require_installed_executable(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["configfile"] = "System/UnrealTournament.ini"
+    server.data["gametype"] = "Botpack.DeathMatchPlus"
+    server.data["maxplayers"] = "16"
+    server.data["port"] = 7777
+    server.data["startmap"] = "DM-Deck16]["
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == mod.runtime_module.DEFAULT_CONTAINER_WORKDIR
+    assert spec["command"][0] == "./System/ucc-bin"
+    assert spec["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7777, "container": 7777, "protocol": "tcp"},
+    ]
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
     mod.screen.send_to_server.assert_called()
+
+def test_get_query_address_uses_udp_protocol():
+    server = DummyServer()
+    server.data["port"] = 7777
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "udp")
+
+def test_get_info_address_uses_udp_protocol():
+    server = DummyServer()
+    server.data["port"] = 7777
+
+    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "udp")
 
 def test_status():
     server = DummyServer()
@@ -184,4 +293,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

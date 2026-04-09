@@ -171,6 +171,44 @@ def test_valve_source_module_exposes_source_info_hooks():
     assert callable(module.MODULE.get_query_address)
     assert callable(module.MODULE.get_info_address)
     assert callable(module.MODULE.get_hibernating_console_info)
+    assert callable(module.MODULE.get_runtime_requirements)
+    assert callable(module.MODULE.get_container_spec)
+
+
+def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    (tmp_path / "srcds_run").write_text("")
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "port": 27015,
+            "clientport": 27005,
+            "sourcetvport": 27020,
+            "exe_name": "srcds_run",
+            "startmap": "de_dust2",
+            "server_cfg": "server.cfg",
+            "maxplayers": "16",
+            "game_dir": "cstrike",
+        },
+    )
+
+    requirements = module.MODULE.get_runtime_requirements(server)
+    spec = module.MODULE.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["mounts"] == [
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
+    ]
+    assert requirements["ports"] == [
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27005, "container": 27005, "protocol": "udp"},
+        {"host": 27020, "container": 27020, "protocol": "udp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["stdin_open"] is True
+    assert spec["command"][:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
 
 
 def test_parse_source_console_status_returns_latest_complete_block():

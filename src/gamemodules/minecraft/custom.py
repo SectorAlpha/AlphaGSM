@@ -9,6 +9,7 @@ import subprocess as sp
 from server import ServerError
 import re
 import screen
+import server.runtime as runtime_module
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
@@ -273,9 +274,59 @@ def get_start_command(server):
     return [javapath, "-jar", server.data["exe_name"], "nogui"], server.data["dir"]
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for Java-based Minecraft servers."""
+
+    java_major = server.data.get("java_major")
+    if java_major is None:
+        java_major = runtime_module.infer_minecraft_java_major(
+            server.data.get("version")
+        )
+    requirements = {
+        "engine": "docker",
+        "family": "java",
+        "java": int(java_major),
+        "env": {
+            "ALPHAGSM_JAVA_MAJOR": str(java_major),
+            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "minecraft_server.jar"),
+        },
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    if "port" in server.data:
+        requirements["ports"] = [
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "tcp",
+            }
+        ]
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Java-based Minecraft servers."""
+
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            'exec java -jar "$ALPHAGSM_SERVER_JAR" nogui',
+        ],
+    }
+
+
 def do_stop(server, j):
     """Send the console command used to stop a running Minecraft server."""
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):
@@ -305,7 +356,7 @@ def message(server, msg, *targets, parse=False):
         msgjson = json.dumps({"text": msg})
     cmd = "\n".join("tellraw " + target + " " + msgjson for target in targets)
     print(cmd)
-    screen.send_to_server(server.name, "\n" + cmd + "\n")
+    runtime_module.send_to_server(server, "\n" + cmd + "\n")
 
 
 def checkvalue(server, key, *value):
@@ -428,22 +479,22 @@ def backup(server, profile=None, *, activate=None, when=None):
 
 def dobackup(server, profile=None):
     """Execute the actual filesystem backup for a Minecraft server."""
-    if screen.check_screen_exists(server.name):
-        screen.send_to_server(server.name, "\nsave-off\nsave-all\n")
+    if runtime_module.check_server_running(server):
+        runtime_module.send_to_server(server, "\nsave-off\nsave-all\n")
         time.sleep(30)
     try:
         backups.backup(server.data["dir"], server.data["backup"], profile)
     except backups.BackupError as ex:
         raise ServerError("Error backing up server: {}".format(ex))
     finally:
-        if screen.check_screen_exists(server.name):
-            screen.send_to_server(server.name, "\nsave-on\nsave-all\n")
+        if runtime_module.check_server_running(server):
+            runtime_module.send_to_server(server, "\nsave-on\nsave-all\n")
 
 
 def op(server, *users):
     """Grant operator status to one or more Minecraft users."""
     for user in users:
-        screen.send_to_server(server.name, "\nop " + user + "\n")
+        runtime_module.send_to_server(server, "\nop " + user + "\n")
 
 
 command_functions["op"] = op
@@ -452,7 +503,7 @@ command_functions["op"] = op
 def deop(server, *users):
     """Remove operator status from one or more Minecraft users."""
     for user in users:
-        screen.send_to_server(server.name, "\ndeop " + user + "\n")
+        runtime_module.send_to_server(server, "\ndeop " + user + "\n")
 
 
 command_functions["deop"] = deop

@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for counterstrikeglobaloffensive is disabled - see docs/TEST_STATUS.md for status"
+# DISABLED: Legacy CS:GO smoke runner.
+# Use tests/smoke_tests/run_counterstrike2.sh for the current CS2 surface.
+echo "Smoke test for counterstrikeglobaloffensive is disabled; use run_counterstrike2.sh for CS2"
 exit 0
 
 set -Eeuo pipefail

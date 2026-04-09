@@ -8,6 +8,12 @@ import pytest
 import utils.proton as proton_module
 
 
+class DummyServer:
+    def __init__(self, name="alpha", data=None):
+        self.name = name
+        self.data = {} if data is None else data
+
+
 # ---------------------------------------------------------------------------
 # find_wine
 # ---------------------------------------------------------------------------
@@ -170,3 +176,86 @@ def test_wrap_command_raises_when_unavailable(monkeypatch):
     monkeypatch.setattr(proton_module, "_PROTON_SEARCH_DIRS", [])
     with pytest.raises(RuntimeError, match="[Ww]ine"):
         proton_module.wrap_command(["server.exe"])
+
+
+def test_unwrap_runtime_command_removes_wine_wrapper():
+    command = [
+        "env",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "WINEPREFIX=/srv/game/.wine",
+        "/usr/bin/wine",
+        "Server.exe",
+        "-port",
+        "27015",
+    ]
+
+    result = proton_module.unwrap_runtime_command(command)
+
+    assert result == ["Server.exe", "-port", "27015"]
+
+
+def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
+    server = DummyServer(
+        data={
+            "dir": "/srv/aska/",
+            "wineprefix": "/var/lib/alphagsm/aska-prefix",
+            "port": 27015,
+            "queryport": 27016,
+        }
+    )
+
+    requirements = proton_module.get_runtime_requirements(
+        server,
+        port_definitions=(("port", "udp"), ("queryport", "udp")),
+        prefer_proton=True,
+    )
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "wine-proton"
+    assert requirements["mounts"] == [
+        {"source": "/srv/aska/", "target": "/srv/server", "mode": "rw"},
+        {
+            "source": "/var/lib/alphagsm/aska-prefix",
+            "target": "/srv/wineprefix",
+            "mode": "rw",
+        },
+    ]
+    assert requirements["ports"] == [
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27016, "container": 27016, "protocol": "udp"},
+    ]
+    assert requirements["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/wineprefix"
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+
+
+def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
+    server = DummyServer(
+        data={
+            "dir": "/srv/opz/",
+            "port": 7777,
+        }
+    )
+
+    spec = proton_module.get_container_spec(
+        server,
+        lambda _server: (
+            [
+                "env",
+                "DISPLAY=",
+                "WINEDLLOVERRIDES=winex11.drv=",
+                "/usr/bin/wine",
+                "WindowsServer/SurvivalGameServer.exe",
+                "-Port=7777",
+            ],
+            "/srv/opz/",
+        ),
+        port_definitions=(("port", "udp"),),
+    )
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"] == ["WindowsServer/SurvivalGameServer.exe", "-Port=7777"]
+    assert spec["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/server/.alphagsm-wineprefix"
+    assert spec["mounts"] == [
+        {"source": "/srv/opz/", "target": "/srv/server", "mode": "rw"}
+    ]

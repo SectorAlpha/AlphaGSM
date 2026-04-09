@@ -15,6 +15,8 @@ def test_write_config_uses_home_download_paths_by_default(tmp_path, monkeypatch)
     text = config_path.read_text()
     assert f"db_path = {home_dir / 'downloads' / 'downloads.txt'}" in text
     assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
+    assert "[runtime]" in text
+    assert "backend = process" in text
 
 
 def test_write_config_keeps_downloads_under_home_when_work_dir_is_set(tmp_path, monkeypatch):
@@ -30,6 +32,8 @@ def test_write_config_keeps_downloads_under_home_when_work_dir_is_set(tmp_path, 
     assert f"db_path = {home_dir / 'downloads' / 'downloads.txt'}" in text
     assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
     assert "sessiontag = AlphaGSM-TF2-IT#" in text
+    assert "[runtime]" in text
+    assert "backend = process" in text
 
 
 def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypatch):
@@ -45,3 +49,5 @@ def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypa
     assert f"db_path = {shared_root / 'downloads' / 'downloads.txt'}" in text
     assert f"target_path = {shared_root / 'downloads' / 'downloads'}" in text
     assert "sessiontag = AlphaGSM-TF2-IT#" in text
+    assert "[runtime]" in text
+    assert "backend = process" in text

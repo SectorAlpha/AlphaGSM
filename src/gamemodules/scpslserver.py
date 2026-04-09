@@ -9,6 +9,8 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
 steam_app_id = 996560
 steam_anonymous_login_possible = True
 LOCALADMIN_GLOBAL_CONFIG = """restart_on_crash: true
@@ -287,3 +289,19 @@ def checkvalue(server, key, *value):
     if key[0] in ("exe_name", "dir", "contactemail"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

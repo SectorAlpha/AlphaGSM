@@ -8,6 +8,7 @@ import urllib.request
 
 import downloader
 import screen
+import server.runtime as runtime_module
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
@@ -160,6 +161,61 @@ def get_start_command(server):
     )
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for TeamSpeak 3."""
+
+    requirements = {
+        "engine": "docker",
+        "family": "service-console",
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    ports = []
+    if "port" in server.data:
+        ports.append(
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "udp",
+            }
+        )
+    if "queryport" in server.data:
+        ports.append(
+            {
+                "host": int(server.data["queryport"]),
+                "container": int(server.data["queryport"]),
+                "protocol": "tcp",
+            }
+        )
+    if "filetransferport" in server.data:
+        ports.append(
+            {
+                "host": int(server.data["filetransferport"]),
+                "container": int(server.data["filetransferport"]),
+                "protocol": "tcp",
+            }
+        )
+    if ports:
+        requirements["ports"] = ports
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for TeamSpeak 3."""
+
+    cmd, _cwd = get_start_command(server)
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": cmd,
+    }
+
+
 def get_query_address(server):
     """Return the TS3 ServerQuery address used to query the TeamSpeak 3 server.
 
@@ -179,7 +235,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Send the standard stop command to TeamSpeak 3."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

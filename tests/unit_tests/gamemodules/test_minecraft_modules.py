@@ -83,7 +83,11 @@ def test_custom_message_sends_tellraw_to_all_players(monkeypatch):
     server = DummyServer("hub")
     calls = []
 
-    monkeypatch.setattr(custom.screen, "send_to_server", lambda name, payload: calls.append((name, payload)))
+    monkeypatch.setattr(
+        custom.runtime_module,
+        "send_to_server",
+        lambda server_obj, payload: calls.append((server_obj.name, payload)),
+    )
 
     custom.message(server, "Hello world")
 
@@ -94,7 +98,11 @@ def test_custom_message_parses_selectors_into_json_fragments(monkeypatch):
     server = DummyServer("hub")
     calls = []
 
-    monkeypatch.setattr(custom.screen, "send_to_server", lambda name, payload: calls.append(payload))
+    monkeypatch.setattr(
+        custom.runtime_module,
+        "send_to_server",
+        lambda server_obj, payload: calls.append(payload),
+    )
 
     custom.message(server, r"Hi @p", "@a", parse=True)
 
@@ -127,7 +135,11 @@ def test_custom_op_and_deop_send_server_commands(monkeypatch):
     server = DummyServer("hub")
     calls = []
 
-    monkeypatch.setattr(custom.screen, "send_to_server", lambda name, payload: calls.append((name, payload)))
+    monkeypatch.setattr(
+        custom.runtime_module,
+        "send_to_server",
+        lambda server_obj, payload: calls.append((server_obj.name, payload)),
+    )
 
     custom.op(server, "alice", "bob")
     custom.deop(server, "alice")
@@ -142,8 +154,12 @@ def test_dobackup_toggles_save_flags_around_backup(monkeypatch):
     server.data.update({"dir": "/srv/mc", "backup": {"profiles": {"default": {"targets": []}}, "schedule": [("default", 0, "day")]}})
     calls = []
 
-    monkeypatch.setattr(custom.screen, "check_screen_exists", lambda name: True)
-    monkeypatch.setattr(custom.screen, "send_to_server", lambda name, payload: calls.append((name, payload)))
+    monkeypatch.setattr(custom.runtime_module, "check_server_running", lambda server_obj: True)
+    monkeypatch.setattr(
+        custom.runtime_module,
+        "send_to_server",
+        lambda server_obj, payload: calls.append((server_obj.name, payload)),
+    )
     monkeypatch.setattr(custom.time, "sleep", lambda seconds: None)
     monkeypatch.setattr(custom.backups, "backup", lambda dir_path, backup_data, profile: calls.append(("backup", dir_path, profile)))
 
@@ -152,6 +168,34 @@ def test_dobackup_toggles_save_flags_around_backup(monkeypatch):
     assert calls[0] == ("hub", "\nsave-off\nsave-all\n")
     assert ("backup", "/srv/mc", "default") in calls
     assert calls[-1] == ("hub", "\nsave-on\nsave-all\n")
+
+
+def test_custom_runtime_requirements_include_java_mounts_and_ports():
+    server = DummyServer("hub")
+    server.data.update(
+        {
+            "dir": "/srv/minecraft",
+            "exe_name": "minecraft_server.jar",
+            "port": 25565,
+            "version": "1.20.6",
+        }
+    )
+
+    requirements = custom.get_runtime_requirements(server)
+    spec = custom.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "java"
+    assert requirements["java"] == 21
+    assert requirements["env"]["ALPHAGSM_SERVER_JAR"] == "minecraft_server.jar"
+    assert requirements["mounts"] == [
+        {"source": "/srv/minecraft", "target": "/srv/server", "mode": "rw"}
+    ]
+    assert requirements["ports"] == [
+        {"host": 25565, "container": 25565, "protocol": "tcp"}
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][-1] == 'exec java -jar "$ALPHAGSM_SERVER_JAR" nogui'
 
 
 def test_bungeecord_configure_install_and_checkvalue(tmp_path):
@@ -183,6 +227,72 @@ def test_bungeecord_updates_unindented_host_line(tmp_path):
     bungeecord._update_bungee_host_port(str(config_path), 31234)
 
     assert config_path.read_text(encoding="utf-8") == "host: 0.0.0.0:31234\n"
+
+
+def test_bungeecord_runtime_requirements_use_java_family():
+    server = DummyServer("proxy")
+    server.data.update({"dir": "/srv/proxy", "exe_name": "BungeeCord.jar", "port": 25577})
+
+    requirements = bungeecord.get_runtime_requirements(server)
+    spec = bungeecord.get_container_spec(server)
+
+    assert requirements["family"] == "java"
+    assert requirements["java"] == 17
+    assert requirements["env"]["ALPHAGSM_SERVER_JAR"] == "BungeeCord.jar"
+    assert requirements["ports"] == [
+        {"host": 25577, "container": 25577, "protocol": "tcp"}
+    ]
+    assert spec["command"][-1] == 'exec java -Xmx256M -jar "$ALPHAGSM_SERVER_JAR"'
+
+
+def test_vanilla_runtime_wrappers_use_java_family():
+    server = DummyServer("vanilla")
+    server.data.update(
+        {
+            "dir": "/srv/vanilla",
+            "exe_name": "minecraft_server.jar",
+            "port": 25565,
+            "version": "1.20.6",
+        }
+    )
+
+    requirements = vanilla.get_runtime_requirements(server)
+    spec = vanilla.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "java"
+    assert requirements["java"] == 21
+    assert requirements["env"]["ALPHAGSM_SERVER_JAR"] == "minecraft_server.jar"
+    assert requirements["ports"] == [
+        {"host": 25565, "container": 25565, "protocol": "tcp"}
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][:3] == ["java", "-jar", "minecraft_server.jar"]
+
+
+def test_tekkit_runtime_wrappers_use_java_family():
+    server = DummyServer("tekkit")
+    server.data.update(
+        {
+            "dir": "/srv/tekkit",
+            "exe_name": "Tekkit.jar",
+            "port": 25566,
+            "version": "1.12.2",
+        }
+    )
+
+    requirements = tekkit.get_runtime_requirements(server)
+    spec = tekkit.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "java"
+    assert requirements["java"] == 8
+    assert requirements["env"]["ALPHAGSM_SERVER_JAR"] == "Tekkit.jar"
+    assert requirements["ports"] == [
+        {"host": 25566, "container": 25566, "protocol": "tcp"}
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][:5] == ["java", "-Xmx3G", "-Xms2G", "-jar", "Tekkit.jar"]
 
 
 def test_vanilla_configure_prefers_explicit_version_url_and_download_metadata(tmp_path, monkeypatch):

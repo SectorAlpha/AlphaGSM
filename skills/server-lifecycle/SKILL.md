@@ -4,13 +4,13 @@
 | --- | --- |
 | Purpose | Preserve, document, and enforce the standard AlphaGSM server lifecycle contract. |
 | Use when | Changing lifecycle code, adding a new game server, or documenting per-server behaviour. |
-| Main source | `server/server.py`, `core/main.py`, smoke tests, and the relevant game module. |
+| Main source | `server/server.py`, `server/runtime.py`, `core/main.py`, smoke tests, and the relevant game module. |
 
 | Field | Value |
 | --- | --- |
 | Inputs | Server dispatch logic, default command contract, and game module lifecycle code. |
 | Outputs | Updated lifecycle code, matching docs, matching tests, and command-contract compliance for new modules. |
-| Related files | `server/server.py`, `core/main.py`, `screen/screen.py`, `gamemodules/**`, `tests/server/*`, `tests/smoke_tests/*.sh`. |
+| Related files | `server/server.py`, `server/runtime.py`, `core/main.py`, `screen/**`, `gamemodules/**`, `tests/server/*`, `tests/smoke_tests/*.sh`. |
 
 Use this skill when changing or documenting the lifecycle for a game server module, especially when adding a new game server type.
 
@@ -73,6 +73,8 @@ Use this table as a checklist when writing or reviewing a module.
 | `message` | `(server, message, *args, **kwargs)` | `message` | Send a chat message to all players.  If the server has no concept of in-game messages, print a clear explanation and return without raising. |
 | `backup` | `(server, *args, **kwargs)` | `backup` | Back up the server.  Call `backup_utils.backup(server.data["dir"], server.data["backup"], profile)` from `utils.backups.backups` in the standard case. |
 | `checkvalue` | `(server, key, *values, **kwargs)` | `set` | Validate and convert a value before it is stored.  Return the sanitised value, return the string `"DELETE"` to request deletion, or raise `ServerError` with a clear message for invalid input.  Delegate backup-related keys to `backup_utils.checkdatavalue`. |
+| `get_runtime_requirements` | `(server)` | runtime selection | Return runtime metadata for Docker-capable modules.  Preferred families today are `"java"`, `"quake-linux"`, `"service-console"`, `"simple-tcp"`, `"steamcmd-linux"`, and `"wine-proton"`.  Use `{"engine": "docker", "family": "<family>"}` plus fields like `java`, `env`, `mounts`, and `ports`.  Legacy aliases `"minecraft"` and `"ts3"` are still accepted and normalized.  Every maintained game module must define this wrapper in module scope, usually by calling shared builders through `import server.runtime as runtime_module`. |
+| `get_container_spec` | `(server)` | Docker launch | Return the Docker launch spec: container working dir, command, stdin/tty settings, env, mounts, and published ports.  Keep this wrapper in module scope even when it delegates to shared runtime helpers. |
 
 ### Optional functions — add these where the server supports them
 
@@ -107,13 +109,17 @@ Before marking a new game module complete, verify all of these:
 - [ ] `configure` returns `((), {})` (or args/kwargs to forward to `install`)
 - [ ] `install` downloads or copies all files and calls `server.data.save()`
 - [ ] `get_start_command` returns `(argv_list, working_dir)` with the correct executable path
-- [ ] `do_stop` sends a graceful stop command (e.g. `screen.send_to_server(name, "\nquit\n")`)
+- [ ] `do_stop` sends a graceful stop command through the runtime-aware helper (e.g. `runtime_module.send_to_server(server, "\nquit\n")`)
 - [ ] `status` at minimum passes (no-op is acceptable if no extra info is available)
 - [ ] `message` either sends a message or prints a clear "not supported" explanation
 - [ ] `backup` calls `backup_utils.backup(...)` with the correct arguments
 - [ ] `checkvalue` handles `"port"`, `"dir"`, `"exe_name"` (where stored), and `"backup"` keys
+- [ ] `checkvalue` or shared validation covers any claim-affecting hosted-IP keys the module stores (`bindaddress`, `publicip`, `externalip`, `hostip`)
 - [ ] `get_info_address` is defined and returns the correct `(host, port, protocol)` tuple
 - [ ] `get_query_address` is defined if the query port differs from the game port or the server uses a non-A2S protocol
+- [ ] `import server.runtime as runtime_module` appears in modules that use shared Docker builders
+- [ ] `get_runtime_requirements` and `get_container_spec` are available in module scope and describe the correct image family, env, mounts, and ports through explicit wrappers
+- [ ] runtime/container claim metadata can be derived during `setup` before `install` finishes; do not make `get_container_spec` depend on already-installed files unless the setup-time path has a safe fallback
 - [ ] `update` and `restart` are wired up in `commands` / `command_functions` if offered
 - [ ] at least one unit test exists under `tests/unit_tests/` for the module or its shared helper surface
 - [ ] one integration test exists at `tests/integration_tests/test_<module>.py`
@@ -159,6 +165,52 @@ steps, in order, without any of them being silently skipped:
 If a game server module genuinely does not implement one of these commands,
 the module itself needs to be fixed to provide a meaningful result (e.g. TCP
 ping fallback for query), not the test skipped.
+
+### Port ownership rules
+
+When you add or edit a module, keep the shared port-manager behaviour in mind:
+
+- `set` rejects conflicting claim changes immediately. This includes primary
+  and optional `*port` keys, hosted-IP keys, and runtime-published `ports`
+  metadata if the module exposes it.
+- `setup` is the only phase allowed to auto-shift ports, and it must shift the
+  entire claimed port group together rather than one port at a time.
+- Explicit user intent persists. Once a claim key is explicit, later `setup`
+  runs must keep treating it as explicit until the user changes it again.
+- `start` must fail before launch if any claimed port is already occupied by a
+  managed AlphaGSM server or a live listener on the same hosted IP.
+- Collision checks ignore protocol, so `27015/tcp` and `27015/udp` still
+  conflict if they target the same hosted IP.
+
+## Runtime Families
+
+When adding container support, prefer these shared runtime families before
+inventing a one-off image strategy:
+
+- `java` for jar-based Java servers and proxies, including Minecraft-family modules
+- `quake-linux` for native Linux Quake-family servers
+- `service-console` for TeamSpeak 3 and similar console-driven TCP service daemons
+- `simple-tcp` for lightweight daemon-style services that just need mounted config/data and published ports
+- `steamcmd-linux` for Linux-native SteamCMD installs
+- `wine-proton` only when there is no viable native path yet
+
+If a module fits one of these families, wire it to that family first and only
+then add game-specific environment or port details inside the explicit module
+wrappers.
+
+When reviewing or editing an existing module, preserve those Docker run details.
+Do not treat container metadata as optional follow-up work.
+
+Back-end Docker lifecycle coverage lives under
+`tests/backend_integration_tests/docker_family_matrix.py`. Keep three declared
+representative cases per runtime family. Any case marked active there must run
+in CI through `tests/backend_integration_tests/test_backend_docker.py` and
+prove the same AlphaGSM lifecycle contract as the regular integration suite.
+
+For Windows-only modules that already use `utils.proton.wrap_command(...)`,
+prefer the shared `utils.proton.get_runtime_requirements(...)` and
+`utils.proton.get_container_spec(...)` helpers plus the container scaffold
+under `docker/wine-proton/`, but keep the module wrappers explicit in source.
 
 ### The integration flow must use AlphaGSM commands
 

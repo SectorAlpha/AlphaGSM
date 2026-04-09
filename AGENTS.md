@@ -67,6 +67,61 @@ module coverage. The integration path must keep the server awake enough that
 the log reached "Server is hibernating" or because TCP fallback happened to
 work.
 
+## Port Manager Contract
+
+Port ownership is now part of the normal AlphaGSM lifecycle contract across
+process and Docker runtimes.
+
+- `set` must reject conflicting claim changes immediately, including primary
+  ports, optional `*port` keys, hosted-IP keys like `bindaddress` /
+  `publicip`, and claim-bearing runtime `ports` edits.
+- `setup` may auto-shift the **whole claimed port set together** only for
+  default-owned claims. Once a claim key is explicit, later setup runs must
+  keep treating it as explicit until the user changes it again.
+- `start` must hard-fail before `prestart(...)` if any claimed port is already
+  owned by another AlphaGSM server or a live listener on the same hosted IP.
+- Collision checks ignore protocol and include optional and runtime-published
+  ports, not just the main game port.
+
+## Container Runtime Contract
+
+Container-capable modules should describe their runtime explicitly instead of
+embedding Docker assumptions in ad hoc test code.
+
+For repository maintenance, treat Docker run details as part of the baseline
+game-module contract. When adding or editing a module, make sure the module
+still provides Docker runtime metadata and a Docker launch spec through
+explicit module-scope wrappers.
+
+- Keep `get_start_command(...)` working for the traditional process runtime.
+- Add `import server.runtime as runtime_module` in modules that use shared
+  runtime builders.
+- Add `get_runtime_requirements(server)` for Docker-capable modules.
+- Add `get_container_spec(server)` with the image, command, env, mounts, and
+  published ports needed to run the server in Docker.
+- Choose the runtime family first, then delegate to `server.runtime` builders
+  or `utils.proton` helpers inside the module wrappers.
+- Do not merge a module change that drops Docker run details for that module.
+- Keep the static runtime-contract coverage under
+  `tests/unit_tests/test_runtime_contract_static.py` green.
+- Keep `tests/backend_integration_tests/docker_family_matrix.py` at three
+  declared representative cases per runtime family, and keep active cases
+  green in CI via `tests/backend_integration_tests/test_backend_docker.py`.
+- Prefer the shared runtime families now in use:
+  - `java`
+  - `quake-linux`
+  - `service-console`
+  - `simple-tcp`
+  - `steamcmd-linux`
+  - `wine-proton`
+- Keep the matching image scaffolds under `docker/<family>/` aligned with the
+  runtime family defaults in `src/server/runtime.py`.
+- For Windows-only servers on Linux, prefer the shared `utils.proton`
+  container helpers and the image scaffold under `docker/wine-proton/`
+  instead of embedding ad hoc Wine/Proton Docker logic in each module.
+- Update representative unit tests whenever a module's runtime wrappers change
+  so the explicit Docker contract stays covered.
+
 ## Server Enablement Goal
 
 Aim to keep as many server modules **enabled** as possible.
@@ -119,6 +174,7 @@ See:
 
 - `SKILLS.md`
 - `skills/disabled-server-gate/SKILL.md`
+- `skills/docker-runtime-wiring/SKILL.md`
 - `skills/install-layout/SKILL.md`
 - `skills/server-info-gathering/SKILL.md`
 - `skills/server-lifecycle/SKILL.md`

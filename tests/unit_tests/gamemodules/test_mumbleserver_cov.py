@@ -83,8 +83,9 @@ def test_get_start_command(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 
 
 def test_status():
@@ -168,4 +169,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

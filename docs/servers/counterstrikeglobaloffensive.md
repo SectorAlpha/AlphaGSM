@@ -1,6 +1,6 @@
-# CS:GO-specific
+# Legacy CS:GO
 
-This guide covers the `counterstrikeglobaloffensive` module in AlphaGSM.
+This guide covers the legacy `counterstrikeglobaloffensive` module in AlphaGSM.
 
 ## Requirements
 
@@ -59,6 +59,8 @@ alphagsm mycounters backup
 
 - Module name: `counterstrikeglobaloffensive`
 - Default port: 27015
+- Current status: disabled in automated testing. SteamCMD app `740` installs a legacy CS:GO dedicated-server build that now receives `MasterRequestRestart` and shuts itself down while hibernating.
+- Valve's current CS2 dedicated-server flow uses app `730` and is exposed separately through [`counterstrike2`](counterstrike2.md).
 
 ## Developer Notes
 

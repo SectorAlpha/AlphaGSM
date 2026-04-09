@@ -1,14 +1,14 @@
 # Integration Test Status
 
-Last updated: 2026-04-07
+Last updated: 2026-04-08
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 81      |
-| DISABLED | 74      |
-| SKIPPED  | 79      |
+| PASSED   | 84      |
+| DISABLED | 72      |
+| SKIPPED  | 78      |
 
 ## Status Key
 
@@ -16,7 +16,12 @@ Last updated: 2026-04-07
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 
-## PASSED (81)
+## Counter-Strike Split
+
+- `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
+- `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
+
+## PASSED (84)
 
 | Test | Type |
 |------|------|
@@ -32,6 +37,7 @@ Last updated: 2026-04-07
 | bmdmserver | SteamCMD (Source) |
 | ccserver | SteamCMD (Source) |
 | colserver | SteamCMD |
+| counterstrike2 | SteamCMD (Source 2) — PASSED 2026-04-08 |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
 | cssserver | SteamCMD (Source) |
@@ -82,6 +88,7 @@ Last updated: 2026-04-07
 | tfcserver | SteamCMD (GoldSrc) |
 | thefrontserver | SteamCMD |
 | unturned | SteamCMD |
+| ut99server | Direct download |
 | valheim | SteamCMD |
 | wfserver | SteamCMD |
 | wurmserver | SteamCMD |
@@ -103,7 +110,7 @@ Last updated: 2026-04-07
 | inssserver | SteamCMD — PASSED 2026-03-28 |
 | ts3server | Direct download — PASSED 2026-03-28 |
 
-## DISABLED (74)
+## DISABLED (72)
 
 | Test | Reason |
 |------|--------|
@@ -133,7 +140,7 @@ Last updated: 2026-04-07
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
 | chivalryserver | Server starts but crashes during initialization before log markers appear (crash pattern) |
 | conanexiles | SteamCMD app 443030 installs no Linux-compatible dedicated server binary (ConanSandboxServer not present) |
-| counterstrikeglobaloffensive | CS2/CS:GO (app 740) server binary fails to load; bundled libgcc_s.so.1 lacks GCC_7.0.0 required by system libstdc++.so.6 (Ubuntu 24.04) |
+| counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | cryofallserver | SteamCMD app 1061710 installs no Linux-compatible dedicated server binary (CryoFall_Server not present) |
 | dabserver | Dedicated server binary segfaults on startup |
 | deadpolyserver | SteamCMD app 2208380 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -180,7 +187,7 @@ Last updated: 2026-04-07
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (79)
+## SKIPPED (78)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -263,7 +270,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |
 | ut2k4server | Download prerequisite |
-| ut99server | Download prerequisite |
 | vintagestoryserver | Download prerequisite |
 | vsserver | HLDS mod maps not available via SteamCMD |
 

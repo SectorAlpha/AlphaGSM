@@ -1,13 +1,36 @@
 # Backend Integration Tests
 
-End-to-end tests that run the full Minecraft Vanilla lifecycle
-(**create → setup → start → verify → stop**) once per process backend:
+End-to-end tests that run the AlphaGSM lifecycle
+(**create -> setup -> start -> query -> info -> stop**) once per backend/runtime
+path:
 
 | Test file | Backend | Requires |
 |-----------|---------|----------|
 | `test_backend_screen.py` | GNU screen | `screen`, `java` |
 | `test_backend_tmux.py` | tmux | `tmux`, `java` |
 | `test_backend_subprocess.py` | subprocess (pure Python) | `java` |
+| `test_backend_docker.py` | Docker runtime | `docker` |
+| `test_backend_docker_manager.py` | AlphaGSM manager container driving Docker runtime | `docker` |
+
+## Docker runtime family coverage
+
+Docker backend validation is now tracked by runtime family in
+`backend_integration_tests/docker_family_matrix.py`.
+
+Each runtime family now declares **three** representative Docker lifecycle
+cases. CI currently runs the active Java cases:
+
+- `java-minecraft-vanilla`
+- `java-minecraft-paper`
+- `java-minecraft-velocity`
+
+The remaining declared families are tracked as planned activation work:
+
+- `quake-linux`
+- `service-console`
+- `simple-tcp`
+- `steamcmd-linux`
+- `wine-proton`
 
 ## Running locally
 
@@ -19,10 +42,25 @@ PYTHONPATH=src \
 
 ## CI
 
-These run as a dedicated **backend-integration-test** job in the GitHub
-Actions workflow, in parallel with the normal smoke and integration test
-matrix.  A matching **backend-smoke-test** job runs the bash-level smoke
-scripts under `smoke_tests/run_backend_*.sh`.
+These run as dedicated host-runner jobs in the GitHub Actions workflow, in
+parallel with the normal smoke and integration test matrix. A matching
+**backend-smoke-test** job runs the bash-level smoke scripts under
+`smoke_tests/run_backend_*.sh`.
+
+The Linux backend job explicitly runs `test_backend_docker.py` against the
+active matrix cases. That Docker step must prove the AlphaGSM command flow
+itself: `create`, `setup`, `start`, readiness, `status`, `query`, `info`,
+`info --json`, `stop`, and shutdown verification.
+
+It also runs `test_backend_docker_manager.py`, which covers the optional
+manager-container mode: AlphaGSM itself runs inside Docker, talks to the host
+Docker socket, and launches a sibling Docker container for Minecraft.
+
+The Docker runtime checks intentionally do not run in the main
+`integration-test` matrix, because that job is itself a GitHub Actions
+`container:` job. AlphaGSM's Docker runtime needs access to a real Docker
+daemon, so the Docker smoke/integration coverage runs in the host-runner
+backend jobs instead.
 
 ## Windows Docker Integration Test
 

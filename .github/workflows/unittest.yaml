@@ -354,9 +354,10 @@ jobs:
 
   backend-smoke-test:
     runs-on: ubuntu-latest
-    needs: unit-test
+    needs: [unit-test, build-integration-image]
     env:
       PYTHONPATH: .:src
+      ALPHAGSM_BACKEND_DOCKER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
     name: backend-smoke-test
     steps:
       - name: Checkout AlphaGSM code
@@ -371,6 +372,12 @@ jobs:
           pip install -r requirements.txt
       - name: Install tmux
         run: sudo apt-get update && sudo apt-get install -y tmux
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -396,7 +403,7 @@ jobs:
 
   backend-integration-test:
     runs-on: ubuntu-latest
-    needs: unit-test
+    needs: [unit-test, build-integration-image]
     env:
       PYTHONPATH: .:src
     name: backend-integration-test
@@ -413,15 +420,49 @@ jobs:
           pip install -r requirements.txt
       - name: Install tmux
         run: sudo apt-get update && sudo apt-get install -y tmux
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "25"
-      - name: Backend Integration Tests
+      - name: Backend Integration Tests (screen, tmux, subprocess)
         env:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
-        run: pytest tests/backend_integration_tests/ -v
+        run: |
+          pytest \
+            tests/backend_integration_tests/test_backend_port_manager.py \
+            tests/backend_integration_tests/test_backend_screen.py \
+            tests/backend_integration_tests/test_backend_tmux.py \
+            tests/backend_integration_tests/test_backend_subprocess.py \
+            tests/backend_integration_tests/test_backend_subprocess_integration.py \
+            --junit-xml=backend-process-results.xml \
+            -v
+      - name: Backend Docker Integration Tests (active matrix cases)
+        if: always()
+        env:
+          ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}
+          ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+        run: |
+          pytest \
+            tests/backend_integration_tests/test_backend_docker.py \
+            tests/backend_integration_tests/test_backend_docker_manager.py \
+            --junit-xml=backend-docker-results.xml \
+            -v
+      - name: Upload backend integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-integration-results-linux
+          path: |
+            backend-process-results.xml
+            backend-docker-results.xml
 
   windows-minecraft-integration:
     runs-on: windows-latest
@@ -477,7 +518,7 @@ jobs:
 
   summarize-tests:
     runs-on: ubuntu-latest
-    needs: [smoke-test, integration-test]
+    needs: [smoke-test, integration-test, backend-integration-test]
     if: always()
     steps:
       - name: Download all test results
@@ -493,6 +534,7 @@ jobs:
 
           smoke_passed, smoke_failed = [], []
           int_passed, int_skipped, int_failed = [], [], []
+          backend_passed, backend_skipped, backend_failed = [], [], []
 
           for txt in sorted(glob.glob("artifacts/smoke-results-*/*.txt")):
               for line in open(txt):
@@ -519,6 +561,24 @@ jobs:
                       int_failed.append((name, node.attrib.get("message", "").split("\n")[0]))
                   else:
                       int_passed.append(name)
+
+          for xml_file in sorted(glob.glob("artifacts/backend-integration-results-*/*.xml")):
+              try:
+                  root = ET.parse(xml_file).getroot()
+              except ET.ParseError:
+                  continue
+              for tc in root.iter("testcase"):
+                  name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
+                  skip = tc.find("skipped")
+                  fail = tc.find("failure")
+                  err = tc.find("error")
+                  if skip is not None:
+                      backend_skipped.append((name, skip.attrib.get("message", "").split("\n")[0]))
+                  elif fail is not None or err is not None:
+                      node = fail if fail is not None else err
+                      backend_failed.append((name, node.attrib.get("message", "").split("\n")[0]))
+                  else:
+                      backend_passed.append(name)
 
           SEP = "=" * 64
           print(SEP)
@@ -558,9 +618,30 @@ jobs:
                   if r:
                       print(f"          Reason: {r}")
 
-          total_p = len(smoke_passed) + len(int_passed)
-          total_s = len(int_skipped)
-          total_f = len(smoke_failed) + len(int_failed)
+          print("\nBACKEND INTEGRATION TESTS")
+          print(f"  Passed  : {len(backend_passed)}")
+          print(f"  Skipped : {len(backend_skipped)}")
+          print(f"  Failed  : {len(backend_failed)}")
+          if backend_passed:
+              print("\n  Passed:")
+              for t in backend_passed:
+                  print(f"    PASS  {t}")
+          if backend_skipped:
+              print("\n  Skipped:")
+              for t, r in backend_skipped:
+                  print(f"    SKIP  {t}")
+                  if r:
+                      print(f"          Reason: {r}")
+          if backend_failed:
+              print("\n  Failed:")
+              for t, r in backend_failed:
+                  print(f"    FAIL  {t}")
+                  if r:
+                      print(f"          Reason: {r}")
+
+          total_p = len(smoke_passed) + len(int_passed) + len(backend_passed)
+          total_s = len(int_skipped) + len(backend_skipped)
+          total_f = len(smoke_failed) + len(int_failed) + len(backend_failed)
           print("\n" + SEP)
           print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")
           print(SEP)

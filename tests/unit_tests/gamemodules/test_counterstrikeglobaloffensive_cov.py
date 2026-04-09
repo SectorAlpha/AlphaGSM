@@ -140,6 +140,27 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_moves_bundled_libgcc(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "srcds_run"
+    (tmp_path / "srcds_run").write_text("")
+    libgcc_path = tmp_path / "bin" / "libgcc_s.so.1"
+    libgcc_path.parent.mkdir(parents=True)
+    libgcc_path.write_text("stale")
+    server.data["gamemode"] = "test"
+    server.data["gametype"] = "test"
+    server.data["mapgroup"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["startmap"] = "test"
+
+    mod.get_start_command(server)
+
+    assert not libgcc_path.exists()
+    assert (tmp_path / "bin" / "libgcc_s.so.1.alphagsm-disabled").exists()
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
