@@ -52,8 +52,10 @@ def test_custom_install_updates_generated_config_files(tmp_path, monkeypatch):
 
     assert update_calls[0][0].endswith("server.properties")
     assert update_calls[0][1] == {"server-port": "25565"}
-    assert update_calls[1][0].endswith("eula.txt")
-    assert update_calls[1][1] == {"eula": "true"}
+    assert update_calls[1][0].endswith("server.properties")
+    assert update_calls[1][1] == {"server-port": "25565"}
+    assert update_calls[2][0].endswith("eula.txt")
+    assert update_calls[2][1] == {"eula": "true"}
     assert server.data.saved == 1
 
 
@@ -267,7 +269,23 @@ def test_vanilla_runtime_wrappers_use_java_family():
         {"host": 25565, "container": 25565, "protocol": "tcp"}
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][:3] == ["java", "-jar", "minecraft_server.jar"]
+    assert spec["command"][:6] == ["java", "-jar", "minecraft_server.jar", "nogui", "--port", "25565"]
+
+
+def test_custom_start_command_passes_explicit_port():
+    server = DummyServer("vanilla")
+    server.data.update(
+        {
+            "dir": "/srv/vanilla",
+            "exe_name": "minecraft_server.jar",
+            "port": 25565,
+        }
+    )
+
+    command, cwd = custom.get_start_command(server)
+
+    assert cwd == "/srv/vanilla"
+    assert command == ["java", "-jar", "minecraft_server.jar", "nogui", "--port", "25565"]
 
 
 def test_tekkit_runtime_wrappers_use_java_family():

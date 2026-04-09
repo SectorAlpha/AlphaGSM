@@ -245,23 +245,26 @@ def install(server, *, eula=False):
     eulafile = os.path.join(server.data["dir"], "eula.txt")
     configfile = os.path.join(server.data["dir"], "server.properties")
     javapath = server.data.get("javapath", "java")
+    had_configfile = os.path.isfile(configfile)
+    had_eulafile = os.path.isfile(eulafile)
     if eula and not os.path.isfile(eulafile):
         with open(eulafile, "w", encoding="utf-8") as handle:
             handle.write("eula=true\n")
-    if not os.path.isfile(configfile) or (
-        eula and not os.path.isfile(eulafile)
-    ):  # use as flag for has the server created it's files
+    # Seed server.properties before first boot so new Minecraft releases bind the
+    # requested port even when the bundler starts without an existing config.
+    updateconfig(configfile, {"server-port": str(server.data["port"])})
+    if not had_configfile or (eula and not had_eulafile):
         print("Starting server to create settings")
         try:
-            ret = sp.check_call(
+            sp.check_call(
                 [javapath, "-jar", server.data["exe_name"], "nogui"],
                 cwd=server.data["dir"],
                 shell=False,
                 timeout=20,
             )
         except sp.CalledProcessError as ex:
-            print("Error running server. Java returned status: " + ex.returncode)
-        except sp.TimeoutExpired as ex:
+            print("Error running server. Java returned status: " + str(ex.returncode))
+        except sp.TimeoutExpired:
             print("Error running server. Process didn't complete in time")
     updateconfig(configfile, {"server-port": str(server.data["port"])})
     if eula:
@@ -271,7 +274,14 @@ def install(server, *, eula=False):
 def get_start_command(server):
     """Build the command list used to launch a custom Minecraft server."""
     javapath = server.data.get("javapath", "java")
-    return [javapath, "-jar", server.data["exe_name"], "nogui"], server.data["dir"]
+    return [
+        javapath,
+        "-jar",
+        server.data["exe_name"],
+        "nogui",
+        "--port",
+        str(server.data["port"]),
+    ], server.data["dir"]
 
 
 def get_runtime_requirements(server):

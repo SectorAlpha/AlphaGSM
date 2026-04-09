@@ -95,7 +95,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="SMALLANDServer.sh")
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
-    server.data.setdefault("queryport", int(server.data["port"]))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))

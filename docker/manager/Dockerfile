@@ -6,9 +6,20 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         bash \
         ca-certificates \
-       default-jre-headless \
         docker.io \
         git \
+        wget \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN wget -q -O /usr/share/keyrings/adoptium.asc \
+        https://packages.adoptium.net/artifactory/api/gpg/key/public \
+ && . /etc/os-release \
+ && printf 'deb [arch=%s signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb %s main\n' \
+        "$(dpkg --print-architecture)" \
+        "$VERSION_CODENAME" \
+        > /etc/apt/sources.list.d/adoptium.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends temurin-25-jre \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/alphagsm
