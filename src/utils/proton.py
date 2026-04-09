@@ -296,7 +296,7 @@ def get_container_spec(
 ):
     """Return the Docker launch spec for a Wine/Proton-backed server."""
 
-    command, _cwd = get_start_command(server)
+    command, _cwd = _get_container_start_command(server, get_start_command)
     requirements = get_runtime_requirements(
         server,
         port_definitions=port_definitions,
@@ -310,3 +310,27 @@ def get_container_spec(
         "env": requirements.get("env", {}),
         "command": unwrap_runtime_command(command),
     }
+
+
+def _get_container_start_command(server, get_start_command):
+    """Return a start command suitable for Docker manifest generation.
+
+    Some Windows modules build their process-runtime command by calling
+    ``wrap_command`` directly, which requires Wine or Proton to be installed on
+    the host. Docker manifest generation should stay host-independent, so when
+    the only failure is a missing local Wine/Proton install, temporarily bypass
+    the wrapper and recover the underlying executable command.
+    """
+
+    try:
+        return get_start_command(server)
+    except RuntimeError as exc:
+        if "Neither Wine nor Proton-GE is available" not in str(exc):
+            raise
+
+    original_wrap_command = wrap_command
+    try:
+        globals()["wrap_command"] = lambda command, **_kwargs: list(command)
+        return get_start_command(server)
+    finally:
+        globals()["wrap_command"] = original_wrap_command

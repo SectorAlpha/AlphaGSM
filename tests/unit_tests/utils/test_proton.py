@@ -259,3 +259,52 @@ def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
     assert spec["mounts"] == [
         {"source": "/srv/opz/", "target": "/srv/server", "mode": "rw"}
     ]
+
+
+def test_get_container_spec_recovers_when_host_runtime_wrapper_is_unavailable():
+    server = DummyServer(
+        data={
+            "dir": "/srv/asa/",
+            "wineprefix": "/srv/asa/.wine",
+            "port": 7777,
+        }
+    )
+
+    observed = []
+
+    def fake_get_start_command(_server):
+        observed.append("called")
+        return (
+            [
+                proton_module.wrap_command(
+                    ["WindowsServer/Server.exe", "-Port=7777"],
+                    wineprefix=_server.data.get("wineprefix"),
+                )
+            ][0],
+            "/srv/asa/",
+        )
+
+    proton_error = RuntimeError(
+        "Neither Wine nor Proton-GE is available on this system.  Run  scripts/install_proton.sh  to install one of them."
+    )
+
+    original_wrap_command = proton_module.wrap_command
+
+    def fake_wrap_command(command, **kwargs):
+        if len(observed) == 1:
+            raise proton_error
+        return original_wrap_command(command, **kwargs)
+
+    monkeypatch = pytest.MonkeyPatch()
+    try:
+        monkeypatch.setattr(proton_module, "wrap_command", fake_wrap_command)
+        spec = proton_module.get_container_spec(
+            server,
+            fake_get_start_command,
+            port_definitions=(("port", "udp"),),
+        )
+    finally:
+        monkeypatch.undo()
+
+    assert observed == ["called", "called"]
+    assert spec["command"] == ["WindowsServer/Server.exe", "-Port=7777"]
