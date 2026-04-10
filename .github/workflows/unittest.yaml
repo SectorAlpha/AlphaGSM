@@ -141,6 +141,7 @@ jobs:
           pip install -r requirements.txt
       - name: Install system dependencies
         run: |
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/microsoft-prod.list
           sudo dpkg --add-architecture i386
           sudo apt-get update
           # screen   — required by all smoke tests (AlphaGSM uses GNU screen as
@@ -371,7 +372,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Install tmux
-        run: sudo apt-get update && sudo apt-get install -y tmux
+        run: sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/microsoft-prod.list && sudo apt-get update && sudo apt-get install -y tmux
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -419,7 +420,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Install tmux
-        run: sudo apt-get update && sudo apt-get install -y tmux
+        run: sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/microsoft-prod.list && sudo apt-get update && sudo apt-get install -y tmux
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
