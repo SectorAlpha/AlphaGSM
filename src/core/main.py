@@ -80,7 +80,18 @@ def main(name, args):
             help(name, None)
             return 2
     #  prevent servers having similar names to commnds
-    banned = set(("help", "create") + Server.default_commands)
+    banned = set(
+        (
+            "help",
+            "create",
+            "up",
+            "down",
+            "shell",
+            "logs",
+            "compose",
+        )
+        + Server.default_commands
+    )
     for s in raw_servers:
         if s.lower() in banned:
             print(

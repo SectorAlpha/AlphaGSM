@@ -206,6 +206,13 @@ def test_main_handles_help_banned_names_and_multi_server_paths(monkeypatch):
     assert main_module.main("alphagsm", ["alpha", "status"]) == 11
 
 
+def test_main_rejects_wrapper_subcommands_as_server_names(monkeypatch):
+    monkeypatch.setattr(main_module, "help", lambda *args, **kwargs: None)
+
+    for banned_name in ("up", "down", "shell", "logs", "compose"):
+        assert main_module.main("alphagsm", [banned_name, "status"]) == 2
+
+
 def test_print_handled_ex_uses_traceback_in_debug(monkeypatch):
     called = []
     monkeypatch.setattr(main_module, "DEBUG", True)
