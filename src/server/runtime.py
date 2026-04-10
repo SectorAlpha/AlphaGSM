@@ -613,6 +613,57 @@ def infer_minecraft_java_major(version):
     return 21
 
 
+def resolve_query_host(server, default="127.0.0.1"):
+    """Return the best reachable host for query/info checks.
+
+    Docker-backed servers are queried from two different contexts in tests:
+    directly from the host runner, and from a manager container that launches a
+    sibling game container through the Docker socket. In the latter case,
+    ``127.0.0.1`` points at the manager container rather than the game server.
+
+    When the runtime backend is Docker, prefer an explicit external IP if the
+    user configured one; otherwise inspect the live game container and query its
+    bridge-network IP directly. Fall back to *default* if inspection is not
+    available or the container is not running yet.
+    """
+
+    explicit_host = str(
+        server.data.get("publicip")
+        or server.data.get("externalip")
+        or server.data.get("hostip")
+        or server.data.get("bindaddress")
+        or ""
+    ).strip()
+    if explicit_host and explicit_host not in {"0.0.0.0", "::"}:
+        return explicit_host
+
+    metadata = resolve_runtime_metadata(server)
+    if metadata.get("runtime") != "docker":
+        return default
+
+    container_name = metadata.get("container_name")
+    if not container_name:
+        return default
+
+    try:
+        container_ip = sp.check_output(
+            [
+                "docker",
+                "inspect",
+                "--format",
+                "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+                container_name,
+            ],
+            stderr=sp.STDOUT,
+            shell=False,
+            text=True,
+        ).strip()
+    except (OSError, sp.SubprocessError):
+        return default
+
+    return container_ip or default
+
+
 def handles_set_key(key):
     """Return whether *key* should be validated by the runtime layer."""
 

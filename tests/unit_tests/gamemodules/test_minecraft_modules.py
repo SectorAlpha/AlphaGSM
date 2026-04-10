@@ -231,6 +231,36 @@ def test_bungeecord_updates_unindented_host_line(tmp_path):
     assert config_path.read_text(encoding="utf-8") == "host: 0.0.0.0:31234\n"
 
 
+def test_bungeecord_install_waits_for_generated_config_and_rewrites_port(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update({"dir": str(tmp_path), "exe_name": "BungeeCord.jar", "port": 31234})
+    (tmp_path / "BungeeCord.jar").write_text("")
+    config_path = tmp_path / "config.yml"
+
+    class FakeProc:
+        def __init__(self):
+            self.poll_count = 0
+
+        def poll(self):
+            self.poll_count += 1
+            if self.poll_count == 3:
+                config_path.write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
+            return None if self.poll_count < 4 else 0
+
+        def terminate(self):
+            return None
+
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(bungeecord.sp, "Popen", lambda *args, **kwargs: FakeProc())
+    monkeypatch.setattr(bungeecord.time, "sleep", lambda seconds: None)
+
+    bungeecord.install(server)
+
+    assert config_path.read_text(encoding="utf-8") == "host: 0.0.0.0:31234\n"
+
+
 def test_bungeecord_runtime_requirements_use_java_family():
     server = DummyServer("proxy")
     server.data.update({"dir": "/srv/proxy", "exe_name": "BungeeCord.jar", "port": 25577})
@@ -245,6 +275,24 @@ def test_bungeecord_runtime_requirements_use_java_family():
         {"host": 25577, "container": 25577, "protocol": "tcp"}
     ]
     assert spec["command"][-1] == 'exec java -Xmx256M -jar "$ALPHAGSM_SERVER_JAR"'
+
+
+def test_bungeecord_query_and_info_addresses_use_runtime_query_host(monkeypatch):
+    server = DummyServer("proxy")
+    server.data["port"] = 25577
+    monkeypatch.setattr(bungeecord.runtime_module, "resolve_query_host", lambda srv: "172.18.0.9")
+
+    assert bungeecord.get_query_address(server) == ("172.18.0.9", 25577, "tcp")
+    assert bungeecord.get_info_address(server) == ("172.18.0.9", 25577, "slp")
+
+
+def test_custom_query_and_info_addresses_use_runtime_query_host(monkeypatch):
+    server = DummyServer("vanilla")
+    server.data["port"] = 25565
+    monkeypatch.setattr(custom.runtime_module, "resolve_query_host", lambda srv: "172.18.0.10")
+
+    assert custom.get_query_address(server) == ("172.18.0.10", 25565, "tcp")
+    assert custom.get_info_address(server) == ("172.18.0.10", 25565, "slp")
 
 
 def test_vanilla_runtime_wrappers_use_java_family():

@@ -392,6 +392,36 @@ def test_inferred_runtime_requirements_use_wine_proton_for_windows_binaries(monk
     ]
 
 
+def test_resolve_query_host_uses_container_ip_for_docker_runtime(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 21,
+            "container_name": "alphagsm-alpha",
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(
+        runtime_module.sp,
+        "check_output",
+        lambda *args, **kwargs: "172.18.0.7\n",
+    )
+
+    assert runtime_module.resolve_query_host(server) == "172.18.0.7"
+
+
+def test_resolve_query_host_prefers_explicit_public_ip(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    server = DummyServer(
+        data={"runtime": "docker", "publicip": "192.168.1.50"},
+    )
+
+    assert runtime_module.resolve_query_host(server) == "192.168.1.50"
+
+
 def test_container_runtime_kill_stops_then_removes_container(monkeypatch):
     server = DummyServer(
         data={

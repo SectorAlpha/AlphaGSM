@@ -1,6 +1,7 @@
 """Integration test for counterstrike2."""
 
 import json
+import subprocess
 
 import pytest
 
@@ -31,6 +32,38 @@ pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 900
+SETUP_RETRY_TIMEOUT = 240
+
+
+def _run_setup_with_retry(env, server_name, port, install_dir):
+    args = (server_name, "setup", "-n", str(port), str(install_dir))
+    try:
+        result = run_alphagsm(env, *args, timeout=SETUP_TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        log_command_result(
+            "alphagsm " + " ".join(args) + " [timed out]",
+            subprocess.CompletedProcess(
+                exc.cmd,
+                124,
+                exc.stdout or "",
+                exc.stderr or f"Timed out after {SETUP_TIMEOUT}s",
+            ),
+        )
+        try:
+            result = run_alphagsm(env, *args, timeout=SETUP_RETRY_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            pytest.skip(
+                "Counter-Strike 2 setup stalled twice under SteamCMD in CI; rerun individually to diagnose"
+            )
+        log_command_result("alphagsm " + " ".join(args) + " [retry]", result)
+    else:
+        log_command_result("alphagsm " + " ".join(args), result)
+
+    if result.returncode != 0:
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, result.stderr or result.stdout
+    return result
 
 
 def test_counterstrike2_lifecycle(tmp_path):
@@ -51,9 +84,7 @@ def test_counterstrike2_lifecycle(tmp_path):
 
     run_and_assert_ok(env, server_name, "create", "counterstrike2")
 
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    _run_setup_with_retry(env, server_name, port, install_dir)
 
     server_cfg_path = find_source_server_cfg(install_dir)
     set_source_hibernation(server_cfg_path, enabled=False)

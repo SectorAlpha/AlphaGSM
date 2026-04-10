@@ -525,4 +525,10 @@ def get_info_address(server):
     Minecraft uses the Server List Ping (SLP) protocol on its main TCP port,
     which reports player count, max players, server description, and version.
     """
-    return ("127.0.0.1", server.data["port"], "slp")
+    return (runtime_module.resolve_query_host(server), server.data["port"], "slp")
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the ``query`` command."""
+
+    return (runtime_module.resolve_query_host(server), server.data["port"], "tcp")

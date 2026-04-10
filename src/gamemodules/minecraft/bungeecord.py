@@ -29,6 +29,7 @@ command_functions = {}
 
 # Regex to locate the first listener's host line in config.yml
 _BUNGEE_HOST_RE = re.compile(r'^(\s*host:\s*)(\S+):(\d+)', re.MULTILINE)
+_CONFIG_GENERATION_TIMEOUT = 120
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
@@ -78,7 +79,7 @@ def install(server, *, eula=False):
             stdout=sp.DEVNULL,
             stderr=sp.DEVNULL,
         )
-        deadline = time.time() + 30
+        deadline = time.time() + _CONFIG_GENERATION_TIMEOUT
         try:
             while time.time() < deadline and not os.path.isfile(config_file):
                 if proc.poll() is not None:
@@ -194,4 +195,10 @@ def get_info_address(server):
     BungeeCord-based proxies (BungeeCord, Waterfall, Velocity) implement
     Minecraft's Server List Ping protocol on their main TCP port.
     """
-    return ("127.0.0.1", server.data["port"], "slp")
+    return (runtime_module.resolve_query_host(server), server.data["port"], "slp")
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the ``query`` command."""
+
+    return (runtime_module.resolve_query_host(server), server.data["port"], "tcp")
