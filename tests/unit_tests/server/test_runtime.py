@@ -1,5 +1,6 @@
 """Unit tests for runtime metadata resolution and Docker command assembly."""
 
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -320,6 +321,50 @@ def test_ensure_runtime_hooks_adds_defaults_for_plain_module(monkeypatch):
         {"host": 7777, "container": 7777, "protocol": "tcp"},
     ]
     assert spec["command"] == ["./plainserver", "--port", "7777"]
+
+
+def test_get_container_spec_mounts_external_symlink_target(monkeypatch, tmp_path):
+    _set_runtime_backend(monkeypatch, "docker")
+    server_root = tmp_path / "server"
+    cache_root = tmp_path / "downloads" / "cache"
+    server_root.mkdir(parents=True)
+    cache_root.mkdir(parents=True)
+    jar_path = cache_root / "minecraft_server.jar"
+    jar_path.write_text("jar", encoding="utf-8")
+    os.symlink(jar_path, server_root / "minecraft_server.jar")
+
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 25,
+        },
+        get_container_spec=lambda server: {
+            "working_dir": "/srv/server",
+            "stdin_open": True,
+            "env": {},
+            "mounts": [
+                {
+                    "source": str(server_root) + "/",
+                    "target": "/srv/server",
+                    "mode": "rw",
+                }
+            ],
+            "ports": [],
+            "command": ["java", "-jar", "minecraft_server.jar"],
+        },
+    )
+    server = DummyServer(
+        module=module,
+        data={"dir": str(server_root) + "/", "exe_name": "minecraft_server.jar"},
+    )
+
+    spec = runtime_module.get_container_spec(server)
+
+    assert spec["mounts"] == [
+        {"source": str(server_root) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(cache_root), "target": str(cache_root), "mode": "ro"},
+    ]
 
 
 def test_inferred_runtime_requirements_use_wine_proton_for_windows_binaries(monkeypatch):

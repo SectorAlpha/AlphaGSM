@@ -135,7 +135,7 @@ def doinstall(server):
         server.data["dir"],
         server.data["Steam_AppID"],
         server.data["Steam_anonymous_login_possible"],
-        validate=True,
+        validate=False,
     )
 
 

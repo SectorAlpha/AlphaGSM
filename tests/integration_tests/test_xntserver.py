@@ -1,5 +1,6 @@
 """Integration test for xntserver."""
 
+import re
 import time
 import pytest
 
@@ -25,6 +26,28 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
+def _run_setup_with_port_retry(env, server_name, install_dir, initial_port):
+    """Retry setup once when CI loses the selected port to another listener."""
+
+    port = initial_port
+    for attempt in range(2):
+        result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+        log_command_result(
+            f"alphagsm {server_name} setup -n {port} {install_dir}",
+            result,
+        )
+        if result.returncode == 0:
+            return port
+        combined = "\n".join(part for part in (result.stdout, result.stderr) if part)
+        match = re.search(r"Recommended free port set: port=(\d+)", combined)
+        if attempt == 0 and match is not None:
+            port = int(match.group(1))
+            continue
+        skip_for_known_steamcmd_issue(result)
+        assert result.returncode == 0, result.stderr or result.stdout
+    return port
+
+
 def test_xntserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")
@@ -43,9 +66,7 @@ def test_xntserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "xntserver")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+    port = _run_setup_with_port_retry(env, server_name, install_dir, port)
 
     # start
     run_and_assert_ok(env, server_name, "start")

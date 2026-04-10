@@ -80,6 +80,30 @@ def test_install_creates_default_server_config(tmp_path, monkeypatch):
     assert cfg_path.exists()
 
 
+def test_doinstall_uses_non_validating_first_download(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "Steam_AppID": 730,
+            "Steam_anonymous_login_possible": True,
+        }
+    )
+    calls = []
+
+    monkeypatch.setattr(
+        mod.steamcmd,
+        "download",
+        lambda path, app_id, anonymous, validate=False: calls.append(
+            (path, app_id, anonymous, validate)
+        ),
+    )
+
+    mod.doinstall(server)
+
+    assert calls == [(server.data["dir"], 730, True, False)]
+
+
 def test_get_start_command_uses_default_launcher(tmp_path):
     server = DummyServer()
     launcher = tmp_path / "game" / "cs2.sh"

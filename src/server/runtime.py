@@ -332,6 +332,62 @@ def build_container_spec(
     return spec
 
 
+def _mount_covers_path(mount, path):
+    """Return whether *mount* already exposes *path* inside the container."""
+
+    if isinstance(mount, dict):
+        source = mount.get("source")
+    else:
+        source = str(mount).split(":", 1)[0]
+    if not source:
+        return False
+    try:
+        return os.path.commonpath(
+            [os.path.abspath(source), os.path.abspath(path)]
+        ) == os.path.abspath(source)
+    except ValueError:
+        return False
+
+
+def _add_external_executable_mounts(server, mounts):
+    """Ensure container mounts include symlink targets used by the executable.
+
+    AlphaGSM often symlinks downloaded payloads from the server directory into the
+    shared download cache. Docker runtime mounts only the server directory by
+    default, so those symlinks become broken inside the container unless the
+    target path is also mounted.
+    """
+
+    server_dir = server.data.get("dir")
+    exe_name = server.data.get("exe_name")
+    if not server_dir or not exe_name:
+        return mounts
+
+    exe_path = os.path.join(server_dir, exe_name)
+    if not os.path.islink(exe_path):
+        return mounts
+
+    target_path = os.path.realpath(exe_path)
+    server_root = os.path.abspath(server_dir)
+    try:
+        if os.path.commonpath([server_root, target_path]) == server_root:
+            return mounts
+    except ValueError:
+        return mounts
+
+    if any(_mount_covers_path(mount, target_path) for mount in mounts):
+        return mounts
+
+    mounts.append(
+        {
+            "source": os.path.dirname(target_path),
+            "target": os.path.dirname(target_path),
+            "mode": "ro",
+        }
+    )
+    return mounts
+
+
 def infer_runtime_requirements(server, module=None):
     """Infer Docker runtime metadata for modules without explicit hooks."""
 
@@ -662,6 +718,9 @@ def get_container_spec(server, *args, **kwargs):
     merged.setdefault("env", {})
     merged.setdefault("mounts", [])
     merged.setdefault("ports", [])
+    merged["mounts"] = _add_external_executable_mounts(
+        server, list(merged.get("mounts") or [])
+    )
     return merged
 
 

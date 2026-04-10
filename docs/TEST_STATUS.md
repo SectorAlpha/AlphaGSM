@@ -1,13 +1,13 @@
 # Integration Test Status
 
-Last updated: 2026-04-08
+Last updated: 2026-04-10
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 84      |
-| DISABLED | 72      |
+| PASSED   | 83      |
+| DISABLED | 73      |
 | SKIPPED  | 78      |
 
 ## Status Key
@@ -77,7 +77,6 @@ Last updated: 2026-04-08
 | silicaserver | SteamCMD |
 | scpslserver | SteamCMD |
 | smallandserver | SteamCMD |
-| sevendaystodie | SteamCMD |
 | solserver | SteamCMD |
 | squad44server | SteamCMD |
 | squadserver | SteamCMD |
@@ -110,7 +109,7 @@ Last updated: 2026-04-08
 | inssserver | SteamCMD — PASSED 2026-03-28 |
 | ts3server | Direct download — PASSED 2026-03-28 |
 
-## DISABLED (72)
+## DISABLED (73)
 
 | Test | Reason |
 |------|--------|
@@ -173,6 +172,7 @@ Last updated: 2026-04-08
 | rwserver | SteamCMD app 339010 installs no Linux-compatible dedicated server binary (server.jar not present) |
 | sampserver | Download domain files.sa-mp.com is dead |
 | seserver | SteamCMD app 298740 installs no Linux-compatible dedicated server binary (executable file not found) |
+| sevendaystodie | SteamCMD app 294420 anonymous install repeatedly returns state 0x202; dedicated server payload is not installable in CI |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | ss14server | SS14 CDN returns 404 |

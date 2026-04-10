@@ -9,6 +9,7 @@ RUN apt-get update \
         docker.io \
         git \
         wget \
+ && command -v docker \
  && rm -rf /var/lib/apt/lists/*
 
 RUN wget -q -O /usr/share/keyrings/adoptium.asc \
@@ -35,6 +36,7 @@ RUN chmod +x /usr/local/bin/alphagsm-manager-entrypoint \
 
 ENV PYTHONPATH=/opt/alphagsm/src
 ENV ALPHAGSM_CONFIG_LOCATION=/srv/alphagsm/alphagsm.conf
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 ENTRYPOINT ["/usr/local/bin/alphagsm-manager-entrypoint"]
 CMD ["sleep", "infinity"]

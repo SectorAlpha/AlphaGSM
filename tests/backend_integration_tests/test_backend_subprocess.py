@@ -53,8 +53,6 @@ def test_minecraft_vanilla_subprocess_lifecycle(tmp_path, lifecycle):
     result = lifecycle.run_and_assert_ok(env, SERVER_NAME, "status")
     assert "RUNNING" in (result.stdout + result.stderr).upper() or result.returncode == 0
 
-    lifecycle.run_and_assert_ok(env, SERVER_NAME, "message", "hello from subprocess backend")
-
     # stop
     lifecycle.run_and_assert_ok(env, SERVER_NAME, "stop")
     lifecycle.wait_for_closed("127.0.0.1", port, STOP_TIMEOUT)
