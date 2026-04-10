@@ -17,6 +17,15 @@ It can run directly on the host, or optionally run as a Docker "manager"
 container that launches Docker-backed game-server containers through the host
 daemon.
 
+If you want the Docker-manager route, there is also a root wrapper script:
+
+```bash
+./alphagsm-docker up
+./alphagsm-docker mymc create minecraft.vanilla
+```
+
+See [Run AlphaGSM In Docker](docs/docker-manager.md).
+
 ## What You Need
 
 You need:

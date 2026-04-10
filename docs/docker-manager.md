@@ -39,6 +39,41 @@ daemon must also be able to see that exact path.
 - `docker/manager/Dockerfile`
 - `docker/manager/compose.yml`
 - `docker/manager/alphagsm.conf.example`
+- `alphagsm-docker`
+
+## Quick Start Wrapper
+
+From the repository root you can use the wrapper script instead of typing the
+full Compose command each time:
+
+```bash
+./alphagsm-docker up
+./alphagsm-docker mymc create minecraft.vanilla
+./alphagsm-docker mymc setup -n 25565 "$PWD/.alphagsm-docker/servers/mymc"
+./alphagsm-docker mymc start
+```
+
+The script will:
+
+- create a Docker-manager state directory if it does not exist
+- write `alphagsm.conf` there from the manager example config
+- start `docker/manager/compose.yml` if the manager container is not already running
+- forward any other arguments to `python alphagsm ...` inside the manager container
+
+By default it uses a repo-local state path:
+
+```bash
+$PWD/.alphagsm-docker
+```
+
+Override that with `ALPHAGSM_HOME` if you want a different shared path:
+
+```bash
+ALPHAGSM_HOME=/srv/alphagsm ./alphagsm-docker up
+```
+
+Keep Docker-backed server install paths under that same `ALPHAGSM_HOME` path so
+the host Docker daemon and the manager container see the same absolute path.
 
 ## Host Preparation
 
@@ -75,8 +110,9 @@ docker-compose -f docker/manager/compose.yml up -d --build
 This mounts:
 
 - `/var/run/docker.sock` so AlphaGSM can launch sibling containers
-- `/srv/alphagsm:/srv/alphagsm` so stored server paths are valid both inside the
-  manager container and on the host daemon
+- `${ALPHAGSM_HOME:-/srv/alphagsm}:${ALPHAGSM_HOME:-/srv/alphagsm}` so stored
+  server paths are valid both inside the manager container and on the host
+  daemon
 - `${HOME}/.docker:/root/.docker:ro` so existing Docker registry credentials can
   be reused inside the manager container
 
@@ -127,14 +163,16 @@ docker compose -f docker/manager/compose.yml exec alphagsm \
 Replace `docker compose` with `docker-compose` on hosts that do not have the
 Compose plugin installed.
 
+If you use `./alphagsm-docker`, it will do the same `exec` flow for you.
+
 The game server container will be created by the host Docker daemon, not by a
 nested daemon inside the manager container.
 
 ## Important Rules
 
-1. Keep all Docker-managed server install paths under `/srv/alphagsm` or another
-   host directory mounted into the manager container at the exact same absolute
-   path.
+1. Keep all Docker-managed server install paths under `ALPHAGSM_HOME` or another
+  host directory mounted into the manager container at the exact same absolute
+  path.
 2. Do not use container-only paths like `/tmp/server` for Docker-backed servers.
 3. If you want to pull private GHCR images, log Docker into the registry on the
   manager side so the mounted Docker socket can reuse those credentials. The

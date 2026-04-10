@@ -4,16 +4,16 @@ services:
       context: ../..
       dockerfile: docker/manager/Dockerfile
     image: alphagsm-manager:dev
-    container_name: alphagsm-manager
+    container_name: ${ALPHAGSM_MANAGER_CONTAINER_NAME:-alphagsm-manager}
     working_dir: /opt/alphagsm
     environment:
-      ALPHAGSM_CONFIG_LOCATION: /srv/alphagsm/alphagsm.conf
+      ALPHAGSM_CONFIG_LOCATION: ${ALPHAGSM_HOME:-/srv/alphagsm}/alphagsm.conf
       ALPHAGSM_PULL_RUNTIME_IMAGES: ${ALPHAGSM_PULL_RUNTIME_IMAGES:-1}
       GHCR_TOKEN: ${GHCR_TOKEN:-}
       GHCR_USERNAME: ${GHCR_USERNAME:-}
       PYTHONPATH: /opt/alphagsm/src
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /srv/alphagsm:/srv/alphagsm
+      - ${ALPHAGSM_HOME:-/srv/alphagsm}:${ALPHAGSM_HOME:-/srv/alphagsm}
       - ${HOME}/.docker:/root/.docker:ro
     command: ["sleep", "infinity"]
