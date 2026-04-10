@@ -7,7 +7,7 @@ Last updated: 2026-04-10
 | Status   | Count |
 |----------|-------|
 | PASSED   | 83      |
-| DISABLED | 73      |
+| DISABLED | 74      |
 | SKIPPED  | 78      |
 
 ## Status Key
@@ -21,7 +21,7 @@ Last updated: 2026-04-10
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (84)
+## PASSED (83)
 
 | Test | Type |
 |------|------|
@@ -47,7 +47,6 @@ Last updated: 2026-04-10
 | dodserver | SteamCMD (GoldSrc) |
 | dodsserver | SteamCMD (Source) |
 | doiserver | SteamCMD (Source) |
-| emserver | SteamCMD (Source) |
 | exfilserver | SteamCMD |
 | fofserver | SteamCMD (Source) |
 | frozenflameserver | SteamCMD |
@@ -109,7 +108,7 @@ Last updated: 2026-04-10
 | inssserver | SteamCMD — PASSED 2026-03-28 |
 | ts3server | Direct download — PASSED 2026-03-28 |
 
-## DISABLED (73)
+## DISABLED (74)
 
 | Test | Reason |
 |------|--------|
@@ -146,6 +145,7 @@ Last updated: 2026-04-10
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
+| emserver | SteamCMD app 460040 returns `Missing configuration` (state `0x202`); anonymous install is not usable in CI |
 | ets2server | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |

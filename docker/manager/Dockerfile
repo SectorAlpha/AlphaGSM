@@ -6,10 +6,11 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         bash \
         ca-certificates \
+       docker-cli \
         docker.io \
         git \
         wget \
- && command -v docker \
+ && test -x /usr/bin/docker \
  && rm -rf /var/lib/apt/lists/*
 
 RUN wget -q -O /usr/share/keyrings/adoptium.asc \
