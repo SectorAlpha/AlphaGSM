@@ -32,6 +32,8 @@ jobs:
             dockerfile: docker/steamcmd-linux/Dockerfile
           - family: wine-proton
             dockerfile: docker/wine-proton/Dockerfile
+          - family: docker
+            dockerfile: docker/manager/Dockerfile
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
