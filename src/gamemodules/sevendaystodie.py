@@ -121,6 +121,12 @@ def update(server, validate=False, restart=False):
         server.start()
 
 
+def prestart(server, *args, **kwargs):
+    """Refresh serverconfig.xml from the current datastore before launch."""
+
+    _patch_serverconfig_port(server)
+
+
 def restart(server):
     """Restart the 7 Days to Die server."""
 

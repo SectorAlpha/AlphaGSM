@@ -49,13 +49,16 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-sevendayst-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$("$PYTHON_BIN" - <<'PY'
+pick_free_port() {
+  "$PYTHON_BIN" - <<'PY'
 import socket
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.bind(("127.0.0.1", 0))
     print(sock.getsockname()[1])
 PY
-)" 
+}
+
+PORT="$(pick_free_port)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -80,6 +83,12 @@ echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create sevendaystodie
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+
+# Setup can take several minutes, so refresh the port just before start to
+# avoid another process claiming the original free port during the download.
+PORT="$(pick_free_port)"
+echo "Refreshing port before start: $PORT"
+run_alphagsm "$SERVER_NAME" set port "$PORT"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
