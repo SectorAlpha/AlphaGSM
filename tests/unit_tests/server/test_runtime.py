@@ -8,6 +8,10 @@ import pytest
 import server.runtime as runtime_module
 
 
+JAVA_RUNTIME_IMAGE = runtime_module.default_runtime_image("java")
+STEAMCMD_RUNTIME_IMAGE = runtime_module.default_runtime_image("steamcmd-linux")
+
+
 class FakeSection(dict):
     """Minimal settings section stub for runtime config tests."""
 
@@ -50,7 +54,7 @@ def test_resolve_runtime_metadata_uses_family_defaults_and_java_alias(monkeypatc
 
     assert metadata["runtime"] == "docker"
     assert metadata["runtime_family"] == "java"
-    assert metadata["image"] == "ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04"
+    assert metadata["image"] == JAVA_RUNTIME_IMAGE
     assert metadata["java_major"] == 17
     assert metadata["container_name"] == "alphagsm-alpha"
     assert metadata["network_mode"] == "bridge"
@@ -165,7 +169,7 @@ def test_container_runtime_start_builds_docker_run_command(monkeypatch):
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "container_name": "alphagsm-alpha",
-            "image": "ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04",
+            "image": JAVA_RUNTIME_IMAGE,
             "runtime_family": "java",
             "network_mode": "bridge",
             "working_dir": "/srv/server",
@@ -212,7 +216,7 @@ def test_container_runtime_start_builds_docker_run_command(monkeypatch):
     assert "-e" in cmd and "ALPHAGSM_SERVER_JAR=minecraft_server.jar" in cmd
     assert "-v" in cmd and "/srv/host:/srv/server:rw" in cmd
     assert "-p" in cmd and "25565:25565/tcp" in cmd
-    assert "ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04" in cmd
+    assert JAVA_RUNTIME_IMAGE in cmd
     assert cmd[-3:] == ["sh", "-lc", "exec java -jar \"$ALPHAGSM_SERVER_JAR\" nogui"]
 
 
@@ -221,7 +225,7 @@ def test_container_runtime_builds_default_family_image_when_missing(monkeypatch)
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "container_name": "alphagsm-alpha",
-            "image": "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04",
+            "image": STEAMCMD_RUNTIME_IMAGE,
             "runtime_family": "steamcmd-linux",
             "working_dir": "/srv/server",
             "stdin_open": True,
@@ -250,7 +254,7 @@ def test_container_runtime_builds_default_family_image_when_missing(monkeypatch)
     assert observed[0][:3] == ["docker", "image", "inspect"]
     assert observed[1][:2] == ["docker", "build"]
     assert observed[1][observed[1].index("-t") + 1] == (
-        "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04"
+        STEAMCMD_RUNTIME_IMAGE
     )
     assert observed[1][-1] == runtime_module.REPO_ROOT
     assert observed[-1][:3] == ["docker", "run", "-d"]
@@ -296,7 +300,7 @@ def test_container_runtime_removes_stale_stopped_container_before_start(monkeypa
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "container_name": "alphagsm-alpha",
-            "image": "ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04",
+            "image": JAVA_RUNTIME_IMAGE,
             "runtime_family": "java",
             "working_dir": "/srv/server",
             "stdin_open": False,
@@ -332,7 +336,7 @@ def test_container_runtime_start_rejects_running_same_name_container(monkeypatch
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "container_name": "alphagsm-alpha",
-            "image": "ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04",
+            "image": JAVA_RUNTIME_IMAGE,
             "runtime_family": "java",
             "working_dir": "/srv/server",
             "stdin_open": False,
@@ -365,7 +369,7 @@ def test_container_runtime_rejects_manager_container_only_mount_paths(monkeypatc
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "container_name": "alphagsm-alpha",
-            "image": "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04",
+            "image": STEAMCMD_RUNTIME_IMAGE,
             "runtime_family": "steamcmd-linux",
             "working_dir": "/srv/server",
             "stdin_open": True,
@@ -398,7 +402,7 @@ def test_container_runtime_allows_mount_paths_under_manager_identity_root(monkey
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "container_name": "alphagsm-alpha",
-            "image": "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04",
+            "image": STEAMCMD_RUNTIME_IMAGE,
             "runtime_family": "steamcmd-linux",
             "working_dir": "/srv/server",
             "stdin_open": False,
@@ -562,7 +566,7 @@ def test_sync_runtime_metadata_removes_stale_docker_fields_when_process_runtime_
             super().__init__(
                 runtime="docker",
                 runtime_family="minecraft",
-                image="ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04",
+                image=JAVA_RUNTIME_IMAGE,
                 java_major=21,
                 container_name="alphagsm-alpha",
             )
@@ -601,7 +605,7 @@ def test_resolve_runtime_metadata_normalizes_legacy_family_aliases(monkeypatch):
     metadata = runtime_module.resolve_runtime_metadata(server)
 
     assert metadata["runtime_family"] == "java"
-    assert metadata["image"] == "ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04"
+    assert metadata["image"] == JAVA_RUNTIME_IMAGE
 
 
 def test_ensure_runtime_hooks_adds_defaults_for_plain_module(monkeypatch):
@@ -626,7 +630,7 @@ def test_ensure_runtime_hooks_adds_defaults_for_plain_module(monkeypatch):
     assert callable(module.get_container_spec)
     assert metadata["runtime"] == "docker"
     assert metadata["runtime_family"] == "steamcmd-linux"
-    assert metadata["image"] == "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04"
+    assert metadata["image"] == STEAMCMD_RUNTIME_IMAGE
     assert spec["working_dir"] == "/srv/server"
     assert spec["mounts"] == [
         {"source": "/srv/plain", "target": "/srv/server", "mode": "rw"}

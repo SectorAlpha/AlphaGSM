@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+import server.runtime as runtime_module
+
 
 @dataclass(frozen=True)
 class DockerBackendFamilyCase:
@@ -76,7 +78,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players",
         info_protocol="quake",
         notes="Blocked in CI today by source-build toolchain requirements.",
-        default_image="ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("quake-linux"),
     ),
     DockerBackendFamilyCase(
         slug="quake-linux-qlserver",
@@ -90,7 +92,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players",
         info_protocol="quake",
         notes="Blocked in CI today because the server exits immediately without extra auth/config.",
-        default_image="ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("quake-linux"),
     ),
     DockerBackendFamilyCase(
         slug="quake-linux-etlegacyserver",
@@ -104,7 +106,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players",
         info_protocol="quake",
         notes="Blocked in CI today because original game data files are required.",
-        default_image="ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("quake-linux"),
     ),
     DockerBackendFamilyCase(
         slug="service-console-ts3-default",
@@ -118,7 +120,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Clients  :",
         info_protocol="ts3",
         notes="Family currently has one concrete module, so coverage expands via explicit TS3 variants.",
-        default_image="ghcr.io/sectoralpha/alphagsm-service-console-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("service-console"),
     ),
     DockerBackendFamilyCase(
         slug="service-console-ts3-detailed",
@@ -132,7 +134,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Clients  :",
         info_protocol="ts3",
         notes="Covers the same module with the detailed-info/query path once the family image is proven.",
-        default_image="ghcr.io/sectoralpha/alphagsm-service-console-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("service-console"),
     ),
     DockerBackendFamilyCase(
         slug="service-console-ts3-alt-ports",
@@ -146,7 +148,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Clients  :",
         info_protocol="ts3",
         notes="Tracks alternate ServerQuery/file-transfer port wiring in Docker.",
-        default_image="ghcr.io/sectoralpha/alphagsm-service-console-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("service-console"),
     ),
     DockerBackendFamilyCase(
         slug="simple-tcp-mumble-default",
@@ -160,7 +162,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Server port is open",
         info_protocol="tcp",
         notes="Family currently has one concrete module and still depends on the runtime image replacing host package installs.",
-        default_image="ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("simple-tcp"),
     ),
     DockerBackendFamilyCase(
         slug="simple-tcp-mumble-auth",
@@ -174,7 +176,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Server port is open",
         info_protocol="tcp",
         notes="Reserved for explicit config-backed Mumble lifecycle validation.",
-        default_image="ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("simple-tcp"),
     ),
     DockerBackendFamilyCase(
         slug="simple-tcp-mumble-alt-port",
@@ -188,7 +190,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Server port is open",
         info_protocol="tcp",
         notes="Reserved for alternate-port Mumble validation once the family image is active.",
-        default_image="ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("simple-tcp"),
     ),
     DockerBackendFamilyCase(
         slug="steamcmd-linux-hldmsserver",
@@ -202,7 +204,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players     : 0/",
         info_protocol="a2s",
         notes="GoldSrc lifecycle candidate with active non-Docker integration coverage.",
-        default_image="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("steamcmd-linux"),
     ),
     DockerBackendFamilyCase(
         slug="steamcmd-linux-cssserver",
@@ -216,7 +218,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players     : 0/",
         info_protocol="a2s",
         notes="Source-engine lifecycle candidate with active non-Docker integration coverage.",
-        default_image="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("steamcmd-linux"),
     ),
     DockerBackendFamilyCase(
         slug="steamcmd-linux-teamfortress2",
@@ -230,7 +232,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players     : 0/",
         info_protocol="a2s",
         notes="Largest active Source candidate; useful once the family image and hibernation handling are proven.",
-        default_image="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("steamcmd-linux"),
     ),
     DockerBackendFamilyCase(
         slug="wine-proton-askaserver",
@@ -244,7 +246,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players",
         info_protocol="a2s",
         notes="First Windows-on-Linux runtime candidate once the Proton image is CI-ready.",
-        default_image="ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("wine-proton"),
     ),
     DockerBackendFamilyCase(
         slug="wine-proton-empyrionserver",
@@ -258,7 +260,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players",
         info_protocol="a2s",
         notes="Windows dedicated server candidate with existing integration coverage.",
-        default_image="ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("wine-proton"),
     ),
     DockerBackendFamilyCase(
         slug="wine-proton-reignofkingsserver",
@@ -272,7 +274,7 @@ DOCKER_BACKEND_FAMILY_CASES = (
         info_marker="Players",
         info_protocol="a2s",
         notes="Third representative Proton-backed module for future CI enablement.",
-        default_image="ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:2026-04",
+        default_image=runtime_module.default_runtime_image("wine-proton"),
     ),
 )
 

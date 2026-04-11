@@ -8,6 +8,14 @@ STEAMCMD_LINUX_DOCKERFILE = Path("docker/steamcmd-linux/Dockerfile")
 WINE_PROTON_DOCKERFILE = Path("docker/wine-proton/Dockerfile")
 WINE_PROTON_ENTRYPOINT = Path("docker/wine-proton/entrypoint.sh")
 BUILD_WORKFLOW = Path(".github/workflows/build-runtime-family-images.yml")
+IMAGE_VERSION_FILE = Path("docker/image-version.txt")
+
+
+def test_runtime_image_version_file_uses_dated_release_format():
+    text = IMAGE_VERSION_FILE.read_text(encoding="utf-8").strip()
+
+    assert text.startswith("2026-")
+    assert "-v" in text
 
 
 def test_java_runtime_image_keeps_bootstrap_tools_and_supported_temurin_jres():

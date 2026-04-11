@@ -5,8 +5,8 @@ on:
     inputs:
       version:
         description: Runtime image version tag
-        required: true
-        default: "2026-04"
+        required: false
+        default: ""
 
 jobs:
   build-runtime-images:
@@ -40,6 +40,9 @@ jobs:
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           repo="ghcr.io/${owner}/alphagsm-${{ matrix.family }}-runtime"
           version="${{ github.event.inputs.version }}"
+          if [ -z "$version" ]; then
+            version=$(tr -d '[:space:]' < docker/image-version.txt)
+          fi
           echo "image=${repo}:${version}" >> "$GITHUB_OUTPUT"
           echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
           echo "Building ${repo}:${version} and ${repo}:latest"

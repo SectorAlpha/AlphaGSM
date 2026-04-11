@@ -21,6 +21,33 @@ from utils.settings import settings
 from utils import proton
 
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DEFAULT_IMAGE_REGISTRY = "ghcr.io/sectoralpha"
+DEFAULT_IMAGE_RELEASE_FILE = os.path.join(REPO_ROOT, "docker", "image-version.txt")
+DEFAULT_IMAGE_RELEASE_FALLBACK = "2026-04-11-v1"
+
+
+def _read_default_image_release():
+    """Return the shared runtime image release tag from the repository."""
+
+    try:
+        with open(DEFAULT_IMAGE_RELEASE_FILE, "r", encoding="utf-8") as handle:
+            value = handle.read().strip()
+    except OSError:
+        value = ""
+    return value or DEFAULT_IMAGE_RELEASE_FALLBACK
+
+
+DEFAULT_IMAGE_RELEASE = _read_default_image_release()
+
+
+def default_runtime_image(family):
+    """Return the default GHCR image reference for a runtime family."""
+
+    family = str(family).strip().lower()
+    return f"{DEFAULT_IMAGE_REGISTRY}/alphagsm-{family}-runtime:{DEFAULT_IMAGE_RELEASE}"
+
+
 class RuntimeError(Exception):
     """Raised when runtime selection or control fails."""
 
@@ -47,7 +74,7 @@ RUNTIME_FAMILY_DEFAULTS = {
     "java": {
         "runtime": "docker",
         "runtime_family": "java",
-        "image": "ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04",
+        "image": default_runtime_image("java"),
         "network_mode": "bridge",
         "stop_mode": "exec-console",
         "java_major": 17,
@@ -58,7 +85,7 @@ RUNTIME_FAMILY_DEFAULTS = {
     "quake-linux": {
         "runtime": "docker",
         "runtime_family": "quake-linux",
-        "image": "ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:2026-04",
+        "image": default_runtime_image("quake-linux"),
         "network_mode": "bridge",
         "stop_mode": "exec-console",
         "env": {},
@@ -68,7 +95,7 @@ RUNTIME_FAMILY_DEFAULTS = {
     "service-console": {
         "runtime": "docker",
         "runtime_family": "service-console",
-        "image": "ghcr.io/sectoralpha/alphagsm-service-console-runtime:2026-04",
+        "image": default_runtime_image("service-console"),
         "network_mode": "bridge",
         "stop_mode": "exec-console",
         "env": {},
@@ -78,7 +105,7 @@ RUNTIME_FAMILY_DEFAULTS = {
     "simple-tcp": {
         "runtime": "docker",
         "runtime_family": "simple-tcp",
-        "image": "ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:2026-04",
+        "image": default_runtime_image("simple-tcp"),
         "network_mode": "bridge",
         "stop_mode": "docker-stop",
         "env": {},
@@ -88,7 +115,7 @@ RUNTIME_FAMILY_DEFAULTS = {
     "steamcmd-linux": {
         "runtime": "docker",
         "runtime_family": "steamcmd-linux",
-        "image": "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04",
+        "image": default_runtime_image("steamcmd-linux"),
         "network_mode": "bridge",
         "stop_mode": "exec-console",
         "env": {},
@@ -98,7 +125,7 @@ RUNTIME_FAMILY_DEFAULTS = {
     "wine-proton": {
         "runtime": "docker",
         "runtime_family": "wine-proton",
-        "image": "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:2026-04",
+        "image": default_runtime_image("wine-proton"),
         "network_mode": "bridge",
         "stop_mode": "docker-stop",
         "env": {},
@@ -110,7 +137,6 @@ RUNTIME_FAMILY_DEFAULTS = {
 VALID_RUNTIME_BACKENDS = ("process", "docker")
 VALID_STOP_MODES = ("docker-stop", "exec-console")
 DEFAULT_CONTAINER_WORKDIR = "/srv/server"
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RUNTIME_FAMILY_DOCKERFILES = {
     "java": os.path.join("docker", "java", "Dockerfile"),
     "quake-linux": os.path.join("docker", "quake-linux", "Dockerfile"),

@@ -61,7 +61,7 @@ The script will:
 
 - create a Docker-manager state directory if it does not exist
 - write `alphagsm.conf` there from the manager example config
-- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm-manager:latest` and falls back to a local build if that pull fails
+- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm-manager:<image-version>` using the shared tag from `docker/image-version.txt` and falls back to a local build if that pull fails
 - support `./alphagsm-docker up --develop` or `./alphagsm-docker start --develop`, which switches the state dir into developer mode and always rebuilds the manager image locally
 - reuse the existing running manager container for forwarded AlphaGSM commands instead of rebuilding on every exec
 - recreate a stopped manager container from the active mode without forcing the other mode's image path
