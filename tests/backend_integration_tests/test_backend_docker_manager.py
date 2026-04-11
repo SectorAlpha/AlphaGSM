@@ -12,7 +12,7 @@ pytestmark = pytest.mark.backend_integration
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MANAGER_DOCKERFILE = REPO_ROOT / "docker" / "manager" / "Dockerfile"
-MANAGER_IMAGE = os.environ.get("ALPHAGSM_MANAGER_TEST_IMAGE", "alphagsm-manager:test")
+MANAGER_IMAGE = os.environ.get("ALPHAGSM_MANAGER_TEST_IMAGE", "alphagsm:test")
 SERVER_IMAGE = os.environ.get("ALPHAGSM_MANAGER_SERVER_IMAGE", "eclipse-temurin:25-jre")
 SERVER_NAME = "bkmgr-vanilla"
 START_TIMEOUT = 180
