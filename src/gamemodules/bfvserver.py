@@ -8,6 +8,8 @@ from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
 BFV_SERVER_URL = "https://files.gamefront.com/bfvlindedv11200407261438run/;3957406;/fileinfo.html"
 BFV_SERVER_NAME = "bfvlindedv1.120040726.1438.run"
 
@@ -139,3 +141,19 @@ def checkvalue(server, key, *value):
     if key[0] in ("url", "download_name", "exe_name", "dir", "startmap", "hostname"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

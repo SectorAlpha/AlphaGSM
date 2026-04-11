@@ -11,6 +11,8 @@ from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 from utils.platform_info import IS_LINUX
 
+import server.runtime as runtime_module
+
 steam_app_id = 1420710
 steam_anonymous_login_possible = True
 
@@ -159,3 +161,16 @@ def checkvalue(server, key, *value):
     if key[0] in ("exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return proton.get_runtime_requirements(
+        server,
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return proton.get_container_spec(
+        server,
+        get_start_command,
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )

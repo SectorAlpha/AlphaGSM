@@ -9,7 +9,7 @@ AlphaGSM is a Python CLI that normalises game-server lifecycle management across
 - one shared command surface
 - one persistent per-server datastore
 - per-game module implementations for lifecycle details
-- GNU screen as the long-running process container
+- a runtime layer that can launch either local screen-backed processes or Docker containers
 - dedicated test layers for unit, integration, and streamed smoke coverage
 
 At runtime, the user-facing call path is:
@@ -20,7 +20,8 @@ At runtime, the user-facing call path is:
 4. [src/server/server.py](src/server/server.py) `Server(...)`
 5. merge of default commands with module-defined commands
 6. dispatch into default server behaviour or module-specific functions
-7. process startup through [src/screen/screen.py](src/screen/screen.py)
+7. runtime resolution through [src/server/runtime.py](src/server/runtime.py)
+8. process startup through [src/screen](src/screen) or container startup through Docker
 
 ## Repository Layout
 
@@ -33,7 +34,7 @@ At runtime, the user-facing call path is:
 - [core](core)
   CLI dispatch, command routing, subprocess orchestration, multiplexer logic.
 - [server](server)
-  `Server` abstraction, datastore integration, default command set, module loading.
+  `Server` abstraction, datastore integration, default command set, runtime selection, module loading.
 - [gamemodules](gamemodules)
   Game-specific implementations.
 - [downloader](downloader)
@@ -109,6 +110,8 @@ The skill-level checklist lives in
 | `message` | `(server, message, *args, **kwargs)` | `message` |
 | `backup` | `(server, *args, **kwargs)` | `backup` |
 | `checkvalue` | `(server, key, *values, **kwargs)` | `set` |
+| `get_runtime_requirements` | `(server)` | runtime metadata for Docker-capable modules |
+| `get_container_spec` | `(server)` | Docker launch spec |
 
 ### Optional module functions
 
@@ -129,6 +132,16 @@ The skill-level checklist lives in
 - `configure(...)` stores at minimum `port` and `dir` in `server.data`, initialises the backup data structure, and returns `(args, kwargs)` to forward to `install`
 - `install(...)` ensures the server filesystem is in a runnable state and calls `server.data.save()`
 - `get_start_command(...)` returns `(argv_list, working_dir)`
+- every maintained game module must define `import server.runtime as runtime_module` when it uses shared Docker builders, plus explicit module-scope `get_runtime_requirements(...)` and `get_container_spec(...)` wrappers
+- choose the runtime family first, then call `server.runtime` builders or `utils.proton` helpers inside those wrappers; do not rely on runtime inference to add the hooks for you
+- Windows-binary modules that already use `utils.proton.wrap_command(...)` should normally build Docker metadata through `utils.proton.get_runtime_requirements(...)` and `utils.proton.get_container_spec(...)` so process and container modes stay aligned
+- `set` now preflights any claim-affecting datastore change before persistence, including top-level `port` / `*port` keys, hosted-IP keys (`bindaddress`, `publicip`, `externalip`, `hostip`), and nested runtime `ports` edits
+- `setup(...)` now resolves port ownership before `install(...)`; it may auto-shift the whole claimed port group only for default-owned claims, and must preserve earlier explicit user intent across later setup runs
+- `start(...)` now performs a strict port-manager preflight before `prestart(...)` and runtime launch
+
+Static enforcement lives in `tests/unit_tests/test_runtime_contract_static.py`, which imports every game module and verifies the Docker runtime hooks are present in module scope.
+- Backend runtime coverage is tracked separately in `tests/backend_integration_tests/docker_family_matrix.py`. Keep three declared representative cases per runtime family, and keep the active cases green in CI through `tests/backend_integration_tests/test_backend_docker.py`.
+- Cheap backend lifecycle coverage for the shared port-manager path lives in `tests/backend_integration_tests/test_backend_port_manager.py`; keep it green in CI because it proves the cross-runtime `create -> setup -> start -> query -> info -> stop` contract without heavyweight game downloads.
 - `checkvalue(...)` delegates `"backup"` key paths to `backup_utils.checkdatavalue`
 - `get_info_address(...)` prevents `Server.info()` from falling back to the TCP ping last resort
 
@@ -152,14 +165,32 @@ Primary files:
 Typical persisted keys include:
 
 - `module`
+- `runtime`
+- `runtime_family`
 - `dir`
 - `port`
 - `exe_name`
 - `url`
 - `version`
 - `javapath`
+- `image`
+- `java_major`
+- `container_name`
+- `mounts`
+- `env`
+- `ports`
+- `port_claim_policy`
+- `network_mode`
+- `stop_mode`
 - `backup`
 - Steam app metadata for Steam-backed servers
+
+Port ownership is derived from:
+
+- top-level `port` and `*port` keys
+- hosted-IP keys such as `bindaddress`, `publicip`, `externalip`, and `hostip`
+- runtime/container `ports` metadata
+- local query/info hooks when they imply an additional claimed local port
 
 ## Download And Install Pipeline
 
@@ -176,21 +207,44 @@ Known exception:
 
 - [src/downloadermodules/steamcmd.py](src/downloadermodules/steamcmd.py) is currently legacy parser-broken code and remains outside the maintained lint/doc verification surface
 
-## Screen Lifecycle
+## Runtime Lifecycle
 
-AlphaGSM uses GNU screen as the process supervisor for long-running game servers.
+AlphaGSM resolves a runtime per server:
+
+- `process` by default for the traditional local flow
+- `docker` only when `[runtime] backend = docker` is configured and the module exposes explicit runtime hooks
+
+Within `process`, the concrete launcher is selected independently by `[process] backend`:
+
+- `screen`
+- `tmux`
+- `subprocess`
 
 Core helpers:
 
-- [src/screen/screen.py](src/screen/screen.py)
+- [src/server/runtime.py](src/server/runtime.py)
+- [src/screen](src/screen)
 - [src/screen/tail.py](src/screen/tail.py)
+- [src/utils/proton.py](src/utils/proton.py)
+
+Container image scaffolding currently lives under:
+
+- [docker/README.md](docker/README.md)
+- [docker/java/Dockerfile](docker/java/Dockerfile)
+- [docker/quake-linux/Dockerfile](docker/quake-linux/Dockerfile)
+- [docker/simple-tcp/Dockerfile](docker/simple-tcp/Dockerfile)
+- [docker/steamcmd-linux/Dockerfile](docker/steamcmd-linux/Dockerfile)
+- [docker/service-console/Dockerfile](docker/service-console/Dockerfile)
+- [docker/wine-proton/Dockerfile](docker/wine-proton/Dockerfile)
+- [docker/wine-proton/entrypoint.sh](docker/wine-proton/entrypoint.sh)
 Lifecycle model:
  [tests/integration_tests](tests/integration_tests)
  ALPHAGSM_RUN_INTEGRATION=1 pytest tests/integration_tests
 1. build command line
-2. write `screenrc` if needed
-3. start detached session
-4. inject console commands with `screen ... stuff`
+2. resolve runtime metadata from the datastore and module hooks
+3. for `process`, write `screenrc` if needed and start a detached session
+4. for `docker`, assemble `docker run` args from the container spec
+5. inject console commands through the selected runtime
 
  [tests/smoke_tests](tests/smoke_tests)
  bash ./tests/smoke_tests/run_minecraft_vanilla.sh

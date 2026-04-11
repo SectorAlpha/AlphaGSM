@@ -150,6 +150,8 @@ def test_write_config_keeps_downloads_inside_test_home_by_default(monkeypatch, t
     text = config_path.read_text(encoding="utf-8")
     assert f"db_path = {home_dir / 'downloads' / 'downloads.txt'}" in text
     assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
+    assert "[runtime]" in text
+    assert "backend = process" in text
 
 
 def test_write_config_can_use_shared_download_cache_when_opted_in(monkeypatch, tmp_path):
@@ -167,3 +169,55 @@ def test_write_config_can_use_shared_download_cache_when_opted_in(monkeypatch, t
     text = config_path.read_text(encoding="utf-8")
     assert f"db_path = {shared_root / 'downloads' / 'downloads.txt'}" in text
     assert f"target_path = {shared_root / 'downloads' / 'downloads'}" in text
+    assert "[runtime]" in text
+    assert "backend = process" in text
+
+
+def test_skip_for_known_steamcmd_issue_skips_only_for_missing_configuration_0x202():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout=(
+            "ERROR! Failed to install app '317670' (Missing configuration)\n"
+            "Error! App '317670' state is 0x202 after update job."
+        ),
+        stderr="",
+    )
+
+    with pytest.raises(pytest.skip.Exception, match="SteamCMD flake skip"):
+        helpers.skip_for_known_steamcmd_issue(result, app_id=317670)
+
+
+def test_skip_for_known_steamcmd_issue_does_not_skip_other_steamcmd_failures():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout="Error! Timed out waiting for download chunks.",
+        stderr="",
+    )
+
+    helpers.skip_for_known_steamcmd_issue(result, app_id=317670)
+
+
+def test_skip_for_known_steamcmd_issue_does_not_skip_when_app_id_does_not_match():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout=(
+            "ERROR! Failed to install app '317670' (Missing configuration)\n"
+            "Error! App '317670' state is 0x202 after update job."
+        ),
+        stderr="",
+    )
+
+    helpers.skip_for_known_steamcmd_issue(result, app_id=222860)
+
+
+def test_skip_for_known_steamcmd_issue_does_not_skip_without_app_id():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout=(
+            "ERROR! Failed to install app '317670' (Missing configuration)\n"
+            "Error! App '317670' state is 0x202 after update job."
+        ),
+        stderr="",
+    )
+
+    helpers.skip_for_known_steamcmd_issue(result)

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import gamemodules.counterstrikeglobaloffensive as csgo
+import gamemodules.counterstrike2 as cs2
 import gamemodules.teamfortress2 as tf2
 
 
@@ -171,6 +172,37 @@ def test_csgo_get_start_command_prefixes_executable_and_uses_steamcmd(tmp_path, 
     assert cwd == server.data["dir"]
 
 
+def test_csgo_get_start_command_disables_bundled_libgcc(tmp_path, monkeypatch):
+    server = DummyServer("red")
+    exe_path = tmp_path / "srcds_run"
+    exe_path.write_text("")
+    libgcc_path = tmp_path / "bin" / "libgcc_s.so.1"
+    libgcc_path.parent.mkdir(parents=True)
+    libgcc_path.write_text("stale-libgcc")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "srcds_run",
+            "port": 27016,
+            "maxplayers": "16",
+            "gametype": "0",
+            "gamemode": "1",
+            "mapgroup": "mg_active",
+            "startmap": "de_dust2",
+        }
+    )
+
+    monkeypatch.setattr(csgo.steamcmd, "get_autoupdate_script", lambda name, path, app_id: "/tmp/update.txt")
+    monkeypatch.setattr(csgo.steamcmd, "STEAMCMD_DIR", "/tmp/steamcmd")
+
+    command, cwd = csgo.get_start_command(server)
+
+    assert command[0] == "./srcds_run"
+    assert cwd == server.data["dir"]
+    assert not libgcc_path.exists()
+    assert (tmp_path / "bin" / "libgcc_s.so.1.alphagsm-disabled").exists()
+
+
 def test_steam_game_restart_calls_stop_then_start():
     server = DummyServer()
 
@@ -218,3 +250,91 @@ def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):
 
     assert (sdk_dir / "steamclient.so").is_symlink()
     assert (sdk_dir / "steamclient.so").resolve() == steamclient_src
+
+
+def test_tf2_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
+    server = DummyServer("blue")
+    launcher = tmp_path / "srcds_run"
+    launcher.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "srcds_run",
+            "port": 27015,
+            "maxplayers": "24",
+            "startmap": "cp_dustbowl",
+        }
+    )
+
+    requirements = tf2.get_runtime_requirements(server)
+    spec = tf2.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27015, "container": 27015, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./srcds_run"
+
+
+def test_csgo_runtime_wrappers_use_steamcmd_linux_family(tmp_path, monkeypatch):
+    server = DummyServer("red")
+    launcher = tmp_path / "srcds_run"
+    launcher.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "srcds_run",
+            "port": 27016,
+            "maxplayers": "16",
+            "gametype": "0",
+            "gamemode": "1",
+            "mapgroup": "mg_active",
+            "startmap": "de_dust2",
+        }
+    )
+
+    monkeypatch.setattr(csgo.steamcmd, "get_autoupdate_script", lambda name, path, app_id: "/tmp/update.txt")
+    monkeypatch.setattr(csgo.steamcmd, "STEAMCMD_DIR", "/tmp/steamcmd")
+
+    requirements = csgo.get_runtime_requirements(server)
+    spec = csgo.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 27016, "container": 27016, "protocol": "udp"},
+        {"host": 27016, "container": 27016, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./srcds_run"
+
+
+def test_cs2_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
+    server = DummyServer("cs2")
+    launcher = tmp_path / "game" / "cs2.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "game/cs2.sh",
+            "port": 27015,
+            "maxplayers": "24",
+            "startmap": "de_dust2",
+        }
+    )
+
+    requirements = cs2.get_runtime_requirements(server)
+    spec = cs2.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27015, "container": 27015, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./game/cs2.sh"

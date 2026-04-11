@@ -1,0 +1,70 @@
+name: Build Runtime Family Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Runtime image version tag
+        required: false
+        default: ""
+
+jobs:
+  build-runtime-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - family: java
+            dockerfile: docker/java/Dockerfile
+          - family: quake-linux
+            dockerfile: docker/quake-linux/Dockerfile
+          - family: service-console
+            dockerfile: docker/service-console/Dockerfile
+          - family: simple-tcp
+            dockerfile: docker/simple-tcp/Dockerfile
+          - family: steamcmd-linux
+            dockerfile: docker/steamcmd-linux/Dockerfile
+          - family: wine-proton
+            dockerfile: docker/wine-proton/Dockerfile
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute image tags
+        id: meta
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-${{ matrix.family }}-runtime"
+          version="${{ github.event.inputs.version }}"
+          if [ -z "$version" ]; then
+            version=$(tr -d '[:space:]' < docker/image-version.txt)
+          fi
+          echo "image=${repo}:${version}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+          echo "Building ${repo}:${version} and ${repo}:latest"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push runtime family image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          secrets: |
+            gh_token=${{ secrets.GITHUB_TOKEN }}
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}

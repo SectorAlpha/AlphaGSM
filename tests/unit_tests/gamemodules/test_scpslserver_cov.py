@@ -61,6 +61,27 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
     mod.configure(server, ask=True)
 
 
+def test_configure_defaults_to_shared_servers_path_in_manager_mode(monkeypatch):
+    server = DummyServer("scp")
+
+    monkeypatch.setattr(mod.runtime_module, "suggest_install_dir", lambda current_server, current_dir=None: "/shared/servers/" + current_server.name)
+
+    mod.configure(server, ask=False)
+
+    assert server.data["dir"] == "/shared/servers/scp/"
+
+
+def test_configure_replaces_stale_invalid_manager_path(monkeypatch):
+    server = DummyServer("scp")
+    server.data["dir"] = "/root/scp/"
+
+    monkeypatch.setattr(mod.runtime_module, "suggest_install_dir", lambda current_server, current_dir=None: "/shared/servers/" + current_server.name)
+
+    mod.configure(server, ask=False)
+
+    assert server.data["dir"] == "/shared/servers/scp/"
+
+
 def test_configure_ask_custom(tmp_path, monkeypatch):
     inputs = iter(["7778", str(tmp_path / 'custom')])
     monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
@@ -146,6 +167,28 @@ def test_get_start_command(tmp_path):
     assert "query_administrator_password: alphagsmquery" in gameplay
 
 
+def test_get_container_spec_uses_container_local_home_paths(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "LocalAdmin"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+    server.data["contactemail"] = "ops@example.com"
+    (tmp_path / "LocalAdmin").write_text("")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["env"] == {
+        "HOME": "/srv/server/home",
+        "XDG_CONFIG_HOME": "/srv/server/home/.config",
+    }
+    assert spec["command"] == ["./LocalAdmin", "27015"]
+    gameplay = (tmp_path / "home/.config/SCP Secret Laboratory/config/27015/config_gameplay.txt").read_text()
+    assert "enable_query: true" in gameplay
+    assert "contact_email: ops@example.com" in gameplay
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -159,13 +202,17 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_get_query_address():
     server = DummyServer()
     server.data["queryport"] = 7778
-    assert mod.get_query_address(server) == ("127.0.0.1", 7778, "tcp")
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="172.18.0.15") as resolver:
+        assert mod.get_query_address(server) == ("172.18.0.15", 7778, "tcp")
+    resolver.assert_called_once_with(server)
 
 
 def test_get_info_address():
     server = DummyServer()
     server.data["queryport"] = 7778
-    assert mod.get_info_address(server) == ("127.0.0.1", 7778, "tcp")
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="172.18.0.15") as resolver:
+        assert mod.get_info_address(server) == ("172.18.0.15", 7778, "tcp")
+    resolver.assert_called_once_with(server)
 
 
 def test_do_stop():

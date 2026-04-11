@@ -9,6 +9,8 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
 steam_app_id = 1874900
 steam_anonymous_login_possible = True
 DEFAULT_SCENARIO_ID = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
@@ -139,16 +141,11 @@ def restart(server):
     server.start()
 
 
-def get_start_command(server):
-    """Build the command used to launch an Arma Reforger dedicated server."""
+def _build_start_command(server):
+    """Build the Arma Reforger start command without install-state checks."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     config_path = os.path.join(server.data["dir"], server.data["configfile"])
     profile_path = os.path.join(server.data["dir"], server.data["profilesdir"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
-    if not os.path.isfile(config_path):
-        raise ServerError("Config file not found")
     return (
         [
             "./" + server.data["exe_name"],
@@ -165,10 +162,62 @@ def get_start_command(server):
     )
 
 
+def get_start_command(server):
+    """Build the command used to launch an Arma Reforger dedicated server."""
+
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    config_path = os.path.join(server.data["dir"], server.data["configfile"])
+    if not os.path.isfile(exe_path):
+        raise ServerError("Executable file not found")
+    if not os.path.isfile(config_path):
+        raise ServerError("Config file not found")
+    return _build_start_command(server)
+
+
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for Arma Reforger."""
+
+    requirements = {
+        "engine": "docker",
+        "family": "steamcmd-linux",
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    ports = []
+    for key in ("port", "queryport"):
+        if key in server.data and server.data[key] is not None:
+            ports.append(
+                {
+                    "host": int(server.data[key]),
+                    "container": int(server.data[key]),
+                    "protocol": "udp",
+                }
+            )
+    if ports:
+        requirements["ports"] = ports
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Arma Reforger."""
+
+    cmd, _cwd = _build_start_command(server)
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": cmd,
+    }
+
+
 def get_query_address(server):
     """Return the A2S query address used by Arma Reforger."""
 
-    return ("127.0.0.1", int(server.data.get("queryport", int(server.data["port"]) + 1)), "a2s")
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", int(server.data["port"]) + 1)), "a2s")
 
 
 def get_info_address(server):

@@ -39,7 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
-    assert server.data['queryport'] == 7777
+    assert 'queryport' not in server.data
     assert server.data['worldname'] == 'World'
 
 

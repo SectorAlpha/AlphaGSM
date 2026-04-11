@@ -1,8 +1,4 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for ut99server is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+#!/usr/bin/env bash
 
 set -Eeuo pipefail
 set -x
@@ -45,6 +41,7 @@ trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
 require_cmd screen
+require_cmd 7z
 
 WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
@@ -56,11 +53,11 @@ mkdir -p "$HOME_DIR"
 
 PORT="$("$PYTHON_BIN" - <<'PY'
 import socket
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
     sock.bind(("127.0.0.1", 0))
     print(sock.getsockname()[1])
 PY
-)" 
+)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -84,12 +81,27 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create ut99server
-run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+
+if [[ ! -e "$INSTALL_DIR/System64/ucc-bin" ]] \
+  && [[ ! -e "$INSTALL_DIR/System64/ucc-bin-amd64" ]] \
+  && [[ ! -e "$INSTALL_DIR/System/ucc-bin" ]]; then
+  echo "Expected UT99 launcher not found in $INSTALL_DIR" >&2
+  exit 1
+fi
+
+if [[ ! -f "$INSTALL_DIR/System64/UnrealTournament.ini" ]] \
+  && [[ ! -f "$INSTALL_DIR/System/UnrealTournament.ini" ]]; then
+  echo "Expected UT99 config file not found in $INSTALL_DIR" >&2
+  exit 1
+fi
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Unreal engine initialized|UdpServerQuery'
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

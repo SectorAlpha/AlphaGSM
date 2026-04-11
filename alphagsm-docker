@@ -1,0 +1,346 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_FILE="$SCRIPT_DIR/docker/manager/compose.yml"
+IMAGE_VERSION_FILE="$SCRIPT_DIR/docker/image-version.txt"
+STATE_DIR="${ALPHAGSM_HOME:-$SCRIPT_DIR/.alphagsm-docker}"
+STATE_DIR="$(mkdir -p "$STATE_DIR" && cd "$STATE_DIR" && pwd)"
+CONFIG_PATH="$STATE_DIR/alphagsm.conf"
+EXAMPLE_CONFIG="$SCRIPT_DIR/docker/manager/alphagsm.conf.example"
+PULL_RUNTIME_IMAGES="${ALPHAGSM_PULL_RUNTIME_IMAGES:-0}"
+MANAGER_CONTAINER_NAME="${ALPHAGSM_MANAGER_CONTAINER_NAME:-alphagsm-manager}"
+MANAGER_MODE_FILE="$STATE_DIR/.manager-mode"
+
+read_image_release() {
+    if [[ -f "$IMAGE_VERSION_FILE" ]]; then
+        tr -d '[:space:]' < "$IMAGE_VERSION_FILE"
+    fi
+}
+
+DEFAULT_IMAGE_RELEASE="$(read_image_release)"
+DEFAULT_IMAGE_RELEASE="${DEFAULT_IMAGE_RELEASE:-2026-04-11-v1}"
+DEFAULT_MANAGER_IMAGE="${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm-manager:${DEFAULT_IMAGE_RELEASE}}"
+DEVELOP_MANAGER_IMAGE="${ALPHAGSM_MANAGER_DEVELOP_IMAGE:-alphagsm-manager:dev}"
+
+compose_cmd() {
+    if docker compose version >/dev/null 2>&1; then
+        docker compose "$@"
+        return
+    fi
+    if command -v docker-compose >/dev/null 2>&1; then
+        docker-compose "$@"
+        return
+    fi
+    echo "Docker Compose is required. Install Docker Compose plugin or docker-compose." >&2
+    exit 1
+}
+
+ensure_config() {
+    mkdir -p "$STATE_DIR"
+    if [[ -f "$CONFIG_PATH" ]]; then
+        return
+    fi
+
+    sed "s|/srv/alphagsm|$STATE_DIR|g" "$EXAMPLE_CONFIG" > "$CONFIG_PATH"
+    echo "Wrote $CONFIG_PATH"
+}
+
+normalize_manager_mode() {
+    case "${1:-}" in
+        ""|release|default)
+            printf 'release\n'
+            ;;
+        develop|developer|dev)
+            printf 'develop\n'
+            ;;
+        *)
+            echo "Unknown manager mode: $1" >&2
+            exit 1
+            ;;
+    esac
+}
+
+persist_manager_mode() {
+    printf '%s\n' "$1" > "$MANAGER_MODE_FILE"
+}
+
+current_manager_mode() {
+    if [[ -n "${ALPHAGSM_MANAGER_MODE:-}" ]]; then
+        normalize_manager_mode "$ALPHAGSM_MANAGER_MODE"
+        return
+    fi
+    if [[ -f "$MANAGER_MODE_FILE" ]]; then
+        normalize_manager_mode "$(head -n 1 "$MANAGER_MODE_FILE")"
+        return
+    fi
+    printf 'release\n'
+}
+
+manager_image_for_mode() {
+    case "$1" in
+        develop)
+            printf '%s\n' "$DEVELOP_MANAGER_IMAGE"
+            ;;
+        *)
+            printf '%s\n' "$DEFAULT_MANAGER_IMAGE"
+            ;;
+    esac
+}
+
+manager_compose() {
+    local mode="${1:-}"
+    local image
+
+    if [[ -z "$mode" ]]; then
+        mode="$(current_manager_mode)"
+    fi
+    image="$(manager_image_for_mode "$mode")"
+
+    ALPHAGSM_HOME="$STATE_DIR" \
+    ALPHAGSM_IMAGE_VERSION="$DEFAULT_IMAGE_RELEASE" \
+    ALPHAGSM_PULL_RUNTIME_IMAGES="$PULL_RUNTIME_IMAGES" \
+    ALPHAGSM_MANAGER_IMAGE="$image" \
+    compose_cmd -f "$COMPOSE_FILE" "${@:2}"
+}
+
+docker_image_exists() {
+    docker image inspect "$1" >/dev/null 2>&1
+}
+
+try_pull_manager_image() {
+    docker pull "$1"
+}
+
+manager_running() {
+    [[ "$(docker inspect -f '{{.State.Running}}' "$MANAGER_CONTAINER_NAME" 2>/dev/null || true)" == "true" ]]
+}
+
+manager_exists() {
+    docker inspect "$MANAGER_CONTAINER_NAME" >/dev/null 2>&1
+}
+
+server_container_name() {
+    printf 'alphagsm-%s\n' "$1"
+}
+
+show_host_connection_details() {
+    local server_name="$1"
+    local container_name
+    local port_lines
+    local line
+    local display_host
+    local host_port
+    local proto
+    local raw_host
+    local seen_key
+
+    declare -A seen_connect=()
+
+    container_name="$(server_container_name "$server_name")"
+    if ! docker inspect "$container_name" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if [[ "$(docker inspect -f '{{.State.Running}}' "$container_name" 2>/dev/null || true)" != "true" ]]; then
+        return 0
+    fi
+
+    port_lines="$(docker port "$container_name" 2>/dev/null || true)"
+    if [[ -z "$port_lines" ]]; then
+        return 0
+    fi
+
+    echo
+    echo "Host connection details:"
+    echo "  Host: 127.0.0.1 (or this machine's reachable IP)"
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        echo "  $line"
+
+        if [[ "$line" =~ ^[0-9]+/([a-z]+)[[:space:]]+\-\>[[:space:]]+(.*):([0-9]+)$ ]]; then
+            proto="${BASH_REMATCH[1]}"
+            raw_host="${BASH_REMATCH[2]}"
+            host_port="${BASH_REMATCH[3]}"
+            raw_host="${raw_host#[}"
+            raw_host="${raw_host%]}"
+            case "$raw_host" in
+                ""|0.0.0.0|::)
+                    display_host="127.0.0.1"
+                    ;;
+                *)
+                    display_host="$raw_host"
+                    ;;
+            esac
+            seen_key="$display_host:$host_port/$proto"
+            if [[ -z "${seen_connect[$seen_key]:-}" ]]; then
+                echo "  Connect from this host: $display_host:$host_port/$proto"
+                seen_connect[$seen_key]=1
+            fi
+        fi
+    done <<< "$port_lines"
+}
+
+wait_for_manager_running() {
+    local attempt
+
+    for attempt in $(seq 1 20); do
+        if manager_running; then
+            return 0
+        fi
+        sleep 0.25
+    done
+    return 1
+}
+
+ensure_manager() {
+    local mode="${1:-}"
+    local force_refresh="${2:-0}"
+    local image
+    local up_args=()
+
+    if [[ -z "$mode" ]]; then
+        mode="$(current_manager_mode)"
+    fi
+
+    ensure_config
+    if [[ "$force_refresh" != "1" ]] && wait_for_manager_running; then
+        return
+    fi
+
+    image="$(manager_image_for_mode "$mode")"
+    if manager_exists || [[ "$force_refresh" == "1" ]]; then
+        up_args+=(--force-recreate)
+    fi
+
+    if [[ "$mode" == "develop" ]]; then
+        echo "Developer mode: building AlphaGSM manager image locally..."
+        manager_compose "$mode" up -d --build "${up_args[@]}"
+    else
+        if try_pull_manager_image "$image" >/dev/null 2>&1; then
+            echo "Pulled AlphaGSM manager image: $image"
+            manager_compose "$mode" up -d "${up_args[@]}"
+        elif docker_image_exists "$image"; then
+            echo "Using existing local AlphaGSM manager image: $image"
+            manager_compose "$mode" up -d "${up_args[@]}"
+        else
+            echo "Unable to pull $image. Building the AlphaGSM manager image locally..."
+            manager_compose "$mode" up -d --build "${up_args[@]}"
+        fi
+    fi
+
+    if manager_running; then
+        return
+    fi
+
+    echo "AlphaGSM manager container failed to stay running after startup." >&2
+    manager_compose "$mode" logs alphagsm >&2 || true
+    exit 1
+}
+
+exec_alphagsm() {
+    ensure_manager "$(current_manager_mode)"
+    echo "Running AlphaGSM command in manager container..."
+    manager_compose "$(current_manager_mode)" exec -T alphagsm python alphagsm "$@"
+    if [[ $# -ge 2 && ( "$2" == "status" || "$2" == "start" ) ]]; then
+        show_host_connection_details "$1"
+    fi
+}
+
+parse_start_mode() {
+    local mode="release"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --develop)
+                mode="develop"
+                ;;
+            --release)
+                mode="release"
+                ;;
+            *)
+                echo "Unknown option for start/up: $1" >&2
+                exit 1
+                ;;
+        esac
+        shift
+    done
+
+    printf '%s\n' "$mode"
+}
+
+show_help() {
+    cat <<EOF
+Usage:
+  ./alphagsm-docker up
+    ./alphagsm-docker start
+    ./alphagsm-docker up --develop
+        ./alphagsm-docker start --develop
+  ./alphagsm-docker down
+    ./alphagsm-docker stop
+  ./alphagsm-docker shell
+  ./alphagsm-docker logs
+  ./alphagsm-docker compose <compose-args>
+  ./alphagsm-docker <alphagsm-args>
+
+Examples:
+  ./alphagsm-docker up
+    ./alphagsm-docker start --develop
+  ./alphagsm-docker mymc create minecraft.vanilla
+  ./alphagsm-docker mymc setup -n 25565 "$STATE_DIR/servers/mymc"
+  ./alphagsm-docker mymc start
+
+Notes:
+  - Default state path: $STATE_DIR
+  - Override with: ALPHAGSM_HOME=/absolute/path ./alphagsm-docker ...
+    - Manager mode defaults to release mode:
+            tries to pull $DEFAULT_MANAGER_IMAGE, then falls back to a local build.
+    - start/up with --develop switches the state dir into developer mode:
+            it always rebuilds locally with image tag $DEVELOP_MANAGER_IMAGE.
+    - Runtime image pre-pull defaults to off in this wrapper. Set
+            ALPHAGSM_PULL_RUNTIME_IMAGES=1 if you want eager GHCR pulls at startup.
+  - Docker-backed server install paths must stay under ALPHAGSM_HOME so the
+    host Docker daemon and the manager container see the same absolute path.
+EOF
+}
+
+main() {
+    local command="${1:-help}"
+
+    case "$command" in
+        help|-h|--help)
+            show_help
+            ;;
+        up|start)
+            shift
+            command="$(parse_start_mode "$@")"
+            persist_manager_mode "$command"
+            ensure_manager "$command" 1
+            ;;
+        down|stop)
+            shift
+            manager_compose "$(current_manager_mode)" down "$@"
+            ;;
+        shell)
+            shift
+            ensure_manager "$(current_manager_mode)"
+            manager_compose "$(current_manager_mode)" exec alphagsm bash "$@"
+            ;;
+        logs)
+            shift
+            ensure_config
+            manager_compose "$(current_manager_mode)" logs -f alphagsm "$@"
+            ;;
+        compose)
+            shift
+            ensure_config
+            manager_compose "$(current_manager_mode)" "$@"
+            ;;
+        *)
+            exec_alphagsm "$@"
+            ;;
+    esac
+}
+
+main "$@"

@@ -66,6 +66,47 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
     assert cwd == server.data["dir"]
 
 
+def test_askaserver_runtime_requirements_use_wine_proton_family(tmp_path, monkeypatch):
+    monkeypatch.setattr(askaserver, "IS_LINUX", True)
+    monkeypatch.setattr(
+        askaserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "/usr/bin/wine",
+        ]
+        + list(cmd),
+    )
+    server = DummyServer("aska")
+    (tmp_path / "AskaServer.exe").write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "AskaServer.exe",
+            "port": 27015,
+            "queryport": 27016,
+            "servername": "aska",
+            "displayname": "AlphaGSM aska",
+            "maxplayers": 4,
+            "password": "",
+        }
+    )
+
+    requirements = askaserver.get_runtime_requirements(server)
+    spec = askaserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "wine-proton"
+    assert requirements["ports"] == [
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27016, "container": 27016, "protocol": "udp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "AskaServer.exe"
+
+
 def test_astroneerserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     monkeypatch.setattr(astroneerserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("astro")

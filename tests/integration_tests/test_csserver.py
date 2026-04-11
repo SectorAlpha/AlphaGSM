@@ -25,6 +25,36 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
+def _run_setup_with_start_retry(env, server_name, install_dir, initial_port):
+    """Retry setup/start once when a transient listener steals the chosen port."""
+
+    port = initial_port
+    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    if result.returncode != 0:
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+
+    start_result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm " + " ".join((server_name, "start")), start_result)
+    if start_result.returncode == 0:
+        return port
+
+    combined = "\n".join(part for part in (start_result.stdout, start_result.stderr) if part)
+    if "claimed ports are not free" not in combined:
+        skip_for_known_steamcmd_issue(start_result)
+        assert start_result.returncode == 0, start_result.stderr or start_result.stdout
+
+    port = pick_free_udp_port()
+    rerun_result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    if rerun_result.returncode != 0:
+        skip_for_known_steamcmd_issue(rerun_result, app_id=steam_app_id)
+
+    retry_result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm " + " ".join((server_name, "start", "[retry]")), retry_result)
+    skip_for_known_steamcmd_issue(retry_result)
+    assert retry_result.returncode == 0, retry_result.stderr or retry_result.stdout
+    return port
+
+
 def test_csserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -43,13 +73,8 @@ def test_csserver_lifecycle(tmp_path):
     # create
     run_and_assert_ok(env, server_name, "create", "csserver")
 
-    # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
-
-    # start
-    run_and_assert_ok(env, server_name, "start")
+    # setup + start
+    port = _run_setup_with_start_retry(env, server_name, install_dir, port)
 
     try:
         # wait for readiness

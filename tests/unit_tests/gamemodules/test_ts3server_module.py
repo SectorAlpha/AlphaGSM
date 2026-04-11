@@ -91,3 +91,34 @@ def test_ts3_get_start_command_builds_ports(tmp_path):
     assert "query_port=10011" in cmd
     assert "filetransfer_port=30033" in cmd
     assert cwd == server.data["dir"]
+
+
+def test_ts3_runtime_requirements_include_udp_and_tcp_ports(tmp_path):
+    (tmp_path / "ts3server").write_text("")
+    server = DummyServer("tsalpha")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "ts3server",
+            "port": 9987,
+            "queryport": "10011",
+            "filetransferport": "30033",
+            "license_accepted": True,
+        }
+    )
+
+    requirements = ts3server.get_runtime_requirements(server)
+    spec = ts3server.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "service-console"
+    assert requirements["mounts"] == [
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
+    ]
+    assert requirements["ports"] == [
+        {"host": 9987, "container": 9987, "protocol": "udp"},
+        {"host": 10011, "container": 10011, "protocol": "tcp"},
+        {"host": 30033, "container": 30033, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./ts3server"

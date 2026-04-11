@@ -9,6 +9,8 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
 steam_app_id = 996560
 steam_anonymous_login_possible = True
 LOCALADMIN_GLOBAL_CONFIG = """restart_on_crash: true
@@ -165,7 +167,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="LocalAdmin"):
     server.data["queryport"] = int(server.data.get("queryport", server.data["port"] + 1))
 
     if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
+        dir = runtime_module.suggest_install_dir(server, server.data.get("dir"))
         if ask:
             inp = input(
                 "Where would you like to install the SCP: Secret Laboratory server: [%s] "
@@ -221,7 +223,7 @@ def restart(server):
 def get_query_address(server):
     """Return the SCP:SL TCP query endpoint when query is enabled."""
 
-    return ("127.0.0.1", int(server.data["queryport"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "tcp")
 
 
 def get_info_address(server):
@@ -249,6 +251,16 @@ def get_start_command(server):
         ],
         server.data["dir"],
     )
+
+
+def _get_container_start_command(server):
+    """Build the Docker launch command for SCP:SL using container-local paths."""
+
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        raise ServerError("Executable file not found")
+    _seed_localadmin_files(server)
+    return (["./" + server.data["exe_name"], str(server.data["port"])], server.data["dir"])
 
 
 def do_stop(server, j):
@@ -287,3 +299,23 @@ def checkvalue(server, key, *value):
     if key[0] in ("exe_name", "dir", "contactemail"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=_get_container_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+        env={
+            'HOME': runtime_module.DEFAULT_CONTAINER_WORKDIR + '/home',
+            'XDG_CONFIG_HOME': runtime_module.DEFAULT_CONTAINER_WORKDIR + '/home/.config',
+        },
+        stdin_open=True,
+    )

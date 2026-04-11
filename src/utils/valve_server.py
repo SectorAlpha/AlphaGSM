@@ -3,12 +3,14 @@
 import os
 import re
 import inspect
+from importlib import import_module
 import socket
 import time
 from types import SimpleNamespace
 from typing import NoReturn
 
 import screen
+from server.errors import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
@@ -63,9 +65,22 @@ _COMMAND_DESCRIPTIONS = {
 def _raise_server_error(*args) -> NoReturn:
     """Raise AlphaGSM's ServerError lazily to avoid import cycles."""
 
-    from server import ServerError
-
     raise ServerError(*args)
+
+
+def _runtime_module():
+    """Import the runtime helper lazily to avoid module import cycles."""
+
+    return import_module("server.runtime")
+
+
+def _send_console_input(server, text):
+    """Send console input through screen for process servers and runtime for containers."""
+
+    runtime_name = getattr(getattr(server, "data", None), "get", lambda *_: None)("runtime")
+    if runtime_name == "docker":
+        return _runtime_module().send_to_server(server, text)
+    return screen.send_to_server(server.name, text)
 
 
 def _default_backup_config(game_dir):
@@ -112,7 +127,7 @@ def wake_source_server_for_a2s(server):
     empty.
     """
 
-    screen.send_to_server(server.name, "\nstatus\n")
+    _send_console_input(server, "\nstatus\n")
     return 1.0
 
 
@@ -127,7 +142,7 @@ def send_console_command_and_collect_response(server, command, parser, timeout=5
         handle.seek(0, os.SEEK_END)
         start_offset = handle.tell()
 
-    screen.send_to_server(server.name, "\n{}\n".format(command.strip()))
+    _send_console_input(server, "\n{}\n".format(command.strip()))
 
     deadline = time.time() + timeout
     collected = ""
@@ -559,10 +574,48 @@ def define_valve_server_module(
         )
         return cmd, server.data["dir"]
 
+    def get_runtime_requirements(server):
+        """Return Docker runtime metadata for Valve-engine Linux servers."""
+
+        requirements = {
+            "engine": "docker",
+            "family": "steamcmd-linux",
+        }
+        if "dir" in server.data:
+            requirements["mounts"] = [
+                {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+            ]
+        ports = []
+        for key in ("port", "clientport", "sourcetvport", "steamport"):
+            if key in server.data and server.data[key] is not None:
+                ports.append(
+                    {
+                        "host": int(server.data[key]),
+                        "container": int(server.data[key]),
+                        "protocol": "udp",
+                    }
+                )
+        if ports:
+            requirements["ports"] = ports
+        return requirements
+
+    def get_container_spec(server):
+        """Return the Docker launch spec for this Valve-engine server."""
+
+        cmd, _cwd = get_start_command(server)
+        requirements = get_runtime_requirements(server)
+        return {
+            "working_dir": "/srv/server",
+            "stdin_open": True,
+            "mounts": requirements.get("mounts", []),
+            "ports": requirements.get("ports", []),
+            "command": cmd,
+        }
+
     def do_stop(server, j):
         """Send the generic Valve-engine shutdown command."""
 
-        screen.send_to_server(server.name, "\nquit\n")
+        _send_console_input(server, "\nquit\n")
 
     def status(server, verbose):
         """Detailed engine-specific status is not implemented yet."""
@@ -571,7 +624,7 @@ def define_valve_server_module(
     def message(server, msg):
         """Broadcast a message using the generic Valve-engine chat command."""
 
-        screen.send_to_server(server.name, "\nsay %s\n" % (msg,))
+        _send_console_input(server, "\nsay %s\n" % (msg,))
 
     def backup(server, profile=None):
         """Run the shared backup helper against the install directory."""
@@ -609,6 +662,8 @@ def define_valve_server_module(
         update=update,
         restart=restart,
         get_start_command=get_start_command,
+        get_runtime_requirements=get_runtime_requirements,
+        get_container_spec=get_container_spec,
         do_stop=do_stop,
         status=status,
         message=message,

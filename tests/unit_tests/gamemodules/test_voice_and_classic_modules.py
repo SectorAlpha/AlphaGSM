@@ -60,6 +60,32 @@ def test_qlserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_qlserver_runtime_requirements_use_steamcmd_linux_family(tmp_path):
+    (tmp_path / "qzeroded.x64").write_text("")
+    server = DummyServer("qlalpha")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "qzeroded.x64",
+            "port": 27960,
+            "hostname": "AlphaGSM qlalpha",
+            "servercfg": "baseq3/server.cfg",
+            "startmap": "campgrounds",
+        }
+    )
+
+    requirements = qlserver.get_runtime_requirements(server)
+    spec = qlserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 27960, "container": 27960, "protocol": "udp"}
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][3] == "/srv/server"
+
+
 def test_qlserver_update_downloads_and_optionally_restarts(monkeypatch):
     server = DummyServer("qlalpha")
     server.data["dir"] = "/srv/ql/"
@@ -96,6 +122,23 @@ def test_mumbleserver_get_start_command_uses_ini_file(tmp_path):
 
     assert cmd == ["murmurd", "-fg", "-ini", str(tmp_path / "mumble-server.ini")]
     assert cwd == server.data["dir"]
+
+
+def test_mumbleserver_runtime_requirements_use_simple_tcp_family(tmp_path):
+    server = DummyServer("mumblealpha")
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "murmurd", "port": 64738})
+
+    requirements = mumbleserver.get_runtime_requirements(server)
+    spec = mumbleserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "simple-tcp"
+    assert requirements["ports"] == [
+        {"host": 64738, "container": 64738, "protocol": "tcp"},
+        {"host": 64738, "container": 64738, "protocol": "udp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"] == ["murmurd", "-fg", "-ini", "/srv/server/mumble-server.ini"]
 
 
 def test_ut99server_install_extracts_archive(tmp_path, monkeypatch):

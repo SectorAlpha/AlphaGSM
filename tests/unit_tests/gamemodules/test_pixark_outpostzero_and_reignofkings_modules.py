@@ -72,6 +72,47 @@ def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatc
     assert cwd == server.data["dir"]
 
 
+def test_outpostzero_runtime_requirements_use_wine_proton_family(tmp_path, monkeypatch):
+    monkeypatch.setattr(outpostzeroserver, "IS_LINUX", True)
+    monkeypatch.setattr(
+        outpostzeroserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "/usr/bin/wine",
+        ]
+        + list(cmd),
+    )
+    server = DummyServer("opz")
+    exe = tmp_path / "WindowsServer" / "SurvivalGameServer.exe"
+    exe.parent.mkdir()
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "WindowsServer/SurvivalGameServer.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "maxplayers": 16,
+            "servername": "AlphaGSM opz",
+        }
+    )
+
+    requirements = outpostzeroserver.get_runtime_requirements(server)
+    spec = outpostzeroserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "wine-proton"
+    assert requirements["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "WindowsServer/SurvivalGameServer.exe"
+
+
 def test_reignofkings_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     monkeypatch.setattr(reignofkingsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("rok")

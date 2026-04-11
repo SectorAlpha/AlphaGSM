@@ -1,6 +1,7 @@
 # Counter-Strike: Global Offensive
 
-This guide covers the built-in `counterstrikeglobaloffensive` module, also available through the `csgo` alias.
+This is the legacy CS:GO guide for `counterstrikeglobaloffensive`.
+Use [`counterstrike2`](counterstrike2.md) for the current CS2 dedicated-server flow.
 
 ## Requirements
 
@@ -39,3 +40,4 @@ alphagsm mycsgo stop
 - Like TF2, CS:GO is managed through SteamCMD.
 - The module shares the same general Steam game lifecycle as TF2: setup, start, stop, status, update, and restart.
 - Backup support is configured during setup through the shared backup helpers in `utils.backups`.
+- This legacy module is disabled in automated testing.

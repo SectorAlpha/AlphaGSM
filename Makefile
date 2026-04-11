@@ -15,7 +15,7 @@
 #   make help          — show this message
 # ==============================================================================
 
-.PHONY: all install python deps system-libs wine proton wine-proton config lint test integration-test smoke-test help
+.PHONY: all install python deps system-libs wine proton wine-proton config lint test coverage integration-test smoke-test help
 
 # Read the pinned Python version from .python-version (e.g. 3.10.13)
 PYTHON_VERSION_FULL := $(shell cat .python-version 2>/dev/null | tr -d '[:space:]')
@@ -44,6 +44,7 @@ help:
 	@echo "  make config        Initialise alphagsm.conf from the template (skipped if exists)"
 	@echo "  make lint          Run the pylint quality gate"
 	@echo "  make test          Run the unit test suite"
+	@echo "  make coverage      Run the unit coverage report"
 	@echo "  make integration-test  Run the integration test suite (needs SteamCMD + ALPHAGSM_WORK_DIR)"
 	@echo "  make smoke-test    Run all smoke tests in tests/smoke_tests/"
 	@echo ""
@@ -175,6 +176,18 @@ lint:
 
 test:
 	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests -n auto
+
+coverage:
+	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests \
+		--cov=core \
+		--cov=downloader \
+		--cov=downloadermodules \
+		--cov=gamemodules \
+		--cov=screen \
+		--cov=server \
+		--cov=utils \
+		--cov-report=xml \
+		-q --tb=no
 
 # ------------------------------------------------------------------------------
 # Integration tests — run all integration tests one at a time via the

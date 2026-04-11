@@ -12,6 +12,8 @@ from .papermc import resolve_download
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec
 
 
+import server.runtime as runtime_module
+
 command_args = command_args.copy()
 command_args["setup"] = command_args["setup"].combine(
     CmdSpec(
@@ -112,3 +114,31 @@ def _update_velocity_bind_port(toml_path, port):
     )
     with open(toml_path, "w") as fh:
         fh.write(updated)
+
+def get_runtime_requirements(server):
+    java_major = server.data.get("java_major")
+    if java_major is None:
+        java_major = runtime_module.infer_minecraft_java_major(
+            server.data.get("version")
+        )
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="java",
+        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
+        env={
+            "ALPHAGSM_JAVA_MAJOR": str(java_major),
+            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "server.jar"),
+        },
+        extra={"java": int(java_major)},
+    )
+
+def get_container_spec(server):
+    requirements = get_runtime_requirements(server)
+    return runtime_module.build_container_spec(
+        server,
+        family="java",
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
+        env=requirements.get("env", {}),
+        stdin_open=True,
+    )

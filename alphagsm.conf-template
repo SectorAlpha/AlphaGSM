@@ -96,6 +96,20 @@
 ## user - how many log files to keep for each server
 # keeplogs = 5
 
+[runtime]
+## user - which runtime family launcher to use.
+## Supported values: process, docker
+## "process" keeps the traditional local runtime and lets [process] choose
+## screen, tmux, or subprocess.
+## "docker" enables Docker for modules that expose container runtime hooks.
+# backend = process
+
+[process]
+## user - which process backend to use for managing server sessions.
+## Supported values: auto, screen, tmux, subprocess
+## "auto" will try screen first, then tmux, then fall back to subprocess.
+# backend = auto
+
 [process]
 ## user - which process backend to use for managing server sessions.
 ## Supported values: auto, screen, tmux, subprocess

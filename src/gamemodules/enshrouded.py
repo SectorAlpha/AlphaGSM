@@ -10,6 +10,8 @@ from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.platform_info import IS_LINUX
 
+import server.runtime as runtime_module
+
 steam_app_id = 2278520
 steam_anonymous_login_possible = True
 
@@ -114,12 +116,12 @@ def restart(server):
 
 def get_query_address(server):
     """Enshrouded uses Steam A2S on the dedicated query port."""
-    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 
 def get_info_address(server):
     """Return the A2S address used by the info command."""
-    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 
 def get_start_command(server):
@@ -180,3 +182,16 @@ def checkvalue(server, key, *value):
     if key[0] in ("servername", "savegame", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return proton.get_runtime_requirements(
+        server,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return proton.get_container_spec(
+        server,
+        get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+    )

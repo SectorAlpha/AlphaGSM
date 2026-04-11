@@ -2,7 +2,10 @@
 __pycache__
 *.bak
 alphagsm.conf
+.alphagsm-docker
+~/
 env
 .coverage
 coverage.xml
 nohup.out
+docs/superpowers/

@@ -13,6 +13,28 @@ AlphaGSM can:
 - update it
 - back it up
 
+It can run directly on the host, or optionally run as a Docker "manager"
+container that launches Docker-backed game-server containers through the host
+daemon.
+
+If you want the Docker-manager route, there is also a root wrapper script:
+
+For many first-time setups, this is the quickest way to get started because it
+avoids most of the host-side Python, Java, and system-package setup.
+
+```bash
+./alphagsm-docker start
+./alphagsm-docker mymc create minecraft.vanilla
+```
+
+The wrapper keeps runtime-image pre-pull off by default so it works without
+GHCR login for a first run. By default it tries to pull the latest manager
+image from GHCR and falls back to a local build if that pull fails. If you are
+working on AlphaGSM itself, `./alphagsm-docker start --develop` switches the
+wrapper into a local-build developer mode.
+
+See [Run AlphaGSM In Docker](docs/docker-manager.md).
+
 ## What You Need
 
 You need:
@@ -42,6 +64,10 @@ Some server types need one extra thing:
 
 ## Fast Start
 
+If you want the quickest first run, start with the Docker-manager path above.
+The host install below is still the right option when you want AlphaGSM running
+directly on the machine instead of through Docker.
+
 ### 1. Install the Python packages
 
 ```bash
@@ -70,10 +96,10 @@ Team Fortress 2:
 ./alphagsm mytf2 create teamfortress2
 ```
 
-CS:GO:
+Counter-Strike 2:
 
 ```bash
-./alphagsm mycsgo create csgo
+./alphagsm mycs2 create counterstrike2
 ```
 
 ### 4. Run setup
@@ -154,6 +180,7 @@ These scripts are useful because they show a full real flow:
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Run AlphaGSM In Docker](docs/docker-manager.md)
 - [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
 - [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
 - [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)

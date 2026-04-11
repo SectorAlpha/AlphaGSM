@@ -24,6 +24,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 #                                         (Ubuntu 24.04 renamed this package from
 #                                         libcurl3-gnutls to libcurl3t64-gnutls)
 #   curl python3 wget ca-certificates  — used by install_proton.sh fallback path
+#   jq                                 — required by the UT99 installer script
 RUN dpkg --add-architecture i386 \
  && apt-get update -qq \
  && apt-get install -y --no-install-recommends \
@@ -36,7 +37,7 @@ RUN dpkg --add-architecture i386 \
         libatomic1 libsdl2-2.0-0 \
         libpulse0 \
         libcurl3t64-gnutls \
-        curl python3 python3-pip python3-venv wget ca-certificates \
+       curl jq python3 python3-pip python3-venv wget ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 # screen stores its session sockets in /run/screen.  Ubuntu's tmpfiles.d

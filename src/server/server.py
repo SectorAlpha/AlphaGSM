@@ -11,11 +11,16 @@ For details of how to write a game server module see the gamemodules module in t
 import json
 import os
 import subprocess as sp
+import copy
 from . import data
+from . import port_manager
+from . import runtime as runtime_module
+from .errors import ServerError
 from importlib import import_module
 import screen
 import time
 import crontab
+from types import SimpleNamespace
 from utils.cmdparse.cmdspec import CmdSpec, ArgSpec, OptSpec
 from utils.settings import settings
 from collections.abc import Mapping as MappingABC
@@ -33,14 +38,6 @@ DATAPATH = os.path.expanduser(
 SERVERMODULEPACKAGE = settings.system.getsection("server").get(
     "servermodulespackage", "gamemodules."
 )
-
-
-class ServerError(Exception):
-    """An Exception thrown when there is an error with the server"""
-
-    pass
-
-
 _DISABLED_SERVERS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "disabled_servers.conf",
@@ -125,7 +122,14 @@ def _findmodule(name):
         try:
             name = module.ALIAS_TARGET
         except AttributeError:
+            runtime_module.ensure_runtime_hooks(module)
             return name, module
+
+
+def find_module(name):
+    """Public wrapper around module resolution for non-server helpers."""
+
+    return _findmodule(name)
 
 
 class Server(object):
@@ -363,6 +367,7 @@ class Server(object):
         if "module" not in self.data:
             raise ServerError("Invalid data store: No module specified")
         truename, self.module = _findmodule(self.data["module"])
+        metadata_changed = runtime_module.sync_runtime_metadata(self, save=False)
         if truename != self.data["module"]:
             print(
                 "Module has been redirected. Actual module is '"
@@ -370,6 +375,8 @@ class Server(object):
                 + "'. Saving to data store."
             )
             self.data["module"] = truename
+            metadata_changed = True
+        if metadata_changed:
             self.data.save()
 
     def get_commands(self):
@@ -455,21 +462,32 @@ class Server(object):
 
     def setup(self, *args, ask=True, **kwargs):
         """Setup this server. Once this returns the server should be ready to start."""
+        explicit_keys = self._explicit_setup_port_keys(args, kwargs)
+        claim_values_before = self._claim_affecting_value_snapshot(self.data)
         args, kwargs = self.module.configure(self, ask, *args, **kwargs)
+        if ask:
+            explicit_keys.update(
+                self._interactive_setup_explicit_keys(claim_values_before, self.data)
+            )
+        runtime_module.sync_runtime_metadata(self, save=True)
+        self._resolve_setup_port_claims(explicit_keys)
+        runtime_module.sync_runtime_metadata(self, save=True)
         self.module.install(self, *args, **kwargs)
+        runtime_module.sync_runtime_metadata(self, save=True)
 
     def start(self, *args, **kwargs):
         """Start a server. Won't start it if the server is already running."""
-        if screen.check_screen_exists(self.name):
+        runtime = runtime_module.get_runtime(self)
+        if runtime.is_running(self):
             raise ServerError("Error: Can't start server that is already running")
+        self._assert_start_ports_available()
         try:
             prestart = self.module.prestart
         except AttributeError:
             pass
         else:
             prestart(self, *args, **kwargs)
-        cmd, cwd = self.module.get_start_command(self, *args, **kwargs)
-        screen.start_screen(self.name, cmd, cwd=cwd)
+        runtime.start(self, *args, **kwargs)
         try:
             poststart = self.module.poststart
         except AttributeError:
@@ -479,7 +497,8 @@ class Server(object):
 
     def stop(self, *args, **kwargs):
         """Stop the server. If the server can't be stopped even after multiple attempts then raises a ServerError"""
-        if not screen.check_screen_exists(self.name):
+        runtime = runtime_module.get_runtime(self)
+        if not runtime.is_running(self):
             raise ServerError("Error: Can't stop a server that isn't running")
         jmax = 5
         try:
@@ -490,19 +509,22 @@ class Server(object):
         for j in range(jmax):
             try:
                 self.module.do_stop(self, j, *args, **kwargs)
-            except screen.ProcessError:
+            except (screen.ProcessError, runtime_module.RuntimeError):
                 break  # backend can't send input cross-invocation; fall through to kill
             for i in range(6):
-                if not screen.check_screen_exists(self.name):
+                if not runtime.is_running(self):
                     return  # session doesn't exist so success
                 time.sleep(10)
-            if not screen.check_screen_exists(self.name):
+            if not runtime.is_running(self):
                 return
             print("Server isn't stopping after " + str(j + 1) + " minutes")
         print("Killing Server")
-        screen.send_to_screen(self.name, ["quit"])
+        try:
+            runtime.kill(self)
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
         time.sleep(1)
-        if screen.check_screen_exists(self.name):
+        if runtime.is_running(self):
             raise ServerError("Error can't kill server")
 
     def restart(self, *args, **kwargs):
@@ -512,41 +534,51 @@ class Server(object):
 
     def kill(self):
         """Force-kill the server by terminating the screen session immediately."""
-        if not screen.check_screen_exists(self.name):
+        runtime = runtime_module.get_runtime(self)
+        if not runtime.is_running(self):
             raise ServerError("Error: Can't kill a server that isn't running")
-        screen.send_to_screen(self.name, ["quit"])
+        try:
+            runtime.kill(self)
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
         time.sleep(1)
-        if screen.check_screen_exists(self.name):
+        if runtime.is_running(self):
             raise ServerError("Error: Could not kill server")
         print("Server killed")
 
     def status(self, *args, verbose=0, **kwargs):
         """Print the status of the server. At the least shows if there is a server screen session running"""
-        if not screen.check_screen_exists(self.name):
-            print("Server isn't running as no screen session")
+        runtime = runtime_module.get_runtime(self)
+        if not runtime.is_running(self):
+            print("Server isn't running as " + runtime.missing_description)
         else:
-            print("Server is running as screen session exists")
+            print("Server is running as " + runtime.running_description)
             if verbose > 0:
                 self.module.status(self, verbose, *args, **kwargs)
 
     def connect(self):
         """Connect to the screen session to manually interact with the server"""
-        screen.connect_to_screen(self.name)
+        try:
+            runtime_module.connect_to_server(self)
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
 
     def send(self, input, **kwargs):
         """Send a line of text directly to the server console."""
-        if not screen.check_screen_exists(self.name):
+        runtime = runtime_module.get_runtime(self)
+        if not runtime.is_running(self):
             raise ServerError("Error: Can't send to a server that isn't running")
-        screen.send_to_server(self.name, input + "\n")
+        try:
+            runtime.send_input(self, input + "\n")
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
 
     def logs(self, lines=50, **kwargs):
         """Print the last *lines* lines of the server console log."""
-        log = screen.logpath(self.name)
-        if not os.path.isfile(log):
-            raise ServerError("No log file found at: " + log)
-        result = sp.run(["tail", "-n", str(lines), log], check=False)
-        if result.returncode != 0:
-            raise ServerError("Failed to read log file: " + log)
+        try:
+            runtime_module.show_server_logs(self, lines=lines)
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
 
     def restore(self, backup=None, **kwargs):
         """Restore the server from a backup archive.
@@ -582,7 +614,7 @@ class Server(object):
             filename = available[idx][2]
         except ValueError:
             filename = backup
-        if screen.check_screen_exists(self.name):
+        if runtime_module.check_server_running(self):
             print("Stopping server before restore...")
             self.stop()
         backup_utils.restore(game_dir, filename)
@@ -596,7 +628,7 @@ class Server(object):
         directory) or a ``wipe(server)`` callable; otherwise a ServerError
         is raised.
         """
-        if screen.check_screen_exists(self.name):
+        if runtime_module.check_server_running(self):
             raise ServerError(
                 "Error: Cannot wipe a running server. Stop it first."
             )
@@ -1021,11 +1053,164 @@ class Server(object):
         """Dump of the data in the data store"""
         print(self.data.prettydump())
 
-    def doset(self, key, *args, **kwargs):
-        """Set a value in the data store. The value will be check and post set actions may be run"""
-        types, key = _parsekey(key)
-        value = self.module.checkvalue(self, key, *args, **kwargs)
-        data = self.data
+    def _mark_port_policy(self, key, policy):
+        """Record whether a claim key is explicit or default-owned."""
+
+        policies = dict(self.data.get("port_claim_policy", {}))
+        key = str(key)
+        if policies.get(key) == policy:
+            return False
+        policies[key] = policy
+        self.data["port_claim_policy"] = policies
+        return True
+
+    def _is_claim_affecting_set_key(self, key):
+        """Return whether a top-level datastore key changes the claimed endpoint set."""
+
+        key = str(key).lower()
+        return port_manager.is_port_key(key) or key in (
+            "bindaddress",
+            "publicip",
+            "externalip",
+            "hostip",
+        )
+
+    def _claim_affecting_value_snapshot(self, payload):
+        """Return a deep-copied snapshot of top-level claim-affecting values."""
+
+        snapshot = {}
+        for key, value in dict(payload).items():
+            key_name = str(key).lower()
+            if self._is_claim_affecting_set_key(key_name) or key_name == "ports":
+                snapshot[key_name] = copy.deepcopy(value)
+        return snapshot
+
+    def _explicit_setup_port_keys(self, args, kwargs):
+        """Return setup argument names that were explicitly provided as port keys."""
+
+        explicit = set()
+        spec = self.get_command_args("setup")
+        for value, arg_spec in zip(args, getattr(spec, "optionalarguments", ())):
+            if value is None:
+                continue
+            key = str(arg_spec.name).lower()
+            if port_manager.is_port_key(key):
+                explicit.add(key)
+        for key, value in kwargs.items():
+            if value is None:
+                continue
+            key = str(key).lower()
+            if port_manager.is_port_key(key):
+                explicit.add(key)
+        return explicit
+
+    def _interactive_setup_explicit_keys(self, before, after):
+        """Return claim keys changed by interactive configure() prompts."""
+
+        explicit = set()
+        current = self._claim_affecting_value_snapshot(after)
+        for key in set(before) | set(current):
+            if before.get(key) != current.get(key):
+                explicit.add(str(key).lower())
+        return explicit
+
+    def _format_recommended_port_set(self, recommendation):
+        """Return a compact display string for a port-shift recommendation."""
+
+        if recommendation is None:
+            return None
+        values = getattr(recommendation, "values", None)
+        if not values:
+            return None
+        return ", ".join(f"{key}={value}" for key, value in sorted(values.items()))
+
+    def _build_port_conflict_error(self, prefix, conflicts, recommendation=None):
+        """Return a user-facing error message for detected port conflicts."""
+
+        message = prefix + port_manager.describe_conflicts(conflicts)
+        recommended = self._format_recommended_port_set(recommendation)
+        if recommended is not None:
+            message += "\nRecommended free port set: " + recommended
+        return message
+
+    def _resolve_setup_port_claims(self, explicit_keys):
+        """Persist setup-time port policy and auto-shift default-owned claims."""
+
+        claim_set = port_manager.collect_claim_set(self)
+        if not claim_set.shift_group_keys:
+            return
+
+        changed = False
+        existing_policies = dict(self.data.get("port_claim_policy", {}))
+        effective_explicit_keys = set()
+        for key in claim_set.shift_group_keys:
+            key_name = str(key)
+            current_policy = existing_policies.get(key_name)
+            if current_policy == "explicit" or key_name.lower() in explicit_keys:
+                policy = "explicit"
+            else:
+                policy = "default"
+            changed = self._mark_port_policy(key, policy) or changed
+            if policy == "explicit":
+                effective_explicit_keys.add(key_name.lower())
+
+        conflicts = port_manager.detect_conflicts(self)
+        if not conflicts:
+            if changed:
+                self.data.save()
+            return
+
+        recommendation = port_manager.recommend_shift(self)
+        if effective_explicit_keys:
+            if changed:
+                self.data.save()
+            raise ServerError(
+                self._build_port_conflict_error(
+                    "Can't complete setup because explicit port choices conflict: ",
+                    conflicts,
+                    recommendation,
+                )
+            )
+        if recommendation is None:
+            raise ServerError(
+                self._build_port_conflict_error(
+                    "Can't complete setup because claimed ports conflict: ",
+                    conflicts,
+                )
+            )
+
+        for key, value in recommendation.values.items():
+            self.data[key] = value
+        self.data.save()
+        print(
+            "Warning: shifted claimed port set by "
+            + f"{recommendation.offset:+d}"
+            + " to avoid collisions."
+        )
+
+    def _assert_start_ports_available(self):
+        """Raise when the current server claim set is not startable."""
+
+        conflicts = port_manager.detect_conflicts(self)
+        if conflicts:
+            raise ServerError(
+                "Can't start server because claimed ports are not free: "
+                + port_manager.describe_conflicts(conflicts)
+            )
+
+    def _is_claim_affecting_key_path(self, key_path):
+        """Return whether a parsed set path changes the claimed endpoint set."""
+
+        if len(key_path) == 0:
+            return False
+        top_level_key = str(key_path[0]).lower()
+        return top_level_key == "ports" or (
+            len(key_path) == 1 and self._is_claim_affecting_set_key(top_level_key)
+        )
+
+    def _apply_set_value(self, data, types, key, value):
+        """Apply a parsed set mutation into *data*."""
+
         for t, el in zip(types[1:], key[:-1]):
             if el is None:
                 print("Appending", el, t)
@@ -1042,12 +1227,53 @@ class Server(object):
             data.append(value)
         else:
             data[key[-1]] = value
+
+    def doset(self, key, *args, **kwargs):
+        """Set a value in the data store. The value will be check and post set actions may be run"""
+        types, key = _parsekey(key)
+        runtime_managed_key = runtime_module.handles_set_key(key)
+        if runtime_managed_key:
+            try:
+                value = runtime_module.validate_set_value(self, key, *args)
+            except runtime_module.RuntimeError as ex:
+                raise ServerError(str(ex))
+        else:
+            value = self.module.checkvalue(self, key, *args, **kwargs)
+        claim_affecting_key_path = (
+            value != "DELETE" and self._is_claim_affecting_key_path(key)
+        )
+        if claim_affecting_key_path:
+            candidate_data = copy.deepcopy(dict(self.data))
+            self._apply_set_value(candidate_data, types, key, value)
+            candidate_server = SimpleNamespace(
+                name=self.name,
+                data=candidate_data,
+                module=self.module,
+            )
+            conflicts = port_manager.detect_conflicts(candidate_server)
+            if conflicts:
+                raise ServerError(
+                    self._build_port_conflict_error(
+                        "Can't set claim-affecting value because it conflicts: ",
+                        conflicts,
+                        port_manager.recommend_shift(candidate_server),
+                    )
+                )
+        self._apply_set_value(self.data, types, key, value)
         try:
             fn = self.module.postset
         except AttributeError:
             pass
         else:
             fn(server, key, *args, **kwargs)
+        if (
+            len(key) == 1
+            and value != "DELETE"
+            and port_manager.is_port_key(key[-1])
+        ):
+            self._mark_port_policy(key[-1], "explicit")
+        if runtime_managed_key:
+            runtime_module.sync_runtime_metadata(self, save=False)
         self.data.save()
 
     def activate(self, start=True):
@@ -1085,7 +1311,7 @@ class Server(object):
         else:
             ct.new(command=programpath + " " + self.name + " start").every_reboot()
             ct.write()
-        if start and not screen.check_screen_exists(self.name):
+        if start and not runtime_module.check_server_running(self):
             self.start()
 
     def deactivate(self, stop=True):
@@ -1093,7 +1319,7 @@ class Server(object):
         from core import program
 
         programpath = program.PATH
-        if stop and screen.check_screen_exists(self.name):
+        if stop and runtime_module.check_server_running(self):
             self.stop()
         ct = crontab.CronTab(user=True)
         jobs = (

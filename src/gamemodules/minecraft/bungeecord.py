@@ -9,6 +9,7 @@ import subprocess as sp
 from server import ServerError
 import re
 import screen
+import server.runtime as runtime_module
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
@@ -28,6 +29,7 @@ command_functions = {}
 
 # Regex to locate the first listener's host line in config.yml
 _BUNGEE_HOST_RE = re.compile(r'^(\s*host:\s*)(\S+):(\d+)', re.MULTILINE)
+_CONFIG_GENERATION_TIMEOUT = 120
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
@@ -37,10 +39,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
     server.data["port"] = int(port)
 
     if dir is None:
-        if "dir" in server.data and server.data["dir"] is not None:
-            dir = server.data["dir"]
-        else:
-            dir = os.path.expanduser(os.path.join("~", server.name))
+        dir = runtime_module.suggest_install_dir(server, server.data.get("dir"))
         if ask:
             inp = input(
                 "Where would you like to install the minecraft server: [" + dir + "] "
@@ -77,7 +76,7 @@ def install(server, *, eula=False):
             stdout=sp.DEVNULL,
             stderr=sp.DEVNULL,
         )
-        deadline = time.time() + 30
+        deadline = time.time() + _CONFIG_GENERATION_TIMEOUT
         try:
             while time.time() < deadline and not os.path.isfile(config_file):
                 if proc.poll() is not None:
@@ -114,9 +113,55 @@ def get_start_command(server):
     return ["java", "-Xmx256M", "-jar", server.data["exe_name"]], server.data["dir"]
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for Java-based Minecraft proxies."""
+
+    java_major = int(server.data.get("java_major", 17))
+    requirements = {
+        "engine": "docker",
+        "family": "java",
+        "java": java_major,
+        "env": {
+            "ALPHAGSM_JAVA_MAJOR": str(java_major),
+            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "BungeeCord.jar"),
+        },
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    if "port" in server.data:
+        requirements["ports"] = [
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "tcp",
+            }
+        ]
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Java-based Minecraft proxies."""
+
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            'exec java -Xmx256M -jar "$ALPHAGSM_SERVER_JAR"',
+        ],
+    }
+
+
 def do_stop(server, j):
     """Send the console command used to stop a running Bungeecord server."""
-    screen.send_to_server(server.name, "\nend\n")
+    runtime_module.send_to_server(server, "\nend\n")
 
 
 def status(server, verbose):
@@ -147,4 +192,10 @@ def get_info_address(server):
     BungeeCord-based proxies (BungeeCord, Waterfall, Velocity) implement
     Minecraft's Server List Ping protocol on their main TCP port.
     """
-    return ("127.0.0.1", server.data["port"], "slp")
+    return (runtime_module.resolve_query_host(server), server.data["port"], "slp")
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the ``query`` command."""
+
+    return (runtime_module.resolve_query_host(server), server.data["port"], "tcp")

@@ -48,6 +48,35 @@ run_setup_or_skip_steamcmd() {
   local rc=${PIPESTATUS[0]}
   set -e
   if [[ $rc -ne 0 ]]; then
+    if grep -q 'Recommended free port set:' "$output_file"; then
+      local recommended_port
+      recommended_port=$(sed -n 's/.*Recommended free port set:.*port=\([0-9][0-9]*\).*/\1/p' "$output_file" | tail -n 1)
+      if [[ -n "$recommended_port" ]]; then
+        local retry_args=()
+        local replaced=0
+        local expect_port_value=0
+        for arg in "$@"; do
+          if [[ $replaced -eq 0 && $expect_port_value -eq 1 ]]; then
+            retry_args+=("$recommended_port")
+            replaced=1
+            expect_port_value=0
+          else
+            retry_args+=("$arg")
+            if [[ "$arg" == "-n" ]]; then
+              expect_port_value=1
+            else
+              expect_port_value=0
+            fi
+          fi
+        done
+        if [[ $replaced -eq 1 ]]; then
+          echo "Retrying setup with recommended free port: $recommended_port"
+          rm -f "$output_file"
+          run_setup_or_skip_steamcmd "${retry_args[@]}"
+          return $?
+        fi
+      fi
+    fi
     if grep -qE 'Failed to install app|No subscription|Missing configuration|No such file or directory|returned non-zero exit status|Error extracting download|Can.t download file' "$output_file"; then
       echo "Setup failed with known SteamCMD issue — skipping smoke test"
       rm -f "$output_file"

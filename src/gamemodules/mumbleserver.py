@@ -3,7 +3,7 @@
 import os
 import shutil
 
-import screen
+import server.runtime as runtime_module
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
@@ -107,10 +107,54 @@ def get_start_command(server):
     )
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for simple TCP/UDP services."""
+
+    requirements = {
+        "engine": "docker",
+        "family": "simple-tcp",
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    if "port" in server.data:
+        requirements["ports"] = [
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "tcp",
+            },
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "udp",
+            },
+        ]
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for a Mumble server."""
+
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            server.data["exe_name"],
+            "-fg",
+            "-ini",
+            "/srv/server/mumble-server.ini",
+        ],
+    }
+
+
 def do_stop(server, j):
     """Stop Mumble by sending an interrupt to the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

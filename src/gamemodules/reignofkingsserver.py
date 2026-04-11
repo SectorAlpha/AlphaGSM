@@ -2,7 +2,7 @@
 
 import os
 
-import screen
+import server.runtime as runtime_module
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -129,10 +129,29 @@ def get_start_command(server):
     return cmd, server.data["dir"]
 
 
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for Wine/Proton-backed servers."""
+
+    return proton.get_runtime_requirements(
+        server,
+        port_definitions=(("port", "udp"), ("queryport", "udp")),
+    )
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Reign Of Kings."""
+
+    return proton.get_container_spec(
+        server,
+        get_start_command,
+        port_definitions=(("port", "udp"), ("queryport", "udp")),
+    )
+
+
 def do_stop(server, j):
     """Stop Reign Of Kings using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

@@ -9,6 +9,7 @@ import subprocess as sp
 from server import ServerError
 import re
 import screen
+import server.runtime as runtime_module
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
@@ -193,11 +194,7 @@ def configure(
 
     # assign the installation directory
     if dir is None:
-        if "dir" in server.data and server.data["dir"] is not None:
-            dir = server.data["dir"]
-        else:
-            # if no directory is assigned, set it to the users home area
-            dir = os.path.expanduser(os.path.join("~", server.name))
+        dir = runtime_module.suggest_install_dir(server, server.data.get("dir"))
         if ask:
             # set a custom location to install the directory?
             inp = input(
@@ -244,23 +241,26 @@ def install(server, *, eula=False):
     eulafile = os.path.join(server.data["dir"], "eula.txt")
     configfile = os.path.join(server.data["dir"], "server.properties")
     javapath = server.data.get("javapath", "java")
+    had_configfile = os.path.isfile(configfile)
+    had_eulafile = os.path.isfile(eulafile)
     if eula and not os.path.isfile(eulafile):
         with open(eulafile, "w", encoding="utf-8") as handle:
             handle.write("eula=true\n")
-    if not os.path.isfile(configfile) or (
-        eula and not os.path.isfile(eulafile)
-    ):  # use as flag for has the server created it's files
+    # Seed server.properties before first boot so new Minecraft releases bind the
+    # requested port even when the bundler starts without an existing config.
+    updateconfig(configfile, {"server-port": str(server.data["port"])})
+    if not had_configfile or (eula and not had_eulafile):
         print("Starting server to create settings")
         try:
-            ret = sp.check_call(
+            sp.check_call(
                 [javapath, "-jar", server.data["exe_name"], "nogui"],
                 cwd=server.data["dir"],
                 shell=False,
                 timeout=20,
             )
         except sp.CalledProcessError as ex:
-            print("Error running server. Java returned status: " + ex.returncode)
-        except sp.TimeoutExpired as ex:
+            print("Error running server. Java returned status: " + str(ex.returncode))
+        except sp.TimeoutExpired:
             print("Error running server. Process didn't complete in time")
     updateconfig(configfile, {"server-port": str(server.data["port"])})
     if eula:
@@ -270,12 +270,69 @@ def install(server, *, eula=False):
 def get_start_command(server):
     """Build the command list used to launch a custom Minecraft server."""
     javapath = server.data.get("javapath", "java")
-    return [javapath, "-jar", server.data["exe_name"], "nogui"], server.data["dir"]
+    return [
+        javapath,
+        "-jar",
+        server.data["exe_name"],
+        "nogui",
+        "--port",
+        str(server.data["port"]),
+    ], server.data["dir"]
+
+
+def get_runtime_requirements(server):
+    """Return Docker runtime metadata for Java-based Minecraft servers."""
+
+    java_major = server.data.get("java_major")
+    if java_major is None:
+        java_major = runtime_module.infer_minecraft_java_major(
+            server.data.get("version")
+        )
+    requirements = {
+        "engine": "docker",
+        "family": "java",
+        "java": int(java_major),
+        "env": {
+            "ALPHAGSM_JAVA_MAJOR": str(java_major),
+            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "minecraft_server.jar"),
+        },
+    }
+    if "dir" in server.data:
+        requirements["mounts"] = [
+            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+        ]
+    if "port" in server.data:
+        requirements["ports"] = [
+            {
+                "host": int(server.data["port"]),
+                "container": int(server.data["port"]),
+                "protocol": "tcp",
+            }
+        ]
+    return requirements
+
+
+def get_container_spec(server):
+    """Return the Docker launch spec for Java-based Minecraft servers."""
+
+    requirements = get_runtime_requirements(server)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            'exec java -jar "$ALPHAGSM_SERVER_JAR" nogui',
+        ],
+    }
 
 
 def do_stop(server, j):
     """Send the console command used to stop a running Minecraft server."""
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):
@@ -305,7 +362,7 @@ def message(server, msg, *targets, parse=False):
         msgjson = json.dumps({"text": msg})
     cmd = "\n".join("tellraw " + target + " " + msgjson for target in targets)
     print(cmd)
-    screen.send_to_server(server.name, "\n" + cmd + "\n")
+    runtime_module.send_to_server(server, "\n" + cmd + "\n")
 
 
 def checkvalue(server, key, *value):
@@ -428,22 +485,22 @@ def backup(server, profile=None, *, activate=None, when=None):
 
 def dobackup(server, profile=None):
     """Execute the actual filesystem backup for a Minecraft server."""
-    if screen.check_screen_exists(server.name):
-        screen.send_to_server(server.name, "\nsave-off\nsave-all\n")
+    if runtime_module.check_server_running(server):
+        runtime_module.send_to_server(server, "\nsave-off\nsave-all\n")
         time.sleep(30)
     try:
         backups.backup(server.data["dir"], server.data["backup"], profile)
     except backups.BackupError as ex:
         raise ServerError("Error backing up server: {}".format(ex))
     finally:
-        if screen.check_screen_exists(server.name):
-            screen.send_to_server(server.name, "\nsave-on\nsave-all\n")
+        if runtime_module.check_server_running(server):
+            runtime_module.send_to_server(server, "\nsave-on\nsave-all\n")
 
 
 def op(server, *users):
     """Grant operator status to one or more Minecraft users."""
     for user in users:
-        screen.send_to_server(server.name, "\nop " + user + "\n")
+        runtime_module.send_to_server(server, "\nop " + user + "\n")
 
 
 command_functions["op"] = op
@@ -452,7 +509,7 @@ command_functions["op"] = op
 def deop(server, *users):
     """Remove operator status from one or more Minecraft users."""
     for user in users:
-        screen.send_to_server(server.name, "\ndeop " + user + "\n")
+        runtime_module.send_to_server(server, "\ndeop " + user + "\n")
 
 
 command_functions["deop"] = deop
@@ -464,4 +521,10 @@ def get_info_address(server):
     Minecraft uses the Server List Ping (SLP) protocol on its main TCP port,
     which reports player count, max players, server description, and version.
     """
-    return ("127.0.0.1", server.data["port"], "slp")
+    return (runtime_module.resolve_query_host(server), server.data["port"], "slp")
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the ``query`` command."""
+
+    return (runtime_module.resolve_query_host(server), server.data["port"], "tcp")

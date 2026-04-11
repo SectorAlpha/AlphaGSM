@@ -8,6 +8,8 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
 steam_app_id = 1169370
 steam_anonymous_login_possible = True
 
@@ -129,12 +131,12 @@ def get_start_command(server):
 
 def get_query_address(server):
     """Necesse is a Java game server; use a TCP ping on the game port."""
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def get_info_address(server):
     """Return the TCP address used by the info command."""
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def do_stop(server, j):
@@ -173,3 +175,31 @@ def checkvalue(server, key, *value):
     if key[0] in ("servername", "world", "javapath", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    java_major = server.data.get("java_major")
+    if java_major is None:
+        java_major = runtime_module.infer_minecraft_java_major(
+            server.data.get("version")
+        )
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="java",
+        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
+        env={
+            "ALPHAGSM_JAVA_MAJOR": str(java_major),
+            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "server.jar"),
+        },
+        extra={"java": int(java_major)},
+    )
+
+def get_container_spec(server):
+    requirements = get_runtime_requirements(server)
+    return runtime_module.build_container_spec(
+        server,
+        family="java",
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
+        env=requirements.get("env", {}),
+        stdin_open=True,
+    )

@@ -3,6 +3,8 @@
 from utils.valve_server import define_valve_server_module
 
 
+import server.runtime as runtime_module
+
 MODULE = define_valve_server_module(
     game_name='Fistful of Frags',
     engine='source',
@@ -38,3 +40,19 @@ status = MODULE.status
 message = MODULE.message
 backup = MODULE.backup
 checkvalue = MODULE.checkvalue
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
+        stdin_open=True,
+    )

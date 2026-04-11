@@ -8,7 +8,22 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IT_DIR="${SCRIPT_DIR}/tests/integration_tests"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 export PYTHONPATH=".:src${PYTHONPATH:+:$PYTHONPATH}"
+
+echo "=== Running lint and unit coverage preflight ==="
+bash "${SCRIPT_DIR}/lint.sh"
+"${PYTHON_BIN}" -m pytest "${SCRIPT_DIR}/tests/unit_tests" \
+    --cov=core \
+    --cov=downloader \
+    --cov=downloadermodules \
+    --cov=gamemodules \
+    --cov=screen \
+    --cov=server \
+    --cov=utils \
+    --cov-report=xml \
+    -q --tb=no
+echo ""
 
 # Accept optional extra pytest args after --pytest-args
 PYTEST_EXTRA=()

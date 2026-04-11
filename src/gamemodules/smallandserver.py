@@ -8,6 +8,8 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
 steam_app_id = 808040
 steam_anonymous_login_possible = True
 
@@ -93,7 +95,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="SMALLANDServer.sh")
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
-    server.data.setdefault("queryport", int(server.data["port"]))
 
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
@@ -159,7 +160,7 @@ def get_start_command(server):
 def get_query_address(server):
     """Smalland exposes a silent UDP listener on the main game port."""
 
-    return ("127.0.0.1", int(server.data["port"]), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
@@ -204,3 +205,19 @@ def checkvalue(server, key, *value):
     if key[0] in ("servername", "worldname", "serverpassword", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

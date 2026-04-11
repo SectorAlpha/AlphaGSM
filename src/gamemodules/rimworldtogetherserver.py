@@ -8,6 +8,8 @@ from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+import server.runtime as runtime_module
+
 RIMWORLD_TOGETHER_LATEST_RELEASE_API = (
     "https://api.github.com/repos/RimWorld-Together/Rimworld-Together/releases/latest"
 )
@@ -142,12 +144,12 @@ def get_query_address(server):
     RimWorld Together uses a TCP-based protocol on its game port; a TCP
     connect on that port confirms the server is accepting connections.
     """
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def get_info_address(server):
     """Return the TCP address used by the ``info`` command for this server."""
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 def do_stop(server, j):
     """Stop RimWorld Together by interrupting the foreground server process."""
@@ -185,3 +187,19 @@ def checkvalue(server, key, *value):
     if key[0] in ("url", "download_name", "exe_name", "dir", "version"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return runtime_module.build_runtime_requirements(
+        server,
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

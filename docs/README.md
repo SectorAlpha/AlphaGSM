@@ -4,6 +4,10 @@ This folder is for people who want help running a specific server.
 
 If you are not sure where to start, pick your server below and follow that guide.
 
+## Deployment Guides
+
+- [Run AlphaGSM In Docker](docker-manager.md)
+
 ## Server Guides
 
 - [Abiotic Factor](servers/abfserver.md)

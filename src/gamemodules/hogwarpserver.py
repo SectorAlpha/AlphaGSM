@@ -8,6 +8,10 @@ from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
+import server.runtime as runtime_module
+
+import utils.proton as proton
+
 commands = ()
 command_args = {
     "setup": CmdSpec(
@@ -131,3 +135,16 @@ def checkvalue(server, key, *value):
     if key[0] in ("url", "download_name", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")
+
+def get_runtime_requirements(server):
+    return proton.get_runtime_requirements(
+        server,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
+
+def get_container_spec(server):
+    return proton.get_container_spec(
+        server,
+        get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    )
