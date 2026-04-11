@@ -204,7 +204,6 @@ def get_info_address(server):
     """Return the Craftopia UDP endpoint used for info output."""
 
     return get_query_address(server)
-    return get_query_address(server)
 
 
 def get_start_command(server):

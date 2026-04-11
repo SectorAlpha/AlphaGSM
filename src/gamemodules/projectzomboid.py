@@ -162,7 +162,6 @@ def get_info_address(server):
     """Return the Project Zomboid direct-connection UDP listener."""
 
     return get_query_address(server)
-    return get_query_address(server)
 
 
 def do_stop(server, j):

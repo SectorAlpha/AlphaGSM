@@ -6,6 +6,8 @@ container runtime. Game modules can describe Docker requirements via
 but Docker is only selected when configuration opts into it.
 """
 
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import copy

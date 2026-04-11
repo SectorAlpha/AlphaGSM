@@ -129,7 +129,6 @@ def get_query_address(server):
 def get_info_address(server):
     """Use the same UDP endpoint for info queries as the query command."""
     return get_query_address(server)
-    return get_query_address(server)
 
 
 def do_stop(server, j):

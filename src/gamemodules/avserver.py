@@ -149,7 +149,6 @@ def get_info_address(server):
     """Return the UDP endpoint used for Avorion info output."""
 
     return get_query_address(server)
-    return get_query_address(server)
 
 
 def do_stop(server, j):

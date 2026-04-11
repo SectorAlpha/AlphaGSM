@@ -167,7 +167,6 @@ def get_info_address(server):
     """Smalland's info surface is the same UDP listener as its query surface."""
 
     return get_query_address(server)
-    return get_query_address(server)
 
 
 def do_stop(server, j):
