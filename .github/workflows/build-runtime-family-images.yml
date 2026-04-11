@@ -60,6 +60,8 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
+          secrets: |
+            gh_token=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}

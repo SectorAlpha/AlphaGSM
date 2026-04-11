@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/manager/Dockerfile
-    image: alphagsm-manager:dev
+    image: ${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm-manager:latest}
     container_name: ${ALPHAGSM_MANAGER_CONTAINER_NAME:-alphagsm-manager}
     working_dir: /opt/alphagsm
     environment:

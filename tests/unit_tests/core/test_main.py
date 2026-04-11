@@ -209,7 +209,7 @@ def test_main_handles_help_banned_names_and_multi_server_paths(monkeypatch):
 def test_main_rejects_wrapper_subcommands_as_server_names(monkeypatch):
     monkeypatch.setattr(main_module, "help", lambda *args, **kwargs: None)
 
-    for banned_name in ("up", "down", "shell", "logs", "compose"):
+    for banned_name in ("up", "down", "start", "stop", "shell", "logs", "compose"):
         assert main_module.main("alphagsm", [banned_name, "status"]) == 2
 
 

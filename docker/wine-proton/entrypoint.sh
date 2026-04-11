@@ -2,7 +2,7 @@
 set -euo pipefail
 
 WINEPREFIX_PATH="${ALPHAGSM_WINEPREFIX:-/srv/server/.alphagsm-wineprefix}"
-PROTON_BIN="${ALPHAGSM_PROTON_BIN:-/opt/proton/proton}"
+PROTON_BIN="${ALPHAGSM_PROTON_BIN:-/opt/proton-ge/proton}"
 
 mkdir -p "${WINEPREFIX_PATH}"
 

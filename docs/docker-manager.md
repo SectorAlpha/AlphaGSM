@@ -48,17 +48,48 @@ full Compose command each time:
 
 ```bash
 ./alphagsm-docker up
+./alphagsm-docker start
+./alphagsm-docker stop
 ./alphagsm-docker mymc create minecraft.vanilla
 ./alphagsm-docker mymc setup -n 25565 "$PWD/.alphagsm-docker/servers/mymc"
 ./alphagsm-docker mymc start
 ```
 
+`start` is an alias for `up`, and `stop` is an alias for `down`.
+
 The script will:
 
 - create a Docker-manager state directory if it does not exist
 - write `alphagsm.conf` there from the manager example config
-- start `docker/manager/compose.yml` if the manager container is not already running
+- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm-manager:latest` and falls back to a local build if that pull fails
+- support `./alphagsm-docker up --develop` or `./alphagsm-docker start --develop`, which switches the state dir into developer mode and always rebuilds the manager image locally
+- reuse the existing running manager container for forwarded AlphaGSM commands instead of rebuilding on every exec
+- recreate a stopped manager container from the active mode without forcing the other mode's image path
+- build bundled AlphaGSM runtime-family images locally on demand when their default GHCR tag is missing, so quick-start still works without registry auth
 - forward any other arguments to `python alphagsm ...` inside the manager container
+
+When a game module prompts for an install directory and you accept the default
+inside manager-container mode, AlphaGSM now prefers `ALPHAGSM_HOME/servers/<name>`
+instead of `/root/<name>`.
+
+The wrapper defaults `ALPHAGSM_PULL_RUNTIME_IMAGES=0` so quick-start users do
+not need GHCR credentials just to bring the manager container up. If you do
+want eager runtime image pulls at startup, run:
+
+```bash
+ALPHAGSM_PULL_RUNTIME_IMAGES=1 ./alphagsm-docker up
+```
+
+If you are actively developing this repository and want manager restarts to
+always use the local checkout, use:
+
+```bash
+./alphagsm-docker start --develop
+```
+
+That mode is stored in the wrapper state directory, so later `./alphagsm-docker`
+commands keep using local manager rebuilds until you switch back with a plain
+`./alphagsm-docker start` or `./alphagsm-docker up`.
 
 By default it uses a repo-local state path:
 
@@ -174,7 +205,10 @@ nested daemon inside the manager container.
   host directory mounted into the manager container at the exact same absolute
   path.
 2. Do not use container-only paths like `/tmp/server` for Docker-backed servers.
-3. If you want to pull private GHCR images, log Docker into the registry on the
+3. If you try to start a Docker-backed server from a container-only path such as
+  `/root/scp`, AlphaGSM now hard-fails before `docker run` with a path-identity
+  error instead of launching a broken child container.
+4. If you want to pull private GHCR images, log Docker into the registry on the
   manager side so the mounted Docker socket can reuse those credentials. The
   sample manager setup supports either mounting `${HOME}/.docker` or passing
   `GHCR_USERNAME` and `GHCR_TOKEN`.

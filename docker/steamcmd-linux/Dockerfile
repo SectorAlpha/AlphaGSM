@@ -14,7 +14,22 @@ RUN dpkg --add-architecture i386 \
         libatomic1 \
         libsdl2-2.0-0 \
         libpulse0 \
+       wget \
  && rm -rf /var/lib/apt/lists/*
+
+# Older dedicated servers in the steamcmd-linux family still link against
+# OpenSSL 1.1 or 1.0.x just like the CI integration image.
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb" \
+       -O /tmp/libssl1.1.deb \
+ && dpkg -i /tmp/libssl1.1.deb \
+ && rm -f /tmp/libssl1.1.deb
+
+RUN wget -q \
+       "http://security.ubuntu.com/ubuntu/pool/main/o/openssl1.0/libssl1.0.0_1.0.2n-1ubuntu5_amd64.deb" \
+       -O /tmp/libssl1.0.0.deb \
+ && dpkg -i /tmp/libssl1.0.0.deb \
+ && rm -f /tmp/libssl1.0.0.deb
 
 WORKDIR /srv/server
 

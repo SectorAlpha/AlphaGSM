@@ -21,8 +21,15 @@ If you want the Docker-manager route, there is also a root wrapper script:
 
 ```bash
 ./alphagsm-docker up
+./alphagsm-docker start
 ./alphagsm-docker mymc create minecraft.vanilla
 ```
+
+The wrapper keeps runtime-image pre-pull off by default so it works without
+GHCR login for a first run. By default it tries to pull the latest manager
+image from GHCR and falls back to a local build if that pull fails. If you are
+working on AlphaGSM itself, `./alphagsm-docker start --develop` switches the
+wrapper into a local-build developer mode.
 
 See [Run AlphaGSM In Docker](docs/docker-manager.md).
 

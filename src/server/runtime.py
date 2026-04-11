@@ -9,6 +9,7 @@ but Docker is only selected when configuration opts into it.
 from __future__ import annotations
 
 import copy
+import json
 import os
 import shlex
 import subprocess as sp
@@ -107,6 +108,15 @@ RUNTIME_FAMILY_DEFAULTS = {
 VALID_RUNTIME_BACKENDS = ("process", "docker")
 VALID_STOP_MODES = ("docker-stop", "exec-console")
 DEFAULT_CONTAINER_WORKDIR = "/srv/server"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+RUNTIME_FAMILY_DOCKERFILES = {
+    "java": os.path.join("docker", "java", "Dockerfile"),
+    "quake-linux": os.path.join("docker", "quake-linux", "Dockerfile"),
+    "service-console": os.path.join("docker", "service-console", "Dockerfile"),
+    "simple-tcp": os.path.join("docker", "simple-tcp", "Dockerfile"),
+    "steamcmd-linux": os.path.join("docker", "steamcmd-linux", "Dockerfile"),
+    "wine-proton": os.path.join("docker", "wine-proton", "Dockerfile"),
+}
 
 
 def canonicalize_runtime_family(family):
@@ -292,6 +302,116 @@ def build_runtime_requirements(
     return requirements
 
 
+def _current_container_identity_mount_roots():
+    """Return same-path bind-mount roots when AlphaGSM runs inside Docker."""
+
+    if not os.path.exists("/.dockerenv"):
+        return []
+
+    container_name = os.environ.get("HOSTNAME", "").strip()
+    if not container_name:
+        return []
+
+    try:
+        mounts_json = sp.check_output(
+            ["docker", "inspect", "-f", "{{json .Mounts}}", container_name],
+            stderr=sp.STDOUT,
+            shell=False,
+            text=True,
+        )
+    except (OSError, sp.SubprocessError):
+        return []
+
+    try:
+        mounts = json.loads(mounts_json or "[]")
+    except ValueError:
+        return []
+
+    roots = []
+    for mount in mounts:
+        if mount.get("Type") != "bind":
+            continue
+        source = str(mount.get("Source") or "").rstrip(os.sep)
+        destination = str(mount.get("Destination") or "").rstrip(os.sep)
+        if not source or not destination:
+            continue
+        if source != destination:
+            continue
+        roots.append(destination or os.sep)
+    return roots
+
+
+def validate_mount_path_identity(mounts):
+    """Reject bind mounts that are not host-visible in manager-container mode."""
+
+    identity_roots = _current_container_identity_mount_roots()
+    if not identity_roots:
+        return
+
+    for mount in mounts or ():
+        if isinstance(mount, dict):
+            source = mount.get("source")
+        else:
+            source = str(mount).split(":", 1)[0]
+        if not source:
+            continue
+        source = os.path.abspath(str(source))
+        if any(
+            source == root or source.startswith(root.rstrip(os.sep) + os.sep)
+            for root in identity_roots
+        ):
+            continue
+        raise RuntimeError(
+            "Docker-backed server paths must live under a same-path host mount "
+            "when AlphaGSM runs inside Docker. Path not visible to the host "
+            "daemon: %s. Use a path under ALPHAGSM_HOME instead." % (source,)
+        )
+
+
+def default_install_dir(server):
+    """Return the default install directory for *server*.
+
+    Traditional host installs keep using ``~/server-name``. When AlphaGSM runs
+    inside the optional manager container, that default is wrong for
+    Docker-backed servers because ``/root/<name>`` only exists inside the
+    manager. In that mode, prefer the shared same-path mount root and place new
+    installs under ``<ALPHAGSM_HOME>/servers/<name>``.
+    """
+
+    shared_root = os.environ.get("ALPHAGSM_HOME", "").strip()
+    if not shared_root and _current_container_identity_mount_roots():
+        config_location = os.environ.get("ALPHAGSM_CONFIG_LOCATION", "").strip()
+        if config_location:
+            shared_root = os.path.dirname(os.path.abspath(os.path.expanduser(config_location)))
+        if not shared_root:
+            alphagsm_path = os.path.abspath(
+                os.path.expanduser(
+                    settings.user.getsection("core").get("alphagsm_path", "~/.alphagsm")
+                )
+            )
+            if os.path.basename(alphagsm_path.rstrip(os.sep)) == "home":
+                shared_root = os.path.dirname(alphagsm_path)
+
+    if shared_root:
+        return os.path.join(shared_root, "servers", server.name)
+    return os.path.expanduser(os.path.join("~", server.name))
+
+
+def suggest_install_dir(server, current_dir=None):
+    """Return the best install directory for *server* in the current context."""
+
+    candidate = current_dir or server.data.get("dir")
+    if candidate:
+        try:
+            validate_mount_path_identity(
+                [{"source": candidate, "target": DEFAULT_CONTAINER_WORKDIR, "mode": "rw"}]
+            )
+            return candidate
+        except RuntimeError:
+            pass
+    return default_install_dir(server)
+
+
 def build_container_spec(
     server,
     *,
@@ -306,7 +426,6 @@ def build_container_spec(
 ):
     """Build a Docker launch spec from a module start-command hook."""
 
-    command, cwd = get_start_command(server)
     requirements = build_runtime_requirements(
         server,
         family=family,
@@ -314,6 +433,8 @@ def build_container_spec(
         env=env,
         mounts=mounts,
     )
+    validate_mount_path_identity(requirements.get("mounts", []))
+    command, cwd = get_start_command(server)
     if working_dir is None:
         if requirements.get("mounts"):
             working_dir = DEFAULT_CONTAINER_WORKDIR
@@ -613,6 +734,38 @@ def infer_minecraft_java_major(version):
     return 21
 
 
+def _running_inside_container():
+    """Return whether AlphaGSM appears to be running inside a container."""
+
+    return os.path.exists("/.dockerenv")
+
+
+def _inspect_container_network_value(container_name, field):
+    """Return the first non-empty network *field* from ``docker inspect``."""
+
+    try:
+        raw = sp.check_output(
+            [
+                "docker",
+                "inspect",
+                "--format",
+                "{{range .NetworkSettings.Networks}}{{println ." + field + "}}{{end}}",
+                container_name,
+            ],
+            stderr=sp.STDOUT,
+            shell=False,
+            text=True,
+        )
+    except (OSError, sp.SubprocessError):
+        return ""
+
+    for line in raw.splitlines():
+        line = line.strip()
+        if line:
+            return line
+    return ""
+
+
 def resolve_query_host(server, default="127.0.0.1"):
     """Return the best reachable host for query/info checks.
 
@@ -622,9 +775,10 @@ def resolve_query_host(server, default="127.0.0.1"):
     ``127.0.0.1`` points at the manager container rather than the game server.
 
     When the runtime backend is Docker, prefer an explicit external IP if the
-    user configured one; otherwise inspect the live game container and query its
-    bridge-network IP directly. Fall back to *default* if inspection is not
-    available or the container is not running yet.
+    user configured one. Inside a containerized manager, prefer the target
+    container's bridge gateway so published host ports remain reachable from the
+    manager. Otherwise fall back to *default* so host-side AlphaGSM continues to
+    use loopback-host published ports by default.
     """
 
     explicit_host = str(
@@ -645,23 +799,15 @@ def resolve_query_host(server, default="127.0.0.1"):
     if not container_name:
         return default
 
-    try:
-        container_ip = sp.check_output(
-            [
-                "docker",
-                "inspect",
-                "--format",
-                "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
-                container_name,
-            ],
-            stderr=sp.STDOUT,
-            shell=False,
-            text=True,
-        ).strip()
-    except (OSError, sp.SubprocessError):
-        return default
+    if _running_inside_container():
+        gateway = _inspect_container_network_value(container_name, "Gateway")
+        if gateway:
+            return gateway
+        container_ip = _inspect_container_network_value(container_name, "IPAddress")
+        if container_ip:
+            return container_ip
 
-    return container_ip or default
+    return default
 
 
 def handles_set_key(key):
@@ -863,8 +1009,92 @@ class ContainerRuntime(BaseRuntime):
         except OSError as ex:
             raise RuntimeError("Error executing docker: " + str(ex)) from ex
 
+    def _image_exists(self, image):
+        """Return whether *image* is already available locally."""
+
+        try:
+            self._run_check_output(["docker", "image", "inspect", image], text=True)
+        except RuntimeError:
+            return False
+        return True
+
+    def _container_running_state(self, name):
+        """Return ``True``/``False`` if *name* exists, else ``None``."""
+
+        try:
+            output = self._run_check_output(
+                ["docker", "inspect", "-f", "{{.State.Running}}", name],
+                text=True,
+            )
+        except RuntimeError:
+            return None
+        return output.strip().lower() == "true"
+
+    def _runtime_family_dockerfile(self, family):
+        """Return the repository Dockerfile path for *family*, if available."""
+
+        relative_path = RUNTIME_FAMILY_DOCKERFILES.get(canonicalize_runtime_family(family))
+        if not relative_path:
+            return None
+        dockerfile_path = os.path.join(REPO_ROOT, relative_path)
+        if not os.path.isfile(dockerfile_path):
+            return None
+        return dockerfile_path
+
+    def _current_container_identity_mount_roots(self):
+        return _current_container_identity_mount_roots()
+
+    def _validate_mount_path_identity(self, spec):
+        """Reject bind mounts that are not host-visible in manager-container mode."""
+
+        validate_mount_path_identity(spec.get("mounts", ()))
+
+    def _ensure_runtime_image_available(self, spec):
+        """Ensure the runtime image exists locally before starting the container.
+
+        Manager-container quick-start should keep working without GHCR auth. When
+        a server still points at one of AlphaGSM's default runtime-family tags and
+        that tag is not present locally, build the matching in-repo family image
+        with the same tag instead of forcing a registry pull.
+        """
+
+        image = spec.get("image")
+        family = canonicalize_runtime_family(spec.get("runtime_family"))
+        if not image or not family:
+            return
+        if self._image_exists(image):
+            return
+
+        default_image = RUNTIME_FAMILY_DEFAULTS.get(family, {}).get("image")
+        if image != default_image:
+            return
+
+        dockerfile_path = self._runtime_family_dockerfile(family)
+        if dockerfile_path is None:
+            return
+
+        self._run_check_output(
+            [
+                "docker",
+                "build",
+                "-f",
+                dockerfile_path,
+                "-t",
+                image,
+                REPO_ROOT,
+            ],
+            text=True,
+        )
+
     def start(self, server, *args, **kwargs):
         spec = get_container_spec(server, *args, **kwargs)
+        self._validate_mount_path_identity(spec)
+        self._ensure_runtime_image_available(spec)
+        container_state = self._container_running_state(spec["container_name"])
+        if container_state is False:
+            self._run_check_output(["docker", "rm", "-f", spec["container_name"]], text=True)
+        elif container_state is True:
+            raise RuntimeError("Docker container is already running: " + spec["container_name"])
         command = ["docker", "run", "-d"]
         if spec.get("stdin_open", False):
             command.append("-i")
@@ -893,14 +1123,7 @@ class ContainerRuntime(BaseRuntime):
 
     def is_running(self, server):
         name = resolve_runtime_metadata(server).get("container_name", "alphagsm-" + server.name)
-        try:
-            output = self._run_check_output(
-                ["docker", "inspect", "-f", "{{.State.Running}}", name],
-                text=True,
-            )
-        except RuntimeError:
-            return False
-        return output.strip().lower() == "true"
+        return self._container_running_state(name) is True
 
     def kill(self, server):
         name = resolve_runtime_metadata(server).get("container_name", "alphagsm-" + server.name)
