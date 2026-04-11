@@ -142,12 +142,13 @@ def get_start_command(server):
 def get_query_address(server):
     """Return the UDP endpoint used for Avorion reachability checks."""
 
-    return ("127.0.0.1", int(server.data["steamqueryport"]), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data["steamqueryport"]), "udp")
 
 
 def get_info_address(server):
     """Return the UDP endpoint used for Avorion info output."""
 
+    return get_query_address(server)
     return get_query_address(server)
 
 

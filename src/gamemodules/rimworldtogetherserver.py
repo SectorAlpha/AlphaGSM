@@ -144,12 +144,12 @@ def get_query_address(server):
     RimWorld Together uses a TCP-based protocol on its game port; a TCP
     connect on that port confirms the server is accepting connections.
     """
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def get_info_address(server):
     """Return the TCP address used by the ``info`` command for this server."""
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 def do_stop(server, j):
     """Stop RimWorld Together by interrupting the foreground server process."""

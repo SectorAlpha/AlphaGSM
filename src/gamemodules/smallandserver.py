@@ -160,12 +160,13 @@ def get_start_command(server):
 def get_query_address(server):
     """Smalland exposes a silent UDP listener on the main game port."""
 
-    return ("127.0.0.1", int(server.data["port"]), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
     """Smalland's info surface is the same UDP listener as its query surface."""
 
+    return get_query_address(server)
     return get_query_address(server)
 
 

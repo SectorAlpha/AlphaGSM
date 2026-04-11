@@ -155,12 +155,13 @@ def get_start_command(server):
 def get_query_address(server):
     """Return the Project Zomboid direct-connection UDP listener."""
 
-    return ("127.0.0.1", int(server.data.get("queryport", 16262)), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", 16262)), "udp")
 
 
 def get_info_address(server):
     """Return the Project Zomboid direct-connection UDP listener."""
 
+    return get_query_address(server)
     return get_query_address(server)
 
 

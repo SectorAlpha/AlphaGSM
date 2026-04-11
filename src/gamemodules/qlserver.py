@@ -189,13 +189,13 @@ def get_container_spec(server):
 def get_query_address(server):
     """Return the Quake UDP query address used by the qlserver module."""
 
-    return ("127.0.0.1", int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def get_info_address(server):
     """Return the Quake UDP info address used by the qlserver module."""
 
-    return ("127.0.0.1", int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def do_stop(server, j):

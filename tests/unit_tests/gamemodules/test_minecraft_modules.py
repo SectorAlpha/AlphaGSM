@@ -39,6 +39,41 @@ def test_custom_configure_sets_backup_defaults_and_returns_eula_state(tmp_path):
     assert server.data["backup"]["schedule"]
 
 
+def test_custom_configure_uses_runtime_install_dir_helper(monkeypatch):
+    server = DummyServer("mymc")
+
+    observed = {}
+
+    def fake_suggest_install_dir(current_server, current_dir=None):
+        observed["current_dir"] = current_dir
+        return "/srv/alphagsm/servers/" + current_server.name
+
+    monkeypatch.setattr(custom.runtime_module, "suggest_install_dir", fake_suggest_install_dir)
+
+    custom.configure(server, ask=False, port=25565, dir=None, eula=True)
+
+    assert observed["current_dir"] is None
+    assert server.data["dir"] == "/srv/alphagsm/servers/mymc"
+
+
+def test_custom_configure_replaces_stale_manager_only_install_dir(monkeypatch):
+    server = DummyServer("mymc")
+    server.data["dir"] = "/root/mymc"
+
+    observed = {}
+
+    def fake_suggest_install_dir(current_server, current_dir=None):
+        observed["current_dir"] = current_dir
+        return "/srv/alphagsm/servers/" + current_server.name
+
+    monkeypatch.setattr(custom.runtime_module, "suggest_install_dir", fake_suggest_install_dir)
+
+    custom.configure(server, ask=False, port=25565, dir=None, eula=True)
+
+    assert observed["current_dir"] == "/root/mymc"
+    assert server.data["dir"] == "/srv/alphagsm/servers/mymc"
+
+
 def test_custom_install_updates_generated_config_files(tmp_path, monkeypatch):
     server = DummyServer()
     server.data.update({"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565})
@@ -212,6 +247,49 @@ def test_bungeecord_configure_install_and_checkvalue(tmp_path):
     assert server.data["dir"] == str(tmp_path)
     assert bungeecord.get_start_command(server) == (["java", "-Xmx256M", "-jar", "BungeeCord.jar"], str(tmp_path))
     assert bungeecord.checkvalue(server, "exe_name", "proxy.jar") == "proxy.jar"
+
+
+def test_bungeecord_configure_uses_runtime_install_dir_helper(monkeypatch):
+    server = DummyServer("proxy")
+
+    observed = {}
+
+    def fake_suggest_install_dir(current_server, current_dir=None):
+        observed["current_dir"] = current_dir
+        return "/srv/alphagsm/servers/" + current_server.name
+
+    monkeypatch.setattr(
+        bungeecord.runtime_module,
+        "suggest_install_dir",
+        fake_suggest_install_dir,
+    )
+
+    bungeecord.configure(server, ask=False, dir=None)
+
+    assert observed["current_dir"] is None
+    assert server.data["dir"] == "/srv/alphagsm/servers/proxy"
+
+
+def test_bungeecord_configure_replaces_stale_manager_only_install_dir(monkeypatch):
+    server = DummyServer("proxy")
+    server.data["dir"] = "/root/proxy"
+
+    observed = {}
+
+    def fake_suggest_install_dir(current_server, current_dir=None):
+        observed["current_dir"] = current_dir
+        return "/srv/alphagsm/servers/" + current_server.name
+
+    monkeypatch.setattr(
+        bungeecord.runtime_module,
+        "suggest_install_dir",
+        fake_suggest_install_dir,
+    )
+
+    bungeecord.configure(server, ask=False, dir=None)
+
+    assert observed["current_dir"] == "/root/proxy"
+    assert server.data["dir"] == "/srv/alphagsm/servers/proxy"
 
 
 def test_bungeecord_install_requires_existing_jar(tmp_path):

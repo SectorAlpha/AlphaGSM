@@ -194,11 +194,7 @@ def configure(
 
     # assign the installation directory
     if dir is None:
-        if "dir" in server.data and server.data["dir"] is not None:
-            dir = server.data["dir"]
-        else:
-            # if no directory is assigned, set it to the users home area
-            dir = os.path.expanduser(os.path.join("~", server.name))
+        dir = runtime_module.suggest_install_dir(server, server.data.get("dir"))
         if ask:
             # set a custom location to install the directory?
             inp = input(

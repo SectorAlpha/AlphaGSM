@@ -3,10 +3,27 @@
 from pathlib import Path
 
 
+JAVA_DOCKERFILE = Path("docker/java/Dockerfile")
 STEAMCMD_LINUX_DOCKERFILE = Path("docker/steamcmd-linux/Dockerfile")
 WINE_PROTON_DOCKERFILE = Path("docker/wine-proton/Dockerfile")
 WINE_PROTON_ENTRYPOINT = Path("docker/wine-proton/entrypoint.sh")
 BUILD_WORKFLOW = Path(".github/workflows/build-runtime-family-images.yml")
+
+
+def test_java_runtime_image_keeps_bootstrap_tools_and_supported_temurin_jres():
+    text = JAVA_DOCKERFILE.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "wget -q -O /usr/share/keyrings/adoptium.asc",
+        "wget",
+        "temurin-17-jre",
+        "temurin-21-jre",
+        "temurin-25-jre",
+    )
+
+    missing = [snippet for snippet in required_snippets if snippet not in text]
+
+    assert missing == []
 
 
 def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():

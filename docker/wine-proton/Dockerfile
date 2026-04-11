@@ -53,7 +53,7 @@ RUN --mount=type=secret,id=gh_token \
     && ln -s /opt/proton-ge /opt/proton \
     && rm -f /tmp/install_proton.sh
 
-COPY entrypoint.sh /usr/local/bin/alphagsm-wine-proton-entrypoint
+COPY docker/wine-proton/entrypoint.sh /usr/local/bin/alphagsm-wine-proton-entrypoint
 
 RUN chmod +x /usr/local/bin/alphagsm-wine-proton-entrypoint \
     && mkdir -p /srv/server \

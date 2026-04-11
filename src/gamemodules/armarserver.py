@@ -217,12 +217,13 @@ def get_container_spec(server):
 def get_query_address(server):
     """Return the A2S query address used by Arma Reforger."""
 
-    return ("127.0.0.1", int(server.data.get("queryport", int(server.data["port"]) + 1)), "a2s")
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", int(server.data["port"]) + 1)), "a2s")
 
 
 def get_info_address(server):
     """Return the A2S info address used by the info command."""
 
+    return get_query_address(server)
     return get_query_address(server)
 
 

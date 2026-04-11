@@ -472,6 +472,7 @@ jobs:
           pytest \
             tests/backend_integration_tests/test_backend_docker.py \
             tests/backend_integration_tests/test_backend_docker_manager.py \
+            tests/backend_integration_tests/test_alphagsm_docker_wrapper.py \
             --junit-xml=backend-docker-results.xml \
             -v
       - name: Upload backend integration test results

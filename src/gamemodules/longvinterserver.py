@@ -123,7 +123,7 @@ def get_start_command(server):
 
 def get_query_address(server):
     """Return the A2S query address for the Longvinter dedicated query port."""
-    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 
 def do_stop(server, j):

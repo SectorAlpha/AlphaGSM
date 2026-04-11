@@ -687,6 +687,20 @@ def resolve_runtime_metadata(server):
     metadata.setdefault("env", {})
     metadata.setdefault("mounts", [])
     metadata.setdefault("ports", [])
+
+    version = server.data.get("version")
+    if metadata.get("runtime_family") == "java" and version not in (None, "", "latest"):
+        inferred_java_major = infer_minecraft_java_major(version)
+        current_java_major = metadata.get("java_major")
+        try:
+            current_java_major = int(current_java_major)
+        except (TypeError, ValueError):
+            current_java_major = None
+        if current_java_major is None or current_java_major < inferred_java_major:
+            metadata["java_major"] = inferred_java_major
+            metadata["env"] = dict(metadata.get("env") or {})
+            metadata["env"]["ALPHAGSM_JAVA_MAJOR"] = str(inferred_java_major)
+
     return metadata
 
 
@@ -724,6 +738,8 @@ def infer_minecraft_java_major(version):
         major = int(parts[0])
         minor = int(parts[1])
         patch = int(parts[2]) if len(parts) >= 3 and parts[2].isdigit() else 0
+        if major >= 26:
+            return 25
         if (major, minor) < (1, 17):
             return 8
         if (major, minor) < (1, 20):
@@ -790,6 +806,9 @@ def resolve_query_host(server, default="127.0.0.1"):
     ).strip()
     if explicit_host and explicit_host not in {"0.0.0.0", "::"}:
         return explicit_host
+
+    if not hasattr(server, "name"):
+        return default
 
     metadata = resolve_runtime_metadata(server)
     if metadata.get("runtime") != "docker":

@@ -287,6 +287,25 @@ def test_wrapper_status_appends_host_connection_details(tmp_path):
     assert "7777/tcp -> 0.0.0.0:7777" in result.stdout
     assert "7777/udp -> 0.0.0.0:7777" in result.stdout
     assert "7778/tcp -> 0.0.0.0:7778" in result.stdout
+    assert "Connect from this host: 127.0.0.1:7777/tcp" in result.stdout
+    assert "Connect from this host: 127.0.0.1:7777/udp" in result.stdout
+    assert "Connect from this host: 127.0.0.1:7778/tcp" in result.stdout
+    assert any(entry["argv"][:1] == ["port"] for entry in log_entries)
+
+
+def test_wrapper_start_appends_host_connection_details(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "mymc",
+        "start",
+        port_output="25566/tcp -> 0.0.0.0:25566\n25566/tcp -> :::25566",
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "FORWARDED:-T alphagsm python alphagsm mymc start" in result.stdout
+    assert "Host connection details:" in result.stdout
+    assert "Connect from this host: 127.0.0.1:25566/tcp" in result.stdout
+    assert result.stdout.count("Connect from this host: 127.0.0.1:25566/tcp") == 1
     assert any(entry["argv"][:1] == ["port"] for entry in log_entries)
 
 

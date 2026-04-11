@@ -156,7 +156,7 @@ def configure(
     server.data["port"] = int(port)
 
     if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
+        dir = runtime_module.suggest_install_dir(server, server.data.get("dir"))
         if ask:
             inp = input(
                 "Where would you like to install the Bedrock server: [%s] " % (dir,)

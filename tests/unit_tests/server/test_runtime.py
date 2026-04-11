@@ -60,6 +60,28 @@ def test_resolve_runtime_metadata_uses_family_defaults_and_java_alias(monkeypatc
     assert metadata["ports"] == []
 
 
+def test_resolve_runtime_metadata_raises_stale_java_major_for_new_minecraft_versions(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 21,
+            "env": {
+                "ALPHAGSM_JAVA_MAJOR": "21",
+                "ALPHAGSM_SERVER_JAR": "minecraft_server.jar",
+            },
+        }
+    )
+    server = DummyServer(module=module, data={"version": "26.1.2"})
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+
+    assert metadata["java_major"] == 25
+    assert metadata["env"]["ALPHAGSM_JAVA_MAJOR"] == "25"
+    assert metadata["env"]["ALPHAGSM_SERVER_JAR"] == "minecraft_server.jar"
+
+
 def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults():
     server = DummyServer(data={"dir": "/srv/game/", "port": 27015})
 
@@ -79,6 +101,10 @@ def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults():
             {"host": 27015, "container": 27015, "protocol": "udp"}
         ],
     }
+
+
+def test_infer_minecraft_java_major_supports_new_26_x_version_scheme():
+    assert runtime_module.infer_minecraft_java_major("26.1.2") == 25
 
 
 def test_build_container_spec_uses_get_start_command_and_shared_mounts(tmp_path):
@@ -739,6 +765,15 @@ def test_resolve_query_host_prefers_explicit_public_ip(monkeypatch):
     )
 
     assert runtime_module.resolve_query_host(server) == "192.168.1.50"
+
+
+def test_resolve_query_host_falls_back_for_server_stubs_without_name(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    server = SimpleNamespace(data={"runtime": "docker", "container_name": "alphagsm-alpha"})
+
+    monkeypatch.setattr(runtime_module, "_running_inside_container", lambda: True)
+
+    assert runtime_module.resolve_query_host(server) == "127.0.0.1"
 
 
 def test_container_runtime_kill_stops_then_removes_container(monkeypatch):

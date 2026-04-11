@@ -59,6 +59,24 @@ def test_bedrock_configure_sets_defaults(tmp_path, monkeypatch):
     assert server.data["exe_name"] == "bedrock_server"
 
 
+def test_bedrock_configure_uses_runtime_install_dir_helper(monkeypatch):
+    server = DummyServer("bedrock")
+    monkeypatch.setattr(
+        bedrock,
+        "resolve_bedrock_download",
+        lambda version=None: ("1.21.100.6", "http://example.com/bedrock.zip"),
+    )
+    monkeypatch.setattr(
+        bedrock.runtime_module,
+        "suggest_install_dir",
+        lambda current_server, current_dir=None: "/srv/alphagsm/servers/" + current_server.name,
+    )
+
+    bedrock.configure(server, ask=False, dir=None)
+
+    assert server.data["dir"] == "/srv/alphagsm/servers/bedrock"
+
+
 def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monkeypatch):
     server = DummyServer("bedrock")
     server.data.update(

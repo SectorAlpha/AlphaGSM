@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+shared_root="${ALPHAGSM_HOME:-/srv/alphagsm}"
+export ALPHAGSM_HOME="$shared_root"
+export HOME="$shared_root"
+
 mkdir -p \
-  /srv/alphagsm/home/conf \
-  /srv/alphagsm/home/downloads/downloads \
-  /srv/alphagsm/home/logs \
-  /srv/alphagsm/servers
+  "$shared_root/home/conf" \
+  "$shared_root/home/downloads/downloads" \
+  "$shared_root/home/logs" \
+  "$shared_root/servers"
 
 if [[ -n "${GHCR_USERNAME:-}" && -n "${GHCR_TOKEN:-}" ]]; then
   printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin

@@ -216,7 +216,7 @@ def do_stop(server, j):
 def get_query_address(server):
     """Probe the UT99 game socket as generic UDP reachability."""
 
-    return ("127.0.0.1", int(server.data["port"]), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):

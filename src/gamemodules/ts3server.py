@@ -224,12 +224,12 @@ def get_query_address(server):
     real server information (name, client count, channel list) via the TS3
     ServerQuery protocol rather than a plain TCP ping.
     """
-    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "ts3")
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", "10011")), "ts3")
 
 
 def get_info_address(server):
     """Return the TS3 ServerQuery address used by the ``info`` command."""
-    return ("127.0.0.1", int(server.data.get("queryport", "10011")), "ts3")
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", "10011")), "ts3")
 
 
 def do_stop(server, j):

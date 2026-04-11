@@ -39,10 +39,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
     server.data["port"] = int(port)
 
     if dir is None:
-        if "dir" in server.data and server.data["dir"] is not None:
-            dir = server.data["dir"]
-        else:
-            dir = os.path.expanduser(os.path.join("~", server.name))
+        dir = runtime_module.suggest_install_dir(server, server.data.get("dir"))
         if ask:
             inp = input(
                 "Where would you like to install the minecraft server: [" + dir + "] "

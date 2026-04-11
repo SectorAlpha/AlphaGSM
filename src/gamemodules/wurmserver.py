@@ -168,7 +168,7 @@ def get_start_command(server):
 def get_query_address(server):
     """Return the TCP endpoint used for generic Wurm reachability checks."""
 
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def get_info_address(server):

@@ -197,12 +197,13 @@ def restart(server):
 def get_query_address(server):
     """Return the Craftopia UDP game endpoint used for health checks."""
 
-    return ("127.0.0.1", int(server.data["port"]), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
     """Return the Craftopia UDP endpoint used for info output."""
 
+    return get_query_address(server)
     return get_query_address(server)
 
 

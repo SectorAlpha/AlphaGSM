@@ -9,6 +9,9 @@ services:
     environment:
       ALPHAGSM_CONFIG_LOCATION: ${ALPHAGSM_HOME:-/srv/alphagsm}/alphagsm.conf
       ALPHAGSM_PULL_RUNTIME_IMAGES: ${ALPHAGSM_PULL_RUNTIME_IMAGES:-1}
+      ALPHAGSM_HOME: ${ALPHAGSM_HOME:-/srv/alphagsm}
+      HOME: ${ALPHAGSM_HOME:-/srv/alphagsm}
+      DOCKER_CONFIG: /root/.docker
       GHCR_TOKEN: ${GHCR_TOKEN:-}
       GHCR_USERNAME: ${GHCR_USERNAME:-}
       PYTHONPATH: /opt/alphagsm/src
