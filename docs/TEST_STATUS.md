@@ -145,7 +145,7 @@ Last updated: 2026-04-10
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
-| emserver | SteamCMD app 460040 returns `Missing configuration` (state `0x202`); anonymous install is not usable in CI |
+| emserver | SteamCMD (Source) |
 | ets2server | SteamCMD downloads successfully but server never outputs expected readiness markers |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
@@ -172,7 +172,7 @@ Last updated: 2026-04-10
 | rwserver | SteamCMD app 339010 installs no Linux-compatible dedicated server binary (server.jar not present) |
 | sampserver | Download domain files.sa-mp.com is dead |
 | seserver | SteamCMD app 298740 installs no Linux-compatible dedicated server binary (executable file not found) |
-| sevendaystodie | SteamCMD app 294420 anonymous install repeatedly returns state 0x202; dedicated server payload is not installable in CI |
+| sevendaystodie | SteamCMD |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | ss14server | SS14 CDN returns 404 |

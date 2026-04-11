@@ -28,6 +28,8 @@ STEAMCMD_SCRIPTS = os.path.expanduser(
 )
 STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 STEAMCMD_RETRIES = 3
+STEAMCMD_RETRY_DELAY_SECONDS = 2
+STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS = 5
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -46,6 +48,26 @@ def _steamcmd_succeeded(output, app_id):
         "Success! App '{}' already up to date.".format(app_id),
     )
     return any(marker in output for marker in success_markers)
+
+
+def _steamcmd_missing_manifest_flake(output, app_id):
+    """Return whether SteamCMD reported the known missing-manifest flake."""
+
+    if app_id in (None, ""):
+        return False
+
+    app_id = str(app_id)
+    missing_config = "ERROR! Failed to install app '{}' (Missing configuration)".format(app_id)
+    state_202 = "Error! App '{}' state is 0x202 after update job.".format(app_id)
+    return missing_config in output and state_202 in output
+
+
+def _steamcmd_retry_delay(output, app_id):
+    """Return the retry delay for known transient SteamCMD states."""
+
+    if _steamcmd_missing_manifest_flake(output, app_id):
+        return STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    return STEAMCMD_RETRY_DELAY_SECONDS
 
 
 def _get_login_args(steam_anonymous_login_possible):
@@ -144,8 +166,12 @@ def download(
             _ensure_steamclient_symlinks()
             return
         if attempt + 1 < STEAMCMD_RETRIES:
-            print("SteamCMD did not complete install cleanly, retrying...")
-            time.sleep(2)
+            retry_delay = _steamcmd_retry_delay(proc.stdout, Steam_AppID)
+            print(
+                "SteamCMD did not complete install cleanly, retrying in %ss..."
+                % (retry_delay,)
+            )
+            time.sleep(retry_delay)
     raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
 
 
