@@ -17,6 +17,7 @@ RUN wget -q -O /usr/share/keyrings/adoptium.asc \
  && apt-get update -qq \
  && apt-get install -y --no-install-recommends \
         bash \
+        python3 \
         temurin-17-jre \
         temurin-21-jre \
         temurin-25-jre \

@@ -468,6 +468,12 @@ jobs:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
           ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}
           ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+          ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA: ghcr.io/sectoralpha/alphagsm-java-runtime:2026-04
+          ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX: ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:2026-04
+          ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE: ghcr.io/sectoralpha/alphagsm-service-console-runtime:2026-04
+          ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP: ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:2026-04
+          ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX: ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:2026-04
+          ALPHAGSM_WRAPPER_DOCKER_IMAGE_WINE_PROTON: ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:2026-04
         run: |
           pytest \
             tests/backend_integration_tests/test_backend_docker.py \

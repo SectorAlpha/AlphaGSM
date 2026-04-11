@@ -8,6 +8,7 @@ RUN dpkg --add-architecture i386 \
         bash \
         ca-certificates \
         lib32gcc-s1 \
+        python3 \
         lib32stdc++6 \
  && rm -rf /var/lib/apt/lists/*
 

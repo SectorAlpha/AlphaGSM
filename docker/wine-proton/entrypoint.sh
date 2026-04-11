@@ -3,6 +3,13 @@ set -euo pipefail
 
 WINEPREFIX_PATH="${ALPHAGSM_WINEPREFIX:-/srv/server/.alphagsm-wineprefix}"
 PROTON_BIN="${ALPHAGSM_PROTON_BIN:-/opt/proton-ge/proton}"
+NATIVE_COMMAND="${1:-}"
+
+if [[ -n "${NATIVE_COMMAND}" && "${NATIVE_COMMAND##*.}" != "exe" ]]; then
+    if command -v "${NATIVE_COMMAND}" >/dev/null 2>&1 || [[ -x "${NATIVE_COMMAND}" ]]; then
+        exec "$@"
+    fi
+fi
 
 mkdir -p "${WINEPREFIX_PATH}"
 

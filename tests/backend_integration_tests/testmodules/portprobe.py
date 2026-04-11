@@ -1,4 +1,4 @@
-"""Tiny test-only module for cheap backend port-manager lifecycle coverage."""
+"""Tiny test-only module for cheap backend lifecycle coverage."""
 
 import os
 
@@ -26,6 +26,8 @@ _PORT_DEFINITIONS = (
     {"key": "queryport", "protocol": "tcp"},
     {"key": "metricsport", "protocol": "tcp"},
 )
+
+_DEFAULT_RUNTIME_FAMILY = "simple-tcp"
 
 _RUNTIME_SCRIPT = """#!/usr/bin/env python3
 import signal
@@ -156,6 +158,14 @@ def _runtime_command(server):
     )
 
 
+def _runtime_family(server):
+    """Return the requested Docker runtime family for probe coverage."""
+
+    return runtime_module.canonicalize_runtime_family(
+        server.data.get("runtime_family", _DEFAULT_RUNTIME_FAMILY)
+    )
+
+
 def get_start_command(server):
     """Launch the tiny Python listener on each claimed TCP port."""
 
@@ -212,13 +222,13 @@ def checkvalue(server, key, *value):
 def get_query_address(server):
     """Query the main listener over TCP reachability."""
 
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def get_info_address(server):
     """Info uses the same lightweight TCP reachability check as query."""
 
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return get_query_address(server)
 
 
 def get_runtime_requirements(server):
@@ -226,9 +236,8 @@ def get_runtime_requirements(server):
 
     return runtime_module.build_runtime_requirements(
         server,
-        family="simple-tcp",
+        family=_runtime_family(server),
         port_definitions=_PORT_DEFINITIONS,
-        extra={"stop_mode": "exec-console"},
     )
 
 
@@ -236,12 +245,7 @@ def get_container_spec(server):
     """Describe the container launch spec for the probe server."""
 
     command, _cwd = _runtime_command(server)
-    requirements = runtime_module.build_runtime_requirements(
-        server,
-        family="simple-tcp",
-        port_definitions=_PORT_DEFINITIONS,
-        extra={"stop_mode": "exec-console"},
-    )
+    requirements = get_runtime_requirements(server)
     return {
         "working_dir": runtime_module.DEFAULT_CONTAINER_WORKDIR,
         "stdin_open": True,
@@ -249,5 +253,4 @@ def get_container_spec(server):
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
         "command": list(command),
-        "stop_mode": "exec-console",
     }

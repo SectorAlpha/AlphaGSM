@@ -20,6 +20,7 @@ RUN dpkg --add-architecture i386 \
         libatomic1 \
         libsdl2-2.0-0 \
         libpulse0 \
+        python3 \
         procps \
         unzip \
         wget \
@@ -45,9 +46,7 @@ RUN wget -q \
     && rm -f /tmp/wine-mono.msi
 
 COPY scripts/install_proton.sh /tmp/install_proton.sh
-RUN --mount=type=secret,id=gh_token \
-    GH_TOKEN=$(cat /run/secrets/gh_token 2>/dev/null || true) \
-    GITHUB_TOKEN=${GH_TOKEN} \
+RUN GITHUB_TOKEN=${GITHUB_TOKEN:-} \
     PROTON_GE_DIR=/opt/proton-ge \
     bash /tmp/install_proton.sh proton \
     && ln -s /opt/proton-ge /opt/proton \

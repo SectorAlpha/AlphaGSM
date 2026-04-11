@@ -19,8 +19,10 @@ daemon.
 
 If you want the Docker-manager route, there is also a root wrapper script:
 
+For many first-time setups, this is the quickest way to get started because it
+avoids most of the host-side Python, Java, and system-package setup.
+
 ```bash
-./alphagsm-docker up
 ./alphagsm-docker start
 ./alphagsm-docker mymc create minecraft.vanilla
 ```
@@ -61,6 +63,10 @@ Some server types need one extra thing:
   ```
 
 ## Fast Start
+
+If you want the quickest first run, start with the Docker-manager path above.
+The host install below is still the right option when you want AlphaGSM running
+directly on the machine instead of through Docker.
 
 ### 1. Install the Python packages
 

@@ -14,6 +14,7 @@ RUN dpkg --add-architecture i386 \
         libatomic1 \
         libsdl2-2.0-0 \
         libpulse0 \
+       python3 \
        wget \
  && rm -rf /var/lib/apt/lists/*
 

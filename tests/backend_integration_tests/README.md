@@ -11,6 +11,7 @@ path:
 | `test_backend_subprocess.py` | subprocess (pure Python) | `java` |
 | `test_backend_docker.py` | Docker runtime | `docker` |
 | `test_backend_docker_manager.py` | AlphaGSM manager container driving Docker runtime | `docker` |
+| `test_alphagsm_docker_wrapper.py` | `alphagsm-docker` wrapper | `docker`, Docker Compose |
 
 ## Docker runtime family coverage
 
@@ -55,6 +56,11 @@ itself: `create`, `setup`, `start`, readiness, `status`, `query`, `info`,
 It also runs `test_backend_docker_manager.py`, which covers the optional
 manager-container mode: AlphaGSM itself runs inside Docker, talks to the host
 Docker socket, and launches a sibling Docker container for Minecraft.
+
+The wrapper-level test file `test_alphagsm_docker_wrapper.py` now adds a
+runtime-family probe matrix through `./alphagsm-docker`, proving that the
+wrapper can create Docker-backed servers for each declared runtime family and
+that local `query` / `info` checks can reach the published ports.
 
 The Docker runtime checks intentionally do not run in the main
 `integration-test` matrix, because that job is itself a GitHub Actions
