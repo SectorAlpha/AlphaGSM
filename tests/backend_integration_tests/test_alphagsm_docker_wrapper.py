@@ -89,7 +89,13 @@ def _wrapper_family_image(runtime_family):
 
 def _ensure_wrapper_family_image(lifecycle, runtime_family, image, pull_only):
     if pull_only:
-        lifecycle.ensure_docker_image(image)
+        try:
+            lifecycle.ensure_docker_image(image)
+        except pytest.fail.Exception:
+            pytest.skip(
+                "Published runtime image is not available yet for %s: %s"
+                % (runtime_family, image)
+            )
         return
 
     inspect = subprocess.run(
