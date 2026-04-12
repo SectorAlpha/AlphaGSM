@@ -54,13 +54,7 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-hzserver-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$("$PYTHON_BIN" - <<'PY'
-import socket
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-    sock.bind(("127.0.0.1", 0))
-    print(sock.getsockname()[1])
-PY
-)" 
+PORT="$(pick_free_port)" 
 
 cat > "$CONFIG_PATH" <<EOF
 [core]

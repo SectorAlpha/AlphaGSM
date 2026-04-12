@@ -26,6 +26,9 @@ run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
+# shellcheck source=tests/smoke_tests/steamcmd_helpers.sh
+source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
+
 run_alphagsm_capture() {
   local output_file
   output_file="$(mktemp)"
@@ -86,13 +89,7 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-TF2-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$("$PYTHON_BIN" - <<'PY'
-import socket
-with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-    sock.bind(("127.0.0.1", 0))
-    print(sock.getsockname()[1])
-PY
-)"
+PORT="$(pick_free_port)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]

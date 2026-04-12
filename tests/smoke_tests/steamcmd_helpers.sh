@@ -2,6 +2,34 @@
 # Shared helpers for smoke tests.
 # Source this after defining run_alphagsm().
 
+# pick_free_port
+# Return an ephemeral port that is free on both TCP and UDP.
+# The dual-protocol check mirrors AlphaGSM's port-manager pre-flight
+# (probe_live_listener), which tests both protocols; a port in TCP
+# TIME_WAIT state would otherwise cause "Live listener already holds" failures.
+pick_free_port() {
+  "${PYTHON_BIN:-python3}" - <<'PY'
+import socket, sys
+for _attempt in range(100):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    ok = True
+    for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
+        try:
+            with socket.socket(socket.AF_INET, kind) as probe:
+                probe.bind(("127.0.0.1", port))
+        except OSError:
+            ok = False
+            break
+    if ok:
+        print(port)
+        sys.exit(0)
+sys.stderr.write("Could not find a free TCP+UDP port after 100 attempts\n")
+sys.exit(1)
+PY
+}
+
 # require_proton
 # Skip this smoke test gracefully if Wine (or Proton-GE) is not installed.
 # Windows-binary game servers need Wine at start time; when Wine is absent the
