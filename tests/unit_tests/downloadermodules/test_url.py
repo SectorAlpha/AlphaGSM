@@ -50,6 +50,8 @@ def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkey
         calls.append(url)
         if len(calls) < 2:
             raise urllib.error.URLError("transient")
+        with open(targetname, "wb"):
+            pass
 
     monkeypatch.setattr(url_module, "_download_url", fake_download_url)
     monkeypatch.setattr(url_module.time, "sleep", lambda seconds: sleeps.append(seconds))
@@ -81,7 +83,7 @@ def test_download_raises_after_all_retries_exhausted(url_module, tmp_path, monke
 def test_download_removes_partial_file_between_retries(url_module, tmp_path, monkeypatch):
     calls = []
     removed = []
-    target = str(tmp_path / "server.jar")
+    part_target = str(tmp_path / "server.jar.part")
 
     def fake_download_url(url, targetname):
         calls.append(url)
@@ -104,7 +106,7 @@ def test_download_removes_partial_file_between_retries(url_module, tmp_path, mon
     url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
 
     assert len(calls) == 2
-    assert target in removed
+    assert part_target in removed
 
 
 @pytest.mark.parametrize(
@@ -121,7 +123,8 @@ def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, com
     calls = []
 
     def fake_download_url(url, targetname):
-        return targetname
+        with open(targetname, "wb"):
+            pass
 
     def fake_call(cmd, stdout):
         calls.append(cmd)
@@ -137,7 +140,11 @@ def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, com
 
 
 def test_download_raises_when_extractor_fails(url_module, tmp_path, monkeypatch):
-    monkeypatch.setattr(url_module, "_download_url", lambda url, targetname: targetname)
+    def fake_download_url(url, targetname):
+        with open(targetname, "wb"):
+            pass
+
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
     monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 1)
 
     with pytest.raises(url_module.DownloaderError, match="Error extracting download"):
