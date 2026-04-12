@@ -7,6 +7,10 @@ import os.path
 import shutil
 import subprocess as sp
 import sys
+import time
+
+URL_RETRIES = 3
+URL_RETRY_DELAY_SECONDS = 5
 
 USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 
@@ -56,12 +60,22 @@ def download(path,args):
             raise DownloaderError("Unknown decompression type")
         if decompress in ["gz"]: # compression without filenames
             targetname+="."+decompress
-    try:
-        fname=_download_url(url,targetname)
-    except urllib.error.URLError as ex:
-        reason = ex.reason if hasattr(ex, 'reason') else str(ex)
-        print("Error downloading "+str(targetname)+": "+str(reason))
-        raise DownloaderError("Can't download file")
+    for attempt in range(URL_RETRIES):
+        try:
+            _download_url(url, targetname)
+            break
+        except urllib.error.URLError as ex:
+            reason = ex.reason if hasattr(ex, 'reason') else str(ex)
+            print("Error downloading " + str(targetname) + ": " + str(reason))
+            try:
+                os.remove(targetname)
+            except FileNotFoundError:
+                pass
+            if attempt + 1 < URL_RETRIES:
+                print("Retrying in %ss..." % (URL_RETRY_DELAY_SECONDS,))
+                time.sleep(URL_RETRY_DELAY_SECONDS)
+            else:
+                raise DownloaderError("Can't download file")
     if decompress == "zip":
         ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
         if ret!=0:

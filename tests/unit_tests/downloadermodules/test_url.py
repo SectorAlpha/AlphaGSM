@@ -1,5 +1,6 @@
 import importlib
 import io
+import os
 import sys
 import urllib.error
 
@@ -35,9 +36,74 @@ def test_download_wraps_url_errors(url_module, tmp_path, monkeypatch):
         raise urllib.error.URLError("offline")
 
     monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: None)
 
     with pytest.raises(url_module.DownloaderError, match="Can't download file"):
         url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
+
+
+def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkeypatch):
+    calls = []
+    sleeps = []
+
+    def fake_download_url(url, targetname):
+        calls.append(url)
+        if len(calls) < 2:
+            raise urllib.error.URLError("transient")
+
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
+
+    assert len(calls) == 2
+    assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
+
+
+def test_download_raises_after_all_retries_exhausted(url_module, tmp_path, monkeypatch):
+    calls = []
+    sleeps = []
+
+    def fake_download_url(url, targetname):
+        calls.append(url)
+        raise urllib.error.URLError("offline")
+
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    with pytest.raises(url_module.DownloaderError, match="Can't download file"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
+
+    assert len(calls) == url_module.URL_RETRIES
+    assert len(sleeps) == url_module.URL_RETRIES - 1
+
+
+def test_download_removes_partial_file_between_retries(url_module, tmp_path, monkeypatch):
+    calls = []
+    removed = []
+    target = str(tmp_path / "server.jar")
+
+    def fake_download_url(url, targetname):
+        calls.append(url)
+        # Simulate a partial file written before failure
+        open(targetname, "wb").close()
+        if len(calls) < 2:
+            raise urllib.error.URLError("transient")
+
+    real_remove = os.remove
+
+    def fake_remove(path):
+        removed.append(path)
+        real_remove(path)
+
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(url_module.os, "remove", fake_remove)
+
+    url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
+
+    assert len(calls) == 2
+    assert target in removed
 
 
 @pytest.mark.parametrize(
