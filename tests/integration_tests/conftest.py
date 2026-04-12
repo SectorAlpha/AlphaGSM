@@ -183,13 +183,15 @@ def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
     current_port = port
     last_result = None
     for _attempt in range(max_tries):
+        command_parts = [
+            server_name, "setup", "-n", str(current_port), str(install_dir),
+            *map(str, extra_flags),
+        ]
         result = run_alphagsm(
-            env, server_name, "setup", "-n", str(current_port), str(install_dir),
-            *extra_flags, timeout=timeout,
+            env, *command_parts, timeout=timeout,
         )
         log_command_result(
-            "alphagsm " + " ".join((server_name, "setup", "-n",
-                                    str(current_port), str(install_dir))),
+            "alphagsm " + " ".join(command_parts) + f" [timeout={timeout}]",
             result,
         )
         last_result = result
