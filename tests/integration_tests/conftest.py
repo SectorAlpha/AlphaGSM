@@ -112,12 +112,13 @@ def pick_free_tcp_port(min_port=None, max_port=None):
     probes both protocols, will not reject it.
     """
     if min_port is None and max_port is None:
-        while True:
+        for _attempt in range(100):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.bind(("127.0.0.1", 0))
                 port = sock.getsockname()[1]
             if _port_free_for_both(port):
                 return port
+        raise RuntimeError("Could not find a free TCP+UDP port after 100 attempts")
 
     min_port = 1024 if min_port is None else int(min_port)
     max_port = 65535 if max_port is None else int(max_port)
@@ -135,12 +136,13 @@ def pick_free_udp_port():
     probes both protocols, will not reject it.  This catches ports in TCP
     TIME_WAIT state that the OS would otherwise return as 'free for UDP'.
     """
-    while True:
+    for _attempt in range(100):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         if _port_free_for_both(port):
             return port
+    raise RuntimeError("Could not find a free UDP+TCP port after 100 attempts")
 
 
 _PORT_CONFLICT_MARKERS = (
@@ -151,8 +153,10 @@ _PORT_CONFLICT_MARKERS = (
 
 
 def _parse_recommended_port(output):
-    """Return the ``port=N`` value from AlphaGSM's 'Recommended free port set' line.
+    """Return the port number from AlphaGSM's 'Recommended free port set' line.
 
+    Parses the bare ``port=N`` key (not ``clientport`` or ``sourcetvport``) from
+    the recommendation line and returns the integer port number N.
     Returns *None* if the line is absent or does not contain a bare ``port=`` key.
     """
     idx = output.find("Recommended free port set:")

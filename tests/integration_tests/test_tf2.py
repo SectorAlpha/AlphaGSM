@@ -45,7 +45,7 @@ def _require_command(name):
 
 
 def _pick_free_port():
-    while True:
+    for _attempt in range(100):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
@@ -55,6 +55,7 @@ def _pick_free_port():
             except OSError:
                 continue
         return port
+    raise RuntimeError("Could not find a free UDP+TCP port after 100 attempts")
 
 
 def _alphagsm_env(config_path):
