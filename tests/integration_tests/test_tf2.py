@@ -45,9 +45,16 @@ def _require_command(name):
 
 
 def _pick_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp_sock:
+            try:
+                tcp_sock.bind(("127.0.0.1", port))
+            except OSError:
+                continue
+        return port
 
 
 def _alphagsm_env(config_path):

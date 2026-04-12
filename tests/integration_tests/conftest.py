@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import subprocess
@@ -87,31 +88,117 @@ def require_mysql(host="127.0.0.1", port=3306):
 # Port helpers
 # ---------------------------------------------------------------------------
 
-def pick_free_tcp_port(min_port=None, max_port=None):
-    """Return a free TCP port on localhost, optionally constrained to a range."""
+def _port_free_for_both(port):
+    """Return True if *port* is bindable on both TCP and UDP (no SO_REUSEADDR).
 
+    This mirrors the check performed by ``server.port_manager.probe_live_listener``
+    so that a port accepted here will also pass the port-manager pre-flight.
+    Ports in TCP TIME_WAIT state or with any live listener will return False.
+    """
+    for socktype in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
+        with socket.socket(socket.AF_INET, socktype) as sock:
+            try:
+                sock.bind(("127.0.0.1", port))
+            except OSError:
+                return False
+    return True
+
+
+def pick_free_tcp_port(min_port=None, max_port=None):
+    """Return a free TCP port on localhost, optionally constrained to a range.
+
+    The chosen port is verified to be bindable on both TCP and UDP (without
+    SO_REUSEADDR) so that AlphaGSM's port-manager pre-flight check, which
+    probes both protocols, will not reject it.
+    """
     if min_port is None and max_port is None:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.bind(("127.0.0.1", 0))
-            return sock.getsockname()[1]
+        while True:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.bind(("127.0.0.1", 0))
+                port = sock.getsockname()[1]
+            if _port_free_for_both(port):
+                return port
 
     min_port = 1024 if min_port is None else int(min_port)
     max_port = 65535 if max_port is None else int(max_port)
     for port in range(min_port, max_port + 1):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            try:
-                sock.bind(("127.0.0.1", port))
-            except OSError:
-                continue
+        if _port_free_for_both(port):
             return port
     raise RuntimeError(f"No free TCP port found in range {min_port}-{max_port}")
 
 
 def pick_free_udp_port():
-    """Return an ephemeral UDP port on localhost."""
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
+    """Return an ephemeral UDP port on localhost.
+
+    The chosen port is verified to be bindable on both UDP and TCP (without
+    SO_REUSEADDR) so that AlphaGSM's port-manager pre-flight check, which
+    probes both protocols, will not reject it.  This catches ports in TCP
+    TIME_WAIT state that the OS would otherwise return as 'free for UDP'.
+    """
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        if _port_free_for_both(port):
+            return port
+
+
+_PORT_CONFLICT_MARKERS = (
+    "claimed ports are not free",
+    "Live listener already holds",
+    "Port conflicts detected",
+)
+
+
+def _parse_recommended_port(output):
+    """Return the ``port=N`` value from AlphaGSM's 'Recommended free port set' line.
+
+    Returns *None* if the line is absent or does not contain a bare ``port=`` key.
+    """
+    idx = output.find("Recommended free port set:")
+    if idx == -1:
+        return None
+    tail = output[idx:]
+    match = re.search(r"(?<![a-z])port=(\d+)", tail)
+    return int(match.group(1)) if match else None
+
+
+def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
+                               timeout=None, max_tries=3):
+    """Run ``setup -n <port> <install_dir>`` and retry with a new port on conflict.
+
+    If setup fails because the port is already in use (AlphaGSM port-manager
+    pre-flight), a new port is chosen — preferring the port recommended by
+    AlphaGSM's own output — and setup is retried up to *max_tries* times.
+
+    Returns ``(result, final_port)`` where *final_port* is the port that was
+    ultimately accepted (which may differ from the original *port*).
+    """
+    if timeout is None:
+        timeout = DEFAULT_TIMEOUT
+    current_port = port
+    last_result = None
+    for _attempt in range(max_tries):
+        result = run_alphagsm(
+            env, server_name, "setup", "-n", str(current_port), str(install_dir),
+            *extra_flags, timeout=timeout,
+        )
+        log_command_result(
+            "alphagsm " + " ".join((server_name, "setup", "-n",
+                                    str(current_port), str(install_dir))),
+            result,
+        )
+        last_result = result
+        if result.returncode == 0:
+            return result, current_port
+        combined = (result.stdout or "") + "\n" + (result.stderr or "")
+        if not any(m in combined for m in _PORT_CONFLICT_MARKERS):
+            break
+        recommended = _parse_recommended_port(combined)
+        current_port = recommended if recommended is not None else pick_free_tcp_port()
+    skip_for_known_steamcmd_issue(last_result)
+    assert last_result.returncode == 0, last_result.stderr or last_result.stdout
+    return last_result, current_port  # unreachable after assert
 
 
 # ---------------------------------------------------------------------------
