@@ -125,7 +125,7 @@ def pick_free_tcp_port(min_port=None, max_port=None):
     for port in range(min_port, max_port + 1):
         if _port_free_for_both(port):
             return port
-    raise RuntimeError(f"No free TCP port found in range {min_port}-{max_port}")
+    raise RuntimeError(f"No free TCP+UDP port found in range {min_port}-{max_port}")
 
 
 def pick_free_udp_port():
