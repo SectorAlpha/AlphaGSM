@@ -86,7 +86,8 @@ def test_download_removes_partial_file_between_retries(url_module, tmp_path, mon
     def fake_download_url(url, targetname):
         calls.append(url)
         # Simulate a partial file written before failure
-        open(targetname, "wb").close()
+        with open(targetname, "wb"):
+            pass
         if len(calls) < 2:
             raise urllib.error.URLError("transient")
 

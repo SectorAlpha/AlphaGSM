@@ -72,7 +72,7 @@ def download(path,args):
             except FileNotFoundError:
                 pass
             if attempt + 1 < URL_RETRIES:
-                print("Retrying in %ss..." % (URL_RETRY_DELAY_SECONDS,))
+                print("Retrying in %d seconds..." % (URL_RETRY_DELAY_SECONDS,))
                 time.sleep(URL_RETRY_DELAY_SECONDS)
             else:
                 raise DownloaderError("Can't download file")
