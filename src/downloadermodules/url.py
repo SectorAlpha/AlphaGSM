@@ -60,15 +60,21 @@ def download(path,args):
             raise DownloaderError("Unknown decompression type")
         if decompress in ["gz"]: # compression without filenames
             targetname+="."+decompress
+    part_targetname = targetname + ".part"
     for attempt in range(URL_RETRIES):
         try:
-            _download_url(url, targetname)
+            try:
+                os.remove(part_targetname)
+            except FileNotFoundError:
+                pass
+            _download_url(url, part_targetname)
+            os.replace(part_targetname, targetname)
             break
         except urllib.error.URLError as ex:
             reason = ex.reason if hasattr(ex, 'reason') else str(ex)
             print("Error downloading " + str(targetname) + ": " + str(reason))
             try:
-                os.remove(targetname)
+                os.remove(part_targetname)
             except FileNotFoundError:
                 pass
             if attempt + 1 < URL_RETRIES:
