@@ -72,3 +72,13 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
+
+      - name: Set package visibility to public
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          package_name="alphagsm-${{ matrix.family }}-runtime"
+          gh api --method PATCH \
+            /orgs/${owner}/packages/container/${package_name} \
+            --field visibility=public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
