@@ -1,10 +1,12 @@
 name: Build Runtime Family Images
 
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
     inputs:
       version:
-        description: Runtime image version tag
+        description: Runtime image version tag (defaults to short git SHA)
         required: false
         default: ""
 
@@ -30,6 +32,8 @@ jobs:
             dockerfile: docker/steamcmd-linux/Dockerfile
           - family: wine-proton
             dockerfile: docker/wine-proton/Dockerfile
+          - family: docker
+            dockerfile: docker/manager/Dockerfile
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
@@ -41,7 +45,7 @@ jobs:
           repo="ghcr.io/${owner}/alphagsm-${{ matrix.family }}-runtime"
           version="${{ github.event.inputs.version }}"
           if [ -z "$version" ]; then
-            version=$(tr -d '[:space:]' < docker/image-version.txt)
+            version=$(echo "${{ github.sha }}" | cut -c1-7)
           fi
           echo "image=${repo}:${version}" >> "$GITHUB_OUTPUT"
           echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"

@@ -469,13 +469,13 @@ jobs:
           ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}
           ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
         run: |
-          RUNTIME_IMAGE_VERSION=$(tr -d '[:space:]' < docker/image-version.txt)
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="ghcr.io/sectoralpha/alphagsm-java-runtime:${RUNTIME_IMAGE_VERSION}"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:${RUNTIME_IMAGE_VERSION}"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE="ghcr.io/sectoralpha/alphagsm-service-console-runtime:${RUNTIME_IMAGE_VERSION}"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:${RUNTIME_IMAGE_VERSION}"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:${RUNTIME_IMAGE_VERSION}"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_WINE_PROTON="ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:${RUNTIME_IMAGE_VERSION}"
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="ghcr.io/${owner}/alphagsm-java-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="ghcr.io/${owner}/alphagsm-quake-linux-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE="ghcr.io/${owner}/alphagsm-service-console-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="ghcr.io/${owner}/alphagsm-simple-tcp-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX="ghcr.io/${owner}/alphagsm-steamcmd-linux-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_WINE_PROTON="ghcr.io/${owner}/alphagsm-wine-proton-runtime:latest"
           pytest \
             tests/backend_integration_tests/test_backend_docker.py \
             tests/backend_integration_tests/test_backend_docker_manager.py \

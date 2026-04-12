@@ -222,7 +222,7 @@ def test_wrapper_start_develop_persists_local_build_mode(tmp_path):
     assert (state_dir / ".manager-mode").read_text(encoding="utf-8").strip() == "develop"
     assert any("up" in entry["argv"] and "--build" in entry["argv"] for entry in log_entries)
     assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
-    assert any(entry["manager_image"] == "alphagsm-manager:dev" for entry in log_entries if "up" in entry["argv"])
+    assert any(entry["manager_image"] == "alphagsm:dev" for entry in log_entries if "up" in entry["argv"])
 
 
 def test_wrapper_starts_manager_and_forwards_alphagsm_command(tmp_path):

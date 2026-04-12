@@ -21,8 +21,8 @@ read_image_release() {
 
 DEFAULT_IMAGE_RELEASE="$(read_image_release)"
 DEFAULT_IMAGE_RELEASE="${DEFAULT_IMAGE_RELEASE:-2026-04-11-v1}"
-DEFAULT_MANAGER_IMAGE="${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm-manager:${DEFAULT_IMAGE_RELEASE}}"
-DEVELOP_MANAGER_IMAGE="${ALPHAGSM_MANAGER_DEVELOP_IMAGE:-alphagsm-manager:dev}"
+DEFAULT_MANAGER_IMAGE="${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm:${DEFAULT_IMAGE_RELEASE}}"
+DEVELOP_MANAGER_IMAGE="${ALPHAGSM_MANAGER_DEVELOP_IMAGE:-alphagsm:dev}"
 
 compose_cmd() {
     if docker compose version >/dev/null 2>&1; then
