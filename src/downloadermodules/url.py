@@ -81,7 +81,7 @@ def download(path,args):
                 print("Retrying in %d seconds..." % (URL_RETRY_DELAY_SECONDS,))
                 time.sleep(URL_RETRY_DELAY_SECONDS)
             else:
-                raise DownloaderError("Can't download file")
+                raise DownloaderError("Can't download file") from ex
     if decompress == "zip":
         ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
         if ret!=0:
