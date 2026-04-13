@@ -154,6 +154,61 @@ print(container_name)
 PY
 }
 
+list_server_config_names() {
+    local conf_dir="$STATE_DIR/home/conf"
+
+    [[ -d "$conf_dir" ]] || return 0
+
+    find "$conf_dir" -maxdepth 1 -type f -name '*.json' -printf '%f\n' \
+        | sed 's/\.json$//' \
+        | sort
+}
+
+container_port_lines() {
+    docker port "$1" 2>/dev/null || true
+}
+
+print_docker_server_list() {
+    local server_name
+    local metadata
+    local runtime_name
+    local container_name
+    local state
+    local ports
+    local printed=0
+
+    while IFS= read -r server_name; do
+        [[ -n "$server_name" ]] || continue
+        metadata="$(load_server_runtime_metadata "$server_name" 2>/dev/null || true)"
+        [[ -n "$metadata" ]] || continue
+
+        runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+        [[ "$runtime_name" == "docker" ]] || continue
+
+        container_name="$(printf '%s\n' "$metadata" | sed -n '2p')"
+        if docker_container_running "$container_name"; then
+            state="running"
+            ports="$(container_port_lines "$container_name" | paste -sd ';' -)"
+        elif docker inspect "$container_name" >/dev/null 2>&1; then
+            state="stopped"
+            ports=""
+        else
+            state="missing"
+            ports=""
+        fi
+
+        if [[ "$printed" == "0" ]]; then
+            printf '%-20s %-28s %-10s %s\n' "SERVER" "CONTAINER" "STATE" "PORTS"
+        fi
+        printf '%-20s %-28s %-10s %s\n' "$server_name" "$container_name" "$state" "$ports"
+        printed=1
+    done < <(list_server_config_names)
+
+    if [[ "$printed" == "0" ]]; then
+        echo "No Docker-backed AlphaGSM servers found in the current wrapper home."
+    fi
+}
+
 connect_server_console() {
     local server_name="$1"
     local metadata
@@ -345,6 +400,7 @@ Usage:
   ./alphagsm-docker shell
   ./alphagsm-docker logs
   ./alphagsm-docker compose <compose-args>
+  ./alphagsm-docker ps
   ./alphagsm-docker <alphagsm-args>
 
 Examples:
@@ -399,6 +455,10 @@ main() {
             shift
             ensure_config
             manager_compose "$(current_manager_mode)" "$@"
+            ;;
+        ps)
+            shift
+            print_docker_server_list "$@"
             ;;
         *)
             if [[ $# -ge 2 && "$2" == "connect" ]]; then

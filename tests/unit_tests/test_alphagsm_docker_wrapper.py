@@ -61,9 +61,12 @@ def _write_fake_docker(bin_dir):
                 "    image_path.write_text(image, encoding='utf-8')",
                 "    sys.exit(0)",
                 "if args[:1] == ['port']:",
-                "    if state != 'running':",
-                "        sys.exit(1)",
-                "    mapping = container.get('ports') if container else os.environ.get('FAKE_DOCKER_PORT_OUTPUT', '')",
+                "    if container_name and container:",
+                "        mapping = container.get('ports', '')",
+                "    else:",
+                "        if state != 'running':",
+                "            sys.exit(1)",
+                "        mapping = os.environ.get('FAKE_DOCKER_PORT_OUTPUT', '')",
                 "    if isinstance(mapping, list):",
                 "        mapping = '\\n'.join(str(item) for item in mapping)",
                 "    if mapping:",
@@ -238,6 +241,14 @@ def test_wrapper_bootstraps_config_before_compose_command(tmp_path):
     assert any(entry["argv"][:2] == ["compose", "version"] for entry in log_entries)
     assert any("config" in entry["argv"] for entry in log_entries)
     assert all(entry["pull_runtime_images"] == "0" for entry in log_entries)
+
+
+def test_wrapper_help_includes_ps_usage(tmp_path):
+    result, _, log_entries = _run_wrapper(tmp_path, "help")
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "  ./alphagsm-docker ps" in result.stdout
+    assert log_entries == []
 
 
 def test_wrapper_start_and_stop_aliases_map_to_compose_up_and_down(tmp_path):
