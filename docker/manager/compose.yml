@@ -1,6 +1,5 @@
 services:
   alphagsm:
-    pull_policy: missing
     build:
       context: ../..
       dockerfile: docker/manager/Dockerfile
