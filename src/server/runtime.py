@@ -624,8 +624,6 @@ def normalize_runtime_requirements(requirements, server_name):
         req["runtime_family"] = canonicalize_runtime_family(req["runtime_family"])
     if "java" in req and "java_major" not in req:
         req["java_major"] = req.pop("java")
-    if req.get("runtime") == "docker":
-        req.setdefault("container_name", "alphagsm-" + server_name)
     return req
 
 

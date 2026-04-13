@@ -64,6 +64,24 @@ def test_resolve_runtime_metadata_uses_family_defaults_and_java_alias(monkeypatc
     assert metadata["ports"] == []
 
 
+def test_resolve_runtime_metadata_preserves_explicit_container_name(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "simple-tcp",
+        }
+    )
+    server = DummyServer(
+        module=module,
+        data={"runtime": "docker", "container_name": "alphagsm-custom-alpha"},
+    )
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+
+    assert metadata["container_name"] == "alphagsm-custom-alpha"
+
+
 def test_resolve_runtime_metadata_raises_stale_java_major_for_new_minecraft_versions(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     module = SimpleNamespace(
