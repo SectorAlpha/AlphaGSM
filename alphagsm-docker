@@ -121,6 +121,10 @@ manager_exists() {
     docker inspect "$MANAGER_CONTAINER_NAME" >/dev/null 2>&1
 }
 
+docker_container_running() {
+    [[ "$(docker inspect -f '{{.State.Running}}' "$1" 2>/dev/null || true)" == "true" ]]
+}
+
 server_container_name() {
     printf 'alphagsm-%s\n' "$1"
 }
@@ -166,6 +170,16 @@ connect_server_console() {
 
     if [[ "$runtime_name" != "docker" ]]; then
         echo "Wrapper connect only attaches to Docker-backed servers." >&2
+        exit 1
+    fi
+
+    if ! docker inspect "$container_name" >/dev/null 2>&1; then
+        echo "Container '$container_name' was not found. Run './alphagsm-docker $server_name status' or './alphagsm-docker $server_name start' first." >&2
+        exit 1
+    fi
+
+    if ! docker_container_running "$container_name"; then
+        echo "Container '$container_name' is not running. Run './alphagsm-docker $server_name start' first." >&2
         exit 1
     fi
 

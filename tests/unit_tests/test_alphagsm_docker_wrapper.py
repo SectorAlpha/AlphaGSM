@@ -359,7 +359,7 @@ def test_wrapper_connect_attaches_to_explicit_container_name_without_manager_exe
     assert result.returncode == 0, result.stderr or result.stdout
     assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
     assert not any("up" in entry["argv"] for entry in log_entries)
-    assert not any(entry["argv"][:1] == ["inspect"] for entry in log_entries)
+    assert any(entry["argv"][:1] == ["inspect"] for entry in log_entries)
     assert "Detach with Ctrl-p Ctrl-q" in result.stdout
     assert "ATTACHED:custom-demo" in result.stdout
     assert any(entry["argv"][:1] == ["attach"] for entry in log_entries)
@@ -375,6 +375,50 @@ def test_wrapper_connect_rejects_non_docker_server(tmp_path):
     assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
     assert not any("exec" in entry["argv"] for entry in log_entries)
     assert "only attaches to Docker-backed servers" in result.stderr
+
+
+def test_wrapper_connect_rejects_missing_docker_container(tmp_path):
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(tmp_path, "demo", "connect")
+
+    assert result.returncode != 0
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert any(entry["argv"][:1] == ["inspect"] for entry in log_entries)
+    assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
+    assert not any("exec" in entry["argv"] for entry in log_entries)
+    assert "Container 'custom-demo' was not found." in result.stderr
+    assert "demo status" in result.stderr
+    assert "demo start" in result.stderr
+
+
+def test_wrapper_connect_rejects_stopped_docker_container(tmp_path):
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "connect",
+        fake_containers={"custom-demo": {"state": "stopped"}},
+    )
+
+    assert result.returncode != 0
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert any(entry["argv"][:1] == ["inspect"] for entry in log_entries)
+    assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
+    assert not any("exec" in entry["argv"] for entry in log_entries)
+    assert "Container 'custom-demo' is not running." in result.stderr
+    assert "demo start" in result.stderr
 
 
 def test_wrapper_start_appends_host_connection_details(tmp_path):
