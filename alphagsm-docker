@@ -125,6 +125,23 @@ docker_container_running() {
     [[ "$(docker inspect -f '{{.State.Running}}' "$1" 2>/dev/null || true)" == "true" ]]
 }
 
+host_python3_available() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    python3 -c "pass" >/dev/null 2>&1
+}
+
+require_host_python3() {
+    if host_python3_available; then
+        return 0
+    fi
+
+    echo "Host python3 is required for './alphagsm-docker ps' and './alphagsm-docker <server> connect' because the wrapper reads local server metadata." >&2
+    exit 1
+}
+
 server_container_name() {
     printf 'alphagsm-%s\n' "$1"
 }
@@ -152,6 +169,24 @@ container_name = str(data.get("container_name", "")).strip() or f"alphagsm-{serv
 print(runtime)
 print(container_name)
 PY
+}
+
+resolve_server_container_name() {
+    local server_name="$1"
+    local metadata
+    local runtime_name
+    local container_name
+
+    if host_python3_available && metadata="$(load_server_runtime_metadata "$server_name" 2>/dev/null)"; then
+        runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+        container_name="$(printf '%s\n' "$metadata" | sed -n '2p')"
+        if [[ "$runtime_name" == "docker" && -n "$container_name" ]]; then
+            printf '%s\n' "$container_name"
+            return 0
+        fi
+    fi
+
+    server_container_name "$server_name"
 }
 
 list_server_config_names() {
@@ -256,7 +291,7 @@ show_host_connection_details() {
 
     declare -A seen_connect=()
 
-    container_name="$(server_container_name "$server_name")"
+    container_name="$(resolve_server_container_name "$server_name")"
     if ! docker inspect "$container_name" >/dev/null 2>&1; then
         return 0
     fi
@@ -401,6 +436,7 @@ Usage:
   ./alphagsm-docker logs
   ./alphagsm-docker compose <compose-args>
   ./alphagsm-docker ps
+  ./alphagsm-docker <server> connect
   ./alphagsm-docker <alphagsm-args>
 
 Examples:
@@ -409,6 +445,7 @@ Examples:
   ./alphagsm-docker mymc create minecraft.vanilla
   ./alphagsm-docker mymc setup -n 25565 "$STATE_DIR/servers/mymc"
   ./alphagsm-docker mymc start
+  ./alphagsm-docker mymc connect
 
 Notes:
   - Default state path: $STATE_DIR
@@ -417,8 +454,9 @@ Notes:
             tries to pull $DEFAULT_MANAGER_IMAGE, then falls back to a local build.
     - start/up with --develop switches the state dir into developer mode:
             it always rebuilds locally with image tag $DEVELOP_MANAGER_IMAGE.
-    - Runtime image pre-pull defaults to off in this wrapper. Set
+  - Runtime image pre-pull defaults to off in this wrapper. Set
             ALPHAGSM_PULL_RUNTIME_IMAGES=1 if you want eager GHCR pulls at startup.
+  - `ps` and `<server> connect` read local metadata and require host `python3`.
   - Docker-backed server install paths must stay under ALPHAGSM_HOME so the
     host Docker daemon and the manager container see the same absolute path.
 EOF
@@ -458,10 +496,12 @@ main() {
             ;;
         ps)
             shift
+            require_host_python3
             print_docker_server_list "$@"
             ;;
         *)
             if [[ $# -ge 2 && "$2" == "connect" ]]; then
+                require_host_python3
                 connect_server_console "$1"
             else
                 exec_alphagsm "$@"

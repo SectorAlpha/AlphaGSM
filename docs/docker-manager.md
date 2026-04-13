@@ -50,9 +50,11 @@ full Compose command each time:
 ./alphagsm-docker up
 ./alphagsm-docker start
 ./alphagsm-docker stop
+./alphagsm-docker ps
 ./alphagsm-docker mymc create minecraft.vanilla
 ./alphagsm-docker mymc setup -n 25565 "$PWD/.alphagsm-docker/servers/mymc"
 ./alphagsm-docker mymc start
+./alphagsm-docker mymc connect
 ```
 
 `start` is an alias for `up`, and `stop` is an alias for `down`.
@@ -66,7 +68,11 @@ The script will:
 - reuse the existing running manager container for forwarded AlphaGSM commands instead of rebuilding on every exec
 - recreate a stopped manager container from the active mode without forcing the other mode's image path
 - build bundled AlphaGSM runtime-family images locally on demand when their default GHCR tag is missing, so quick-start still works without registry auth
+- provide wrapper-native `./alphagsm-docker ps` and `./alphagsm-docker <server> connect` commands that read local server metadata instead of forwarding through manager `exec`
 - forward any other arguments to `python alphagsm ...` inside the manager container
+
+Because those wrapper-native metadata commands read local JSON server config,
+they still require a working host `python3`.
 
 When a game module prompts for an install directory and you accept the default
 inside manager-container mode, AlphaGSM now prefers `ALPHAGSM_HOME/servers/<name>`

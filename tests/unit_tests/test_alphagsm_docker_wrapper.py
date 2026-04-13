@@ -6,6 +6,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WRAPPER = REPO_ROOT / "alphagsm-docker"
@@ -181,6 +183,21 @@ def _write_fake_docker_compose(bin_dir):
     fake_docker_compose.chmod(0o755)
 
 
+def _write_failing_python3(bin_dir):
+    fake_python3 = bin_dir / "python3"
+    fake_python3.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "exit 127",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    fake_python3.chmod(0o755)
+
+
 def _run_wrapper(
     tmp_path,
     *args,
@@ -189,6 +206,7 @@ def _run_wrapper(
     install_standalone_compose=False,
     port_output=None,
     fake_containers=None,
+    host_python3_missing=False,
 ):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
@@ -197,6 +215,8 @@ def _run_wrapper(
     image_state_path = tmp_path / "docker.image"
     state_dir = tmp_path / "state"
     _write_fake_docker(bin_dir)
+    if host_python3_missing:
+        _write_failing_python3(bin_dir)
     if install_standalone_compose:
         _write_fake_docker_compose(bin_dir)
     if initial_state is not None:
@@ -446,6 +466,63 @@ def test_wrapper_start_appends_host_connection_details(tmp_path):
     assert "Connect from this host: 127.0.0.1:25566/tcp" in result.stdout
     assert result.stdout.count("Connect from this host: 127.0.0.1:25566/tcp") == 1
     assert any(entry["argv"][:1] == ["port"] for entry in log_entries)
+
+
+@pytest.mark.parametrize("alphagsm_command", ["status", "start"])
+def test_wrapper_uses_metadata_container_name_for_host_connection_details(
+    tmp_path,
+    alphagsm_command,
+):
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        alphagsm_command,
+        initial_state="running",
+        fake_containers={
+            "custom-demo": {
+                "state": "running",
+                "ports": "25565/tcp -> 0.0.0.0:25565",
+            },
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "Host connection details:" in result.stdout
+    assert "25565/tcp -> 0.0.0.0:25565" in result.stdout
+    assert any(
+        entry["argv"][:1] == ["port"] and entry["argv"][-1] == "custom-demo"
+        for entry in log_entries
+    )
+    assert not any(
+        entry["argv"][:1] == ["port"] and entry["argv"][-1] == "alphagsm-demo"
+        for entry in log_entries
+    )
+
+
+@pytest.mark.parametrize(
+    "wrapper_args",
+    [
+        ("ps",),
+        ("demo", "connect"),
+    ],
+)
+def test_wrapper_native_metadata_commands_require_host_python3(tmp_path, wrapper_args):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        *wrapper_args,
+        host_python3_missing=True,
+    )
+
+    assert result.returncode != 0
+    assert "Host python3 is required for './alphagsm-docker ps'" in result.stderr
+    assert "./alphagsm-docker <server> connect" in result.stderr
+    assert log_entries == []
 
 
 def test_wrapper_builds_locally_when_remote_pull_fails(tmp_path):
