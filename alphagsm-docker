@@ -125,6 +125,55 @@ server_container_name() {
     printf 'alphagsm-%s\n' "$1"
 }
 
+server_config_path() {
+    printf '%s/home/conf/%s.json\n' "$STATE_DIR" "$1"
+}
+
+load_server_runtime_metadata() {
+    local server_name="$1"
+    local path
+    path="$(server_config_path "$server_name")"
+    [[ -f "$path" ]] || return 1
+
+    python3 - "$path" "$server_name" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+server_name = sys.argv[2]
+data = json.loads(path.read_text(encoding="utf-8"))
+runtime = str(data.get("runtime", "")).strip()
+container_name = str(data.get("container_name", "")).strip() or f"alphagsm-{server_name}"
+print(runtime)
+print(container_name)
+PY
+}
+
+connect_server_console() {
+    local server_name="$1"
+    local metadata
+    local runtime_name
+    local container_name
+
+    if ! metadata="$(load_server_runtime_metadata "$server_name")"; then
+        echo "Server '$server_name' is not defined in $STATE_DIR/home/conf" >&2
+        exit 1
+    fi
+
+    runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+    container_name="$(printf '%s\n' "$metadata" | sed -n '2p')"
+
+    if [[ "$runtime_name" != "docker" ]]; then
+        echo "Wrapper connect only attaches to Docker-backed servers." >&2
+        exit 1
+    fi
+
+    echo "Connecting to $container_name"
+    echo "Detach with Ctrl-p Ctrl-q"
+    docker attach "$container_name"
+}
+
 show_host_connection_details() {
     local server_name="$1"
     local container_name
@@ -338,7 +387,11 @@ main() {
             manager_compose "$(current_manager_mode)" "$@"
             ;;
         *)
-            exec_alphagsm "$@"
+            if [[ $# -ge 2 && "$2" == "connect" ]]; then
+                connect_server_console "$1"
+            else
+                exec_alphagsm "$@"
+            fi
             ;;
     esac
 }

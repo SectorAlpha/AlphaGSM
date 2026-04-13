@@ -221,11 +221,10 @@ def _run_wrapper(
         timeout=60,
         check=False,
     )
-    log_entries = [
-        json.loads(line)
-        for line in log_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    log_lines = []
+    if log_path.exists():
+        log_lines = log_path.read_text(encoding="utf-8").splitlines()
+    log_entries = [json.loads(line) for line in log_lines if line.strip()]
     return result, state_dir, log_entries
 
 
