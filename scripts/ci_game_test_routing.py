@@ -258,13 +258,20 @@ def build_integration_matrix(selected_tests: list[str] | None = None, repo_root:
 
 def git_changed_files(base_sha: str, head_sha: str, repo_root: Path | None = None) -> list[str]:
     root = repo_root or REPO_ROOT
-    merge_base_result = subprocess.run(
-        ["git", "merge-base", base_sha, head_sha],
-        cwd=root,
-        text=True,
-        capture_output=True,
-        check=True,
-    )
+    try:
+        merge_base_result = subprocess.run(
+            ["git", "merge-base", base_sha, head_sha],
+            cwd=root,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            f"git merge-base failed for base={base_sha!r} head={head_sha!r}; "
+            "ensure both commits are present (fetch-depth: 0 in checkout). "
+            f"stderr: {exc.stderr.strip()}"
+        ) from exc
     merge_base = merge_base_result.stdout.strip()
     result = subprocess.run(
         ["git", "diff", "--name-only", merge_base, head_sha],
