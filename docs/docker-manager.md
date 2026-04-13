@@ -71,8 +71,10 @@ The script will:
 - provide wrapper-native `./alphagsm-docker ps` and `./alphagsm-docker <server> connect` commands that read local server metadata instead of forwarding through manager `exec`
 - forward any other arguments to `python alphagsm ...` inside the manager container
 
-Because those wrapper-native metadata commands read local JSON server config,
-they still require a working host `python3`.
+Because `./alphagsm-docker ps` reads local JSON server config, it still
+requires a working host `python3`. For Docker-backed servers, wrapper
+`connect` also uses that host metadata when it is available; otherwise the
+wrapper falls back to AlphaGSM's normal forwarded `connect` command.
 
 When a game module prompts for an install directory and you accept the default
 inside manager-container mode, AlphaGSM now prefers `ALPHAGSM_HOME/servers/<name>`

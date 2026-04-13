@@ -34,8 +34,10 @@ GHCR login for a first run. By default it tries to pull the latest manager
 image from GHCR and falls back to a local build if that pull fails. If you are
 working on AlphaGSM itself, `./alphagsm-docker start --develop` switches the
 wrapper into a local-build developer mode.
-`./alphagsm-docker ps` and `./alphagsm-docker <server> connect` are
-wrapper-native metadata commands and still expect a working host `python3`.
+`./alphagsm-docker ps` reads local wrapper metadata and expects a working host
+`python3`. For Docker-backed servers, `./alphagsm-docker <server> connect`
+uses that local metadata when it can, and otherwise falls back to AlphaGSM's
+normal forwarded `connect` command.
 
 See [Run AlphaGSM In Docker](docs/docker-manager.md).
 

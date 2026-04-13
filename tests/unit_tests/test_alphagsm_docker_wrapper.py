@@ -126,6 +126,14 @@ def _write_fake_docker(bin_dir):
         ),
         encoding="utf-8",
     )
+    fake_docker.write_text(
+        fake_docker.read_text(encoding="utf-8").replace(
+            "#!/usr/bin/env python3",
+            f"#!{sys.executable}",
+            1,
+        ),
+        encoding="utf-8",
+    )
     fake_docker.chmod(0o755)
 
 
@@ -177,6 +185,14 @@ def _write_fake_docker_compose(bin_dir):
                 "sys.exit(1)",
                 "",
             ]
+        ),
+        encoding="utf-8",
+    )
+    fake_docker_compose.write_text(
+        fake_docker_compose.read_text(encoding="utf-8").replace(
+            "#!/usr/bin/env python3",
+            f"#!{sys.executable}",
+            1,
         ),
         encoding="utf-8",
     )
@@ -397,15 +413,15 @@ def test_wrapper_connect_attaches_to_explicit_container_name_without_manager_exe
     assert not any("exec" in entry["argv"] for entry in log_entries)
 
 
-def test_wrapper_connect_rejects_non_docker_server(tmp_path):
+def test_wrapper_connect_forwards_non_docker_server_through_manager_exec(tmp_path):
     state_dir = tmp_path / "state"
     _write_server_config(state_dir, "demo", {"runtime": "process"})
     result, _, log_entries = _run_wrapper(tmp_path, "demo", "connect")
 
-    assert result.returncode != 0
+    assert result.returncode == 0, result.stderr or result.stdout
     assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
-    assert not any("exec" in entry["argv"] for entry in log_entries)
-    assert "only attaches to Docker-backed servers" in result.stderr
+    assert any("exec" in entry["argv"] for entry in log_entries)
+    assert "FORWARDED:-T alphagsm python alphagsm demo connect" in result.stdout
 
 
 def test_wrapper_connect_rejects_missing_docker_container(tmp_path):
@@ -505,24 +521,36 @@ def test_wrapper_uses_metadata_container_name_for_host_connection_details(
     )
 
 
-@pytest.mark.parametrize(
-    "wrapper_args",
-    [
-        ("ps",),
-        ("demo", "connect"),
-    ],
-)
-def test_wrapper_native_metadata_commands_require_host_python3(tmp_path, wrapper_args):
+def test_wrapper_ps_requires_host_python3(tmp_path):
     result, _, log_entries = _run_wrapper(
         tmp_path,
-        *wrapper_args,
+        "ps",
         host_python3_missing=True,
     )
 
     assert result.returncode != 0
     assert "Host python3 is required for './alphagsm-docker ps'" in result.stderr
-    assert "./alphagsm-docker <server> connect" in result.stderr
     assert log_entries == []
+
+
+def test_wrapper_connect_falls_back_to_forwarded_exec_when_host_python3_is_missing(tmp_path):
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "connect",
+        host_python3_missing=True,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
+    assert any("exec" in entry["argv"] for entry in log_entries)
+    assert "FORWARDED:-T alphagsm python alphagsm demo connect" in result.stdout
 
 
 def test_wrapper_builds_locally_when_remote_pull_fails(tmp_path):

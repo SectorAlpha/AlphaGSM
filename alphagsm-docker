@@ -138,7 +138,7 @@ require_host_python3() {
         return 0
     fi
 
-    echo "Host python3 is required for './alphagsm-docker ps' and './alphagsm-docker <server> connect' because the wrapper reads local server metadata." >&2
+    echo "Host python3 is required for './alphagsm-docker ps' because the wrapper reads local server metadata." >&2
     exit 1
 }
 
@@ -276,6 +276,30 @@ connect_server_console() {
     echo "Connecting to $container_name"
     echo "Detach with Ctrl-p Ctrl-q"
     docker attach "$container_name"
+}
+
+route_connect_command() {
+    local server_name="$1"
+    local metadata
+    local runtime_name
+
+    if ! host_python3_available; then
+        exec_alphagsm "$@"
+        return
+    fi
+
+    if ! metadata="$(load_server_runtime_metadata "$server_name" 2>/dev/null)"; then
+        exec_alphagsm "$@"
+        return
+    fi
+
+    runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+    if [[ "$runtime_name" != "docker" ]]; then
+        exec_alphagsm "$@"
+        return
+    fi
+
+    connect_server_console "$server_name"
 }
 
 show_host_connection_details() {
@@ -456,7 +480,9 @@ Notes:
             it always rebuilds locally with image tag $DEVELOP_MANAGER_IMAGE.
   - Runtime image pre-pull defaults to off in this wrapper. Set
             ALPHAGSM_PULL_RUNTIME_IMAGES=1 if you want eager GHCR pulls at startup.
-  - `ps` and `<server> connect` read local metadata and require host `python3`.
+  - `ps` reads local metadata and requires host `python3`.
+  - Docker-backed `<server> connect` uses host metadata when available and
+    otherwise falls back to AlphaGSM's normal forwarded `connect`.
   - Docker-backed server install paths must stay under ALPHAGSM_HOME so the
     host Docker daemon and the manager container see the same absolute path.
 EOF
@@ -501,8 +527,7 @@ main() {
             ;;
         *)
             if [[ $# -ge 2 && "$2" == "connect" ]]; then
-                require_host_python3
-                connect_server_console "$1"
+                route_connect_command "$@"
             else
                 exec_alphagsm "$@"
             fi
