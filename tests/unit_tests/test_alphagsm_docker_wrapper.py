@@ -358,6 +358,9 @@ def test_wrapper_connect_attaches_to_explicit_container_name_without_manager_exe
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert not any(entry["argv"][:1] == ["inspect"] for entry in log_entries)
     assert "Detach with Ctrl-p Ctrl-q" in result.stdout
     assert "ATTACHED:custom-demo" in result.stdout
     assert any(entry["argv"][:1] == ["attach"] for entry in log_entries)
@@ -367,9 +370,11 @@ def test_wrapper_connect_attaches_to_explicit_container_name_without_manager_exe
 def test_wrapper_connect_rejects_non_docker_server(tmp_path):
     state_dir = tmp_path / "state"
     _write_server_config(state_dir, "demo", {"runtime": "process"})
-    result, _, _ = _run_wrapper(tmp_path, "demo", "connect")
+    result, _, log_entries = _run_wrapper(tmp_path, "demo", "connect")
 
     assert result.returncode != 0
+    assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
+    assert not any("exec" in entry["argv"] for entry in log_entries)
     assert "only attaches to Docker-backed servers" in result.stderr
 
 
