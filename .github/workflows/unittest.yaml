@@ -102,11 +102,10 @@ jobs:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
       - name: Fetch PR base commit
         run: |
-          git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git fetch --no-tags origin "${{ github.event.pull_request.base.sha }}"
       - id: classify
         name: Classify Linux game smoke and integration scope
         run: |
