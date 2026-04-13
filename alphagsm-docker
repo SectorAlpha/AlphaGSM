@@ -235,9 +235,12 @@ print_docker_server_list() {
 
 connect_server_console() {
     local server_name="$1"
+    local show_logs="${2:-1}"
+    local log_tail_lines="${3:-${ALPHAGSM_CONNECT_LOG_TAIL:-10}}"
     local metadata
     local runtime_name
     local container_name
+    local recent_logs
 
     if ! metadata="$(load_server_runtime_metadata "$server_name")"; then
         echo "Server '$server_name' is not defined in $STATE_DIR/home/conf" >&2
@@ -262,6 +265,16 @@ connect_server_console() {
         exit 1
     fi
 
+    recent_logs=""
+    if [[ "$show_logs" == "1" ]]; then
+        recent_logs="$(docker logs --tail "$log_tail_lines" "$container_name" 2>/dev/null || true)"
+    fi
+    if [[ -n "$recent_logs" ]]; then
+        echo "Recent container logs (last $log_tail_lines lines):"
+        printf '%s\n' "$recent_logs"
+        echo
+    fi
+
     echo "Connecting to $container_name"
     echo "Detach with Ctrl-p Ctrl-q"
     docker attach "$container_name"
@@ -269,26 +282,65 @@ connect_server_console() {
 
 route_connect_command() {
     local server_name="$1"
+    local show_logs=1
+    local log_tail_lines="${ALPHAGSM_CONNECT_LOG_TAIL:-10}"
     local metadata
     local runtime_name
+    shift
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            connect)
+                shift
+                ;;
+            --no-logs)
+                show_logs=0
+                shift
+                ;;
+            --tail)
+                if [[ $# -lt 2 ]]; then
+                    echo "Missing value for --tail" >&2
+                    exit 1
+                fi
+                if [[ ! "$2" =~ ^[0-9]+$ ]]; then
+                    echo "--tail requires a non-negative integer" >&2
+                    exit 1
+                fi
+                log_tail_lines="$2"
+                shift 2
+                ;;
+            --tail=*)
+                log_tail_lines="${1#--tail=}"
+                if [[ ! "$log_tail_lines" =~ ^[0-9]+$ ]]; then
+                    echo "--tail requires a non-negative integer" >&2
+                    exit 1
+                fi
+                shift
+                ;;
+            *)
+                echo "Unknown option for connect: $1" >&2
+                exit 1
+                ;;
+        esac
+    done
 
     if ! host_python3_available; then
-        exec_alphagsm "$@"
+        exec_alphagsm "$server_name" connect
         return
     fi
 
     if ! metadata="$(load_server_runtime_metadata "$server_name" 2>/dev/null)"; then
-        exec_alphagsm "$@"
+        exec_alphagsm "$server_name" connect
         return
     fi
 
     runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
     if [[ "$runtime_name" != "docker" ]]; then
-        exec_alphagsm "$@"
+        exec_alphagsm "$server_name" connect
         return
     fi
 
-    connect_server_console "$server_name"
+    connect_server_console "$server_name" "$show_logs" "$log_tail_lines"
 }
 
 show_host_connection_details() {
@@ -450,6 +502,8 @@ Usage:
   ./alphagsm-docker compose <compose-args>
   ./alphagsm-docker ps
   ./alphagsm-docker <server> connect
+    ./alphagsm-docker <server> connect --tail <n>
+    ./alphagsm-docker <server> connect --no-logs
   ./alphagsm-docker <alphagsm-args>
 
 Examples:
@@ -459,6 +513,8 @@ Examples:
   ./alphagsm-docker mymc setup -n 25565 "$STATE_DIR/servers/mymc"
   ./alphagsm-docker mymc start
   ./alphagsm-docker mymc connect
+    ./alphagsm-docker mymc connect --tail 25
+    ./alphagsm-docker mymc connect --no-logs
 
 Notes:
   - Default state path: $STATE_DIR
@@ -472,6 +528,8 @@ Notes:
   - `ps` reads local metadata and requires host `python3`.
   - Docker-backed `<server> connect` uses host metadata when available and
     otherwise falls back to AlphaGSM's normal forwarded `connect`.
+        - `--tail <n>` shows the last `n` log lines before attach.
+        - `--no-logs` skips the pre-attach log tail.
   - Docker-backed server install paths must stay under ALPHAGSM_HOME so the
     host Docker daemon and the manager container see the same absolute path.
 EOF

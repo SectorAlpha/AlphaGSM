@@ -48,7 +48,7 @@ def _write_fake_docker(bin_dir):
                 "state = state_path.read_text(encoding='utf-8').strip() if state_path.exists() else ''",
                 "image_state = image_path.read_text(encoding='utf-8').strip() if image_path.exists() else ''",
                 "container_name = None",
-                "if args[:1] in (['inspect'], ['port'], ['attach']) and len(args) > 1:",
+                "if args[:1] in (['inspect'], ['port'], ['attach'], ['logs']) and len(args) > 1:",
                 "    container_name = args[-1]",
                 "container = containers.get(container_name, {}) if container_name else {}",
                 "if args[:2] == ['compose', 'version']:",
@@ -117,7 +117,15 @@ def _write_fake_docker(bin_dir):
                 "    forwarded = args[exec_index + 1:]",
                 "    sys.stdout.write('FORWARDED:' + ' '.join(forwarded) + '\\n')",
                 "    sys.exit(0)",
-                "if 'logs' in args:",
+                "if args[:1] == ['logs']:",
+                "    if container_name and container:",
+                "        logs_output = container.get('logs', '')",
+                "    else:",
+                "        logs_output = os.environ.get('FAKE_DOCKER_LOGS_OUTPUT', '')",
+                "    if logs_output:",
+                "        sys.stdout.write(str(logs_output))",
+                "        if not str(logs_output).endswith('\\n'):",
+                "            sys.stdout.write('\\n')",
                 "    sys.exit(0)",
                 "sys.stderr.write('Unhandled fake docker args: ' + ' '.join(args) + '\\n')",
                 "sys.exit(1)",
@@ -388,6 +396,7 @@ def test_wrapper_connect_attaches_to_explicit_container_name_without_manager_exe
         "custom-demo": {
             "state": "running",
             "ports": "25565/tcp -> 0.0.0.0:25565",
+            "logs": "[alpha] booting\\n[alpha] ready",
         }
     }
     state_dir = tmp_path / "state"
@@ -407,16 +416,74 @@ def test_wrapper_connect_attaches_to_explicit_container_name_without_manager_exe
     assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
     assert not any("up" in entry["argv"] for entry in log_entries)
     assert any(entry["argv"][:1] == ["inspect"] for entry in log_entries)
+    assert "Recent container logs (last 10 lines):" in result.stdout
+    assert "[alpha] booting" in result.stdout
+    assert "[alpha] ready" in result.stdout
     assert "Detach with Ctrl-p Ctrl-q" in result.stdout
     assert "ATTACHED:custom-demo" in result.stdout
+    assert any(entry["argv"][:1] == ["logs"] for entry in log_entries)
     assert any(entry["argv"][:1] == ["attach"] for entry in log_entries)
     assert not any("exec" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_connect_supports_tail_override(tmp_path):
+    fake_containers = {
+        "custom-demo": {
+            "state": "running",
+            "logs": "[alpha] line one",
+        }
+    }
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "connect",
+        "--tail",
+        "25",
+        fake_containers=fake_containers,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "Recent container logs (last 25 lines):" in result.stdout
+    assert any(entry["argv"][:2] == ["logs", "--tail"] and entry["argv"][2] == "25" for entry in log_entries)
+
+
+def test_wrapper_connect_supports_no_logs(tmp_path):
+    fake_containers = {
+        "custom-demo": {
+            "state": "running",
+            "logs": "[alpha] should not print",
+        }
+    }
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "connect",
+        "--no-logs",
+        fake_containers=fake_containers,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "Recent container logs" not in result.stdout
+    assert not any(entry["argv"][:1] == ["logs"] for entry in log_entries)
+    assert any(entry["argv"][:1] == ["attach"] for entry in log_entries)
 
 
 def test_wrapper_connect_forwards_non_docker_server_through_manager_exec(tmp_path):
     state_dir = tmp_path / "state"
     _write_server_config(state_dir, "demo", {"runtime": "process"})
-    result, _, log_entries = _run_wrapper(tmp_path, "demo", "connect")
+    result, _, log_entries = _run_wrapper(tmp_path, "demo", "connect", "--no-logs", "--tail", "25")
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
@@ -544,6 +611,7 @@ def test_wrapper_connect_falls_back_to_forwarded_exec_when_host_python3_is_missi
         tmp_path,
         "demo",
         "connect",
+        "--tail=3",
         host_python3_missing=True,
     )
 
@@ -551,6 +619,20 @@ def test_wrapper_connect_falls_back_to_forwarded_exec_when_host_python3_is_missi
     assert not any(entry["argv"][:1] == ["attach"] for entry in log_entries)
     assert any("exec" in entry["argv"] for entry in log_entries)
     assert "FORWARDED:-T alphagsm python alphagsm demo connect" in result.stdout
+
+
+def test_wrapper_connect_rejects_unknown_option(tmp_path):
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(tmp_path, "demo", "connect", "--bogus")
+
+    assert result.returncode != 0
+    assert "Unknown option for connect: --bogus" in result.stderr
+    assert log_entries == []
 
 
 def test_wrapper_builds_locally_when_remote_pull_fails(tmp_path):
