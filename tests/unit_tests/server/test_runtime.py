@@ -111,6 +111,11 @@ def test_infer_minecraft_java_major_supports_new_26_x_version_scheme():
     assert runtime_module.infer_minecraft_java_major("26.1.2") == 25
 
 
+def test_default_runtime_images_use_latest_tag():
+    assert JAVA_RUNTIME_IMAGE.endswith(":latest")
+    assert STEAMCMD_RUNTIME_IMAGE.endswith(":latest")
+
+
 def test_build_container_spec_uses_get_start_command_and_shared_mounts(tmp_path):
     exe = tmp_path / "server.bin"
     exe.write_text("", encoding="utf-8")

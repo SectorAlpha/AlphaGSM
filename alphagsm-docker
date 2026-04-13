@@ -4,7 +4,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker/manager/compose.yml"
-IMAGE_VERSION_FILE="$SCRIPT_DIR/docker/image-version.txt"
 STATE_DIR="${ALPHAGSM_HOME:-$SCRIPT_DIR/.alphagsm-docker}"
 STATE_DIR="$(mkdir -p "$STATE_DIR" && cd "$STATE_DIR" && pwd)"
 CONFIG_PATH="$STATE_DIR/alphagsm.conf"
@@ -12,15 +11,6 @@ EXAMPLE_CONFIG="$SCRIPT_DIR/docker/manager/alphagsm.conf.example"
 PULL_RUNTIME_IMAGES="${ALPHAGSM_PULL_RUNTIME_IMAGES:-0}"
 MANAGER_CONTAINER_NAME="${ALPHAGSM_MANAGER_CONTAINER_NAME:-alphagsm-manager}"
 MANAGER_MODE_FILE="$STATE_DIR/.manager-mode"
-
-read_image_release() {
-    if [[ -f "$IMAGE_VERSION_FILE" ]]; then
-        tr -d '[:space:]' < "$IMAGE_VERSION_FILE"
-    fi
-}
-
-DEFAULT_IMAGE_RELEASE="$(read_image_release)"
-DEFAULT_IMAGE_RELEASE="${DEFAULT_IMAGE_RELEASE:-2026-04-11-v1}"
 DEFAULT_MANAGER_IMAGE="${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm:latest}"
 DEVELOP_MANAGER_IMAGE="${ALPHAGSM_MANAGER_DEVELOP_IMAGE:-alphagsm:dev}"
 
@@ -99,7 +89,6 @@ manager_compose() {
     image="$(manager_image_for_mode "$mode")"
 
     ALPHAGSM_HOME="$STATE_DIR" \
-    ALPHAGSM_IMAGE_VERSION="$DEFAULT_IMAGE_RELEASE" \
     ALPHAGSM_PULL_RUNTIME_IMAGES="$PULL_RUNTIME_IMAGES" \
     ALPHAGSM_MANAGER_IMAGE="$image" \
     compose_cmd -f "$COMPOSE_FILE" "${@:2}"
