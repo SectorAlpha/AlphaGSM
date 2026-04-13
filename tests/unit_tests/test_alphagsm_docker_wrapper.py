@@ -516,7 +516,7 @@ def test_wrapper_ps_lists_docker_backed_servers_in_current_home(tmp_path):
         "vanilla",
         {"runtime": "process"},
     )
-    result, _, _ = _run_wrapper(
+    result, _, log_entries = _run_wrapper(
         tmp_path,
         "ps",
         fake_containers={
@@ -528,16 +528,29 @@ def test_wrapper_ps_lists_docker_backed_servers_in_current_home(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr or result.stdout
-    assert "SERVER" in result.stdout
-    assert "demo" in result.stdout
-    assert "custom-demo" in result.stdout
-    assert "running" in result.stdout
-    assert "25565/tcp -> 0.0.0.0:25565" in result.stdout
-    assert "vanilla" not in result.stdout
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert not any("exec" in entry["argv"] for entry in log_entries)
+
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert any(line.startswith("SERVER") for line in lines), result.stdout
+    server_line = next(
+        (line for line in lines if "demo" in line and "custom-demo" in line),
+        None,
+    )
+    assert server_line is not None, result.stdout
+    assert "running" in server_line
+    assert "25565/tcp -> 0.0.0.0:25565" in server_line
+    assert not any("vanilla" in line for line in lines)
 
 
 def test_wrapper_ps_reports_empty_state_when_no_docker_servers_exist(tmp_path):
-    result, _, _ = _run_wrapper(tmp_path, "ps")
+    result, _, log_entries = _run_wrapper(tmp_path, "ps")
 
     assert result.returncode == 0, result.stderr or result.stdout
-    assert "No Docker-backed AlphaGSM servers found" in result.stdout
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert not any("exec" in entry["argv"] for entry in log_entries)
+    assert result.stdout.splitlines() == [
+        "No Docker-backed AlphaGSM servers found in the current wrapper home."
+    ]
