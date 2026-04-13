@@ -191,7 +191,7 @@ print_docker_server_list() {
             ports="$(container_port_lines "$container_name" | paste -sd ';' -)"
         elif docker inspect "$container_name" >/dev/null 2>&1; then
             state="stopped"
-            ports=""
+            ports="$(container_port_lines "$container_name" | paste -sd ';' -)"
         else
             state="missing"
             ports=""

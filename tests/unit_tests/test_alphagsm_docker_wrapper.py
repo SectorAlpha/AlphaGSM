@@ -565,3 +565,36 @@ def test_wrapper_ps_reports_empty_state_when_no_docker_servers_exist(tmp_path):
     assert result.stdout.splitlines() == [
         "No Docker-backed AlphaGSM servers found in the current wrapper home."
     ]
+
+
+def test_wrapper_ps_keeps_port_mappings_for_stopped_containers(tmp_path):
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "ps",
+        fake_containers={
+            "custom-demo": {
+                "state": "stopped",
+                "ports": "25565/tcp -> 0.0.0.0:25565",
+            }
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert not any("exec" in entry["argv"] for entry in log_entries)
+
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    server_line = next(
+        (line for line in lines if "demo" in line and "custom-demo" in line),
+        None,
+    )
+    assert server_line is not None, result.stdout
+    assert "stopped" in server_line
+    assert "25565/tcp -> 0.0.0.0:25565" in server_line
