@@ -90,36 +90,48 @@ jobs:
             --cov-report=xml \
             -q --tb=no
 
-  discover-smoke-tests:
+  classify-changes:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage]
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      game_test_mode: ${{ steps.classify.outputs.game_test_mode }}
+      has_smoke_tests: ${{ steps.classify.outputs.has_smoke_tests }}
+      has_integration_tests: ${{ steps.classify.outputs.has_integration_tests }}
+      smoke_matrix: ${{ steps.classify.outputs.smoke_matrix }}
+      integration_matrix: ${{ steps.classify.outputs.integration_matrix }}
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
-      - id: set-matrix
-        name: Split smoke scripts into max 40 batches
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - name: Fetch PR base commit
         run: |
-          python3 - <<'PY'
-          import json, math, os
-          scripts = sorted(f for f in os.listdir("tests/smoke_tests") if f.startswith("run_") and f.endswith(".sh") and not f.startswith("run_backend_"))
-          max_jobs = 40
-          batch_size = math.ceil(len(scripts) / max_jobs)
-          batches = []
-          for i in range(0, len(scripts), batch_size):
-              chunk = scripts[i:i+batch_size]
-              batches.append({
-                  "batch": i // batch_size + 1,
-                  "scripts": " ".join(f"tests/smoke_tests/{s}" for s in chunk),
-                  "label": f"batch-{i // batch_size + 1}-of-{math.ceil(len(scripts) / batch_size)}"
-              })
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f'matrix={json.dumps({"include": batches})}\n')
-          PY
+          git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+      - id: classify
+        name: Classify Linux game smoke and integration scope
+        run: |
+          python3 scripts/ci_game_test_routing.py \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}"
+
+  discover-smoke-tests:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage, classify-changes]
+    outputs:
+      matrix: ${{ steps.forward.outputs.matrix }}
+      has_tests: ${{ steps.forward.outputs.has_tests }}
+    steps:
+      - id: forward
+        name: Forward Linux game smoke matrix
+        run: |
+          echo "Linux game smoke mode: ${{ needs.classify-changes.outputs.game_test_mode }}"
+          echo "Smoke tests selected: ${{ needs.classify-changes.outputs.has_smoke_tests }}"
+          echo 'matrix=${{ needs.classify-changes.outputs.smoke_matrix }}' >> "$GITHUB_OUTPUT"
+          echo 'has_tests=${{ needs.classify-changes.outputs.has_smoke_tests }}' >> "$GITHUB_OUTPUT"
 
   smoke-test:
     runs-on: ubuntu-latest
+    if: needs.discover-smoke-tests.outputs.has_tests == 'true'
     needs: discover-smoke-tests
     strategy:
       fail-fast: false
@@ -189,68 +201,18 @@ jobs:
 
   discover-integration-tests:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage]
+    needs: [unit-test, lint, coverage, classify-changes]
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.forward.outputs.matrix }}
+      has_tests: ${{ steps.forward.outputs.has_tests }}
     steps:
-      - name: Checkout AlphaGSM code
-        uses: actions/checkout@v4
-      - id: set-matrix
-        name: Split integration tests into batches (slow tests get solo batches)
+      - id: forward
+        name: Forward Linux game integration matrix
         run: |
-          python3 - <<'PY'
-          import json, math, os
-
-          # Tests with extended per-test timeouts (2400-3600s) get solo batches
-          # so they never block a batch of regular tests.
-          SLOW_TESTS = [
-              "test_rs2server.py",           # 3600s: ~13 GB download
-              "test_scumserver.py",          # 3600s: large download
-              "test_sevendaystodie.py",      # 3600s: ~12 GB + world gen
-              "test_palworld.py",            # 2400s: ~3.7 GB + UE5 startup
-              "test_rust.py",               # 2400s: ~2 GB + world gen
-              "test_arksurvivalascended.py", # 3600s: UE4/Proton, very slow startup
-              "test_btserver.py",           # 3600s: slow SteamManager init
-              "test_enshrouded.py",         # 3600s: UE4/Proton, slow A2S
-              "test_readyornotserver.py",   # 3600s: UE4/Proton, full map load + A2S
-              "test_valheim.py",            # 3600s: Steam relay + A2S on port+1
-          ]
-
-          all_tests = sorted(
-              f for f in os.listdir("tests/integration_tests")
-              if f.startswith("test_") and f.endswith(".py")
-          )
-          slow_set = set(SLOW_TESTS)
-          regular_tests = [t for t in all_tests if t not in slow_set]
-
-          batches = []
-
-          # Solo batch per slow test
-          for t in SLOW_TESTS:
-              if t in all_tests:
-                  batches.append({
-                      "batch": len(batches) + 1,
-                      "files": f"tests/integration_tests/{t}",
-                      "label": f"slow-{t[5:-3]}",
-                  })
-
-          # Remaining tests split across up to max_jobs batches
-          max_jobs = 40
-          if regular_tests:
-              batch_size = math.ceil(len(regular_tests) / max_jobs)
-              for i in range(0, len(regular_tests), batch_size):
-                  chunk = regular_tests[i:i+batch_size]
-                  n = i // batch_size + 1
-                  total = math.ceil(len(regular_tests) / batch_size)
-                  batches.append({
-                      "batch": len(batches) + 1,
-                      "files": " ".join(f"tests/integration_tests/{t}" for t in chunk),
-                      "label": f"batch-{n}-of-{total}",
-                  })
-
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f'matrix={json.dumps({"include": batches})}\n')
-          PY
+          echo "Linux game integration mode: ${{ needs.classify-changes.outputs.game_test_mode }}"
+          echo "Integration tests selected: ${{ needs.classify-changes.outputs.has_integration_tests }}"
+          echo 'matrix=${{ needs.classify-changes.outputs.integration_matrix }}' >> "$GITHUB_OUTPUT"
+          echo 'has_tests=${{ needs.classify-changes.outputs.has_integration_tests }}' >> "$GITHUB_OUTPUT"
 
   build-integration-image:
     runs-on: ubuntu-latest
@@ -280,21 +242,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check whether image tag already exists
-        id: check
-        run: |
-          if docker manifest inspect "${{ steps.meta.outputs.image }}" > /dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Set up Docker Buildx
-        if: steps.check.outputs.exists != 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push integration test image
-        if: steps.check.outputs.exists != 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -308,6 +259,7 @@ jobs:
 
   integration-test:
     runs-on: ubuntu-latest
+    if: needs.discover-integration-tests.outputs.has_tests == 'true'
     needs: [discover-integration-tests, build-integration-image]
     strategy:
       fail-fast: false

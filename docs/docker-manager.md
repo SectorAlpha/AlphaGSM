@@ -61,7 +61,7 @@ The script will:
 
 - create a Docker-manager state directory if it does not exist
 - write `alphagsm.conf` there from the manager example config
-- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm:<image-version>` using the shared tag from `docker/image-version.txt` and falls back to a local build if that pull fails
+- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm:latest` and falls back to a local build if that pull fails
 - support `./alphagsm-docker up --develop` or `./alphagsm-docker start --develop`, which switches the state dir into developer mode and always rebuilds the manager image locally
 - reuse the existing running manager container for forwarded AlphaGSM commands instead of rebuilding on every exec
 - recreate a stopped manager container from the active mode without forcing the other mode's image path
@@ -129,13 +129,13 @@ main use case.
 From the repository root:
 
 ```bash
-docker compose -f docker/manager/compose.yml up -d --build
+docker compose -f docker/manager/compose.yml up -d
 ```
 
 If your host still uses the standalone Compose binary, use:
 
 ```bash
-docker-compose -f docker/manager/compose.yml up -d --build
+docker-compose -f docker/manager/compose.yml up -d
 ```
 
 This mounts:
@@ -150,6 +150,11 @@ This mounts:
 The manager image also includes Java and the Docker CLI. That is intentional:
 some Docker-backed modules still perform local setup-time work, then hand off
 the actual long-running server process to a sibling runtime container.
+
+The checked-in Compose file now defaults to `ghcr.io/sectoralpha/alphagsm:latest`
+and is configured to prefer pulling a fresh `latest` image before reusing a
+local copy. If you explicitly want a local rebuild with direct Compose instead
+of the wrapper, add `--build`.
 
 On startup, the manager container will try to pull the runtime-family images
 referenced by `src/server/runtime.py`.

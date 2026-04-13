@@ -91,3 +91,18 @@ def test_runtime_image_publish_workflow_passes_gh_token_for_proton_builds():
 
     assert 'secrets:' in text
     assert 'gh_token=${{ secrets.GITHUB_TOKEN }}' in text
+
+
+def test_runtime_image_publish_workflow_links_packages_back_to_repo():
+    text = BUILD_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "labels:" in text
+    assert "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" in text
+
+
+def test_runtime_image_publish_workflow_avoids_unsupported_visibility_patch_api():
+    text = BUILD_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "Set package visibility to public" not in text
+    assert "/packages/container/${package_name}" not in text
+    assert "--field visibility=public" not in text

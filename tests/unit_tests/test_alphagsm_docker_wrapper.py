@@ -207,6 +207,11 @@ def test_wrapper_start_and_stop_aliases_map_to_compose_up_and_down(tmp_path):
 
     assert start_result.returncode == 0, start_result.stderr or start_result.stdout
     assert (state_dir / "alphagsm.conf").exists()
+    assert any(
+        entry["manager_image"] == "ghcr.io/sectoralpha/alphagsm:latest"
+        for entry in start_entries
+        if "up" in entry["argv"]
+    )
     assert any("up" in entry["argv"] for entry in start_entries)
 
     stop_result, _, stop_entries = _run_wrapper(tmp_path, "stop")
