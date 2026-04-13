@@ -89,6 +89,7 @@ def main(name, args):
             "shell",
             "logs",
             "compose",
+            "ps",
         )
         + Server.default_commands
     )
