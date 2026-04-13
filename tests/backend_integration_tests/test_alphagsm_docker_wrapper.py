@@ -31,11 +31,12 @@ WRAPPER_FAMILY_CASES = (
 )
 
 
-def _run_wrapper(lifecycle, env, *args, timeout=1200):
+def _run_wrapper(lifecycle, env, *args, timeout=1200, input_text=None):
     result = subprocess.run(
         [str(WRAPPER), *args],
         cwd=str(REPO_ROOT),
         env=env,
+        input=input_text,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -461,6 +462,167 @@ def test_root_wrapper_probe_matrix_covers_all_docker_runtime_families(
         _run_wrapper(lifecycle, env, "down", timeout=300)
         subprocess.run(
             ["docker", "rm", "-f", container_name, "alphagsm-" + server_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+
+
+def test_root_wrapper_ps_and_connect_cover_custom_container_name(tmp_path, lifecycle):
+    lifecycle.require_backend_opt_in()
+    lifecycle.require_command("docker")
+
+    docker_socket = Path("/var/run/docker.sock")
+    if not docker_socket.exists():
+        pytest.skip("Docker socket is required for the docker-wrapper integration test")
+    if not _compose_available():
+        pytest.skip("Docker Compose is required for the docker-wrapper integration test")
+
+    runtime_family = "simple-tcp"
+    server_name = "itwrap-ps-connect"
+    manager_container_name = "alphagsm-manager-wrap-" + str(lifecycle.pick_free_tcp_port())
+    custom_server_container_name = "alphagsm-wrap-native-" + str(lifecycle.pick_free_tcp_port())
+    state_dir = (tmp_path / "manager-home-ps-connect").resolve()
+    install_dir = state_dir / "servers" / server_name
+    port = lifecycle.pick_free_tcp_port()
+    image, pull_only = _wrapper_family_image(runtime_family)
+
+    _write_wrapper_probe_config(state_dir, lifecycle)
+
+    env = os.environ.copy()
+    env["ALPHAGSM_HOME"] = str(state_dir)
+    env["ALPHAGSM_MANAGER_CONTAINER_NAME"] = manager_container_name
+    env["ALPHAGSM_PULL_RUNTIME_IMAGES"] = "0"
+
+    up_result = _run_wrapper(lifecycle, env, "up", "--develop", timeout=1800)
+    assert up_result.returncode == 0, up_result.stderr or up_result.stdout
+
+    try:
+        _ensure_wrapper_family_image(lifecycle, runtime_family, image, pull_only)
+
+        create_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "create",
+            "portprobe",
+            timeout=300,
+        )
+        assert create_result.returncode == 0, create_result.stderr or create_result.stdout
+
+        set_family_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "set",
+            "runtime_family",
+            runtime_family,
+            timeout=300,
+        )
+        assert set_family_result.returncode == 0, set_family_result.stderr or set_family_result.stdout
+
+        set_image_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "set",
+            "image",
+            image,
+            timeout=300,
+        )
+        assert set_image_result.returncode == 0, set_image_result.stderr or set_image_result.stdout
+
+        set_container_name_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "set",
+            "container_name",
+            custom_server_container_name,
+            timeout=300,
+        )
+        assert (
+            set_container_name_result.returncode == 0
+        ), set_container_name_result.stderr or set_container_name_result.stdout
+
+        setup_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "setup",
+            "-n",
+            str(install_dir),
+            str(port),
+            str(port + 1),
+            str(port + 2),
+            timeout=600,
+        )
+        assert setup_result.returncode == 0, setup_result.stderr or setup_result.stdout
+
+        start_result = _run_wrapper(lifecycle, env, server_name, "start", timeout=1200)
+        assert start_result.returncode == 0, start_result.stderr or start_result.stdout
+
+        lifecycle.wait_for_tcp_open("127.0.0.1", port, 180)
+
+        status_result = _run_wrapper(lifecycle, env, server_name, "status", timeout=300)
+        assert status_result.returncode == 0, status_result.stderr or status_result.stdout
+        assert "Host connection details:" in status_result.stdout, status_result.stdout
+
+        ps_result = _run_wrapper(lifecycle, env, "ps", timeout=300)
+        assert ps_result.returncode == 0, ps_result.stderr or ps_result.stdout
+        ps_output = ps_result.stdout
+        matching_lines = [
+            line for line in ps_output.splitlines() if line.lstrip().startswith(server_name)
+        ]
+        assert matching_lines, ps_output
+        ps_row = matching_lines[0]
+        assert custom_server_container_name in ps_row, ps_row
+        assert "running" in ps_row, ps_row
+        assert str(port) in ps_row, ps_row
+
+        connect_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "connect",
+            timeout=120,
+            input_text="quit\n",
+        )
+        assert connect_result.returncode == 0, (
+            connect_result.stderr or connect_result.stdout
+        )
+        connect_output = connect_result.stderr + connect_result.stdout
+        assert ("Connecting to %s" % (custom_server_container_name,)) in connect_output
+        assert "Detach with Ctrl-p Ctrl-q" in connect_output, connect_output
+
+        lifecycle.wait_for_closed("127.0.0.1", port, 90)
+
+        stopped_connect_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "connect",
+            timeout=120,
+        )
+        assert stopped_connect_result.returncode != 0, (
+            stopped_connect_result.stderr or stopped_connect_result.stdout
+        )
+        stopped_connect_output = stopped_connect_result.stderr + stopped_connect_result.stdout
+        assert ("Container '%s' is not running." % (custom_server_container_name,)) in stopped_connect_output
+    finally:
+        _run_wrapper(lifecycle, env, server_name, "stop", timeout=300)
+        _run_wrapper(lifecycle, env, "down", timeout=300)
+        subprocess.run(
+            [
+                "docker",
+                "rm",
+                "-f",
+                manager_container_name,
+                custom_server_container_name,
+                "alphagsm-" + server_name,
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
