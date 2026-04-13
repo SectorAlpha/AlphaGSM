@@ -11,6 +11,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WRAPPER = REPO_ROOT / "alphagsm-docker"
 
 
+def _write_server_config(state_dir, server_name, payload):
+    conf_dir = state_dir / "home" / "conf"
+    conf_dir.mkdir(parents=True, exist_ok=True)
+    (conf_dir / f"{server_name}.json").write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+
 def _write_fake_docker(bin_dir):
     fake_docker = bin_dir / "docker"
     fake_docker.write_text(
@@ -25,12 +34,23 @@ def _write_fake_docker(bin_dir):
                 "log_path = Path(os.environ['FAKE_DOCKER_LOG'])",
                 "state_path = Path(os.environ['FAKE_DOCKER_STATE'])",
                 "image_path = Path(os.environ['FAKE_DOCKER_IMAGE_STATE'])",
+                "containers_json = os.environ.get('FAKE_DOCKER_CONTAINERS_JSON', '{}')",
+                "try:",
+                "    containers = json.loads(containers_json) if containers_json else {}",
+                "except json.JSONDecodeError:",
+                "    containers = {}",
                 "entry = {'argv': sys.argv[1:], 'alphagsm_home': os.environ.get('ALPHAGSM_HOME', ''), 'pull_runtime_images': os.environ.get('ALPHAGSM_PULL_RUNTIME_IMAGES', ''), 'manager_image': os.environ.get('ALPHAGSM_MANAGER_IMAGE', '')}",
                 "with log_path.open('a', encoding='utf-8') as handle:",
                 "    handle.write(json.dumps(entry) + '\\n')",
                 "args = sys.argv[1:]",
                 "state = state_path.read_text(encoding='utf-8').strip() if state_path.exists() else ''",
                 "image_state = image_path.read_text(encoding='utf-8').strip() if image_path.exists() else ''",
+                "container_name = None",
+                "if args[:1] in (['inspect'], ['port']) and args[1:2] and not args[1].startswith('-'):",
+                "    container_name = args[1]",
+                "elif args[:1] == ['attach'] and args[1:2]:",
+                "    container_name = args[1]",
+                "container = containers.get(container_name, {}) if container_name else {}",
                 "if args[:2] == ['compose', 'version']:",
                 "    sys.exit(0 if os.environ.get('FAKE_DOCKER_COMPOSE_AVAILABLE', '1') == '1' else 1)",
                 "if args[:2] == ['image', 'inspect']:",
@@ -52,6 +72,16 @@ def _write_fake_docker(bin_dir):
                 "            sys.stdout.write('\\n')",
                 "    sys.exit(0)",
                 "if args[:1] == ['inspect']:",
+                "    if container_name and container:",
+                "        if '-f' in args:",
+                "            fmt = args[args.index('-f') + 1] if args.index('-f') + 1 < len(args) else ''",
+                "            if fmt == '{{.State.Running}}':",
+                "                sys.stdout.write('true\\n' if container.get('state') == 'running' else 'false\\n')",
+                "            else:",
+                "                sys.stdout.write('{}\\n')",
+                "        else:",
+                "            sys.stdout.write(json.dumps(container) + '\\n')",
+                "        sys.exit(0)",
                 "    if state == '':",
                 "        sys.exit(1)",
                 "    if '-f' in args:",
@@ -59,6 +89,12 @@ def _write_fake_docker(bin_dir):
                 "    else:",
                 "        sys.stdout.write('{}\\n')",
                 "    sys.exit(0)",
+                "if args[:1] == ['attach']:",
+                "    if container_name and container:",
+                "        sys.stdout.write('ATTACHED:' + container_name + '\\n')",
+                "        sys.exit(0)",
+                "    sys.stderr.write('Unhandled attach target: ' + ' '.join(args) + '\\n')",
+                "    sys.exit(1)",
                 "if 'up' in args:",
                 "    state_path.write_text('running', encoding='utf-8')",
                 "    image = os.environ.get('ALPHAGSM_MANAGER_IMAGE', '')",
@@ -149,6 +185,7 @@ def _run_wrapper(
     docker_compose_available=True,
     install_standalone_compose=False,
     port_output=None,
+    fake_containers=None,
 ):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
@@ -171,6 +208,8 @@ def _run_wrapper(
     env["FAKE_DOCKER_COMPOSE_AVAILABLE"] = "1" if docker_compose_available else "0"
     if port_output is not None:
         env["FAKE_DOCKER_PORT_OUTPUT"] = port_output
+    if fake_containers is not None:
+        env["FAKE_DOCKER_CONTAINERS_JSON"] = json.dumps(fake_containers)
 
     result = subprocess.run(
         ["bash", str(WRAPPER), *args],
@@ -296,6 +335,42 @@ def test_wrapper_status_appends_host_connection_details(tmp_path):
     assert "Connect from this host: 127.0.0.1:7777/udp" in result.stdout
     assert "Connect from this host: 127.0.0.1:7778/tcp" in result.stdout
     assert any(entry["argv"][:1] == ["port"] for entry in log_entries)
+
+
+def test_wrapper_connect_attaches_to_explicit_container_name_without_manager_exec(tmp_path):
+    fake_containers = {
+        "custom-demo": {
+            "state": "running",
+            "ports": "25565/tcp -> 0.0.0.0:25565",
+        }
+    }
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "connect",
+        fake_containers=fake_containers,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "Detach with Ctrl-p Ctrl-q" in result.stdout
+    assert "ATTACHED:custom-demo" in result.stdout
+    assert any(entry["argv"][:1] == ["attach"] for entry in log_entries)
+    assert not any("exec" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_connect_rejects_non_docker_server(tmp_path):
+    state_dir = tmp_path / "state"
+    _write_server_config(state_dir, "demo", {"runtime": "process"})
+    result, _, _ = _run_wrapper(tmp_path, "demo", "connect")
+
+    assert result.returncode != 0
+    assert "only attaches to Docker-backed servers" in result.stderr
 
 
 def test_wrapper_start_appends_host_connection_details(tmp_path):
