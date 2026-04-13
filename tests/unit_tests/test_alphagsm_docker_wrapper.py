@@ -502,3 +502,42 @@ def test_wrapper_prefers_docker_compose_plugin_when_both_are_available(tmp_path)
     assert result.returncode == 0, result.stderr or result.stdout
     assert any(entry["argv"][:2] == ["compose", "version"] for entry in log_entries)
     assert not any(entry.get("tool") == "docker-compose" for entry in log_entries)
+
+
+def test_wrapper_ps_lists_docker_backed_servers_in_current_home(tmp_path):
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    _write_server_config(
+        state_dir,
+        "vanilla",
+        {"runtime": "process"},
+    )
+    result, _, _ = _run_wrapper(
+        tmp_path,
+        "ps",
+        fake_containers={
+            "custom-demo": {
+                "state": "running",
+                "ports": "25565/tcp -> 0.0.0.0:25565",
+            }
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "SERVER" in result.stdout
+    assert "demo" in result.stdout
+    assert "custom-demo" in result.stdout
+    assert "running" in result.stdout
+    assert "25565/tcp -> 0.0.0.0:25565" in result.stdout
+    assert "vanilla" not in result.stdout
+
+
+def test_wrapper_ps_reports_empty_state_when_no_docker_servers_exist(tmp_path):
+    result, _, _ = _run_wrapper(tmp_path, "ps")
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "No Docker-backed AlphaGSM servers found" in result.stdout
