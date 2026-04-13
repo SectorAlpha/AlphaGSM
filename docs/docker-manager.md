@@ -160,9 +160,8 @@ some Docker-backed modules still perform local setup-time work, then hand off
 the actual long-running server process to a sibling runtime container.
 
 The checked-in Compose file now defaults to `ghcr.io/sectoralpha/alphagsm:latest`
-and is configured to prefer pulling a fresh `latest` image before reusing a
-local copy. If you explicitly want a local rebuild with direct Compose instead
-of the wrapper, add `--build`.
+and will pull that image if it is missing locally. If you explicitly want a
+local rebuild with direct Compose instead of the wrapper, add `--build`.
 
 On startup, the manager container will try to pull the runtime-family images
 referenced by `src/server/runtime.py`.
