@@ -502,6 +502,29 @@ def test_default_install_dir_prefers_shared_servers_root_in_manager_mode(monkeyp
     assert runtime_module.default_install_dir(server) == "/shared/servers/scp"
 
 
+def test_current_container_identity_mount_roots_inspects_docker_without_tty_kwarg(monkeypatch):
+    observed = {}
+
+    def _fake_check_output(cmd, **kwargs):
+        observed["cmd"] = cmd
+        observed["kwargs"] = kwargs
+        return '[{"Type":"bind","Source":"/shared","Destination":"/shared"}]'
+
+    monkeypatch.setenv("HOSTNAME", "alphagsm-manager")
+    monkeypatch.setattr(runtime_module.os.path, "exists", lambda path: path == "/.dockerenv")
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    roots = runtime_module._current_container_identity_mount_roots()
+
+    assert roots == ["/shared"]
+    assert observed["cmd"] == ["docker", "inspect", "-f", "{{json .Mounts}}", "alphagsm-manager"]
+    assert observed["kwargs"] == {
+        "stderr": runtime_module.sp.STDOUT,
+        "shell": False,
+        "text": True,
+    }
+
+
 def test_default_install_dir_uses_home_on_normal_host(monkeypatch):
     server = DummyServer(name="scp")
 

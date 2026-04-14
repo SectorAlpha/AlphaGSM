@@ -331,7 +331,6 @@ def _current_container_identity_mount_roots():
             stderr=sp.STDOUT,
             shell=False,
             text=True,
-            tty=False,
         )
     except (OSError, sp.SubprocessError):
         return []

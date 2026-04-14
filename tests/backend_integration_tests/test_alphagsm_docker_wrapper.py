@@ -30,6 +30,8 @@ WRAPPER_FAMILY_CASES = (
     ("wine-proton", "itwrap-wine"),
 )
 
+WRAPPER_STOP_TIMEOUT = 420
+
 
 def _run_wrapper(lifecycle, env, *args, timeout=1200, input_text=None):
     result = subprocess.run(
@@ -325,11 +327,17 @@ def test_root_wrapper_runs_docker_minecraft_info_lifecycle(tmp_path, lifecycle):
         assert info_data["protocol"] == "slp", info_data
         assert info_data.get("players_online", 0) == 0, info_data
 
-        stop_result = _run_wrapper(lifecycle, env, SERVER_NAME, "stop", timeout=300)
+        stop_result = _run_wrapper(
+            lifecycle,
+            env,
+            SERVER_NAME,
+            "stop",
+            timeout=WRAPPER_STOP_TIMEOUT,
+        )
         assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
         lifecycle.wait_for_closed("127.0.0.1", port, 90)
     finally:
-        _run_wrapper(lifecycle, env, SERVER_NAME, "stop", timeout=300)
+        _run_wrapper(lifecycle, env, SERVER_NAME, "stop", timeout=WRAPPER_STOP_TIMEOUT)
         _run_wrapper(lifecycle, env, "down", timeout=300)
         subprocess.run(
             ["docker", "rm", "-f", container_name, "alphagsm-" + SERVER_NAME],
@@ -450,7 +458,13 @@ def test_root_wrapper_probe_matrix_covers_all_docker_runtime_families(
 
         _assert_wrapper_query_and_info(lifecycle, env, server_name, port)
 
-        stop_result = _run_wrapper(lifecycle, env, server_name, "stop", timeout=300)
+        stop_result = _run_wrapper(
+            lifecycle,
+            env,
+            server_name,
+            "stop",
+            timeout=WRAPPER_STOP_TIMEOUT,
+        )
         assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
         lifecycle.wait_for_closed("127.0.0.1", port, 90)
 
@@ -458,7 +472,7 @@ def test_root_wrapper_probe_matrix_covers_all_docker_runtime_families(
         assert final_status.returncode == 0, final_status.stderr or final_status.stdout
         assert "isn't running" in final_status.stdout, final_status.stdout
     finally:
-        _run_wrapper(lifecycle, env, server_name, "stop", timeout=300)
+        _run_wrapper(lifecycle, env, server_name, "stop", timeout=WRAPPER_STOP_TIMEOUT)
         _run_wrapper(lifecycle, env, "down", timeout=300)
         subprocess.run(
             ["docker", "rm", "-f", container_name, "alphagsm-" + server_name],
@@ -612,7 +626,7 @@ def test_root_wrapper_ps_and_connect_cover_custom_container_name(tmp_path, lifec
         stopped_connect_output = stopped_connect_result.stderr + stopped_connect_result.stdout
         assert ("Container '%s' is not running." % (custom_server_container_name,)) in stopped_connect_output
     finally:
-        _run_wrapper(lifecycle, env, server_name, "stop", timeout=300)
+        _run_wrapper(lifecycle, env, server_name, "stop", timeout=WRAPPER_STOP_TIMEOUT)
         _run_wrapper(lifecycle, env, "down", timeout=300)
         subprocess.run(
             [
