@@ -237,6 +237,7 @@ connect_server_console() {
     local server_name="$1"
     local show_logs="${2:-1}"
     local log_tail_lines="${3:-${ALPHAGSM_CONNECT_LOG_TAIL:-10}}"
+    local detach_keys="${4:-${ALPHAGSM_CONNECT_DETACH_KEYS:-}}"
     local metadata
     local runtime_name
     local container_name
@@ -276,14 +277,20 @@ connect_server_console() {
     fi
 
     echo "Connecting to $container_name"
-    echo "Detach with Ctrl-p Ctrl-q"
-    docker attach "$container_name"
+    if [[ -n "$detach_keys" ]]; then
+        echo "Detach with Docker escape sequence: $detach_keys"
+        docker attach --detach-keys "$detach_keys" "$container_name"
+    else
+        echo "Detach with Ctrl-p Ctrl-q"
+        docker attach "$container_name"
+    fi
 }
 
 route_connect_command() {
     local server_name="$1"
     local show_logs=1
     local log_tail_lines="${ALPHAGSM_CONNECT_LOG_TAIL:-10}"
+    local detach_keys="${ALPHAGSM_CONNECT_DETACH_KEYS:-}"
     local metadata
     local runtime_name
     shift
@@ -317,6 +324,18 @@ route_connect_command() {
                 fi
                 shift
                 ;;
+            --detach-keys)
+                if [[ $# -lt 2 ]]; then
+                    echo "Missing value for --detach-keys" >&2
+                    exit 1
+                fi
+                detach_keys="$2"
+                shift 2
+                ;;
+            --detach-keys=*)
+                detach_keys="${1#--detach-keys=}"
+                shift
+                ;;
             *)
                 echo "Unknown option for connect: $1" >&2
                 exit 1
@@ -340,7 +359,7 @@ route_connect_command() {
         return
     fi
 
-    connect_server_console "$server_name" "$show_logs" "$log_tail_lines"
+    connect_server_console "$server_name" "$show_logs" "$log_tail_lines" "$detach_keys"
 }
 
 show_host_connection_details() {
@@ -504,6 +523,7 @@ Usage:
   ./alphagsm-docker <server> connect
     ./alphagsm-docker <server> connect --tail <n>
     ./alphagsm-docker <server> connect --no-logs
+        ./alphagsm-docker <server> connect --detach-keys <seq>
   ./alphagsm-docker <alphagsm-args>
 
 Examples:
@@ -515,6 +535,7 @@ Examples:
   ./alphagsm-docker mymc connect
     ./alphagsm-docker mymc connect --tail 25
     ./alphagsm-docker mymc connect --no-logs
+        ./alphagsm-docker mymc connect --detach-keys ctrl-z,z
 
 Notes:
   - Default state path: $STATE_DIR
@@ -530,6 +551,8 @@ Notes:
     otherwise falls back to AlphaGSM's normal forwarded `connect`.
         - `--tail <n>` shows the last `n` log lines before attach.
         - `--no-logs` skips the pre-attach log tail.
+                - `--detach-keys <seq>` overrides Docker's detach sequence for attach.
+                    Example: `ctrl-z,z`.
   - Docker-backed server install paths must stay under ALPHAGSM_HOME so the
     host Docker daemon and the manager container see the same absolute path.
 EOF

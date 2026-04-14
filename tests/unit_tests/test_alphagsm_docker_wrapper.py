@@ -231,6 +231,7 @@ def _run_wrapper(
     port_output=None,
     fake_containers=None,
     host_python3_missing=False,
+    extra_env=None,
 ):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
@@ -257,6 +258,8 @@ def _run_wrapper(
         env["FAKE_DOCKER_PORT_OUTPUT"] = port_output
     if fake_containers is not None:
         env["FAKE_DOCKER_CONTAINERS_JSON"] = json.dumps(fake_containers)
+    if extra_env:
+        env.update(extra_env)
 
     result = subprocess.run(
         ["bash", str(WRAPPER), *args],
@@ -478,6 +481,65 @@ def test_wrapper_connect_supports_no_logs(tmp_path):
     assert "Recent container logs" not in result.stdout
     assert not any(entry["argv"][:1] == ["logs"] for entry in log_entries)
     assert any(entry["argv"][:1] == ["attach"] for entry in log_entries)
+
+
+def test_wrapper_connect_supports_custom_detach_keys(tmp_path):
+    fake_containers = {
+        "custom-demo": {
+            "state": "running",
+            "logs": "[alpha] ready",
+        }
+    }
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "connect",
+        "--detach-keys",
+        "ctrl-z,z",
+        fake_containers=fake_containers,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "Detach with Docker escape sequence: ctrl-z,z" in result.stdout
+    assert any(
+        entry["argv"][:3] == ["attach", "--detach-keys", "ctrl-z,z"]
+        for entry in log_entries
+    )
+
+
+def test_wrapper_connect_supports_custom_detach_keys_from_env(tmp_path):
+    fake_containers = {
+        "custom-demo": {
+            "state": "running",
+            "logs": "[alpha] ready",
+        }
+    }
+    state_dir = tmp_path / "state"
+    _write_server_config(
+        state_dir,
+        "demo",
+        {"runtime": "docker", "container_name": "custom-demo"},
+    )
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "connect",
+        fake_containers=fake_containers,
+        extra_env={"ALPHAGSM_CONNECT_DETACH_KEYS": "ctrl-z,z"},
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "Detach with Docker escape sequence: ctrl-z,z" in result.stdout
+    assert any(
+        entry["argv"][:3] == ["attach", "--detach-keys", "ctrl-z,z"]
+        for entry in log_entries
+    )
 
 
 def test_wrapper_connect_forwards_non_docker_server_through_manager_exec(tmp_path):

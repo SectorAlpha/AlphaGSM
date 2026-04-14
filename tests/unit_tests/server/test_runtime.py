@@ -150,11 +150,13 @@ def test_build_container_spec_uses_get_start_command_and_shared_mounts(tmp_path)
         ),
         port_definitions=(("port", "udp"),),
         stdin_open=True,
+        tty=True,
     )
 
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] is True
     assert spec["command"][0] == "./server.bin"
+    assert spec["tty"] is True
     assert spec["mounts"] == [
         {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
     ]

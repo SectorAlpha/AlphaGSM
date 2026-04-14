@@ -319,6 +319,7 @@ def get_container_spec(server):
     return {
         "working_dir": "/srv/server",
         "stdin_open": True,
+        "tty": True,
         "env": requirements.get("env", {}),
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),

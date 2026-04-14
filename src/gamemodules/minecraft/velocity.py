@@ -141,4 +141,5 @@ def get_container_spec(server):
         port_definitions=({'key': 'port', 'protocol': 'tcp'},),
         env=requirements.get("env", {}),
         stdin_open=True,
+        tty=True,
     )

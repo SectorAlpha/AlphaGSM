@@ -331,6 +331,7 @@ def _current_container_identity_mount_roots():
             stderr=sp.STDOUT,
             shell=False,
             text=True,
+            tty=False,
         )
     except (OSError, sp.SubprocessError):
         return []
@@ -434,6 +435,7 @@ def build_container_spec(
     env=None,
     mounts=None,
     stdin_open=True,
+    tty=False,
     working_dir=None,
     extra=None,
 ):
@@ -456,6 +458,7 @@ def build_container_spec(
     spec = {
         "working_dir": working_dir,
         "stdin_open": stdin_open,
+        "tty": tty,
         "env": requirements.get("env", {}),
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
