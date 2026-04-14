@@ -9,6 +9,7 @@ query -> info -> stop`` through AlphaGSM itself.
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import socket
 import subprocess
@@ -120,6 +121,28 @@ def _alphagsm_env(config_path):
         ]
     )
     return env
+
+
+def _write_java_wrapper(wrapper_path, *java_args):
+    java_home = os.environ.get("JAVA_HOME")
+    java_path = None
+    if java_home:
+        candidate = Path(java_home) / "bin" / "java"
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            java_path = str(candidate)
+    if java_path is None:
+        java_path = shutil.which("java")
+    if java_path is None:
+        pytest.skip("Required command not available: java")
+    command = " ".join(
+        [shlex.quote(java_path)] + [shlex.quote(str(arg)) for arg in java_args]
+    )
+    wrapper_path.write_text(
+        "#!/usr/bin/env bash\nexec " + command + ' "$@"\n',
+        encoding="utf-8",
+    )
+    wrapper_path.chmod(0o755)
+    return wrapper_path
 
 
 def _server_data_path(home_dir, server_name):
@@ -249,6 +272,7 @@ class BackendLifecycle:
     pick_free_tcp_port = staticmethod(_pick_free_tcp_port)
     latest_minecraft_release = staticmethod(_latest_minecraft_release)
     write_config = staticmethod(_write_config)
+    write_java_wrapper = staticmethod(_write_java_wrapper)
     alphagsm_env = staticmethod(_alphagsm_env)
     server_data_path = staticmethod(_server_data_path)
     load_server_data = staticmethod(_load_server_data)

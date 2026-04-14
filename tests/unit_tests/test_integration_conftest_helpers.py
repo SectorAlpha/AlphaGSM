@@ -173,6 +173,39 @@ def test_write_config_can_use_shared_download_cache_when_opted_in(monkeypatch, t
     assert "backend = process" in text
 
 
+def test_backend_write_java_wrapper_prefers_java_home(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.backend_integration_tests.conftest")
+    java_home = tmp_path / "jdk-25"
+    java_bin = java_home / "bin"
+    java_bin.mkdir(parents=True)
+    java_path = java_bin / "java"
+    java_path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    java_path.chmod(0o755)
+    wrapper_path = tmp_path / "java-wrapper.sh"
+
+    monkeypatch.setenv("JAVA_HOME", str(java_home))
+    monkeypatch.setattr(helpers.shutil, "which", lambda name: "/usr/bin/java")
+
+    helpers._write_java_wrapper(wrapper_path, "-Xms256M", "-Xmx768M")
+
+    wrapper_text = wrapper_path.read_text(encoding="utf-8")
+    assert str(java_path) in wrapper_text
+    assert "/usr/bin/java" not in wrapper_text
+
+
+def test_backend_write_java_wrapper_falls_back_to_path(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.backend_integration_tests.conftest")
+    wrapper_path = tmp_path / "java-wrapper.sh"
+
+    monkeypatch.delenv("JAVA_HOME", raising=False)
+    monkeypatch.setattr(helpers.shutil, "which", lambda name: "/opt/java/bin/java")
+
+    helpers._write_java_wrapper(wrapper_path, "-Xms256M", "-Xmx768M")
+
+    wrapper_text = wrapper_path.read_text(encoding="utf-8")
+    assert "/opt/java/bin/java" in wrapper_text
+
+
 def test_skip_for_known_steamcmd_issue_skips_only_for_missing_configuration_0x202():
     helpers = importlib.import_module("tests.integration_tests.conftest")
     result = types.SimpleNamespace(
