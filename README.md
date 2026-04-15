@@ -25,6 +25,8 @@ avoids most of the host-side Python, Java, and system-package setup.
 ```bash
 ./alphagsm-docker start
 ./alphagsm-docker mymc create minecraft.vanilla
+./alphagsm-docker ps
+./alphagsm-docker mymc connect
 ```
 
 The wrapper keeps runtime-image pre-pull off by default so it works without
@@ -32,6 +34,10 @@ GHCR login for a first run. By default it tries to pull the latest manager
 image from GHCR and falls back to a local build if that pull fails. If you are
 working on AlphaGSM itself, `./alphagsm-docker start --develop` switches the
 wrapper into a local-build developer mode.
+`./alphagsm-docker ps` reads local wrapper metadata and expects a working host
+`python3`. For Docker-backed servers, `./alphagsm-docker <server> connect`
+uses that local metadata when it can, and otherwise falls back to AlphaGSM's
+normal forwarded `connect` command.
 
 See [Run AlphaGSM In Docker](docs/docker-manager.md).
 

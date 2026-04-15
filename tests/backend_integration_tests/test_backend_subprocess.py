@@ -25,10 +25,7 @@ def test_minecraft_vanilla_subprocess_lifecycle(tmp_path, lifecycle):
 
     lifecycle.write_config(config_path, home_dir, "BkSub#", backend="subprocess")
 
-    java_wrapper.write_text(
-        "#!/usr/bin/env bash\nexec java -Xms256M -Xmx768M \"$@\"\n"
-    )
-    java_wrapper.chmod(0o755)
+    lifecycle.write_java_wrapper(java_wrapper, "-Xms256M", "-Xmx768M")
 
     env = lifecycle.alphagsm_env(config_path)
 

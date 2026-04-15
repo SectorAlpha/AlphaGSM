@@ -4,7 +4,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker/manager/compose.yml"
-IMAGE_VERSION_FILE="$SCRIPT_DIR/docker/image-version.txt"
 STATE_DIR="${ALPHAGSM_HOME:-$SCRIPT_DIR/.alphagsm-docker}"
 STATE_DIR="$(mkdir -p "$STATE_DIR" && cd "$STATE_DIR" && pwd)"
 CONFIG_PATH="$STATE_DIR/alphagsm.conf"
@@ -12,16 +11,7 @@ EXAMPLE_CONFIG="$SCRIPT_DIR/docker/manager/alphagsm.conf.example"
 PULL_RUNTIME_IMAGES="${ALPHAGSM_PULL_RUNTIME_IMAGES:-0}"
 MANAGER_CONTAINER_NAME="${ALPHAGSM_MANAGER_CONTAINER_NAME:-alphagsm-manager}"
 MANAGER_MODE_FILE="$STATE_DIR/.manager-mode"
-
-read_image_release() {
-    if [[ -f "$IMAGE_VERSION_FILE" ]]; then
-        tr -d '[:space:]' < "$IMAGE_VERSION_FILE"
-    fi
-}
-
-DEFAULT_IMAGE_RELEASE="$(read_image_release)"
-DEFAULT_IMAGE_RELEASE="${DEFAULT_IMAGE_RELEASE:-2026-04-11-v1}"
-DEFAULT_MANAGER_IMAGE="${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm:${DEFAULT_IMAGE_RELEASE}}"
+DEFAULT_MANAGER_IMAGE="${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm:latest}"
 DEVELOP_MANAGER_IMAGE="${ALPHAGSM_MANAGER_DEVELOP_IMAGE:-alphagsm:dev}"
 
 compose_cmd() {
@@ -99,7 +89,6 @@ manager_compose() {
     image="$(manager_image_for_mode "$mode")"
 
     ALPHAGSM_HOME="$STATE_DIR" \
-    ALPHAGSM_IMAGE_VERSION="$DEFAULT_IMAGE_RELEASE" \
     ALPHAGSM_PULL_RUNTIME_IMAGES="$PULL_RUNTIME_IMAGES" \
     ALPHAGSM_MANAGER_IMAGE="$image" \
     compose_cmd -f "$COMPOSE_FILE" "${@:2}"
@@ -121,8 +110,256 @@ manager_exists() {
     docker inspect "$MANAGER_CONTAINER_NAME" >/dev/null 2>&1
 }
 
+docker_container_running() {
+    [[ "$(docker inspect -f '{{.State.Running}}' "$1" 2>/dev/null || true)" == "true" ]]
+}
+
+host_python3_available() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    python3 -c "pass" >/dev/null 2>&1
+}
+
+require_host_python3() {
+    if host_python3_available; then
+        return 0
+    fi
+
+    echo "Host python3 is required for './alphagsm-docker ps' because the wrapper reads local server metadata." >&2
+    exit 1
+}
+
 server_container_name() {
     printf 'alphagsm-%s\n' "$1"
+}
+
+server_config_path() {
+    printf '%s/home/conf/%s.json\n' "$STATE_DIR" "$1"
+}
+
+load_server_runtime_metadata() {
+    local server_name="$1"
+    local path
+    path="$(server_config_path "$server_name")"
+    [[ -f "$path" ]] || return 1
+
+    python3 - "$path" "$server_name" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+server_name = sys.argv[2]
+data = json.loads(path.read_text(encoding="utf-8"))
+runtime = str(data.get("runtime", "")).strip()
+container_name = str(data.get("container_name", "")).strip() or f"alphagsm-{server_name}"
+print(runtime)
+print(container_name)
+PY
+}
+
+resolve_server_container_name() {
+    local server_name="$1"
+    local metadata
+    local runtime_name
+    local container_name
+
+    if host_python3_available && metadata="$(load_server_runtime_metadata "$server_name" 2>/dev/null)"; then
+        runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+        container_name="$(printf '%s\n' "$metadata" | sed -n '2p')"
+        if [[ "$runtime_name" == "docker" && -n "$container_name" ]]; then
+            printf '%s\n' "$container_name"
+            return 0
+        fi
+    fi
+
+    server_container_name "$server_name"
+}
+
+list_server_config_names() {
+    local conf_dir="$STATE_DIR/home/conf"
+
+    [[ -d "$conf_dir" ]] || return 0
+
+    find "$conf_dir" -maxdepth 1 -type f -name '*.json' -printf '%f\n' \
+        | sed 's/\.json$//' \
+        | sort
+}
+
+container_port_lines() {
+    docker port "$1" 2>/dev/null || true
+}
+
+print_docker_server_list() {
+    local server_name
+    local metadata
+    local runtime_name
+    local container_name
+    local state
+    local ports
+    local printed=0
+
+    while IFS= read -r server_name; do
+        [[ -n "$server_name" ]] || continue
+        metadata="$(load_server_runtime_metadata "$server_name" 2>/dev/null || true)"
+        [[ -n "$metadata" ]] || continue
+
+        runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+        [[ "$runtime_name" == "docker" ]] || continue
+
+        container_name="$(printf '%s\n' "$metadata" | sed -n '2p')"
+        if docker_container_running "$container_name"; then
+            state="running"
+            ports="$(container_port_lines "$container_name" | paste -sd ';' -)"
+        elif docker inspect "$container_name" >/dev/null 2>&1; then
+            state="stopped"
+            ports="$(container_port_lines "$container_name" | paste -sd ';' -)"
+        else
+            state="missing"
+            ports=""
+        fi
+
+        if [[ "$printed" == "0" ]]; then
+            printf '%-20s %-28s %-10s %s\n' "SERVER" "CONTAINER" "STATE" "PORTS"
+        fi
+        printf '%-20s %-28s %-10s %s\n' "$server_name" "$container_name" "$state" "$ports"
+        printed=1
+    done < <(list_server_config_names)
+
+    if [[ "$printed" == "0" ]]; then
+        echo "No Docker-backed AlphaGSM servers found in the current wrapper home."
+    fi
+}
+
+connect_server_console() {
+    local server_name="$1"
+    local show_logs="${2:-1}"
+    local log_tail_lines="${3:-${ALPHAGSM_CONNECT_LOG_TAIL:-10}}"
+    local detach_keys="${4:-${ALPHAGSM_CONNECT_DETACH_KEYS:-}}"
+    local metadata
+    local runtime_name
+    local container_name
+    local recent_logs
+
+    if ! metadata="$(load_server_runtime_metadata "$server_name")"; then
+        echo "Server '$server_name' is not defined in $STATE_DIR/home/conf" >&2
+        exit 1
+    fi
+
+    runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+    container_name="$(printf '%s\n' "$metadata" | sed -n '2p')"
+
+    if [[ "$runtime_name" != "docker" ]]; then
+        echo "Wrapper connect only attaches to Docker-backed servers." >&2
+        exit 1
+    fi
+
+    if ! docker inspect "$container_name" >/dev/null 2>&1; then
+        echo "Container '$container_name' was not found. Run './alphagsm-docker $server_name status' or './alphagsm-docker $server_name start' first." >&2
+        exit 1
+    fi
+
+    if ! docker_container_running "$container_name"; then
+        echo "Container '$container_name' is not running. Run './alphagsm-docker $server_name start' first." >&2
+        exit 1
+    fi
+
+    recent_logs=""
+    if [[ "$show_logs" == "1" ]]; then
+        recent_logs="$(docker logs --tail "$log_tail_lines" "$container_name" 2>/dev/null || true)"
+    fi
+    if [[ -n "$recent_logs" ]]; then
+        echo "Recent container logs (last $log_tail_lines lines):"
+        printf '%s\n' "$recent_logs"
+        echo
+    fi
+
+    echo "Connecting to $container_name"
+    if [[ -n "$detach_keys" ]]; then
+        echo "Detach with Docker escape sequence: $detach_keys"
+        docker attach --detach-keys "$detach_keys" "$container_name"
+    else
+        echo "Detach with Ctrl-p Ctrl-q"
+        docker attach "$container_name"
+    fi
+}
+
+route_connect_command() {
+    local server_name="$1"
+    local show_logs=1
+    local log_tail_lines="${ALPHAGSM_CONNECT_LOG_TAIL:-10}"
+    local detach_keys="${ALPHAGSM_CONNECT_DETACH_KEYS:-}"
+    local metadata
+    local runtime_name
+    shift
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            connect)
+                shift
+                ;;
+            --no-logs)
+                show_logs=0
+                shift
+                ;;
+            --tail)
+                if [[ $# -lt 2 ]]; then
+                    echo "Missing value for --tail" >&2
+                    exit 1
+                fi
+                if [[ ! "$2" =~ ^[0-9]+$ ]]; then
+                    echo "--tail requires a non-negative integer" >&2
+                    exit 1
+                fi
+                log_tail_lines="$2"
+                shift 2
+                ;;
+            --tail=*)
+                log_tail_lines="${1#--tail=}"
+                if [[ ! "$log_tail_lines" =~ ^[0-9]+$ ]]; then
+                    echo "--tail requires a non-negative integer" >&2
+                    exit 1
+                fi
+                shift
+                ;;
+            --detach-keys)
+                if [[ $# -lt 2 ]]; then
+                    echo "Missing value for --detach-keys" >&2
+                    exit 1
+                fi
+                detach_keys="$2"
+                shift 2
+                ;;
+            --detach-keys=*)
+                detach_keys="${1#--detach-keys=}"
+                shift
+                ;;
+            *)
+                echo "Unknown option for connect: $1" >&2
+                exit 1
+                ;;
+        esac
+    done
+
+    if ! host_python3_available; then
+        exec_alphagsm "$server_name" connect
+        return
+    fi
+
+    if ! metadata="$(load_server_runtime_metadata "$server_name" 2>/dev/null)"; then
+        exec_alphagsm "$server_name" connect
+        return
+    fi
+
+    runtime_name="$(printf '%s\n' "$metadata" | sed -n '1p')"
+    if [[ "$runtime_name" != "docker" ]]; then
+        exec_alphagsm "$server_name" connect
+        return
+    fi
+
+    connect_server_console "$server_name" "$show_logs" "$log_tail_lines" "$detach_keys"
 }
 
 show_host_connection_details() {
@@ -138,7 +375,7 @@ show_host_connection_details() {
 
     declare -A seen_connect=()
 
-    container_name="$(server_container_name "$server_name")"
+    container_name="$(resolve_server_container_name "$server_name")"
     if ! docker inspect "$container_name" >/dev/null 2>&1; then
         return 0
     fi
@@ -282,6 +519,11 @@ Usage:
   ./alphagsm-docker shell
   ./alphagsm-docker logs
   ./alphagsm-docker compose <compose-args>
+  ./alphagsm-docker ps
+  ./alphagsm-docker <server> connect
+    ./alphagsm-docker <server> connect --tail <n>
+    ./alphagsm-docker <server> connect --no-logs
+        ./alphagsm-docker <server> connect --detach-keys <seq>
   ./alphagsm-docker <alphagsm-args>
 
 Examples:
@@ -290,6 +532,10 @@ Examples:
   ./alphagsm-docker mymc create minecraft.vanilla
   ./alphagsm-docker mymc setup -n 25565 "$STATE_DIR/servers/mymc"
   ./alphagsm-docker mymc start
+  ./alphagsm-docker mymc connect
+    ./alphagsm-docker mymc connect --tail 25
+    ./alphagsm-docker mymc connect --no-logs
+        ./alphagsm-docker mymc connect --detach-keys ctrl-z,z
 
 Notes:
   - Default state path: $STATE_DIR
@@ -298,8 +544,15 @@ Notes:
             tries to pull $DEFAULT_MANAGER_IMAGE, then falls back to a local build.
     - start/up with --develop switches the state dir into developer mode:
             it always rebuilds locally with image tag $DEVELOP_MANAGER_IMAGE.
-    - Runtime image pre-pull defaults to off in this wrapper. Set
+  - Runtime image pre-pull defaults to off in this wrapper. Set
             ALPHAGSM_PULL_RUNTIME_IMAGES=1 if you want eager GHCR pulls at startup.
+  - `ps` reads local metadata and requires host `python3`.
+  - Docker-backed `<server> connect` uses host metadata when available and
+    otherwise falls back to AlphaGSM's normal forwarded `connect`.
+        - `--tail <n>` shows the last `n` log lines before attach.
+        - `--no-logs` skips the pre-attach log tail.
+                - `--detach-keys <seq>` overrides Docker's detach sequence for attach.
+                    Example: `ctrl-z,z`.
   - Docker-backed server install paths must stay under ALPHAGSM_HOME so the
     host Docker daemon and the manager container see the same absolute path.
 EOF
@@ -337,8 +590,17 @@ main() {
             ensure_config
             manager_compose "$(current_manager_mode)" "$@"
             ;;
+        ps)
+            shift
+            require_host_python3
+            print_docker_server_list "$@"
+            ;;
         *)
-            exec_alphagsm "$@"
+            if [[ $# -ge 2 && "$2" == "connect" ]]; then
+                route_connect_command "$@"
+            else
+                exec_alphagsm "$@"
+            fi
             ;;
     esac
 }

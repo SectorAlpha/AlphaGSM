@@ -24,9 +24,9 @@ Legacy aliases still accepted by the runtime layer:
 
 These scaffolds are published by the manual GitHub Actions workflow at
 `.github/workflows/build-runtime-family-images.yml`. The runtime metadata now
-defaults to GHCR tags derived from `docker/image-version.txt`, for example
-`ghcr.io/sectoralpha/alphagsm-java-runtime:<image-version>`, while the
-Dockerfiles live here so image contents are versioned alongside the code.
+defaults to the GHCR `latest` tags, for example
+`ghcr.io/sectoralpha/alphagsm-java-runtime:latest`, while the workflow still
+publishes an additional versioned tag for traceability.
 
 The images are intentionally split by runtime family rather than by individual
 game module. Modules should describe their family-specific env, mounts, ports,

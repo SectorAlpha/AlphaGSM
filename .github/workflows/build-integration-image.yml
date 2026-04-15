@@ -7,8 +7,9 @@ name: Build Integration Test Image
 #   ghcr.io/sectoralpha/alphagsm-integration-test:<content-hash>
 #   ghcr.io/sectoralpha/alphagsm-integration-test:latest
 #
-# The PR workflow (unittest.yaml) always pulls :latest, so triggering this
-# workflow is the only way to update the image used by integration tests.
+# The PR workflow (unittest.yaml) now builds its integration image on the fly.
+# This manual workflow remains useful when code owners want to publish a known
+# GHCR copy of the integration image ahead of time.
 
 on:
   workflow_dispatch:

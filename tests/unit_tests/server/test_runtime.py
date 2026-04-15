@@ -64,6 +64,24 @@ def test_resolve_runtime_metadata_uses_family_defaults_and_java_alias(monkeypatc
     assert metadata["ports"] == []
 
 
+def test_resolve_runtime_metadata_preserves_explicit_container_name(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "simple-tcp",
+        }
+    )
+    server = DummyServer(
+        module=module,
+        data={"runtime": "docker", "container_name": "alphagsm-custom-alpha"},
+    )
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+
+    assert metadata["container_name"] == "alphagsm-custom-alpha"
+
+
 def test_resolve_runtime_metadata_raises_stale_java_major_for_new_minecraft_versions(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     module = SimpleNamespace(
@@ -111,6 +129,11 @@ def test_infer_minecraft_java_major_supports_new_26_x_version_scheme():
     assert runtime_module.infer_minecraft_java_major("26.1.2") == 25
 
 
+def test_default_runtime_images_use_latest_tag():
+    assert JAVA_RUNTIME_IMAGE.endswith(":latest")
+    assert STEAMCMD_RUNTIME_IMAGE.endswith(":latest")
+
+
 def test_build_container_spec_uses_get_start_command_and_shared_mounts(tmp_path):
     exe = tmp_path / "server.bin"
     exe.write_text("", encoding="utf-8")
@@ -127,11 +150,13 @@ def test_build_container_spec_uses_get_start_command_and_shared_mounts(tmp_path)
         ),
         port_definitions=(("port", "udp"),),
         stdin_open=True,
+        tty=True,
     )
 
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] is True
     assert spec["command"][0] == "./server.bin"
+    assert spec["tty"] is True
     assert spec["mounts"] == [
         {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
     ]
@@ -475,6 +500,29 @@ def test_default_install_dir_prefers_shared_servers_root_in_manager_mode(monkeyp
     )
 
     assert runtime_module.default_install_dir(server) == "/shared/servers/scp"
+
+
+def test_current_container_identity_mount_roots_inspects_docker_without_tty_kwarg(monkeypatch):
+    observed = {}
+
+    def _fake_check_output(cmd, **kwargs):
+        observed["cmd"] = cmd
+        observed["kwargs"] = kwargs
+        return '[{"Type":"bind","Source":"/shared","Destination":"/shared"}]'
+
+    monkeypatch.setenv("HOSTNAME", "alphagsm-manager")
+    monkeypatch.setattr(runtime_module.os.path, "exists", lambda path: path == "/.dockerenv")
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    roots = runtime_module._current_container_identity_mount_roots()
+
+    assert roots == ["/shared"]
+    assert observed["cmd"] == ["docker", "inspect", "-f", "{{json .Mounts}}", "alphagsm-manager"]
+    assert observed["kwargs"] == {
+        "stderr": runtime_module.sp.STDOUT,
+        "shell": False,
+        "text": True,
+    }
 
 
 def test_default_install_dir_uses_home_on_normal_host(monkeypatch):

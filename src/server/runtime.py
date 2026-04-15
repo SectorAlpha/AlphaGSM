@@ -23,29 +23,14 @@ from utils import proton
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_IMAGE_REGISTRY = "ghcr.io/sectoralpha"
-DEFAULT_IMAGE_RELEASE_FILE = os.path.join(REPO_ROOT, "docker", "image-version.txt")
-DEFAULT_IMAGE_RELEASE_FALLBACK = "2026-04-11-v1"
-
-
-def _read_default_image_release():
-    """Return the shared runtime image release tag from the repository."""
-
-    try:
-        with open(DEFAULT_IMAGE_RELEASE_FILE, "r", encoding="utf-8") as handle:
-            value = handle.read().strip()
-    except OSError:
-        value = ""
-    return value or DEFAULT_IMAGE_RELEASE_FALLBACK
-
-
-DEFAULT_IMAGE_RELEASE = _read_default_image_release()
+DEFAULT_IMAGE_TAG = "latest"
 
 
 def default_runtime_image(family):
     """Return the default GHCR image reference for a runtime family."""
 
     family = str(family).strip().lower()
-    return f"{DEFAULT_IMAGE_REGISTRY}/alphagsm-{family}-runtime:{DEFAULT_IMAGE_RELEASE}"
+    return f"{DEFAULT_IMAGE_REGISTRY}/alphagsm-{family}-runtime:{DEFAULT_IMAGE_TAG}"
 
 
 class RuntimeError(Exception):
@@ -449,6 +434,7 @@ def build_container_spec(
     env=None,
     mounts=None,
     stdin_open=True,
+    tty=False,
     working_dir=None,
     extra=None,
 ):
@@ -471,6 +457,7 @@ def build_container_spec(
     spec = {
         "working_dir": working_dir,
         "stdin_open": stdin_open,
+        "tty": tty,
         "env": requirements.get("env", {}),
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
@@ -639,8 +626,6 @@ def normalize_runtime_requirements(requirements, server_name):
         req["runtime_family"] = canonicalize_runtime_family(req["runtime_family"])
     if "java" in req and "java_major" not in req:
         req["java_major"] = req.pop("java")
-    if req.get("runtime") == "docker":
-        req.setdefault("container_name", "alphagsm-" + server_name)
     return req
 
 

@@ -8,4 +8,4 @@ env
 .coverage
 coverage.xml
 nohup.out
-docs/superpowers/
+docs/superpowers/*

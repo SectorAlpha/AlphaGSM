@@ -26,10 +26,7 @@ def test_minecraft_vanilla_tmux_lifecycle(tmp_path, lifecycle):
 
     lifecycle.write_config(config_path, home_dir, "BkTmux#", backend="tmux")
 
-    java_wrapper.write_text(
-        "#!/usr/bin/env bash\nexec java -Xms256M -Xmx768M \"$@\"\n"
-    )
-    java_wrapper.chmod(0o755)
+    lifecycle.write_java_wrapper(java_wrapper, "-Xms256M", "-Xmx768M")
 
     env = lifecycle.alphagsm_env(config_path)
 

@@ -50,9 +50,11 @@ full Compose command each time:
 ./alphagsm-docker up
 ./alphagsm-docker start
 ./alphagsm-docker stop
+./alphagsm-docker ps
 ./alphagsm-docker mymc create minecraft.vanilla
 ./alphagsm-docker mymc setup -n 25565 "$PWD/.alphagsm-docker/servers/mymc"
 ./alphagsm-docker mymc start
+./alphagsm-docker mymc connect
 ```
 
 `start` is an alias for `up`, and `stop` is an alias for `down`.
@@ -61,12 +63,18 @@ The script will:
 
 - create a Docker-manager state directory if it does not exist
 - write `alphagsm.conf` there from the manager example config
-- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm:<image-version>` using the shared tag from `docker/image-version.txt` and falls back to a local build if that pull fails
+- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm:latest` and falls back to a local build if that pull fails
 - support `./alphagsm-docker up --develop` or `./alphagsm-docker start --develop`, which switches the state dir into developer mode and always rebuilds the manager image locally
 - reuse the existing running manager container for forwarded AlphaGSM commands instead of rebuilding on every exec
 - recreate a stopped manager container from the active mode without forcing the other mode's image path
 - build bundled AlphaGSM runtime-family images locally on demand when their default GHCR tag is missing, so quick-start still works without registry auth
+- provide wrapper-native `./alphagsm-docker ps` and `./alphagsm-docker <server> connect` commands that read local server metadata instead of forwarding through manager `exec`
 - forward any other arguments to `python alphagsm ...` inside the manager container
+
+Because `./alphagsm-docker ps` reads local JSON server config, it still
+requires a working host `python3`. For Docker-backed servers, wrapper
+`connect` also uses that host metadata when it is available; otherwise the
+wrapper falls back to AlphaGSM's normal forwarded `connect` command.
 
 When a game module prompts for an install directory and you accept the default
 inside manager-container mode, AlphaGSM now prefers `ALPHAGSM_HOME/servers/<name>`
@@ -129,13 +137,13 @@ main use case.
 From the repository root:
 
 ```bash
-docker compose -f docker/manager/compose.yml up -d --build
+docker compose -f docker/manager/compose.yml up -d
 ```
 
 If your host still uses the standalone Compose binary, use:
 
 ```bash
-docker-compose -f docker/manager/compose.yml up -d --build
+docker-compose -f docker/manager/compose.yml up -d
 ```
 
 This mounts:
@@ -150,6 +158,10 @@ This mounts:
 The manager image also includes Java and the Docker CLI. That is intentional:
 some Docker-backed modules still perform local setup-time work, then hand off
 the actual long-running server process to a sibling runtime container.
+
+The checked-in Compose file now defaults to `ghcr.io/sectoralpha/alphagsm:latest`
+and will pull that image if it is missing locally. If you explicitly want a
+local rebuild with direct Compose instead of the wrapper, add `--build`.
 
 On startup, the manager container will try to pull the runtime-family images
 referenced by `src/server/runtime.py`.

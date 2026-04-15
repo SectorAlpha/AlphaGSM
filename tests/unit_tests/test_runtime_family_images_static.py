@@ -8,14 +8,7 @@ STEAMCMD_LINUX_DOCKERFILE = Path("docker/steamcmd-linux/Dockerfile")
 WINE_PROTON_DOCKERFILE = Path("docker/wine-proton/Dockerfile")
 WINE_PROTON_ENTRYPOINT = Path("docker/wine-proton/entrypoint.sh")
 BUILD_WORKFLOW = Path(".github/workflows/build-runtime-family-images.yml")
-IMAGE_VERSION_FILE = Path("docker/image-version.txt")
-
-
-def test_runtime_image_version_file_uses_dated_release_format():
-    text = IMAGE_VERSION_FILE.read_text(encoding="utf-8").strip()
-
-    assert text.startswith("2026-")
-    assert "-v" in text
+DOCKER_README = Path("docker/README.md")
 
 
 def test_java_runtime_image_keeps_bootstrap_tools_and_supported_temurin_jres():
@@ -91,3 +84,25 @@ def test_runtime_image_publish_workflow_passes_gh_token_for_proton_builds():
 
     assert 'secrets:' in text
     assert 'gh_token=${{ secrets.GITHUB_TOKEN }}' in text
+
+
+def test_runtime_image_publish_workflow_links_packages_back_to_repo():
+    text = BUILD_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "labels:" in text
+    assert "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" in text
+
+
+def test_runtime_image_publish_workflow_avoids_unsupported_visibility_patch_api():
+    text = BUILD_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "Set package visibility to public" not in text
+    assert "/packages/container/${package_name}" not in text
+    assert "--field visibility=public" not in text
+
+
+def test_runtime_image_docs_default_to_latest_tags():
+    text = DOCKER_README.read_text(encoding="utf-8")
+
+    assert "alphagsm-java-runtime:latest" in text
+    assert "docker/image-version.txt" not in text
