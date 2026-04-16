@@ -614,7 +614,9 @@ def define_valve_server_module(
         if engine == "source":
             config_values.update(integration_source_server_config())
         config_values["hostname"] = _quote_config_value(_current_servername(server, module_settings))
-        config_values["rcon_password"] = _current_rconpassword(server, module_settings)
+        config_values["rcon_password"] = _quote_config_value(
+            _current_rconpassword(server, module_settings)
+        )
         updateconfig(cfg_path, config_values)
 
     def list_setting_values(server, canonical_key):

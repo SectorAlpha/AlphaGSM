@@ -174,7 +174,7 @@ def test_valve_module_sync_server_config_updates_real_server_cfg(monkeypatch, tm
         data={
             "dir": str(tmp_path) + "/",
             "servername": "Configured CSS",
-            "rconpassword": "supersecret",
+            "rconpassword": 'super secret "pass"',
             "server_cfg": "server.cfg",
         },
     )
@@ -183,7 +183,7 @@ def test_valve_module_sync_server_config_updates_real_server_cfg(monkeypatch, tm
 
     cfg_text = cfg_path.read_text()
     assert 'hostname "Configured CSS"' in cfg_text
-    assert "rcon_password supersecret" in cfg_text
+    assert 'rcon_password "super secret \\"pass\\""' in cfg_text
     assert "sv_cheats 0" in cfg_text
 
 
