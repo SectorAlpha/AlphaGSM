@@ -37,6 +37,26 @@ def test_resolve_requested_key_rejects_unknown_input():
         resolve_requested_key("madeupsetting", {})
 
 
+def test_resolve_requested_key_rejects_ambiguous_normalized_key():
+    schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("game-map",),
+            description="Current map",
+            value_type="string",
+        ),
+        "game-map": SettingSpec(
+            canonical_key="othermap",
+            aliases=("game-map",),
+            description="Another map",
+            value_type="string",
+        ),
+    }
+
+    with pytest.raises(KeyResolutionError, match="Ambiguous setting key"):
+        resolve_requested_key("game-map", schema)
+
+
 def test_redact_value_hides_secret_values():
     spec = SettingSpec(
         canonical_key="rconpassword",
