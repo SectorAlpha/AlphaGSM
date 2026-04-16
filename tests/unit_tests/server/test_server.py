@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 import server.server as server_module
+from server.settable_keys import SettingSpec
 
 
 class DummyData(dict):
@@ -310,6 +311,177 @@ def test_doset_updates_nested_data_and_saves():
 
     assert srv.data["existing"]["items"] == ["value"]
     assert srv.data.saved == 1
+
+
+def test_doset_lists_schema_backed_keys(capsys):
+    srv = make_server(data=DummyData({}))
+    srv.module.setting_schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap"),
+            description="Current map",
+            value_type="string",
+            storage_key="startmap",
+            examples=("cp_badlands",),
+        ),
+        "rconpassword": SettingSpec(
+            canonical_key="rconpassword",
+            aliases=("rconpass",),
+            description="RCON password",
+            value_type="string",
+            secret=True,
+        ),
+    }
+
+    srv.doset(list_settings=True)
+
+    out = capsys.readouterr().out
+    assert "map" in out
+    assert "gamemap" in out
+    assert "startmap" in out
+    assert "rconpassword" in out
+
+
+def test_doset_describes_schema_backed_key(capsys):
+    srv = make_server(data=DummyData({}))
+    srv.module.setting_schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap", "level"),
+            description="Current map",
+            value_type="string",
+            storage_key="startmap",
+            examples=("cp_badlands",),
+        )
+    }
+
+    srv.doset("gamemap", describe=True)
+
+    out = capsys.readouterr().out
+    assert "Canonical key: map" in out
+    assert "Storage key: startmap" in out
+    assert "Aliases: gamemap, startmap, level" in out
+    assert "Examples: cp_badlands" in out
+
+
+def test_doset_lists_values_for_schema_backed_key(capsys):
+    srv = make_server(data=DummyData({}))
+    seen = {}
+    srv.module.setting_schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap"),
+            description="Current map",
+            value_type="string",
+            storage_key="startmap",
+        )
+    }
+
+    def list_setting_values(server, canonical_key):
+        seen["server"] = server
+        seen["canonical_key"] = canonical_key
+        return ["cp_badlands", "cp_dustbowl"]
+
+    srv.module.list_setting_values = list_setting_values
+
+    srv.doset("gamemap", values=True)
+
+    out = capsys.readouterr().out
+    assert "cp_badlands" in out
+    assert "cp_dustbowl" in out
+    assert seen == {"server": srv, "canonical_key": "map"}
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    (
+        {"describe": True},
+        {"values": True},
+        {},
+    ),
+)
+def test_doset_rejects_missing_key_for_discovery_and_write_modes(kwargs):
+    srv = make_server(data=DummyData({}))
+
+    with pytest.raises(server_module.ServerError, match="requires a key"):
+        srv.doset(**kwargs)
+
+
+def test_doset_calls_module_postset_with_updated_data(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015}))
+    seen = {}
+
+    def postset(server, key, *args, **kwargs):
+        seen["server"] = server
+        seen["key"] = key
+        seen["port"] = server.data["port"]
+
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: int(args[0])
+    srv.module.postset = postset
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", lambda server, overrides=None, include_live=True: [])
+    monkeypatch.setattr(server_module.port_manager, "recommend_shift", lambda server, max_offset=100, base_overrides=None: None)
+
+    srv.doset("port", "27030")
+
+    assert seen == {
+        "server": srv,
+        "key": ("port",),
+        "port": 27030,
+    }
+    assert srv.data.saved == 1
+
+
+def test_doset_runs_sync_server_config_for_matching_key(monkeypatch):
+    srv = make_server(data=DummyData({"port": 27015}))
+    seen = {}
+
+    def sync_server_config(server):
+        seen["server"] = server
+        seen["port"] = server.data["port"]
+
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: int(args[0])
+    srv.module.sync_server_config = sync_server_config
+    srv.module.config_sync_keys = ("port",)
+    monkeypatch.setattr(server_module.port_manager, "detect_conflicts", lambda server, overrides=None, include_live=True: [])
+    monkeypatch.setattr(server_module.port_manager, "recommend_shift", lambda server, max_offset=100, base_overrides=None: None)
+
+    srv.doset("port", "27030")
+
+    assert seen == {"server": srv, "port": 27030}
+    assert srv.data.saved == 1
+
+
+def test_doset_skips_sync_server_config_for_non_matching_key():
+    srv = make_server(data=DummyData({"port": 27015, "hostname": "old"}))
+    calls = []
+
+    def sync_server_config(server):
+        calls.append(server.data.copy())
+
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: args[0]
+    srv.module.sync_server_config = sync_server_config
+    srv.module.config_sync_keys = ("port",)
+
+    srv.doset("hostname", "new")
+
+    assert calls == []
+    assert srv.data["hostname"] == "new"
+
+
+def test_doset_skips_sync_server_config_without_explicit_config_keys():
+    srv = make_server(data=DummyData({"hostname": "old"}))
+    calls = []
+
+    def sync_server_config(server):
+        calls.append(server.data.copy())
+
+    srv.module.checkvalue = lambda server, key, *args, **kwargs: args[0]
+    srv.module.sync_server_config = sync_server_config
+
+    srv.doset("hostname", "new")
+
+    assert calls == []
+    assert srv.data["hostname"] == "new"
 
 
 def test_doset_rejects_colliding_port_change_and_recommends_group_shift(monkeypatch):
