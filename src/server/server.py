@@ -1398,7 +1398,9 @@ class Server(object):
         if schema:
             try:
                 resolved = resolve_requested_key(key, schema)
-            except KeyResolutionError:
+            except KeyResolutionError as ex:
+                if "Ambiguous setting key" in str(ex):
+                    raise ServerError(str(ex))
                 resolved = None
         effective_key = resolved.storage_key if resolved is not None else key
         types, key = _parsekey(effective_key)

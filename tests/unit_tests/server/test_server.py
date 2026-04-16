@@ -392,6 +392,64 @@ def test_doset_lists_values_for_schema_backed_key(capsys):
     assert seen == {"server": srv, "canonical_key": "map"}
 
 
+def test_doset_resolves_alias_to_storage_key_before_parse_and_check(monkeypatch):
+    srv = make_server(data=DummyData({"startmap": "old"}))
+    seen = {}
+    srv.module.setting_schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap"),
+            description="Current map",
+            value_type="string",
+            storage_key="startmap",
+        )
+    }
+
+    def fake_parsekey(raw_key):
+        seen["parsekey"] = raw_key
+        return iter(((dict,), ("startmap",)))
+
+    def checkvalue(server, key, *args, **kwargs):
+        seen["checkvalue_key"] = key
+        seen["checkvalue_args"] = args
+        return str(args[0])
+
+    monkeypatch.setattr(server_module, "_parsekey", fake_parsekey)
+    srv.module.checkvalue = checkvalue
+
+    srv.doset("gamemap", "cp_badlands")
+
+    assert seen == {
+        "parsekey": "startmap",
+        "checkvalue_key": ("startmap",),
+        "checkvalue_args": ("cp_badlands",),
+    }
+    assert srv.data["startmap"] == "cp_badlands"
+
+
+def test_doset_rejects_ambiguous_schema_aliases():
+    srv = make_server(data=DummyData({}))
+    srv.module.setting_schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap",),
+            description="Current map",
+            value_type="string",
+            storage_key="startmap",
+        ),
+        "game_map": SettingSpec(
+            canonical_key="game_map",
+            aliases=("gamemap",),
+            description="Alternate map",
+            value_type="string",
+            storage_key="mapname",
+        ),
+    }
+
+    with pytest.raises(server_module.ServerError, match="Ambiguous setting key"):
+        srv.doset("gamemap", "cp_badlands")
+
+
 @pytest.mark.parametrize(
     "kwargs",
     (
