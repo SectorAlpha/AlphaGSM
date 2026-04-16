@@ -437,16 +437,22 @@ class Server(object):
 
     def get_setting_schema(self):
         """Return the schema-backed settings exposed by the module."""
-        schema = getattr(self.module, "setting_schema", None)
+        if not hasattr(self.module, "setting_schema"):
+            return {}
+        schema = getattr(self.module, "setting_schema")
         if isinstance(schema, MappingABC):
             return schema
-        return {}
+        raise ServerError(
+            "Module setting_schema must be a mapping, got " + type(schema).__name__
+        )
 
     def _iter_setting_schema_items(self):
         """Yield schema items in a stable order for discovery output."""
         schema = self.get_setting_schema()
-        for canonical_key in sorted(schema, key=str):
-            yield canonical_key, schema[canonical_key]
+        for canonical_key, spec in sorted(
+            schema.items(), key=lambda item: str(item[1].canonical_key)
+        ):
+            yield canonical_key, spec
 
     def _print_setting_schema_list(self, verbose=False):
         """Print the schema-backed setting keys exposed by the module."""

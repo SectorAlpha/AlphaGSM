@@ -316,6 +316,37 @@ def test_doset_updates_nested_data_and_saves():
 def test_doset_lists_schema_backed_keys(capsys):
     srv = make_server(data=DummyData({}))
     srv.module.setting_schema = {
+        "zzz": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap"),
+            description="Current map",
+            value_type="string",
+            storage_key="startmap",
+            examples=("cp_badlands",),
+        ),
+        "aaa": SettingSpec(
+            canonical_key="rconpassword",
+            aliases=("rconpass",),
+            description="RCON password",
+            value_type="string",
+            secret=True,
+        ),
+    }
+
+    srv.doset(list_settings=True)
+
+    out = capsys.readouterr().out
+    lines = [line for line in out.splitlines() if line]
+    assert lines[0].startswith("map ")
+    assert lines[1].startswith("rconpassword ")
+    assert "gamemap" in out
+    assert "startmap" in out
+    assert "rconpassword" in out
+
+
+def test_doset_lists_schema_backed_keys_verbose(capsys):
+    srv = make_server(data=DummyData({}))
+    srv.module.setting_schema = {
         "map": SettingSpec(
             canonical_key="map",
             aliases=("gamemap", "startmap"),
@@ -333,13 +364,18 @@ def test_doset_lists_schema_backed_keys(capsys):
         ),
     }
 
-    srv.doset(list_settings=True)
+    srv.doset(list_settings=True, verbose=True)
 
     out = capsys.readouterr().out
     assert "map" in out
     assert "gamemap" in out
     assert "startmap" in out
     assert "rconpassword" in out
+    assert "storage key=startmap" in out
+    assert "type=string" in out
+    assert "applies to=datastore" in out
+    assert "secret" in out
+    assert "examples=cp_badlands" in out
 
 
 def test_doset_describes_schema_backed_key(capsys):
@@ -448,6 +484,14 @@ def test_doset_rejects_ambiguous_schema_aliases():
 
     with pytest.raises(server_module.ServerError, match="Ambiguous setting key"):
         srv.doset("gamemap", "cp_badlands")
+
+
+def test_doset_rejects_malformed_setting_schema():
+    srv = make_server(data=DummyData({}))
+    srv.module.setting_schema = ["not", "a", "mapping"]
+
+    with pytest.raises(server_module.ServerError, match="setting_schema must be a mapping"):
+        srv.doset(list_settings=True)
 
 
 @pytest.mark.parametrize(
