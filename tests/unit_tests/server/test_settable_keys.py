@@ -16,20 +16,19 @@ def test_normalize_setting_name_collapses_case_and_separators():
 
 def test_resolve_requested_key_uses_schema_aliases():
     schema = {
-        "map": SettingSpec(
+        "start-map": SettingSpec(
             canonical_key="map",
             aliases=("gamemap", "startmap", "level"),
             description="Current map",
             value_type="string",
             apply_to=("datastore", "launch_args"),
-            storage_key="startmap",
         )
     }
 
     resolved = resolve_requested_key("game-map", schema)
 
     assert resolved.canonical_key == "map"
-    assert resolved.storage_key == "startmap"
+    assert resolved.storage_key == "map"
     assert resolved.input_key == "game-map"
 
 
@@ -48,3 +47,16 @@ def test_redact_value_hides_secret_values():
     )
 
     assert redact_value(spec, "hunter2") == "<redacted>"
+
+
+@pytest.mark.parametrize("value", [[], {}, ()])
+def test_redact_value_does_not_redact_empty_secret_containers(value):
+    spec = SettingSpec(
+        canonical_key="rconpassword",
+        aliases=("rconpass",),
+        description="Remote console password",
+        value_type="string",
+        secret=True,
+    )
+
+    assert redact_value(spec, value) == value
