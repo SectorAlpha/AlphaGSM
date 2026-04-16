@@ -47,8 +47,8 @@ def resolve_requested_key(raw_key: str, schema: dict[str, SettingSpec]) -> Resol
     if not matched_specs:
         raise KeyResolutionError(f"Unsupported setting key: {raw_key}")
 
-    canonical_keys = {spec.canonical_key for spec in matched_specs}
-    if len(canonical_keys) > 1:
+    unique_specs = set(matched_specs)
+    if len(unique_specs) > 1:
         raise KeyResolutionError(f"Ambiguous setting key: {raw_key}")
 
     spec = matched_specs[0]

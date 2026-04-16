@@ -57,6 +57,26 @@ def test_resolve_requested_key_rejects_ambiguous_normalized_key():
         resolve_requested_key("game-map", schema)
 
 
+def test_resolve_requested_key_rejects_same_canonical_collision():
+    schema = {
+        "primary-map": SettingSpec(
+            canonical_key="map",
+            aliases=("game-map",),
+            description="Current map",
+            value_type="string",
+        ),
+        "secondary-map": SettingSpec(
+            canonical_key="map",
+            aliases=("game-map",),
+            description="Backup map",
+            value_type="string",
+        ),
+    }
+
+    with pytest.raises(KeyResolutionError, match="Ambiguous setting key"):
+        resolve_requested_key("game-map", schema)
+
+
 def test_redact_value_hides_secret_values():
     spec = SettingSpec(
         canonical_key="rconpassword",
