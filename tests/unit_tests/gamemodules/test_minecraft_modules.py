@@ -171,6 +171,41 @@ def test_custom_doset_servername_updates_motd_and_server_properties(monkeypatch,
     ]
 
 
+def test_custom_doset_gamemap_updates_levelname_and_server_properties(monkeypatch, tmp_path):
+    server = make_server(custom, "java")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 25565,
+            "gamemode": "survival",
+            "difficulty": "easy",
+            "levelname": "world_one",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Java",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    server.doset("gamemap", "world_two")
+
+    assert server.data["levelname"] == "world_two"
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "25565",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "world_two",
+                "max-players": "20",
+                "motd": "AlphaGSM Java",
+            },
+        )
+    ]
+
+
 def test_custom_install_writes_eula_before_first_boot(tmp_path, monkeypatch):
     server = DummyServer()
     server.data.update({"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565})
