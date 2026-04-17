@@ -7,10 +7,15 @@ import urllib.request
 import downloader
 import screen
 from server import ServerError
-from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
+from server.settable_keys import KeyResolutionError, resolve_requested_key
 from utils import backups
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from .custom import updateconfig
+from .properties_config import (
+    CONFIG_SYNC_KEYS,
+    build_server_properties_values,
+    build_setting_schema,
+)
 
 import server.runtime as runtime_module
 
@@ -49,60 +54,15 @@ command_args = {
 }
 command_descriptions = {}
 command_functions = {}
-config_sync_keys = (
-    "port",
-    "gamemode",
-    "difficulty",
-    "levelname",
-    "maxplayers",
-    "servername",
+config_sync_keys = CONFIG_SYNC_KEYS
+setting_schema = build_setting_schema(
+    port_description="The port the Bedrock server listens on.",
+    port_example="19132",
+    map_example="Bedrock level",
+    maxplayers_example="10",
+    servername_description="The server name shown in Bedrock server listings.",
+    servername_example="AlphaGSM Bedrock Server",
 )
-setting_schema = {
-    "port": SettingSpec(
-        canonical_key="port",
-        description="The port the Bedrock server listens on.",
-        value_type="integer",
-        apply_to=("datastore", "native_config"),
-        examples=("19132",),
-    ),
-    "map": SettingSpec(
-        canonical_key="map",
-        aliases=("gamemap", "level", "world"),
-        description="The selected world or level name.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        storage_key="levelname",
-        examples=("Bedrock level",),
-    ),
-    "gamemode": SettingSpec(
-        canonical_key="gamemode",
-        description="The default game mode.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        examples=("survival",),
-    ),
-    "difficulty": SettingSpec(
-        canonical_key="difficulty",
-        description="The world difficulty.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        examples=("easy",),
-    ),
-    "maxplayers": SettingSpec(
-        canonical_key="maxplayers",
-        description="The maximum number of players allowed on the server.",
-        value_type="integer",
-        apply_to=("datastore", "native_config"),
-        examples=("10",),
-    ),
-    "servername": SettingSpec(
-        canonical_key="servername",
-        description="The server name shown in Bedrock server listings.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        examples=("AlphaGSM Bedrock Server",),
-    ),
-}
 
 
 def _read_download_page():
@@ -230,14 +190,14 @@ def sync_server_config(server):
     server_properties = os.path.join(server.data["dir"], "server.properties")
     updateconfig(
         server_properties,
-        {
-            "server-port": str(server.data["port"]),
-            "gamemode": str(server.data["gamemode"]),
-            "difficulty": str(server.data["difficulty"]),
-            "level-name": str(server.data["levelname"]),
-            "max-players": str(server.data["maxplayers"]),
-            "server-name": str(server.data["servername"]),
-        },
+        build_server_properties_values(
+            server,
+            servername_key="server-name",
+            default_port=19132,
+            default_levelname=server.name,
+            default_maxplayers="10",
+            default_servername="AlphaGSM %s" % (server.name,),
+        ),
     )
 
 

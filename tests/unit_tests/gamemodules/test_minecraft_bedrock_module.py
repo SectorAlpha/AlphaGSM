@@ -1,4 +1,5 @@
 import gamemodules.minecraft.bedrock as bedrock
+import gamemodules.minecraft.properties_config as properties_config
 import server.server as server_module
 
 
@@ -173,6 +174,18 @@ def test_bedrock_exposes_schema_metadata_for_native_properties():
     assert map_spec.storage_key == "levelname"
     assert servername_spec.canonical_key == "servername"
     assert servername_spec.aliases == ()
+
+
+def test_bedrock_uses_shared_properties_config_contract():
+    assert bedrock.config_sync_keys == properties_config.CONFIG_SYNC_KEYS
+    assert bedrock.setting_schema == properties_config.build_setting_schema(
+        port_description="The port the Bedrock server listens on.",
+        port_example="19132",
+        map_example="Bedrock level",
+        maxplayers_example="10",
+        servername_description="The server name shown in Bedrock server listings.",
+        servername_example="AlphaGSM Bedrock Server",
+    )
 
 
 def test_bedrock_sync_server_config_updates_server_properties(monkeypatch, tmp_path):

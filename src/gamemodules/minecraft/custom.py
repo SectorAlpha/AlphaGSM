@@ -7,7 +7,7 @@ import time
 import datetime
 import subprocess as sp
 from server import ServerError
-from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
+from server.settable_keys import KeyResolutionError, resolve_requested_key
 import re
 import screen
 import server.runtime as runtime_module
@@ -16,6 +16,11 @@ import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
 from utils import backups
 import random
+from .properties_config import (
+    CONFIG_SYNC_KEYS,
+    build_server_properties_values,
+    build_setting_schema,
+)
 
 _confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
 
@@ -128,53 +133,15 @@ command_descriptions = {
     "using that profiles"
 }
 command_functions = {}  # will have elements added as the functions are defined
-config_sync_keys = ("port", "gamemode", "difficulty", "levelname", "maxplayers", "servername")
-setting_schema = {
-    "port": SettingSpec(
-        canonical_key="port",
-        description="The port the server listens on.",
-        value_type="integer",
-        apply_to=("datastore", "native_config"),
-        examples=("25565",),
-    ),
-    "map": SettingSpec(
-        canonical_key="map",
-        aliases=("gamemap", "level", "world"),
-        description="The selected world or level name.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        storage_key="levelname",
-        examples=("world",),
-    ),
-    "gamemode": SettingSpec(
-        canonical_key="gamemode",
-        description="The default game mode.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        examples=("survival",),
-    ),
-    "difficulty": SettingSpec(
-        canonical_key="difficulty",
-        description="The world difficulty.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        examples=("easy",),
-    ),
-    "maxplayers": SettingSpec(
-        canonical_key="maxplayers",
-        description="The maximum number of players allowed on the server.",
-        value_type="integer",
-        apply_to=("datastore", "native_config"),
-        examples=("20",),
-    ),
-    "servername": SettingSpec(
-        canonical_key="servername",
-        description="The server name shown in the client list.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        examples=("AlphaGSM Server",),
-    ),
-}
+config_sync_keys = CONFIG_SYNC_KEYS
+setting_schema = build_setting_schema(
+    port_description="The port the server listens on.",
+    port_example="25565",
+    map_example="world",
+    maxplayers_example="20",
+    servername_description="The server name shown in the client list.",
+    servername_example="AlphaGSM Server",
+)
 
 
 def configure(
@@ -424,14 +391,14 @@ def sync_server_config(server):
     server_properties = os.path.join(server.data["dir"], "server.properties")
     updateconfig(
         server_properties,
-        {
-            "server-port": str(int(server.data.get("port", 25565))),
-            "gamemode": str(server.data.get("gamemode", "survival")),
-            "difficulty": str(server.data.get("difficulty", "easy")),
-            "level-name": str(server.data.get("levelname", server.name)),
-            "max-players": str(server.data.get("maxplayers", "20")),
-            "motd": str(server.data.get("servername", "AlphaGSM %s" % (server.name,))),
-        },
+        build_server_properties_values(
+            server,
+            servername_key="motd",
+            default_port=25565,
+            default_levelname=server.name,
+            default_maxplayers="20",
+            default_servername="AlphaGSM %s" % (server.name,),
+        ),
     )
 
 

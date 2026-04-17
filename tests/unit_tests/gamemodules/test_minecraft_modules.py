@@ -4,6 +4,7 @@ import pytest
 
 import gamemodules.minecraft.bungeecord as bungeecord
 import gamemodules.minecraft.custom as custom
+import gamemodules.minecraft.properties_config as properties_config
 import gamemodules.minecraft.vanilla as vanilla
 import server.server as server_module
 
@@ -134,6 +135,18 @@ def test_custom_exposes_schema_metadata_for_native_properties():
     assert map_spec.storage_key == "levelname"
     assert servername_spec.canonical_key == "servername"
     assert servername_spec.aliases == ()
+
+
+def test_custom_uses_shared_properties_config_contract():
+    assert custom.config_sync_keys == properties_config.CONFIG_SYNC_KEYS
+    assert custom.setting_schema == properties_config.build_setting_schema(
+        port_description="The port the server listens on.",
+        port_example="25565",
+        map_example="world",
+        maxplayers_example="20",
+        servername_description="The server name shown in the client list.",
+        servername_example="AlphaGSM Server",
+    )
 
 
 def test_custom_doset_servername_updates_motd_and_server_properties(monkeypatch, tmp_path):
