@@ -13,7 +13,6 @@ def _rewrite_key_value_config(
     config_values,
     *,
     pattern,
-    replace_prefix,
     separator,
     encoding="utf-8",
 ):
@@ -25,7 +24,10 @@ def _rewrite_key_value_config(
                 match = pattern.match(line)
                 if match is not None and match.group(1) in config_values:
                     lines.append(
-                        match.expand(replace_prefix + str(config_values[match.group(1)]) + r"\3")
+                        match.group(1)
+                        + separator
+                        + str(config_values[match.group(1)])
+                        + match.group(3)
                     )
                     del config_values[match.group(1)]
                 else:
@@ -41,7 +43,6 @@ def rewrite_equals_config(filename, config_values, encoding="utf-8"):
         filename,
         config_values,
         pattern=_EQUALS_PATTERN,
-        replace_prefix=r"\1=",
         separator="=",
         encoding=encoding,
     )
@@ -52,7 +53,6 @@ def rewrite_space_config(filename, config_values, encoding="utf-8"):
         filename,
         config_values,
         pattern=_SPACE_PATTERN,
-        replace_prefix=r"\1 ",
         separator=" ",
         encoding=encoding,
     )

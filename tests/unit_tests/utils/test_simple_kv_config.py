@@ -21,6 +21,18 @@ def test_rewrite_equals_config_preserves_unknown_lines_and_appends_new_keys(tmp_
     ]
 
 
+def test_rewrite_equals_config_preserves_literal_backreference_like_value(tmp_path):
+    config_path = tmp_path / "server.properties"
+    config_path.write_text("motd=Old Name\n", encoding="utf-8")
+
+    rewrite_equals_config(
+        str(config_path),
+        {"motd": r"\1"},
+    )
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [r"motd=\1"]
+
+
 def test_rewrite_space_config_preserves_unknown_lines_and_appends_new_keys(tmp_path):
     config_path = tmp_path / "server.cfg"
     config_path.write_text(
