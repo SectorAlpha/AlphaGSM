@@ -357,6 +357,13 @@ def checkvalue(server, key, *value):
         return str(value[0])
     raise ServerError("Unsupported key")
 
+
+def postset(server, key, *args, **kwargs):
+    """Keep derived SCP:SL gameplay config aligned after datastore edits."""
+
+    if len(key) > 0 and str(key[0]).lower() == "port":
+        sync_server_config(server)
+
 def get_runtime_requirements(server):
     return runtime_module.build_runtime_requirements(
         server,

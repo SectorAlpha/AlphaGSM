@@ -142,6 +142,27 @@ def test_checkvalue_accepts_canonical_scpsl_keys():
     assert mod.checkvalue(server, ("rconpassword",), "secret-query-password") == "secret-query-password"
 
 
+def test_postset_resyncs_gameplay_config_when_port_changes(tmp_path):
+    server = DummyServer("scp")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 7777
+    server.data["queryport"] = 8888
+    server.data["contactemail"] = "ops@example.com"
+    server.data["servername"] = "AlphaGSM SCP"
+    server.data["rconpassword"] = "secret-query-password"
+    mod.sync_server_config(server)
+
+    server.data["port"] = 9000
+
+    mod.postset(server, ("port",), "9000")
+
+    gameplay = (tmp_path / "home/.config/SCP Secret Laboratory/config/9000/config_gameplay.txt").read_text()
+    assert "server_name: AlphaGSM SCP" in gameplay
+    assert "contact_email: ops@example.com" in gameplay
+    assert "query_port_shift: -112" in gameplay
+    assert "query_administrator_password: secret-query-password" in gameplay
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

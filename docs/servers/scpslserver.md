@@ -58,7 +58,7 @@ alphagsm myscpslser set queryport 7778
 alphagsm myscpslser set rconpassword "changeme"
 ```
 
-`query_port_shift` is derived automatically as `queryport - port` when AlphaGSM writes `config_gameplay.txt`.
+`query_port_shift` is derived automatically as `queryport - port` when AlphaGSM writes `config_gameplay.txt`, so it updates whenever either port changes.
 
 ## Useful Commands
 
@@ -73,7 +73,7 @@ alphagsm myscpslser backup
 - Default port: 7777
 - AlphaGSM launches SCP:SL through `LocalAdmin`, not by invoking `SCPSL.x86_64` directly
 - AlphaGSM seeds `home/.config/SCP Secret Laboratory/` inside the server install so the EULA/config wizard stays noninteractive
-- Query is enabled in the generated gameplay config, with `query_port_shift: 1`
+- Query is enabled in the generated gameplay config, and `query_port_shift` is derived from the current `queryport - port`
 
 ## Developer Notes
 
