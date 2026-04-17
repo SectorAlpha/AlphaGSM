@@ -7,6 +7,7 @@ import gamemodules.minecraft.custom as custom
 import gamemodules.minecraft.properties_config as properties_config
 import gamemodules.minecraft.vanilla as vanilla
 import server.server as server_module
+from utils.simple_kv_config import rewrite_equals_config
 
 html5lib = pytest.importorskip("html5lib")
 import gamemodules.minecraft.tekkit as tekkit
@@ -147,6 +148,10 @@ def test_custom_uses_shared_properties_config_contract():
         servername_description="The server name shown in the client list.",
         servername_example="AlphaGSM Server",
     )
+
+
+def test_custom_uses_shared_equals_config_writer():
+    assert custom.updateconfig is rewrite_equals_config
 
 
 def test_custom_doset_servername_updates_motd_and_server_properties(monkeypatch, tmp_path):

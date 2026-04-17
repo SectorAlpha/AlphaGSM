@@ -15,34 +15,13 @@ import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
 from utils import backups
+from utils.simple_kv_config import rewrite_equals_config as updateconfig
 import random
 from .properties_config import (
     CONFIG_SYNC_KEYS,
     build_server_properties_values,
     build_setting_schema,
 )
-
-_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
-
-
-def updateconfig(filename, settings):
-    """Rewrite a simple key/value config file with the provided settings."""
-    lines = []
-    if os.path.isfile(filename):
-        settings = settings.copy()
-        with open(filename, "r") as f:
-            for l in f:
-                m = _confpat.match(l)
-                if m is not None and m.group(1) in settings:
-                    lines.append(m.expand(r"\1=" + settings[m.group(1)] + r"\3"))
-                    del settings[m.group(1)]
-                else:
-                    lines.append(l)
-    for k, v in settings.items():
-        lines.append(k + "=" + v + "\n")
-    print(lines)
-    with open(filename, "w") as f:
-        f.write("".join(lines))
 
 
 # required tuple

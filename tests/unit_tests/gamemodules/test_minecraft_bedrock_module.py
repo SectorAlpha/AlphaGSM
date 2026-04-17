@@ -3,6 +3,7 @@ import pytest
 import gamemodules.minecraft.bedrock as bedrock
 import gamemodules.minecraft.properties_config as properties_config
 import server.server as server_module
+from utils.simple_kv_config import rewrite_equals_config
 
 
 class DummyData(dict):
@@ -188,6 +189,10 @@ def test_bedrock_uses_shared_properties_config_contract():
         servername_description="The server name shown in Bedrock server listings.",
         servername_example="AlphaGSM Bedrock Server",
     )
+
+
+def test_bedrock_uses_shared_equals_config_writer():
+    assert bedrock.updateconfig is rewrite_equals_config
 
 
 def test_bedrock_sync_server_config_updates_server_properties(monkeypatch, tmp_path):
