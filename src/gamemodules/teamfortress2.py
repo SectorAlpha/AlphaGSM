@@ -127,7 +127,7 @@ def updateconfig(filename, settings):
     lines = []
     if os.path.isfile(filename):
         settings = settings.copy()
-        with open(filename, "r") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             for line in f:
                 m = _confpat.match(line)
                 if m is not None and m.group(1) in settings:
@@ -137,8 +137,7 @@ def updateconfig(filename, settings):
                     lines.append(line)
     for k, v in settings.items():
         lines.append(k + " " + v + "\n")
-    print(lines)
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write("".join(lines))
 
 
