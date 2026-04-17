@@ -1,0 +1,16 @@
+// AlphaGSM-managed gameplay/query settings:
+//   servername -> server_name
+//   contactemail -> contact_email
+//   queryport -> query_port_shift (derived from queryport - port)
+//   rconpassword -> query_administrator_password
+
+server_name: AlphaGSM SCP:SL Server
+server_name_color: pink
+contact_email: default
+enable_query: true
+query_port_shift: 1
+query_administrator_password: alphagsmquery
+max_players: 20
+friendly_fire: false
+respawn_time_team_chaos_insurgency: 13
+respawn_time_team_scientists: 13

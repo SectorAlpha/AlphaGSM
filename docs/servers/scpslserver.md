@@ -50,6 +50,16 @@ Setup configures:
 - optional `contactemail` for the public-list contact field
 - SteamCMD downloads the server files
 
+The canonical gameplay/query settings are managed with `set`:
+
+```bash
+alphagsm myscpslser set servername "AlphaGSM SCP:SL Server"
+alphagsm myscpslser set queryport 7778
+alphagsm myscpslser set rconpassword "changeme"
+```
+
+`query_port_shift` is derived automatically as `queryport - port` when AlphaGSM writes `config_gameplay.txt`.
+
 ## Useful Commands
 
 ```bash
@@ -78,7 +88,9 @@ alphagsm myscpslser backup
 
 - **Config root**: `<install_dir>/home/.config/SCP Secret Laboratory/`
 - **Gameplay config**: `<install_dir>/home/.config/SCP Secret Laboratory/config/<port>/config_gameplay.txt`
+- **Canonical set keys**: `servername`, `contactemail`, `queryport`, `rconpassword`
 - **Optional property**: `contactemail` maps to SCP:SL `contact_email`
+- **Derived query setting**: `queryport` maps to SCP:SL `query_port_shift` via `queryport - port`
 - **Template**: See [server-templates/scpslserver/](../server-templates/scpslserver/) if available
 - **Current status**: The dedicated server can be launched headlessly on Linux through `LocalAdmin` once its EULA/config state is preseeded.
 

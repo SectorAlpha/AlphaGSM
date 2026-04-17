@@ -108,6 +108,40 @@ def test_install(tmp_path):
     assert "query_administrator_password: alphagsmquery" in gameplay
 
 
+def test_sync_server_config_updates_contact_email(tmp_path):
+    server = DummyServer("scp")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 7777
+    server.data["contactemail"] = "ops@example.com"
+    server.data["servername"] = "AlphaGSM SCP"
+    server.data["queryport"] = 8888
+    server.data["rconpassword"] = "secret-query-password"
+
+    mod.sync_server_config(server)
+
+    gameplay = (tmp_path / "home/.config/SCP Secret Laboratory/config/7777/config_gameplay.txt").read_text()
+    assert "server_name: AlphaGSM SCP" in gameplay
+    assert "contact_email: ops@example.com" in gameplay
+    assert "query_port_shift: 1111" in gameplay
+    assert "query_administrator_password: secret-query-password" in gameplay
+    assert "enable_query: true" in gameplay
+
+
+def test_setting_schema_and_config_sync_keys_cover_canonical_surface():
+    assert mod.config_sync_keys == ("servername", "contactemail", "queryport", "rconpassword")
+    assert mod.setting_schema["servername"].storage_key == "servername"
+    assert mod.setting_schema["queryport"].storage_key == "queryport"
+    assert mod.setting_schema["rconpassword"].secret is True
+
+
+def test_checkvalue_accepts_canonical_scpsl_keys():
+    server = DummyServer()
+    assert mod.checkvalue(server, ("servername",), "AlphaGSM SCP") == "AlphaGSM SCP"
+    assert mod.checkvalue(server, ("contactemail",), "ops@example.com") == "ops@example.com"
+    assert mod.checkvalue(server, ("queryport",), "8888") == 8888
+    assert mod.checkvalue(server, ("rconpassword",), "secret-query-password") == "secret-query-password"
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -290,4 +324,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
