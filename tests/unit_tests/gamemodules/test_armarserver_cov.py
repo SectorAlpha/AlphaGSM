@@ -89,6 +89,71 @@ def test_install(tmp_path):
     assert '"maxPlayers": 8' in config
 
 
+def test_sync_server_config_updates_existing_config(tmp_path):
+    server = DummyServer()
+    server.name = "armar-alpha"
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "configs/server.json"
+    server.data["profilesdir"] = "profile"
+    server.data["bindaddress"] = "127.0.0.1"
+    server.data["port"] = 2101
+    server.data["queryport"] = 2102
+    server.data["scenarioid"] = "scenario-custom"
+    server.data["maxplayers"] = 12
+
+    mod.sync_server_config(server)
+
+    config = (tmp_path / "configs" / "server.json").read_text()
+    assert '"address": "127.0.0.1"' in config
+    assert '"port": 2102' in config
+    assert '"scenarioId": "scenario-custom"' in config
+    assert '"maxPlayers": 12' in config
+    assert (tmp_path / "profile").is_dir()
+
+
+def test_setting_schema_exposes_canonical_json_keys():
+    schema = mod.setting_schema
+
+    assert schema["map"].storage_key == "scenarioid"
+    assert schema["map"].aliases == ("scenario", "scenarioid")
+    assert schema["port"].storage_key is None
+    assert schema["queryport"].storage_key is None
+    assert schema["maxplayers"].storage_key is None
+    assert schema["bindaddress"].storage_key is None
+    assert schema["adminpassword"].storage_key is None
+    assert schema["adminpassword"].secret is True
+    assert schema["bindaddress"].apply_to == ("datastore", "native_config")
+    assert schema["adminpassword"].apply_to == ("datastore", "native_config")
+
+
+def test_checkvalue_accepts_json_synced_keys():
+    server = DummyServer()
+
+    assert mod.checkvalue(server, ("bindaddress",), "127.0.0.1") == "127.0.0.1"
+    assert mod.checkvalue(server, ("adminpassword",), "secret") == "secret"
+
+
+def test_sync_server_config_writes_json_backed_keys(tmp_path):
+    server = DummyServer()
+    server.name = "armar-alpha"
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "configs/server.json"
+    server.data["profilesdir"] = "profile"
+    server.data["bindaddress"] = "127.0.0.1"
+    server.data["port"] = 2201
+    server.data["queryport"] = 2202
+    server.data["scenarioid"] = "scenario-custom"
+    server.data["adminpassword"] = "admin-secret"
+
+    mod.sync_server_config(server)
+
+    config = (tmp_path / "configs" / "server.json").read_text()
+    assert '"address": "127.0.0.1"' in config
+    assert '"port": 2202' in config
+    assert '"scenarioId": "scenario-custom"' in config
+    assert '"passwordAdmin": "admin-secret"' in config
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -279,4 +344,3 @@ def test_checkvalue_scenarioid():
     server = DummyServer()
     value = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
     assert mod.checkvalue(server, ("scenarioid",), value) == value
-

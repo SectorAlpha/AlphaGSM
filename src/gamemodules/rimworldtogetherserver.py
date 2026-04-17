@@ -5,6 +5,7 @@ import os
 
 import screen
 from server import ServerError
+from server.settable_keys import SettingSpec
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
@@ -31,6 +32,51 @@ command_args = {
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port",)
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        aliases=("gameport",),
+        description="The game port used by the RimWorld Together server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config", "launch_args"),
+        examples=("25555",),
+    ),
+}
+
+
+def _update_json_config(path, updates):
+    """Merge *updates* into a JSON config file, creating it if needed."""
+
+    settings = {}
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                settings = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            settings = {}
+    settings.update(updates)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(settings, fh, indent=2)
+        fh.write("\n")
+
+
+def sync_server_config(server):
+    """Keep RimWorld Together config files aligned with the datastore."""
+
+    config_dir = os.path.join(server.data["dir"], "Config")
+    os.makedirs(config_dir, exist_ok=True)
+    _update_json_config(
+        os.path.join(config_dir, "ServerSettings.json"),
+        {"Port": server.data["port"]},
+    )
+
+    live_config_dir = os.path.join(server.data["dir"], "Configs")
+    os.makedirs(live_config_dir, exist_ok=True)
+    _update_json_config(
+        os.path.join(live_config_dir, "ServerConfig.json"),
+        {"Port": server.data["port"]},
+    )
 
 
 def resolve_download(version=None):
@@ -108,23 +154,11 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(server.data["url"]))
     install_archive(server, detect_compression(server.data["download_name"]))
-    # The GameServer binary ignores the --port command-line argument and
-    # always reads its listen port from Config/ServerSettings.json.  Write
-    # (or update) that file so the server binds the port chosen during setup.
-    config_dir = os.path.join(server.data["dir"], "Config")
-    os.makedirs(config_dir, exist_ok=True)
-    settings_path = os.path.join(config_dir, "ServerSettings.json")
-    settings: dict = {}
-    if os.path.exists(settings_path):
-        try:
-            with open(settings_path, encoding="utf-8") as fh:
-                settings = json.load(fh)
-        except (json.JSONDecodeError, OSError):
-            settings = {}
-    settings["Port"] = server.data["port"]
-    with open(settings_path, "w", encoding="utf-8") as fh:
-        json.dump(settings, fh, indent=2)
-        fh.write("\n")
+    # The GameServer binary ignores the --port command-line argument. Recent
+    # builds still generate their live network settings from Configs/
+    # ServerConfig.json, so keep both config locations aligned with the port
+    # chosen during setup.
+    sync_server_config(server)
 
 
 def get_start_command(server):
@@ -150,6 +184,12 @@ def get_query_address(server):
 def get_info_address(server):
     """Return the TCP address used by the ``info`` command for this server."""
     return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+
+
+def list_setting_values(server, canonical_key):
+    """RimWorld Together does not expose enumerated setting values."""
+
+    return None
 
 def do_stop(server, j):
     """Stop RimWorld Together by interrupting the foreground server process."""
