@@ -197,6 +197,7 @@ def sync_server_config(server):
             default_levelname=server.name,
             default_maxplayers="10",
             default_servername="AlphaGSM %s" % (server.name,),
+            use_defaults=False,
         ),
     )
 

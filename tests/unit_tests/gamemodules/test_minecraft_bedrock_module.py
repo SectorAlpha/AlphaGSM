@@ -1,3 +1,5 @@
+import pytest
+
 import gamemodules.minecraft.bedrock as bedrock
 import gamemodules.minecraft.properties_config as properties_config
 import server.server as server_module
@@ -220,6 +222,23 @@ def test_bedrock_sync_server_config_updates_server_properties(monkeypatch, tmp_p
             },
         )
     ]
+
+
+def test_bedrock_sync_server_config_requires_existing_gamemode(tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19133,
+            "difficulty": "hard",
+            "levelname": "world_two",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Changed",
+        }
+    )
+
+    with pytest.raises(KeyError):
+        bedrock.sync_server_config(server)
 
 
 def test_bedrock_get_start_command_uses_local_library_path(tmp_path):

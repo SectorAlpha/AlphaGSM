@@ -78,7 +78,17 @@ def build_server_properties_values(
     default_levelname,
     default_maxplayers,
     default_servername,
+    use_defaults=True,
 ):
+    if not use_defaults:
+        return {
+            "server-port": str(int(server.data["port"])),
+            "gamemode": str(server.data["gamemode"]),
+            "difficulty": str(server.data["difficulty"]),
+            "level-name": str(server.data["levelname"]),
+            "max-players": str(server.data["maxplayers"]),
+            servername_key: str(server.data["servername"]),
+        }
     return {
         "server-port": str(int(server.data.get("port", default_port))),
         "gamemode": str(server.data.get("gamemode", "survival")),
