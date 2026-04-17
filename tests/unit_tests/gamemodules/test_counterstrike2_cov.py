@@ -3,8 +3,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from utils.simple_kv_config import rewrite_space_config
 
 sys_modules_patch = {
@@ -183,25 +181,3 @@ def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_p
     ]
     assert spec["working_dir"] == "/srv/server"
     assert spec["command"][0] == "./game/cs2.sh"
-
-
-def test_checkvalue_validates_cs2_maps_and_core_keys(tmp_path):
-    server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    maps_dir = tmp_path / "game" / "csgo" / "maps"
-    maps_dir.mkdir(parents=True)
-    (maps_dir / "de_dust2.bsp").write_text("")
-
-    assert mod.checkvalue(server, ("port",), "27016") == 27016
-    assert mod.checkvalue(server, ("maxplayers",), "24") == "24"
-    assert mod.checkvalue(server, ("startmap",), "de_dust2") == "de_dust2"
-
-    with pytest.raises(mod.ServerError, match="Unsupported map de_missing"):
-        mod.checkvalue(server, ("startmap",), "de_missing")
-
-
-def test_checkvalue_rejects_unsupported_cs2_key():
-    server = DummyServer()
-
-    with pytest.raises(mod.ServerError, match="Unsupported key"):
-        mod.checkvalue(server, ("mapgroup",), "mg_active")

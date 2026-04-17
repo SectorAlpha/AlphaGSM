@@ -9,7 +9,6 @@ from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
     integration_source_server_config,
     source_query_address,
-    validate_source_startmap,
     wake_source_server_for_a2s,
 )
 import server.runtime as runtime_module
@@ -203,24 +202,6 @@ def status(server, verbose):
     """Report CS2 server status information."""
 
     pass
-
-
-def checkvalue(server, key, *value):
-    """Validate supported CS2 datastore edits."""
-
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] == "maxplayers":
-        return str(int(value[0]))
-    if key[0] == "startmap":
-        return validate_source_startmap(server, os.path.join("game", "csgo"), value[0])
-    if key[0] in ("dir", "exe_name"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
 
 
 command_functions = {

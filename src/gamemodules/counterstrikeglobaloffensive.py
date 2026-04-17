@@ -19,7 +19,6 @@ from utils.fileutils import make_empty_file
 from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
     integration_source_server_config,
-    validate_source_startmap,
     wake_source_server_for_a2s,
 )
 
@@ -299,24 +298,6 @@ def do_stop(server, j):
 def status(server, verbose):
     """Report CS:GO server status information."""
     pass
-
-
-def checkvalue(server, key, *value):
-    """Validate supported CS:GO datastore edits."""
-
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] == "maxplayers":
-        return str(int(value[0]))
-    if key[0] == "startmap":
-        return validate_source_startmap(server, "csgo", value[0])
-    if key[0] in ("gametype", "gamemode", "mapgroup", "dir", "exe_name"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
 
 
 # required, must be defined to allow functions listed below which are not in the defaults to be used
