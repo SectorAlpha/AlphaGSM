@@ -33,7 +33,27 @@ def test_rewrite_equals_config_preserves_literal_backreference_like_value(tmp_pa
     assert config_path.read_text(encoding="utf-8").splitlines() == [r"motd=\1"]
 
 
-def test_rewrite_space_config_preserves_unknown_lines_and_appends_new_keys(tmp_path):
+def test_rewrite_space_config_rewrites_single_token_values_and_appends_missing_keys(tmp_path):
+    config_path = tmp_path / "server.cfg"
+    config_path.write_text(
+        "hostname OldName\n"
+        "sv_cheats 0\n",
+        encoding="utf-8",
+    )
+
+    rewrite_space_config(
+        str(config_path),
+        {"hostname": "NewName", "rcon_password": "secret"},
+    )
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        "hostname NewName",
+        "sv_cheats 0",
+        "rcon_password secret",
+    ]
+
+
+def test_rewrite_space_config_appends_quoted_multi_word_duplicate_values(tmp_path):
     config_path = tmp_path / "server.cfg"
     config_path.write_text(
         'hostname "Old Name"\n'
@@ -43,13 +63,13 @@ def test_rewrite_space_config_preserves_unknown_lines_and_appends_new_keys(tmp_p
 
     rewrite_space_config(
         str(config_path),
-        {"hostname": '"New Name"', "rcon_password": '"secret"'},
+        {"hostname": '"New Name"'},
     )
 
     assert config_path.read_text(encoding="utf-8").splitlines() == [
-        'hostname "New Name"',
+        'hostname "Old Name"',
         "sv_cheats 0",
-        'rcon_password "secret"',
+        'hostname "New Name"',
     ]
 
 

@@ -204,6 +204,23 @@ def test_valve_updateconfig_preserves_unknown_lines_and_appends_missing_keys(tmp
     ]
 
 
+def test_valve_updateconfig_appends_quoted_multi_word_duplicate_values(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text('hostname "Old Name"\nsv_cheats 0\n', encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": '"Configured CSS"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname "Old Name"',
+        "sv_cheats 0",
+        'hostname "Configured CSS"',
+    ]
+
+
 def test_valve_updateconfig_rewrites_existing_blank_managed_line(tmp_path):
     valve_server = importlib.import_module("utils.valve_server")
     cfg_path = tmp_path / "server.cfg"
