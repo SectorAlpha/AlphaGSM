@@ -86,12 +86,45 @@ def test_custom_install_updates_generated_config_files(tmp_path, monkeypatch):
     custom.install(server, eula=True)
 
     assert update_calls[0][0].endswith("server.properties")
-    assert update_calls[0][1] == {"server-port": "25565"}
+    assert update_calls[0][1] == {
+        "server-port": "25565",
+        "gamemode": "survival",
+        "difficulty": "easy",
+        "level-name": "alpha",
+        "max-players": "20",
+        "motd": "AlphaGSM alpha",
+    }
     assert update_calls[1][0].endswith("server.properties")
-    assert update_calls[1][1] == {"server-port": "25565"}
+    assert update_calls[1][1] == {
+        "server-port": "25565",
+        "gamemode": "survival",
+        "difficulty": "easy",
+        "level-name": "alpha",
+        "max-players": "20",
+        "motd": "AlphaGSM alpha",
+    }
     assert update_calls[2][0].endswith("eula.txt")
     assert update_calls[2][1] == {"eula": "true"}
     assert server.data.saved == 1
+
+
+def test_custom_exposes_schema_metadata_for_native_properties():
+    map_spec = custom.setting_schema["map"]
+    servername_spec = custom.setting_schema["servername"]
+
+    assert custom.config_sync_keys == (
+        "port",
+        "gamemode",
+        "difficulty",
+        "levelname",
+        "maxplayers",
+        "servername",
+    )
+    assert map_spec.canonical_key == "map"
+    assert map_spec.aliases == ("gamemap", "level", "world")
+    assert map_spec.storage_key == "levelname"
+    assert servername_spec.canonical_key == "servername"
+    assert servername_spec.aliases == ()
 
 
 def test_custom_install_writes_eula_before_first_boot(tmp_path, monkeypatch):
@@ -157,6 +190,54 @@ def test_custom_checkvalue_handles_simple_and_backup_values(monkeypatch):
     assert custom.checkvalue(server, ("exe_name",), "server.jar") == "server.jar"
     assert custom.checkvalue(server, ("TEST",), "value") == "value"
     assert custom.checkvalue(server, ("backup", "profiles", "default"), "x") == ["ok", ("profiles", "default"), ("x",)]
+
+
+def test_custom_checkvalue_accepts_server_properties_keys(monkeypatch):
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {}}, "schedule": []}
+
+    monkeypatch.setattr(custom.backups, "checkdatavalue", lambda data, key, *value: ["ok", key, value])
+
+    assert custom.checkvalue(server, ("port",), "25566") == 25566
+    assert custom.checkvalue(server, ("gamemode",), "creative") == "creative"
+    assert custom.checkvalue(server, ("difficulty",), "hard") == "hard"
+    assert custom.checkvalue(server, ("maxplayers",), "30") == "30"
+    assert custom.checkvalue(server, ("levelname",), "world") == "world"
+    assert custom.checkvalue(server, ("servername",), "AlphaGSM Java") == "AlphaGSM Java"
+
+
+def test_custom_sync_server_config_updates_server_properties(tmp_path, monkeypatch):
+    server = DummyServer("java")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 25570,
+            "gamemode": "creative",
+            "difficulty": "hard",
+            "levelname": "java_world",
+            "maxplayers": "30",
+            "servername": "AlphaGSM Java",
+        }
+    )
+    update_calls = []
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: update_calls.append((filename, settings)))
+
+    custom.sync_server_config(server)
+
+    assert update_calls == [
+        (
+            str(tmp_path / "server.properties"),
+                {
+                    "server-port": "25570",
+                    "gamemode": "creative",
+                    "difficulty": "hard",
+                    "level-name": "java_world",
+                    "max-players": "30",
+                    "motd": "AlphaGSM Java",
+                },
+            )
+        ]
 
 
 def test_custom_parsewhen_supports_all_frequencies(monkeypatch):

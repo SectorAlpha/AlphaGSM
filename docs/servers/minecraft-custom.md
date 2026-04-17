@@ -52,6 +52,8 @@ Setup configures:
 ```bash
 alphagsm mycustom update
 alphagsm mycustom backup
+alphagsm mycustom set gamemap CustomWorld
+alphagsm mycustom set servername "AlphaGSM Custom Server"
 ```
 
 ## Notes
@@ -72,7 +74,8 @@ alphagsm mycustom backup
 - **Config file**: `server.properties`
 - **Key settings** (in `server.properties`):
   - `server-port` — Game port (default 25565)
-  - `motd` — Message of the day
+  - `level-name` — World name managed by `set gamemap`
+  - `motd` — Message of the day, managed by `set servername`
   - `max-players` — Maximum players
   - `level-seed` — World generation seed
   - `online-mode` — Mojang authentication

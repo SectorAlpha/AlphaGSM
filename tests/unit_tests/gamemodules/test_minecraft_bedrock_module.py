@@ -107,8 +107,62 @@ def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monk
     assert (tmp_path / "server" / "bedrock_server").exists()
     assert updates[0][0].endswith("server.properties")
     assert updates[0][1]["server-port"] == "19132"
+    assert updates[0][1]["level-name"] == "world_one"
     assert updates[0][1]["server-name"] == "AlphaGSM Bedrock"
     assert server.data["current_url"] == "http://example.com/bedrock.zip"
+
+
+def test_bedrock_exposes_schema_metadata_for_native_properties():
+    map_spec = bedrock.setting_schema["map"]
+    servername_spec = bedrock.setting_schema["servername"]
+
+    assert bedrock.config_sync_keys == (
+        "port",
+        "gamemode",
+        "difficulty",
+        "levelname",
+        "maxplayers",
+        "servername",
+    )
+    assert map_spec.canonical_key == "map"
+    assert map_spec.aliases == ("gamemap", "level", "world")
+    assert map_spec.storage_key == "levelname"
+    assert servername_spec.canonical_key == "servername"
+    assert servername_spec.aliases == ()
+
+
+def test_bedrock_sync_server_config_updates_server_properties(monkeypatch, tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19133,
+            "gamemode": "creative",
+            "difficulty": "hard",
+            "levelname": "world_two",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Changed",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    bedrock.sync_server_config(server)
+
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "19133",
+                "gamemode": "creative",
+                "difficulty": "hard",
+                "level-name": "world_two",
+                "max-players": "20",
+                "server-name": "AlphaGSM Changed",
+            },
+        )
+    ]
 
 
 def test_bedrock_get_start_command_uses_local_library_path(tmp_path):

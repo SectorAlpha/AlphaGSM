@@ -7,6 +7,7 @@ import time
 import datetime
 import subprocess as sp
 from server import ServerError
+from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
 import re
 import screen
 import server.runtime as runtime_module
@@ -127,6 +128,53 @@ command_descriptions = {
     "using that profiles"
 }
 command_functions = {}  # will have elements added as the functions are defined
+config_sync_keys = ("port", "gamemode", "difficulty", "levelname", "maxplayers", "servername")
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The port the server listens on.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("25565",),
+    ),
+    "map": SettingSpec(
+        canonical_key="map",
+        aliases=("gamemap", "level", "world"),
+        description="The selected world or level name.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        storage_key="levelname",
+        examples=("world",),
+    ),
+    "gamemode": SettingSpec(
+        canonical_key="gamemode",
+        description="The default game mode.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("survival",),
+    ),
+    "difficulty": SettingSpec(
+        canonical_key="difficulty",
+        description="The world difficulty.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("easy",),
+    ),
+    "maxplayers": SettingSpec(
+        canonical_key="maxplayers",
+        description="The maximum number of players allowed on the server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("20",),
+    ),
+    "servername": SettingSpec(
+        canonical_key="servername",
+        description="The server name shown in the client list.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("AlphaGSM Server",),
+    ),
+}
 
 
 def configure(
@@ -191,6 +239,11 @@ def configure(
     if port is None:
         raise ValueError("No Port")
     server.data["port"] = port
+    server.data.setdefault("levelname", server.name)
+    server.data.setdefault("gamemode", "survival")
+    server.data.setdefault("difficulty", "easy")
+    server.data.setdefault("maxplayers", "20")
+    server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
 
     # assign the installation directory
     if dir is None:
@@ -248,7 +301,7 @@ def install(server, *, eula=False):
             handle.write("eula=true\n")
     # Seed server.properties before first boot so new Minecraft releases bind the
     # requested port even when the bundler starts without an existing config.
-    updateconfig(configfile, {"server-port": str(server.data["port"])})
+    sync_server_config(server)
     if not had_configfile or (eula and not had_eulafile):
         print("Starting server to create settings")
         try:
@@ -262,7 +315,7 @@ def install(server, *, eula=False):
             print("Error running server. Java returned status: " + str(ex.returncode))
         except sp.TimeoutExpired:
             print("Error running server. Process didn't complete in time")
-    updateconfig(configfile, {"server-port": str(server.data["port"])})
+    sync_server_config(server)
     if eula:
         updateconfig(eulafile, {"eula": "true"})
 
@@ -366,10 +419,35 @@ def message(server, msg, *targets, parse=False):
     runtime_module.send_to_server(server, "\n" + cmd + "\n")
 
 
+def sync_server_config(server):
+    """Write supported datastore values to server.properties."""
+    server_properties = os.path.join(server.data["dir"], "server.properties")
+    updateconfig(
+        server_properties,
+        {
+            "server-port": str(int(server.data.get("port", 25565))),
+            "gamemode": str(server.data.get("gamemode", "survival")),
+            "difficulty": str(server.data.get("difficulty", "easy")),
+            "level-name": str(server.data.get("levelname", server.name)),
+            "max-players": str(server.data.get("maxplayers", "20")),
+            "motd": str(server.data.get("servername", "AlphaGSM %s" % (server.name,))),
+        },
+    )
+
+
 def checkvalue(server, key, *value):
     """Validate a proposed stored setting value for this server type."""
     if key[0] == "TEST":
         return value[0]
+    try:
+        resolved = resolve_requested_key(key[0], setting_schema)
+        key = (resolved.storage_key,) + key[1:]
+    except KeyResolutionError:
+        pass
+    if key == ("port",):
+        if len(value) != 1:
+            raise ServerError("Only one value supported for 'port'")
+        return int(value[0])
     if key == ("exe_name",):
         if len(value) != 1:
             raise ServerError("Only one value supported for 'exe_name'")
@@ -378,6 +456,14 @@ def checkvalue(server, key, *value):
         if len(value) != 1:
             raise ServerError("Only one value supported for 'javapath'")
         return value[0]
+    if key == ("maxplayers",):
+        if len(value) != 1:
+            raise ServerError("Only one value supported for 'maxplayers'")
+        return str(int(value[0]))
+    if key in (("gamemode",), ("difficulty",), ("levelname",), ("servername",)):
+        if len(value) != 1:
+            raise ServerError("Only one value supported for '{}'".format(key[0]))
+        return str(value[0])
     if key[0] == ("backup"):
         try:
             return backups.checkdatavalue(

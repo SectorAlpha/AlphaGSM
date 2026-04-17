@@ -7,6 +7,7 @@ import urllib.request
 import downloader
 import screen
 from server import ServerError
+from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
 from utils import backups
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from .custom import updateconfig
@@ -48,6 +49,60 @@ command_args = {
 }
 command_descriptions = {}
 command_functions = {}
+config_sync_keys = (
+    "port",
+    "gamemode",
+    "difficulty",
+    "levelname",
+    "maxplayers",
+    "servername",
+)
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The port the Bedrock server listens on.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("19132",),
+    ),
+    "map": SettingSpec(
+        canonical_key="map",
+        aliases=("gamemap", "level", "world"),
+        description="The selected world or level name.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        storage_key="levelname",
+        examples=("Bedrock level",),
+    ),
+    "gamemode": SettingSpec(
+        canonical_key="gamemode",
+        description="The default game mode.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("survival",),
+    ),
+    "difficulty": SettingSpec(
+        canonical_key="difficulty",
+        description="The world difficulty.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("easy",),
+    ),
+    "maxplayers": SettingSpec(
+        canonical_key="maxplayers",
+        description="The maximum number of players allowed on the server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("10",),
+    ),
+    "servername": SettingSpec(
+        canonical_key="servername",
+        description="The server name shown in Bedrock server listings.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("AlphaGSM Bedrock Server",),
+    ),
+}
 
 
 def _read_download_page():
@@ -169,6 +224,23 @@ def configure(
     return (), {}
 
 
+def sync_server_config(server):
+    """Write supported datastore values to server.properties."""
+
+    server_properties = os.path.join(server.data["dir"], "server.properties")
+    updateconfig(
+        server_properties,
+        {
+            "server-port": str(server.data["port"]),
+            "gamemode": str(server.data["gamemode"]),
+            "difficulty": str(server.data["difficulty"]),
+            "level-name": str(server.data["levelname"]),
+            "max-players": str(server.data["maxplayers"]),
+            "server-name": str(server.data["servername"]),
+        },
+    )
+
+
 def install(server):
     """Download and install the Bedrock dedicated server files."""
 
@@ -186,18 +258,7 @@ def install(server):
         _sync_tree(_resolve_archive_root(downloadpath), server.data["dir"])
         server.data["current_url"] = server.data["url"]
 
-    server_properties = os.path.join(server.data["dir"], "server.properties")
-    updateconfig(
-        server_properties,
-        {
-            "server-port": str(server.data["port"]),
-            "gamemode": str(server.data["gamemode"]),
-            "difficulty": str(server.data["difficulty"]),
-            "level-name": str(server.data["levelname"]),
-            "max-players": str(server.data["maxplayers"]),
-            "server-name": str(server.data["servername"]),
-        },
-    )
+    sync_server_config(server)
     server.data.save()
 
 
@@ -239,6 +300,11 @@ def checkvalue(server, key, *value):
         raise ServerError("Invalid key")
     if key[0] == "backup":
         return backups.checkdatavalue(server.data["backup"], key, *value)
+    try:
+        resolved = resolve_requested_key(key[0], setting_schema)
+        key = (resolved.storage_key,) + key[1:]
+    except KeyResolutionError:
+        pass
     if len(value) == 0:
         raise ServerError("No value specified")
     if key[0] == "port":
