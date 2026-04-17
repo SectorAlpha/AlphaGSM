@@ -1,14 +1,15 @@
 """Counter-Strike 2-specific lifecycle, configuration, and update helpers."""
 
 import os
-import re
 
 from server import ServerError
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
+from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
     integration_source_server_config,
     source_query_address,
+    validate_source_startmap,
     wake_source_server_for_a2s,
 )
 import server.runtime as runtime_module
@@ -54,28 +55,6 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
-
-_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
-
-
-def updateconfig(filename, settings):
-    """Rewrite a simple key/value config file with the provided settings."""
-
-    lines = []
-    if os.path.isfile(filename):
-        settings = settings.copy()
-        with open(filename, "r", encoding="utf-8") as handle:
-            for line in handle:
-                match = _confpat.match(line)
-                if match is not None and match.group(1) in settings:
-                    lines.append(match.expand(r"\1 " + settings[match.group(1)] + r"\3"))
-                    del settings[match.group(1)]
-                else:
-                    lines.append(line)
-    for key, value in settings.items():
-        lines.append(key + " " + value + "\n")
-    with open(filename, "w", encoding="utf-8") as handle:
-        handle.write("".join(lines))
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="game/cs2.sh"):
@@ -224,6 +203,24 @@ def status(server, verbose):
     """Report CS2 server status information."""
 
     pass
+
+
+def checkvalue(server, key, *value):
+    """Validate supported CS2 datastore edits."""
+
+    if len(key) == 0:
+        raise ServerError("Invalid key")
+    if len(value) == 0:
+        raise ServerError("No value specified")
+    if key[0] == "port":
+        return int(value[0])
+    if key[0] == "maxplayers":
+        return str(int(value[0]))
+    if key[0] == "startmap":
+        return validate_source_startmap(server, os.path.join("game", "csgo"), value[0])
+    if key[0] in ("dir", "exe_name"):
+        return str(value[0])
+    raise ServerError("Unsupported key")
 
 
 command_functions = {

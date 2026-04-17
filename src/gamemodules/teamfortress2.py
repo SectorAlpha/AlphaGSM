@@ -9,6 +9,7 @@ from server.settable_keys import SettingSpec
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
     send_console_command_and_collect_response,
     integration_source_server_config,
@@ -117,28 +118,7 @@ sv_logbans 1
 sv_logecho 1
 sv_logfile 1
 """
-
-_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 _SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
-
-
-def updateconfig(filename, settings):
-    """Rewrite a simple key/value config file with the provided settings."""
-    lines = []
-    if os.path.isfile(filename):
-        settings = settings.copy()
-        with open(filename, "r", encoding="utf-8") as f:
-            for line in f:
-                m = _confpat.match(line)
-                if m is not None and m.group(1) in settings:
-                    lines.append(m.expand(r"\1 " + settings[m.group(1)] + r"\3"))
-                    del settings[m.group(1)]
-                else:
-                    lines.append(line)
-    for k, v in settings.items():
-        lines.append(k + " " + v + "\n")
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write("".join(lines))
 
 
 def _quote_config_value(value):

@@ -7,7 +7,6 @@ import time
 import datetime
 import subprocess as sp
 from server import ServerError
-import re
 import screen
 import downloader
 import utils.updatefs
@@ -17,7 +16,12 @@ from utils import updatefs
 import random
 
 from utils.fileutils import make_empty_file
-from utils.valve_server import integration_source_server_config, wake_source_server_for_a2s
+from utils.simple_kv_config import rewrite_space_config as updateconfig
+from utils.valve_server import (
+    integration_source_server_config,
+    validate_source_startmap,
+    wake_source_server_for_a2s,
+)
 
 import utils.steamcmd as steamcmd
 
@@ -71,28 +75,6 @@ command_functions = {}  # will have elements added as the functions are defined
 wake_a2s_query = wake_source_server_for_a2s
 
 max_stop_wait = 1
-
-_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
-
-
-def updateconfig(filename, settings):
-    """Rewrite a simple key/value config file with the provided settings."""
-    lines = []
-    if os.path.isfile(filename):
-        settings = settings.copy()
-        with open(filename, "r") as f:
-            for l in f:
-                m = _confpat.match(l)
-                if m is not None and m.group(1) in settings:
-                    lines.append(m.expand(r"\1 " + settings[m.group(1)] + r"\3"))
-                    del settings[m.group(1)]
-                else:
-                    lines.append(l)
-    for k, v in settings.items():
-        lines.append(k + " " + v + "\n")
-    print(lines)
-    with open(filename, "w") as f:
-        f.write("".join(lines))
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
@@ -317,6 +299,24 @@ def do_stop(server, j):
 def status(server, verbose):
     """Report CS:GO server status information."""
     pass
+
+
+def checkvalue(server, key, *value):
+    """Validate supported CS:GO datastore edits."""
+
+    if len(key) == 0:
+        raise ServerError("Invalid key")
+    if len(value) == 0:
+        raise ServerError("No value specified")
+    if key[0] == "port":
+        return int(value[0])
+    if key[0] == "maxplayers":
+        return str(int(value[0]))
+    if key[0] == "startmap":
+        return validate_source_startmap(server, "csgo", value[0])
+    if key[0] in ("gametype", "gamemode", "mapgroup", "dir", "exe_name"):
+        return str(value[0])
+    raise ServerError("Unsupported key")
 
 
 # required, must be defined to allow functions listed below which are not in the defaults to be used

@@ -6,6 +6,8 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from utils.simple_kv_config import rewrite_space_config
+
 sys.modules.pop('gamemodules.counterstrikeglobaloffensive', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.fileutils': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.counterstrikeglobaloffensive as mod
@@ -39,6 +41,10 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
     assert server.data['port'] == 27015
+
+
+def test_csgo_uses_shared_space_config_writer():
+    assert mod.updateconfig is rewrite_space_config
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -185,3 +191,28 @@ def test_do_stop():
 def test_status():
     server = DummyServer()
     mod.status(server, verbose=True)
+
+
+def test_checkvalue_validates_csgo_maps_and_core_keys(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    maps_dir = tmp_path / "csgo" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "de_dust2.bsp").write_text("")
+
+    assert mod.checkvalue(server, ("port",), "27016") == 27016
+    assert mod.checkvalue(server, ("maxplayers",), "24") == "24"
+    assert mod.checkvalue(server, ("mapgroup",), "mg_active") == "mg_active"
+    assert mod.checkvalue(server, ("gametype",), "0") == "0"
+    assert mod.checkvalue(server, ("gamemode",), "1") == "1"
+    assert mod.checkvalue(server, ("startmap",), "de_dust2") == "de_dust2"
+
+    with pytest.raises(ServerError, match="Unsupported map de_missing"):
+        mod.checkvalue(server, ("startmap",), "de_missing")
+
+
+def test_checkvalue_rejects_unsupported_csgo_key():
+    server = DummyServer()
+
+    with pytest.raises(ServerError, match="Unsupported key"):
+        mod.checkvalue(server, ("hostname",), "AlphaGSM")

@@ -6,6 +6,8 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from utils.simple_kv_config import rewrite_space_config
+
 sys.modules.pop('gamemodules.teamfortress2', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.fileutils': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.teamfortress2 as mod
@@ -39,6 +41,10 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
     assert server.data['port'] == 27015
+
+
+def test_tf2_uses_shared_space_config_writer():
+    assert mod.updateconfig is rewrite_space_config
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
