@@ -5,7 +5,7 @@ import re
 
 
 _EQUALS_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(.*?)(\s*)\Z")
-_SPACE_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)[ ]+((?!#)\S*)(\s*)\Z")
+_SPACE_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 
 
 def _rewrite_key_value_config(

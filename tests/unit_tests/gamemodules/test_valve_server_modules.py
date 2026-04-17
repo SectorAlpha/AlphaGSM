@@ -238,6 +238,22 @@ def test_valve_updateconfig_leaves_tab_delimited_line_and_appends_new_value(tmp_
     ]
 
 
+def test_valve_updateconfig_rewrites_hash_prefixed_values_in_place(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("rcon_password #placeholder\nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"rcon_password": "topsecret"},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        "rcon_password topsecret",
+        "sv_cheats 0",
+    ]
+
+
 def test_valve_updateconfig_rewrites_existing_blank_managed_line(tmp_path):
     valve_server = importlib.import_module("utils.valve_server")
     cfg_path = tmp_path / "server.cfg"
