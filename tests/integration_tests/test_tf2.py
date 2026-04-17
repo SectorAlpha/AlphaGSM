@@ -267,7 +267,7 @@ def test_tf2_download_install_and_start(tmp_path):
         assert hibernating_info["protocol"] in {"console", "a2s"}, (
             f"Expected console or a2s protocol for hibernating TF2: {hibernating_info!r}"
         )
-        _assert_common_tf2_info(hibernating_info)
+        _assert_common_tf2_info(hibernating_info, expected_map=selected_map)
         if hibernating_info["protocol"] == "console":
             assert "version" in hibernating_info, (
                 f"Expected console-derived version details for hibernating TF2: {hibernating_info!r}"
