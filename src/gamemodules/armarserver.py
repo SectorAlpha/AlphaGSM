@@ -96,28 +96,37 @@ def sync_server_config(server):
     os.makedirs(os.path.join(server.data["dir"], server.data["profilesdir"]), exist_ok=True)
 
     config_path = os.path.join(server.data["dir"], server.data["configfile"])
+    config = {}
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, encoding="utf-8") as handle:
+                loaded = json.load(handle)
+            if isinstance(loaded, dict):
+                config = loaded
+        except (json.JSONDecodeError, OSError):
+            config = {}
+
+    a2s_config = config.get("a2s")
+    if not isinstance(a2s_config, dict):
+        a2s_config = {}
+    a2s_config["address"] = server.data.get("bindaddress", "0.0.0.0")
+    a2s_config["port"] = int(server.data.get("queryport", int(server.data.get("port", 2001)) + 1))
+    config["a2s"] = a2s_config
+
+    game_config = config.get("game")
+    if not isinstance(game_config, dict):
+        game_config = {}
+    game_config["passwordAdmin"] = (
+        server.data["adminpassword"]
+        if "adminpassword" in server.data
+        else game_config.get("passwordAdmin", "")
+    )
+    game_config["maxPlayers"] = int(server.data.get("maxplayers", 8))
+    game_config["scenarioId"] = server.data.get("scenarioid", DEFAULT_SCENARIO_ID)
+    config["game"] = game_config
+
     with open(config_path, "w", encoding="utf-8") as handle:
-        json.dump(
-            {
-                "a2s": {
-                    "address": server.data.get("bindaddress", "0.0.0.0"),
-                    "port": int(server.data.get("queryport", int(server.data.get("port", 2001)) + 1)),
-                },
-                "game": {
-                    "name": server.name,
-                    "admins": [],
-                    "passwordAdmin": server.data.get("adminpassword", ""),
-                    "maxPlayers": int(server.data.get("maxplayers", 8)),
-                    "crossPlatform": False,
-                    "supportedPlatforms": ["PLATFORM_PC"],
-                    "scenarioId": server.data.get(
-                        "scenarioid", DEFAULT_SCENARIO_ID
-                    ),
-                }
-            },
-            handle,
-            indent=2,
-        )
+        json.dump(config, handle, indent=2)
         handle.write("\n")
 
 
