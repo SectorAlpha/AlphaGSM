@@ -5,15 +5,16 @@ import re
 
 import screen
 import server.runtime as runtime_module
+from server.settable_keys import SettingSpec
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
-from utils.fileutils import make_empty_file
 from utils.valve_server import (
     send_console_command_and_collect_response,
     integration_source_server_config,
     source_console_status,
     source_query_address,
+    validate_source_startmap,
     wake_source_server_for_a2s,
 )
 
@@ -59,6 +60,63 @@ command_descriptions = {
 }
 
 max_stop_wait = 1
+config_sync_keys = ("servername", "rconpassword", "serverpassword")
+setting_schema = {
+    "map": SettingSpec(
+        canonical_key="map",
+        aliases=("gamemap", "startmap", "level"),
+        description="The currently selected map or level.",
+        value_type="string",
+        apply_to=("datastore", "launch_args"),
+        storage_key="startmap",
+        examples=("cp_dustbowl",),
+    ),
+    "servername": SettingSpec(
+        canonical_key="servername",
+        aliases=("hostname", "server_name", "name"),
+        description="The server's public name shown to players.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("AlphaGSM TF2 Server",),
+    ),
+    "rconpassword": SettingSpec(
+        canonical_key="rconpassword",
+        aliases=("rconpass", "rcon_password"),
+        description="Remote console password for administrative access.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        secret=True,
+    ),
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        aliases=("sv_password", "svpassword", "password"),
+        description="Password required for players to join the server.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        secret=True,
+    ),
+}
+
+_TF2_SERVER_CFG_TEMPLATE = """// Team Fortress 2 server.cfg template
+// Place this file at: tf/cfg/server.cfg
+
+// AlphaGSM-managed identity and password settings
+hostname "AlphaGSM TF2 Server"
+sv_password ""
+rcon_password "changeme"
+
+// Gameplay
+sv_pure 1
+mp_timelimit 30
+mp_maxrounds 0
+mp_autokick 0
+
+// Logging
+log on
+sv_logbans 1
+sv_logecho 1
+sv_logfile 1
+"""
 
 _confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 _SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
@@ -84,6 +142,15 @@ def updateconfig(filename, settings):
         f.write("".join(lines))
 
 
+def _quote_config_value(value):
+    """Return a Source-style quoted config value."""
+
+    text = str(value)
+    if len(text) >= 2 and text.startswith('"') and text.endswith('"'):
+        return text
+    return '"' + text.replace('"', '\\"') + '"'
+
+
 # Team Fortress 2 is probably the most simple example of a steamcmd game
 def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
     """
@@ -104,6 +171,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
 
     server.data["startmap"] = "cp_dustbowl"
     server.data["maxplayers"] = "16"
+    server.data.setdefault("servername", "AlphaGSM TF2 Server")
+    server.data.setdefault("rconpassword", "changeme")
+    server.data.setdefault("serverpassword", "")
 
     # do we have backup data already? if not initialise the dictionary
     if "backup" not in server.data:
@@ -172,31 +242,11 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
 def install(server):
     """Install or prepare the TF2 server files for this server object."""
     doinstall(server)
-    # TODO: any config files that need creating or any commands that need running before the server can start for the first time
-
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
     elif os.path.isfile(server.data["dir"] + "srcds_run"):
         server.data["exe_name"] = "srcds_run"
-
-    # create a default config if the download didn't include one
-    server_cfg_dir = server.data["dir"] + "tf/cfg/"
-    if not os.path.isdir(server_cfg_dir):
-        os.makedirs(server_cfg_dir)
-
-    server_cfg = server_cfg_dir + "server.cfg"
-    if not os.path.isfile(server_cfg):
-        make_empty_file(server_cfg)
-        with open(server_cfg, "w") as f:
-            f.write("""// AlphaGSM default TF2 server config
-hostname "AlphaGSM TF2 Server"
-sv_pure 1
-""")
-    integration_cfg = integration_source_server_config()
-    if integration_cfg:
-        integration_cfg = dict(integration_cfg)
-        integration_cfg["tf_allow_server_hibernation"] = "0"
-        updateconfig(server_cfg, integration_cfg)
+    sync_server_config(server)
     server.data.save()
 
 
@@ -349,9 +399,75 @@ def get_info_address(server):
     return source_query_address(server)
 
 
+def sync_server_config(server):
+    """Rewrite the TF2 native server.cfg from datastore values."""
+
+    server_cfg_dir = os.path.join(server.data["dir"], "tf", "cfg")
+    if not os.path.isdir(server_cfg_dir):
+        os.makedirs(server_cfg_dir)
+
+    server_cfg = os.path.join(server_cfg_dir, "server.cfg")
+    if not os.path.isfile(server_cfg):
+        with open(server_cfg, "w", encoding="utf-8") as handle:
+            handle.write(_TF2_SERVER_CFG_TEMPLATE)
+
+    config_values = {
+        "hostname": _quote_config_value(
+            server.data.get("servername", "AlphaGSM TF2 Server")
+        ),
+        "rcon_password": _quote_config_value(server.data.get("rconpassword", "changeme")),
+        "sv_password": _quote_config_value(server.data.get("serverpassword", "")),
+    }
+    integration_cfg = integration_source_server_config()
+    if integration_cfg:
+        merged_config_values = dict(integration_cfg)
+        merged_config_values.update(config_values)
+        config_values = merged_config_values
+        config_values["tf_allow_server_hibernation"] = "0"
+    updateconfig(server_cfg, config_values)
+
+
+def list_setting_values(server, canonical_key):
+    """Return installed map names for the TF2 map setting."""
+
+    if canonical_key != "map":
+        return None
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return []
+    maps_dir = os.path.join(install_dir, "tf", "maps")
+    if not os.path.isdir(maps_dir):
+        return []
+    return sorted(
+        os.path.splitext(filename)[0]
+        for filename in os.listdir(maps_dir)
+        if filename.endswith(".bsp")
+    )
+
+
 def status(server, verbose):
     """Report TF2 server status information."""
     pass
+
+
+def checkvalue(server, key, *value):
+    """Validate supported TF2 datastore edits."""
+
+    if len(key) == 0:
+        raise ServerError("Invalid key")
+    if len(value) == 0:
+        raise ServerError("No value specified")
+    if key[0] == "port":
+        return int(value[0])
+    if key[0] == "maxplayers":
+        return str(int(value[0]))
+    if key[0] in ("startmap", "map"):
+        return validate_source_startmap(server, "tf", value[0])
+    if key[0] in ("servername", "hostname", "dir", "exe_name"):
+        return str(value[0])
+    if key[0] in ("rconpassword", "rcon_password", "serverpassword", "sv_password"):
+        return str(value[0])
+    raise ServerError("Unsupported key")
 
 
 ## TODO integrate Steam games properly into the downloads module.

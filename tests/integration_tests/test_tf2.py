@@ -192,10 +192,10 @@ def _set_tf2_hibernation(server_cfg_path, enabled):
     server_cfg_path.write_text(cfg_text, encoding="utf-8")
 
 
-def _assert_common_tf2_info(data):
+def _assert_common_tf2_info(data, expected_map="cp_dustbowl"):
     assert data.get("players") == 0, f"Expected 0 players on fresh TF2 server: {data!r}"
     assert data.get("bots") == 0, f"Expected 0 bots on fresh TF2 server: {data!r}"
-    assert data.get("map") == "cp_dustbowl", f"Expected cp_dustbowl map: {data!r}"
+    assert data.get("map") == expected_map, f"Expected {expected_map} map: {data!r}"
     assert data.get("name") == "AlphaGSM TF2 Server", f"Unexpected TF2 name: {data!r}"
 
 
@@ -236,6 +236,21 @@ def test_tf2_download_install_and_start(tmp_path):
     server_cfg_path = install_dir / "tf" / "cfg" / "server.cfg"
     assert server_cfg_path.exists()
 
+    installed_maps = sorted(
+        path.stem for path in (install_dir / "tf" / "maps").glob("*.bsp")
+    )
+    assert installed_maps, "Expected TF2 install to expose at least one installed map"
+    selected_map = installed_maps[0]
+
+    describe_result = _run_and_assert_ok(env, server_name, "set", "gamemap", "--describe")
+    assert "Canonical key: map" in describe_result.stdout
+
+    _run_and_assert_ok(env, server_name, "set", "gamemap", selected_map)
+    rcon_password = f"rcon-{port}"
+    _run_and_assert_ok(env, server_name, "set", "rconpassword", rcon_password)
+    config_text = server_cfg_path.read_text(encoding="utf-8")
+    assert f'rcon_password "{rcon_password}"' in config_text
+
     try:
         _set_tf2_hibernation(server_cfg_path, enabled=True)
         _run_and_assert_ok(env, server_name, "start", timeout=60)
@@ -261,7 +276,7 @@ def test_tf2_download_install_and_start(tmp_path):
         else:
             awake_info = hibernating_info
 
-        _assert_common_tf2_info(awake_info)
+        _assert_common_tf2_info(awake_info, expected_map=selected_map)
         assert "Team Fortress" in (awake_info.get("game") or ""), (
             f"Expected 'Team Fortress' in game field: {awake_info!r}"
         )
@@ -288,7 +303,7 @@ def test_tf2_download_install_and_start(tmp_path):
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol for TF2: {_info_data!r}"
         )
-        _assert_common_tf2_info(_info_data)
+        _assert_common_tf2_info(_info_data, expected_map=selected_map)
         assert "Team Fortress" in (_info_data.get("game") or ""), (
             f"Expected 'Team Fortress' in game field: {_info_data!r}"
         )

@@ -1,0 +1,58 @@
+AlphaGSM changelog
+==================
+
+Current release notes should be updated in every PR that changes user-facing behaviour,
+server support, CI, packaging, or workflow defaults.
+
+Historical detail lives in git history. Keep this file focused on release-facing notes and
+high-level milestones.
+
+2026-04-17
+- CLI: add canonical `set` discovery and alias routing for schema-backed keys so modules can expose shared names like `gamemap` while still writing the underlying storage key.
+- Server support: roll Team Fortress 2 into the schema-backed `set` flow with map aliasing, `server.cfg` password syncing, and installed-map discovery.
+
+2026-04-16
+- Documentation: rename the MTA, RedM, ATS, and ETS2 server-template examples to their real upstream config filenames and reshape the sample contents to match the native config formats.
+- Documentation: add `scripts/audit_server_templates.py` so template filename mismatches can be checked against module and server-guide config-path evidence.
+- Documentation: tighten the server-template authoring guidance in the repo skills and developer docs so template files should mimic the real server config path, filename, and structure as closely as verified evidence allows.
+- Documentation: add a canonical `docs/server-templates/_template/` scaffold and document that real runtime filenames should only be used when the module or server guide identifies a stable config path, leaving `alphagsm-example.cfg` for AlphaGSM-only reference templates.
+- Documentation: replace the remaining README-only server-template directories with concrete config/example files across the full server catalog, using module-backed filenames where available and AlphaGSM example-value files otherwise.
+- Documentation: add docs/server-templates entries across the game-server catalog and expand the practical templates with fuller default config samples, while marking generated or runtime-owned schemas explicitly instead of leaving thin placeholders.
+- Server support: re-enable rimworldtogetherserver after updating the live Configs/ServerConfig.json port and aligning its TCP integration checks with the shared query/info contract.
+- CLI: make `set` trigger module config-sync hooks only for explicitly declared game-config keys, so valid server config values sync immediately while AlphaGSM-only keys do not.
+- Server support: extend the explicit config-sync contract to mumbleserver, craftopiaserver, and scpslserver so `set` updates their managed INI/text server config values immediately.
+- Server support: let Java Minecraft modules sync `port`, `gamemode`, `difficulty`, and `maxplayers` back into server.properties through the shared custom/vanilla/paper lifecycle path.
+- Server support: validate `set startmap` against installed `.bsp` files for low-risk Source server batches so obvious bad map names fail before start.
+
+2026-04-15
+- Release prep: set the preferred local integration-test work directory to /media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme when available.
+- Release prep: add changelog discipline guidance via AGENTS.md and skills/changelog-discipline/SKILL.md.
+- Release prep: update user-facing CLI and project text to reference 2026 and point to changelog.txt.
+- CI: add cross-platform standalone binary build smoke jobs for Linux, Windows, and macOS artifacts.
+
+Historical highlights
+---------------------
+
+2014
+- Initial repository created.
+
+2015
+- Built the first AlphaGSM CLI foundation, including command parsing, output multiplexing, and early Minecraft support.
+- Renamed the project from sagsm/samanager to AlphaGSM and expanded early documentation.
+
+2016
+- Added downloader, settings, backup, activation, and update workflows that shaped the current lifecycle model.
+- Expanded Minecraft variants and Steam-oriented support while stabilising the configuration system.
+
+2017
+- Continued Steam/public branch integration work and small maintenance merges.
+
+2021
+- Refreshed GitHub-facing documentation.
+
+2024
+- Resumed active maintenance on the live branch.
+
+2026
+- Accelerated platform and runtime work across Windows compatibility, Proton, Docker runtime families, docs/wiki automation, more commands, and broader game-module coverage.
+- Hardened CI and release workflows with runtime image publishing, port-collision fixes, and tighter test workflows.
