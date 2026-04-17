@@ -1,4 +1,5 @@
 import gamemodules.minecraft.bedrock as bedrock
+import server.server as server_module
 
 
 class DummyData(dict):
@@ -14,6 +15,14 @@ class DummyServer:
     def __init__(self, name="alpha"):
         self.name = name
         self.data = DummyData()
+
+
+def make_server(module, name="alpha"):
+    server = server_module.Server.__new__(server_module.Server)
+    server.name = name
+    server.module = module
+    server.data = DummyData()
+    return server
 
 
 def test_resolve_bedrock_download_uses_explicit_version():
@@ -110,6 +119,41 @@ def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monk
     assert updates[0][1]["level-name"] == "world_one"
     assert updates[0][1]["server-name"] == "AlphaGSM Bedrock"
     assert server.data["current_url"] == "http://example.com/bedrock.zip"
+
+
+def test_bedrock_doset_gamemap_updates_levelname_and_server_properties(monkeypatch, tmp_path):
+    server = make_server(bedrock, "bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19132,
+            "gamemode": "survival",
+            "difficulty": "easy",
+            "levelname": "world_one",
+            "maxplayers": "10",
+            "servername": "AlphaGSM Bedrock",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    server.doset("gamemap", "world_two")
+
+    assert server.data["levelname"] == "world_two"
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "19132",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "world_two",
+                "max-players": "10",
+                "server-name": "AlphaGSM Bedrock",
+            },
+        )
+    ]
 
 
 def test_bedrock_exposes_schema_metadata_for_native_properties():

@@ -44,7 +44,7 @@ alphagsm mycustom stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 25565)
 - the install directory
 
 ## Useful Commands
@@ -59,7 +59,7 @@ alphagsm mycustom set servername "AlphaGSM Custom Server"
 ## Notes
 
 - Module name: `minecraft.custom`
-- Default port: 27015
+- Default port: 25565
 
 ## Developer Notes
 

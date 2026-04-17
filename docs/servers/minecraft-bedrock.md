@@ -73,7 +73,7 @@ alphagsm mybedrock set servername "AlphaGSM Bedrock Server"
 
 - **Config file**: `server.properties`
 - **Key settings** (in `server.properties`):
-  - `server-port` — Game port (default 25565)
+  - `server-port` — Game port (default 19132)
   - `level-name` — World name managed by `set gamemap`
   - `server-name` — Server name managed by `set servername`
   - `motd` — Message of the day

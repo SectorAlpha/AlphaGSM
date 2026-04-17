@@ -5,6 +5,7 @@ import pytest
 import gamemodules.minecraft.bungeecord as bungeecord
 import gamemodules.minecraft.custom as custom
 import gamemodules.minecraft.vanilla as vanilla
+import server.server as server_module
 
 html5lib = pytest.importorskip("html5lib")
 import gamemodules.minecraft.tekkit as tekkit
@@ -23,6 +24,14 @@ class DummyServer:
     def __init__(self, name="alpha"):
         self.name = name
         self.data = DummyData()
+
+
+def make_server(module, name="alpha"):
+    server = server_module.Server.__new__(server_module.Server)
+    server.name = name
+    server.module = module
+    server.data = DummyData()
+    return server
 
 
 def test_custom_configure_sets_backup_defaults_and_returns_eula_state(tmp_path):
@@ -125,6 +134,41 @@ def test_custom_exposes_schema_metadata_for_native_properties():
     assert map_spec.storage_key == "levelname"
     assert servername_spec.canonical_key == "servername"
     assert servername_spec.aliases == ()
+
+
+def test_custom_doset_servername_updates_motd_and_server_properties(monkeypatch, tmp_path):
+    server = make_server(custom, "java")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 25565,
+            "gamemode": "survival",
+            "difficulty": "easy",
+            "levelname": "world",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Java",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    server.doset("servername", "AlphaGSM Custom")
+
+    assert server.data["servername"] == "AlphaGSM Custom"
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "25565",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "world",
+                "max-players": "20",
+                "motd": "AlphaGSM Custom",
+            },
+        )
+    ]
 
 
 def test_custom_install_writes_eula_before_first_boot(tmp_path, monkeypatch):
