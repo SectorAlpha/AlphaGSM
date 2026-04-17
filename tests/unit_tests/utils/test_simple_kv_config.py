@@ -39,3 +39,22 @@ def test_rewrite_space_config_preserves_unknown_lines_and_appends_new_keys(tmp_p
         "sv_cheats 0",
         'rcon_password "secret"',
     ]
+
+
+def test_rewrite_space_config_rewrites_existing_blank_managed_line(tmp_path):
+    config_path = tmp_path / "server.cfg"
+    config_path.write_text(
+        "rcon_password \n"
+        "sv_cheats 0\n",
+        encoding="utf-8",
+    )
+
+    rewrite_space_config(
+        str(config_path),
+        {"rcon_password": '"secret"'},
+    )
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'rcon_password "secret"',
+        "sv_cheats 0",
+    ]

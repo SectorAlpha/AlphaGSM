@@ -204,6 +204,22 @@ def test_valve_updateconfig_preserves_unknown_lines_and_appends_missing_keys(tmp
     ]
 
 
+def test_valve_updateconfig_rewrites_existing_blank_managed_line(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("rcon_password \nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"rcon_password": '"topsecret"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'rcon_password "topsecret"',
+        "sv_cheats 0",
+    ]
+
+
 def test_valve_module_list_setting_values_returns_installed_maps(tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
     maps_dir = tmp_path / "cstrike" / "maps"
