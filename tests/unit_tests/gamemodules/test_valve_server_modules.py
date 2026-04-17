@@ -187,6 +187,23 @@ def test_valve_module_sync_server_config_updates_real_server_cfg(monkeypatch, tm
     assert "sv_cheats 0" in cfg_text
 
 
+def test_valve_updateconfig_preserves_unknown_lines_and_appends_missing_keys(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text('hostname "Old"\nsv_cheats 0\n', encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": '"Configured CSS"', "rcon_password": '"topsecret"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname "Configured CSS"',
+        "sv_cheats 0",
+        'rcon_password "topsecret"',
+    ]
+
+
 def test_valve_module_list_setting_values_returns_installed_maps(tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
     maps_dir = tmp_path / "cstrike" / "maps"

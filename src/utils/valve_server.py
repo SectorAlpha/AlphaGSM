@@ -15,12 +15,12 @@ from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
+from utils.simple_kv_config import rewrite_space_config
 from utils.settings import settings
 import utils.steamcmd as steamcmd
 
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 STEAMCLIENT_32_DST = os.path.expanduser("~/.steam/sdk32/steamclient.so")
-_CONFPAT = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 _SOURCE_STATUS_PLAYERS_RE = re.compile(
     r"(?P<players>\d+) humans, (?P<bots>\d+) bots \((?P<max_players>\d+) max\)"
 )
@@ -323,21 +323,7 @@ def _ensure_steamclient_link():
 def updateconfig(filename, config_values):
     """Rewrite a simple key/value config file while preserving unknown lines."""
 
-    lines = []
-    if os.path.isfile(filename):
-        config_values = config_values.copy()
-        with open(filename, "r", encoding="utf-8") as handle:
-            for line in handle:
-                match = _CONFPAT.match(line)
-                if match is not None and match.group(1) in config_values:
-                    lines.append(match.expand(r"\1 " + str(config_values[match.group(1)]) + r"\3"))
-                    del config_values[match.group(1)]
-                else:
-                    lines.append(line)
-    for key, value in config_values.items():
-        lines.append("%s %s\n" % (key, value))
-    with open(filename, "w", encoding="utf-8") as handle:
-        handle.write("".join(lines))
+    rewrite_space_config(filename, config_values)
 
 
 def validate_source_startmap(server, game_dir, startmap):
