@@ -116,12 +116,19 @@ def test_setting_schema_exposes_canonical_json_keys():
     schema = mod.setting_schema
 
     assert schema["map"].storage_key == "scenarioid"
+    assert schema["map"].native_config_path == ("game", "scenarioId")
     assert schema["map"].aliases == ("scenario", "scenarioid")
     assert schema["port"].storage_key is None
+    assert schema["port"].launch_arg_tokens == ("-bindPort",)
     assert schema["queryport"].storage_key is None
+    assert schema["queryport"].native_config_path == ("a2s", "port")
     assert schema["maxplayers"].storage_key is None
+    assert schema["maxplayers"].native_config_path == ("game", "maxPlayers")
     assert schema["bindaddress"].storage_key is None
+    assert schema["bindaddress"].native_config_path == ("a2s", "address")
+    assert schema["bindaddress"].launch_arg_tokens == ("-bindAddress",)
     assert schema["adminpassword"].storage_key is None
+    assert schema["adminpassword"].native_config_path == ("game", "passwordAdmin")
     assert schema["adminpassword"].secret is True
     assert schema["bindaddress"].apply_to == ("datastore", "native_config")
     assert schema["adminpassword"].apply_to == ("datastore", "native_config")

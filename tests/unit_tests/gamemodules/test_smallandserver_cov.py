@@ -121,10 +121,36 @@ def test_get_start_command(tmp_path):
     server.data["serverpassword"] = ""
     (tmp_path / "SMALLANDServer.sh").write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./SMALLANDServer.sh"
-    assert cmd[-3:] == ["-port=7777", "-NOSTEAM", "-log"]
-    assert 'SERVERNAME="AlphaGSM testserver"' in cmd[1]
-    assert '?WORLDNAME="World"' in cmd[1]
+    assert cmd == [
+        "./SMALLANDServer.sh",
+        '/Game/Maps/WorldGame/WorldGame_Smalland?SERVERNAME="AlphaGSM testserver"?WORLDNAME="World"?lengthofdayseconds=1800?lengthofseasonseconds=10800?creaturehealthmodifier=100?creaturedamagemodifier=100?creaturerespawnratemodifier=100?resourcerespawnratemodifier=100?creaturespawnchancemodifier=100?craftingtimemodifier=100?craftingfuelmodifier=100?stormfrequencymodifier=100?nourishmentlossmodifier=100?falldamagemodifier=100?SESSIONPLATFORM=pc?CROSSPLAY',
+        "-ini:Engine:[EpicOnlineServices]:DeploymentId=50f2b148496e4cbbbdeefbecc2ccd6a3",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientId=xyza78918KT08TkA6emolUay8yhvAAy2",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientSecret=aN2GtVw7aHb6hx66HwohNM+qktFaO3vtrLSbGdTzZWk",
+        "-port=7777",
+        "-NOSTEAM",
+        "-log",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_includes_optional_password(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "SMALLANDServer.sh"
+    server.data["port"] = 7777
+    server.data["worldname"] = "World"
+    server.data["servername"] = "AlphaGSM testserver"
+    server.data["serverpassword"] = "secret"
+    (tmp_path / "SMALLANDServer.sh").write_text("")
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert '?PASSWORD="secret"' in cmd[1]
+
+
+def test_setting_schema_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-port={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

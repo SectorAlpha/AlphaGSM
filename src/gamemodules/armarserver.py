@@ -6,11 +6,17 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import SettingSpec
+from server.settable_keys import (
+    SettingSpec,
+    build_launch_arg_values,
+    build_native_config_tree,
+    merge_nested_config,
+)
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1874900
 steam_anonymous_login_possible = True
@@ -47,6 +53,7 @@ setting_schema = {
         value_type="string",
         apply_to=("datastore", "native_config"),
         storage_key="scenarioid",
+        native_config_path=("game", "scenarioId"),
         examples=(DEFAULT_SCENARIO_ID,),
     ),
     "port": SettingSpec(
@@ -54,6 +61,7 @@ setting_schema = {
         description="The primary game port.",
         value_type="integer",
         apply_to=("datastore", "native_config", "launch_args"),
+        launch_arg_tokens=("-bindPort",),
         examples=("2001",),
     ),
     "queryport": SettingSpec(
@@ -61,6 +69,7 @@ setting_schema = {
         description="The A2S query port.",
         value_type="integer",
         apply_to=("datastore", "native_config"),
+        native_config_path=("a2s", "port"),
         examples=("2002",),
     ),
     "maxplayers": SettingSpec(
@@ -68,6 +77,7 @@ setting_schema = {
         description="Maximum number of players allowed on the server.",
         value_type="integer",
         apply_to=("datastore", "native_config"),
+        native_config_path=("game", "maxPlayers"),
         examples=("8",),
     ),
     "bindaddress": SettingSpec(
@@ -75,6 +85,8 @@ setting_schema = {
         description="IP address the server binds its A2S listener to.",
         value_type="string",
         apply_to=("datastore", "native_config"),
+        native_config_path=("a2s", "address"),
+        launch_arg_tokens=("-bindAddress",),
         examples=("0.0.0.0",),
     ),
     "adminpassword": SettingSpec(
@@ -82,6 +94,7 @@ setting_schema = {
         description="Password used for administrative access.",
         value_type="string",
         apply_to=("datastore", "native_config"),
+        native_config_path=("game", "passwordAdmin"),
         secret=True,
     ),
 }
@@ -106,24 +119,19 @@ def sync_server_config(server):
         except (json.JSONDecodeError, OSError):
             config = {}
 
-    a2s_config = config.get("a2s")
-    if not isinstance(a2s_config, dict):
-        a2s_config = {}
-    a2s_config["address"] = server.data.get("bindaddress", "0.0.0.0")
-    a2s_config["port"] = int(server.data.get("queryport", int(server.data.get("port", 2001)) + 1))
-    config["a2s"] = a2s_config
-
-    game_config = config.get("game")
-    if not isinstance(game_config, dict):
-        game_config = {}
-    game_config["passwordAdmin"] = (
-        server.data["adminpassword"]
-        if "adminpassword" in server.data
-        else game_config.get("passwordAdmin", "")
+    updates = build_native_config_tree(
+        server.data,
+        setting_schema,
+        defaults={
+            "bindaddress": "0.0.0.0",
+            "queryport": int(server.data.get("port", 2001)) + 1,
+            "maxplayers": 8,
+            "scenarioid": DEFAULT_SCENARIO_ID,
+        },
+        value_transform=lambda spec, value: int(value) if spec.value_type == "integer" else str(value),
+        require_explicit_path=True,
     )
-    game_config["maxPlayers"] = int(server.data.get("maxplayers", 8))
-    game_config["scenarioId"] = server.data.get("scenarioid", DEFAULT_SCENARIO_ID)
-    config["game"] = game_config
+    merge_nested_config(config, updates)
 
     with open(config_path, "w", encoding="utf-8") as handle:
         json.dump(config, handle, indent=2)
@@ -209,6 +217,12 @@ def _build_start_command(server):
 
     config_path = os.path.join(server.data["dir"], server.data["configfile"])
     profile_path = os.path.join(server.data["dir"], server.data["profilesdir"])
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        value_transform=lambda _spec, value: str(value),
+        require_explicit_tokens=True,
+    )
     return (
         [
             "./" + server.data["exe_name"],
@@ -216,10 +230,7 @@ def _build_start_command(server):
             config_path,
             "-profile",
             profile_path,
-            "-bindAddress",
-            server.data["bindaddress"],
-            "-bindPort",
-            str(server.data["port"]),
+            *launch_args,
         ],
         server.data["dir"],
     )
@@ -302,13 +313,13 @@ def status(server, verbose):
 def message(server, msg):
     """Arma Reforger has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an Arma Reforger server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):

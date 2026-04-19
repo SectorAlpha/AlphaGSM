@@ -6,12 +6,14 @@ import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.backups import backups as backup_utils
+from server.settable_keys import SettingSpec, build_launch_arg_values
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 from utils.platform_info import IS_LINUX
 
 import server.runtime as runtime_module
+from utils.backups import backups as backup_utils
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1794810
 steam_anonymous_login_possible = True
@@ -38,6 +40,14 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
+setting_schema = {
+    **gamemodule_common.build_unreal_setting_schema(
+        include_maxplayers=True,
+        include_servername=True,
+    ),
+    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
+    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="MOE/Binaries/Win64/MOEServer.exe"):
@@ -115,13 +125,16 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    dynamic_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     cmd = [
             server.data["exe_name"],
             "-log",
-            "-Port=%s" % (server.data["port"],),
-            "-QueryPort=%s" % (server.data["queryport"],),
-            "-MaxPlayers=%s" % (server.data["maxplayers"],),
-            "-ServerName=%s" % (server.data["servername"],),
+            *dynamic_args,
         ]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
@@ -141,13 +154,13 @@ def status(server, verbose):
 def message(server, msg):
     """Myth of Empires has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Myth of Empires server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def get_query_address(server):
@@ -163,27 +176,21 @@ def get_info_address(server):
 def checkvalue(server, key, *value):
     """Validate supported Myth of Empires datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport", "maxplayers"):
-        return int(value[0])
-    if key[0] in ("servername", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return proton.get_runtime_requirements(
+    return gamemodule_common.handle_setting_schema_checkvalue(
         server,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port", "queryport", "maxplayers"),
+        resolved_str_keys=("servername", "exe_name", "dir"),
+        backup_module=backup_utils,
     )
 
-def get_container_spec(server):
-    return proton.get_container_spec(
-        server,
-        get_start_command,
+get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
-    )
+)
+
+get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+)

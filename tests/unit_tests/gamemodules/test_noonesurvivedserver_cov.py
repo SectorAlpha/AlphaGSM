@@ -117,7 +117,21 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["queryport"] = 27015
     server.data["servername"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "WRSHServer.exe",
+        "-server",
+        "-log",
+        "-port=27015",
+        "-queryport=27015",
+        "-servername=test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_noonesurvived_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-queryport={value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-servername={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

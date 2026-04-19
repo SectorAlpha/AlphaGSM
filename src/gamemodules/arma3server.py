@@ -9,6 +9,7 @@ from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 233780
 steam_anonymous_login_possible = True
@@ -35,6 +36,20 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("servername",)
+
+
+def sync_server_config(server):
+    """Write managed server.cfg values from datastore settings."""
+
+    configfile = server.data.get("configfile", "server.cfg")
+    servername = server.data.get("servername", "AlphaGSM %s" % (server.name,))
+    config_path = os.path.join(server.data["dir"], configfile)
+    config_dir = os.path.dirname(config_path)
+    if config_dir:
+        os.makedirs(config_dir, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as handle:
+        handle.write('hostname = "%s";\n' % (servername.replace('"', '\\"'),))
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="arma3server_x64"):
@@ -83,6 +98,7 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
+    sync_server_config(server)
 
 
 def update(server, validate=False, restart=False):
@@ -93,6 +109,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    gamemodule_common.sync_if_install_present(server, sync_server_config)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -139,13 +156,13 @@ def status(server, verbose):
 def message(server, msg):
     """Arma 3 has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an Arma 3 server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
@@ -163,18 +180,14 @@ def checkvalue(server, key, *value):
         return str(value[0])
     raise ServerError("Unsupported key")
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-    )
+)
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

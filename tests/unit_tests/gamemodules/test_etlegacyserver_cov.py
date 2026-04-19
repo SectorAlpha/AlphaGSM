@@ -93,7 +93,31 @@ def test_get_start_command(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./etl.x86_64",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+set",
+        "dedicated",
+        "2",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_etlegacy_launch_tokens():
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["configfile"].launch_arg_tokens == ("+exec",)
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

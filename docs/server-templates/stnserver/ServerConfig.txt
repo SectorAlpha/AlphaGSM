@@ -1,0 +1,7 @@
+; Survive the Nights ServerConfig.txt template
+; Place this file at: <install_dir>/Config/ServerConfig.txt
+;
+; AlphaGSM currently manages the listen port here and leaves the rest of the
+; runtime configuration to the game's generated files.
+
+Port=8888

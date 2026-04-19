@@ -72,6 +72,35 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_sync_server_config_rewrites_mumble_config(tmp_path):
+    server = DummyServer("voice")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 64739
+    server.data["welcometext"] = "Welcome to voice"
+    server.data["users"] = "42"
+    server.data["database"] = "voice.sqlite"
+    server.data["serverpassword"] = "secret"
+
+    mod.sync_server_config(server)
+
+    config_text = (tmp_path / "mumble-server.ini").read_text()
+    assert "welcometext=Welcome to voice" in config_text
+    assert "port=64739" in config_text
+    assert "users=42" in config_text
+    assert "database=voice.sqlite" in config_text
+    assert "serverpassword=secret" in config_text
+
+
+def test_setting_schema_exposes_canonical_ini_keys():
+    schema = mod.setting_schema
+
+    assert mod.config_sync_keys == ("port", "users", "database", "serverpassword", "welcometext")
+    assert schema["maxplayers"].storage_key == "users"
+    assert schema["maxplayers"].native_config_key == "users"
+    assert schema["serverpassword"].secret is True
+    assert schema["maxplayers"].value_type == "integer"
+
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

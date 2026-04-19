@@ -6,6 +6,7 @@ Each skill lives in its own directory and exposes a `SKILL.md` file.
 
 ## Current Skills
 
+- [changelog-discipline](changelog-discipline/SKILL.md)
 - [disabled-server-gate](disabled-server-gate/SKILL.md)
 - [install-layout](install-layout/SKILL.md)
 - [server-info-gathering](server-info-gathering/SKILL.md)

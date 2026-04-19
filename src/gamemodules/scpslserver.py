@@ -6,11 +6,12 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
+from server.settable_keys import SettingSpec, build_native_config_values
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 996560
 steam_anonymous_login_possible = True
@@ -70,6 +71,7 @@ setting_schema = {
         value_type="string",
         apply_to=("datastore", "native_config"),
         storage_key="servername",
+        native_config_key="server_name",
         examples=("AlphaGSM SCP:SL Server",),
     ),
     "contactemail": SettingSpec(
@@ -79,6 +81,7 @@ setting_schema = {
         value_type="string",
         apply_to=("datastore", "native_config"),
         storage_key="contactemail",
+        native_config_key="contact_email",
         examples=("ops@example.com",),
     ),
     "queryport": SettingSpec(
@@ -97,6 +100,7 @@ setting_schema = {
         value_type="string",
         apply_to=("datastore", "native_config"),
         storage_key="rconpassword",
+        native_config_key="query_administrator_password",
         secret=True,
         examples=("changeme",),
     ),
@@ -118,20 +122,34 @@ def _scpsl_port_config_dir(server):
 def _scpsl_gameplay_values(server):
     port = int(server.data.get("port", 7777))
     queryport = int(server.data.get("queryport", port + 1))
-    server_name = server.data.get("servername", "AlphaGSM {}".format(server.name)) or "AlphaGSM {}".format(
-        server.name
+
+    def _format_gameplay_value(spec, value):
+        if spec.canonical_key == "servername":
+            return str(value or "AlphaGSM {}".format(server.name))
+        if spec.canonical_key == "contactemail":
+            return str(value or "default")
+        if spec.canonical_key == "rconpassword":
+            return str(value or "alphagsmquery")
+        return str(value)
+
+    replacements = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "servername": "AlphaGSM {}".format(server.name),
+            "contactemail": "default",
+            "rconpassword": "alphagsmquery",
+        },
+        value_transform=_format_gameplay_value,
+        require_explicit_key=True,
     )
-    contact_email = server.data.get("contactemail", "default") or "default"
-    query_administrator_password = server.data.get("rconpassword", "alphagsmquery") or "alphagsmquery"
-    return {
-        "server_name": "server_name: {}".format(server_name),
-        "contact_email": "contact_email: {}".format(contact_email),
-        "enable_query": "enable_query: true",
-        "query_port_shift": "query_port_shift: {}".format(queryport - port),
-        "query_administrator_password": "query_administrator_password: {}".format(
-            query_administrator_password
-        ),
+    gameplay_values = {
+        key_name: "{}: {}".format(key_name, value)
+        for key_name, value in replacements.items()
     }
+    gameplay_values["enable_query"] = "enable_query: true"
+    gameplay_values["query_port_shift"] = "query_port_shift: {}".format(queryport - port)
+    return gameplay_values
 
 
 def _write_named_config_lines(path, replacements):
@@ -255,7 +273,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    sync_server_config(server)
+    gamemodule_common.sync_if_install_present(server, sync_server_config)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -325,37 +343,28 @@ def status(server, verbose):
 def message(server, msg):
     """SCP: Secret Laboratory has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an SCP: Secret Laboratory server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported SCP: Secret Laboratory datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    try:
-        resolved = resolve_requested_key(key[0], setting_schema)
-    except KeyResolutionError as ex:
-        if key[0] in ("port",):
-            return int(value[0])
-        if key[0] in ("exe_name", "dir"):
-            return str(value[0])
-        raise ServerError("Unsupported key") from ex
-    if resolved.canonical_key in ("queryport",):
-        return int(value[0])
-    if resolved.canonical_key in ("servername", "contactemail", "rconpassword"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("queryport",),
+        resolved_str_keys=("servername", "contactemail", "rconpassword"),
+        raw_int_keys=("port",),
+        raw_str_keys=("exe_name", "dir"),
+    )
 
 
 def postset(server, key, *args, **kwargs):
@@ -364,16 +373,12 @@ def postset(server, key, *args, **kwargs):
     if len(key) > 0 and str(key[0]).lower() == "port":
         sync_server_config(server)
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
-    )
+)
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=_get_container_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
@@ -382,4 +387,4 @@ def get_container_spec(server):
             'XDG_CONFIG_HOME': runtime_module.DEFAULT_CONTAINER_WORKDIR + '/home/.config',
         },
         stdin_open=True,
-    )
+)

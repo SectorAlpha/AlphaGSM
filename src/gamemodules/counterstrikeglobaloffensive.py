@@ -11,20 +11,25 @@ import screen
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
-from utils import backups
 from utils import updatefs
 import random
 
 from utils.fileutils import make_empty_file
+from server.settable_keys import build_launch_arg_values, build_native_config_values
 from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
+    VALVE_SERVER_CONFIG_SYNC_KEYS,
+    build_valve_server_setting_schema,
     integration_source_server_config,
+    source_query_address,
+    validate_source_startmap,
     wake_source_server_for_a2s,
 )
 
 import utils.steamcmd as steamcmd
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 740
 steam_anonymous_login_possible = True
@@ -37,43 +42,29 @@ command_args = {
             ArgSpec("DIR", "The Directory to install minecraft in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec(
-                "v",
-                ["validate"],
-                "Validate the server files after updating",
-                "validate",
-                None,
-                True,
-            ),
-            OptSpec(
-                "r",
-                ["restart"],
-                "Restarts the server upon updating",
-                "restart",
-                None,
-                True,
-            ),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
 
 # required still
-command_descriptions = {
-    "update": "Updates the game server to the latest version.",
-    "restart": "Restarts the game server without killing the process.",
-}
-
-
-# required still
-command_descriptions = {}
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Updates the game server to the latest version.",
+    "Restarts the game server without killing the process.",
+)
 command_functions = {}  # will have elements added as the functions are defined
 
 wake_a2s_query = wake_source_server_for_a2s
 
 max_stop_wait = 1
+config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
+setting_schema = {
+    **build_valve_server_setting_schema(
+        game_name="CS:GO Server",
+        default_map="de_dust2",
+        max_players=16,
+        servername_example="AlphaGSM CS:GO Server",
+    ),
+    **gamemodule_common.build_executable_path_setting_schema(),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
@@ -97,6 +88,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
     server.data["maxplayers"] = "16"
     server.data["gametype"] = "0"
     server.data["gamemode"] = "0"
+    server.data.setdefault("servername", "AlphaGSM CS:GO Server")
+    server.data.setdefault("rconpassword", "changeme")
+    server.data.setdefault("serverpassword", "")
 
     # do we have backup data already? if not initialise the dictionary
     if "backup" not in server.data:
@@ -167,16 +161,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
 def install(server):
     """Install or prepare the CS:GO server files for this server object."""
     doinstall(server)
-    # TODO: any config files that need creating or any commands that need running before the server can start for the first time
-
-    # create config file
-    server_cfg = server.data["dir"] + "csgo/cfg/" + "server.cfg"
-    cfg_exists = os.path.isfile(server_cfg)
-    if cfg_exists == False:
-        make_empty_file(server_cfg)
-    integration_cfg = integration_source_server_config()
-    if integration_cfg:
-        updateconfig(server_cfg, integration_cfg)
+    sync_server_config(server)
 
 
 # technically this command is not needed, but leaving it commented as an example
@@ -254,6 +239,12 @@ def get_start_command(server):
     steam_updatescript = steamcmd.get_autoupdate_script(
         server.name, server.data["dir"], steam_app_id
     )
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        value_transform=lambda _spec, value: str(value),
+        require_explicit_tokens=True,
+    )
 
     return [
         exe_name,
@@ -272,14 +263,10 @@ def get_start_command(server):
         "-secured",
         "-timeout 0",
         "-strictportbind",
-        "-port",
-        str(server.data["port"]),
+        *launch_args[:2],
         "+mapgroup",
         str(server.data["mapgroup"]),
-        "+map",
-        str(server.data["startmap"]),
-        "-maxplayers",
-        str(server.data["maxplayers"]),
+        *launch_args[2:],
         "-autoupdate",
         "-steam_dir",
         steamcmd_dir,
@@ -300,24 +287,102 @@ def status(server, verbose):
     pass
 
 
+def get_query_address(server):
+    """Return the live CS:GO query endpoint."""
+
+    return source_query_address(server)
+
+
+def get_info_address(server):
+    """Return the live CS:GO info endpoint."""
+
+    return source_query_address(server)
+
+
+def sync_server_config(server):
+    """Rewrite the CS:GO native server.cfg from datastore values."""
+
+    server_cfg = os.path.join(server.data["dir"], "csgo", "cfg", "server.cfg")
+    os.makedirs(os.path.dirname(server_cfg), exist_ok=True)
+    if not os.path.isfile(server_cfg):
+        make_empty_file(server_cfg)
+
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "servername": "AlphaGSM CS:GO Server",
+            "rconpassword": "changeme",
+            "serverpassword": "",
+        },
+        value_transform=lambda _spec, value: '"' + str(value).replace('"', '\\"') + '"',
+        require_explicit_key=True,
+    )
+    integration_cfg = integration_source_server_config()
+    if integration_cfg:
+        merged_config_values = dict(integration_cfg)
+        merged_config_values.update(config_values)
+        config_values = merged_config_values
+    updateconfig(server_cfg, config_values)
+
+
+def list_setting_values(server, canonical_key):
+    """Return installed map names for the CS:GO map setting."""
+
+    if canonical_key != "map":
+        return None
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return []
+    maps_dir = os.path.join(install_dir, "csgo", "maps")
+    if not os.path.isdir(maps_dir):
+        return []
+    return sorted(
+        os.path.splitext(filename)[0]
+        for filename in os.listdir(maps_dir)
+        if filename.endswith(".bsp")
+    )
+
+
+def checkvalue(server, key, *value):
+    """Validate supported CS:GO datastore edits."""
+
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_str_keys=("servername", "rconpassword", "serverpassword"),
+        raw_int_keys=(),
+        raw_str_keys=("gamemode", "gametype", "mapgroup", "dir", "exe_name"),
+        resolved_handlers={
+            "map": lambda server_obj, raw_value: validate_source_startmap(
+                server_obj, "csgo", raw_value
+            ),
+        },
+        raw_handlers={
+            "maxplayers": lambda _server_obj, raw_value: str(int(raw_value)),
+            "startmap": lambda server_obj, raw_value: validate_source_startmap(
+                server_obj, "csgo", raw_value
+            ),
+        },
+    )
+
+
 # required, must be defined to allow functions listed below which are not in the defaults to be used
 command_functions = {
     "update": update,
     "restart": restart,
 }  # will have elements added as the functions are defined
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-    )
+)
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

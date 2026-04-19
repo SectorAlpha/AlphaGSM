@@ -130,7 +130,10 @@ def test_sync_server_config_updates_contact_email(tmp_path):
 def test_setting_schema_and_config_sync_keys_cover_canonical_surface():
     assert mod.config_sync_keys == ("servername", "contactemail", "queryport", "rconpassword")
     assert mod.setting_schema["servername"].storage_key == "servername"
+    assert mod.setting_schema["servername"].native_config_key == "server_name"
     assert mod.setting_schema["queryport"].storage_key == "queryport"
+    assert mod.setting_schema["contactemail"].native_config_key == "contact_email"
+    assert mod.setting_schema["rconpassword"].native_config_key == "query_administrator_password"
     assert mod.setting_schema["rconpassword"].secret is True
 
 

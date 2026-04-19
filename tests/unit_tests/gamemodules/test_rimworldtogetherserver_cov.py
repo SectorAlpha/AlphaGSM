@@ -91,6 +91,7 @@ def test_setting_schema_exposes_verified_port_only():
     assert schema["port"].canonical_key == "port"
     assert schema["port"].aliases == ("gameport",)
     assert schema["port"].storage_key is None
+    assert schema["port"].native_config_key == "Port"
     assert schema["port"].apply_to == ("datastore", "native_config", "launch_args")
     assert mod.config_sync_keys == ("port",)
     assert mod.list_setting_values(DummyServer(), "port") is None

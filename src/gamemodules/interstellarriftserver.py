@@ -9,6 +9,7 @@ from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 363360
 steam_anonymous_login_possible = False
@@ -145,42 +146,34 @@ def status(server, verbose):
 def message(server, msg):
     """Interstellar Rift has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an Interstellar Rift server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Interstellar Rift datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return gamemodule_common.handle_basic_checkvalue(
         server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        key,
+        *value,
+        int_keys=("port",),
+        str_keys=("exe_name", "dir"),
     )
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

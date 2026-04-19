@@ -4,6 +4,7 @@ from utils.valve_server import define_valve_server_module
 
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 MODULE = define_valve_server_module(
     game_name='IOSoccer',
@@ -41,18 +42,14 @@ message = MODULE.message
 backup = MODULE.backup
 checkvalue = MODULE.checkvalue
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
-    )
+)
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
         stdin_open=True,
-    )
+)

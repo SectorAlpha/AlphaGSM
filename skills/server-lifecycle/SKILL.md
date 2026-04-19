@@ -70,7 +70,7 @@ Use this table as a checklist when writing or reviewing a module.
 | `get_start_command` | `(server, *args, **kwargs)` | `start` | Return `(command_list, working_dir)` — the argv list and the directory to run it in. |
 | `do_stop` | `(server, time, *args, **kwargs)` | `stop` | Send a stop command to the running server.  `time` is minutes elapsed since the stop was initiated.  Called repeatedly until the server exits or the timeout (`max_stop_wait`) is reached. |
 | `status` | `(server, verbose, *args, **kwargs)` | `status` | Print game-specific status.  Only called when `verbose > 0` — the caller already prints the "running / not running" line. |
-| `message` | `(server, message, *args, **kwargs)` | `message` | Send a chat message to all players.  If the server has no concept of in-game messages, print a clear explanation and return without raising. |
+| `message` | `(server, message, *args, **kwargs)` | `message` | Send a chat or broadcast message through the server's active console-input pathway. Prefer the runtime-aware helper (`server.runtime.send_to_server(server, ...)`) or a shared wrapper built on it so the same hook works whether the server is reached via screen, tmux/subprocess facade, or Docker exec-console input. If the server has no concept of in-game messages, print a clear explanation and return without raising. |
 | `backup` | `(server, *args, **kwargs)` | `backup` | Back up the server.  Call `backup_utils.backup(server.data["dir"], server.data["backup"], profile)` from `utils.backups.backups` in the standard case. |
 | `checkvalue` | `(server, key, *values, **kwargs)` | `set` | Validate and convert a value before it is stored.  Return the sanitised value, return the string `"DELETE"` to request deletion, or raise `ServerError` with a clear message for invalid input.  Delegate backup-related keys to `backup_utils.checkdatavalue`. |
 | `get_runtime_requirements` | `(server)` | runtime selection | Return runtime metadata for Docker-capable modules.  Preferred families today are `"java"`, `"quake-linux"`, `"service-console"`, `"simple-tcp"`, `"steamcmd-linux"`, and `"wine-proton"`.  Use `{"engine": "docker", "family": "<family>"}` plus fields like `java`, `env`, `mounts`, and `ports`.  Legacy aliases `"minecraft"` and `"ts3"` are still accepted and normalized.  Every maintained game module must define this wrapper in module scope, usually by calling shared builders through `import server.runtime as runtime_module`. |
@@ -82,6 +82,7 @@ Use this table as a checklist when writing or reviewing a module.
 |---|---|---|---|
 | `prestart` | `(server, *args, **kwargs)` | `start` (pre-hook) | Run immediately before the screen session is created — e.g. symlink Steam libraries, rotate logs. |
 | `poststart` | `(server, *args, **kwargs)` | `start` (post-hook) | Run after the screen session starts — e.g. wait for a readiness marker, send init commands. |
+| `sync_server_config` | `(server)` | `set` config sync | Rewrite on-disk game-server config files from datastore values that mirror real server config. Pair this with `config_sync_keys` so only valid game-config-backed keys trigger the sync. |
 | `postset` | `(server, key, **kwargs)` | `set` (post-hook) | React to a data-store change — e.g. regenerate a config file when `port` is updated. |
 | `get_query_address` | `(server)` | `query` | Return `(host, port, protocol)` so `Server.query()` uses the right address.  Protocol values: `"a2s"`, `"quake"`, `"ts3"`, `"tcp"`.  Without this hook the server falls back to `("127.0.0.1", data["port"], "a2s")`. |
 | `get_info_address` | `(server)` | `info` | Return `(host, port, protocol)` so `Server.info()` uses the right address and protocol.  Protocol values: `"a2s"`, `"quake"`, `"slp"`, `"ts3"`, `"tcp"`.  Without this hook the server falls back to A2S then TCP.  **Always add this** unless the module uses `define_valve_server_module()` (which configures it automatically). |
@@ -98,6 +99,7 @@ Use this table as a checklist when writing or reviewing a module.
 | `command_descriptions` | `dict[str, str]` | Yes | Human-readable description for every command in `commands`. |
 | `command_functions` | `dict[str, callable]` | Yes | Implementation function for every command in `commands`. |
 | `max_stop_wait` | `int` | No | Maximum minutes to wait for a graceful stop before the `Server` class kills the process.  Capped at 5 minutes.  Default is 5 if omitted. |
+| `config_sync_keys` | `tuple[str, ...]` or iterable | Conditional | Required when any `set`-able datastore keys map directly to real game-server config values. List only the top-level keys that represent actual game-server config. Do not include AlphaGSM-only keys such as internal runtime metadata, backup settings, install-only fields, or other manager-only values. |
 
 ### Quick checklist for a new module
 
@@ -111,10 +113,13 @@ Before marking a new game module complete, verify all of these:
 - [ ] `get_start_command` returns `(argv_list, working_dir)` with the correct executable path
 - [ ] `do_stop` sends a graceful stop command through the runtime-aware helper (e.g. `runtime_module.send_to_server(server, "\nquit\n")`)
 - [ ] `status` at minimum passes (no-op is acceptable if no extra info is available)
-- [ ] `message` either sends a message or prints a clear "not supported" explanation
+- [ ] `message` either sends a message through the active runtime input path or prints a clear "not supported" explanation
 - [ ] `backup` calls `backup_utils.backup(...)` with the correct arguments
 - [ ] `checkvalue` handles `"port"`, `"dir"`, `"exe_name"` (where stored), and `"backup"` keys
 - [ ] `checkvalue` or shared validation covers any claim-affecting hosted-IP keys the module stores (`bindaddress`, `publicip`, `externalip`, `hostip`)
+- [ ] if any `set`-able keys map to real game-server config, `sync_server_config(server)` exists and `config_sync_keys` lists exactly those top-level keys
+- [ ] `config_sync_keys` excludes AlphaGSM-only keys such as backup config, runtime metadata, install-cache fields, or manager-only convenience values
+- [ ] if the module exposes map-like `set` keys such as `map`, `startmap`, `world`, `level`, or `mission`, validate them against installed content, declared supported defaults, or another module-specific allowlist when practical
 - [ ] `get_info_address` is defined and returns the correct `(host, port, protocol)` tuple
 - [ ] `get_query_address` is defined if the query port differs from the game port or the server uses a non-A2S protocol
 - [ ] `import server.runtime as runtime_module` appears in modules that use shared Docker builders

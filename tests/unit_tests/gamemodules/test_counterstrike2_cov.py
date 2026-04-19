@@ -60,6 +60,16 @@ def test_command_args_expose_setup_update_and_restart():
     assert mod.command_args["update"].options[1].keyword == "restart"
 
 
+def test_cs2_exposes_shared_valve_schema_and_sync_keys():
+    assert mod.config_sync_keys == mod.VALVE_SERVER_CONFIG_SYNC_KEYS
+    assert mod.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert mod.setting_schema["map"].launch_arg_tokens == ("+map",)
+    assert mod.setting_schema["maxplayers"].launch_arg_tokens == ("-maxplayers",)
+    assert mod.setting_schema["servername"].native_config_key == "hostname"
+    assert mod.setting_schema["rconpassword"].native_config_key == "rcon_password"
+    assert mod.setting_schema["serverpassword"].native_config_key == "sv_password"
+
+
 def test_install_creates_default_server_config(tmp_path, monkeypatch):
     server = DummyServer()
     server.data.update(
@@ -84,6 +94,27 @@ def test_install_creates_default_server_config(tmp_path, monkeypatch):
 
     assert calls == [server]
     assert cfg_path.exists()
+
+
+def test_sync_server_config_updates_server_cfg(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "servername": "Configured CS2",
+            "rconpassword": "rcon-secret",
+            "serverpassword": "join-secret",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    config_text = (tmp_path / "game" / "csgo" / "cfg" / "server.cfg").read_text(
+        encoding="utf-8"
+    )
+    assert 'hostname "Configured CS2"' in config_text
+    assert 'rcon_password "rcon-secret"' in config_text
+    assert 'sv_password "join-secret"' in config_text
 
 
 def test_doinstall_uses_non_validating_first_download(tmp_path, monkeypatch):

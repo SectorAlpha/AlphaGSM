@@ -2,26 +2,24 @@
 
 import os
 import urllib.request
-import json
 import time
 import datetime
 import subprocess as sp
 from server import ServerError
-from server.settable_keys import KeyResolutionError, resolve_requested_key
-import re
-import screen
 import server.runtime as runtime_module
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
-from utils import backups
-from utils.simple_kv_config import rewrite_equals_config as updateconfig
-import random
-from .properties_config import (
+from utils.gamemodules.minecraft import messaging as minecraft_messaging
+from utils.gamemodules import common as gamemodule_common
+from utils.gamemodules.minecraft.properties_config import (
     CONFIG_SYNC_KEYS,
     build_server_properties_values,
     build_setting_schema,
 )
+from utils import backups
+from utils.simple_kv_config import rewrite_equals_config as updateconfig
+import random
 
 
 # required tuple
@@ -340,29 +338,8 @@ def status(server, verbose):
     pass
 
 
-def message(server, msg, *targets, parse=False):
-    """Send a chat message or command through the Minecraft server console."""
-    if len(targets) < 1:
-        targets = ["@a"]
-    if parse and "@" in msg:
-        msglist = []
-        pat = re.compile(r"([^@]*[^\\])?(@.(?:\[[^\]]+\])?)")
-        while True:
-            match = pat.match(msg)
-            if match is None:
-                break
-            if match.group(1) is not None:
-                msglist.append(match.group(1))  # group is optional
-                # nothing stopping two selectors straight after each other
-            msglist.append({"selector": match.group(2)})
-            msg = msg[match.end(0) :]
-        msglist.append(msg)
-        msgjson = json.dumps(msglist)
-    else:
-        msgjson = json.dumps({"text": msg})
-    cmd = "\n".join("tellraw " + target + " " + msgjson for target in targets)
-    print(cmd)
-    runtime_module.send_to_server(server, "\n" + cmd + "\n")
+message = minecraft_messaging.make_tellraw_message_hook(runtime_module=runtime_module)
+message.__doc__ = "Send a chat message or command through the Minecraft server console."
 
 
 def sync_server_config(server):
@@ -372,6 +349,7 @@ def sync_server_config(server):
         server_properties,
         build_server_properties_values(
             server,
+            setting_schema=setting_schema,
             servername_key="motd",
             default_port=25565,
             default_levelname=server.name,
@@ -383,41 +361,23 @@ def sync_server_config(server):
 
 def checkvalue(server, key, *value):
     """Validate a proposed stored setting value for this server type."""
-    if key[0] == "TEST":
-        return value[0]
     try:
-        resolved = resolve_requested_key(key[0], setting_schema)
-        key = (resolved.storage_key,) + key[1:]
-    except KeyResolutionError:
-        pass
-    if key == ("port",):
-        if len(value) != 1:
-            raise ServerError("Only one value supported for 'port'")
-        return int(value[0])
-    if key == ("exe_name",):
-        if len(value) != 1:
-            raise ServerError("Only one value supported for 'exe_name'")
-        return value[0]
-    if key == ("javapath",):
-        if len(value) != 1:
-            raise ServerError("Only one value supported for 'javapath'")
-        return value[0]
-    if key == ("maxplayers",):
-        if len(value) != 1:
-            raise ServerError("Only one value supported for 'maxplayers'")
-        return str(int(value[0]))
-    if key in (("gamemode",), ("difficulty",), ("levelname",), ("servername",)):
-        if len(value) != 1:
-            raise ServerError("Only one value supported for '{}'".format(key[0]))
-        return str(value[0])
-    if key[0] == ("backup"):
-        try:
-            return backups.checkdatavalue(
-                server.data.get("backup", {}), key[1:], *value
-            )
-        except backups.BackupError as ex:
-            raise ServerError(ex)
-    raise ServerError("{} invalid key to set".format(".".join(str(k) for k in key)))
+        return gamemodule_common.handle_setting_schema_checkvalue(
+            server,
+            key,
+            *value,
+            setting_schema=setting_schema,
+            resolved_int_keys=("port",),
+            resolved_str_keys=("map", "gamemode", "difficulty", "servername"),
+            resolved_handlers={"maxplayers": lambda _server, *values: str(int(values[0]))},
+            raw_str_keys=("exe_name", "javapath", "levelname"),
+            raw_handlers={"TEST": lambda _server, *values: values[0]},
+            backup_module=backups,
+        )
+    except ServerError as ex:
+        if str(ex) == "Unsupported key":
+            raise ServerError("{} invalid key to set".format(".".join(str(k) for k in key)))
+        raise
 
 
 def _parsewhen(frequency, when):

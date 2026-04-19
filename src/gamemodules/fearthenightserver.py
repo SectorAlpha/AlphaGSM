@@ -12,6 +12,7 @@ from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.platform_info import IS_LINUX
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 764940
 steam_anonymous_login_possible = True
@@ -73,38 +74,23 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Moonlight/Binaries/
     return (), {}
 
 
-def install(server):
-    """Download the Fear the Night server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
-        force_windows=IS_LINUX,
-    )
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+install.__doc__ = "Download the Fear the Night server files via SteamCMD."
 
 
-def update(server, validate=False, restart=False):
-    """Update the Fear the Night server files and optionally restart the server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
+)
 
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
-
-
-def restart(server):
-    """Restart the Fear the Night server."""
-
-    server.stop()
-    server.start()
+restart = gamemodule_common.make_restart_hook()
 
 
 def get_start_command(server):
@@ -125,46 +111,38 @@ def do_stop(server, j):
     screen.send_to_server(server.name, "\003")
 
 
-def status(server, verbose):
-    """Detailed Fear the Night status is not implemented yet."""
+status = gamemodule_common.make_noop_status_hook()
+status.__doc__ = "Detailed Fear the Night status is not implemented yet."
 
 
 def message(server, msg):
     """Fear the Night has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Fear the Night server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Fear the Night datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("startmap", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return proton.get_runtime_requirements(
+    return gamemodule_common.handle_basic_checkvalue(
         server,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        key,
+        *value,
+        int_keys=("port",),
+        str_keys=("startmap", "exe_name", "dir"),
     )
 
-def get_container_spec(server):
-    return proton.get_container_spec(
-        server,
-        get_start_command,
+get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-    )
+)
+
+get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)

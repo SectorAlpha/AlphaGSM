@@ -4,7 +4,7 @@ import pytest
 
 import gamemodules.minecraft.bungeecord as bungeecord
 import gamemodules.minecraft.custom as custom
-import gamemodules.minecraft.properties_config as properties_config
+import utils.gamemodules.minecraft.properties_config as properties_config
 import gamemodules.minecraft.vanilla as vanilla
 import server.server as server_module
 from utils.simple_kv_config import rewrite_equals_config

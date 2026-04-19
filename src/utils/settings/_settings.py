@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 import configparser
 import os
+import sys
 
 from utils.platform_info import IS_WINDOWS
 
@@ -248,7 +249,12 @@ class Settings(object):
         try:
             return self._system
         except AttributeError:
-            if IS_WINDOWS:
+            if getattr(sys, "frozen", False):
+                default_path = os.path.join(
+                    os.path.dirname(os.path.abspath(sys.executable)),
+                    "alphagsm.conf",
+                )
+            elif IS_WINDOWS:
                 default_path = os.path.join(
                     os.path.dirname(
                         os.path.dirname(os.path.dirname(os.path.dirname(__file__)))

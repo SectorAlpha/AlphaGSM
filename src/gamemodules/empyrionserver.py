@@ -6,10 +6,11 @@ import server.runtime as runtime_module
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 from utils.platform_info import IS_LINUX
+from utils.backups import backups as backup_utils
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 530870
 steam_anonymous_login_possible = True
@@ -117,23 +118,17 @@ def get_start_command(server):
     return cmd, server.data["dir"]
 
 
-def get_runtime_requirements(server):
-    """Return Docker runtime metadata for Wine/Proton-backed servers."""
-
-    return proton.get_runtime_requirements(
-        server,
-        port_definitions=(("port", "udp"), ("queryport", "udp")),
-    )
+get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+    port_definitions=(("port", "udp"), ("queryport", "udp")),
+)
+get_runtime_requirements.__doc__ = "Return Docker runtime metadata for Wine/Proton-backed servers."
 
 
-def get_container_spec(server):
-    """Return the Docker launch spec for Empyrion."""
-
-    return proton.get_container_spec(
-        server,
-        get_start_command,
-        port_definitions=(("port", "udp"), ("queryport", "udp")),
-    )
+get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=get_start_command,
+    port_definitions=(("port", "udp"), ("queryport", "udp")),
+)
+get_container_spec.__doc__ = "Return the Docker launch spec for Empyrion."
 
 
 def do_stop(server, j):
@@ -149,26 +144,22 @@ def status(server, verbose):
 def message(server, msg):
     """Empyrion has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an Empyrion server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Empyrion datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport"):
-        return int(value[0])
-    if key[0] in ("exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_basic_checkvalue(
+        server,
+        key,
+        *value,
+        int_keys=("port", "queryport"),
+        str_keys=("exe_name", "dir"),
+    )

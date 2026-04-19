@@ -188,14 +188,22 @@ def test_tf2_query_and_info_address_use_source_query_address():
 
 
 def test_tf2_exposes_schema_metadata_for_map_and_passwords():
+    port_spec = mod.setting_schema["port"]
     map_spec = mod.setting_schema["map"]
+    maxplayers_spec = mod.setting_schema["maxplayers"]
     rcon_spec = mod.setting_schema["rconpassword"]
     serverpassword_spec = mod.setting_schema["serverpassword"]
 
-    assert mod.config_sync_keys == ("servername", "rconpassword", "serverpassword")
+    assert mod.config_sync_keys == mod.VALVE_SERVER_CONFIG_SYNC_KEYS
+    assert port_spec.launch_arg_tokens == ("-port",)
     assert map_spec.canonical_key == "map"
     assert map_spec.aliases == ("gamemap", "startmap", "level")
     assert map_spec.storage_key == "startmap"
+    assert map_spec.launch_arg_tokens == ("+map",)
+    assert maxplayers_spec.launch_arg_tokens == ("+maxplayers",)
+    assert mod.setting_schema["servername"].native_config_key == "hostname"
+    assert rcon_spec.native_config_key == "rcon_password"
+    assert serverpassword_spec.native_config_key == "sv_password"
     assert rcon_spec.secret is True
     assert serverpassword_spec.secret is True
     assert rcon_spec.apply_to == ("datastore", "native_config")

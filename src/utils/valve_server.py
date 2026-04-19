@@ -11,7 +11,7 @@ from typing import NoReturn
 
 import screen
 from server.errors import ServerError
-from server.settable_keys import SettingSpec
+from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
@@ -61,6 +61,81 @@ _COMMAND_DESCRIPTIONS = {
     "update": "Update the game server to the latest version available via SteamCMD.",
     "restart": "Restart the game server by stopping it and then starting it again.",
 }
+
+VALVE_SERVER_CONFIG_SYNC_KEYS = ("servername", "rconpassword", "serverpassword")
+
+
+def build_valve_server_setting_schema(
+    *,
+    game_name,
+    default_map,
+    max_players,
+    servername_example=None,
+    port_launch_arg_tokens=("-port",),
+    map_launch_arg_tokens=("+map",),
+    maxplayers_launch_arg_tokens=("-maxplayers",),
+):
+    """Return the shared datastore/config schema for Valve-engine servers."""
+
+    if servername_example is None:
+        servername_example = f"AlphaGSM {game_name}"
+
+    return {
+        "port": SettingSpec(
+            canonical_key="port",
+            description="The primary game port.",
+            value_type="integer",
+            apply_to=("datastore", "launch_args"),
+            launch_arg_tokens=port_launch_arg_tokens,
+            examples=("27015",),
+        ),
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap", "level"),
+            description="The currently selected map or level.",
+            value_type="string",
+            apply_to=("datastore", "launch_args"),
+            storage_key="startmap",
+            launch_arg_tokens=map_launch_arg_tokens,
+            examples=(default_map,),
+        ),
+        "maxplayers": SettingSpec(
+            canonical_key="maxplayers",
+            aliases=("max_players",),
+            description="Maximum number of player slots.",
+            value_type="integer",
+            apply_to=("datastore", "launch_args"),
+            launch_arg_tokens=maxplayers_launch_arg_tokens,
+            examples=(str(max_players),),
+        ),
+        "servername": SettingSpec(
+            canonical_key="servername",
+            aliases=("hostname", "server_name", "name"),
+            description="The server's public name shown to players.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="hostname",
+            examples=(servername_example,),
+        ),
+        "rconpassword": SettingSpec(
+            canonical_key="rconpassword",
+            aliases=("rconpass", "rcon_password"),
+            description="Remote console password for administrative access.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="rcon_password",
+            secret=True,
+        ),
+        "serverpassword": SettingSpec(
+            canonical_key="serverpassword",
+            aliases=("sv_password", "svpassword", "password"),
+            description="Password required for players to join the server.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="sv_password",
+            secret=True,
+        ),
+    }
 
 
 def _raise_server_error(*args) -> NoReturn:
@@ -397,42 +472,12 @@ def define_valve_server_module(
     module_name = caller_globals["__name__"].split(".")[-1]
     default_server_config = {} if default_server_config is None else default_server_config.copy()
     default_backupfiles = _default_backupfiles(game_dir, config_subdir, config_default)
-    setting_schema = {
-        "map": SettingSpec(
-            canonical_key="map",
-            aliases=("gamemap", "startmap", "level"),
-            description="The currently selected map or level.",
-            value_type="string",
-            apply_to=("datastore", "launch_args"),
-            storage_key="startmap",
-            examples=(default_map,),
-        ),
-        "servername": SettingSpec(
-            canonical_key="servername",
-            aliases=("hostname", "server_name", "name"),
-            description="The server's public name shown to players.",
-            value_type="string",
-            apply_to=("datastore", "native_config"),
-            examples=(f"AlphaGSM {game_name}",),
-        ),
-        "rconpassword": SettingSpec(
-            canonical_key="rconpassword",
-            aliases=("rconpass", "rcon_password"),
-            description="Remote console password for administrative access.",
-            value_type="string",
-            apply_to=("datastore", "native_config"),
-            secret=True,
-        ),
-        "maxplayers": SettingSpec(
-            canonical_key="maxplayers",
-            aliases=("max_players",),
-            description="Maximum number of player slots.",
-            value_type="int",
-            apply_to=("datastore", "launch_args"),
-            examples=(str(max_players),),
-        ),
-    }
-    config_sync_keys = ("servername", "rconpassword")
+    setting_schema = build_valve_server_setting_schema(
+        game_name=game_name,
+        default_map=default_map,
+        max_players=max_players,
+    )
+    config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
 
     def _server_cfg_path(server):
         """Return the authoritative config file path for this Valve server."""
@@ -471,6 +516,15 @@ def define_valve_server_module(
             module_settings.get("rconpassword", server_cfg.get("rcon_password", "")),
         )
 
+    def _current_serverpassword(server, module_settings):
+        """Return the best available join password for the datastore or config file."""
+
+        server_cfg = module_settings.getsection("servercfg")
+        return server.data.get(
+            "serverpassword",
+            module_settings.get("serverpassword", server_cfg.get("sv_password", "")),
+        )
+
     def configure(server, ask, port=None, dir=None, *, exe_name=None):
         """Store install and networking defaults for this Valve-engine server."""
         module_settings = _get_module_settings(module_name)
@@ -482,6 +536,7 @@ def define_valve_server_module(
 
         server.data.setdefault("startmap", module_settings.get("startmap", default_map))
         server.data.setdefault("maxplayers", str(module_settings.get("maxplayers", max_players)))
+        server.data.setdefault("serverpassword", module_settings.get("serverpassword", ""))
         server.data.setdefault("game_dir", game_dir)
         server.data.setdefault("server_cfg", module_settings.get("server_cfg", config_default))
         server.data.setdefault("backupfiles", list(default_backupfiles))
@@ -602,6 +657,9 @@ def define_valve_server_module(
         config_values["hostname"] = _quote_config_value(_current_servername(server, module_settings))
         config_values["rcon_password"] = _quote_config_value(
             _current_rconpassword(server, module_settings)
+        )
+        config_values["sv_password"] = _quote_config_value(
+            _current_serverpassword(server, module_settings)
         )
         updateconfig(cfg_path, config_values)
 
@@ -761,6 +819,21 @@ def define_valve_server_module(
             return backup_utils.checkdatavalue(server.data["backup"], key, *value)
         if len(value) == 0:
             _raise_server_error("No value specified")
+        try:
+            resolved = resolve_requested_key(key[0], setting_schema)
+        except KeyResolutionError:
+            resolved = None
+        if resolved is not None:
+            if resolved.canonical_key == "port":
+                return int(value[0])
+            if resolved.canonical_key == "maxplayers":
+                return str(int(value[0]))
+            if resolved.canonical_key in ("servername", "rconpassword", "serverpassword"):
+                return str(value[0])
+            if resolved.canonical_key == "map":
+                if enable_map_validation and engine == "source":
+                    return validate_source_startmap(server, game_dir, value[0])
+                return str(value[0])
         if key[0] in ("port", "clientport", "sourcetvport", "steamport"):
             return int(value[0])
         if key[0] == "maxplayers":
@@ -768,6 +841,8 @@ def define_valve_server_module(
         if key[0] in ("servername", "hostname"):
             return str(value[0])
         if key[0] in ("rconpassword", "rcon_password"):
+            return str(value[0])
+        if key[0] in ("serverpassword", "sv_password", "svpassword", "password"):
             return str(value[0])
         if key[0] == "startmap":
             if enable_map_validation and engine == "source":

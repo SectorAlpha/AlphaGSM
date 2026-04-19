@@ -5,19 +5,22 @@ import re
 
 import screen
 import server.runtime as runtime_module
-from server.settable_keys import SettingSpec
+from server.settable_keys import build_launch_arg_values, build_native_config_values
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
     send_console_command_and_collect_response,
     integration_source_server_config,
     source_console_status,
     source_query_address,
+    VALVE_SERVER_CONFIG_SYNC_KEYS,
+    build_valve_server_setting_schema,
     validate_source_startmap,
     wake_source_server_for_a2s,
 )
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
@@ -31,71 +34,30 @@ command_args = {
             ArgSpec("DIR", "The Directory to install minecraft in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec(
-                "v",
-                ["validate"],
-                "Validate the server files after updating",
-                "validate",
-                None,
-                True,
-            ),
-            OptSpec(
-                "r",
-                ["restart"],
-                "Restarts the server upon updating",
-                "restart",
-                None,
-                True,
-            ),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
 
 # required still
 command_descriptions = {
-    "update": "Updates the game server to the latest version.",
-    "restart": "Restarts the game server without killing the process.",
+    **gamemodule_common.build_update_restart_command_descriptions(
+        "Updates the game server to the latest version.",
+        "Restarts the game server without killing the process.",
+    ),
 }
 
+command_functions = {}
+
 max_stop_wait = 1
-config_sync_keys = ("servername", "rconpassword", "serverpassword")
+config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
 setting_schema = {
-    "map": SettingSpec(
-        canonical_key="map",
-        aliases=("gamemap", "startmap", "level"),
-        description="The currently selected map or level.",
-        value_type="string",
-        apply_to=("datastore", "launch_args"),
-        storage_key="startmap",
-        examples=("cp_dustbowl",),
+    **build_valve_server_setting_schema(
+        game_name="TF2 Server",
+        default_map="cp_dustbowl",
+        max_players=16,
+        servername_example="AlphaGSM TF2 Server",
+        maxplayers_launch_arg_tokens=("+maxplayers",),
     ),
-    "servername": SettingSpec(
-        canonical_key="servername",
-        aliases=("hostname", "server_name", "name"),
-        description="The server's public name shown to players.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        examples=("AlphaGSM TF2 Server",),
-    ),
-    "rconpassword": SettingSpec(
-        canonical_key="rconpassword",
-        aliases=("rconpass", "rcon_password"),
-        description="Remote console password for administrative access.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        secret=True,
-    ),
-    "serverpassword": SettingSpec(
-        canonical_key="serverpassword",
-        aliases=("sv_password", "svpassword", "password"),
-        description="Password required for players to join the server.",
-        value_type="string",
-        apply_to=("datastore", "native_config"),
-        secret=True,
-    ),
+    **gamemodule_common.build_executable_path_setting_schema(),
 }
 
 _TF2_SERVER_CFG_TEMPLATE = """// Team Fortress 2 server.cfg template
@@ -247,10 +209,8 @@ def doinstall(server):
     )
 
 
-def restart(server):
-    """Restart the server by stopping it and then starting it again."""
-    server.stop()
-    server.start()
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the server by stopping it and then starting it again."
 
 
 def prestart(server, *args, **kwargs):
@@ -271,22 +231,12 @@ def prestart(server, *args, **kwargs):
         os.symlink(steamclient_src, STEAMCLIENT_DST)
 
 
-def update(server, validate=False, restart=False):
-    """Update the TF2 install through SteamCMD and optionally restart it."""
-    try:
-        server.stop()
-    except:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(
-        server.data["dir"],
-        steam_app_id,
-        steam_anonymous_login_possible,
-        validate=validate,
-    )
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the TF2 install through SteamCMD and optionally restart it."
 
 
 def get_start_command(server):
@@ -308,6 +258,13 @@ def get_start_command(server):
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
 
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        value_transform=lambda _spec, value: str(value),
+        require_explicit_tokens=True,
+    )
+
     return [
         exe_name,
         "-game",
@@ -315,18 +272,15 @@ def get_start_command(server):
         "-strictportbind",
         "+ip",
         "0.0.0.0",
-        "-port",
-        str(server.data["port"]),
+        *launch_args[:2],
         "+clientport",
         str(client_port),
         "+tv_port",
         str(sourcetv_port),
-        "+map",
-        str(server.data["startmap"]),
+        *launch_args[2:4],
         "+servercfgfile",
         "server.cfg",
-        "+maxplayers",
-        str(server.data["maxplayers"]),
+        *launch_args[4:6],
     ], server.data["dir"]
 
 
@@ -390,13 +344,17 @@ def sync_server_config(server):
         with open(server_cfg, "w", encoding="utf-8") as handle:
             handle.write(_TF2_SERVER_CFG_TEMPLATE)
 
-    config_values = {
-        "hostname": _quote_config_value(
-            server.data.get("servername", "AlphaGSM TF2 Server")
-        ),
-        "rcon_password": _quote_config_value(server.data.get("rconpassword", "changeme")),
-        "sv_password": _quote_config_value(server.data.get("serverpassword", "")),
-    }
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "servername": "AlphaGSM TF2 Server",
+            "rconpassword": "changeme",
+            "serverpassword": "",
+        },
+        value_transform=lambda _spec, value: _quote_config_value(value),
+        require_explicit_key=True,
+    )
     integration_cfg = integration_source_server_config()
     if integration_cfg:
         merged_config_values = dict(integration_cfg)
@@ -424,29 +382,29 @@ def list_setting_values(server, canonical_key):
     )
 
 
-def status(server, verbose):
-    """Report TF2 server status information."""
-    pass
+status = gamemodule_common.make_noop_status_hook()
+status.__doc__ = "Report TF2 server status information."
 
 
 def checkvalue(server, key, *value):
     """Validate supported TF2 datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] == "maxplayers":
-        return str(int(value[0]))
-    if key[0] in ("startmap", "map"):
-        return validate_source_startmap(server, "tf", value[0])
-    if key[0] in ("servername", "hostname", "dir", "exe_name"):
-        return str(value[0])
-    if key[0] in ("rconpassword", "rcon_password", "serverpassword", "sv_password"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_str_keys=("servername", "rconpassword", "serverpassword"),
+        raw_int_keys=("port",),
+        raw_str_keys=("dir", "exe_name"),
+        resolved_handlers={
+            "map": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+        },
+        raw_handlers={
+            "maxplayers": lambda _server_obj, raw_value: str(int(raw_value)),
+            "startmap": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+        },
+    )
 
 
 ## TODO integrate Steam games properly into the downloads module.
@@ -498,18 +456,14 @@ command_functions = {
 
 wake_a2s_query = wake_source_server_for_a2s
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-    )
+)
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

@@ -6,10 +6,12 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1670340
 steam_anonymous_login_possible = True
@@ -36,6 +38,46 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "maxplayers", "worldname", "serverpassword", "bindaddress")
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The primary game port.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("8787",),
+    ),
+    "map": SettingSpec(
+        canonical_key="map",
+        aliases=("worldname",),
+        description="The selected Craftopia world name.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        storage_key="worldname",
+        examples=("AlphaGSM World",),
+    ),
+    "maxplayers": SettingSpec(
+        canonical_key="maxplayers",
+        description="Maximum number of players allowed on the server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("8",),
+    ),
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        description="Password required for joining the server.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        secret=True,
+    ),
+    "bindaddress": SettingSpec(
+        canonical_key="bindaddress",
+        description="IP address the server binds to.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("0.0.0.0",),
+    ),
+}
 
 
 def _server_setting_path(server):
@@ -50,7 +92,7 @@ def _save_dir(server):
     return os.path.join(server.data["dir"], "DedicatedServerSave")
 
 
-def _seed_server_setting(server):
+def sync_server_config(server):
     parser = configparser.ConfigParser(interpolation=None)
     parser.optionxform = str
 
@@ -69,11 +111,11 @@ def _seed_server_setting(server):
             "enemyPoolSizeRate": "1",
         },
         "Host": {
-            "port": str(server.data["port"]),
+            "port": str(int(server.data.get("port", 8787))),
             "maxPlayerNumber": str(server.data.get("maxplayers", 8)),
             "usePassword": "0",
-            "serverPassword": "00000000",
-            "bindAddress": "0.0.0.0",
+            "serverPassword": str(server.data.get("serverpassword", "00000000")),
+            "bindAddress": str(server.data.get("bindaddress", "0.0.0.0")),
         },
         "Graphics": {
             "vSyncCount": "0",
@@ -128,6 +170,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Craftopia.x86_64"):
     server.data.setdefault("queryport", 8787)
     server.data.setdefault("maxplayers", 8)
     server.data.setdefault("worldname", server.name)
+    server.data.setdefault("serverpassword", "00000000")
+    server.data.setdefault("bindaddress", "0.0.0.0")
     server.data.setdefault("backupfiles", ["DedicatedServerSave", "ServerSetting.ini"])
     if "backup" not in server.data:
         server.data["backup"] = {
@@ -169,7 +213,7 @@ def install(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if os.path.isfile(exe_path):
         os.chmod(exe_path, os.stat(exe_path).st_mode | 0o111)
-    _seed_server_setting(server)
+    sync_server_config(server)
     server.data.save()
 
 
@@ -181,6 +225,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    gamemodule_common.sync_if_install_present(server, sync_server_config)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -212,7 +257,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    _seed_server_setting(server)
+    sync_server_config(server)
     return (
         [
             "./" + server.data["exe_name"],
@@ -236,42 +281,37 @@ def status(server, verbose):
 def message(server, msg):
     """Craftopia has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Craftopia server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Craftopia datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport", "maxplayers"):
-        return int(value[0])
-    if key[0] in ("worldname", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return gamemodule_common.handle_setting_schema_checkvalue(
         server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port", "maxplayers"),
+        resolved_str_keys=("map", "serverpassword", "bindaddress"),
+        raw_int_keys=("port", "queryport", "maxplayers"),
+        raw_str_keys=("worldname", "exe_name", "dir", "serverpassword", "bindaddress"),
     )
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

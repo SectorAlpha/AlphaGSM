@@ -65,7 +65,23 @@ def test_install(tmp_path):
     server.data["exe_name"] = "WreckfestServer"
     server.data["Steam_AppID"] = 361580
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["configfile"] = "server_config.cfg"
+    server.data["port"] = 33540
+    (tmp_path / "server_config.cfg").write_text("server_port = 33539\n")
     mod.install(server)
+
+
+def test_sync_server_config_updates_config_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "server_config.cfg"
+    server.data["port"] = 33541
+    config_path = tmp_path / "server_config.cfg"
+    config_path.write_text("server_port = 33540\n")
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text() == "server_port =33541\n"
 
 
 def test_update_with_restart(tmp_path):

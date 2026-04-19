@@ -45,6 +45,14 @@ def test_csgo_uses_shared_space_config_writer():
     assert mod.updateconfig is rewrite_space_config
 
 
+def test_csgo_exposes_shared_valve_schema_and_sync_keys():
+    assert mod.config_sync_keys == mod.VALVE_SERVER_CONFIG_SYNC_KEYS
+    assert mod.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert mod.setting_schema["map"].launch_arg_tokens == ("+map",)
+    assert mod.setting_schema["maxplayers"].launch_arg_tokens == ("-maxplayers",)
+    assert mod.setting_schema["serverpassword"].native_config_key == "sv_password"
+
+
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
     server = DummyServer()
@@ -67,18 +75,20 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     mod.configure(server, ask=True)
 
 
-def test_install(tmp_path):
+def test_install(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "srcds_run"
     server.data["Steam_AppID"] = 740
     server.data["Steam_anonymous_login_possible"] = True
+    monkeypatch.setattr(mod.steamcmd, "download", lambda *args, **kwargs: None)
     mod.install(server)
 
 
 def test_install_disables_hibernation_during_integration(tmp_path, monkeypatch):
     monkeypatch.setenv("ALPHAGSM_RUN_INTEGRATION", "1")
     monkeypatch.setattr(mod, "make_empty_file", lambda path: open(path, "a", encoding="utf-8").close())
+    monkeypatch.setattr(mod.steamcmd, "download", lambda *args, **kwargs: None)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "srcds_run"
@@ -93,32 +103,50 @@ def test_install_disables_hibernation_during_integration(tmp_path, monkeypatch):
     assert "sv_hibernate_when_empty 0" in cfg_text
 
 
-def test_update_with_restart(tmp_path):
+def test_sync_server_config_updates_server_cfg(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servername"] = "Configured CSGO"
+    server.data["rconpassword"] = "rcon-secret"
+    server.data["serverpassword"] = "join-secret"
+
+    mod.sync_server_config(server)
+
+    config_text = (tmp_path / "csgo" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert 'hostname "Configured CSGO"' in config_text
+    assert 'rcon_password "rcon-secret"' in config_text
+    assert 'sv_password "join-secret"' in config_text
+
+
+def test_update_with_restart(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 740
     server.data["Steam_anonymous_login_possible"] = True
+    monkeypatch.setattr(mod.steamcmd, "download", lambda *args, **kwargs: None)
     mod.update(server, validate=True, restart=True)
     assert server._stopped
     assert server._started
 
 
-def test_update_no_restart(tmp_path):
+def test_update_no_restart(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 740
     server.data["Steam_anonymous_login_possible"] = True
+    monkeypatch.setattr(mod.steamcmd, "download", lambda *args, **kwargs: None)
     mod.update(server, validate=False, restart=False)
     assert server._stopped
     assert not server._started
 
 
-def test_update_stop_exception(tmp_path):
+def test_update_stop_exception(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 740
     server.data["Steam_anonymous_login_possible"] = True
     server.stop = MagicMock(side_effect=Exception('already stopped'))
+    monkeypatch.setattr(mod.steamcmd, "download", lambda *args, **kwargs: None)
     mod.update(server, validate=False, restart=False)
 
 
@@ -184,6 +212,21 @@ def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
     mod.screen.send_to_server.assert_called()
+
+
+def test_csgo_query_and_info_address_use_source_query_address(monkeypatch):
+    server = DummyServer()
+    server.data["port"] = 27015
+    calls = []
+    monkeypatch.setattr(
+        mod,
+        "source_query_address",
+        lambda srv: calls.append(srv) or ("127.0.0.1", 27015, "a2s"),
+    )
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert calls == [server, server]
 
 
 def test_status():

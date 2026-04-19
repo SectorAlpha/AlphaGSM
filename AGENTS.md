@@ -31,20 +31,31 @@ Keep documentation split by audience:
 - `DEVELOPERS.md`
   technical, detailed, implementation-focused
 
+## Changelog Discipline
+
+Keep `changelog.txt` current for every PR that changes user-visible behaviour,
+server support, CI, packaging, or workflow expectations.
+
+- Use `skills/changelog-discipline/SKILL.md` when updating the changelog.
+- Treat `changelog.txt` as part of the release surface, not an optional extra.
+- Backfill historical context from git history instead of inventing release notes.
+
 ## When Behaviour Changes
 
 Update these in order when relevant:
 
 1. the smoke test
-2. the matching server guide
-3. `README.md`
-4. `DEVELOPERS.md`
+2. `changelog.txt`
+3. the matching server guide
+4. `README.md`
+5. `DEVELOPERS.md`
 
 ## Quality Gates
 
 - lint: `make lint` (or `bash ./lint.sh` directly) — must score `10.00/10`
 - unit tests: `make test` — keep green
-- integration tests: `make integration-test` (needs `ALPHAGSM_WORK_DIR` set) — keep green
+- integration tests: `make integration-test` — keep green
+  default local scratch root: `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme`
 - smoke tests: `make smoke-test` (or `make smoke-test SMOKE_TEST=run_<name>.sh`) — keep accurate
 
 ## New Module Test Contract
@@ -82,6 +93,29 @@ process and Docker runtimes.
   owned by another AlphaGSM server or a live listener on the same hosted IP.
 - Collision checks ignore protocol and include optional and runtime-published
   ports, not just the main game port.
+
+## Config Sync Contract
+
+Game modules should declare which `set` values represent real game-server
+configuration, and only those keys should auto-sync into on-disk config files.
+
+- If a module supports `set` on values that map directly to the game server's
+  own config file or live config payload, add `sync_server_config(server)`.
+- Add `config_sync_keys` listing the top-level datastore keys that represent
+  real game-server config values such as `port`, `queryport`, `maxplayers`,
+  `servername`, `map`, or similar module-specific settings.
+- Do not include AlphaGSM-only keys in `config_sync_keys`, including backup
+  settings, install-only cache fields, runtime metadata, wrapper image fields,
+  or other manager-specific values.
+- Treat missing `config_sync_keys` on a module with game-config-backed `set`
+  values as incomplete lifecycle wiring.
+- If a module exposes map-like values via `set` such as `map`, `startmap`,
+  `world`, `level`, or `mission`, validate them against installed content,
+  known defaults, or another module-specific allowlist when practical instead
+  of accepting arbitrary strings blindly.
+- When editing an existing module, prefer a single `sync_server_config(server)`
+  helper reused by `install`, `prestart`, `update`, and `set` rather than
+  duplicating config write logic in each phase.
 
 ## Container Runtime Contract
 
@@ -181,3 +215,4 @@ See:
 - `skills/smoke-driven-docs/SKILL.md`
 - `skills/system-install-validation/SKILL.md`
 - `skills/wiki-publishing/SKILL.md`
+- `skills/changelog-discipline/SKILL.md`

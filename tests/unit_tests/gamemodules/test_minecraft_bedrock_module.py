@@ -1,7 +1,7 @@
 import pytest
 
 import gamemodules.minecraft.bedrock as bedrock
-import gamemodules.minecraft.properties_config as properties_config
+import utils.gamemodules.minecraft.properties_config as properties_config
 import server.server as server_module
 from utils.simple_kv_config import rewrite_equals_config
 

@@ -4,11 +4,13 @@ import os
 
 import screen
 from server import ServerError
+from server.settable_keys import SettingSpec, build_launch_arg_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 COD_SERVER_URL = "https://0day.icculus.org/cod/COD-lnxded-1.5-large.tar.bz2"
 COD_SERVER_NAME = "COD-lnxded-1.5-large.tar.bz2"
@@ -29,6 +31,21 @@ command_args = {
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+setting_schema = {
+    **gamemodule_common.build_quake_setting_schema(
+        include_fs_game=True,
+        game_key="moddir",
+        game_description="The active Call of Duty mod directory.",
+        fs_game_tokens=("+set", "fs_game"),
+        port_tokens=("+set", "net_port"),
+        hostname_tokens=("+set", "sv_hostname"),
+        hostname_before_port=True,
+    ),
+    "url": SettingSpec(canonical_key="url", description="Download URL for the server archive."),
+    "download_name": SettingSpec(canonical_key="download_name", description="Cached archive filename."),
+    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
+    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, url=None, download_name=None, exe_name="cod_lnxded"):
@@ -89,21 +106,14 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     return (
-        [
-            "./" + server.data["exe_name"],
-            "+set",
-            "fs_game",
-            server.data["moddir"],
-            "+set",
-            "sv_hostname",
-            server.data["hostname"],
-            "+set",
-            "net_port",
-            str(server.data["port"]),
-            "+map",
-            server.data["startmap"],
-        ],
+        ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
 
@@ -121,42 +131,36 @@ def status(server, verbose):
 def message(server, msg):
     """Call of Duty has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Call of Duty server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Call of Duty datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("url", "download_name", "exe_name", "dir", "moddir", "startmap", "hostname"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return gamemodule_common.handle_setting_schema_checkvalue(
         server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port",),
+        resolved_str_keys=("url", "download_name", "exe_name", "dir", "moddir", "startmap", "hostname"),
+        backup_module=backup_utils,
     )
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

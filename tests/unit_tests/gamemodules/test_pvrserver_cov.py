@@ -114,7 +114,19 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./PavlovServer.sh",
+        "-PORT=27015",
+        "-QueryPort=27015",
+        "-Map=test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-PORT={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["map"].launch_arg_format == "-Map={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

@@ -7,15 +7,15 @@ import urllib.request
 import downloader
 import screen
 from server import ServerError
-from server.settable_keys import KeyResolutionError, resolve_requested_key
-from utils import backups
+from utils import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
-from .custom import updateconfig
-from .properties_config import (
+from utils.gamemodules import common as gamemodule_common
+from utils.gamemodules.minecraft.properties_config import (
     CONFIG_SYNC_KEYS,
     build_server_properties_values,
     build_setting_schema,
 )
+from .custom import updateconfig
 
 import server.runtime as runtime_module
 
@@ -192,6 +192,7 @@ def sync_server_config(server):
         server_properties,
         build_server_properties_values(
             server,
+            setting_schema=setting_schema,
             servername_key="server-name",
             default_port=19132,
             default_levelname=server.name,
@@ -238,52 +239,37 @@ def do_stop(server, j):
     screen.send_to_server(server.name, "\nstop\n")
 
 
-def status(server, verbose):
-    """Detailed Bedrock status is not implemented yet."""
+status = gamemodule_common.make_noop_status_hook()
+status.__doc__ = "Detailed Bedrock status is not implemented yet."
 
 
-def message(server, msg):
-    """Send a Bedrock chat message through the server console."""
-
-    screen.send_to_server(server.name, "\nsay %s\n" % (msg,))
+message = gamemodule_common.make_server_message_hook(
+    command="say",
+    runtime_module=runtime_module,
+)
+message.__doc__ = "Send a Bedrock chat message through the server console."
 
 
 def backup(server, profile=None):
     """Run the shared backup helper for a Bedrock server."""
 
-    backups.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Bedrock datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backups.checkdatavalue(server.data["backup"], key, *value)
-    try:
-        resolved = resolve_requested_key(key[0], setting_schema)
-        key = (resolved.storage_key,) + key[1:]
-    except KeyResolutionError:
-        pass
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in (
-        "exe_name",
-        "url",
-        "version",
-        "dir",
-        "levelname",
-        "gamemode",
-        "difficulty",
-        "servername",
-    ):
-        return str(value[0])
-    if key[0] == "maxplayers":
-        return str(int(value[0]))
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port",),
+        resolved_str_keys=("map", "gamemode", "difficulty", "servername"),
+        resolved_handlers={"maxplayers": lambda _server, *values: str(int(values[0]))},
+        raw_str_keys=("exe_name", "url", "version", "dir", "levelname"),
+        backup_module=backup_utils,
+    )
 
 def get_runtime_requirements(server):
     java_major = server.data.get("java_major")

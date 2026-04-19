@@ -2,9 +2,9 @@
 
 from .bungeecord import *
 from . import bungeecord as proxy_base
-from .jardownload import install_downloaded_jar
 from .papermc import resolve_download
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec
+from utils.gamemodules.minecraft.jardownload import install_downloaded_jar
 
 
 import server.runtime as runtime_module
