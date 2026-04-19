@@ -1,0 +1,11 @@
+# Velocity proxy template
+bind = "0.0.0.0:25577"
+motd = "AlphaGSM Velocity Proxy"
+show-max-players = 100
+online-mode = true
+player-info-forwarding-mode = "none"
+forwarding-secret-file = "forwarding.secret"
+announce-forge = false
+kick-existing-players = false
+ping-passthrough = "disabled"
+enable-player-address-logging = true

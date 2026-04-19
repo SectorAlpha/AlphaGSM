@@ -2,6 +2,8 @@
 
 This document is the technical reference for contributors, maintainers, and automation working inside the repository.
 
+Release-facing changes should also update [changelog.txt](changelog.txt).
+
 ## Top-Level Architecture
 
 AlphaGSM is a Python CLI that normalises game-server lifecycle management across multiple backends. The core design is:
@@ -53,6 +55,19 @@ At runtime, the user-facing call path is:
   Shell-driven streamed lifecycle runners used by CI and documentation.
 - [docs](docs)
   User-facing documentation.
+
+## Server Template Naming
+
+Store per-server config examples under `docs/server-templates/<module_name>/`.
+
+- Make the template mimic the real game-owned config file as closely as possible: filename, relative path, key spelling, syntax, comments, and section layout.
+- Use the real runtime filename when the module or docs identify one stable on-disk config path, such as `server.cfg`, `server.properties`, `mumble-server.ini`, or `dedicated_cfg.txt`.
+- Keep `alphagsm-example.cfg` only when the module exposes AlphaGSM-managed values but does not manage one stable game-owned config filename.
+- Match the real relative path when it is part of the contract, for example `ROGame/Config/PCServer-ROGame.ini` or `System/UT2004.ini`.
+- Include concrete default values from `configure(...)`, `sync_server_config(...)`, smoke tests, or the matching `docs/servers/<module>.md` guide.
+- Do not include AlphaGSM-only datastore keys such as `download_name`, `dir`, `backup`, `image`, or other manager metadata unless the game itself reads them.
+- Start from `docs/server-templates/_template/` when adding new template directories.
+- Run `python scripts/audit_server_templates.py` after template changes to catch filename mismatches against module- and guide-backed config paths.
 
 ## Command And Server Model
 
@@ -120,6 +135,10 @@ The skill-level checklist lives in
 | `prestart` | `(server, *args, **kwargs)` | Run before the screen session starts (e.g. symlink Steam libraries) |
 | `poststart` | `(server, *args, **kwargs)` | Run after the screen session starts (e.g. send init commands) |
 | `postset` | `(server, key, **kwargs)` | React after a `set` data-store change |
+| `setting_schema` | module-level `dict[str, SettingSpec]` | Declare schema-backed `set` keys, aliases, examples, and secrecy for discovery |
+| `config_sync_keys` | module-level `tuple[str, ...]` | List datastore keys that should auto-sync into native game config files |
+| `sync_server_config` | `(server)` | Rewrite the native config file from datastore-backed values |
+| `list_setting_values` | `(server, canonical_key)` | Return enumerable values for schema-backed keys such as maps |
 | `get_query_address` | `(server)` | Return `(host, port, protocol)` for `query`; protocols: `"a2s"`, `"quake"`, `"ts3"`, `"tcp"` |
 | `get_info_address` | `(server)` | Return `(host, port, protocol)` for `info`; protocols: `"a2s"`, `"slp"`, `"tcp"`.  Always add this unless the module uses `define_valve_server_module()`. |
 | `update` | `(server, validate=False, restart=False, ...)` | In-place server update; wire into `commands` / `command_functions` |
@@ -132,6 +151,7 @@ The skill-level checklist lives in
 - `configure(...)` stores at minimum `port` and `dir` in `server.data`, initialises the backup data structure, and returns `(args, kwargs)` to forward to `install`
 - `install(...)` ensures the server filesystem is in a runnable state and calls `server.data.save()`
 - `get_start_command(...)` returns `(argv_list, working_dir)`
+- schema-backed `set` keys should use `setting_schema` plus `resolve_requested_key(...)` in the shared `Server.set` flow, with `sync_server_config(server)` handling the on-disk native config update for datastore keys in `config_sync_keys`
 - every maintained game module must define `import server.runtime as runtime_module` when it uses shared Docker builders, plus explicit module-scope `get_runtime_requirements(...)` and `get_container_spec(...)` wrappers
 - choose the runtime family first, then call `server.runtime` builders or `utils.proton` helpers inside those wrappers; do not rely on runtime inference to add the hooks for you
 - Windows-binary modules that already use `utils.proton.wrap_command(...)` should normally build Docker metadata through `utils.proton.get_runtime_requirements(...)` and `utils.proton.get_container_spec(...)` so process and container modes stay aligned

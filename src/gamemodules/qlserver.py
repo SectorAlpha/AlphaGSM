@@ -6,8 +6,10 @@ import screen
 import server.runtime as runtime_module
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec, build_launch_arg_values
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 349090
 steam_anonymous_login_possible = True
@@ -34,6 +36,30 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
+_quake_launch_schema = gamemodule_common.build_quake_setting_schema(
+    port_tokens=("+set", "net_port"),
+    hostname_tokens=("+set", "sv_hostname"),
+)
+setting_schema = {
+    "homepath": SettingSpec(
+        canonical_key="homepath",
+        description="Launch-only homepath for Quake Live.",
+        apply_to=("launch_args",),
+        storage_key="dir",
+        launch_arg_tokens=("+set", "fs_homepath"),
+    ),
+    "port": _quake_launch_schema["port"],
+    "hostname": _quake_launch_schema["hostname"],
+    "servercfg": SettingSpec(
+        canonical_key="servercfg",
+        description="Server config file to exec on startup.",
+        apply_to=("datastore", "launch_args"),
+        launch_arg_tokens=("+exec",),
+    ),
+    "startmap": _quake_launch_schema["startmap"],
+    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
+    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="qzeroded.x64"):
@@ -115,23 +141,14 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     return (
-        [
-            "./" + server.data["exe_name"],
-            "+set",
-            "fs_homepath",
-            server.data["dir"],
-            "+set",
-            "net_port",
-            str(server.data["port"]),
-            "+set",
-            "sv_hostname",
-            server.data["hostname"],
-            "+exec",
-            server.data["servercfg"],
-            "+map",
-            server.data["startmap"],
-        ],
+        ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
 
@@ -162,27 +179,18 @@ def get_container_spec(server):
     """Return the Docker launch spec for Quake Live."""
 
     requirements = get_runtime_requirements(server)
+    launch_args = build_launch_arg_values(
+        dict(server.data, dir="/srv/server"),
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     return {
         "working_dir": "/srv/server",
         "stdin_open": True,
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
-        "command": [
-            "./" + server.data["exe_name"],
-            "+set",
-            "fs_homepath",
-            "/srv/server",
-            "+set",
-            "net_port",
-            str(server.data["port"]),
-            "+set",
-            "sv_hostname",
-            server.data["hostname"],
-            "+exec",
-            server.data["servercfg"],
-            "+map",
-            server.data["startmap"],
-        ],
+        "command": ["./" + server.data["exe_name"], *launch_args],
     }
 
 
@@ -211,26 +219,24 @@ def status(server, verbose):
 def message(server, msg):
     """Quake Live has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Quake Live server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Quake Live datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("hostname", "startmap", "servercfg", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port",),
+        resolved_str_keys=("hostname", "startmap", "servercfg", "exe_name", "dir"),
+        backup_module=backup_utils,
+    )

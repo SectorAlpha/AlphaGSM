@@ -6,10 +6,12 @@ import server.runtime as runtime_module
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from server.settable_keys import build_launch_arg_values
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 from utils.platform_info import IS_LINUX
+from utils.backups import backups as backup_utils
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 762880
 steam_anonymous_login_possible = True
@@ -22,20 +24,21 @@ command_args = {
             ArgSpec("DIR", "The directory to install Outpost Zero in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
-command_descriptions = {
-    "update": "Update the Outpost Zero dedicated server to the latest version.",
-    "restart": "Restart the Outpost Zero dedicated server.",
-}
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Outpost Zero dedicated server to the latest version.",
+    "Restart the Outpost Zero dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
+setting_schema = {
+    **gamemodule_common.build_unreal_setting_schema(
+        include_maxplayers=True,
+        include_servername=True,
+    ),
+    **gamemodule_common.build_executable_path_setting_schema(),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="WindowsServer/SurvivalGameServer.exe"):
@@ -73,38 +76,23 @@ def configure(server, ask, port=None, dir=None, *, exe_name="WindowsServer/Survi
     return (), {}
 
 
-def install(server):
-    """Download the Outpost Zero server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
-        force_windows=IS_LINUX,
-    )
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+install.__doc__ = "Download the Outpost Zero server files via SteamCMD."
 
 
-def update(server, validate=False, restart=False):
-    """Update the Outpost Zero server files and optionally restart the server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
+)
 
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
-
-
-def restart(server):
-    """Restart the Outpost Zero server."""
-
-    server.stop()
-    server.start()
+restart = gamemodule_common.make_restart_hook()
 
 
 def get_start_command(server):
@@ -113,35 +101,32 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    dynamic_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     cmd = [
             server.data["exe_name"],
-            "-Port=%s" % (server.data["port"],),
-            "-QueryPort=%s" % (server.data["queryport"],),
-            "-MaxPlayers=%s" % (server.data["maxplayers"],),
-            "-ServerName=%s" % (server.data["servername"],),
+            *dynamic_args,
         ]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]
 
 
-def get_runtime_requirements(server):
-    """Return Docker runtime metadata for Wine/Proton-backed servers."""
-
-    return proton.get_runtime_requirements(
-        server,
-        port_definitions=(("port", "udp"), ("queryport", "udp")),
-    )
+get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+    port_definitions=(("port", "udp"), ("queryport", "udp")),
+)
+get_runtime_requirements.__doc__ = "Return Docker runtime metadata for Wine/Proton-backed servers."
 
 
-def get_container_spec(server):
-    """Return the Docker launch spec for Outpost Zero."""
-
-    return proton.get_container_spec(
-        server,
-        get_start_command,
-        port_definitions=(("port", "udp"), ("queryport", "udp")),
-    )
+get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=get_start_command,
+    port_definitions=(("port", "udp"), ("queryport", "udp")),
+)
+get_container_spec.__doc__ = "Return the Docker launch spec for Outpost Zero."
 
 
 def do_stop(server, j):
@@ -157,26 +142,24 @@ def status(server, verbose):
 def message(server, msg):
     """Outpost Zero has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an Outpost Zero server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Outpost Zero datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport", "maxplayers"):
-        return int(value[0])
-    if key[0] in ("servername", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port", "queryport", "maxplayers"),
+        resolved_str_keys=("servername", "exe_name", "dir"),
+        backup_module=backup_utils,
+    )

@@ -1,0 +1,1 @@
+from utils.gamemodules.minecraft.properties_config import *  # noqa: F401,F403

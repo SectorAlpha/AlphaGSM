@@ -16,6 +16,9 @@ from utils.steamcmd import _steamcmd_missing_manifest_flake
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
+DEFAULT_INTEGRATION_WORK_DIR = Path(
+    "/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+)
 
 # ---------------------------------------------------------------------------
 # Override pytest-timeout for integration tests (default pytest.ini is 10s)
@@ -255,6 +258,8 @@ def alphagsm_env(config_path):
 def build_integration_tmp_path(test_name, tmp_path_factory):
     """Return the temp directory root for an integration test."""
     work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
+    if not work_dir and DEFAULT_INTEGRATION_WORK_DIR.exists():
+        work_dir = str(DEFAULT_INTEGRATION_WORK_DIR)
     if not work_dir:
         return tmp_path_factory.mktemp(test_name)
 

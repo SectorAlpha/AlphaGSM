@@ -71,7 +71,8 @@ alphagsm myinterste backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `server.json`
+- **Notes**: upstream docs place `server.json` under `%APPDATA%/InterstellarRift/`; AlphaGSM still manages the listen port through the launch command
 - **Template**: See [server-templates/interstellarriftserver/](../server-templates/interstellarriftserver/) if available
 
 ### Maps and Mods

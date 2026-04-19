@@ -12,6 +12,7 @@ import server.runtime as runtime_module
 from server import ServerError
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.gamemodules import common as gamemodule_common
 
 TEAMSPEAK_DOWNLOADS_PAGE = "https://teamspeak.com/en/downloads"
 TEAMSPEAK_URL_TEMPLATE = (
@@ -245,13 +246,13 @@ def status(server, verbose):
 def message(server, msg):
     """TeamSpeak 3 has no generic user message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a TeamSpeak 3 server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def get_query_credentials(server):

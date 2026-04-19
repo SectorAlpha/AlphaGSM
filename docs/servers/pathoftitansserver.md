@@ -69,7 +69,8 @@ alphagsm mypathofti backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `PathOfTitans/Saved/Config/WindowsServer/Game.ini`
+- **Notes**: upstream docs use `WindowsServer` for the Windows example path; the platform folder differs on non-Windows servers. AlphaGSM still manages `ServerGUID`, `BranchKey`, `Database`, and `-port` through launch arguments.
 - **Max players**: `100`
 - **Template**: See [server-templates/pathoftitansserver/](../server-templates/pathoftitansserver/) if available
 

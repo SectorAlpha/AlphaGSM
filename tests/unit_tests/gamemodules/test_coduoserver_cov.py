@@ -75,7 +75,28 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./coduoded_lnxded",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_coduo_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "moddir"
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

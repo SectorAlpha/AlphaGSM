@@ -11,8 +11,22 @@ GAMEMODULE_DIR = Path("src/gamemodules")
 HELPER_MODULES = {
     "factorio",
     "minecraft.jardownload",
+    "minecraft.properties_config",
     "minecraft.papermc",
     "terraria.common",
+}
+
+GAME_CONFIG_HINTS = {
+    '"port"',
+    '"queryport"',
+    '"maxplayers"',
+    '"servername"',
+    '"hostname"',
+    '"map"',
+    '"scenarioid"',
+    '"gamemode"',
+    '"difficulty"',
+    '"levelname"',
 }
 
 
@@ -176,5 +190,35 @@ def test_all_game_modules_resolve_valid_docker_manifests():
         finally:
             for attribute_name, original in original_resolvers.items():
                 setattr(module, attribute_name, original)
+
+    assert offenders == []
+
+
+def test_managed_config_modules_declare_config_sync_contract():
+    offenders = []
+    for module_name in _game_module_names():
+        source = _module_source(module_name)
+        has_sync_function = "def sync_server_config(" in source
+        has_config_sync_keys = "config_sync_keys" in source or "set_sync_keys" in source
+
+        if has_sync_function and not has_config_sync_keys:
+            offenders.append(module_name + ": missing config_sync_keys for sync_server_config")
+            continue
+
+        manages_real_config = (
+            'setdefault("configfile"' in source
+            and "def checkvalue(" in source
+            and any(hint in source for hint in GAME_CONFIG_HINTS)
+            and (
+                "updateconfig(" in source
+                or "json.dump(" in source
+                or "xml.etree" in source
+                or "ElementTree" in source
+                or "server.json" in source
+            )
+        )
+
+        if manages_real_config and not has_config_sync_keys:
+            offenders.append(module_name + ": manages real server config but missing config_sync_keys")
 
     assert offenders == []

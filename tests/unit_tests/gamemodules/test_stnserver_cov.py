@@ -70,6 +70,17 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_sync_server_config_updates_port_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "Config" / "ServerConfig.txt").read_text() == "Port=9999\n"
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

@@ -6,10 +6,12 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec, build_native_config_values
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 996560
 steam_anonymous_login_possible = True
@@ -60,6 +62,49 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("servername", "contactemail", "queryport", "rconpassword")
+setting_schema = {
+    "servername": SettingSpec(
+        canonical_key="servername",
+        aliases=("hostname", "name"),
+        description="The server's public name shown to players.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        storage_key="servername",
+        native_config_key="server_name",
+        examples=("AlphaGSM SCP:SL Server",),
+    ),
+    "contactemail": SettingSpec(
+        canonical_key="contactemail",
+        aliases=("email", "contact_email"),
+        description="The public contact email shown in the server browser.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        storage_key="contactemail",
+        native_config_key="contact_email",
+        examples=("ops@example.com",),
+    ),
+    "queryport": SettingSpec(
+        canonical_key="queryport",
+        aliases=("query_port",),
+        description="The query port used to derive the SCP:SL query-port shift.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        storage_key="queryport",
+        examples=("7778",),
+    ),
+    "rconpassword": SettingSpec(
+        canonical_key="rconpassword",
+        aliases=("querypassword", "query_administrator_password"),
+        description="The administrator password used by the query/admin surface.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        storage_key="rconpassword",
+        native_config_key="query_administrator_password",
+        secret=True,
+        examples=("changeme",),
+    ),
+}
 
 
 def _scpsl_config_root(server):
@@ -71,10 +116,68 @@ def _scpsl_config_dir(server):
 
 
 def _scpsl_port_config_dir(server):
-    return os.path.join(_scpsl_config_dir(server), str(server.data["port"]))
+    return os.path.join(_scpsl_config_dir(server), str(int(server.data.get("port", 7777))))
 
 
-def _seed_localadmin_files(server):
+def _scpsl_gameplay_values(server):
+    port = int(server.data.get("port", 7777))
+    queryport = int(server.data.get("queryport", port + 1))
+
+    def _format_gameplay_value(spec, value):
+        if spec.canonical_key == "servername":
+            return str(value or "AlphaGSM {}".format(server.name))
+        if spec.canonical_key == "contactemail":
+            return str(value or "default")
+        if spec.canonical_key == "rconpassword":
+            return str(value or "alphagsmquery")
+        return str(value)
+
+    replacements = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "servername": "AlphaGSM {}".format(server.name),
+            "contactemail": "default",
+            "rconpassword": "alphagsmquery",
+        },
+        value_transform=_format_gameplay_value,
+        require_explicit_key=True,
+    )
+    gameplay_values = {
+        key_name: "{}: {}".format(key_name, value)
+        for key_name, value in replacements.items()
+    }
+    gameplay_values["enable_query"] = "enable_query: true"
+    gameplay_values["query_port_shift"] = "query_port_shift: {}".format(queryport - port)
+    return gameplay_values
+
+
+def _write_named_config_lines(path, replacements):
+    if not os.path.isfile(path):
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(replacements.values()) + "\n")
+        return
+
+    with open(path, encoding="utf-8") as handle:
+        existing_lines = handle.read().splitlines()
+
+    seen = set()
+    updated_lines = []
+    for line in existing_lines:
+        key = line.split(":", 1)[0].strip() if ":" in line else None
+        if key in replacements:
+            updated_lines.append(replacements[key])
+            seen.add(key)
+        else:
+            updated_lines.append(line)
+    for key in replacements:
+        if key not in seen:
+            updated_lines.append(replacements[key])
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(updated_lines) + "\n")
+
+
+def sync_server_config(server):
     config_dir = _scpsl_config_dir(server)
     port_config_dir = _scpsl_port_config_dir(server)
     internal_dir = os.path.join(_scpsl_config_root(server), "internal")
@@ -102,46 +205,7 @@ def _seed_localadmin_files(server):
             handle.write(LOCALADMIN_GLOBAL_CONFIG)
 
     gameplay_path = os.path.join(port_config_dir, "config_gameplay.txt")
-    gameplay_lines = [
-        "server_name: AlphaGSM {}".format(server.name),
-        "contact_email: {}".format(server.data.get("contactemail", "default") or "default"),
-        "enable_query: true",
-        "query_port_shift: 1",
-        "query_administrator_password: alphagsmquery",
-    ]
-    if not os.path.isfile(gameplay_path):
-        with open(gameplay_path, "w", encoding="utf-8") as handle:
-            handle.write("\n".join(gameplay_lines) + "\n")
-    else:
-        with open(gameplay_path, encoding="utf-8") as handle:
-            existing_lines = handle.read().splitlines()
-        replacements = {
-            "server_name": gameplay_lines[0],
-            "contact_email": gameplay_lines[1],
-            "enable_query": gameplay_lines[2],
-            "query_port_shift": gameplay_lines[3],
-            "query_administrator_password": gameplay_lines[4],
-        }
-        seen = set()
-        updated_lines = []
-        for line in existing_lines:
-            key = line.split(":", 1)[0].strip() if ":" in line else None
-            if key in replacements:
-                updated_lines.append(replacements[key])
-                seen.add(key)
-            else:
-                updated_lines.append(line)
-        for key in (
-            "server_name",
-            "contact_email",
-            "enable_query",
-            "query_port_shift",
-            "query_administrator_password",
-        ):
-            if key not in seen:
-                updated_lines.append(replacements[key])
-        with open(gameplay_path, "w", encoding="utf-8") as handle:
-            handle.write("\n".join(updated_lines) + "\n")
+    _write_named_config_lines(gameplay_path, _scpsl_gameplay_values(server))
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="LocalAdmin"):
@@ -149,7 +213,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="LocalAdmin"):
 
     server.data["Steam_AppID"] = steam_app_id
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
+    server.data.setdefault("servername", "AlphaGSM {}".format(server.name))
     server.data.setdefault("contactemail", "")
+    server.data.setdefault("rconpassword", "alphagsmquery")
     server.data.setdefault("backupfiles", ["home/.config/SCP Secret Laboratory"])
     if "backup" not in server.data:
         server.data["backup"] = {
@@ -195,7 +261,7 @@ def install(server):
         exe_path = os.path.join(server.data["dir"], exe_name)
         if os.path.isfile(exe_path):
             os.chmod(exe_path, os.stat(exe_path).st_mode | 0o111)
-    _seed_localadmin_files(server)
+    sync_server_config(server)
     server.data.save()
 
 
@@ -207,6 +273,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    gamemodule_common.sync_if_install_present(server, sync_server_config)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -238,7 +305,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    _seed_localadmin_files(server)
+    sync_server_config(server)
     home_dir = os.path.join(server.data["dir"], "home")
     xdg_config_home = os.path.join(home_dir, ".config")
     return (
@@ -259,7 +326,7 @@ def _get_container_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    _seed_localadmin_files(server)
+    sync_server_config(server)
     return (["./" + server.data["exe_name"], str(server.data["port"])], server.data["dir"])
 
 
@@ -276,40 +343,42 @@ def status(server, verbose):
 def message(server, msg):
     """SCP: Secret Laboratory has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an SCP: Secret Laboratory server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported SCP: Secret Laboratory datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport"):
-        return int(value[0])
-    if key[0] in ("exe_name", "dir", "contactemail"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return gamemodule_common.handle_setting_schema_checkvalue(
         server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("queryport",),
+        resolved_str_keys=("servername", "contactemail", "rconpassword"),
+        raw_int_keys=("port",),
+        raw_str_keys=("exe_name", "dir"),
     )
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+
+def postset(server, key, *args, **kwargs):
+    """Keep derived SCP:SL gameplay config aligned after datastore edits."""
+
+    if len(key) > 0 and str(key[0]).lower() == "port":
+        sync_server_config(server)
+
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+)
+
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=_get_container_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
@@ -318,4 +387,4 @@ def get_container_spec(server):
             'XDG_CONFIG_HOME': runtime_module.DEFAULT_CONTAINER_WORKDIR + '/home/.config',
         },
         stdin_open=True,
-    )
+)

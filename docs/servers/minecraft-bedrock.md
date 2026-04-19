@@ -52,6 +52,8 @@ Setup configures:
 ```bash
 alphagsm mybedrock update
 alphagsm mybedrock backup
+alphagsm mybedrock set gamemap BedrockWorld
+alphagsm mybedrock set servername "AlphaGSM Bedrock Server"
 ```
 
 ## Notes
@@ -71,7 +73,9 @@ alphagsm mybedrock backup
 
 - **Config file**: `server.properties`
 - **Key settings** (in `server.properties`):
-  - `server-port` — Game port (default 25565)
+  - `server-port` — Game port (default 19132)
+  - `level-name` — World name managed by `set gamemap`
+  - `server-name` — Server name managed by `set servername`
   - `motd` — Message of the day
   - `max-players` — Maximum players
   - `level-seed` — World generation seed

@@ -10,6 +10,7 @@ from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 402370
 steam_anonymous_login_possible = True
@@ -190,42 +191,40 @@ def status(server, verbose):
 def message(server, msg):
     """Wurm Unlimited has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Wurm Unlimited server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Wurm Unlimited datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport", "internalport", "rmiport"):
-        return _parse_port(value[0])
-    if key[0] in ("servername", "exe_name", "dir", "worldname"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return gamemodule_common.handle_basic_checkvalue(
         server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'internalport', 'protocol': 'udp'}, {'key': 'internalport', 'protocol': 'tcp'}, {'key': 'rmiport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        key,
+        *value,
+        str_keys=("servername", "exe_name", "dir", "worldname"),
+        custom_handlers={
+            "port": lambda _server, *values: _parse_port(values[0]),
+            "queryport": lambda _server, *values: _parse_port(values[0]),
+            "internalport": lambda _server, *values: _parse_port(values[0]),
+            "rmiport": lambda _server, *values: _parse_port(values[0]),
+        },
+        backup_module=backup_utils,
     )
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'internalport', 'protocol': 'udp'}, {'key': 'internalport', 'protocol': 'tcp'}, {'key': 'rmiport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'internalport', 'protocol': 'udp'}, {'key': 'internalport', 'protocol': 'tcp'}, {'key': 'rmiport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

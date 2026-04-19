@@ -5,10 +5,12 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from server.settable_keys import SettingSpec, build_launch_arg_values
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 import server.runtime as runtime_module
+from utils.backups import backups as backup_utils
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 805140
 steam_anonymous_login_possible = True
@@ -21,20 +23,21 @@ command_args = {
             ArgSpec("DIR", "The directory to install BATTALION: Legacy in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
-command_descriptions = {
-    "update": "Update the BATTALION: Legacy dedicated server to the latest version.",
-    "restart": "Restart the BATTALION: Legacy dedicated server.",
-}
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the BATTALION: Legacy dedicated server to the latest version.",
+    "Restart the BATTALION: Legacy dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
+setting_schema = {
+    **gamemodule_common.build_unreal_setting_schema(
+        positional_key="map",
+        positional_description="The startup map.",
+    ),
+    **gamemodule_common.build_executable_path_setting_schema(),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Battalion/Binaries/Linux/BattalionServer-Linux-Shipping"):
@@ -120,12 +123,16 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    dynamic_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     return (
         [
             "./" + server.data["exe_name"],
-            server.data["map"],
-            "-Port=%s" % (server.data["port"],),
-            "-QueryPort=%s" % (server.data["queryport"],),
+            *dynamic_args,
             "-log",
         ],
         server.data["dir"],
@@ -145,42 +152,36 @@ def status(server, verbose):
 def message(server, msg):
     """BATTALION: Legacy has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a BATTALION: Legacy server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported BATTALION: Legacy datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport"):
-        return int(value[0])
-    if key[0] in ("map", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return gamemodule_common.handle_setting_schema_checkvalue(
         server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port", "queryport"),
+        resolved_str_keys=("map", "exe_name", "dir"),
+        backup_module=backup_utils,
     )
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+)
+
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

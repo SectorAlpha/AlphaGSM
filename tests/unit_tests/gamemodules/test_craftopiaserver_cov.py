@@ -83,6 +83,52 @@ def test_install(tmp_path):
     assert (tmp_path / "DedicatedServerSave").is_dir()
 
 
+def test_sync_server_config_updates_server_setting(tmp_path):
+    server = DummyServer("craft")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 9797
+    server.data["maxplayers"] = 12
+    server.data["worldname"] = "Fresh World"
+    (tmp_path / "DefaultServerSetting.ini").write_text(
+        "[GameWorld]\nname=OldWorld\n\n[Host]\nport=6587\nmaxPlayerNumber=7\nusePassword=0\nserverPassword=00000000\nbindAddress=0.0.0.0\n\n[Save]\nsavePath=DedicatedServerSave/\n"
+    )
+
+    mod.sync_server_config(server)
+
+    settings = (tmp_path / "ServerSetting.ini").read_text()
+    assert "name=Fresh World" in settings
+    assert "port=9797" in settings
+    assert "maxPlayerNumber=12" in settings
+
+
+def test_setting_schema_exposes_canonical_ini_keys():
+    schema = mod.setting_schema
+
+    assert schema["map"].storage_key == "worldname"
+    assert schema["map"].aliases == ("worldname",)
+    assert schema["serverpassword"].secret is True
+    assert schema["bindaddress"].storage_key is None
+
+
+def test_sync_server_config_writes_password_and_bindaddress(tmp_path):
+    server = DummyServer("craft")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 9797
+    server.data["maxplayers"] = 12
+    server.data["worldname"] = "Fresh World"
+    server.data["serverpassword"] = "craft-secret"
+    server.data["bindaddress"] = "127.0.0.1"
+    (tmp_path / "DefaultServerSetting.ini").write_text(
+        "[GameWorld]\nname=OldWorld\n\n[Host]\nport=6587\nmaxPlayerNumber=7\nusePassword=0\nserverPassword=00000000\nbindAddress=0.0.0.0\n\n[Save]\nsavePath=DedicatedServerSave/\n"
+    )
+
+    mod.sync_server_config(server)
+
+    settings = (tmp_path / "ServerSetting.ini").read_text()
+    assert "serverPassword=craft-secret" in settings
+    assert "bindAddress=127.0.0.1" in settings
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -241,4 +287,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

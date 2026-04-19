@@ -6,10 +6,17 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import (
+    SettingSpec,
+    build_launch_arg_values,
+    build_native_config_tree,
+    merge_nested_config,
+)
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1874900
 steam_anonymous_login_possible = True
@@ -37,6 +44,98 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "queryport", "maxplayers", "scenarioid", "bindaddress", "adminpassword")
+setting_schema = {
+    "map": SettingSpec(
+        canonical_key="map",
+        aliases=("scenario", "scenarioid"),
+        description="The selected scenario file used by the server.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        storage_key="scenarioid",
+        native_config_path=("game", "scenarioId"),
+        examples=(DEFAULT_SCENARIO_ID,),
+    ),
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The primary game port.",
+        value_type="integer",
+        apply_to=("datastore", "native_config", "launch_args"),
+        launch_arg_tokens=("-bindPort",),
+        examples=("2001",),
+    ),
+    "queryport": SettingSpec(
+        canonical_key="queryport",
+        description="The A2S query port.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_path=("a2s", "port"),
+        examples=("2002",),
+    ),
+    "maxplayers": SettingSpec(
+        canonical_key="maxplayers",
+        description="Maximum number of players allowed on the server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_path=("game", "maxPlayers"),
+        examples=("8",),
+    ),
+    "bindaddress": SettingSpec(
+        canonical_key="bindaddress",
+        description="IP address the server binds its A2S listener to.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        native_config_path=("a2s", "address"),
+        launch_arg_tokens=("-bindAddress",),
+        examples=("0.0.0.0",),
+    ),
+    "adminpassword": SettingSpec(
+        canonical_key="adminpassword",
+        description="Password used for administrative access.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        native_config_path=("game", "passwordAdmin"),
+        secret=True,
+    ),
+}
+
+
+def sync_server_config(server):
+    """Write the managed Arma Reforger server config from datastore values."""
+
+    config_dir = os.path.join(server.data["dir"], os.path.dirname(server.data["configfile"]))
+    if config_dir:
+        os.makedirs(config_dir, exist_ok=True)
+    os.makedirs(os.path.join(server.data["dir"], server.data["profilesdir"]), exist_ok=True)
+
+    config_path = os.path.join(server.data["dir"], server.data["configfile"])
+    config = {}
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, encoding="utf-8") as handle:
+                loaded = json.load(handle)
+            if isinstance(loaded, dict):
+                config = loaded
+        except (json.JSONDecodeError, OSError):
+            config = {}
+
+    updates = build_native_config_tree(
+        server.data,
+        setting_schema,
+        defaults={
+            "bindaddress": "0.0.0.0",
+            "queryport": int(server.data.get("port", 2001)) + 1,
+            "maxplayers": 8,
+            "scenarioid": DEFAULT_SCENARIO_ID,
+        },
+        value_transform=lambda spec, value: int(value) if spec.value_type == "integer" else str(value),
+        require_explicit_path=True,
+    )
+    merge_nested_config(config, updates)
+
+    with open(config_path, "w", encoding="utf-8") as handle:
+        json.dump(config, handle, indent=2)
+        handle.write("\n")
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="ArmaReforgerServer"):
@@ -47,6 +146,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ArmaReforgerServer"
     server.data.setdefault("configfile", "configs/server.json")
     server.data.setdefault("profilesdir", "profile")
     server.data.setdefault("bindaddress", "0.0.0.0")
+    server.data.setdefault("adminpassword", "")
     server.data.setdefault("scenarioid", DEFAULT_SCENARIO_ID)
     server.data.setdefault("maxplayers", 8)
     server.data.setdefault("backupfiles", ["configs", "profile"])
@@ -87,36 +187,7 @@ def install(server):
         server.data["Steam_anonymous_login_possible"],
         validate=False,
     )
-    config_dir = os.path.join(server.data["dir"], os.path.dirname(server.data["configfile"]))
-    if config_dir:
-        os.makedirs(config_dir, exist_ok=True)
-    os.makedirs(os.path.join(server.data["dir"], server.data["profilesdir"]), exist_ok=True)
-
-    config_path = os.path.join(server.data["dir"], server.data["configfile"])
-    if not os.path.isfile(config_path):
-        with open(config_path, "w", encoding="utf-8") as handle:
-            json.dump(
-                {
-                    "a2s": {
-                        "address": server.data.get("bindaddress", "0.0.0.0"),
-                        "port": int(server.data.get("queryport", int(server.data.get("port", 2001)) + 1)),
-                    },
-                    "game": {
-                        "name": server.name,
-                        "admins": [],
-                        "passwordAdmin": "",
-                        "maxPlayers": int(server.data.get("maxplayers", 8)),
-                        "crossPlatform": False,
-                        "supportedPlatforms": ["PLATFORM_PC"],
-                        "scenarioId": server.data.get(
-                            "scenarioid", DEFAULT_SCENARIO_ID
-                        ),
-                    }
-                },
-                handle,
-                indent=2,
-            )
-            handle.write("\n")
+    sync_server_config(server)
     server.data.save()
 
 
@@ -146,6 +217,12 @@ def _build_start_command(server):
 
     config_path = os.path.join(server.data["dir"], server.data["configfile"])
     profile_path = os.path.join(server.data["dir"], server.data["profilesdir"])
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        value_transform=lambda _spec, value: str(value),
+        require_explicit_tokens=True,
+    )
     return (
         [
             "./" + server.data["exe_name"],
@@ -153,10 +230,7 @@ def _build_start_command(server):
             config_path,
             "-profile",
             profile_path,
-            "-bindAddress",
-            server.data["bindaddress"],
-            "-bindPort",
-            str(server.data["port"]),
+            *launch_args,
         ],
         server.data["dir"],
     )
@@ -239,13 +313,13 @@ def status(server, verbose):
 def message(server, msg):
     """Arma Reforger has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for an Arma Reforger server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
@@ -265,6 +339,6 @@ def checkvalue(server, key, *value):
         return int(value[0])
     if key[0] == "scenarioid":
         return str(value[0])
-    if key[0] in ("configfile", "profilesdir", "bindaddress", "exe_name", "dir"):
+    if key[0] in ("configfile", "profilesdir", "bindaddress", "adminpassword", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")

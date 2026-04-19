@@ -116,7 +116,60 @@ def test_get_start_command(tmp_path):
     server.data["servercfg"] = "test"
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./qzeroded.x64",
+        "+set",
+        "fs_homepath",
+        server.data["dir"],
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_container_spec_uses_container_homepath(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "qzeroded.x64"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["servercfg"] = "server.cfg"
+    server.data["startmap"] = "campgrounds"
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["command"] == [
+        "./qzeroded.x64",
+        "+set",
+        "fs_homepath",
+        "/srv/server",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "server.cfg",
+        "+map",
+        "campgrounds",
+    ]
+
+
+def test_setting_schema_exposes_quake_live_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["startmap"].aliases == ("map",)
+    assert mod.setting_schema["homepath"].storage_key == "dir"
+    assert mod.setting_schema["servercfg"].launch_arg_tokens == ("+exec",)
 
 
 def test_get_start_command_missing_exe(tmp_path):

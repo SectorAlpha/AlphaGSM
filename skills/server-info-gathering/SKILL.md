@@ -41,7 +41,7 @@ Sources:
 - For Minecraft: `server.properties` in the install dir
 - For other games: search for `.cfg`, `.ini`, `.yaml`, `.json`, `.toml`, `.xml` references in the module
 
-Record: config file path relative to install dir, key settings (port, max players, map, RCON), and provide a config template.
+Record: config file path relative to install dir, key settings (port, max players, map, RCON), and provide a config template that mimics the real server config file as closely as possible.
 
 ### 3. Maps and Mods
 
@@ -67,7 +67,7 @@ All Valve servers go through `define_valve_server_module()`. The parameters dire
 executable      → run file name
 game_dir        → base directory for game content
 config_subdir   → config subdirectory (usually "cfg")
-config_default  → main config file (usually "server.cfg")
+config_default  → main config file (usually "server.cfg") and preferred template filename when AlphaGSM manages one stable config path
 default_map     → starting map
 max_players     → player limit
 port            → default game port
@@ -104,8 +104,27 @@ Read `configure()`, `install()`, and `get_start_command()`. Look for:
 
 Store config templates in `docs/server-templates/<module_name>/`:
 
-- `server.cfg` or equivalent — the main config file with documented defaults
-- `README.md` — brief notes on what each setting does
+- Mimic the real game-owned config file as closely as possible: filename, relative path, key names, syntax style, comments, and default structure.
+- Use the real runtime filename when the module, smoke test, or server guide identifies one stable config path.
+- Use `alphagsm-example.cfg` only when the module has no stable game-owned config filename and the file is documenting AlphaGSM-managed values instead.
+- Match subpaths when they are part of the runtime contract, for example `System/UT2004.ini`.
+- Prefer real upstream sections and setting names over AlphaGSM-invented placeholders.
+- `README.txt` — brief notes that explain whether the included file is the real runtime config or an AlphaGSM-oriented reference.
+- Start from `docs/server-templates/_template/` when creating a new template directory.
+
+Reference seed files in `docs/server-templates/_template/`:
+
+- `server.cfg` — copy and rename when the game really uses a stable config file, then reshape it to match the real format.
+- `alphagsm-example.cfg` — copy only for modules that expose AlphaGSM-managed keys without one stable runtime filename.
+
+When deciding whether to rename a template away from `alphagsm-example.cfg`, require at least one of these:
+
+- a module-owned config path such as `configfile`, `settingsfile`, `servercfg`, or another explicit runtime filename
+- a smoke or integration test that edits or depends on a specific config path
+- a server guide that documents one stable runtime config filename
+- strong upstream documentation that names the actual config file used by the dedicated server
+
+If that evidence does not exist, keep `alphagsm-example.cfg` and explain in `README.txt` that the file is an AlphaGSM-oriented reference rather than a literal on-disk game config.
 
 ## Developer Notes Section Format
 

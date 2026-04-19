@@ -1,18 +1,23 @@
 """Counter-Strike 2-specific lifecycle, configuration, and update helpers."""
 
 import os
-import re
 
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from server.settable_keys import build_launch_arg_values, build_native_config_values
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.fileutils import make_empty_file
+from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
+    VALVE_SERVER_CONFIG_SYNC_KEYS,
+    build_valve_server_setting_schema,
     integration_source_server_config,
     source_query_address,
+    validate_source_startmap,
     wake_source_server_for_a2s,
 )
 import server.runtime as runtime_module
 import utils.steamcmd as steamcmd
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 730
 steam_anonymous_login_possible = True
@@ -26,56 +31,24 @@ command_args = {
             ArgSpec("DIR", "The Directory to install minecraft in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec(
-                "v",
-                ["validate"],
-                "Validate the server files after updating",
-                "validate",
-                None,
-                True,
-            ),
-            OptSpec(
-                "r",
-                ["restart"],
-                "Restarts the server upon updating",
-                "restart",
-                None,
-                True,
-            ),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
-command_descriptions = {
-    "update": "Updates the game server to the latest version.",
-    "restart": "Restarts the game server without killing the process.",
-}
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Updates the game server to the latest version.",
+    "Restarts the game server without killing the process.",
+)
 command_functions = {}
 max_stop_wait = 1
-
-_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
-
-
-def updateconfig(filename, settings):
-    """Rewrite a simple key/value config file with the provided settings."""
-
-    lines = []
-    if os.path.isfile(filename):
-        settings = settings.copy()
-        with open(filename, "r", encoding="utf-8") as handle:
-            for line in handle:
-                match = _confpat.match(line)
-                if match is not None and match.group(1) in settings:
-                    lines.append(match.expand(r"\1 " + settings[match.group(1)] + r"\3"))
-                    del settings[match.group(1)]
-                else:
-                    lines.append(line)
-    for key, value in settings.items():
-        lines.append(key + " " + value + "\n")
-    with open(filename, "w", encoding="utf-8") as handle:
-        handle.write("".join(lines))
+config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
+setting_schema = {
+    **build_valve_server_setting_schema(
+        game_name="CS2 Server",
+        default_map="de_dust2",
+        max_players=16,
+        servername_example="AlphaGSM CS2 Server",
+    ),
+    **gamemodule_common.build_executable_path_setting_schema(),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="game/cs2.sh"):
@@ -85,6 +58,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="game/cs2.sh"):
     server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
     server.data["startmap"] = "de_dust2"
     server.data["maxplayers"] = "16"
+    server.data.setdefault("servername", "AlphaGSM CS2 Server")
+    server.data.setdefault("rconpassword", "changeme")
+    server.data.setdefault("serverpassword", "")
 
     if port is None:
         port = server.data.get("port", 27015)
@@ -143,13 +119,7 @@ def install(server):
     """Install or prepare the Counter-Strike 2 server files."""
 
     doinstall(server)
-    server_cfg = os.path.join(server.data["dir"], "game", "csgo", "cfg", "server.cfg")
-    os.makedirs(os.path.dirname(server_cfg), exist_ok=True)
-    if not os.path.isfile(server_cfg):
-        make_empty_file(server_cfg)
-    integration_cfg = integration_source_server_config()
-    if integration_cfg:
-        updateconfig(server_cfg, dict(integration_cfg))
+    sync_server_config(server)
 
 
 def restart(server):
@@ -188,17 +158,19 @@ def get_start_command(server):
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
 
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        value_transform=lambda _spec, value: str(value),
+        require_explicit_tokens=True,
+    )
+
     return [
         exe_name,
         "-dedicated",
         "-console",
         "-usercon",
-        "-port",
-        str(server.data["port"]),
-        "+map",
-        str(server.data["startmap"]),
-        "-maxplayers",
-        str(server.data["maxplayers"]),
+        *launch_args,
     ], server.data["dir"]
 
 
@@ -220,10 +192,80 @@ def get_info_address(server):
     return source_query_address(server)
 
 
+def sync_server_config(server):
+    """Rewrite the CS2 native server.cfg from datastore values."""
+
+    server_cfg = os.path.join(server.data["dir"], "game", "csgo", "cfg", "server.cfg")
+    os.makedirs(os.path.dirname(server_cfg), exist_ok=True)
+    if not os.path.isfile(server_cfg):
+        make_empty_file(server_cfg)
+
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "servername": "AlphaGSM CS2 Server",
+            "rconpassword": "changeme",
+            "serverpassword": "",
+        },
+        value_transform=lambda _spec, value: '"' + str(value).replace('"', '\\"') + '"',
+        require_explicit_key=True,
+    )
+    integration_cfg = integration_source_server_config()
+    if integration_cfg:
+        merged_config_values = dict(integration_cfg)
+        merged_config_values.update(config_values)
+        config_values = merged_config_values
+    updateconfig(server_cfg, config_values)
+
+
+def list_setting_values(server, canonical_key):
+    """Return installed map names for the CS2 map setting."""
+
+    if canonical_key != "map":
+        return None
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return []
+    maps_dir = os.path.join(install_dir, "game", "csgo", "maps")
+    if not os.path.isdir(maps_dir):
+        return []
+    return sorted(
+        os.path.splitext(filename)[0]
+        for filename in os.listdir(maps_dir)
+        if filename.endswith(".vpk") or filename.endswith(".bsp")
+    )
+
+
 def status(server, verbose):
     """Report CS2 server status information."""
 
     pass
+
+
+def checkvalue(server, key, *value):
+    """Validate supported CS2 datastore edits."""
+
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_str_keys=("servername", "rconpassword", "serverpassword"),
+        raw_int_keys=(),
+        raw_str_keys=("dir", "exe_name"),
+        resolved_handlers={
+            "map": lambda server_obj, raw_value: validate_source_startmap(
+                server_obj, "game/csgo", raw_value
+            ),
+        },
+        raw_handlers={
+            "maxplayers": lambda _server_obj, raw_value: str(int(raw_value)),
+            "startmap": lambda server_obj, raw_value: validate_source_startmap(
+                server_obj, "game/csgo", raw_value
+            ),
+        },
+    )
 
 
 command_functions = {
@@ -232,20 +274,16 @@ command_functions = {
 }
 
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family="steamcmd-linux",
         port_definitions=(
             {"key": "port", "protocol": "udp"},
             {"key": "port", "protocol": "tcp"},
         ),
-    )
+)
 
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family="steamcmd-linux",
         get_start_command=get_start_command,
         port_definitions=(
@@ -253,4 +291,4 @@ def get_container_spec(server):
             {"key": "port", "protocol": "tcp"},
         ),
         stdin_open=True,
-    )
+)

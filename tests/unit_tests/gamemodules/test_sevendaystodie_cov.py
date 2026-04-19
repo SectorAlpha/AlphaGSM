@@ -65,7 +65,23 @@ def test_install(tmp_path):
     server.data["exe_name"] = "startserver.sh"
     server.data["Steam_AppID"] = 294420
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["configfile"] = "serverconfig.xml"
+    server.data["port"] = 26900
+    (tmp_path / "serverconfig.xml").write_text('<property name="ServerPort" value="26900"/>\n')
     mod.install(server)
+
+
+def test_sync_server_config_updates_serverconfig_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "serverconfig.xml"
+    server.data["port"] = 26901
+    config_path = tmp_path / "serverconfig.xml"
+    config_path.write_text('<property name="ServerPort" value="26900"/>\n')
+
+    mod.sync_server_config(server)
+
+    assert 'value="26901"' in config_path.read_text()
 
 
 def test_update_with_restart(tmp_path):

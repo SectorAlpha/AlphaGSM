@@ -6,8 +6,10 @@ import screen
 import server.runtime as runtime_module
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1136510
 steam_anonymous_login_possible = True
@@ -20,20 +22,27 @@ command_args = {
             ArgSpec("DIR", "The directory to install Warfork in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
-command_descriptions = {
-    "update": "Update the Warfork dedicated server to the latest version.",
-    "restart": "Restart the Warfork dedicated server.",
-}
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Warfork dedicated server to the latest version.",
+    "Restart the Warfork dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "hostname")
+setting_schema = {
+    **gamemodule_common.build_quake_setting_schema(
+        include_fs_game=True,
+        port_tokens=("+set", "net_port"),
+        hostname_tokens=("+set", "sv_hostname"),
+        port_native_config_key="net_port",
+        hostname_native_config_key="sv_hostname",
+        include_bind_address=True,
+        hostname_before_port=True,
+    ),
+    **gamemodule_common.build_executable_path_setting_schema(),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="wf_server.x86_64"):
@@ -71,6 +80,60 @@ def configure(server, ask, port=None, dir=None, *, exe_name="wf_server.x86_64"):
     return (), {}
 
 
+def sync_server_config(server):
+    """Write managed Warfork config values into the autoexec file."""
+
+    autoexec_dir = os.path.join(server.data["dir"], "basewf")
+    os.makedirs(autoexec_dir, exist_ok=True)
+    autoexec_path = os.path.join(autoexec_dir, "dedicated_autoexec.cfg")
+    managed_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "port": 44400,
+            "hostname": "AlphaGSM %s" % (server.name,),
+        },
+        require_explicit_key=True,
+    )
+    port = int(managed_values["net_port"])
+    hostname = managed_values["sv_hostname"]
+    with open(autoexec_path, "w", encoding="utf-8") as fh:
+        fh.write(f'set net_port {port}\n')
+        fh.write('set sv_hostname "%s"\n' % (hostname.replace('"', '\\"'),))
+
+
+def _validate_startmap(server, startmap):
+    """Validate a map name against installed map files when available."""
+
+    server_dir = server.data.get("dir")
+    fs_game = server.data.get("fs_game", "basewf")
+    if not server_dir:
+        return startmap
+
+    candidate_dirs = [
+        os.path.join(server_dir, fs_game, "maps"),
+        os.path.join(server_dir, "basewf", "maps"),
+    ]
+    existing_map_dirs = [path for path in candidate_dirs if os.path.isdir(path)]
+    if not existing_map_dirs:
+        return startmap
+
+    available_maps = set()
+    for maps_dir in existing_map_dirs:
+        for entry in os.listdir(maps_dir):
+            if entry.lower().endswith(".bsp"):
+                available_maps.add(os.path.splitext(entry)[0])
+
+    if not available_maps or startmap in available_maps:
+        return startmap
+
+    sample = ", ".join(sorted(available_maps)[:10])
+    raise ServerError(
+        "Unsupported map '%s'. Available installed maps include: %s"
+        % (startmap, sample)
+    )
+
+
 def install(server):
     """Download the Warfork server files via SteamCMD."""
 
@@ -84,11 +147,7 @@ def install(server):
     # SteamCMD ships a basewf/dedicated_autoexec.cfg that hard-codes
     # net_port 44400.  Overwrite it with the configured port so that
     # the server binds the port specified during setup.
-    autoexec_dir = os.path.join(server.data["dir"], "basewf")
-    os.makedirs(autoexec_dir, exist_ok=True)
-    autoexec_path = os.path.join(autoexec_dir, "dedicated_autoexec.cfg")
-    with open(autoexec_path, "w", encoding="utf-8") as fh:
-        fh.write(f'set net_port {server.data["port"]}\n')
+    sync_server_config(server)
 
 
 def update(server, validate=False, restart=False):
@@ -99,6 +158,7 @@ def update(server, validate=False, restart=False):
     except Exception:
         print("Server has probably already stopped, updating")
     steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
+    gamemodule_common.sync_if_install_present(server, sync_server_config)
     print("Server up to date")
     if restart:
         print("Starting the server up")
@@ -118,24 +178,15 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        defaults={"bindaddress": "0.0.0.0"},
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     return (
-        [
-            "./" + server.data["exe_name"],
-            "+set",
-            "fs_game",
-            server.data["fs_game"],
-            "+set",
-            "sv_hostname",
-            server.data["hostname"],
-            "+set",
-            "net_ip",
-            "0.0.0.0",
-            "+set",
-            "net_port",
-            str(server.data["port"]),
-            "+map",
-            server.data["startmap"],
-        ],
+        ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
 
@@ -199,26 +250,27 @@ def status(server, verbose):
 def message(server, msg):
     """Warfork has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Warfork server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Warfork datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("fs_game", "hostname", "startmap", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port",),
+        resolved_str_keys=("fs_game", "hostname", "exe_name", "dir"),
+        resolved_handlers={
+            "startmap": lambda active_server, *values: _validate_startmap(active_server, str(values[0]))
+        },
+        backup_module=backup_utils,
+    )

@@ -5,10 +5,11 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.backups import backups as backup_utils
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1169370
 steam_anonymous_login_possible = True
@@ -152,29 +153,25 @@ def status(server, verbose):
 def message(server, msg):
     """Necesse has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Necesse server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Necesse datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "slots"):
-        return int(value[0])
-    if key[0] in ("servername", "world", "javapath", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_basic_checkvalue(
+        server,
+        key,
+        *value,
+        int_keys=("port", "slots"),
+        str_keys=("servername", "world", "javapath", "exe_name", "dir"),
+    )
 
 def get_runtime_requirements(server):
     java_major = server.data.get("java_major")

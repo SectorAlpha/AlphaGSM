@@ -23,7 +23,7 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Minecraft.net Bedrock download page is JavaScript-rendered; URL scraper returns no results (module disabled)")
+@pytest.mark.skip(reason="Bedrock setup currently hangs in local validation despite the page exposing a direct Linux archive URL again; module remains disabled")
 def test_minecraft_bedrock_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

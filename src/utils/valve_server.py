@@ -11,15 +11,16 @@ from typing import NoReturn
 
 import screen
 from server.errors import ServerError
+from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
+from utils.simple_kv_config import rewrite_space_config
 from utils.settings import settings
 import utils.steamcmd as steamcmd
 
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 STEAMCLIENT_32_DST = os.path.expanduser("~/.steam/sdk32/steamclient.so")
-_CONFPAT = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 _SOURCE_STATUS_PLAYERS_RE = re.compile(
     r"(?P<players>\d+) humans, (?P<bots>\d+) bots \((?P<max_players>\d+) max\)"
 )
@@ -60,6 +61,81 @@ _COMMAND_DESCRIPTIONS = {
     "update": "Update the game server to the latest version available via SteamCMD.",
     "restart": "Restart the game server by stopping it and then starting it again.",
 }
+
+VALVE_SERVER_CONFIG_SYNC_KEYS = ("servername", "rconpassword", "serverpassword")
+
+
+def build_valve_server_setting_schema(
+    *,
+    game_name,
+    default_map,
+    max_players,
+    servername_example=None,
+    port_launch_arg_tokens=("-port",),
+    map_launch_arg_tokens=("+map",),
+    maxplayers_launch_arg_tokens=("-maxplayers",),
+):
+    """Return the shared datastore/config schema for Valve-engine servers."""
+
+    if servername_example is None:
+        servername_example = f"AlphaGSM {game_name}"
+
+    return {
+        "port": SettingSpec(
+            canonical_key="port",
+            description="The primary game port.",
+            value_type="integer",
+            apply_to=("datastore", "launch_args"),
+            launch_arg_tokens=port_launch_arg_tokens,
+            examples=("27015",),
+        ),
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap", "level"),
+            description="The currently selected map or level.",
+            value_type="string",
+            apply_to=("datastore", "launch_args"),
+            storage_key="startmap",
+            launch_arg_tokens=map_launch_arg_tokens,
+            examples=(default_map,),
+        ),
+        "maxplayers": SettingSpec(
+            canonical_key="maxplayers",
+            aliases=("max_players",),
+            description="Maximum number of player slots.",
+            value_type="integer",
+            apply_to=("datastore", "launch_args"),
+            launch_arg_tokens=maxplayers_launch_arg_tokens,
+            examples=(str(max_players),),
+        ),
+        "servername": SettingSpec(
+            canonical_key="servername",
+            aliases=("hostname", "server_name", "name"),
+            description="The server's public name shown to players.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="hostname",
+            examples=(servername_example,),
+        ),
+        "rconpassword": SettingSpec(
+            canonical_key="rconpassword",
+            aliases=("rconpass", "rcon_password"),
+            description="Remote console password for administrative access.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="rcon_password",
+            secret=True,
+        ),
+        "serverpassword": SettingSpec(
+            canonical_key="serverpassword",
+            aliases=("sv_password", "svpassword", "password"),
+            description="Password required for players to join the server.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="sv_password",
+            secret=True,
+        ),
+    }
 
 
 def _raise_server_error(*args) -> NoReturn:
@@ -322,21 +398,38 @@ def _ensure_steamclient_link():
 def updateconfig(filename, config_values):
     """Rewrite a simple key/value config file while preserving unknown lines."""
 
-    lines = []
-    if os.path.isfile(filename):
-        config_values = config_values.copy()
-        with open(filename, "r", encoding="utf-8") as handle:
-            for line in handle:
-                match = _CONFPAT.match(line)
-                if match is not None and match.group(1) in config_values:
-                    lines.append(match.expand(r"\1 " + str(config_values[match.group(1)]) + r"\3"))
-                    del config_values[match.group(1)]
-                else:
-                    lines.append(line)
-    for key, value in config_values.items():
-        lines.append("%s %s\n" % (key, value))
-    with open(filename, "w", encoding="utf-8") as handle:
-        handle.write("".join(lines))
+    rewrite_space_config(filename, config_values)
+
+
+def validate_source_startmap(server, game_dir, startmap):
+    """Validate a Source startmap against installed BSP files when available."""
+
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return str(startmap)
+
+    maps_dir = os.path.join(install_dir, game_dir, "maps")
+    if not os.path.isdir(maps_dir):
+        return str(startmap)
+
+    installed_maps = sorted(
+        os.path.splitext(filename)[0]
+        for filename in os.listdir(maps_dir)
+        if filename.endswith(".bsp")
+    )
+    if not installed_maps:
+        return str(startmap)
+
+    normalized_maps = {name.lower(): name for name in installed_maps}
+    requested_map = str(startmap)
+    if requested_map.lower() in normalized_maps:
+        return requested_map
+
+    sample_maps = ", ".join(installed_maps[:10])
+    raise ServerError(
+        "Unsupported map %s. Installed maps include: %s"
+        % (requested_map, sample_maps)
+    )
 
 
 def _get_module_settings(module_name):
@@ -371,12 +464,66 @@ def define_valve_server_module(
     config_subdir="cfg",
     config_default="server.cfg",
     default_server_config=None,
+    enable_map_validation=False,
 ):
     """Create a standard AlphaGSM game-module surface for a Valve-engine server."""
     default_port = port
-    module_name = inspect.currentframe().f_back.f_globals["__name__"].split(".")[-1]
+    caller_globals = inspect.currentframe().f_back.f_globals
+    module_name = caller_globals["__name__"].split(".")[-1]
     default_server_config = {} if default_server_config is None else default_server_config.copy()
     default_backupfiles = _default_backupfiles(game_dir, config_subdir, config_default)
+    setting_schema = build_valve_server_setting_schema(
+        game_name=game_name,
+        default_map=default_map,
+        max_players=max_players,
+    )
+    config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
+
+    def _server_cfg_path(server):
+        """Return the authoritative config file path for this Valve server."""
+
+        cfg_dir = os.path.join(server.data["dir"], game_dir)
+        if config_subdir:
+            cfg_dir = os.path.join(cfg_dir, config_subdir)
+        return cfg_dir, os.path.join(cfg_dir, server.data["server_cfg"])
+
+    def _quote_config_value(value):
+        """Return a Source-style quoted config value."""
+
+        text = str(value)
+        if len(text) >= 2 and text.startswith('"') and text.endswith('"'):
+            return text
+        return '"' + text.replace('"', '\\"') + '"'
+
+    def _current_servername(server, module_settings):
+        """Return the best available server name for the datastore or config file."""
+
+        server_cfg = module_settings.getsection("servercfg")
+        return server.data.get(
+            "servername",
+            module_settings.get(
+                "servername",
+                server_cfg.get("hostname", "AlphaGSM %s" % (game_name,)),
+            ),
+        )
+
+    def _current_rconpassword(server, module_settings):
+        """Return the best available RCON password for the datastore or config file."""
+
+        server_cfg = module_settings.getsection("servercfg")
+        return server.data.get(
+            "rconpassword",
+            module_settings.get("rconpassword", server_cfg.get("rcon_password", "")),
+        )
+
+    def _current_serverpassword(server, module_settings):
+        """Return the best available join password for the datastore or config file."""
+
+        server_cfg = module_settings.getsection("servercfg")
+        return server.data.get(
+            "serverpassword",
+            module_settings.get("serverpassword", server_cfg.get("sv_password", "")),
+        )
 
     def configure(server, ask, port=None, dir=None, *, exe_name=None):
         """Store install and networking defaults for this Valve-engine server."""
@@ -389,6 +536,7 @@ def define_valve_server_module(
 
         server.data.setdefault("startmap", module_settings.get("startmap", default_map))
         server.data.setdefault("maxplayers", str(module_settings.get("maxplayers", max_players)))
+        server.data.setdefault("serverpassword", module_settings.get("serverpassword", ""))
         server.data.setdefault("game_dir", game_dir)
         server.data.setdefault("server_cfg", module_settings.get("server_cfg", config_default))
         server.data.setdefault("backupfiles", list(default_backupfiles))
@@ -483,24 +631,55 @@ def define_valve_server_module(
                     with open(_path, "wb") as _fh:
                         _fh.write(_content.replace(b"\r\n", b"\n"))
 
-        cfg_dir = os.path.join(server.data["dir"], game_dir)
-        if config_subdir:
-            cfg_dir = os.path.join(cfg_dir, config_subdir)
+        cfg_dir, cfg_path = _server_cfg_path(server)
         if not os.path.isdir(cfg_dir):
             os.makedirs(cfg_dir)
+        sync_server_config(server)
+        _save_data_store(server)
 
-        cfg_path = os.path.join(cfg_dir, server.data["server_cfg"])
+    def sync_server_config(server):
+        """Rewrite the shared Valve native config file from datastore values."""
+
+        module_settings = _get_module_settings(module_name)
+        cfg_dir, cfg_path = _server_cfg_path(server)
+        if not os.path.isdir(cfg_dir):
+            os.makedirs(cfg_dir)
         if not os.path.isfile(cfg_path):
             make_empty_file(cfg_path)
             with open(cfg_path, "w", encoding="utf-8") as handle:
                 handle.write("// AlphaGSM default config for %s\n" % (game_name,))
-        config_values = {"hostname": "\"AlphaGSM %s\"" % (game_name,)}
+
+        config_values = {}
         config_values.update(default_server_config)
         config_values.update(dict(module_settings.getsection("servercfg").items()))
         if engine == "source":
             config_values.update(integration_source_server_config())
+        config_values["hostname"] = _quote_config_value(_current_servername(server, module_settings))
+        config_values["rcon_password"] = _quote_config_value(
+            _current_rconpassword(server, module_settings)
+        )
+        config_values["sv_password"] = _quote_config_value(
+            _current_serverpassword(server, module_settings)
+        )
         updateconfig(cfg_path, config_values)
-        _save_data_store(server)
+
+    def list_setting_values(server, canonical_key):
+        """Return installed values for schema-backed keys when they are enumerable."""
+
+        if canonical_key != "map":
+            return None
+        install_dir = server.data.get("dir")
+        if not install_dir:
+            return []
+        maps_dir = os.path.join(install_dir, game_dir, "maps")
+        if not os.path.isdir(maps_dir):
+            return []
+        installed_maps = sorted(
+            os.path.splitext(filename)[0]
+            for filename in os.listdir(maps_dir)
+            if filename.endswith(".bsp")
+        )
+        return installed_maps
 
     def prestart(server, *args, **kwargs):
         """Perform common Valve-engine startup preparation."""
@@ -640,15 +819,40 @@ def define_valve_server_module(
             return backup_utils.checkdatavalue(server.data["backup"], key, *value)
         if len(value) == 0:
             _raise_server_error("No value specified")
+        try:
+            resolved = resolve_requested_key(key[0], setting_schema)
+        except KeyResolutionError:
+            resolved = None
+        if resolved is not None:
+            if resolved.canonical_key == "port":
+                return int(value[0])
+            if resolved.canonical_key == "maxplayers":
+                return str(int(value[0]))
+            if resolved.canonical_key in ("servername", "rconpassword", "serverpassword"):
+                return str(value[0])
+            if resolved.canonical_key == "map":
+                if enable_map_validation and engine == "source":
+                    return validate_source_startmap(server, game_dir, value[0])
+                return str(value[0])
         if key[0] in ("port", "clientport", "sourcetvport", "steamport"):
             return int(value[0])
         if key[0] == "maxplayers":
             return str(int(value[0]))
-        if key[0] in ("startmap", "dir", "server_cfg", "exe_name"):
+        if key[0] in ("servername", "hostname"):
+            return str(value[0])
+        if key[0] in ("rconpassword", "rcon_password"):
+            return str(value[0])
+        if key[0] in ("serverpassword", "sv_password", "svpassword", "password"):
+            return str(value[0])
+        if key[0] == "startmap":
+            if enable_map_validation and engine == "source":
+                return validate_source_startmap(server, game_dir, value[0])
+            return str(value[0])
+        if key[0] in ("dir", "server_cfg", "exe_name"):
             return str(value[0])
         _raise_server_error("Unsupported key for Valve server module: %s" % (key[0],))
 
-    return SimpleNamespace(
+    exported_namespace = SimpleNamespace(
         steam_app_id=steam_app_id,
         commands=("update", "restart"),
         command_args=_COMMAND_ARGS,
@@ -669,6 +873,10 @@ def define_valve_server_module(
         message=message,
         backup=backup,
         checkvalue=checkvalue,
+        config_sync_keys=config_sync_keys,
+        sync_server_config=sync_server_config,
+        setting_schema=setting_schema,
+        list_setting_values=list_setting_values,
         updateconfig=updateconfig,
         wake_a2s_query=wake_source_server_for_a2s if engine == "source" else None,
         get_query_address=source_query_address if engine == "source" else None,
@@ -677,3 +885,8 @@ def define_valve_server_module(
             hibernating_source_console_info if engine == "source" else None
         ),
     )
+    caller_globals["config_sync_keys"] = config_sync_keys
+    caller_globals["sync_server_config"] = sync_server_config
+    caller_globals["setting_schema"] = setting_schema
+    caller_globals["list_setting_values"] = list_setting_values
+    return exported_namespace

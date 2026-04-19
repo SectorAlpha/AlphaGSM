@@ -11,6 +11,7 @@ import screen
 from server import ServerError
 from utils import backups
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.gamemodules import common as gamemodule_common
 
 TERRARIA_HOMEPAGE = "https://terraria.org"
 TERRARIA_DOWNLOAD_TEMPLATE = (
@@ -269,20 +270,18 @@ def do_stop(server, j):
     screen.send_to_server(server.name, "\nexit\n")
 
 
-def status(server, verbose):
-    """Detailed Terraria-family status is not implemented yet."""
+status = gamemodule_common.make_noop_status_hook()
+status.__doc__ = "Detailed Terraria-family status is not implemented yet."
 
 
-def message(server, msg):
-    """Send a Terraria-family server message through the console."""
-
-    screen.send_to_server(server.name, "\nsay %s\n" % (msg,))
+message = gamemodule_common.make_server_message_hook(command="say")
+message.__doc__ = "Send a Terraria-family server message through the console."
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for Terraria-family servers."""
 
-    backups.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):

@@ -9,3 +9,5 @@ env
 coverage.xml
 nohup.out
 docs/superpowers/*
+build/
+dist-binary/

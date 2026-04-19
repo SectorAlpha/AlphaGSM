@@ -1,4 +1,9 @@
+import pytest
+
 import gamemodules.minecraft.bedrock as bedrock
+import utils.gamemodules.minecraft.properties_config as properties_config
+import server.server as server_module
+from utils.simple_kv_config import rewrite_equals_config
 
 
 class DummyData(dict):
@@ -14,6 +19,14 @@ class DummyServer:
     def __init__(self, name="alpha"):
         self.name = name
         self.data = DummyData()
+
+
+def make_server(module, name="alpha"):
+    server = server_module.Server.__new__(server_module.Server)
+    server.name = name
+    server.module = module
+    server.data = DummyData()
+    return server
 
 
 def test_resolve_bedrock_download_uses_explicit_version():
@@ -107,8 +120,130 @@ def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monk
     assert (tmp_path / "server" / "bedrock_server").exists()
     assert updates[0][0].endswith("server.properties")
     assert updates[0][1]["server-port"] == "19132"
+    assert updates[0][1]["level-name"] == "world_one"
     assert updates[0][1]["server-name"] == "AlphaGSM Bedrock"
     assert server.data["current_url"] == "http://example.com/bedrock.zip"
+
+
+def test_bedrock_doset_gamemap_updates_levelname_and_server_properties(monkeypatch, tmp_path):
+    server = make_server(bedrock, "bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19132,
+            "gamemode": "survival",
+            "difficulty": "easy",
+            "levelname": "world_one",
+            "maxplayers": "10",
+            "servername": "AlphaGSM Bedrock",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    server.doset("gamemap", "world_two")
+
+    assert server.data["levelname"] == "world_two"
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "19132",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "world_two",
+                "max-players": "10",
+                "server-name": "AlphaGSM Bedrock",
+            },
+        )
+    ]
+
+
+def test_bedrock_exposes_schema_metadata_for_native_properties():
+    map_spec = bedrock.setting_schema["map"]
+    servername_spec = bedrock.setting_schema["servername"]
+
+    assert bedrock.config_sync_keys == (
+        "port",
+        "gamemode",
+        "difficulty",
+        "levelname",
+        "maxplayers",
+        "servername",
+    )
+    assert map_spec.canonical_key == "map"
+    assert map_spec.aliases == ("gamemap", "level", "world")
+    assert map_spec.storage_key == "levelname"
+    assert servername_spec.canonical_key == "servername"
+    assert servername_spec.aliases == ()
+
+
+def test_bedrock_uses_shared_properties_config_contract():
+    assert bedrock.config_sync_keys == properties_config.CONFIG_SYNC_KEYS
+    assert bedrock.setting_schema == properties_config.build_setting_schema(
+        port_description="The port the Bedrock server listens on.",
+        port_example="19132",
+        map_example="Bedrock level",
+        maxplayers_example="10",
+        servername_description="The server name shown in Bedrock server listings.",
+        servername_example="AlphaGSM Bedrock Server",
+    )
+
+
+def test_bedrock_uses_shared_equals_config_writer():
+    assert bedrock.updateconfig is rewrite_equals_config
+
+
+def test_bedrock_sync_server_config_updates_server_properties(monkeypatch, tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19133,
+            "gamemode": "creative",
+            "difficulty": "hard",
+            "levelname": "world_two",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Changed",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    bedrock.sync_server_config(server)
+
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "19133",
+                "gamemode": "creative",
+                "difficulty": "hard",
+                "level-name": "world_two",
+                "max-players": "20",
+                "server-name": "AlphaGSM Changed",
+            },
+        )
+    ]
+
+
+def test_bedrock_sync_server_config_requires_existing_gamemode(tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19133,
+            "difficulty": "hard",
+            "levelname": "world_two",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Changed",
+        }
+    )
+
+    with pytest.raises(KeyError):
+        bedrock.sync_server_config(server)
 
 
 def test_bedrock_get_start_command_uses_local_library_path(tmp_path):

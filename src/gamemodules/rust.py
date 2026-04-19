@@ -5,10 +5,11 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
+from utils.backups import backups as backup_utils
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 258550
 steam_anonymous_login_possible = True
@@ -75,38 +76,21 @@ def configure(server, ask, port=None, dir=None, *, exe_name="RustDedicated"):
     return (), {}
 
 
-def install(server):
-    """Download the Rust server files via SteamCMD."""
-
-    if not os.path.isdir(server.data["dir"]):
-        os.makedirs(server.data["dir"])
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
-    )
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+install.__doc__ = "Download the Rust server files via SteamCMD."
 
 
-def update(server, validate=False, restart=False):
-    """Update the Rust server files and optionally restart the server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
 
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
-
-
-def restart(server):
-    """Restart the Rust server."""
-
-    server.stop()
-    server.start()
+restart = gamemodule_common.make_restart_hook()
 
 
 def get_start_command(server):
@@ -148,49 +132,41 @@ def do_stop(server, j):
     screen.send_to_server(server.name, "\nquit\n")
 
 
-def status(server, verbose):
-    """Detailed Rust status is not implemented yet."""
+status = gamemodule_common.make_noop_status_hook()
+status.__doc__ = "Detailed Rust status is not implemented yet."
 
 
 def message(server, msg):
     """Rust has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Rust server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Rust datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "worldsize", "maxplayers", "seed", "rconport"):
-        return int(value[0])
-    if key[0] in ("hostname", "level", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
+    return gamemodule_common.handle_basic_checkvalue(
         server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        key,
+        *value,
+        int_keys=("port", "worldsize", "maxplayers", "seed", "rconport"),
+        str_keys=("hostname", "level", "exe_name", "dir"),
     )
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

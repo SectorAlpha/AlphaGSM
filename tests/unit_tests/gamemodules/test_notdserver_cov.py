@@ -117,7 +117,19 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "LF/Binaries/Win64/LFServer.exe",
+        "?listen",
+        "-log",
+        "-Port=27015",
+        "-QueryPort=27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_notd_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

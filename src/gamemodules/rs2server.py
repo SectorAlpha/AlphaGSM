@@ -6,12 +6,14 @@ import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from server.settable_keys import SettingSpec, build_launch_arg_values
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 from utils.platform_info import IS_LINUX
 
 import server.runtime as runtime_module
+from utils.backups import backups as backup_utils
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 418480
 steam_anonymous_login_possible = True
@@ -24,20 +26,19 @@ command_args = {
             ArgSpec("DIR", "The directory to install Rising Storm 2 in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
-command_descriptions = {
-    "update": "Update the Rising Storm 2: Vietnam dedicated server to the latest version.",
-    "restart": "Restart the Rising Storm 2: Vietnam dedicated server.",
-}
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Rising Storm 2: Vietnam dedicated server to the latest version.",
+    "Restart the Rising Storm 2: Vietnam dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
+setting_schema = {
+    **gamemodule_common.build_unreal_setting_schema(),
+    "configfile": SettingSpec(canonical_key="configfile", description="Config file path for the server."),
+    **gamemodule_common.build_executable_path_setting_schema(),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/VNGame.exe"):
@@ -114,11 +115,16 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    dynamic_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     cmd = [
             server.data["exe_name"],
             "VNTE-CuChi?maxplayers=64",
-            "-Port=%s" % (server.data["port"],),
-            "-QueryPort=%s" % (server.data["queryport"],),
+            *dynamic_args,
             "-ConfigSubDir=PCServer",
             "-log",
         ]
@@ -140,39 +146,33 @@ def status(server, verbose):
 def message(server, msg):
     """Rising Storm 2 has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Rising Storm 2 server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Rising Storm 2 datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] in ("port", "queryport"):
-        return int(value[0])
-    if key[0] in ("configfile", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
-
-def get_runtime_requirements(server):
-    return proton.get_runtime_requirements(
+    return gamemodule_common.handle_setting_schema_checkvalue(
         server,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port", "queryport"),
+        resolved_str_keys=("configfile", "exe_name", "dir"),
+        backup_module=backup_utils,
     )
 
-def get_container_spec(server):
-    return proton.get_container_spec(
-        server,
-        get_start_command,
+get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-    )
+)
+
+get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=get_start_command,
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)

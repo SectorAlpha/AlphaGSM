@@ -1,6 +1,8 @@
 import importlib
 from types import SimpleNamespace
 
+import pytest
+
 
 class FakeSection(dict):
     def __init__(self, values=None, sections=None):
@@ -131,6 +133,183 @@ def test_valve_module_install_updates_server_cfg_from_settings(monkeypatch, tmp_
     assert "sv_pure 1" in cfg_text
 
 
+def test_valve_module_exposes_schema_and_sync_helpers():
+    module = importlib.import_module("gamemodules.cssserver")
+
+    assert "port" in module.setting_schema
+    assert "serverpassword" in module.setting_schema
+    assert "servername" in module.config_sync_keys
+    assert "rconpassword" in module.config_sync_keys
+    assert "serverpassword" in module.config_sync_keys
+    assert callable(module.sync_server_config)
+    assert callable(module.list_setting_values)
+    assert "map" in module.setting_schema
+    assert module.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert module.setting_schema["map"].storage_key == "startmap"
+    assert "gamemap" in module.setting_schema["map"].aliases
+    assert module.setting_schema["servername"].native_config_key == "hostname"
+    assert module.setting_schema["rconpassword"].native_config_key == "rcon_password"
+    assert module.setting_schema["serverpassword"].native_config_key == "sv_password"
+
+
+def test_valve_module_sync_server_config_updates_real_server_cfg(monkeypatch, tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    fake_settings = SimpleNamespace(
+        user=FakeSection(
+            sections={
+                "gamemodules": FakeSection(
+                    sections={
+                        "cssserver": FakeSection(
+                            sections={
+                                "servercfg": FakeSection({"sv_pure": "1"})
+                            }
+                        )
+                    }
+                )
+            }
+        )
+    )
+    monkeypatch.setattr(valve_server, "settings", fake_settings)
+
+    cfg_dir = tmp_path / "cstrike" / "cfg"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text('sv_cheats 0\nhostname "Old"\nrcon_password old\n', encoding="utf-8")
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "servername": "Configured CSS",
+            "rconpassword": 'super secret "pass"',
+            "serverpassword": 'join secret "pass"',
+            "server_cfg": "server.cfg",
+        },
+    )
+
+    module.sync_server_config(server)
+
+    cfg_text = cfg_path.read_text()
+    assert 'hostname "Configured CSS"' in cfg_text
+    assert 'rcon_password "super secret \\"pass\\""' in cfg_text
+    assert 'sv_password "join secret \\"pass\\""' in cfg_text
+    assert "sv_cheats 0" in cfg_text
+
+
+def test_valve_server_schema_builder_supports_tf2_style_maxplayers_token():
+    valve_server = importlib.import_module("utils.valve_server")
+
+    schema = valve_server.build_valve_server_setting_schema(
+        game_name="TF2 Server",
+        default_map="cp_dustbowl",
+        max_players=16,
+        servername_example="AlphaGSM TF2 Server",
+        maxplayers_launch_arg_tokens=("+maxplayers",),
+    )
+
+    assert schema["port"].launch_arg_tokens == ("-port",)
+    assert schema["map"].launch_arg_tokens == ("+map",)
+    assert schema["maxplayers"].launch_arg_tokens == ("+maxplayers",)
+    assert schema["servername"].native_config_key == "hostname"
+    assert schema["rconpassword"].native_config_key == "rcon_password"
+    assert schema["serverpassword"].native_config_key == "sv_password"
+
+
+def test_valve_updateconfig_preserves_unknown_lines_and_appends_missing_keys(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text('hostname "Old"\nsv_cheats 0\n', encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": '"Configured CSS"', "rcon_password": '"topsecret"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname "Configured CSS"',
+        "sv_cheats 0",
+        'rcon_password "topsecret"',
+    ]
+
+
+def test_valve_updateconfig_appends_quoted_multi_word_duplicate_values(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text('hostname "Old Name"\nsv_cheats 0\n', encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": '"Configured CSS"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname "Old Name"',
+        "sv_cheats 0",
+        'hostname "Configured CSS"',
+    ]
+
+
+def test_valve_updateconfig_leaves_tab_delimited_line_and_appends_new_value(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("hostname\tOldName\nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": "Configured CSS"},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        "hostname\tOldName",
+        "sv_cheats 0",
+        "hostname Configured CSS",
+    ]
+
+
+def test_valve_updateconfig_rewrites_hash_prefixed_values_in_place(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("rcon_password #placeholder\nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"rcon_password": "topsecret"},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        "rcon_password topsecret",
+        "sv_cheats 0",
+    ]
+
+
+def test_valve_updateconfig_rewrites_existing_blank_managed_line(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("rcon_password \nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"rcon_password": '"topsecret"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'rcon_password "topsecret"',
+        "sv_cheats 0",
+    ]
+
+
+def test_valve_module_list_setting_values_returns_installed_maps(tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    maps_dir = tmp_path / "cstrike" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "cp_badlands.bsp").write_text("")
+    (maps_dir / "cp_dustbowl.bsp").write_text("")
+    (maps_dir / "readme.txt").write_text("")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    assert module.list_setting_values(server, "map") == ["cp_badlands", "cp_dustbowl"]
+
+
 def test_valve_source_install_disables_hibernation_for_integration(monkeypatch, tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
     valve_server = importlib.import_module("utils.valve_server")
@@ -209,6 +388,34 @@ def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] is True
     assert spec["command"][:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
+
+
+def test_validate_source_startmap_accepts_installed_map(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    maps_dir = tmp_path / "cstrike" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "de_dust2.bsp").write_text("")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    assert valve_server.validate_source_startmap(server, "cstrike", "de_dust2") == "de_dust2"
+
+
+def test_validate_source_startmap_rejects_unknown_installed_map(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    maps_dir = tmp_path / "cstrike" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "de_dust2.bsp").write_text("")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    with pytest.raises(Exception, match="Unsupported map de_train"):
+        valve_server.validate_source_startmap(server, "cstrike", "de_train")
+
+
+def test_validate_source_startmap_skips_validation_without_installed_maps(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    assert valve_server.validate_source_startmap(server, "cstrike", "custom_map") == "custom_map"
 
 
 def test_parse_source_console_status_returns_latest_complete_block():

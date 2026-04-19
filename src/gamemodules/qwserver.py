@@ -5,10 +5,12 @@ import os
 import screen
 import server.runtime as runtime_module
 from server import ServerError
+from server.settable_keys import SettingSpec, build_launch_arg_values
 from utils.archive_install import install_binary
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.github_releases import resolve_release_asset
+from utils.gamemodules import common as gamemodule_common
 
 MVDSV_LATEST_RELEASE_API = "https://api.github.com/repos/QW-Group/mvdsv/releases/latest"
 
@@ -29,6 +31,17 @@ command_args = {
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+setting_schema = {
+    **gamemodule_common.build_quake_setting_schema(
+        port_tokens=("-port",),
+        hostname_tokens=("+hostname",),
+    ),
+    "url": SettingSpec(canonical_key="url", description="Download URL for the server archive."),
+    "download_name": SettingSpec(canonical_key="download_name", description="Cached archive filename."),
+    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
+    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
+    "version": SettingSpec(canonical_key="version", description="Requested upstream release version."),
+}
 
 
 def resolve_download(version=None):
@@ -114,16 +127,14 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     return (
-        [
-            "./" + server.data["exe_name"],
-            "-port",
-            str(server.data["port"]),
-            "+hostname",
-            server.data["hostname"],
-            "+map",
-            server.data["startmap"],
-        ],
+        ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
 
@@ -189,26 +200,32 @@ def status(server, verbose):
 def message(server, msg):
     """QuakeWorld has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a QuakeWorld server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported QuakeWorld datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("url", "download_name", "exe_name", "dir", "startmap", "hostname", "version"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port",),
+        resolved_str_keys=(
+            "url",
+            "download_name",
+            "exe_name",
+            "dir",
+            "startmap",
+            "hostname",
+            "version",
+        ),
+        backup_module=backup_utils,
+    )

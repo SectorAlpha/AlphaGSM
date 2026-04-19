@@ -111,7 +111,15 @@ def test_get_start_command(tmp_path):
     (tmp_path / "VeinServer.sh").write_text("")
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./VeinServer.sh",
+        "-Port=27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_vein_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

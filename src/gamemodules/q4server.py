@@ -5,9 +5,11 @@ import os
 import screen
 import server.runtime as runtime_module
 from server import ServerError
+from server.settable_keys import SettingSpec, build_launch_arg_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.gamemodules import common as gamemodule_common
 
 Q4_SERVER_URL = "https://cloud.quake4.net/files/quake4_linux_1.4.2.x86.run"
 Q4_SERVER_NAME = "quake4_linux_1.4.2.x86.run"
@@ -28,6 +30,17 @@ command_args = {
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+setting_schema = {
+    **gamemodule_common.build_quake_setting_schema(
+        include_fs_game=True,
+        port_tokens=("+set", "net_port"),
+        hostname_tokens=("+set", "si_name"),
+    ),
+    "url": SettingSpec(canonical_key="url", description="Download URL for the server archive."),
+    "download_name": SettingSpec(canonical_key="download_name", description="Cached archive filename."),
+    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
+    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, url=None, download_name=None, exe_name="q4ded.x86"):
@@ -88,21 +101,14 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
     return (
-        [
-            "./" + server.data["exe_name"],
-            "+set",
-            "fs_game",
-            server.data["fs_game"],
-            "+set",
-            "net_port",
-            str(server.data["port"]),
-            "+set",
-            "si_name",
-            server.data["hostname"],
-            "+map",
-            server.data["startmap"],
-        ],
+        ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
 
@@ -168,26 +174,24 @@ def status(server, verbose):
 def message(server, msg):
     """Quake 4 has no simple generic message console support here."""
 
-    print("This server doesn't support generic messages yet")
+    gamemodule_common.print_unsupported_message()
 
 
 def backup(server, profile=None):
     """Run the shared backup implementation for a Quake 4 server."""
 
-    backup_utils.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Quake 4 datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("url", "download_name", "exe_name", "dir", "fs_game", "hostname", "startmap"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port",),
+        resolved_str_keys=("url", "download_name", "exe_name", "dir", "fs_game", "hostname", "startmap"),
+        backup_module=backup_utils,
+    )

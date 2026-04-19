@@ -5,17 +5,22 @@ import re
 
 import screen
 import server.runtime as runtime_module
+from server.settable_keys import build_launch_arg_values, build_native_config_values
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
-from utils.fileutils import make_empty_file
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
+from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
     send_console_command_and_collect_response,
     integration_source_server_config,
     source_console_status,
     source_query_address,
+    VALVE_SERVER_CONFIG_SYNC_KEYS,
+    build_valve_server_setting_schema,
+    validate_source_startmap,
     wake_source_server_for_a2s,
 )
+from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
@@ -29,59 +34,62 @@ command_args = {
             ArgSpec("DIR", "The Directory to install minecraft in", str),
         )
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec(
-                "v",
-                ["validate"],
-                "Validate the server files after updating",
-                "validate",
-                None,
-                True,
-            ),
-            OptSpec(
-                "r",
-                ["restart"],
-                "Restarts the server upon updating",
-                "restart",
-                None,
-                True,
-            ),
-        )
-    ),
-    "restart": CmdSpec(),
+    **gamemodule_common.build_update_restart_command_args(),
 }
 
 # required still
 command_descriptions = {
-    "update": "Updates the game server to the latest version.",
-    "restart": "Restarts the game server without killing the process.",
+    **gamemodule_common.build_update_restart_command_descriptions(
+        "Updates the game server to the latest version.",
+        "Restarts the game server without killing the process.",
+    ),
 }
 
-max_stop_wait = 1
+command_functions = {}
 
-_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
+max_stop_wait = 1
+config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
+setting_schema = {
+    **build_valve_server_setting_schema(
+        game_name="TF2 Server",
+        default_map="cp_dustbowl",
+        max_players=16,
+        servername_example="AlphaGSM TF2 Server",
+        maxplayers_launch_arg_tokens=("+maxplayers",),
+    ),
+    **gamemodule_common.build_executable_path_setting_schema(),
+}
+
+_TF2_SERVER_CFG_TEMPLATE = """// Team Fortress 2 server.cfg template
+// Place this file at: tf/cfg/server.cfg
+
+// AlphaGSM-managed identity and password settings
+hostname "AlphaGSM TF2 Server"
+sv_password ""
+rcon_password "changeme"
+
+// Gameplay
+sv_pure 1
+mp_timelimit 30
+mp_maxrounds 0
+mp_autokick 0
+
+// Logging
+log on
+sv_logbans 1
+sv_logecho 1
+sv_logfile 1
+"""
 _SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
 
 
-def updateconfig(filename, settings):
-    """Rewrite a simple key/value config file with the provided settings."""
-    lines = []
-    if os.path.isfile(filename):
-        settings = settings.copy()
-        with open(filename, "r") as f:
-            for line in f:
-                m = _confpat.match(line)
-                if m is not None and m.group(1) in settings:
-                    lines.append(m.expand(r"\1 " + settings[m.group(1)] + r"\3"))
-                    del settings[m.group(1)]
-                else:
-                    lines.append(line)
-    for k, v in settings.items():
-        lines.append(k + " " + v + "\n")
-    print(lines)
-    with open(filename, "w") as f:
-        f.write("".join(lines))
+def _quote_config_value(value):
+    """Return a Source-style quoted config value."""
+
+    text = str(value)
+    if len(text) >= 2 and text.startswith('"') and text.endswith('"'):
+        return text
+    return '"' + text.replace('"', '\\"') + '"'
 
 
 # Team Fortress 2 is probably the most simple example of a steamcmd game
@@ -104,6 +112,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
 
     server.data["startmap"] = "cp_dustbowl"
     server.data["maxplayers"] = "16"
+    server.data.setdefault("servername", "AlphaGSM TF2 Server")
+    server.data.setdefault("rconpassword", "changeme")
+    server.data.setdefault("serverpassword", "")
 
     # do we have backup data already? if not initialise the dictionary
     if "backup" not in server.data:
@@ -172,31 +183,11 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
 def install(server):
     """Install or prepare the TF2 server files for this server object."""
     doinstall(server)
-    # TODO: any config files that need creating or any commands that need running before the server can start for the first time
-
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
     elif os.path.isfile(server.data["dir"] + "srcds_run"):
         server.data["exe_name"] = "srcds_run"
-
-    # create a default config if the download didn't include one
-    server_cfg_dir = server.data["dir"] + "tf/cfg/"
-    if not os.path.isdir(server_cfg_dir):
-        os.makedirs(server_cfg_dir)
-
-    server_cfg = server_cfg_dir + "server.cfg"
-    if not os.path.isfile(server_cfg):
-        make_empty_file(server_cfg)
-        with open(server_cfg, "w") as f:
-            f.write("""// AlphaGSM default TF2 server config
-hostname "AlphaGSM TF2 Server"
-sv_pure 1
-""")
-    integration_cfg = integration_source_server_config()
-    if integration_cfg:
-        integration_cfg = dict(integration_cfg)
-        integration_cfg["tf_allow_server_hibernation"] = "0"
-        updateconfig(server_cfg, integration_cfg)
+    sync_server_config(server)
     server.data.save()
 
 
@@ -218,10 +209,8 @@ def doinstall(server):
     )
 
 
-def restart(server):
-    """Restart the server by stopping it and then starting it again."""
-    server.stop()
-    server.start()
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the server by stopping it and then starting it again."
 
 
 def prestart(server, *args, **kwargs):
@@ -242,22 +231,12 @@ def prestart(server, *args, **kwargs):
         os.symlink(steamclient_src, STEAMCLIENT_DST)
 
 
-def update(server, validate=False, restart=False):
-    """Update the TF2 install through SteamCMD and optionally restart it."""
-    try:
-        server.stop()
-    except:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(
-        server.data["dir"],
-        steam_app_id,
-        steam_anonymous_login_possible,
-        validate=validate,
-    )
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the TF2 install through SteamCMD and optionally restart it."
 
 
 def get_start_command(server):
@@ -279,6 +258,13 @@ def get_start_command(server):
     if exe_name[:2] != "./":
         exe_name = "./" + exe_name
 
+    launch_args = build_launch_arg_values(
+        server.data,
+        setting_schema,
+        value_transform=lambda _spec, value: str(value),
+        require_explicit_tokens=True,
+    )
+
     return [
         exe_name,
         "-game",
@@ -286,18 +272,15 @@ def get_start_command(server):
         "-strictportbind",
         "+ip",
         "0.0.0.0",
-        "-port",
-        str(server.data["port"]),
+        *launch_args[:2],
         "+clientport",
         str(client_port),
         "+tv_port",
         str(sourcetv_port),
-        "+map",
-        str(server.data["startmap"]),
+        *launch_args[2:4],
         "+servercfgfile",
         "server.cfg",
-        "+maxplayers",
-        str(server.data["maxplayers"]),
+        *launch_args[4:6],
     ], server.data["dir"]
 
 
@@ -349,9 +332,79 @@ def get_info_address(server):
     return source_query_address(server)
 
 
-def status(server, verbose):
-    """Report TF2 server status information."""
-    pass
+def sync_server_config(server):
+    """Rewrite the TF2 native server.cfg from datastore values."""
+
+    server_cfg_dir = os.path.join(server.data["dir"], "tf", "cfg")
+    if not os.path.isdir(server_cfg_dir):
+        os.makedirs(server_cfg_dir)
+
+    server_cfg = os.path.join(server_cfg_dir, "server.cfg")
+    if not os.path.isfile(server_cfg):
+        with open(server_cfg, "w", encoding="utf-8") as handle:
+            handle.write(_TF2_SERVER_CFG_TEMPLATE)
+
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "servername": "AlphaGSM TF2 Server",
+            "rconpassword": "changeme",
+            "serverpassword": "",
+        },
+        value_transform=lambda _spec, value: _quote_config_value(value),
+        require_explicit_key=True,
+    )
+    integration_cfg = integration_source_server_config()
+    if integration_cfg:
+        merged_config_values = dict(integration_cfg)
+        merged_config_values.update(config_values)
+        config_values = merged_config_values
+        config_values["tf_allow_server_hibernation"] = "0"
+    updateconfig(server_cfg, config_values)
+
+
+def list_setting_values(server, canonical_key):
+    """Return installed map names for the TF2 map setting."""
+
+    if canonical_key != "map":
+        return None
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return []
+    maps_dir = os.path.join(install_dir, "tf", "maps")
+    if not os.path.isdir(maps_dir):
+        return []
+    return sorted(
+        os.path.splitext(filename)[0]
+        for filename in os.listdir(maps_dir)
+        if filename.endswith(".bsp")
+    )
+
+
+status = gamemodule_common.make_noop_status_hook()
+status.__doc__ = "Report TF2 server status information."
+
+
+def checkvalue(server, key, *value):
+    """Validate supported TF2 datastore edits."""
+
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_str_keys=("servername", "rconpassword", "serverpassword"),
+        raw_int_keys=("port",),
+        raw_str_keys=("dir", "exe_name"),
+        resolved_handlers={
+            "map": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+        },
+        raw_handlers={
+            "maxplayers": lambda _server_obj, raw_value: str(int(raw_value)),
+            "startmap": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+        },
+    )
 
 
 ## TODO integrate Steam games properly into the downloads module.
@@ -403,18 +456,14 @@ command_functions = {
 
 wake_a2s_query = wake_source_server_for_a2s
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-    )
+)
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

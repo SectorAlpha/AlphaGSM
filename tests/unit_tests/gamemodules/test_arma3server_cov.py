@@ -68,7 +68,21 @@ def test_install(tmp_path):
     server.data["exe_name"] = "arma3server_x64"
     server.data["Steam_AppID"] = 233780
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["configfile"] = "server.cfg"
+    server.data["servername"] = "AlphaGSM Test"
     mod.install(server)
+    assert (tmp_path / "server.cfg").read_text() == 'hostname = "AlphaGSM Test";\n'
+
+
+def test_sync_server_config_writes_servername(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "server.cfg"
+    server.data["servername"] = 'Alpha "Quoted"'
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "server.cfg").read_text() == 'hostname = "Alpha \\"Quoted\\"";\n'
 
 
 def test_update_with_restart(tmp_path):

@@ -13,6 +13,7 @@ import server.runtime as runtime_module
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
+from utils.gamemodules import common as gamemodule_common
 
 commands = ()
 command_args = {
@@ -171,7 +172,8 @@ def status(server, verbose):
 
 def message(server, msg):
     """Explain that Bungeecord has no direct user-message support here."""
-    print("This server doesn't have users directly")
+
+    gamemodule_common.print_unsupported_message("This server doesn't have users directly")
 
 
 def checkvalue(server, key, value):

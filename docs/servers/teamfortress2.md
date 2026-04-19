@@ -48,6 +48,22 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+The native TF2 config lives at `tf/cfg/server.cfg`. AlphaGSM keeps the
+following values in sync through `set`:
+
+- `set gamemap` aliases `map`, `startmap`, and `level`
+- `set servername` updates the `hostname` entry in `server.cfg`
+- `set rconpassword` updates `rcon_password`
+- `set serverpassword` updates `sv_password`
+
+Examples:
+
+```bash
+alphagsm myteamfort set gamemap --describe
+alphagsm myteamfort set gamemap cp_dustbowl
+alphagsm myteamfort set rconpassword secret
+```
+
 ## Useful Commands
 
 ```bash

@@ -102,6 +102,15 @@ Team Fortress 2:
 ./alphagsm mytf2 create teamfortress2
 ```
 
+TF2 also exposes canonical `set` aliases and discovery:
+
+```bash
+./alphagsm mytf2 set --list
+./alphagsm mytf2 set gamemap --describe
+./alphagsm mytf2 set gamemap cp_dustbowl
+./alphagsm mytf2 set rconpassword secret
+```
+
 Counter-Strike 2:
 
 ```bash
@@ -211,3 +220,4 @@ Use:
 - GitHub: https://github.com/SectorAlpha/AlphaGSM
 - License: GPL v3.0, see [LICENSE](LICENSE)
 - Credits: see [CREDITS](CREDITS)
+- Changelog: [changelog.txt](changelog.txt)

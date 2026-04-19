@@ -69,7 +69,7 @@ alphagsm myredmserv backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `server.cfg`
 - **Template**: See [server-templates/redmserver/](../server-templates/redmserver/) if available
 
 ### Maps and Mods

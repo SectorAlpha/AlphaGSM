@@ -96,7 +96,29 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./q2ded",
+        "+set",
+        "game",
+        "test",
+        "+set",
+        "hostname",
+        "test",
+        "+set",
+        "port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_q2_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "gamedir"
+    assert mod.setting_schema["fs_game"].aliases == ("game",)
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "game")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "port")
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

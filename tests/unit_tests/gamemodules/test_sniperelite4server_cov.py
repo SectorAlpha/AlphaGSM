@@ -117,7 +117,22 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "SniperElite4_DedicatedServer.exe",
+        "-port",
+        "27015",
+        "-queryport",
+        "27015",
+        "-maxplayers",
+        "27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_sniperelite4_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert mod.setting_schema["queryport"].launch_arg_tokens == ("-queryport",)
+    assert mod.setting_schema["maxplayers"].launch_arg_tokens == ("-maxplayers",)
 
 
 def test_get_start_command_missing_exe(tmp_path):

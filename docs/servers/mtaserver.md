@@ -69,7 +69,7 @@ alphagsm mymtaserve backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `mods/deathmatch/mtaserver.conf`
 - **Template**: See [server-templates/mtaserver/](../server-templates/mtaserver/) if available
 
 ### Maps and Mods
