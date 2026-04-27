@@ -128,32 +128,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=sync_server_config,
-    validate=True,
-)
-install.__doc__ = "Install or prepare the CS:GO server files for this server object."
-
-
-# technically this command is not needed, but leaving it commented as an example
-#  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
-
-
-restart = gamemodule_common.make_restart_hook()
-restart.__doc__ = "Restart the server by stopping it and then starting it again."
-
-
-update = gamemodule_common.make_steamcmd_update_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-)
-update.__doc__ = "Update the CS:GO install through SteamCMD and optionally restart it."
-
-
 def _disable_incompatible_bundled_libgcc(server):
     """Move the bundled libgcc aside so Source uses the host runtime copy."""
 
@@ -273,6 +247,33 @@ def sync_server_config(server):
         merged_config_values.update(config_values)
         config_values = merged_config_values
     updateconfig(server_cfg, config_values)
+
+
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+    validate=True,
+)
+install.__doc__ = "Install or prepare the CS:GO server files for this server object."
+
+
+# technically this command is not needed, but leaving it commented as an example
+#  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
+
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the server by stopping it and then starting it again."
+
+
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+)
+update.__doc__ = "Update the CS:GO install through SteamCMD and optionally restart it."
 
 
 def list_setting_values(server, canonical_key):

@@ -1018,28 +1018,25 @@ def get_runtime_doctor_report(server):
 
     runtime = ContainerRuntime()
     try:
-        docker_cli = runtime._run_check_output(
-            ["docker", "version", "--format", "{{.Client.Version}}"],
-            text=True,
-        ).strip()
+        docker_cli = runtime.docker_cli_version()
         report["docker_cli"] = docker_cli or "ok"
     except RuntimeError as ex:
         report["docker_cli_error"] = str(ex)
         return report
 
     try:
-        runtime._validate_mount_path_identity(spec)
+        runtime.validate_mount_path_identity(spec)
         report["mount_path_identity"] = "ok"
     except RuntimeError as ex:
         report["mount_path_identity_error"] = str(ex)
 
     image = spec.get("image")
     if image:
-        report["image_present"] = runtime._image_exists(image)
+        report["image_present"] = runtime.image_exists(image)
 
     container_name = spec.get("container_name")
     if container_name:
-        container_state = runtime._container_running_state(container_name)
+        container_state = runtime.container_running_state(container_name)
         if container_state is True:
             report["container_state"] = "running"
         elif container_state is False:
@@ -1243,6 +1240,29 @@ class ContainerRuntime(BaseRuntime):
         """Reject bind mounts that are not host-visible in manager-container mode."""
 
         validate_mount_path_identity(spec.get("mounts", ()))
+
+    def docker_cli_version(self):
+        """Return the local Docker client version string."""
+
+        return self._run_check_output(
+            ["docker", "version", "--format", "{{.Client.Version}}"],
+            text=True,
+        ).strip()
+
+    def validate_mount_path_identity(self, spec):
+        """Public wrapper for bind-mount identity validation."""
+
+        self._validate_mount_path_identity(spec)
+
+    def image_exists(self, image):
+        """Public wrapper that reports whether an image is present locally."""
+
+        return self._image_exists(image)
+
+    def container_running_state(self, name):
+        """Public wrapper that returns the current container running state."""
+
+        return self._container_running_state(name)
 
     def _ensure_runtime_image_available(self, spec):
         """Ensure the runtime image exists locally before starting the container.
