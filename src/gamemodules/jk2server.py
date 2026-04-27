@@ -1,5 +1,7 @@
 """Jedi Knight II: Jedi Outcast dedicated server lifecycle helpers."""
 
+import os
+
 import server.runtime as runtime_module
 from server import ServerError
 from server.settable_keys import build_launch_arg_values

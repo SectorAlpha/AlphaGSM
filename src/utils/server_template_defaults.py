@@ -123,23 +123,41 @@ class _ConfigureDefaultCollector(ast.NodeVisitor):
         self.defaults: OrderedDict[str, object] = OrderedDict()
 
     def visit_Call(self, node: ast.Call) -> None:
-        if not isinstance(node.func, ast.Attribute):
-            return self.generic_visit(node)
+        if isinstance(node.func, ast.Attribute):
+            owner = node.func.value
+            if (
+                isinstance(owner, ast.Attribute)
+                and owner.attr == "data"
+                and isinstance(owner.value, ast.Name)
+                and owner.value.id == "server"
+            ):
+                if node.func.attr in {"get", "setdefault"} and len(node.args) >= 2:
+                    key = self.evaluator.eval(node.args[0])
+                    value = self.evaluator.eval(node.args[1])
+                    if isinstance(key, str) and key not in self.defaults:
+                        self.defaults[key] = value
+                self.generic_visit(node)
+                return
 
-        owner = node.func.value
-        if not (
-            isinstance(owner, ast.Attribute)
-            and owner.attr == "data"
-            and isinstance(owner.value, ast.Name)
-            and owner.value.id == "server"
-        ):
-            return self.generic_visit(node)
+        helper_name = None
+        if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+            if node.func.value.id == "gamemodule_common":
+                helper_name = node.func.attr
 
-        if node.func.attr in {"get", "setdefault"} and len(node.args) >= 2:
-            key = self.evaluator.eval(node.args[0])
-            value = self.evaluator.eval(node.args[1])
-            if isinstance(key, str) and key not in self.defaults:
-                self.defaults[key] = value
+        if helper_name == "set_server_defaults" and len(node.args) >= 2:
+            defaults = self.evaluator.eval(node.args[1])
+            if isinstance(defaults, dict):
+                for key, value in defaults.items():
+                    if isinstance(key, str) and key not in self.defaults:
+                        self.defaults[key] = value
+        elif helper_name == "configure_port":
+            for keyword in node.keywords:
+                if keyword.arg != "default_port":
+                    continue
+                value = self.evaluator.eval(keyword.value)
+                if value is not None and "port" not in self.defaults:
+                    self.defaults["port"] = value
+                break
 
         self.generic_visit(node)
 
@@ -154,6 +172,29 @@ class _SupportedKeyCollector(ast.NodeVisitor):
         for key in self._extract_keys(node.test):
             if key != "backup" and key not in self.keys:
                 self.keys[key] = None
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        helper_name = None
+        if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+            if node.func.value.id == "gamemodule_common":
+                helper_name = node.func.attr
+
+        if helper_name in {"handle_basic_checkvalue", "handle_setting_schema_checkvalue"}:
+            for keyword in node.keywords:
+                if keyword.arg in {
+                    "int_keys",
+                    "str_keys",
+                    "bool_keys",
+                    "resolved_int_keys",
+                    "resolved_str_keys",
+                    "raw_int_keys",
+                    "raw_str_keys",
+                }:
+                    for key in self._extract_string_sequence(keyword.value):
+                        if key != "backup" and key not in self.keys:
+                            self.keys[key] = None
+
         self.generic_visit(node)
 
     def _extract_keys(self, node: ast.AST) -> list[str]:
@@ -177,6 +218,17 @@ class _SupportedKeyCollector(ast.NodeVisitor):
             return [
                 item.value
                 for item in comparator.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, str)
+            ]
+        return []
+
+    def _extract_string_sequence(self, node: ast.AST) -> list[str]:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return [node.value]
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            return [
+                item.value
+                for item in node.elts
                 if isinstance(item, ast.Constant) and isinstance(item.value, str)
             ]
         return []
@@ -337,6 +389,13 @@ def _extract_runtime_path_from_module(path: Path) -> Path | None:
         return None
 
     evaluator = _ExpressionEvaluator(_build_argument_defaults(configure_node))
+    defaults_collector = _ConfigureDefaultCollector(evaluator)
+    defaults_collector.visit(configure_node)
+    for key in MODULE_PATH_KEYS:
+        value = defaults_collector.defaults.get(key)
+        if isinstance(value, str) and value:
+            return Path(value)
+
     for node in ast.walk(configure_node):
         if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
             continue

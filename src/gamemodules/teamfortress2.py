@@ -151,16 +151,18 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
     return gamemodule_common.finalize_configure(server)
 
 
-_base_install = gamemodule_common.make_steamcmd_install_hook(
+doinstall = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
+doinstall.__doc__ = "Download or refresh the TF2 server files via SteamCMD."
 
 
 def install(server):
     """Install or prepare the TF2 server files for this server object."""
-    _base_install(server)
+
+    doinstall(server)
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
     elif os.path.isfile(server.data["dir"] + "srcds_run"):

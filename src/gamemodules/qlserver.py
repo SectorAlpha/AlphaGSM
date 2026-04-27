@@ -1,5 +1,7 @@
 """Quake Live dedicated server lifecycle helpers."""
 
+import os
+
 import screen
 import server.runtime as runtime_module
 import utils.steamcmd as steamcmd

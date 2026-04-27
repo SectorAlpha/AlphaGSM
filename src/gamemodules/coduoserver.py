@@ -1,5 +1,7 @@
 """Call of Duty: United Offensive dedicated server lifecycle helpers."""
 
+import os
+
 import screen
 from server import ServerError
 from server.settable_keys import build_launch_arg_values

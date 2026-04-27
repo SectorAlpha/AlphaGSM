@@ -8,6 +8,7 @@ class KeyResolutionError(ValueError):
 
 
 @dataclass(frozen=True)
+# pylint: disable=too-many-instance-attributes
 class SettingSpec:
     canonical_key: str
     aliases: tuple[str, ...] = ()

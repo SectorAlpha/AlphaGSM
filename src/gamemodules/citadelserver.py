@@ -1,5 +1,7 @@
 """Citadel: Forged With Fire dedicated server lifecycle helpers."""
 
+import os
+
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError

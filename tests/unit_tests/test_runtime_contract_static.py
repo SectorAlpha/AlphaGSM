@@ -1,6 +1,7 @@
 """Static contract tests for Docker runtime metadata coverage."""
 
 import os
+import shutil
 from importlib import import_module
 from pathlib import Path
 
@@ -28,6 +29,9 @@ GAME_CONFIG_HINTS = {
     '"difficulty"',
     '"levelname"',
 }
+DEFAULT_TEST_WORK_DIR = Path(
+    "/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+)
 
 
 def _game_module_names():
@@ -47,6 +51,18 @@ def _module_source(module_name):
 
     path = GAMEMODULE_DIR.joinpath(*module_name.split(".")).with_suffix(".py")
     return path.read_text(encoding="utf-8")
+
+
+def _runtime_contract_root(module_name):
+    work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
+    if not work_dir and DEFAULT_TEST_WORK_DIR.exists():
+        work_dir = str(DEFAULT_TEST_WORK_DIR)
+    if work_dir:
+        root = Path(work_dir).expanduser() / "pytest-runtime-contract" / module_name.replace(".", "-")
+    else:
+        root = Path("/tmp") / module_name.replace(".", "-")
+    shutil.rmtree(root, ignore_errors=True)
+    return root
 
 
 class _DataStore(dict):
@@ -143,9 +159,12 @@ def test_all_game_modules_define_explicit_runtime_wrappers():
         source = _module_source(module_name)
         if "import server.runtime as runtime_module" not in source:
             offenders.append(module_name + ": missing runtime_module import")
-        if "def get_runtime_requirements(" not in source:
+        if (
+            "def get_runtime_requirements(" not in source
+            and "get_runtime_requirements = " not in source
+        ):
             offenders.append(module_name + ": missing get_runtime_requirements")
-        if "def get_container_spec(" not in source:
+        if "def get_container_spec(" not in source and "get_container_spec = " not in source:
             offenders.append(module_name + ": missing get_container_spec")
     assert offenders == []
 
@@ -155,7 +174,8 @@ def test_all_game_modules_resolve_valid_docker_manifests():
     for module_name in _game_module_names():
         module = _resolve_module(import_module("gamemodules." + module_name))
         original_resolvers = _stub_download_resolution(module, module_name)
-        server = _FakeServer("it-" + module_name.replace(".", "-"), Path("/tmp") / module_name.replace(".", "-"))
+        server_root = _runtime_contract_root(module_name)
+        server = _FakeServer("it-" + module_name.replace(".", "-"), server_root)
         server.module = module
         try:
             configure = getattr(module, "configure", None)
@@ -190,6 +210,7 @@ def test_all_game_modules_resolve_valid_docker_manifests():
         finally:
             for attribute_name, original in original_resolvers.items():
                 setattr(module, attribute_name, original)
+            shutil.rmtree(server_root, ignore_errors=True)
 
     assert offenders == []
 

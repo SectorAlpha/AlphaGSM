@@ -165,6 +165,17 @@ def backup(server, profile=None):
     gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
+def _parse_bool_setting(_server, raw_value):
+    """Normalize a user-supplied boolean datastore value."""
+
+    normalized = str(raw_value).strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ServerError("Unsupported value")
+
+
 def checkvalue(server, key, *value):
     """Validate supported Palworld datastore edits."""
 
@@ -174,7 +185,7 @@ def checkvalue(server, key, *value):
         *value,
         int_keys=("port",),
         str_keys=("exe_name", "dir", "queryport"),
-        bool_keys=("publiclobby",),
+        custom_handlers={"publiclobby": _parse_bool_setting},
         backup_module=backup_utils,
     )
 

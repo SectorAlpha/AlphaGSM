@@ -105,7 +105,7 @@ def build_server_properties_values(
             "maxplayers",
             "servername",
         ):
-            server.data[required_key]
+            _ = server.data[required_key]
     return build_native_config_values(
         server.data,
         setting_schema,

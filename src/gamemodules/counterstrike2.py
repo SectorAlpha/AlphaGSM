@@ -163,13 +163,19 @@ def sync_server_config(server):
     updateconfig(server_cfg, config_values)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+doinstall = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=sync_server_config,
 )
-install.__doc__ = "Install or prepare the Counter-Strike 2 server files."
+doinstall.__doc__ = "Download or refresh the Counter-Strike 2 server files."
+
+
+def install(server):
+    """Install or prepare the Counter-Strike 2 server files."""
+
+    doinstall(server)
+    sync_server_config(server)
 
 
 def list_setting_values(server, canonical_key):

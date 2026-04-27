@@ -102,10 +102,13 @@ def _ensure_steamclient_symlinks():
             continue
         dst_dir = os.path.join(home, ".steam", f"sdk{bits}")
         dst = os.path.join(dst_dir, "steamclient.so")
-        if os.path.isfile(dst) or os.path.islink(dst):
+        if os.path.lexists(dst):
             continue
         os.makedirs(dst_dir, exist_ok=True)
-        os.symlink(src, dst)
+        try:
+            os.symlink(src, dst)
+        except FileExistsError:
+            continue
 
 
 def install_steamcmd():

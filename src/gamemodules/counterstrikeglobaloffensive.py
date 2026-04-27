@@ -249,14 +249,20 @@ def sync_server_config(server):
     updateconfig(server_cfg, config_values)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+doinstall = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=sync_server_config,
     validate=True,
 )
-install.__doc__ = "Install or prepare the CS:GO server files for this server object."
+doinstall.__doc__ = "Download or refresh the CS:GO server files via SteamCMD."
+
+
+def install(server):
+    """Install or prepare the CS:GO server files for this server object."""
+
+    doinstall(server)
+    sync_server_config(server)
 
 
 # technically this command is not needed, but leaving it commented as an example

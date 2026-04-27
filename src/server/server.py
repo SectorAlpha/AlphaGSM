@@ -1376,7 +1376,7 @@ class Server(object):
         if postset_fn is not None:
             postset_fn(self, key, *args, **kwargs)
 
-    def doset(
+    def doset(  # pylint: disable=keyword-arg-before-vararg
         self,
         key=None,
         *args,
