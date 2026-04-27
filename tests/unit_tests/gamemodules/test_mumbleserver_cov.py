@@ -110,6 +110,15 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_query_and_info_address_use_runtime_query_host():
+    server = DummyServer()
+    server.data["port"] = 64738
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="172.18.0.25") as resolver:
+        assert mod.get_query_address(server) == ("172.18.0.25", 64738, "tcp")
+        assert mod.get_info_address(server) == ("172.18.0.25", 64738, "tcp")
+        assert resolver.call_count == 2
+
+
 def test_do_stop():
     server = DummyServer()
     mod.runtime_module.send_to_server = MagicMock()

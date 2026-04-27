@@ -159,6 +159,18 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """Return the TCP reachability endpoint used by query."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP reachability endpoint used by info."""
+
+    return get_query_address(server)
+
+
 def get_runtime_requirements(server):
     """Return Docker runtime metadata for simple TCP/UDP services."""
 
