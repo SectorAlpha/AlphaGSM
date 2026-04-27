@@ -13,9 +13,9 @@ import screen
 from server.errors import ServerError
 from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
 from utils.simple_kv_config import rewrite_space_config
+from utils.gamemodules import common as gamemodule_common
 from utils.settings import settings
 import utils.steamcmd as steamcmd
 
@@ -27,35 +27,10 @@ _SOURCE_STATUS_PLAYERS_RE = re.compile(
 _SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
 _SOURCE_UNKNOWN_COMMAND_RE = re.compile(r'^Unknown command "(?P<name>[^"]+)"$', re.MULTILINE)
 
-_COMMAND_ARGS = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install the server in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec(
-                "v",
-                ["validate"],
-                "Validate the server files after updating",
-                "validate",
-                None,
-                True,
-            ),
-            OptSpec(
-                "r",
-                ["restart"],
-                "Restart the server after updating",
-                "restart",
-                None,
-                True,
-            ),
-        )
-    ),
-    "restart": CmdSpec(),
-}
+_COMMAND_ARGS = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install the server in",
+)
 
 _COMMAND_DESCRIPTIONS = {
     "update": "Update the game server to the latest version available via SteamCMD.",
@@ -529,39 +504,38 @@ def define_valve_server_module(
         """Store install and networking defaults for this Valve-engine server."""
         module_settings = _get_module_settings(module_name)
 
-        server.data["Steam_AppID"] = steam_app_id
-        server.data["Steam_anonymous_login_possible"] = True
+        gamemodule_common.set_steam_install_metadata(
+            server,
+            steam_app_id=steam_app_id,
+            steam_anonymous_login_possible=True,
+        )
         if app_id_mod is not None:
             server.data["Steam_AppID_Mod"] = app_id_mod
 
-        server.data.setdefault("startmap", module_settings.get("startmap", default_map))
-        server.data.setdefault("maxplayers", str(module_settings.get("maxplayers", max_players)))
-        server.data.setdefault("serverpassword", module_settings.get("serverpassword", ""))
-        server.data.setdefault("game_dir", game_dir)
-        server.data.setdefault("server_cfg", module_settings.get("server_cfg", config_default))
-        server.data.setdefault("backupfiles", list(default_backupfiles))
-        if "backup" not in server.data:
-            server.data["backup"] = _default_backup_config(game_dir)
-
-        if port is None:
-            port = server.data.get("port", _get_int_setting(module_settings, "port", default_port))
-        if ask:
-            while True:
-                inp = input(
-                    "Please specify the port to use for this server: "
-                    + ("(current=%s) " % (port,) if port is not None else "")
-                ).strip()
-                if port is not None and inp == "":
-                    break
-                try:
-                    port = int(inp)
-                except ValueError:
-                    print(inp + " isn't a valid port number")
-                    continue
-                break
-        if port is None:
-            raise ValueError("No Port")
-        server.data["port"] = int(port)
+        gamemodule_common.set_server_defaults(
+            server,
+            {
+                "startmap": module_settings.get("startmap", default_map),
+                "maxplayers": str(module_settings.get("maxplayers", max_players)),
+                "servername": _current_servername(server, module_settings),
+                "rconpassword": _current_rconpassword(server, module_settings),
+                "serverpassword": _current_serverpassword(server, module_settings),
+                "game_dir": game_dir,
+                "server_cfg": module_settings.get("server_cfg", config_default),
+            },
+        )
+        gamemodule_common.ensure_backup_config(
+            server,
+            backupfiles=default_backupfiles,
+            targets=[game_dir],
+        )
+        gamemodule_common.configure_port(
+            server,
+            ask,
+            port,
+            default_port=_get_int_setting(module_settings, "port", default_port),
+            prompt="Please specify the port to use for this server:",
+        )
 
         if client_port is not None:
             server.data.setdefault(
@@ -583,17 +557,19 @@ def define_valve_server_module(
                 or module_settings.get("dir")
                 or os.path.expanduser(os.path.join("~", server.name))
             )
-            if ask:
-                inp = input(
-                    "Where would you like to install the server: [%s] " % (dir,)
-                ).strip()
-                if inp != "":
-                    dir = inp
-        server.data["dir"] = os.path.join(dir, "")
-        server.data["exe_name"] = (
-            exe_name
-            or server.data.get("exe_name")
-            or module_settings.get("exe_name", executable)
+        gamemodule_common.configure_install_dir(
+            server,
+            ask,
+            dir,
+            prompt="Where would you like to install the server:",
+        )
+        gamemodule_common.configure_executable(
+            server,
+            exe_name=(
+                exe_name
+                or server.data.get("exe_name")
+                or module_settings.get("exe_name", executable)
+            ),
         )
         _save_data_store(server)
         return (), {}

@@ -10,7 +10,7 @@ import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.cmdparse.cmdspec import OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -19,21 +19,36 @@ POT_CMD_URL_X64 = "https://launcher-cdn.alderongames.com/AlderonGamesCmd-Linux-x
 POT_CMD_NAME = "AlderonGamesCmd-Linux"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Path of Titans server", int),
-            ArgSpec("DIR", "The directory to install Path of Titans in", str),
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The game port to use for the Path of Titans server",
+    "The directory to install Path of Titans in",
+    version_option=OptSpec(
+        "v",
+        ["version"],
+        "Hotfix version to download, defaults to latest.",
+        "version",
+        "VERSION",
+        str,
+    ),
+    setup_options=(
+        OptSpec(
+            "a",
+            ["auth-token"],
+            "Alderon auth token for the server host account.",
+            "auth_token",
+            "TOKEN",
+            str,
         ),
-        options=(
-            OptSpec("v", ["version"], "Hotfix version to download, defaults to latest.", "version", "VERSION", str),
-            OptSpec("a", ["auth-token"], "Alderon auth token for the server host account.", "auth_token", "TOKEN", str),
-            OptSpec("b", ["beta-branch"], "Alderon branch key to install.", "beta_branch", "BRANCH", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
+        OptSpec(
+            "b",
+            ["beta-branch"],
+            "Alderon branch key to install.",
+            "beta_branch",
+            "BRANCH",
+            str,
         ),
-    )
-}
+    ),
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -70,28 +85,24 @@ def configure(
     server.data.setdefault("database", "Local")
     server.data.setdefault("beta_branch", "production")
     server.data.setdefault("maxplayers", "100")
-    server.data.setdefault("backupfiles", ["Saved", "Config", "Plugins"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Saved", "Config", "Plugins"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 7777)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Path of Titans server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Saved", "Config", "Plugins"],
+        targets=["Saved", "Config", "Plugins"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=7777,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Path of Titans server:",
+    )
     if version is not None:
         server.data["version"] = str(version)
     if auth_token is not None:
@@ -108,13 +119,16 @@ def configure(
         inp = input("Direct archive URL for the Path of Titans server override [leave blank for AlderonGamesCmd latest]: ").strip()
         if inp:
             server.data["url"] = inp
-    if download_name is not None:
-        server.data["download_name"] = download_name
-    elif "download_name" not in server.data:
-        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or POT_CMD_NAME
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.configure_download_source(
+        server,
+        ask=False,
+        url=server.data.get("url"),
+        download_name=download_name,
+        default_name=POT_CMD_NAME,
+        prompt="",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

@@ -119,16 +119,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
       - name: Build standalone AlphaGSM binary
-        run: python scripts/build_binary.py
+        env:
+          ALPHAGSM_VERSION: ci-${{ github.sha }}
+        run: >-
+          python scripts/build_binary.py
+          --version ci-${{ github.sha }}
+          --release-dir release-artifacts
+          --artifact-name ${{ matrix.artifact }}-${{ runner.arch }}
       - name: Run binary smoke check
         env:
           ALPHAGSM_CONFIG_LOCATION: ${{ github.workspace }}/tests/alphagsm-test.conf
-        run: ${{ matrix.binary }} --help
+        run: release-artifacts/${{ matrix.artifact }}-${{ runner.arch }}${{ endsWith(matrix.binary, '.exe') && '.exe' || '' }} --version
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}-${{ runner.arch }}
-          path: ${{ matrix.binary }}
+          path: release-artifacts/*
 
   classify-changes:
     runs-on: ubuntu-latest

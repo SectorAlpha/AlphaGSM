@@ -6,7 +6,6 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import build_launch_arg_values
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -16,15 +15,10 @@ steam_app_id = 1088320
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Day of Dragons server", int),
-            ArgSpec("DIR", "The directory to install Day of Dragons in", str),
-        )
-    ),
-    **gamemodule_common.build_update_restart_command_args(),
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the Day of Dragons server",
+    "The directory to install Day of Dragons in",
+)
 command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
     "Update the Day of Dragons dedicated server to the latest version.",
     "Restart the Day of Dragons dedicated server.",
@@ -40,34 +34,32 @@ setting_schema = {
 def configure(server, ask, port=None, dir=None, *, exe_name="DragonsServer.sh"):
     """Collect and store configuration values for a Day of Dragons server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27016")
-    server.data.setdefault("backupfiles", ["Saved", "Config"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Saved", "Config"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 7777)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Day of Dragons server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(server, {"queryport": "27016"})
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Saved", "Config"],
+        targets=["Saved", "Config"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=7777,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Day of Dragons server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(

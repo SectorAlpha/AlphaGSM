@@ -6,7 +6,6 @@ import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -15,18 +14,10 @@ TRACKMANIA_SERVER_URL = "http://files2.trackmaniaforever.com/TrackmaniaServer_20
 TRACKMANIA_SERVER_NAME = "TrackmaniaServer_2011-02-21.zip"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The XML-RPC port to use for the Trackmania server", int),
-            ArgSpec("DIR", "The directory to install Trackmania in", str),
-        ),
-        options=(
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_download_command_args(
+    "The XML-RPC port to use for the Trackmania server",
+    "The directory to install Trackmania in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -44,50 +35,42 @@ def configure(
 ):
     """Collect and store configuration values for a Trackmania server."""
 
-    server.data.setdefault("dedicated_cfg", "dedicated_cfg.txt")
-    server.data.setdefault("game_settings", "MatchSettings/Nations/NationsGreen.txt")
-    server.data.setdefault("backupfiles", ["GameData/Config", "UserData", "Logs"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["GameData/Config", "UserData", "Logs"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 5000)
-    if ask:
-        inp = input("Please specify the XML-RPC port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install Trackmania in: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    if url is not None:
-        server.data["url"] = url
-    elif "url" not in server.data:
-        server.data["url"] = TRACKMANIA_SERVER_URL
-    if ask and url is None:
-        inp = input(
-            "Direct archive URL for the Trackmania dedicated server override [%s] "
-            % (server.data["url"],)
-        ).strip()
-        if inp:
-            server.data["url"] = inp
-    if download_name is not None:
-        server.data["download_name"] = download_name
-    elif "download_name" not in server.data:
-        server.data["download_name"] = (
-            os.path.basename(server.data.get("url", "")) or TRACKMANIA_SERVER_NAME
-        )
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "dedicated_cfg": "dedicated_cfg.txt",
+            "game_settings": "MatchSettings/Nations/NationsGreen.txt",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["GameData/Config", "UserData", "Logs"],
+        targets=["GameData/Config", "UserData", "Logs"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=5000,
+        prompt="Please specify the XML-RPC port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install Trackmania in:",
+    )
+    gamemodule_common.configure_download_source(
+        server,
+        ask,
+        url=url,
+        download_name=download_name,
+        default_url=TRACKMANIA_SERVER_URL,
+        default_name=TRACKMANIA_SERVER_NAME,
+        prompt="Direct archive URL for the Trackmania dedicated server override",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

@@ -6,7 +6,6 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -15,25 +14,14 @@ steam_app_id = 563930
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Argo in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Argo dedicated server to the latest version.",
-    "restart": "Restart the Argo dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install Argo in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Argo dedicated server to the latest version.",
+    "Restart the Argo dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -41,75 +29,60 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="argo_server_x64"):
     """Collect and store configuration values for an Argo server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("configfile", "server.cfg")
-    server.data.setdefault("profilesdir", "profiles")
-    server.data.setdefault("bindaddress", "0.0.0.0")
-    server.data.setdefault("mod", "")
-    server.data.setdefault("backupfiles", ["profiles", "server.cfg"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["profiles", "server.cfg"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 2302)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Argo server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
-
-
-def install(server):
-    """Download the Argo server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-
-
-def update(server, validate=False, restart=False):
-    """Update the Argo server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(
-        server.data["dir"],
-        steam_app_id,
-        steam_anonymous_login_possible,
-        validate=validate,
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "configfile": "server.cfg",
+            "profilesdir": "profiles",
+            "bindaddress": "0.0.0.0",
+            "mod": "",
+        },
     )
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["profiles", "server.cfg"],
+        targets=["profiles", "server.cfg"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=2302,
+        prompt="Please specify the port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Argo server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
-def restart(server):
-    """Restart the Argo server."""
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+install.__doc__ = "Download the Argo server files via SteamCMD."
 
-    server.stop()
-    server.start()
+
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the Argo server files and optionally restart the server."
+
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Argo server."
 
 
 def get_start_command(server):
@@ -161,17 +134,14 @@ def backup(server, profile=None):
 def checkvalue(server, key, *value):
     """Validate supported Argo datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("configfile", "profilesdir", "bindaddress", "mod", "exe_name", "dir"):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_basic_checkvalue(
+        server,
+        key,
+        *value,
+        int_keys=("port",),
+        str_keys=("configfile", "profilesdir", "bindaddress", "mod", "exe_name", "dir"),
+        backup_module=backup_utils,
+    )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',

@@ -1,12 +1,9 @@
 """Satisfactory dedicated server lifecycle helpers."""
 
-import os
-
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import SettingSpec, build_launch_arg_values
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from server.settable_keys import build_launch_arg_values
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -16,122 +13,68 @@ steam_app_id = 1690800
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Satisfactory in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec(
-                "v",
-                ["validate"],
-                "Validate the server files after updating",
-                "validate",
-                None,
-                True,
-            ),
-            OptSpec(
-                "r",
-                ["restart"],
-                "Restart the server after updating",
-                "restart",
-                None,
-                True,
-            ),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Satisfactory dedicated server to the latest version.",
-    "restart": "Restart the Satisfactory dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install Satisfactory in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Satisfactory dedicated server to the latest version.",
+    "Restart the Satisfactory dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 setting_schema = {
     **gamemodule_common.build_unreal_setting_schema(),
-    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
-    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
+    **gamemodule_common.build_executable_path_setting_schema(),
 }
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="FactoryServer.sh"):
     """Collect and store configuration values for a Satisfactory server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("backupfiles", ["FactoryGame/Saved", "FactoryServer.sh"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["FactoryGame/Saved"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 7777)
-    if ask:
-        inp = input(
-            "Please specify the port to use for this server: [%s] " % (port,)
-        ).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["FactoryGame/Saved", "FactoryServer.sh"],
+        targets=["FactoryGame/Saved"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=7777,
+        prompt="Please specify the port to use for this server:",
+    )
     server.data.setdefault("queryport", str(server.data["port"] + 1))
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input(
-                "Where would you like to install the Satisfactory server: [%s] " % (dir,)
-            ).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
-
-
-def install(server):
-    """Download the Satisfactory server files via SteamCMD."""
-
-    if not os.path.isdir(server.data["dir"]):
-        os.makedirs(server.data["dir"])
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Satisfactory server:",
     )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
-def update(server, validate=False, restart=False):
-    """Update the Satisfactory server files and optionally restart."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(
-        server.data["dir"],
-        steam_app_id,
-        steam_anonymous_login_possible,
-        validate=validate,
-    )
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+install.__doc__ = "Download the Satisfactory server files via SteamCMD."
 
 
-def restart(server):
-    """Restart the Satisfactory server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
 
-    server.stop()
-    server.start()
+restart = gamemodule_common.make_restart_hook()
 
 
 def get_start_command(server):

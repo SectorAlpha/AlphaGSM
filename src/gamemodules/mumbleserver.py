@@ -6,18 +6,13 @@ import shutil
 import server.runtime as runtime_module
 from server.settable_keys import SettingSpec, build_native_config_values
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.gamemodules import common as gamemodule_common
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to store Mumble server files in", str),
-        )
-    )
-}
+command_args = gamemodule_common.build_setup_command_args(
+    "The port for the server to listen on",
+    "The directory to store Mumble server files in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -110,37 +105,35 @@ def sync_server_config(server):
 def configure(server, ask, port=None, dir=None, *, exe_name=None):
     """Collect and store configuration values for a Mumble server."""
 
-    server.data.setdefault("welcometext", "Welcome to %s" % (server.name,))
-    server.data.setdefault("users", 100)
-    server.data.setdefault("database", "mumble-server.sqlite")
-    server.data.setdefault("serverpassword", "")
-    server.data.setdefault("backupfiles", ["mumble-server.ini", "mumble-server.sqlite"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["mumble-server.ini", "mumble-server.sqlite"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 64738)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input(
-                "Where would you like to store the Mumble server files: [%s] " % (dir,)
-            ).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name or _default_executable())
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "welcometext": "Welcome to %s" % (server.name,),
+            "users": 100,
+            "database": "mumble-server.sqlite",
+            "serverpassword": "",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["mumble-server.ini", "mumble-server.sqlite"],
+        targets=["mumble-server.ini", "mumble-server.sqlite"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=64738,
+        prompt="Please specify the port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to store the Mumble server files:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name or _default_executable())
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):
@@ -202,10 +195,11 @@ def get_container_spec(server):
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
         "command": [
-            server.data["exe_name"],
-            "-fg",
-            "-ini",
-            "/srv/server/mumble-server.ini",
+            "sh",
+            "-lc",
+            "mkdir -p /srv/server && chown -R mumble-server:mumble-server /srv/server && exec "
+            + server.data["exe_name"]
+            + " -fg -ini /srv/server/mumble-server.ini",
         ],
     }
 

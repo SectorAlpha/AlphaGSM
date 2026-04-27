@@ -6,7 +6,6 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -16,15 +15,10 @@ steam_app_id = 920720
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Last Oasis server", int),
-            ArgSpec("DIR", "The directory to install Last Oasis in", str),
-        )
-    ),
-    **gamemodule_common.build_update_restart_command_args(),
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the Last Oasis server",
+    "The directory to install Last Oasis in",
+)
 command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
     "Update the Last Oasis dedicated server to the latest version.",
     "Restart the Last Oasis dedicated server.",
@@ -51,69 +45,59 @@ setting_schema = {
 def configure(server, ask, port=None, dir=None, *, exe_name="LastOasisServer.x86_64"):
     """Collect and store configuration values for a Last Oasis server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "15001")
-    server.data.setdefault("maxplayers", "100")
-    server.data.setdefault("worldname", server.name)
-    server.data.setdefault("backupfiles", ["Saved", "Config"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Saved", "Config"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 15000)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Last Oasis server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
-
-
-def install(server):
-    """Download the Last Oasis server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "queryport": "15001",
+            "maxplayers": "100",
+            "worldname": server.name,
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Saved", "Config"],
+        targets=["Saved", "Config"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=15000,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Last Oasis server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
-def update(server, validate=False, restart=False):
-    """Update the Last Oasis server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+install.__doc__ = "Download the Last Oasis server files via SteamCMD."
 
 
-def restart(server):
-    """Restart the Last Oasis server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the Last Oasis server files and optionally restart the server."
 
-    server.stop()
-    server.start()
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Last Oasis server."
 
 
 def get_start_command(server):

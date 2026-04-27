@@ -86,6 +86,7 @@ Default commands:
 - `dump`
 - `set`
 - `backup`
+- `doctor`
 
 Game modules extend this model by exporting module-level data:
 
@@ -265,6 +266,7 @@ Lifecycle model:
 3. for `process`, write `screenrc` if needed and start a detached session
 4. for `docker`, assemble `docker run` args from the container spec
 5. inject console commands through the selected runtime
+6. use `doctor` to print the effective runtime decision and local runtime-health checks for a server
 
  [tests/smoke_tests](tests/smoke_tests)
  bash ./tests/smoke_tests/run_minecraft_vanilla.sh

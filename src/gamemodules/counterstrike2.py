@@ -4,7 +4,6 @@ import os
 
 from server import ServerError
 from server.settable_keys import build_launch_arg_values, build_native_config_values
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.fileutils import make_empty_file
 from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
@@ -24,15 +23,10 @@ steam_anonymous_login_possible = True
 wake_a2s_query = wake_source_server_for_a2s
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The Directory to install minecraft in", str),
-        )
-    ),
-    **gamemodule_common.build_update_restart_command_args(),
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install the server in",
+)
 command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
     "Updates the game server to the latest version.",
     "Restarts the game server without killing the process.",
@@ -54,98 +48,48 @@ setting_schema = {
 def configure(server, ask, port=None, dir=None, *, exe_name="game/cs2.sh"):
     """Create the basic Counter-Strike 2 configuration details."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data["startmap"] = "de_dust2"
-    server.data["maxplayers"] = "16"
-    server.data.setdefault("servername", "AlphaGSM CS2 Server")
-    server.data.setdefault("rconpassword", "changeme")
-    server.data.setdefault("serverpassword", "")
-
-    if port is None:
-        port = server.data.get("port", 27015)
-    if ask:
-        while True:
-            inp = input(
-                "Please specify the port to use for this server: "
-                + ("(current=" + str(port) + ") " if port is not None else "")
-            ).strip()
-            if port is not None and inp == "":
-                break
-            try:
-                port = int(inp)
-            except ValueError:
-                print(inp + " isn't a valid port number")
-                continue
-            break
-    if port is None:
-        raise ValueError("No Port")
-    server.data["port"] = port
-
-    if dir is None:
-        if "dir" in server.data and server.data["dir"] is not None:
-            dir = server.data["dir"]
-        else:
-            dir = os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input(
-                "Where would you like to install the cs2 server: [" + dir + "] "
-            ).strip()
-            if inp != "":
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-
-    if "exe_name" not in server.data:
-        server.data["exe_name"] = exe_name
-    server.data.save()
-    return (), {}
-
-
-def doinstall(server):
-    """Install the Counter-Strike 2 server files via SteamCMD."""
-
-    if not os.path.isdir(server.data["dir"]):
-        os.makedirs(server.data["dir"])
-
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-
-
-def install(server):
-    """Install or prepare the Counter-Strike 2 server files."""
-
-    doinstall(server)
-    sync_server_config(server)
-
-
-def restart(server):
-    """Restart the server by stopping it and then starting it again."""
-
-    server.stop()
-    server.start()
-
-
-def update(server, validate=False, restart=False):
-    """Update the CS2 install through SteamCMD and optionally restart it."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(
-        server.data["dir"],
-        steam_app_id,
-        steam_anonymous_login_possible,
-        validate=validate,
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "startmap": "de_dust2",
+            "maxplayers": "16",
+            "servername": "AlphaGSM CS2 Server",
+            "rconpassword": "changeme",
+            "serverpassword": "",
+        },
     )
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=27015,
+        prompt="Please specify the port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the cs2 server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
+
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the server by stopping it and then starting it again."
+
+
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the CS2 install through SteamCMD and optionally restart it."
 
 
 def get_start_command(server):
@@ -217,6 +161,15 @@ def sync_server_config(server):
         merged_config_values.update(config_values)
         config_values = merged_config_values
     updateconfig(server_cfg, config_values)
+
+
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+)
+install.__doc__ = "Install or prepare the Counter-Strike 2 server files."
 
 
 def list_setting_values(server, canonical_key):

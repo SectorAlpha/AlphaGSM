@@ -4,21 +4,16 @@ import os
 
 import screen
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the GRAV server", int),
-            ArgSpec("DIR", "The directory containing the GRAV server files", str),
-        )
-    )
-}
+command_args = gamemodule_common.build_setup_command_args(
+    "The game port to use for the GRAV server",
+    "The directory containing the GRAV server files",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -27,36 +22,36 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="CAGGameServer-Win32-Shipping"):
     """Collect and store configuration values for a GRAV server."""
 
-    server.data.setdefault("peerport", "7778")
-    server.data.setdefault("queryport", "27015")
-    server.data.setdefault("maxplayers", "32")
-    server.data.setdefault("servername", server.name)
-    server.data.setdefault("adminpassword", "")
-    server.data.setdefault("backupfiles", ["CAGGame", "Cloud"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["CAGGame", "Cloud"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 7777)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where are the GRAV server files located: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "peerport": "7778",
+            "queryport": "27015",
+            "maxplayers": "32",
+            "servername": server.name,
+            "adminpassword": "",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["CAGGame", "Cloud"],
+        targets=["CAGGame", "Cloud"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=7777,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where are the GRAV server files located:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

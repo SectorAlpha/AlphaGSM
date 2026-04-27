@@ -22,18 +22,18 @@ TEAMSPEAK_URL_TEMPLATE = (
 TEAMSPEAK_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The voice port to use for the TeamSpeak 3 server", int),
-            ArgSpec("DIR", "The directory to install TeamSpeak 3 in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Direct TeamSpeak 3 server download URL to use.", "url", "URL", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_url_command_args(
+    "The voice port to use for the TeamSpeak 3 server",
+    "The directory to install TeamSpeak 3 in",
+    url_option=OptSpec(
+        "u",
+        ["url"],
+        "Direct TeamSpeak 3 server download URL to use.",
+        "url",
+        "URL",
+        str,
+    ),
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1

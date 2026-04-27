@@ -13,7 +13,6 @@ from server.settable_keys import (
     merge_nested_config,
 )
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -23,25 +22,14 @@ steam_anonymous_login_possible = True
 DEFAULT_SCENARIO_ID = "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Arma Reforger in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Arma Reforger dedicated server to the latest version.",
-    "restart": "Restart the Arma Reforger dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install Arma Reforger in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Arma Reforger dedicated server to the latest version.",
+    "Restart the Arma Reforger dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 config_sync_keys = ("port", "queryport", "maxplayers", "scenarioid", "bindaddress", "adminpassword")
@@ -141,75 +129,70 @@ def sync_server_config(server):
 def configure(server, ask, port=None, dir=None, *, exe_name="ArmaReforgerServer"):
     """Collect and store configuration values for an Arma Reforger server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("configfile", "configs/server.json")
-    server.data.setdefault("profilesdir", "profile")
-    server.data.setdefault("bindaddress", "0.0.0.0")
-    server.data.setdefault("adminpassword", "")
-    server.data.setdefault("scenarioid", DEFAULT_SCENARIO_ID)
-    server.data.setdefault("maxplayers", 8)
-    server.data.setdefault("backupfiles", ["configs", "profile"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["configs", "profile"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 2001)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "configfile": "configs/server.json",
+            "profilesdir": "profile",
+            "bindaddress": "0.0.0.0",
+            "adminpassword": "",
+            "scenarioid": DEFAULT_SCENARIO_ID,
+            "maxplayers": 8,
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["configs", "profile"],
+        targets=["configs", "profile"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=2001,
+        prompt="Please specify the port to use for this server:",
+    )
     server.data.setdefault("queryport", int(server.data["port"]) + 1)
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Arma Reforger server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Arma Reforger server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+
+_base_install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
 
 
 def install(server):
     """Download the Arma Reforger server files via SteamCMD."""
 
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
-    )
+    _base_install(server)
     sync_server_config(server)
     server.data.save()
 
 
-def update(server, validate=False, restart=False):
-    """Update the Arma Reforger server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the Arma Reforger server files and optionally restart the server."
 
 
-def restart(server):
-    """Restart the Arma Reforger server."""
-
-    server.stop()
-    server.start()
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Arma Reforger server."
 
 
 def _build_start_command(server):

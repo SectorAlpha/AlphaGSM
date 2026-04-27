@@ -17,19 +17,10 @@ MTA_DOWNLOADS_PAGE = "https://linux.multitheftauto.com/"
 MTA_LATEST_DOWNLOAD_NAME = "multitheftauto_linux_x64.tar.gz"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Multi Theft Auto in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Multi Theft Auto in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1

@@ -320,6 +320,81 @@ def test_container_runtime_does_not_build_missing_custom_image(monkeypatch):
     assert observed[-1][:3] == ["docker", "run", "-d"]
 
 
+def test_runtime_doctor_report_shows_process_runtime_when_backend_is_not_enabled(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 17,
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.screen, "check_screen_exists", lambda name: True)
+
+    report = runtime_module.get_runtime_doctor_report(server)
+
+    assert report["configured_backend"] == "process"
+    assert report["module_runtime"] == "docker"
+    assert report["module_runtime_family"] == "java"
+    assert report["resolved_runtime"] == "process"
+    assert report["running"] is True
+
+
+def test_runtime_doctor_report_includes_docker_runtime_health(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "simple-tcp",
+        },
+        get_container_spec=lambda server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "simple-tcp",
+            "network_mode": "bridge",
+            "stop_mode": "docker-stop",
+            "working_dir": "/srv/server",
+            "stdin_open": False,
+            "env": {},
+            "mounts": [{"source": "/srv/host", "target": "/srv/server", "mode": "rw"}],
+            "ports": [{"host": 25565, "container": 25565, "protocol": "tcp"}],
+            "command": ["./server"],
+        },
+    )
+    server = DummyServer(module=module, data={"runtime": "docker"})
+
+    monkeypatch.setattr(
+        runtime_module.ContainerRuntime,
+        "_run_check_output",
+        staticmethod(lambda command, text=False: "25.0.3\n"),
+    )
+    monkeypatch.setattr(runtime_module.ContainerRuntime, "_image_exists", lambda self, image: True)
+    monkeypatch.setattr(
+        runtime_module.ContainerRuntime,
+        "_container_running_state",
+        lambda self, name: False,
+    )
+    monkeypatch.setattr(
+        runtime_module.ContainerRuntime,
+        "_validate_mount_path_identity",
+        lambda self, spec: None,
+    )
+
+    report = runtime_module.get_runtime_doctor_report(server)
+
+    assert report["configured_backend"] == "docker"
+    assert report["resolved_runtime"] == "docker"
+    assert report["runtime_family"] == "simple-tcp"
+    assert report["docker_cli"] == "25.0.3"
+    assert report["image_present"] is True
+    assert report["container_state"] == "stopped"
+    assert report["mount_path_identity"] == "ok"
+    assert report["mount_count"] == 1
+    assert report["port_count"] == 1
+
+
 def test_container_runtime_removes_stale_stopped_container_before_start(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     module = SimpleNamespace(

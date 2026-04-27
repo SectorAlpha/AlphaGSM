@@ -4,21 +4,16 @@ import os
 
 import screen
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The server port to use for the Aloft server", int),
-            ArgSpec("DIR", "The directory containing the Aloft server files", str),
-        )
-    )
-}
+command_args = gamemodule_common.build_setup_command_args(
+    "The server port to use for the Aloft server",
+    "The directory containing the Aloft server files",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -27,36 +22,36 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="AloftServerNoGuiLoad.ps1"):
     """Collect and store configuration values for an Aloft server."""
 
-    server.data.setdefault("mapname", server.name)
-    server.data.setdefault("servername", server.name)
-    server.data.setdefault("visible", "true")
-    server.data.setdefault("privateislands", "false")
-    server.data.setdefault("playercount", "8")
-    server.data.setdefault("backupfiles", ["output.log", "ServerRoomCode.txt", "Saves"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["output.log", "ServerRoomCode.txt", "Saves"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 0)
-    if ask:
-        inp = input("Please specify the server port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where are the Aloft server files located: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "mapname": server.name,
+            "servername": server.name,
+            "visible": "true",
+            "privateislands": "false",
+            "playercount": "8",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["output.log", "ServerRoomCode.txt", "Saves"],
+        targets=["output.log", "ServerRoomCode.txt", "Saves"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=0,
+        prompt="Please specify the server port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where are the Aloft server files located:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

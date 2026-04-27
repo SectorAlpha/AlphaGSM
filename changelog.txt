@@ -7,6 +7,12 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-04-26
+- CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.
+- Documentation: add a dedicated host-install Docker runtime guide so running AlphaGSM on the host with Docker-backed game servers is documented separately from the manager-container workflow.
+- Release prep: stamp standalone binaries with a shared AlphaGSM version, stage release-ready artifacts with SHA256 sidecars, and add a tag-driven GitHub release workflow for Linux, Windows, and macOS builds.
+- Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
+
 2026-04-17
 - CLI: add canonical `set` discovery and alias routing for schema-backed keys so modules can expose shared names like `gamemap` while still writing the underlying storage key.
 - Server support: roll Team Fortress 2 into the schema-backed `set` flow with map aliasing, `server.cfg` password syncing, and installed-map discovery.

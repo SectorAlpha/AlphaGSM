@@ -16,19 +16,10 @@ VINTAGE_STORY_DOWNLOAD_TEMPLATE = (
 )
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Vintage Story server", int),
-            ArgSpec("DIR", "The directory to install Vintage Story in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The game port to use for the Vintage Story server",
+    "The directory to install Vintage Story in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1

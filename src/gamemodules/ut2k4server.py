@@ -9,7 +9,6 @@ import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -20,18 +19,10 @@ UT2K4_INSTALLER_URL = (
 UT2K4_INSTALLER_NAME = "install-ut2004.sh"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Unreal Tournament 2004 in", str),
-        ),
-        options=(
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Unreal Tournament 2004 in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -49,34 +40,33 @@ def configure(
 ):
     """Collect and store configuration values for an Unreal Tournament 2004 server."""
 
-    server.data.setdefault("startmap", "DM-Antalus")
-    server.data.setdefault("gametype", "XGame.xDeathMatch")
-    server.data.setdefault("maxplayers", "16")
-    server.data.setdefault("configfile", "System/UT2004.ini")
-    server.data.setdefault("backupfiles", ["System", "Maps"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["System", "Maps"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 7777)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input(
-                "Where would you like to install the Unreal Tournament 2004 server: [%s] " % (dir,)
-            ).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "startmap": "DM-Antalus",
+            "gametype": "XGame.xDeathMatch",
+            "maxplayers": "16",
+            "configfile": "System/UT2004.ini",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["System", "Maps"],
+        targets=["System", "Maps"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=7777,
+        prompt="Please specify the port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Unreal Tournament 2004 server:",
+    )
     if url is not None:
         server.data["url"] = url
     elif "url" not in server.data:
@@ -90,13 +80,16 @@ def configure(
         if inp:
             server.data["url"] = inp
             server.data["download_mode"] = "archive"
-    if download_name is not None:
-        server.data["download_name"] = download_name
-    elif "download_name" not in server.data:
-        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or UT2K4_INSTALLER_NAME
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.configure_download_source(
+        server,
+        ask=False,
+        url=server.data.get("url"),
+        download_name=download_name,
+        default_name=UT2K4_INSTALLER_NAME,
+        prompt="",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

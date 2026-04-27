@@ -171,6 +171,7 @@ def test_get_commands_args_and_descriptions_merge_module_data():
     description = srv.get_command_description("setup")
 
     assert "custom" in commands
+    assert srv.get_command_args("doctor") is not None
     assert "extra setup details" in description
     assert srv.get_command_args("custom") == "custom-args"
 
@@ -181,6 +182,7 @@ def test_run_command_dispatches_builtin_and_custom_methods(monkeypatch):
     monkeypatch.setattr(srv, "setup", lambda *args, **kwargs: calls.append(("setup", args, kwargs)))
     monkeypatch.setattr(srv, "connect", lambda *args, **kwargs: calls.append(("connect", args, kwargs)))
     monkeypatch.setattr(srv, "dump", lambda *args, **kwargs: calls.append(("dump", args, kwargs)))
+    monkeypatch.setattr(srv, "doctor", lambda *args, **kwargs: calls.append(("doctor", args, kwargs)))
     monkeypatch.setattr(srv, "doset", lambda *args, **kwargs: calls.append(("set", args, kwargs)))
     srv.module.command_functions = {"custom": lambda server, *args, **kwargs: calls.append(("custom", args, kwargs))}
 
@@ -189,6 +191,7 @@ def test_run_command_dispatches_builtin_and_custom_methods(monkeypatch):
     srv.run_command("backup", "nightly")
     srv.run_command("connect")
     srv.run_command("dump")
+    srv.run_command("doctor")
     srv.run_command("set", "path", "value")
     srv.run_command("custom", 9)
 
@@ -197,6 +200,7 @@ def test_run_command_dispatches_builtin_and_custom_methods(monkeypatch):
     assert ("set", ("path", "value"), {}) in calls
     assert ("message", (("hello",), {})) not in calls
     assert any(call[0] == "connect" for call in calls)
+    assert any(call[0] == "doctor" for call in calls)
     assert any(entry[0] == "message" for entry in srv.module.calls)
     assert any(entry[0] == "backup" for entry in srv.module.calls)
 
@@ -302,6 +306,20 @@ def test_status_connect_and_dump_use_screen_and_output(monkeypatch, capsys):
     assert "Server is running as screen session exists" in out
     assert '{"ok": true}' in out
     assert any(entry[0] == "status" for entry in srv.module.calls)
+
+
+def test_doctor_prints_runtime_report(monkeypatch, capsys):
+    srv = make_server()
+
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "print_runtime_doctor_report",
+        lambda server: print("Runtime doctor for " + server.name),
+    )
+
+    srv.doctor()
+
+    assert "Runtime doctor for alpha" in capsys.readouterr().out
 
 
 def test_doset_updates_nested_data_and_saves():

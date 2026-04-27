@@ -6,7 +6,6 @@ import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 from utils.platform_info import IS_LINUX
 
@@ -17,25 +16,14 @@ steam_app_id = 755170
 steam_anonymous_login_possible = False
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Staxel server", int),
-            ArgSpec("DIR", "The directory to install Staxel in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Staxel dedicated server to the latest version.",
-    "restart": "Restart the Staxel dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the Staxel server",
+    "The directory to install Staxel in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Staxel dedicated server to the latest version.",
+    "Restart the Staxel dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -43,67 +31,53 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="bin/Staxel.ServerWizard.exe"):
     """Collect and store configuration values for a Staxel server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("backupfiles", ["data", "mods", "saves"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["data", "mods", "saves"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 25565)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Staxel server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
-
-
-def install(server):
-    """Download the Staxel server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
-        force_windows=IS_LINUX,
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["data", "mods", "saves"],
+        targets=["data", "mods", "saves"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=25565,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Staxel server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
-def update(server, validate=False, restart=False):
-    """Update the Staxel server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate, force_windows=IS_LINUX)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+install.__doc__ = "Download the Staxel server files via SteamCMD."
 
 
-def restart(server):
-    """Restart the Staxel server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+update.__doc__ = "Update the Staxel server files and optionally restart the server."
 
-    server.stop()
-    server.start()
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Staxel server."
 
 
 def get_start_command(server):

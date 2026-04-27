@@ -5,7 +5,7 @@ import os
 import screen
 import server.runtime as runtime_module
 from server import ServerError
-from server.settable_keys import SettingSpec, build_launch_arg_values
+from server.settable_keys import build_launch_arg_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
@@ -15,19 +15,10 @@ from utils.gamemodules import common as gamemodule_common
 IOQ3_LATEST_RELEASE_API = "https://api.github.com/repos/ioquake/ioq3/releases/latest"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Quake 3 in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Quake 3 in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -37,11 +28,8 @@ setting_schema = {
         port_tokens=("+set", "net_port"),
         hostname_tokens=("+set", "sv_hostname"),
     ),
-    "url": SettingSpec(canonical_key="url", description="Download URL for the server archive."),
-    "download_name": SettingSpec(canonical_key="download_name", description="Cached archive filename."),
-    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
-    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
-    "version": SettingSpec(canonical_key="version", description="Requested upstream release version."),
+    **gamemodule_common.build_versioned_download_setting_schema(),
+    **gamemodule_common.build_executable_path_setting_schema(),
 }
 
 

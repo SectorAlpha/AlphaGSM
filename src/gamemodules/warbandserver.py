@@ -17,19 +17,10 @@ WARBAND_DOWNLOADS_PAGE = "https://www.taleworlds.com/en/games/warband"
 WARBAND_URL_TEMPLATE = "https://download.taleworlds.com/mb_warband_dedicated_%s.zip"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Warband server", int),
-            ArgSpec("DIR", "The directory to install Warband in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Mount and Blade: Warband in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1

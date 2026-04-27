@@ -9,7 +9,7 @@ import urllib.request
 import downloader
 import screen
 from server import ServerError
-from utils import backups
+from utils import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.gamemodules import common as gamemodule_common
 
@@ -22,18 +22,10 @@ HTTP_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Terraria in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_url_command_args(
+    "The port for the server to listen on",
+    "The directory to install Terraria in",
+)
 command_descriptions = {}
 command_functions = {}
 
@@ -290,7 +282,7 @@ def checkvalue(server, key, *value):
     if len(key) == 0:
         raise ServerError("Invalid key")
     if key[0] == "backup":
-        return backups.checkdatavalue(server.data["backup"], key, *value)
+        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
     if len(value) == 0:
         raise ServerError("No value specified")
     if key[0] in ("port", "worldsize"):

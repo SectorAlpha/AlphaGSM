@@ -20,19 +20,10 @@ SS14_DOWNLOAD_URL = (
 )
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Space Station 14 server", int),
-            ArgSpec("DIR", "The directory to install Space Station 14 in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Space Station 14 in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1

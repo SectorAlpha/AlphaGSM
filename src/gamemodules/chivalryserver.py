@@ -6,7 +6,6 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -15,25 +14,14 @@ steam_app_id = 220070
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Chivalry server", int),
-            ArgSpec("DIR", "The directory to install Chivalry in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Chivalry dedicated server to the latest version.",
-    "restart": "Restart the Chivalry dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the Chivalry server",
+    "The directory to install Chivalry in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Chivalry dedicated server to the latest version.",
+    "Restart the Chivalry dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -41,67 +29,52 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Linux/UDKGameServer-Linux"):
     """Collect and store configuration values for a Chivalry server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("startmap", "AOCTO-Battlegrounds_V3_P")
-    server.data.setdefault("backupfiles", ["UDKGame", "Binaries"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["UDKGame", "Binaries"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 7777)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Chivalry server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
-
-
-def install(server):
-    """Download the Chivalry server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
+    gamemodule_common.set_server_defaults(server, {"startmap": "AOCTO-Battlegrounds_V3_P"})
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["UDKGame", "Binaries"],
+        targets=["UDKGame", "Binaries"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=7777,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Chivalry server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
-def update(server, validate=False, restart=False):
-    """Update the Chivalry server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+install.__doc__ = "Download the Chivalry server files via SteamCMD."
 
 
-def restart(server):
-    """Restart the Chivalry server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the Chivalry server files and optionally restart the server."
 
-    server.stop()
-    server.start()
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Chivalry server."
 
 
 def get_start_command(server):

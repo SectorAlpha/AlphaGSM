@@ -5,7 +5,6 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -15,25 +14,14 @@ steam_app_id = 1948160
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Euro Truck Simulator 2 in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Euro Truck Simulator 2 dedicated server to the latest version.",
-    "restart": "Restart the Euro Truck Simulator 2 dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port for the server to listen on",
+    "The directory to install Euro Truck Simulator 2 in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Euro Truck Simulator 2 dedicated server to the latest version.",
+    "Restart the Euro Truck Simulator 2 dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -41,38 +29,38 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="bin/linux_x64/eurotrucks2_server"):
     """Collect and store configuration values for an ETS2 server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27016")
-    server.data.setdefault("configdir", ".local/share/Euro Truck Simulator 2")
-    server.data.setdefault("backupfiles", [".local/share/Euro Truck Simulator 2"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": [".local/share/Euro Truck Simulator 2"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 27015)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input(
-                "Where would you like to install the Euro Truck Simulator 2 server: [%s] "
-                % (dir,)
-            ).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "queryport": "27016",
+            "configdir": ".local/share/Euro Truck Simulator 2",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=[".local/share/Euro Truck Simulator 2"],
+        targets=[".local/share/Euro Truck Simulator 2"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=27015,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Euro Truck Simulator 2 server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(

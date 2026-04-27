@@ -17,6 +17,9 @@ It can run directly on the host, or optionally run as a Docker "manager"
 container that launches Docker-backed game-server containers through the host
 daemon.
 
+It can also run directly on the host while still using Docker as the runtime for
+individual game servers.
+
 If you want the Docker-manager route, there is also a root wrapper script:
 
 For many first-time setups, this is the quickest way to get started because it
@@ -73,6 +76,9 @@ Some server types need one extra thing:
 If you want the quickest first run, start with the Docker-manager path above.
 The host install below is still the right option when you want AlphaGSM running
 directly on the machine instead of through Docker.
+
+If you want AlphaGSM on the host but want supported game servers to start as
+Docker containers, see [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md).
 
 ### 1. Install the Python packages
 
@@ -142,6 +148,14 @@ Setup may ask for:
 ./alphagsm mymc status
 ```
 
+If you configured `[runtime] backend = docker`, use the runtime doctor command
+before `start` when you want to confirm which backend, image, and container
+state AlphaGSM will use:
+
+```bash
+./alphagsm mymc doctor
+```
+
 ### 7. Stop it later
 
 ```bash
@@ -195,6 +209,7 @@ These scripts are useful because they show a full real flow:
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md)
 - [Run AlphaGSM In Docker](docs/docker-manager.md)
 - [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
 - [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)

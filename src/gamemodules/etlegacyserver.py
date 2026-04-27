@@ -16,19 +16,10 @@ ETLEGACY_DOWNLOAD_PAGE = "https://www.etlegacy.com/download"
 ETLEGACY_RELEASE_LIST_PAGE = "https://www.etlegacy.com/download/release/list"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install ET: Legacy in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install ET: Legacy in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -47,11 +38,8 @@ setting_schema = {
         apply_to=("datastore", "launch_args"),
         launch_arg_tokens=("+exec",),
     ),
-    "url": SettingSpec(canonical_key="url", description="Download URL for the server archive."),
-    "download_name": SettingSpec(canonical_key="download_name", description="Cached archive filename."),
-    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
-    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
-    "version": SettingSpec(canonical_key="version", description="Requested upstream release version."),
+    **gamemodule_common.build_versioned_download_setting_schema(),
+    **gamemodule_common.build_executable_path_setting_schema(),
 }
 
 

@@ -7,7 +7,6 @@ import urllib.request
 import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -16,18 +15,10 @@ from utils.gamemodules import common as gamemodule_common
 GES_SERVER_DOWNLOADS_PAGE = "https://www.geshl2.com/server-downloads/"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the GoldenEye: Source server", int),
-            ArgSpec("DIR", "The directory to install GoldenEye: Source in", str),
-        ),
-        options=(
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_download_command_args(
+    "The game port to use for the GoldenEye: Source server",
+    "The directory to install GoldenEye: Source in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -67,31 +58,32 @@ def configure(
 ):
     """Collect and store configuration values for a GoldenEye: Source server."""
 
-    server.data.setdefault("game", "gesource")
-    server.data.setdefault("maxplayers", "16")
-    server.data.setdefault("startmap", "ge_archives")
-    server.data.setdefault("backupfiles", ["gesource", "gesource/cfg"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["gesource", "gesource/cfg"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 27015)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the GoldenEye: Source server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "game": "gesource",
+            "maxplayers": "16",
+            "startmap": "ge_archives",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["gesource", "gesource/cfg"],
+        targets=["gesource", "gesource/cfg"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=27015,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the GoldenEye: Source server:",
+    )
     if url is not None:
         server.data["url"] = url
     elif "url" not in server.data:
@@ -106,13 +98,16 @@ def configure(
         ).strip()
         if inp:
             server.data["url"] = inp
-    if download_name is not None:
-        server.data["download_name"] = download_name
-    elif "download_name" not in server.data:
-        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or "goldeneye-source-server.zip"
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.configure_download_source(
+        server,
+        ask=False,
+        url=server.data.get("url"),
+        download_name=download_name,
+        default_name="goldeneye-source-server.zip",
+        prompt="",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

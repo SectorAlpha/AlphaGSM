@@ -7,7 +7,6 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -28,25 +27,14 @@ JvmParam0=-XX:+AggressiveOpts
 """
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Wurm Unlimited in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Wurm Unlimited dedicated server to the latest version.",
-    "restart": "Restart the Wurm Unlimited dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install Wurm Unlimited in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Wurm Unlimited dedicated server to the latest version.",
+    "Restart the Wurm Unlimited dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -63,50 +51,46 @@ def _parse_port(value):
 def configure(server, ask, port=None, dir=None, *, exe_name="WurmServerLauncher"):
     """Collect and store configuration values for a Wurm Unlimited server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
-    server.data.setdefault("worldname", "Adventure")
-    server.data.setdefault("queryport", 27016)
-    server.data.setdefault("internalport", 7220)
-    server.data.setdefault("rmiport", 7221)
-    server.data.setdefault("backupfiles", ["Adventure", "Creative", "WurmServerLauncher"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Adventure", "Creative"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 3724)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Wurm Unlimited server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
-
-
-def install(server):
-    """Download the Wurm Unlimited server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "servername": "AlphaGSM %s" % (server.name,),
+            "worldname": "Adventure",
+            "queryport": 27016,
+            "internalport": 7220,
+            "rmiport": 7221,
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Adventure", "Creative", "WurmServerLauncher"],
+        targets=["Adventure", "Creative"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=3724,
+        prompt="Please specify the port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Wurm Unlimited server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
+
+
+def _finalize_install_layout(server):
+    """Restore Wurm's expected launcher files and bundled worlds after install."""
+
     steamclient_src = os.path.join(server.data["dir"], "linux64", "steamclient.so")
     steamclient_dst = os.path.join(server.data["dir"], "nativelibs", "steamclient.so")
     launch_config = os.path.join(server.data["dir"], "LaunchConfig.ini")
@@ -124,25 +108,30 @@ def install(server):
             shutil.copytree(bundled_world, install_world)
 
 
-def update(server, validate=False, restart=False):
-    """Update the Wurm Unlimited server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+_base_install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
 
 
-def restart(server):
-    """Restart the Wurm Unlimited server."""
+def install(server):
+    """Download the Wurm Unlimited server files via SteamCMD."""
 
-    server.stop()
-    server.start()
+    _base_install(server)
+    _finalize_install_layout(server)
+
+
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the Wurm Unlimited server files and optionally restart the server."
+
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Wurm Unlimited server."
 
 
 def get_start_command(server):

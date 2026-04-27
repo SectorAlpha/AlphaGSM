@@ -6,7 +6,6 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 
@@ -17,25 +16,14 @@ steam_app_id = 1430110
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the ACC server", int),
-            ArgSpec("DIR", "The directory to install ACC in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Assetto Corsa Competizione dedicated server to the latest version.",
-    "restart": "Restart the Assetto Corsa Competizione dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the ACC server",
+    "The directory to install ACC in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Assetto Corsa Competizione dedicated server to the latest version.",
+    "Restart the Assetto Corsa Competizione dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -43,39 +31,42 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="server/accServer.exe"):
     """Collect and store configuration values for an ACC server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("configdir", "cfg")
-    server.data.setdefault("configfile", "configuration.json")
-    server.data.setdefault("settingsfile", "settings.json")
-    server.data.setdefault("eventfile", "event.json")
-    server.data.setdefault("eventrulesfile", "eventRules.json")
-    server.data.setdefault("connectionfile", "assistRules.json")
-    server.data.setdefault("backupfiles", ["cfg"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["cfg"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 9231)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the ACC server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "configdir": "cfg",
+            "configfile": "configuration.json",
+            "settingsfile": "settings.json",
+            "eventfile": "event.json",
+            "eventrulesfile": "eventRules.json",
+            "connectionfile": "assistRules.json",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["cfg"],
+        targets=["cfg"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=9231,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the ACC server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
@@ -91,8 +82,10 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
+update.__doc__ = "Update the ACC server files and optionally restart the server."
 
 restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the ACC server."
 
 
 def get_start_command(server):
@@ -136,26 +129,23 @@ def backup(server, profile=None):
 def checkvalue(server, key, *value):
     """Validate supported ACC datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in (
-        "configdir",
-        "configfile",
-        "settingsfile",
-        "eventfile",
-        "eventrulesfile",
-        "connectionfile",
-        "exe_name",
-        "dir",
-    ):
-        return str(value[0])
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_basic_checkvalue(
+        server,
+        key,
+        *value,
+        int_keys=("port",),
+        str_keys=(
+            "configdir",
+            "configfile",
+            "settingsfile",
+            "eventfile",
+            "eventrulesfile",
+            "connectionfile",
+            "exe_name",
+            "dir",
+        ),
+        backup_module=backup_utils,
+    )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),

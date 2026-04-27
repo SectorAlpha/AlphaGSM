@@ -7,7 +7,7 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.cmdparse.cmdspec import OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -16,35 +16,24 @@ steam_app_id = 2394010
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port to use for the Palworld server", int),
-            ArgSpec("DIR", "The directory to install Palworld in", str),
-        ),
-        options=(
-            OptSpec(
-                "c",
-                ["community"],
-                "Start the server in community server mode.",
-                "publiclobby",
-                None,
-                True,
-            ),
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port to use for the Palworld server",
+    "The directory to install Palworld in",
+    setup_options=(
+        OptSpec(
+            "c",
+            ["community"],
+            "Start the server in community server mode.",
+            "publiclobby",
+            None,
+            True,
         ),
     ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Palworld dedicated server to the latest version.",
-    "restart": "Restart the Palworld dedicated server.",
-}
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Palworld dedicated server to the latest version.",
+    "Restart the Palworld dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -52,35 +41,33 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="PalServer.sh", publiclobby=False):
     """Collect and store configuration values for a Palworld server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("publiclobby", bool(publiclobby))
-    server.data.setdefault("backupfiles", ["Pal/Saved", "PalWorldSettings.ini", "PalServer.sh"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Pal/Saved"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 8211)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(server, {"publiclobby": bool(publiclobby)})
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Pal/Saved", "PalWorldSettings.ini", "PalServer.sh"],
+        targets=["Pal/Saved"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=8211,
+        prompt="Please specify the port to use for this server:",
+    )
     server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Palworld server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Palworld server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def _settings_paths(server):
@@ -93,17 +80,8 @@ def _settings_paths(server):
     )
 
 
-def install(server):
-    """Download the Palworld server files and prepare the settings file."""
-
-    if not os.path.isdir(server.data["dir"]):
-        os.makedirs(server.data["dir"])
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
-    )
+def _finalize_install_layout(server):
+    """Create the active Palworld settings file from the shipped default."""
 
     default_settings, active_settings = _settings_paths(server)
     active_dir = os.path.dirname(active_settings)
@@ -113,25 +91,30 @@ def install(server):
         shutil.copy2(default_settings, active_settings)
 
 
-def update(server, validate=False, restart=False):
-    """Update the Palworld server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+_base_install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
 
 
-def restart(server):
-    """Restart the Palworld server."""
+def install(server):
+    """Download the Palworld server files and prepare the settings file."""
 
-    server.stop()
-    server.start()
+    _base_install(server)
+    _finalize_install_layout(server)
+
+
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the Palworld server files and optionally restart the server."
+
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Palworld server."
 
 
 def get_start_command(server):
@@ -185,19 +168,15 @@ def backup(server, profile=None):
 def checkvalue(server, key, *value):
     """Validate supported Palworld datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in ("exe_name", "dir", "queryport"):
-        return str(value[0])
-    if key[0] == "publiclobby":
-        return str(value[0]).lower() in ("1", "true", "yes", "on")
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_basic_checkvalue(
+        server,
+        key,
+        *value,
+        int_keys=("port",),
+        str_keys=("exe_name", "dir", "queryport"),
+        bool_keys=("publiclobby",),
+        backup_module=backup_utils,
+    )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',

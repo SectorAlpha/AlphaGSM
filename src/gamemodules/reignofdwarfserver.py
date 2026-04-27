@@ -6,7 +6,6 @@ import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 from utils.platform_info import IS_LINUX
 
@@ -18,25 +17,14 @@ steam_app_id = 1999160
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Reign Of Dwarf server", int),
-            ArgSpec("DIR", "The directory to install Reign Of Dwarf in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Reign Of Dwarf dedicated server to the latest version.",
-    "restart": "Restart the Reign Of Dwarf dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the Reign Of Dwarf server",
+    "The directory to install Reign Of Dwarf in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Reign Of Dwarf dedicated server to the latest version.",
+    "Restart the Reign Of Dwarf dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -44,35 +32,38 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="Server.exe"):
     """Collect and store configuration values for a Reign Of Dwarf server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "27015")
-    server.data.setdefault("maxplayers", "16")
-    server.data.setdefault("backupfiles", ["SaveGames", "Config", "Mods"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["SaveGames", "Config", "Mods"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 7777)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Reign Of Dwarf server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "queryport": "27015",
+            "maxplayers": "16",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["SaveGames", "Config", "Mods"],
+        targets=["SaveGames", "Config", "Mods"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=7777,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Reign Of Dwarf server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(

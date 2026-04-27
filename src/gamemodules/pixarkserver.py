@@ -7,7 +7,6 @@ import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 from utils.platform_info import IS_LINUX
 
@@ -19,15 +18,10 @@ steam_app_id = 824360
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the PixARK server", int),
-            ArgSpec("DIR", "The directory to install PixARK in", str),
-        )
-    ),
-    **gamemodule_common.build_update_restart_command_args(),
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the PixARK server",
+    "The directory to install PixARK in",
+)
 command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
     "Update the PixARK dedicated server to the latest version.",
     "Restart the PixARK dedicated server.",
@@ -70,37 +64,40 @@ setting_schema = {
 def configure(server, ask, port=None, dir=None, *, exe_name="ShooterGame/Binaries/Win64/PixARKServer.exe"):
     """Collect and store configuration values for a PixARK server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("maxplayers", "70")
-    server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
-    server.data.setdefault("map", "CubeWorld_Light")
-    server.data.setdefault("backupfiles", ["ShooterGame/Saved", "ShooterGame/Config"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["ShooterGame/Saved", "ShooterGame/Config"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 27015)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-    server.data.setdefault("queryport", str(int(port) + 1))
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the PixARK server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "maxplayers": "70",
+            "servername": "AlphaGSM %s" % (server.name,),
+            "map": "CubeWorld_Light",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["ShooterGame/Saved", "ShooterGame/Config"],
+        targets=["ShooterGame/Saved", "ShooterGame/Config"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=27015,
+        prompt="Please specify the game port to use for this server:",
+    )
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the PixARK server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(

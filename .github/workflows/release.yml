@@ -1,0 +1,74 @@
+name: AlphaGSM Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version to publish.
+        required: true
+
+jobs:
+  build-release-binaries:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_slug: linux
+            binary_name: alphagsm
+          - os: windows-latest
+            artifact_slug: windows
+            binary_name: alphagsm.exe
+          - os: macos-latest
+            artifact_slug: macos
+            binary_name: alphagsm
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          version="${{ github.event.inputs.version }}"
+          if [ -z "$version" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build staged release artifact
+        env:
+          ALPHAGSM_VERSION: ${{ steps.version.outputs.value }}
+        run: >-
+          python scripts/build_binary.py
+          --version ${{ steps.version.outputs.value }}
+          --release-dir release-artifacts
+          --artifact-name alphagsm-${{ steps.version.outputs.value }}-${{ matrix.artifact_slug }}-${{ runner.arch }}
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alphagsm-${{ steps.version.outputs.value }}-${{ matrix.artifact_slug }}-${{ runner.arch }}
+          path: release-artifacts/*
+
+      - name: Publish release files
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: release-artifacts/*

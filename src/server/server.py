@@ -172,6 +172,7 @@ class Server(object):
         "wipe",
         "query",
         "info",
+        "doctor",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -329,6 +330,7 @@ class Server(object):
                 ),
             )
         ),
+        "doctor": CmdSpec(),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -366,6 +368,7 @@ class Server(object):
         "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.\n"
         "Use -j / --json to emit the result as a JSON object.\n"
         "Use -d / --detailed to include extended data (e.g. TeamSpeak 3 channel list).",
+        "doctor": "Print runtime diagnostics for this server, including the effective backend, Docker image/container details, and local runtime health checks.",
     }
 
     def __init__(self, name, module=None):
@@ -568,6 +571,8 @@ class Server(object):
                 self.query(*args, **kwargs)
             elif command == "info":
                 self.info(*args, **kwargs)
+            elif command == "doctor":
+                self.doctor(*args, **kwargs)
         elif command in self.module.commands:
             self.module.command_functions[command](self, *args, **kwargs)
         else:
@@ -696,6 +701,11 @@ class Server(object):
             runtime_module.show_server_logs(self, lines=lines)
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
+
+    def doctor(self, **kwargs):
+        """Print runtime diagnostics for this server."""
+
+        runtime_module.print_runtime_doctor_report(self)
 
     def restore(self, backup=None, **kwargs):
         """Restore the server from a backup archive.

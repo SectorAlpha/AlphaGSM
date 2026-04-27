@@ -8,6 +8,7 @@ import screen
 import os
 import traceback
 from . import program
+from .version import get_version
 from sys import stderr, stdout
 from textwrap import dedent
 
@@ -54,6 +55,10 @@ def main(name, args):
 
     The main role of this function is to sanitize the command input from the user.
     """
+
+    if len(args) == 1 and args[0].lower() in ("-v", "--version", "version"):
+        print("AlphaGSM %s" % (get_version(),))
+        return 0
 
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]

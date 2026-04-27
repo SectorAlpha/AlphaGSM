@@ -138,7 +138,11 @@ def test_mumbleserver_runtime_requirements_use_simple_tcp_family(tmp_path):
         {"host": 64738, "container": 64738, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"] == ["murmurd", "-fg", "-ini", "/srv/server/mumble-server.ini"]
+    assert spec["command"] == [
+        "sh",
+        "-lc",
+        "mkdir -p /srv/server && chown -R mumble-server:mumble-server /srv/server && exec murmurd -fg -ini /srv/server/mumble-server.ini",
+    ]
 
 
 def test_ut99server_install_extracts_archive(tmp_path, monkeypatch):

@@ -6,7 +6,6 @@ import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -16,15 +15,10 @@ steam_app_id = 581330
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Insurgency: Sandstorm in", str),
-        )
-    ),
-    **gamemodule_common.build_update_restart_command_args(),
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install Insurgency: Sandstorm in",
+)
 command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
     "Update the Insurgency: Sandstorm dedicated server to the latest version.",
     "Restart the Insurgency: Sandstorm dedicated server.",
@@ -62,73 +56,61 @@ setting_schema = {
 def configure(server, ask, port=None, dir=None, *, exe_name="Insurgency/Binaries/Linux/InsurgencyServer-Linux-Shipping"):
     """Collect and store configuration values for an Insurgency: Sandstorm server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("mapcycle", "Scenario_Crossing_Push_Security")
-    server.data.setdefault("hostname", "AlphaGSM %s" % (server.name,))
-    server.data.setdefault("maxplayers", "28")
-    server.data.setdefault("gslt", "")
-    server.data.setdefault("backupfiles", ["Insurgency/Config/Server", "Insurgency/Saved"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Insurgency/Config/Server", "Insurgency/Saved"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 27102)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input(
-                "Where would you like to install the Insurgency: Sandstorm server: [%s] " % (dir,)
-            ).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
-
-
-def install(server):
-    """Download the Insurgency: Sandstorm server files via SteamCMD."""
-
-    os.makedirs(server.data["dir"], exist_ok=True)
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "mapcycle": "Scenario_Crossing_Push_Security",
+            "hostname": "AlphaGSM %s" % (server.name,),
+            "maxplayers": "28",
+            "gslt": "",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Insurgency/Config/Server", "Insurgency/Saved"],
+        targets=["Insurgency/Config/Server", "Insurgency/Saved"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=27102,
+        prompt="Please specify the port to use for this server:",
+    )
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Insurgency: Sandstorm server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
-def update(server, validate=False, restart=False):
-    """Update the Insurgency: Sandstorm server files and optionally restart the server."""
-
-    try:
-        server.stop()
-    except Exception:
-        print("Server has probably already stopped, updating")
-    steamcmd.download(server.data["dir"], steam_app_id, steam_anonymous_login_possible, validate=validate)
-    print("Server up to date")
-    if restart:
-        print("Starting the server up")
-        server.start()
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+install.__doc__ = "Download the Insurgency: Sandstorm server files via SteamCMD."
 
 
-def restart(server):
-    """Restart the Insurgency: Sandstorm server."""
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
+update.__doc__ = "Update the Insurgency: Sandstorm server files and optionally restart the server."
 
-    server.stop()
-    server.start()
+
+restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Insurgency: Sandstorm server."
 
 
 def get_query_address(server):

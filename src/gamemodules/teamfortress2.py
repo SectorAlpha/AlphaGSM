@@ -8,7 +8,6 @@ import server.runtime as runtime_module
 from server.settable_keys import build_launch_arg_values, build_native_config_values
 import utils.steamcmd as steamcmd
 from server import ServerError
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.simple_kv_config import rewrite_space_config as updateconfig
 from utils.valve_server import (
     send_console_command_and_collect_response,
@@ -27,15 +26,10 @@ steam_anonymous_login_possible = True
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The Directory to install minecraft in", str),
-        )
-    ),
-    **gamemodule_common.build_update_restart_command_args(),
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install the server in",
+)
 
 # required still
 command_descriptions = {
@@ -105,16 +99,21 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
         exe_name: the executable name of the server
     """
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-
-    # defaults
-
-    server.data["startmap"] = "cp_dustbowl"
-    server.data["maxplayers"] = "16"
-    server.data.setdefault("servername", "AlphaGSM TF2 Server")
-    server.data.setdefault("rconpassword", "changeme")
-    server.data.setdefault("serverpassword", "")
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "startmap": "cp_dustbowl",
+            "maxplayers": "16",
+            "servername": "AlphaGSM TF2 Server",
+            "rconpassword": "changeme",
+            "serverpassword": "",
+        },
+    )
 
     # do we have backup data already? if not initialise the dictionary
     if "backup" not in server.data:
@@ -135,54 +134,33 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
         # set the default to never back up
         server.data["backup"]["schedule"].append((profile, 0, "days"))
 
-    # assign the port to the server
-    if port is None:
-        port = server.data.get("port", 27015)
-    if ask:
-        while True:
-            inp = input(
-                "Please specify the port to use for this server: "
-                + ("(current=" + str(port) + ") " if port is not None else "")
-            ).strip()
-            if port is not None and inp == "":
-                break
-            try:
-                port = int(inp)
-            except ValueError:
-                print(inp + " isn't a valid port number")
-                continue
-            break
-    if port is None:
-        raise ValueError("No Port")
-    server.data["port"] = port
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=27015,
+        prompt="Please specify the port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the tf2 server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
-    # assign install dir for the server
-    if dir is None:
-        if "dir" in server.data and server.data["dir"] is not None:
-            dir = server.data["dir"]
-        else:
-            dir = os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input(
-                "Where would you like to install the tf2 server: [" + dir + "] "
-            ).strip()
-            if inp != "":
-                dir = inp
-    server.data["dir"] = os.path.join(
-        dir, ""
-    )  # guarentees the inclusion of trailing slashes.
 
-    # if exe_name is not asigned, use the function default one
-    if "exe_name" not in server.data:
-        server.data["exe_name"] = "srcds_run"
-    server.data.save()
-
-    return (), {}
+_base_install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+)
 
 
 def install(server):
     """Install or prepare the TF2 server files for this server object."""
-    doinstall(server)
+    _base_install(server)
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
     elif os.path.isfile(server.data["dir"] + "srcds_run"):
@@ -193,20 +171,6 @@ def install(server):
 
 # technically this command is not needed since the chosen port is assigned in the runscript, but leaving it commented as an example
 #  updateconfig(server_cfg,{"hostport":str(server.data["port"])})
-
-
-def doinstall(server):
-    """Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater"""
-    if not os.path.isdir(server.data["dir"]):
-        os.makedirs(server.data["dir"])
-
-    print("Installing game server at", server.data["dir"])
-    steamcmd.download(
-        server.data["dir"],
-        server.data["Steam_AppID"],
-        server.data["Steam_anonymous_login_possible"],
-        validate=False,
-    )
 
 
 restart = gamemodule_common.make_restart_hook()
@@ -410,7 +374,7 @@ def checkvalue(server, key, *value):
 ## TODO integrate Steam games properly into the downloads module.
 ##
 ##
-##def doinstall(server):
+## legacy installation sketch:
 ##  """# Do the installation of the latest version. Will be called by both the install function thats part of the setup command and by the auto updater """
 ##  if not os.path.isdir(server.data["dir"]):
 ##    os.makedirs(server.data["dir"])

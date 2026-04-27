@@ -8,7 +8,6 @@ import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -16,19 +15,11 @@ from utils.gamemodules import common as gamemodule_common
 CFX_ARTIFACTS_BASE = "https://runtime.fivem.net/artifacts/fivem/build_proot_linux/master"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the RedM server", int),
-            ArgSpec("DIR", "The directory to install RedM in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Artifact version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The game port to use for the RedM server",
+    "The directory to install RedM in",
+    version_option=gamemodule_common.STANDARD_ARTIFACT_VERSION_OPTION,
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -70,44 +61,36 @@ def configure(
     """Collect and store configuration values for a RedM server."""
 
     server.data.setdefault("backupfiles", ["server-data", "cache", "citizen"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["server-data", "citizen"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 30120)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the RedM server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    if url is not None:
-        server.data["url"] = url
-    elif "url" not in server.data:
-        resolved_version, resolved_url = resolve_download(version=version or server.data.get("version"))
-        server.data["version"] = resolved_version
-        server.data["url"] = resolved_url
-    if ask and url is None:
-        inp = input("Direct archive URL for the RedM server: [%s] " % (server.data["url"],)).strip()
-        if inp:
-            server.data["url"] = inp
-    if download_name is not None:
-        server.data["download_name"] = download_name
-    elif "download_name" not in server.data:
-        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or "fx.tar.xz"
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["server-data", "cache", "citizen"],
+        targets=["server-data", "citizen"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=30120,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the RedM server:",
+    )
+    gamemodule_common.configure_resolved_download_source(
+        server,
+        ask,
+        version=version,
+        url=url,
+        download_name=download_name,
+        resolve_download=resolve_download,
+        prompt="Direct archive URL for the RedM server:",
+        default_name="fx.tar.xz",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

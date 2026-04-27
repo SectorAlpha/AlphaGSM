@@ -13,19 +13,10 @@ from utils.gamemodules import common as gamemodule_common
 LMP_LATEST_RELEASE_API = "https://api.github.com/repos/LunaMultiplayer/LunaMultiplayer/releases/latest"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Kerbal Space Program server", int),
-            ArgSpec("DIR", "The directory to install the KSP LunaMultiplayer server in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Luna Multiplayer in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1

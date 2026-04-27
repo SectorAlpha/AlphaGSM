@@ -7,7 +7,6 @@ import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 from utils.platform_info import IS_LINUX
 
@@ -18,25 +17,14 @@ steam_app_id = 367970
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Medieval Engineers server", int),
-            ArgSpec("DIR", "The directory to install Medieval Engineers in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Medieval Engineers dedicated server to the latest version.",
-    "restart": "Restart the Medieval Engineers dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the Medieval Engineers server",
+    "The directory to install Medieval Engineers in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Medieval Engineers dedicated server to the latest version.",
+    "Restart the Medieval Engineers dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 
@@ -44,33 +32,31 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServer64/MedievalEngineersDedicated.exe"):
     """Collect and store configuration values for a Medieval Engineers server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("backupfiles", ["DedicatedServer64", "Content", "global.cfg"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["DedicatedServer64", "Content", "global.cfg"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 27016)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Medieval Engineers server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["DedicatedServer64", "Content", "global.cfg"],
+        targets=["DedicatedServer64", "Content", "global.cfg"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=27016,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Medieval Engineers server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
@@ -88,8 +74,10 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
 )
+update.__doc__ = "Update the Medieval Engineers server files and optionally restart the server."
 
 restart = gamemodule_common.make_restart_hook()
+restart.__doc__ = "Restart the Medieval Engineers server."
 
 
 def get_start_command(server):

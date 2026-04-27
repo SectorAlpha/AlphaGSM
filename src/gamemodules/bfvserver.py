@@ -6,7 +6,6 @@ import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -15,18 +14,10 @@ BFV_SERVER_URL = "https://files.gamefront.com/bfvlindedv11200407261438run/;39574
 BFV_SERVER_NAME = "bfvlindedv1.120040726.1438.run"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install Battlefield Vietnam in", str),
-        ),
-        options=(
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Battlefield Vietnam in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
@@ -35,46 +26,42 @@ max_stop_wait = 1
 def configure(server, ask, port=None, dir=None, *, url=None, download_name=None, exe_name="bfvietnam_lnxded"):
     """Collect and store configuration values for a Battlefield Vietnam server."""
 
-    server.data.setdefault("hostname", "AlphaGSM %s" % (server.name,))
-    server.data.setdefault("startmap", "operation_hastings")
-    server.data.setdefault("backupfiles", ["Mods/BFVietnam"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Mods/BFVietnam"]}},
-            "schedule": [("default", 0, "days")],
-        }
-    if port is None:
-        port = server.data.get("port", 15567)
-    if ask:
-        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Battlefield Vietnam server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    if url is not None:
-        server.data["url"] = url
-    elif "url" not in server.data:
-        server.data["url"] = BFV_SERVER_URL
-    if ask and url is None:
-        inp = input(
-            "Direct archive URL for the Battlefield Vietnam server override [%s] "
-            % (server.data["url"],)
-        ).strip()
-        if inp:
-            server.data["url"] = inp
-    if download_name is not None:
-        server.data["download_name"] = download_name
-    elif "download_name" not in server.data:
-        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or BFV_SERVER_NAME
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "hostname": "AlphaGSM %s" % (server.name,),
+            "startmap": "operation_hastings",
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Mods/BFVietnam"],
+        targets=["Mods/BFVietnam"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=15567,
+        prompt="Please specify the port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Battlefield Vietnam server:",
+    )
+    gamemodule_common.configure_download_source(
+        server,
+        ask,
+        url=url,
+        download_name=download_name,
+        default_url=BFV_SERVER_URL,
+        default_name=BFV_SERVER_NAME,
+        prompt="Direct archive URL for the Battlefield Vietnam server override",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

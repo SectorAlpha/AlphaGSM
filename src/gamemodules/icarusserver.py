@@ -1,13 +1,10 @@
 """Icarus dedicated server lifecycle helpers."""
 
-import os
-
 import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 from utils.platform_info import IS_LINUX
 
@@ -19,25 +16,14 @@ steam_app_id = 2089300
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Icarus server", int),
-            ArgSpec("DIR", "The directory to install Icarus in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec("v", ["validate"], "Validate the server files after updating", "validate", None, True),
-            OptSpec("r", ["restart"], "Restart the server after updating", "restart", None, True),
-        )
-    ),
-    "restart": CmdSpec(),
-}
-command_descriptions = {
-    "update": "Update the Icarus dedicated server to the latest version.",
-    "restart": "Restart the Icarus dedicated server.",
-}
+command_args = gamemodule_common.build_setup_update_restart_command_args(
+    "The game port to use for the Icarus server",
+    "The directory to install Icarus in",
+)
+command_descriptions = gamemodule_common.build_update_restart_command_descriptions(
+    "Update the Icarus dedicated server to the latest version.",
+    "Restart the Icarus dedicated server.",
+)
 command_functions = {}
 max_stop_wait = 1
 setting_schema = {
@@ -48,44 +34,46 @@ setting_schema = {
         apply_to=("datastore", "launch_args"),
         launch_arg_format="-WorldName={value}",
     ),
-    "exe_name": SettingSpec(canonical_key="exe_name", description="Server executable filename."),
-    "dir": SettingSpec(canonical_key="dir", description="Install directory for the server."),
+    **gamemodule_common.build_executable_path_setting_schema(),
 }
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="IcarusServer.exe"):
     """Collect and store configuration values for an Icarus server."""
 
-    server.data["Steam_AppID"] = steam_app_id
-    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
-    server.data.setdefault("queryport", "17778")
-    server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
-    server.data.setdefault("worldname", server.name)
-    server.data.setdefault("backupfiles", ["Saved"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["Saved"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 17777)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Icarus server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.set_steam_install_metadata(
+        server,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "queryport": "17778",
+            "servername": "AlphaGSM %s" % (server.name,),
+            "worldname": server.name,
+        },
+    )
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["Saved"],
+        targets=["Saved"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=17777,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Icarus server:",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(

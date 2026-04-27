@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import copy
 import importlib
 import inspect
 import os
 
 from server import ServerError
 from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
-from utils.cmdparse.cmdspec import CmdSpec, OptSpec
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 
 
 STANDARD_UPDATE_VALIDATE_OPTION = OptSpec(
@@ -31,6 +32,42 @@ STANDARD_UPDATE_CMDSPEC = CmdSpec(
     options=(STANDARD_UPDATE_VALIDATE_OPTION, STANDARD_UPDATE_RESTART_OPTION)
 )
 STANDARD_RESTART_CMDSPEC = CmdSpec()
+STANDARD_DOWNLOAD_URL_OPTION = OptSpec(
+    "u",
+    ["url"],
+    "Download URL to use.",
+    "url",
+    "URL",
+    str,
+)
+STANDARD_DOWNLOAD_NAME_OPTION = OptSpec(
+    "N",
+    ["download-name"],
+    "Archive filename to cache.",
+    "download_name",
+    "NAME",
+    str,
+)
+STANDARD_DOWNLOAD_SOURCE_OPTIONS = (
+    STANDARD_DOWNLOAD_URL_OPTION,
+    STANDARD_DOWNLOAD_NAME_OPTION,
+)
+STANDARD_VERSION_OPTION = OptSpec(
+    "v",
+    ["version"],
+    "Version to download.",
+    "version",
+    "VERSION",
+    str,
+)
+STANDARD_ARTIFACT_VERSION_OPTION = OptSpec(
+    "v",
+    ["version"],
+    "Artifact version to download.",
+    "version",
+    "VERSION",
+    str,
+)
 STANDARD_EXE_NAME_SETTING = SettingSpec(
     canonical_key="exe_name",
     description="Server executable filename.",
@@ -39,6 +76,151 @@ STANDARD_DIR_SETTING = SettingSpec(
     canonical_key="dir",
     description="Install directory for the server.",
 )
+STANDARD_DOWNLOAD_URL_SETTING = SettingSpec(
+    canonical_key="url",
+    description="Download URL for the server archive.",
+)
+STANDARD_DOWNLOAD_NAME_SETTING = SettingSpec(
+    canonical_key="download_name",
+    description="Cached archive filename.",
+)
+STANDARD_VERSION_SETTING = SettingSpec(
+    canonical_key="version",
+    description="Requested upstream release version.",
+)
+
+
+def set_server_defaults(server, defaults):
+    """Apply default datastore values without overwriting user state."""
+
+    for key, value in defaults.items():
+        if key not in server.data:
+            server.data[key] = copy.deepcopy(value)
+
+
+def set_steam_install_metadata(server, *, steam_app_id, steam_anonymous_login_possible):
+    """Persist the standard Steam install metadata for a module."""
+
+    server.data["Steam_AppID"] = steam_app_id
+    server.data["Steam_anonymous_login_possible"] = steam_anonymous_login_possible
+
+
+def ensure_backup_config(server, *, backupfiles=None, targets, profile_name="default"):
+    """Populate standard backup datastore keys when missing."""
+
+    if backupfiles is not None:
+        server.data.setdefault("backupfiles", list(backupfiles))
+    ensure_backup_defaults(server, targets=targets, profile_name=profile_name)
+
+
+def configure_port(server, ask, port, *, default_port, prompt):
+    """Resolve and persist the server's main port value."""
+
+    if port is None:
+        port = server.data.get("port", default_port)
+    if ask:
+        inp = input("%s [%s] " % (prompt, port)).strip()
+        if inp:
+            port = int(inp)
+    server.data["port"] = int(port)
+    return server.data["port"]
+
+
+def configure_install_dir(server, ask, dir, *, prompt):
+    """Resolve and persist the install directory with AlphaGSM's trailing slash style."""
+
+    if dir is None:
+        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
+    if ask:
+        inp = input("%s [%s] " % (prompt, dir)).strip()
+        if inp:
+            dir = inp
+    server.data["dir"] = os.path.join(dir, "")
+    return server.data["dir"]
+
+
+def configure_executable(server, *, exe_name):
+    """Resolve and persist the executable filename/path."""
+
+    server.data["exe_name"] = server.data.get("exe_name", exe_name)
+    return server.data["exe_name"]
+
+
+def configure_download_source(
+    server,
+    ask,
+    *,
+    url=None,
+    download_name=None,
+    default_url=None,
+    default_name=None,
+    prompt,
+    url_key="url",
+    download_name_key="download_name",
+):
+    """Resolve standard archive download URL and cached filename settings."""
+
+    if url is not None:
+        server.data[url_key] = url
+    elif url_key not in server.data and default_url is not None:
+        server.data[url_key] = default_url
+    if ask and url is None and server.data.get(url_key):
+        inp = input("%s [%s] " % (prompt, server.data[url_key])).strip()
+        if inp:
+            server.data[url_key] = inp
+    if download_name is not None:
+        server.data[download_name_key] = download_name
+    elif download_name_key not in server.data:
+        server.data[download_name_key] = (
+            os.path.basename(server.data.get(url_key, "")) or default_name
+        )
+    return server.data.get(url_key), server.data.get(download_name_key)
+
+
+def configure_resolved_download_source(
+    server,
+    ask,
+    *,
+    version=None,
+    url=None,
+    download_name=None,
+    resolve_download,
+    prompt,
+    default_name=None,
+    version_key="version",
+    url_key="url",
+    download_name_key="download_name",
+):
+    """Resolve a versioned archive source, allow an override prompt, and persist the cache name."""
+
+    if url is not None:
+        server.data[url_key] = url
+    elif server.data.get(url_key) in (None, ""):
+        resolved_version, resolved_url = resolve_download(version=version or server.data.get(version_key))
+        server.data[version_key] = resolved_version
+        server.data[url_key] = resolved_url
+    elif version is not None:
+        server.data[version_key] = str(version)
+
+    if ask and url is None and server.data.get(url_key):
+        inp = input("%s [%s] " % (prompt, server.data[url_key])).strip()
+        if inp:
+            server.data[url_key] = inp
+
+    if download_name is not None:
+        server.data[download_name_key] = download_name
+    elif server.data.get(download_name_key) in (None, ""):
+        server.data[download_name_key] = (
+            os.path.basename(server.data.get(url_key, "")) or default_name
+        )
+    return server.data.get(url_key), server.data.get(download_name_key)
+
+
+def finalize_configure(server):
+    """Persist datastore changes and return the standard configure result."""
+
+    server.data.save()
+    return (), {}
 
 
 def _backup_module():
@@ -155,6 +337,127 @@ def make_screen_message_hook(*, command="say"):
     return make_server_message_hook(command=command)
 
 
+def build_setup_command_args(port_description, dir_description, *, setup_options=(), extra_optionalarguments=()):
+    """Return the standard ``setup`` command args for modules with port/dir inputs."""
+
+    return {
+        "setup": CmdSpec(
+            optionalarguments=(
+                ArgSpec("PORT", port_description, int),
+                ArgSpec("DIR", dir_description, str),
+                *extra_optionalarguments,
+            ),
+            options=tuple(setup_options),
+        )
+    }
+
+
+def build_setup_dir_command_args(dir_description, *, setup_options=(), extra_optionalarguments=()):
+    """Return the standard ``setup`` command args for modules that only take ``DIR``."""
+
+    return {
+        "setup": CmdSpec(
+            optionalarguments=(
+                ArgSpec("DIR", dir_description, str),
+                *extra_optionalarguments,
+            ),
+            options=tuple(setup_options),
+        )
+    }
+
+
+def build_setup_update_restart_command_args(
+    port_description,
+    dir_description,
+    *,
+    setup_options=(),
+    extra_optionalarguments=(),
+):
+    """Return standard ``setup``/``update``/``restart`` command args."""
+
+    return {
+        **build_setup_command_args(
+            port_description,
+            dir_description,
+            setup_options=setup_options,
+            extra_optionalarguments=extra_optionalarguments,
+        ),
+        **build_update_restart_command_args(),
+    }
+
+
+def build_setup_dir_update_restart_command_args(
+    dir_description,
+    *,
+    setup_options=(),
+    extra_optionalarguments=(),
+):
+    """Return standard ``setup``/``update``/``restart`` args for dir-only modules."""
+
+    return {
+        **build_setup_dir_command_args(
+            dir_description,
+            setup_options=setup_options,
+            extra_optionalarguments=extra_optionalarguments,
+        ),
+        **build_update_restart_command_args(),
+    }
+
+
+def build_setup_download_command_args(
+    port_description,
+    dir_description,
+    *,
+    setup_options=(),
+    extra_optionalarguments=(),
+):
+    """Return standard ``setup`` args for modules with archive URL/name options."""
+
+    return build_setup_command_args(
+        port_description,
+        dir_description,
+        setup_options=tuple(setup_options) + STANDARD_DOWNLOAD_SOURCE_OPTIONS,
+        extra_optionalarguments=extra_optionalarguments,
+    )
+
+
+def build_setup_version_url_command_args(
+    port_description,
+    dir_description,
+    *,
+    version_option=STANDARD_VERSION_OPTION,
+    url_option=STANDARD_DOWNLOAD_URL_OPTION,
+    setup_options=(),
+    extra_optionalarguments=(),
+):
+    """Return standard ``setup`` args for modules with version and direct URL options."""
+
+    return build_setup_command_args(
+        port_description,
+        dir_description,
+        setup_options=(version_option, url_option) + tuple(setup_options),
+        extra_optionalarguments=extra_optionalarguments,
+    )
+
+
+def build_setup_version_download_command_args(
+    port_description,
+    dir_description,
+    *,
+    version_option=STANDARD_VERSION_OPTION,
+    setup_options=(),
+    extra_optionalarguments=(),
+):
+    """Return standard ``setup`` args for modules with versioned archive downloads."""
+
+    return build_setup_command_args(
+        port_description,
+        dir_description,
+        setup_options=(version_option,) + tuple(setup_options) + STANDARD_DOWNLOAD_SOURCE_OPTIONS,
+        extra_optionalarguments=extra_optionalarguments,
+    )
+
+
 def build_update_restart_command_args():
     """Return the standard ``update`` and ``restart`` command specs."""
 
@@ -182,11 +485,32 @@ def build_executable_path_setting_schema():
     }
 
 
+def build_download_source_setting_schema():
+    """Return shared ``url`` and ``download_name`` SettingSpec entries."""
+
+    return {
+        "url": STANDARD_DOWNLOAD_URL_SETTING,
+        "download_name": STANDARD_DOWNLOAD_NAME_SETTING,
+    }
+
+
+def build_versioned_download_setting_schema():
+    """Return shared ``url``/``download_name``/``version`` SettingSpec entries."""
+
+    return {
+        **build_download_source_setting_schema(),
+        "version": STANDARD_VERSION_SETTING,
+    }
+
+
 def make_steamcmd_install_hook(
     *,
     steamcmd_module,
     steam_app_id,
     steam_anonymous_login_possible,
+    sync_server_config=None,
+    validate=False,
+    post_download_hook=None,
     download_kwargs=None,
 ):
     """Return a standard SteamCMD-backed ``install`` hook."""
@@ -198,9 +522,13 @@ def make_steamcmd_install_hook(
             server.data["dir"],
             steam_app_id,
             steam_anonymous_login_possible,
-            validate=False,
+            validate=validate,
             **resolved_download_kwargs,
         )
+        if sync_server_config is not None:
+            sync_if_install_present(server, sync_server_config)
+        if post_download_hook is not None:
+            post_download_hook(server)
 
     install.__name__ = "install"
     return install
@@ -212,6 +540,7 @@ def make_steamcmd_update_hook(
     steam_app_id,
     steam_anonymous_login_possible,
     sync_server_config=None,
+    post_download_hook=None,
     download_kwargs=None,
 ):
     """Return a standard SteamCMD-backed ``update`` hook."""
@@ -231,6 +560,8 @@ def make_steamcmd_update_hook(
         )
         if sync_server_config is not None:
             sync_if_install_present(server, sync_server_config)
+        if post_download_hook is not None:
+            post_download_hook(server)
         print("Server up to date")
         if restart:
             print("Starting the server up")

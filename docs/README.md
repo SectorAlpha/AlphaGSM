@@ -6,6 +6,7 @@ If you are not sure where to start, pick your server below and follow that guide
 
 ## Deployment Guides
 
+- [Run Docker-Backed Servers From Host AlphaGSM](docker-runtime-host.md)
 - [Run AlphaGSM In Docker](docker-manager.md)
 
 ## Server Guides

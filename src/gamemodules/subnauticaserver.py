@@ -13,19 +13,10 @@ from utils.gamemodules import common as gamemodule_common
 NITROX_LATEST_RELEASE_API = "https://api.github.com/repos/SubnauticaNitrox/Nitrox/releases/latest"
 
 commands = ()
-command_args = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The game port to use for the Subnautica Nitrox server", int),
-            ArgSpec("DIR", "The directory to install the Subnautica Nitrox server in", str),
-        ),
-        options=(
-            OptSpec("v", ["version"], "Version to download.", "version", "VERSION", str),
-            OptSpec("u", ["url"], "Download URL to use.", "url", "URL", str),
-            OptSpec("N", ["download-name"], "Archive filename to cache.", "download_name", "NAME", str),
-        ),
-    )
-}
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The game port to use for the Subnautica Nitrox server",
+    "The directory to install the Subnautica Nitrox server in",
+)
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
