@@ -13,6 +13,16 @@ high-level milestones.
 - Release prep: stamp standalone binaries with a shared AlphaGSM version, stage release-ready artifacts with SHA256 sidecars, and add a tag-driven GitHub release workflow for Linux, Windows, and macOS builds.
 - Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
 
+2026-04-28
+- Tests: add an opt-in backend integration test that exercises AlphaGSM CLI
+	commands (`create`, `set image`, `setup`, `start`, `status`, `info`, `query`, `stop`) against
+	the Docker runtime to validate CLI/runtime integration in CI environments.
+- Dev: normalize `get_start_command(server)` across gamemodules so static
+	validators and container builders can reliably introspect start commands.
+- Tools: add static validators and helper scripts to audit `get_start_command`
+	and `get_container_spec` implementations, plus docs summarising audit
+	results and remediation guidance.
+
 2026-04-17
 - CLI: add canonical `set` discovery and alias routing for schema-backed keys so modules can expose shared names like `gamemap` while still writing the underlying storage key.
 - Server support: roll Team Fortress 2 into the schema-backed `set` flow with map aliasing, `server.cfg` password syncing, and installed-map discovery.
