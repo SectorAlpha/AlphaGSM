@@ -88,8 +88,6 @@ def extract_tarball_safe(tar_path, extract_root):
                     shutil.copyfileobj(extracted_file, handle)
                 if member.isfile():
                     extracted_paths.append(destination)
-    except ModSupportError:
-        raise
     except (OSError, tarfile.TarError) as exc:
         raise ModSupportError(f"Failed to extract tarball {tar_path}: {exc}") from exc
 

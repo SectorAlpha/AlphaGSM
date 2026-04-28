@@ -158,7 +158,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=lambda server: sync_server_config(server),
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download the Rising Storm 2 server files via SteamCMD."
@@ -168,7 +168,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=lambda server: sync_server_config(server),
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 update.__doc__ = "Update the Rising Storm 2 server files and optionally restart the server."

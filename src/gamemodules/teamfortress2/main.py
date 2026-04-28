@@ -417,7 +417,6 @@ def status(server, verbose):
     error_messages = [str(message) for message in mods.get("errors", []) if str(message)]
     if error_messages:
         print("Mod apply errors: " + "; ".join(error_messages))
-    return None
 
 
 def checkvalue(server, key, *value):

@@ -114,7 +114,6 @@ def status(server, verbose):
             server.query()
     except Exception as exc:
         print("Status check failed: " + str(exc))
-    return None
 status.__doc__ = "Detailed ETS2 status is not implemented yet."
 
 

@@ -786,7 +786,6 @@ def define_valve_server_module(
                 server.query()
         except Exception as exc:
             print("Status check failed: " + str(exc))
-        return None
 
     def message(server, msg):
         """Broadcast a message using the generic Valve-engine chat command."""

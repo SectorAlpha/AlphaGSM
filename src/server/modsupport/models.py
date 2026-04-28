@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
-class CuratedRelease:
+class CuratedRelease:  # pylint: disable=too-many-instance-attributes
     family: str
     channel: str
     resolved_id: str

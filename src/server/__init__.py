@@ -12,7 +12,7 @@ from typing import Any
 
 from .errors import ServerError
 
-__all__ = ["Server", "ServerError", "server"]
+__all__ = ["ServerError", "server"]  # Server is lazily exported via __getattr__
 
 
 def __getattr__(name: str) -> Any:

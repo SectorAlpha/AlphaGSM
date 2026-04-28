@@ -150,7 +150,6 @@ def status(server, verbose):
             server.query()
     except Exception as exc:
         print("Status check failed: " + str(exc))
-    return None
 
 
 def message(server, msg):

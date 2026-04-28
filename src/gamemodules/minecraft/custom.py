@@ -342,7 +342,6 @@ def status(server, verbose):
             server.query()
     except Exception as exc:
         print("Status check failed: " + str(exc))
-    return None
 
 
 message = minecraft_messaging.make_tellraw_message_hook(runtime_module=runtime_module)
