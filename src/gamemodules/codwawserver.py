@@ -110,7 +110,15 @@ def do_stop(server, j):
 
 
 def status(server, verbose):
-    """Detailed COD: World at War status is not implemented yet."""
+    """Report COD: World at War server status information."""
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
+    return None
 
 
 def message(server, msg):

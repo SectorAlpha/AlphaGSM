@@ -114,7 +114,15 @@ def do_stop(server, j):
 
 
 def status(server, verbose):
-    """Detailed Call of Duty 2 status is not implemented yet."""
+    """Report Call of Duty 2 server status information."""
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
+    return None
 
 
 def message(server, msg):
