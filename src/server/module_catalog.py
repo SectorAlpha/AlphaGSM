@@ -86,6 +86,11 @@ def _canonical_module_names(
             module_name = ".".join(path.relative_to(gamemodule_dir).parent.parts)
             if module_name in namespace_modules:
                 continue
+            if any(
+                package_name != module_name and module_name.startswith(package_name + ".")
+                for package_name in package_modules
+            ):
+                continue
         else:
             module_name = ".".join(path.relative_to(gamemodule_dir).with_suffix("").parts)
             if any(

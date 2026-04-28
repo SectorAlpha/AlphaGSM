@@ -128,6 +128,10 @@ def test_catalog_counts_package_backed_canonical_module_once(tmp_path):
     tf2_package.mkdir(parents=True)
     (tf2_package / "__init__.py").write_text("SERVER_NAME = 'tf2'\n", encoding="utf-8")
     (tf2_package / "main.py").write_text("HELPER = True\n", encoding="utf-8")
+    helper_package = tf2_package / "helpers"
+    helper_package.mkdir()
+    (helper_package / "__init__.py").write_text("HELPER_PACKAGE = True\n", encoding="utf-8")
+    (helper_package / "main.py").write_text("HELPER = True\n", encoding="utf-8")
     (gamemodule_dir / "counterstrike2.py").write_text(
         "SERVER_NAME = 'cs2'\n", encoding="utf-8"
     )
