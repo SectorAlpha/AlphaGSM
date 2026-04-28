@@ -5,6 +5,7 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
@@ -25,6 +26,16 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 command_functions = {}
 max_stop_wait = 1
 config_sync_keys = ("servername",)
+setting_schema = {
+    "servername": SettingSpec(
+        canonical_key="servername",
+        description="The public hostname written to server.cfg.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        native_config_key="hostname",
+        examples=("AlphaGSM Server",),
+    )
+}
 
 
 def sync_server_config(server):

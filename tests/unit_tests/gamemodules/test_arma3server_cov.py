@@ -5,6 +5,7 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from server.settable_keys import resolve_requested_key
 
 sys.modules.pop('gamemodules.arma3server', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
@@ -83,6 +84,13 @@ def test_sync_server_config_writes_servername(tmp_path):
     mod.sync_server_config(server)
 
     assert (tmp_path / "server.cfg").read_text() == 'hostname = "Alpha \\"Quoted\\"";\n'
+
+
+def test_setting_schema_resolves_hostname_alias():
+    resolved = resolve_requested_key("hostname", mod.setting_schema)
+
+    assert resolved.canonical_key == "servername"
+    assert resolved.storage_key == "servername"
 
 
 def test_update_with_restart(tmp_path):

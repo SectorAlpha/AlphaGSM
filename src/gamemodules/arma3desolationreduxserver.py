@@ -2,6 +2,7 @@
 
 import os
 
+import gamemodules.arma3server as arma3_base
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -24,6 +25,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = arma3_base.config_sync_keys
+setting_schema = arma3_base.setting_schema
+sync_server_config = arma3_base.sync_server_config
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="arma3server_x64"):
@@ -71,12 +75,14 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 
 update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 
 restart = gamemodule_common.make_restart_hook()
@@ -137,7 +143,7 @@ def checkvalue(server, key, *value):
         raise ServerError("No value specified")
     if key[0] == "port":
         return int(value[0])
-    if key[0] in ("configfile", "profilesdir", "world", "mod", "servermod", "mission", "exe_name", "dir"):
+    if key[0] in ("configfile", "profilesdir", "world", "mod", "servermod", "mission", "servername", "exe_name", "dir"):
         return str(value[0])
     raise ServerError("Unsupported key")
 
