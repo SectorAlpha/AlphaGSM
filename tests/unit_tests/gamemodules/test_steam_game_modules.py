@@ -1,4 +1,5 @@
 import importlib
+import sys
 
 import gamemodules.counterstrikeglobaloffensive as csgo
 import gamemodules.counterstrike2 as cs2
@@ -26,6 +27,10 @@ class DummyServer:
 
     def start(self):
         self.start_calls += 1
+
+
+def _tf2_package_root():
+    return importlib.import_module("gamemodules.teamfortress2")
 
 
 def test_tf2_configure_populates_defaults_and_backup_schedule(tmp_path):
@@ -63,8 +68,8 @@ def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
     launcher = tmp_path / "srcds_run_64"
     launcher.write_text("")
     doinstall_calls = []
-    monkeypatch.setitem(
-        tf2.install.__globals__,
+    monkeypatch.setattr(
+        _tf2_package_root(),
         "doinstall",
         lambda server_obj: doinstall_calls.append(server_obj),
     )
@@ -104,9 +109,9 @@ def test_tf2_install_applies_mods_when_autoapply_enabled(tmp_path, monkeypatch):
     )
     calls = []
 
-    monkeypatch.setitem(tf2.install.__globals__, "doinstall", lambda server_obj: calls.append("base"))
-    monkeypatch.setitem(
-        tf2.install.__globals__,
+    monkeypatch.setattr(_tf2_package_root(), "doinstall", lambda server_obj: calls.append("base"))
+    monkeypatch.setattr(
+        _tf2_package_root(),
         "apply_configured_mods",
         lambda server_obj: calls.append("mods"),
     )
@@ -307,8 +312,8 @@ def test_tf2_update_applies_mods_when_autoapply_enabled(monkeypatch):
         "download",
         lambda path, app_id, anon, validate=True: calls.append(("base", path, validate)),
     )
-    monkeypatch.setitem(
-        tf2.update.__globals__,
+    monkeypatch.setattr(
+        _tf2_package_root(),
         "apply_configured_mods",
         lambda server_obj: calls.append(("mods", server_obj.data["dir"])),
     )

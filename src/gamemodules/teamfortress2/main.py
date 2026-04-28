@@ -185,7 +185,7 @@ doinstall.__doc__ = "Download or refresh the TF2 server files via SteamCMD."
 def install(server):
     """Install or prepare the TF2 server files for this server object."""
 
-    doinstall(server)
+    _package_override("doinstall", doinstall)(server)
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
     elif os.path.isfile(server.data["dir"] + "srcds_run"):
@@ -193,7 +193,7 @@ def install(server):
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
-        apply_configured_mods(server)
+        _package_override("apply_configured_mods", apply_configured_mods)(server)
     server.data.save()
 
 
@@ -237,7 +237,7 @@ def update(server, validate=True, restart=False):
     _base_update(server, validate=validate, restart=restart)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
-        apply_configured_mods(server)
+        _package_override("apply_configured_mods", apply_configured_mods)(server)
 
 
 def get_start_command(server):

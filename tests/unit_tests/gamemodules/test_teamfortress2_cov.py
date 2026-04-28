@@ -39,6 +39,10 @@ class DummyServer:
         self._started = True
 
 
+def _tf2_package_root():
+    return importlib.import_module("gamemodules.teamfortress2")
+
+
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
@@ -109,16 +113,10 @@ def test_install_autoapplies_tf2_mods(tmp_path):
         "errors": [],
     }
 
-    original_doinstall = mod.install.__globals__["doinstall"]
-    original_apply = mod.install.__globals__["apply_configured_mods"]
-    try:
-        mod.install.__globals__["doinstall"] = lambda server_obj: None
-        apply_mock = MagicMock()
-        mod.install.__globals__["apply_configured_mods"] = apply_mock
+    with patch.object(_tf2_package_root(), "doinstall", lambda server_obj: None), patch.object(
+        _tf2_package_root(), "apply_configured_mods"
+    ) as apply_mock:
         mod.install(server)
-    finally:
-        mod.install.__globals__["doinstall"] = original_doinstall
-        mod.install.__globals__["apply_configured_mods"] = original_apply
 
     apply_mock.assert_called_once_with(server)
 
@@ -149,13 +147,8 @@ def test_update_autoapplies_tf2_mods(tmp_path):
         "errors": [],
     }
 
-    original_apply = mod.update.__globals__["apply_configured_mods"]
-    try:
-        apply_mock = MagicMock()
-        mod.update.__globals__["apply_configured_mods"] = apply_mock
+    with patch.object(_tf2_package_root(), "apply_configured_mods") as apply_mock:
         mod.update(server, validate=False, restart=False)
-    finally:
-        mod.update.__globals__["apply_configured_mods"] = original_apply
 
     apply_mock.assert_called_once_with(server)
 
