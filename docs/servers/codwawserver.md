@@ -69,7 +69,8 @@ alphagsm mycodwawse backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
+- `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Template**: See [server-templates/codwawserver/](../server-templates/codwawserver/) if available
 
 ### Maps and Mods

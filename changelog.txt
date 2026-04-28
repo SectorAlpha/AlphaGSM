@@ -14,7 +14,7 @@ high-level milestones.
 - Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
 
 2026-04-28
-- Server support: add schema-backed `server.cfg` sync for `codserver`, `cod2server`, and `cod4server` so `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg`.
+- Server support: add schema-backed `server.cfg` sync for `codserver`, `cod2server`, `cod4server`, `coduoserver`, and `codwawserver` so `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg`.
 - Server support: add schema-backed Quake Live config sync so `set servername` and `set map` rewrite `baseq3/server.cfg`.
 - Server support: add schema-backed Quake 4 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
 - Server support: add schema-backed `etl_server.cfg` sync for `etlegacyserver` so `set servername` and `set port` rewrite the native ET: Legacy config.

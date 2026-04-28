@@ -98,6 +98,34 @@ def test_setting_schema_exposes_coduo_launch_tokens():
     assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
     assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
 
+
+def test_sync_server_config_updates_mod_server_cfg(tmp_path):
+    server = DummyServer("coduo")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "moddir": "uo",
+            "hostname": "AlphaGSM coduo",
+            "startmap": "mp_hurtgen",
+        }
+    )
+    cfg_dir = tmp_path / "uo"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nmoddir=main\nstartmap=mp_brecourt\nset g_gametype dm\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM coduo"\n'
+        'moddir=uo\n'
+        'startmap=mp_hurtgen\n'
+        'set g_gametype dm\n'
+    )
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
