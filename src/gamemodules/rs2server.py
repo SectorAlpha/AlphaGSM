@@ -6,7 +6,7 @@ import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import SettingSpec, build_launch_arg_values
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 
 from utils.platform_info import IS_LINUX
 
@@ -28,11 +28,92 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("servername",)
 setting_schema = {
     **gamemodule_common.build_unreal_setting_schema(),
+    "servername": SettingSpec(
+        canonical_key="servername",
+        aliases=("hostname", "server_name", "name"),
+        description="The advertised server name.",
+        apply_to=("datastore", "native_config"),
+        native_config_key="ServerName",
+    ),
     "configfile": SettingSpec(canonical_key="configfile", description="Config file path for the server."),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
+
+
+def _config_path(server):
+    return os.path.join(server.data["dir"], server.data["configfile"])
+
+
+def _rewrite_ini_setting(path, section_name, key_name, value):
+    rendered_value = str(value)
+    if os.path.isfile(path):
+        lines = open(path, "r", encoding="utf-8").read().splitlines(True)
+    else:
+        lines = []
+
+    section_header = "[%s]" % (section_name,)
+    key_prefix = key_name + "="
+    current_section = None
+    section_start = None
+    insert_index = None
+
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if current_section == section_name and insert_index is None:
+                insert_index = index
+            current_section = stripped[1:-1]
+            if current_section == section_name:
+                section_start = index
+            continue
+        if current_section != section_name:
+            continue
+        if stripped.startswith(key_prefix):
+            lines[index] = "%s=%s\n" % (key_name, rendered_value)
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.writelines(lines)
+            return
+
+    if section_start is not None:
+        if insert_index is None:
+            insert_index = len(lines)
+        lines.insert(insert_index, "%s=%s\n" % (key_name, rendered_value))
+    else:
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        if lines and lines[-1].strip():
+            lines.append("\n")
+        lines.extend([
+            "%s\n" % (section_header,),
+            "%s=%s\n" % (key_name, rendered_value),
+        ])
+
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.writelines(lines)
+
+
+def sync_server_config(server):
+    """Rewrite managed Rising Storm 2 config entries from datastore values."""
+
+    config_path = _config_path(server)
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={"servername": "AlphaGSM %s" % (server.name,)},
+        require_explicit_key=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
+    if "ServerName" in config_values:
+        _rewrite_ini_setting(
+            config_path,
+            "/Script/Engine.GameReplicationInfo",
+            "ServerName",
+            config_values["ServerName"],
+        )
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/VNGame.exe"):
@@ -48,6 +129,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/VNGa
         {
             "queryport": "27015",
             "configfile": "ROGame/Config/PCServer-ROGame.ini",
+            "servername": "AlphaGSM %s" % (server.name,),
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -76,6 +158,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=lambda server: sync_server_config(server),
     download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download the Rising Storm 2 server files via SteamCMD."
@@ -85,6 +168,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=lambda server: sync_server_config(server),
     download_kwargs={"force_windows": IS_LINUX},
 )
 update.__doc__ = "Update the Rising Storm 2 server files and optionally restart the server."
@@ -149,7 +233,7 @@ def checkvalue(server, key, *value):
         *value,
         setting_schema=setting_schema,
         resolved_int_keys=("port", "queryport"),
-        resolved_str_keys=("configfile", "exe_name", "dir"),
+        resolved_str_keys=("servername", "configfile", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 

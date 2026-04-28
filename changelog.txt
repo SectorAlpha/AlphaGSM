@@ -14,6 +14,7 @@ high-level milestones.
 - Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
 
 2026-04-28
+- Server support: add schema-backed Rising Storm 2 config sync so `set servername` rewrites `ServerName` in `ROGame/Config/PCServer-ROGame.ini`.
 - Server support: add schema-backed Quake 2 config sync so `set servername` and `set map` rewrite `<gamedir>/server.cfg`.
 - Server support: add schema-backed RTCW config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
 - Server support: add schema-backed Quake 3 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
