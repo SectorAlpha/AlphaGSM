@@ -53,7 +53,7 @@ def test_rewrite_space_config_rewrites_single_token_values_and_appends_missing_k
     ]
 
 
-def test_rewrite_space_config_appends_quoted_multi_word_duplicate_values(tmp_path):
+def test_rewrite_space_config_rewrites_quoted_multi_word_values_in_place(tmp_path):
     config_path = tmp_path / "server.cfg"
     config_path.write_text(
         'hostname "Old Name"\n'
@@ -67,9 +67,8 @@ def test_rewrite_space_config_appends_quoted_multi_word_duplicate_values(tmp_pat
     )
 
     assert config_path.read_text(encoding="utf-8").splitlines() == [
-        'hostname "Old Name"',
-        "sv_cheats 0",
         'hostname "New Name"',
+        "sv_cheats 0",
     ]
 
 

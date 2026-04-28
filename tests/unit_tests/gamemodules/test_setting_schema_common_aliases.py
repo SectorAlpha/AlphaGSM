@@ -4,6 +4,7 @@ from gamemodules import inssserver
 from gamemodules import scpslserver
 from gamemodules import soulmask
 from gamemodules import thefrontserver
+from gamemodules import twserver
 
 
 def test_hostname_style_servers_accept_servername_aliases():
@@ -34,3 +35,9 @@ def test_maxplayers_style_servers_accept_users_aliases():
     resolved = resolve_requested_key("users", thefrontserver.setting_schema)
 
     assert resolved.canonical_key == "maxplayers"
+
+
+def test_servername_style_servers_accept_hostname_aliases():
+    resolved = resolve_requested_key("hostname", twserver.setting_schema)
+
+    assert resolved.canonical_key == "servername"

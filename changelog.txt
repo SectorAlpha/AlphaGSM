@@ -14,6 +14,7 @@ high-level milestones.
 - Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
 
 2026-04-28
+- Server support: make `twserver` sync schema-backed `set port` and `set servername` changes into `autoexec.cfg`, and harden space-delimited config rewrites so quoted multi-word values update in place.
 - Module loading: replace game-module alias wrapper files and namespace `DEFAULT.py` shims with a shared canonical catalog in `src/server/module_aliases.json`, and persist canonical module ids in server data even when users create servers through aliases.
 - Release prep: add generated `docs/module_parity_report.md` and `docs/module_parity_report.json` artifacts plus test/script enforcement so canonical module parity gaps and alias coverage stay visible in CI.
 - Tests: add an opt-in backend integration test that exercises AlphaGSM CLI

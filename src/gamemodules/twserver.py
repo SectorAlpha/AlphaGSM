@@ -5,10 +5,12 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec, build_native_config_values
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
+from utils.simple_kv_config import rewrite_space_config
 
 steam_app_id = 380840
 steam_anonymous_login_possible = False
@@ -24,6 +26,22 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "servername")
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The UDP/TCP game port Teeworlds listens on.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_key="sv_port",
+    ),
+    "servername": SettingSpec(
+        canonical_key="servername",
+        description="The advertised server name.",
+        apply_to=("datastore", "native_config"),
+        native_config_key="sv_name",
+    ),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="teeworlds_srv"):
@@ -34,7 +52,13 @@ def configure(server, ask, port=None, dir=None, *, exe_name="teeworlds_srv"):
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-    gamemodule_common.set_server_defaults(server, {"configfile": "autoexec.cfg"})
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "configfile": "autoexec.cfg",
+            "servername": "AlphaGSM %s" % (server.name,),
+        },
+    )
     gamemodule_common.ensure_backup_config(
         server,
         backupfiles=["autoexec.cfg", "maps"],
@@ -57,10 +81,36 @@ def configure(server, ask, port=None, dir=None, *, exe_name="teeworlds_srv"):
     return gamemodule_common.finalize_configure(server)
 
 
+def sync_server_config(server):
+    """Write managed Teeworlds config values into autoexec.cfg."""
+
+    os.makedirs(server.data["dir"], exist_ok=True)
+    config_path = os.path.join(
+        server.data["dir"],
+        server.data.get("configfile", "autoexec.cfg"),
+    )
+    managed_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "port": 8303,
+            "servername": "AlphaGSM %s" % (server.name,),
+        },
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            str(int(current_value))
+            if spec.canonical_key == "port"
+            else '"%s"' % (str(current_value).replace('"', '\\"'),)
+        ),
+    )
+    rewrite_space_config(config_path, managed_values)
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Teeworlds server files via SteamCMD."
 
@@ -69,6 +119,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Teeworlds server files and optionally restart the server."
 
@@ -123,7 +174,7 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port",),
-        str_keys=("configfile", "exe_name", "dir"),
+        str_keys=("configfile", "exe_name", "dir", "servername"),
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
