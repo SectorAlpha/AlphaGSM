@@ -6,6 +6,7 @@ import sys
 
 import screen
 import server.runtime as runtime_module
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from server.settable_keys import build_launch_arg_values, build_native_config_values
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -21,15 +22,24 @@ from utils.valve_server import (
     wake_source_server_for_a2s,
 )
 from utils.gamemodules import common as gamemodule_common
+from .mods import ensure_mod_state, tf2_mod_command
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 
-commands = ("update", "restart")
+commands = ("update", "restart", "mod")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The port for the server to listen on",
     "The directory to install the server in",
+)
+command_args["mod"] = CmdSpec(
+    requiredarguments=(ArgSpec("ACTION", "mod action", str),),
+    optionalarguments=(
+        ArgSpec("SOURCE", "curated or workshop", str),
+        ArgSpec("IDENTIFIER", "family or workshop id", str),
+        ArgSpec("EXTRA", "optional channel/version", str),
+    ),
 )
 
 # required still
@@ -39,8 +49,10 @@ command_descriptions = {
         "Restarts the game server without killing the process.",
     ),
 }
+command_descriptions["mod"] = "Manage TF2 server-side mods and workshop items."
 
 command_functions = {}
+command_functions["mod"] = tf2_mod_command
 
 max_stop_wait = 1
 config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
@@ -158,6 +170,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
         prompt="Where would you like to install the tf2 server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
 
 
@@ -445,6 +458,7 @@ def checkvalue(server, key, *value):
 command_functions = {
     "update": update,
     "restart": restart,
+    "mod": tf2_mod_command,
 }  # will have elements added as the functions are defined
 
 wake_a2s_query = wake_source_server_for_a2s
