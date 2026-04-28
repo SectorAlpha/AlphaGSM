@@ -6,6 +6,7 @@ from gamemodules import soulmask
 from gamemodules import stnserver
 from gamemodules import thefrontserver
 from gamemodules import twserver
+from gamemodules import wreckfestserver
 
 
 def test_hostname_style_servers_accept_servername_aliases():
@@ -46,5 +47,11 @@ def test_servername_style_servers_accept_hostname_aliases():
 
 def test_port_style_servers_accept_gameport_aliases():
     resolved = resolve_requested_key("gameport", stnserver.setting_schema)
+
+    assert resolved.canonical_key == "port"
+
+
+def test_wreckfest_port_style_servers_accept_gameport_aliases():
+    resolved = resolve_requested_key("gameport", wreckfestserver.setting_schema)
 
     assert resolved.canonical_key == "port"

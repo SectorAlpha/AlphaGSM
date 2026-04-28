@@ -81,7 +81,27 @@ def test_sync_server_config_updates_config_port(tmp_path):
 
     mod.sync_server_config(server)
 
-    assert config_path.read_text() == "server_port =33541\n"
+    assert config_path.read_text() == "server_port=33541\n"
+
+
+def test_sync_server_config_preserves_unknown_lines(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "server_config.cfg"
+    server.data["port"] = 33541
+    config_path = tmp_path / "server_config.cfg"
+    config_path.write_text(
+        "server_name=AlphaGSM\n"
+        "server_port=33540\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        "server_name=AlphaGSM",
+        "server_port=33541",
+    ]
 
 
 def test_update_with_restart(tmp_path):
