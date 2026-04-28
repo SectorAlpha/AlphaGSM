@@ -69,6 +69,24 @@ def test_resolve_rejects_malformed_release_payload():
         registry.resolve("sourcemod")
 
 
+def test_resolve_rejects_string_hosts_payload():
+    families = _families()
+    families["sourcemod"]["releases"]["stable"]["hosts"] = "example.invalid"
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
+def test_resolve_rejects_string_destinations_payload():
+    families = _families()
+    families["sourcemod"]["releases"]["stable"]["destinations"] = "tf/addons"
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
 def test_loader_reads_registry_json(tmp_path):
     payload = {"families": _families()}
     registry_path = tmp_path / "curated-mods.json"
@@ -82,6 +100,14 @@ def test_loader_reads_registry_json(tmp_path):
 def test_loader_rejects_malformed_wrapper(tmp_path):
     registry_path = tmp_path / "curated-mods.json"
     registry_path.write_text(json.dumps({"not_families": _families()}), encoding="utf-8")
+
+    with pytest.raises(ModSupportError, match=str(registry_path)):
+        CuratedRegistryLoader.load(registry_path)
+
+
+def test_loader_rejects_invalid_json_syntax(tmp_path):
+    registry_path = tmp_path / "curated-mods.json"
+    registry_path.write_text("{invalid-json", encoding="utf-8")
 
     with pytest.raises(ModSupportError, match=str(registry_path)):
         CuratedRegistryLoader.load(registry_path)

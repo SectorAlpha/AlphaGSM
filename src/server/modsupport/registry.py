@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from collections.abc import Sequence
 
 from .errors import ModSupportError
 from .models import CuratedRelease
@@ -37,14 +38,24 @@ class CuratedRegistry:
             raise ModSupportError(f"Malformed curated mod release payload: {family}.{resolved_channel}")
 
         try:
+            hosts = _coerce_string_sequence(
+                release_payload["hosts"],
+                field_name="hosts",
+                release_id=f"{family}.{resolved_channel}",
+            )
+            destinations = _coerce_string_sequence(
+                release_payload["destinations"],
+                field_name="destinations",
+                release_id=f"{family}.{resolved_channel}",
+            )
             return CuratedRelease(
                 family=family,
                 channel=resolved_channel,
                 resolved_id=f"{family}.{resolved_channel}",
                 url=release_payload["url"],
-                hosts=tuple(release_payload["hosts"]),
+                hosts=hosts,
                 archive_type=release_payload["archive_type"],
-                destinations=tuple(release_payload["destinations"]),
+                destinations=destinations,
                 checksum=release_payload.get("checksum"),
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -59,7 +70,12 @@ class CuratedRegistryLoader:
     @classmethod
     def load(cls, path: str | Path) -> CuratedRegistry:
         registry_path = Path(path)
-        payload = json.loads(registry_path.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(registry_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ModSupportError(
+                f"Malformed curated registry JSON in {registry_path}: invalid JSON syntax"
+            ) from exc
         if not isinstance(payload, dict):
             raise ModSupportError(
                 f"Malformed curated registry wrapper in {registry_path}: expected top-level object"
@@ -72,3 +88,17 @@ class CuratedRegistryLoader:
             )
 
         return CuratedRegistry(dict(families))
+
+
+def _coerce_string_sequence(value, *, field_name: str, release_id: str) -> tuple[str, ...]:
+    if isinstance(value, str) or not isinstance(value, Sequence):
+        raise ModSupportError(
+            f"Malformed curated mod release payload: {release_id} field '{field_name}'"
+            " must be a sequence of strings"
+        )
+    if not all(isinstance(item, str) for item in value):
+        raise ModSupportError(
+            f"Malformed curated mod release payload: {release_id} field '{field_name}'"
+            " must be a sequence of strings"
+        )
+    return tuple(value)
