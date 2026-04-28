@@ -70,26 +70,54 @@ def make_server(module=None, data=None, name="alpha"):
 
 
 def test_findmodule_returns_module_after_alias_resolution(monkeypatch):
-    alias_module = SimpleNamespace(__file__="/tmp/alias.py", ALIAS_TARGET="real")
     real_module = SimpleNamespace(__file__="/tmp/real.py")
     imports = []
 
+    class FakeCatalog:
+        def resolve(self, name):
+            assert name == "real"
+            return "real"
+
     def fake_import(name):
         imports.append(name)
-        if name.endswith(".alias"):
-            return alias_module
         if name.endswith(".real"):
             return real_module
         raise ImportError("missing")
 
+    monkeypatch.setattr(server_module, "MODULE_CATALOG", FakeCatalog(), raising=False)
     monkeypatch.setattr(server_module, "import_module", fake_import)
+    monkeypatch.setattr(server_module.runtime_module, "ensure_runtime_hooks", lambda module: None)
     monkeypatch.setattr(server_module, "SERVERMODULEPACKAGE", "gamemodules.")
 
-    resolved_name, resolved_module = server_module._findmodule("alias")
+    resolved_name, resolved_module = server_module._findmodule("real")
 
     assert resolved_name == "real"
     assert resolved_module is real_module
-    assert imports == ["gamemodules.alias", "gamemodules.real"]
+    assert imports == ["gamemodules.real"]
+
+
+def test_findmodule_resolves_alias_through_catalog(monkeypatch):
+    real_module = SimpleNamespace(__file__="/tmp/real.py")
+
+    class FakeCatalog:
+        def resolve(self, name):
+            assert name == "tf2server"
+            return "teamfortress2"
+
+    def fake_import(name):
+        if name != "gamemodules.teamfortress2":
+            raise ImportError(name)
+        return real_module
+
+    monkeypatch.setattr(server_module, "MODULE_CATALOG", FakeCatalog(), raising=False)
+    monkeypatch.setattr(server_module, "import_module", fake_import)
+    monkeypatch.setattr(server_module.runtime_module, "ensure_runtime_hooks", lambda module: None)
+    monkeypatch.setattr(server_module, "SERVERMODULEPACKAGE", "gamemodules.")
+
+    resolved_name, resolved_module = server_module._findmodule("tf2server")
+
+    assert resolved_name == "teamfortress2"
+    assert resolved_module is real_module
 
 
 def test_server_init_creates_new_datastore_and_saves(monkeypatch, tmp_path):
@@ -111,6 +139,28 @@ def test_server_init_creates_new_datastore_and_saves(monkeypatch, tmp_path):
     assert srv.data.saved == 1
 
 
+def test_server_init_persists_canonical_name_when_created_from_alias(monkeypatch, tmp_path):
+    class FakeStore(DummyData):
+        def __init__(self, filename, payload=None):
+            super().__init__(payload or {})
+
+    monkeypatch.setattr(server_module, "DATAPATH", str(tmp_path))
+    monkeypatch.setattr(server_module.data, "JSONDataStore", FakeStore)
+    monkeypatch.setattr(
+        server_module,
+        "_findmodule",
+        lambda name: (
+            "teamfortress2",
+            SimpleNamespace(commands=(), command_args={}, command_descriptions={}),
+        ),
+    )
+
+    srv = server_module.Server("alpha", "tf2server")
+
+    assert srv.data["module"] == "teamfortress2"
+    assert srv.data.saved == 1
+
+
 def test_server_init_updates_redirected_module_name(monkeypatch, tmp_path, capsys):
     class FakeStore(DummyData):
         def __init__(self, filename, payload=None):
@@ -123,6 +173,29 @@ def test_server_init_updates_redirected_module_name(monkeypatch, tmp_path, capsy
     srv = server_module.Server("alpha")
 
     assert srv.data["module"] == "real.module"
+    assert srv.data.saved == 1
+    assert "Module has been redirected" in capsys.readouterr().out
+
+
+def test_server_init_rewrites_saved_alias_to_canonical_name(monkeypatch, tmp_path, capsys):
+    class FakeStore(DummyData):
+        def __init__(self, filename, payload=None):
+            super().__init__({"module": "tf2"})
+
+    monkeypatch.setattr(server_module, "DATAPATH", str(tmp_path))
+    monkeypatch.setattr(server_module.data, "JSONDataStore", FakeStore)
+    monkeypatch.setattr(
+        server_module,
+        "_findmodule",
+        lambda name: (
+            "teamfortress2",
+            SimpleNamespace(commands=(), command_args={}, command_descriptions={}),
+        ),
+    )
+
+    srv = server_module.Server("alpha")
+
+    assert srv.data["module"] == "teamfortress2"
     assert srv.data.saved == 1
     assert "Module has been redirected" in capsys.readouterr().out
 

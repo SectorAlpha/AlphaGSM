@@ -13,6 +13,7 @@ import os
 import subprocess as sp
 import copy
 from . import data
+from .module_catalog import load_default_module_catalog
 from . import port_manager
 from . import runtime as runtime_module
 from .settable_keys import KeyResolutionError, resolve_requested_key
@@ -43,6 +44,7 @@ _DISABLED_SERVERS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "disabled_servers.conf",
 )
+MODULE_CATALOG = load_default_module_catalog()
 
 
 def _load_disabled_servers():
@@ -96,35 +98,26 @@ def _get_module_hook(module, hook_name):
 
 
 def _findmodule(name):
-    """Resolve a game module name, following namespace and alias indirection."""
+    """Resolve a game module name through the canonical catalog."""
+
+    requested_name = str(name)
+    name = MODULE_CATALOG.resolve(requested_name)
     disabled = _load_disabled_servers()
-    while True:
-        name = str(name)
-        if name in disabled:
-            raise ServerError(
-                "Server module '" + name + "' is currently disabled: "
-                + disabled[name]
-                + "\nIf you'd like to help fix this, please open an issue or "
-                "submit a pull request."
-            )
-        if len(name) < 2 and all(
-            (len(el) > 0 and el.isalnum()) for el in name.split(".")
-        ):
-            raise ServerError("Invalid module requested: " + name)
-        try:
-            module = import_module(SERVERMODULEPACKAGE + name)
-        except ImportError as ex:
-            raise ServerError("Can't find module: " + name, ex)
-        if not hasattr(
-            module, "__file__"
-        ):  # no filesystem path so must be a namespace path
-            name = name + ".DEFAULT"
-            continue
-        try:
-            name = module.ALIAS_TARGET
-        except AttributeError:
-            runtime_module.ensure_runtime_hooks(module)
-            return name, module
+    if name in disabled:
+        raise ServerError(
+            "Server module '" + name + "' is currently disabled: "
+            + disabled[name]
+            + "\nIf you'd like to help fix this, please open an issue or "
+            "submit a pull request."
+        )
+    if len(name) < 2 and all((len(el) > 0 and el.isalnum()) for el in name.split(".")):
+        raise ServerError("Invalid module requested: " + name)
+    try:
+        module = import_module(SERVERMODULEPACKAGE + name)
+    except ImportError as ex:
+        raise ServerError("Can't find module: " + name, ex)
+    runtime_module.ensure_runtime_hooks(module)
+    return name, module
 
 
 def find_module(name):
@@ -381,6 +374,7 @@ class Server(object):
         """
         self.name = name
         if module is not None:
+            truename, self.module = _findmodule(module)
             if not os.path.isdir(DATAPATH):
                 try:
                     os.makedirs(DATAPATH)
@@ -389,7 +383,7 @@ class Server(object):
                         "Data Path doesn't exist and can't create it", DATAPATH
                     )
             self.data = data.JSONDataStore(
-                os.path.join(DATAPATH, name + ".json"), {"module": module}
+                os.path.join(DATAPATH, name + ".json"), {"module": truename}
             )
             try:
                 self.data.save()
@@ -402,7 +396,8 @@ class Server(object):
                 raise ServerError("Error reading data", ex)
         if "module" not in self.data:
             raise ServerError("Invalid data store: No module specified")
-        truename, self.module = _findmodule(self.data["module"])
+        if module is None:
+            truename, self.module = _findmodule(self.data["module"])
         metadata_changed = runtime_module.sync_runtime_metadata(self, save=False)
         if truename != self.data["module"]:
             print(
