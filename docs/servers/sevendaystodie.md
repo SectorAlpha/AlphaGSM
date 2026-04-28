@@ -53,7 +53,11 @@ Setup configures:
 ```bash
 alphagsm mysevenday update
 alphagsm mysevenday backup
+alphagsm mysevenday set servername "AlphaGSM 7DTD"
+alphagsm mysevenday set maxplayers 12
 ```
+
+`set port`, `set servername`, `set maxplayers`, and `set serverpassword` rewrite `serverconfig.xml` immediately through the schema-backed config-sync path.
 
 ## Notes
 
@@ -73,6 +77,7 @@ alphagsm mysevenday backup
 
 - **Config file**: `serverconfig.xml`
 - **Template**: See [server-templates/sevendaystodie/](../server-templates/sevendaystodie/) if available
+- **Schema-backed sync**: AlphaGSM keeps `ServerPort`, `ServerName`, `ServerMaxPlayerCount`, and `ServerPassword` aligned with `set`
 
 ### Maps and Mods
 

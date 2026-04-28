@@ -6,6 +6,7 @@ import re
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec, build_native_config_values
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
@@ -25,7 +26,36 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
-config_sync_keys = ("port",)
+config_sync_keys = ("port", "servername", "maxplayers", "serverpassword")
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The game port to use for this server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_key="ServerPort",
+    ),
+    "servername": SettingSpec(
+        canonical_key="servername",
+        description="The advertised server name.",
+        apply_to=("datastore", "native_config"),
+        native_config_key="ServerName",
+    ),
+    "maxplayers": SettingSpec(
+        canonical_key="maxplayers",
+        description="Maximum allowed players.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_key="ServerMaxPlayerCount",
+    ),
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        description="Optional join password.",
+        apply_to=("datastore", "native_config"),
+        native_config_key="ServerPassword",
+        secret=True,
+    ),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="startserver.sh"):
@@ -60,21 +90,37 @@ def configure(server, ask, port=None, dir=None, *, exe_name="startserver.sh"):
 
 
 def sync_server_config(server):
-    """Update the ServerPort entry in serverconfig.xml to match server.data."""
-    port = server.data.get("port")
-    if port is None:
-        return
+    """Update managed serverconfig.xml entries to match server.data."""
+
     configfile = server.data.get("configfile", "serverconfig.xml")
     config_path = os.path.join(server.data["dir"], configfile)
     if not os.path.isfile(config_path):
         return
+    replacements = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "port": 26900,
+            "servername": "AlphaGSM %s" % (server.name,),
+            "maxplayers": 8,
+            "serverpassword": "",
+        },
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            str(int(current_value)) if spec.value_type == "integer" else str(current_value)
+        ),
+    )
+    if not replacements:
+        return
     with open(config_path, encoding="utf-8") as fh:
         content = fh.read()
-    new_content = re.sub(
-        r'(<property\s+name="ServerPort"\s+value=")[^"]*(")'
-        , r'\g<1>' + str(port) + r'\2',
-        content,
-    )
+    new_content = content
+    for xml_key, replacement_value in replacements.items():
+        new_content = re.sub(
+            rf'(<property\s+name="{re.escape(xml_key)}"\s+value=")[^"]*(")',
+            r'\g<1>' + replacement_value + r'\2',
+            new_content,
+        )
     if new_content != content:
         with open(config_path, "w", encoding="utf-8") as fh:
             fh.write(new_content)
@@ -154,8 +200,8 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
-        str_keys=("configfile", "exe_name", "dir"),
+        int_keys=("port", "maxplayers"),
+        str_keys=("configfile", "exe_name", "dir", "servername", "serverpassword"),
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(

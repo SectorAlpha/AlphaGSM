@@ -14,6 +14,7 @@ high-level milestones.
 - Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
 
 2026-04-28
+- Server support: expand `sevendaystodie` schema-backed config sync so `set port`, `set servername`, `set maxplayers`, and `set serverpassword` rewrite `serverconfig.xml`.
 - Server support: move `wreckfestserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `server_config.cfg` through the shared equals-config helper.
 - Server support: move `stnserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `Config/ServerConfig.txt` through the shared config helper.
 - Server support: make `twserver` sync schema-backed `set port` and `set servername` changes into `autoexec.cfg`, and harden space-delimited config rewrites so quoted multi-word values update in place.
