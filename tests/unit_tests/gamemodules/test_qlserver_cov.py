@@ -67,6 +67,7 @@ def test_install(tmp_path):
     server.data["exe_name"] = "qzeroded.x64"
     server.data["Steam_AppID"] = 349090
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["servercfg"] = "baseq3/server.cfg"
     mod.install(server)
 
 
@@ -170,6 +171,29 @@ def test_setting_schema_exposes_quake_live_launch_tokens():
     assert mod.setting_schema["startmap"].aliases == ("map",)
     assert mod.setting_schema["homepath"].storage_key == "dir"
     assert mod.setting_schema["servercfg"].launch_arg_tokens == ("+exec",)
+
+
+def test_sync_server_config_updates_quake_live_server_cfg(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servercfg"] = "baseq3/server.cfg"
+    server.data["hostname"] = "AlphaGSM QL Test"
+    server.data["startmap"] = "asylum"
+    config_dir = tmp_path / "baseq3"
+    config_dir.mkdir()
+    config_path = config_dir / "server.cfg"
+    config_path.write_text(
+        'hostname="Old Name"\n'
+        'startmap=campgrounds\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname="AlphaGSM QL Test"',
+        'startmap=asylum',
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):

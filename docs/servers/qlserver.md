@@ -53,7 +53,11 @@ Setup configures:
 ```bash
 alphagsm myqlserver update
 alphagsm myqlserver backup
+alphagsm myqlserver set servername "AlphaGSM QL"
+alphagsm myqlserver set map asylum
 ```
+
+`set servername` and `set map` rewrite `baseq3/server.cfg` immediately through the schema-backed config-sync path.
 
 ## Notes
 
@@ -73,6 +77,7 @@ alphagsm myqlserver backup
 
 - **Config files**: `baseq3/server.cfg`
 - **Template**: See [server-templates/qlserver/](../server-templates/qlserver/) if available
+- **Schema-backed sync**: AlphaGSM keeps `hostname` and `startmap` aligned with `set`
 
 ### Maps and Mods
 

@@ -4,6 +4,7 @@ from gamemodules import etlegacyserver
 from gamemodules import dayzserver
 from gamemodules import inssserver
 from gamemodules import q4server
+from gamemodules import qlserver
 from gamemodules import scpslserver
 from gamemodules import sevendaystodie
 from gamemodules import soulmask
@@ -81,5 +82,11 @@ def test_etlegacy_hostname_style_servers_accept_servername_aliases():
 
 def test_q4_hostname_style_servers_accept_servername_aliases():
     resolved = resolve_requested_key("servername", q4server.setting_schema)
+
+    assert resolved.canonical_key == "hostname"
+
+
+def test_ql_hostname_style_servers_accept_servername_aliases():
+    resolved = resolve_requested_key("servername", qlserver.setting_schema)
 
     assert resolved.canonical_key == "hostname"

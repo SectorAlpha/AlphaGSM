@@ -6,9 +6,10 @@ import screen
 import server.runtime as runtime_module
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import SettingSpec, build_launch_arg_values
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from utils.simple_kv_config import rewrite_equals_config
 
 steam_app_id = 349090
 steam_anonymous_login_possible = True
@@ -24,6 +25,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("hostname", "startmap")
 _quake_launch_schema = gamemodule_common.build_quake_setting_schema(
     port_tokens=("+set", "net_port"),
     hostname_tokens=("+set", "sv_hostname"),
@@ -37,14 +39,28 @@ setting_schema = {
         launch_arg_tokens=("+set", "fs_homepath"),
     ),
     "port": _quake_launch_schema["port"],
-    "hostname": _quake_launch_schema["hostname"],
+    "hostname": SettingSpec(
+        canonical_key="hostname",
+        aliases=("servername",),
+        description=_quake_launch_schema["hostname"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="hostname",
+        launch_arg_tokens=_quake_launch_schema["hostname"].launch_arg_tokens,
+    ),
     "servercfg": SettingSpec(
         canonical_key="servercfg",
         description="Server config file to exec on startup.",
         apply_to=("datastore", "launch_args"),
         launch_arg_tokens=("+exec",),
     ),
-    "startmap": _quake_launch_schema["startmap"],
+    "startmap": SettingSpec(
+        canonical_key="startmap",
+        aliases=_quake_launch_schema["startmap"].aliases,
+        description=_quake_launch_schema["startmap"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="startmap",
+        launch_arg_tokens=_quake_launch_schema["startmap"].launch_arg_tokens,
+    ),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
 
@@ -91,6 +107,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=lambda server: sync_server_config(server),
 )
 install.__doc__ = "Download the Quake Live dedicated server files via SteamCMD."
 
@@ -99,9 +116,33 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=lambda server: sync_server_config(server),
 )
 
 restart = gamemodule_common.make_restart_hook()
+
+
+def sync_server_config(server):
+    """Rewrite managed Quake Live config entries from datastore values."""
+
+    config_relpath = server.data.get("servercfg", "baseq3/server.cfg")
+    config_path = os.path.join(server.data["dir"], config_relpath)
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "hostname": "AlphaGSM %s" % (server.name,),
+            "startmap": "campgrounds",
+        },
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            '"%s"' % (str(current_value),)
+            if spec.canonical_key == "hostname"
+            else str(current_value)
+        ),
+    )
+    rewrite_equals_config(config_path, config_values)
 
 
 def get_start_command(server):
