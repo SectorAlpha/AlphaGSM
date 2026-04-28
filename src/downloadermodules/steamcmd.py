@@ -9,6 +9,7 @@ import pwd
 import os
 import os.path
 import shutil
+import subprocess as sp
 
 
 
@@ -25,7 +26,7 @@ STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.
 def install_steamcmd():
 
     # if steamcmd dir does not exist, download it  
-    if not os.path.exists(steam_cmd_install_dir):
+    if not os.path.exists(STEAMCMD_DIR):
         os.makedirs(STEAMCMD_DIR)
 
     if not os.path.isfile(STEAMCMD_EXE):
@@ -35,7 +36,7 @@ def install_steamcmd():
 
 def download(path, args):
     """ downloads a game via steamcmd"""
-    Steam_AppID, version, steam_anonymous_login_possible = *args
+    Steam_AppID, version, steam_anonymous_login_possible = args
     version = int(version)
     # check to see if steamcmd exists
     install_steamcmd()
@@ -53,32 +54,43 @@ def download(path, args):
     else:
         print("no support for normal SteamCMD logins yet.")
 
-def getfilter(active=None,Steam_AppID=None,steam_anonymous_login_possible=None,sort=None):
-    filterfn=_true
-    sortfn=None
-    if active!=None:
-        active=bool(active)
-        if Steam_AppID!=None:
-            if steam_anonymous_login_possible!=None:
-                filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and str(Steam_AppID) == largs[0] and str(steam_anonymous_login_possible) == largs[2]
-            else
-                filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and str(Steam_AppID) == largs[0]
-        elif steam_anonymous_login_possible!=None:
-            filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive and str(steam_anonymous_login_possible) == largs[2]
-        else
-            filterfn=lambda lmodule,largs,llocation,ldate,lactive: active == lactive
-    elif Steam_AppID!=None:    
-        if steam_anonymous_login_possible!=None:
-            filterfn=lambda lmodule,largs,llocation,ldate,lactive: str(Steam_AppID) == largs[0] and str(steam_anonymous_login_possible) == largs[2]
-        else
-            filterfn=lambda lmodule,largs,llocation,ldate,lactive: str(Steam_AppID) == largs[0]
-    else if steam_anonymous_login_possible!=None:
-            filterfn=lambda lmodule,largs,llocation,ldate,lactive: str(steam_anonymous_login_possible) == largs[2]
+def getfilter(active=None, Steam_AppID=None, steam_anonymous_login_possible=None, sort=None):
+    filterfn = _true
+    sortfn = None
+
+    if active is not None:
+        active = bool(active)
+        if Steam_AppID is not None:
+            if steam_anonymous_login_possible is not None:
+                filterfn = lambda lmodule, largs, llocation, ldate, lactive: (
+                    active == lactive and str(Steam_AppID) == largs[0] and str(steam_anonymous_login_possible) == largs[2]
+                )
+            else:
+                filterfn = lambda lmodule, largs, llocation, ldate, lactive: (
+                    active == lactive and str(Steam_AppID) == largs[0]
+                )
+        elif steam_anonymous_login_possible is not None:
+            filterfn = lambda lmodule, largs, llocation, ldate, lactive: (
+                active == lactive and str(steam_anonymous_login_possible) == largs[2]
+            )
+        else:
+            filterfn = lambda lmodule, largs, llocation, ldate, lactive: active == lactive
+    elif Steam_AppID is not None:
+        if steam_anonymous_login_possible is not None:
+            filterfn = lambda lmodule, largs, llocation, ldate, lactive: (
+                str(Steam_AppID) == largs[0] and str(steam_anonymous_login_possible) == largs[2]
+            )
+        else:
+            filterfn = lambda lmodule, largs, llocation, ldate, lactive: str(Steam_AppID) == largs[0]
+    elif steam_anonymous_login_possible is not None:
+        filterfn = lambda lmodule, largs, llocation, ldate, lactive: str(steam_anonymous_login_possible) == largs[2]
+
     if sort == "version":
-        sortfn=lambda lmodule,largs,llocation,ldate,lactive: int(largs[1])
-    elif sort != None:
-        raise DownloaderError("Unknown sort key")
-    return filterfn,sortfn
+        sortfn = lambda lmodule, largs, llocation, ldate, lactive: int(largs[1])
+    elif sort is not None:
+        raise RuntimeError("Unknown sort key")
+
+    return filterfn, sortfn
 
 def _true(*arg):
     return True
