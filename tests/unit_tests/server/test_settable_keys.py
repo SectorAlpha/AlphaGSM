@@ -36,6 +36,40 @@ def test_resolve_requested_key_uses_schema_aliases():
     assert resolved.input_key == "game-map"
 
 
+def test_resolve_requested_key_uses_common_aliases_without_schema_repetition():
+    schema = {
+        "server_name": SettingSpec(
+            canonical_key="servername",
+            description="Current public name",
+            value_type="string",
+        )
+    }
+
+    resolved = resolve_requested_key("hostname", schema)
+
+    assert resolved.canonical_key == "servername"
+    assert resolved.storage_key == "servername"
+
+
+def test_resolve_requested_key_skips_common_alias_that_conflicts_with_other_key():
+    schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            description="Current map",
+            value_type="string",
+        ),
+        "startmap": SettingSpec(
+            canonical_key="startmap",
+            description="Startup map",
+            value_type="string",
+        ),
+    }
+
+    resolved = resolve_requested_key("startmap", schema)
+
+    assert resolved.canonical_key == "startmap"
+
+
 def test_resolve_requested_key_rejects_unknown_input():
     with pytest.raises(KeyResolutionError, match="Unsupported setting key"):
         resolve_requested_key("madeupsetting", {})

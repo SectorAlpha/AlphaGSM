@@ -535,6 +535,41 @@ def test_doset_describes_schema_backed_key(capsys):
     assert "Examples: cp_badlands" in out
 
 
+def test_doset_lists_common_setting_aliases(capsys):
+    srv = make_server(data=DummyData({}))
+    srv.module.setting_schema = {
+        "servername": SettingSpec(
+            canonical_key="servername",
+            description="Current public name",
+            value_type="string",
+        )
+    }
+
+    srv.doset(list_settings=True)
+
+    out = capsys.readouterr().out
+    assert "hostname" in out
+    assert "name" in out
+
+
+def test_doset_describe_uses_common_alias_resolution(capsys):
+    srv = make_server(data=DummyData({}))
+    srv.module.setting_schema = {
+        "servername": SettingSpec(
+            canonical_key="servername",
+            description="Current public name",
+            value_type="string",
+        )
+    }
+
+    srv.doset("hostname", describe=True)
+
+    out = capsys.readouterr().out
+    assert "Requested key: hostname" in out
+    assert "Canonical key: servername" in out
+    assert "Aliases: hostname, name" in out
+
+
 def test_doset_lists_values_for_schema_backed_key(capsys):
     srv = make_server(data=DummyData({}))
     seen = {}

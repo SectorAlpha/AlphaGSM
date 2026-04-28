@@ -32,8 +32,67 @@ class ResolvedSetting:
     spec: SettingSpec
 
 
+COMMON_SETTING_ALIASES = {
+    "bindaddress": ("bind_address",),
+    "contactemail": ("email", "contact_email"),
+    "map": ("gamemap", "startmap", "level"),
+    "maxplayers": ("max_players",),
+    "port": ("gameport",),
+    "queryport": ("query_port",),
+    "rconpassword": ("rconpass", "rcon_password"),
+    "servername": ("hostname", "server_name", "name"),
+    "serverpassword": ("sv_password", "svpassword", "password"),
+    "startmap": ("map",),
+}
+
+
 def normalize_setting_name(value: str) -> str:
     return "".join(ch for ch in value.lower() if ch.isalnum())
+
+
+def get_effective_aliases(spec: SettingSpec, schema: dict[str, SettingSpec] | None = None):
+    """Return schema aliases plus collision-safe common aliases for *spec*."""
+
+    aliases = []
+    seen = {normalize_setting_name(spec.canonical_key)}
+    for alias in spec.aliases:
+        normalized = normalize_setting_name(alias)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        aliases.append(alias)
+
+    for alias in COMMON_SETTING_ALIASES.get(spec.canonical_key, ()):
+        normalized = normalize_setting_name(alias)
+        if normalized in seen:
+            continue
+        if schema is not None and _is_name_claimed_by_other_spec(normalized, spec, schema):
+            continue
+        seen.add(normalized)
+        aliases.append(alias)
+
+    return tuple(aliases)
+
+
+def _is_name_claimed_by_other_spec(
+    normalized_name: str,
+    current_spec: SettingSpec,
+    schema: dict[str, SettingSpec],
+):
+    """Return true when another schema entry already claims *normalized_name*."""
+
+    for other_spec in schema.values():
+        if other_spec is current_spec:
+            continue
+        other_names = {normalize_setting_name(other_spec.canonical_key)}
+        other_names.update(normalize_setting_name(alias) for alias in other_spec.aliases)
+        other_names.update(
+            normalize_setting_name(alias)
+            for alias in COMMON_SETTING_ALIASES.get(other_spec.canonical_key, ())
+        )
+        if normalized_name in other_names:
+            return True
+    return False
 
 
 def redact_value(spec: SettingSpec, value):
@@ -45,7 +104,7 @@ def resolve_requested_key(raw_key: str, schema: dict[str, SettingSpec]) -> Resol
     matched_specs: list[SettingSpec] = []
     for _, spec in schema.items():
         names = {normalize_setting_name(spec.canonical_key)}
-        names.update(normalize_setting_name(alias) for alias in spec.aliases)
+        names.update(normalize_setting_name(alias) for alias in get_effective_aliases(spec, schema))
         if normalized in names:
             matched_specs.append(spec)
 

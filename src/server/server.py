@@ -17,6 +17,7 @@ from .module_catalog import load_default_module_catalog
 from . import port_manager
 from . import runtime as runtime_module
 from .settable_keys import KeyResolutionError, resolve_requested_key
+from .settable_keys import get_effective_aliases
 from .errors import ServerError
 from importlib import import_module
 import screen
@@ -459,7 +460,7 @@ class Server(object):
             print("No schema-backed settings are exposed by this server.")
             return
         for _, spec in self._iter_setting_schema_items():
-            aliases = ", ".join(spec.aliases) if spec.aliases else ""
+            aliases = ", ".join(get_effective_aliases(spec, schema))
             line = spec.canonical_key
             if aliases:
                 line += " (aliases: " + aliases + ")"
@@ -485,12 +486,13 @@ class Server(object):
         """Print the description for a schema-backed setting key."""
         resolved = resolve_requested_key(requested_key, self.get_setting_schema())
         spec = resolved.spec
+        aliases = get_effective_aliases(spec, self.get_setting_schema())
         print("Requested key: " + resolved.input_key)
         print("Canonical key: " + resolved.canonical_key)
         if resolved.storage_key != resolved.canonical_key:
             print("Storage key: " + resolved.storage_key)
-        if spec.aliases:
-            print("Aliases: " + ", ".join(spec.aliases))
+        if aliases:
+            print("Aliases: " + ", ".join(aliases))
         if spec.value_type:
             print("Type: " + spec.value_type)
         if spec.apply_to:
