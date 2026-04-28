@@ -2,6 +2,7 @@
 
 import os
 import re
+import sys
 
 import screen
 import server.runtime as runtime_module
@@ -75,6 +76,15 @@ sv_logecho 1
 sv_logfile 1
 """
 _SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
+
+
+def _package_override(name, default):
+    """Return a package-root override when TF2 is imported canonically."""
+
+    package_module = sys.modules.get(__name__.rsplit(".", 1)[0])
+    if package_module is None:
+        return default
+    return getattr(package_module, name, default)
 
 
 def _quote_config_value(value):
@@ -162,7 +172,7 @@ doinstall.__doc__ = "Download or refresh the TF2 server files via SteamCMD."
 def install(server):
     """Install or prepare the TF2 server files for this server object."""
 
-    doinstall(server)
+    _package_override("doinstall", doinstall)(server)
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
     elif os.path.isfile(server.data["dir"] + "srcds_run"):
@@ -182,19 +192,20 @@ restart.__doc__ = "Restart the server by stopping it and then starting it again.
 def prestart(server, *args, **kwargs):
     """Perform TF2-specific setup immediately before the server is started."""
     steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
-    steamclient_dir = os.path.dirname(STEAMCLIENT_DST)
+    steamclient_dst = _package_override("STEAMCLIENT_DST", STEAMCLIENT_DST)
+    steamclient_dir = os.path.dirname(steamclient_dst)
 
     if os.path.isfile(steamclient_src):
         if not os.path.isdir(steamclient_dir):
             os.makedirs(steamclient_dir)
-        if os.path.lexists(STEAMCLIENT_DST):
+        if os.path.lexists(steamclient_dst):
             if (
-                os.path.islink(STEAMCLIENT_DST)
-                and os.readlink(STEAMCLIENT_DST) == steamclient_src
+                os.path.islink(steamclient_dst)
+                and os.readlink(steamclient_dst) == steamclient_src
             ):
                 return
-            os.remove(STEAMCLIENT_DST)
-        os.symlink(steamclient_src, STEAMCLIENT_DST)
+            os.remove(steamclient_dst)
+        os.symlink(steamclient_src, steamclient_dst)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -281,21 +292,24 @@ def _tf2_hibernation_allowed(server):
 def get_hibernating_console_info(server):
     """Return console-derived info only when TF2 hibernation is enabled."""
 
-    if not _tf2_hibernation_allowed(server):
+    hibernation_allowed = _package_override("_tf2_hibernation_allowed", _tf2_hibernation_allowed)
+    console_status = _package_override("source_console_status", source_console_status)
+
+    if not hibernation_allowed(server):
         return None
-    return source_console_status(server)
+    return console_status(server)
 
 
 def get_query_address(server):
     """Return the live TF2 query endpoint."""
 
-    return source_query_address(server)
+    return _package_override("source_query_address", source_query_address)(server)
 
 
 def get_info_address(server):
     """Return the live TF2 info endpoint."""
 
-    return source_query_address(server)
+    return _package_override("source_query_address", source_query_address)(server)
 
 
 def sync_server_config(server):

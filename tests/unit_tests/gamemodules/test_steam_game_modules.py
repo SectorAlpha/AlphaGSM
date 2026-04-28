@@ -1,9 +1,9 @@
+import importlib
 from pathlib import Path
 
 import gamemodules.counterstrikeglobaloffensive as csgo
 import gamemodules.counterstrike2 as cs2
 import gamemodules.teamfortress2 as tf2
-import gamemodules.teamfortress2.main as tf2_main
 
 
 class DummyData(dict):
@@ -58,15 +58,16 @@ def test_csgo_configure_populates_game_defaults(tmp_path):
 
 
 def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
+    package_tf2 = importlib.import_module("gamemodules.teamfortress2")
     server = DummyServer()
     server.data.update({"dir": str(tmp_path) + "/", "Steam_AppID": 1, "Steam_anonymous_login_possible": True, "exe_name": "srcds_run"})
     cfg_path = tmp_path / "tf" / "cfg" / "server.cfg"
     launcher = tmp_path / "srcds_run_64"
     launcher.write_text("")
     doinstall_calls = []
-    monkeypatch.setattr(tf2_main, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
+    monkeypatch.setattr(package_tf2, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
 
-    tf2.install(server)
+    package_tf2.install(server)
 
     assert doinstall_calls == [server]
     assert cfg_path.exists()
@@ -237,6 +238,7 @@ def test_steam_game_update_downloads_and_optionally_restarts(monkeypatch):
 
 
 def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):
+    package_tf2 = importlib.import_module("gamemodules.teamfortress2")
     server = DummyServer()
     steam_root = tmp_path / "steam"
     sdk_dir = tmp_path / ".steam" / "sdk64"
@@ -244,10 +246,10 @@ def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):
     steamclient_src.parent.mkdir(parents=True)
     steamclient_src.write_text("")
 
-    monkeypatch.setattr(tf2.steamcmd, "STEAMCMD_DIR", str(steam_root) + "/")
-    monkeypatch.setattr(tf2_main, "STEAMCLIENT_DST", str(sdk_dir / "steamclient.so"))
+    monkeypatch.setattr(package_tf2.steamcmd, "STEAMCMD_DIR", str(steam_root) + "/")
+    monkeypatch.setattr(package_tf2, "STEAMCLIENT_DST", str(sdk_dir / "steamclient.so"))
 
-    tf2.prestart(server)
+    package_tf2.prestart(server)
 
     assert (sdk_dir / "steamclient.so").is_symlink()
     assert (sdk_dir / "steamclient.so").resolve() == steamclient_src
