@@ -6,7 +6,7 @@ import urllib.request
 
 import server.runtime as runtime_module
 from server import ServerError
-from server.settable_keys import SettingSpec, build_launch_arg_values
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
@@ -23,6 +23,7 @@ command_args = gamemodule_common.build_setup_version_download_command_args(
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "hostname")
 _quake_schema = gamemodule_common.build_quake_setting_schema(
     include_fs_game=True,
     port_tokens=("+set", "net_port"),
@@ -30,8 +31,21 @@ _quake_schema = gamemodule_common.build_quake_setting_schema(
 )
 setting_schema = {
     "fs_game": _quake_schema["fs_game"],
-    "port": _quake_schema["port"],
-    "hostname": _quake_schema["hostname"],
+    "port": SettingSpec(
+        canonical_key="port",
+        description=_quake_schema["port"].description,
+        value_type=_quake_schema["port"].value_type,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="net_port",
+        launch_arg_tokens=_quake_schema["port"].launch_arg_tokens,
+    ),
+    "hostname": SettingSpec(
+        canonical_key="hostname",
+        description=_quake_schema["hostname"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="sv_hostname",
+        launch_arg_tokens=_quake_schema["hostname"].launch_arg_tokens,
+    ),
     "configfile": SettingSpec(
         canonical_key="configfile",
         description="Server config file to exec on startup.",
@@ -154,6 +168,47 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", "etlegacy-v%s-x86_64.tar.gz" % (resolved_version,))
     install_archive(server, detect_compression(server.data["download_name"]))
+    sync_server_config(server)
+
+
+def sync_server_config(server):
+    """Rewrite managed etl_server.cfg entries from datastore values."""
+
+    config_path = os.path.join(
+        server.data["dir"],
+        server.data.get("configfile", "etl_server.cfg"),
+    )
+    if not os.path.isfile(config_path):
+        return
+    replacements = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "port": 27960,
+            "hostname": "AlphaGSM %s" % (server.name,),
+        },
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            str(int(current_value))
+            if spec.value_type == "integer"
+            else '"%s"' % (str(current_value),)
+        ),
+    )
+    if not replacements:
+        return
+    with open(config_path, encoding="utf-8") as fh:
+        content = fh.read()
+    new_content = content
+    for native_key, native_value in replacements.items():
+        new_content = re.sub(
+            rf'(^\s*set\s+{re.escape(native_key)}\s+)(.*?)(\s*$)',
+            r'\g<1>' + native_value + r'\g<3>',
+            new_content,
+            flags=re.MULTILINE,
+        )
+    if new_content != content:
+        with open(config_path, "w", encoding="utf-8") as fh:
+            fh.write(new_content)
 
 
 def get_start_command(server):

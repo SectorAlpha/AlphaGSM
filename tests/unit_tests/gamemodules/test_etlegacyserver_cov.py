@@ -72,6 +72,8 @@ def test_install(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
+    server.data["configfile"] = "etl_server.cfg"
+    (tmp_path / "etl_server.cfg").write_text('set sv_hostname "Old Name"\n', encoding="utf-8")
     mod.install(server)
 
 def test_install_resolves_download(tmp_path):
@@ -111,6 +113,29 @@ def test_get_start_command(tmp_path):
         "2",
     ]
     assert cwd == server.data["dir"]
+
+
+def test_sync_server_config_updates_etlegacy_cfg_values(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "etl_server.cfg"
+    server.data["hostname"] = "AlphaGSM ET Test"
+    server.data["port"] = 27961
+    config_path = tmp_path / "etl_server.cfg"
+    config_path.write_text(
+        'set sv_hostname "Old Name"\n'
+        'set net_port 27960\n'
+        'set sv_maxclients 16\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'set sv_hostname "AlphaGSM ET Test"',
+        'set net_port 27961',
+        'set sv_maxclients 16',
+    ]
 
 
 def test_setting_schema_exposes_etlegacy_launch_tokens():

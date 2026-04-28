@@ -1,5 +1,6 @@
 from server.settable_keys import resolve_requested_key
 
+from gamemodules import etlegacyserver
 from gamemodules import dayzserver
 from gamemodules import inssserver
 from gamemodules import scpslserver
@@ -67,5 +68,11 @@ def test_sevendaystodie_servername_style_servers_accept_hostname_aliases():
 
 def test_dayz_hostname_style_servers_accept_servername_aliases():
     resolved = resolve_requested_key("servername", dayzserver.setting_schema)
+
+    assert resolved.canonical_key == "hostname"
+
+
+def test_etlegacy_hostname_style_servers_accept_servername_aliases():
+    resolved = resolve_requested_key("servername", etlegacyserver.setting_schema)
 
     assert resolved.canonical_key == "hostname"

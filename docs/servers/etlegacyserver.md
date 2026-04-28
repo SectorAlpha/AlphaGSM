@@ -52,7 +52,11 @@ Setup configures:
 ```bash
 alphagsm myetlegacy update
 alphagsm myetlegacy backup
+alphagsm myetlegacy set servername "AlphaGSM ET"
+alphagsm myetlegacy set port 27961
 ```
+
+`set servername` and `set port` rewrite `etl_server.cfg` immediately through the schema-backed config-sync path.
 
 ## Notes
 
@@ -71,6 +75,7 @@ alphagsm myetlegacy backup
 
 - **Config file**: `etl_server.cfg`
 - **Template**: See [server-templates/etlegacyserver/](../server-templates/etlegacyserver/) if available
+- **Schema-backed sync**: AlphaGSM keeps `sv_hostname` and `net_port` aligned with `set`
 
 ### Maps and Mods
 
