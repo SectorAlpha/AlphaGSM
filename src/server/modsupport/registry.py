@@ -23,7 +23,11 @@ class CuratedRegistry:
         if not isinstance(family_payload, dict):
             raise ModSupportError(f"Malformed curated mod family payload: {family}")
 
-        resolved_channel = channel or family_payload.get("default")
+        default_channel = family_payload.get("default")
+        if default_channel is not None and not isinstance(default_channel, str):
+            raise ModSupportError(f"Malformed curated mod family payload: {family}")
+
+        resolved_channel = channel or default_channel
         releases = family_payload.get("releases", {})
         if not isinstance(releases, dict):
             raise ModSupportError(f"Malformed curated mod family payload: {family}")
@@ -52,11 +56,23 @@ class CuratedRegistry:
                 family=family,
                 channel=resolved_channel,
                 resolved_id=f"{family}.{resolved_channel}",
-                url=release_payload["url"],
+                url=_coerce_string_scalar(
+                    release_payload["url"],
+                    field_name="url",
+                    release_id=f"{family}.{resolved_channel}",
+                ),
                 hosts=hosts,
-                archive_type=release_payload["archive_type"],
+                archive_type=_coerce_string_scalar(
+                    release_payload["archive_type"],
+                    field_name="archive_type",
+                    release_id=f"{family}.{resolved_channel}",
+                ),
                 destinations=destinations,
-                checksum=release_payload.get("checksum"),
+                checksum=_coerce_optional_string_scalar(
+                    release_payload.get("checksum"),
+                    field_name="checksum",
+                    release_id=f"{family}.{resolved_channel}",
+                ),
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise ModSupportError(
@@ -102,3 +118,18 @@ def _coerce_string_sequence(value, *, field_name: str, release_id: str) -> tuple
             " must be a sequence of strings"
         )
     return tuple(value)
+
+
+def _coerce_string_scalar(value, *, field_name: str, release_id: str) -> str:
+    if not isinstance(value, str):
+        raise ModSupportError(
+            f"Malformed curated mod release payload: {release_id} field '{field_name}'"
+            " must be a string"
+        )
+    return value
+
+
+def _coerce_optional_string_scalar(value, *, field_name: str, release_id: str) -> str | None:
+    if value is None:
+        return None
+    return _coerce_string_scalar(value, field_name=field_name, release_id=release_id)

@@ -87,6 +87,51 @@ def test_resolve_rejects_string_destinations_payload():
         registry.resolve("sourcemod")
 
 
+def test_resolve_rejects_non_string_family_default():
+    families = _families()
+    families["sourcemod"]["default"] = 112
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
+def test_resolve_rejects_non_string_url():
+    families = _families()
+    families["sourcemod"]["releases"]["stable"]["url"] = 123
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
+def test_resolve_rejects_non_string_archive_type():
+    families = _families()
+    families["sourcemod"]["releases"]["stable"]["archive_type"] = 123
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
+def test_resolve_rejects_none_archive_type():
+    families = _families()
+    families["sourcemod"]["releases"]["stable"]["archive_type"] = None
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
+def test_resolve_rejects_non_string_checksum():
+    families = _families()
+    families["sourcemod"]["releases"]["stable"]["checksum"] = 123
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
 def test_loader_reads_registry_json(tmp_path):
     payload = {"families": _families()}
     registry_path = tmp_path / "curated-mods.json"
