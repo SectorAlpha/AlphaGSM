@@ -7,11 +7,14 @@ import re
 from collections import OrderedDict
 from pathlib import Path
 
+from server.module_catalog import load_default_module_catalog
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_ROOT = REPO_ROOT / "docs" / "server-templates"
 MODULE_ROOT = REPO_ROOT / "src" / "gamemodules"
 DOCS_ROOT = REPO_ROOT / "docs" / "servers"
+MODULE_CATALOG = load_default_module_catalog()
 TEMPLATE_MODULE_ALIASES = {
     "arma3-headless": "arma3headlessserver",
 }
@@ -304,8 +307,8 @@ def extract_runtime_template_path(template_dir_name: str) -> Path | None:
         return explicit
 
     doc_name = TEMPLATE_MODULE_ALIASES.get(template_dir_name, template_dir_name)
-    alias_target = _read_alias_target(MODULE_ROOT / f"{doc_name}.py") if (MODULE_ROOT / f"{doc_name}.py").exists() else None
-    for candidate in (template_dir_name, doc_name, alias_target):
+    canonical_name = MODULE_CATALOG.resolve(doc_name)
+    for candidate in (template_dir_name, doc_name, canonical_name):
         if candidate is None:
             continue
         explicit = _extract_runtime_path_from_doc(candidate)
@@ -367,13 +370,9 @@ def _build_argument_defaults(function_node: ast.FunctionDef) -> dict[str, object
 
 def _resolve_module_path(template_dir_name: str) -> Path:
     module_name = TEMPLATE_MODULE_ALIASES.get(template_dir_name, template_dir_name)
-    path = MODULE_ROOT / f"{module_name}.py"
+    path = MODULE_ROOT.joinpath(*MODULE_CATALOG.resolve(module_name).split(".")).with_suffix(".py")
     if not path.exists():
         raise FileNotFoundError(f"No game module found for template directory {template_dir_name!r}")
-
-    alias_target = _read_alias_target(path)
-    if alias_target is not None:
-        return _resolve_module_path(alias_target)
     return path
 
 
