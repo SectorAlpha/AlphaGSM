@@ -773,7 +773,19 @@ def define_valve_server_module(
         _send_console_input(server, "\nquit\n")
 
     def status(server, verbose):
-        """Detailed engine-specific status is not implemented yet."""
+        """Report server status using the shared query/info helpers.
+
+        When *verbose* is true call the richer `info()` path; otherwise use
+        the quicker `query()` check. Errors are caught and printed so this
+        remains non-fatal and backward-compatible with existing callers.
+        """
+        try:
+            if verbose:
+                server.info(as_json=False, detailed=False)
+            else:
+                server.query()
+        except Exception as exc:
+            print("Status check failed: " + str(exc))
         return None
 
     def message(server, msg):

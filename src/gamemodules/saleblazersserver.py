@@ -95,7 +95,15 @@ def do_stop(server, j):
     screen.send_to_server(server.name, "\003")
 
 
-status = gamemodule_common.make_noop_status_hook()
+def status(server, verbose):
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
+    return None
 status.__doc__ = "Detailed Saleblazers status is not implemented yet."
 
 

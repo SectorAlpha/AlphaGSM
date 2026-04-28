@@ -348,8 +348,21 @@ def list_setting_values(server, canonical_key):
     )
 
 
-status = gamemodule_common.make_noop_status_hook()
-status.__doc__ = "Report TF2 server status information."
+def status(server, verbose):
+    """Report TF2 server status information using shared query/info helpers.
+
+    If *verbose* is true call `server.info()` for richer output; otherwise
+    call `server.query()` for a quick reachability check. Catch and print
+    exceptions to remain non-fatal and backward-compatible.
+    """
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
+    return None
 
 
 def checkvalue(server, key, *value):

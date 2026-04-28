@@ -197,9 +197,14 @@ def list_setting_values(server, canonical_key):
 
 
 def status(server, verbose):
-    """Report CS2 server status information."""
-
-    pass
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
+    return None
 
 
 def checkvalue(server, key, *value):
