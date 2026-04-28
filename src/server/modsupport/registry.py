@@ -21,8 +21,8 @@ class CuratedRegistry:
             raise ModSupportError(f"Unknown curated mod family: {family}")
 
         resolved_channel = channel or family_payload.get("default")
-        channels = family_payload.get("channels", {})
-        release_payload = channels.get(resolved_channel)
+        releases = family_payload.get("releases", {})
+        release_payload = releases.get(resolved_channel)
         if release_payload is None:
             raise ModSupportError(
                 f"Unknown curated mod release: {family}"
@@ -32,11 +32,11 @@ class CuratedRegistry:
         return CuratedRelease(
             family=family,
             channel=resolved_channel,
-            resolved_id=release_payload["resolved_id"],
+            resolved_id=f"{family}.{resolved_channel}",
             url=release_payload["url"],
-            hosts=list(release_payload["hosts"]),
+            hosts=tuple(release_payload["hosts"]),
             archive_type=release_payload["archive_type"],
-            destinations=list(release_payload["destinations"]),
+            destinations=tuple(release_payload["destinations"]),
             checksum=release_payload.get("checksum"),
         )
 

@@ -10,16 +10,14 @@ def _families():
     return {
         "sourcemod": {
             "default": "stable",
-            "channels": {
+            "releases": {
                 "stable": {
-                    "resolved_id": "sourcemod.stable",
                     "url": "https://example.invalid/sourcemod-stable.zip",
                     "hosts": ["example.invalid"],
                     "archive_type": "zip",
                     "destinations": ["tf/addons"],
                 },
                 "1.12": {
-                    "resolved_id": "sourcemod.1.12",
                     "url": "https://example.invalid/sourcemod-1.12.zip",
                     "hosts": ["example.invalid"],
                     "archive_type": "zip",
@@ -36,6 +34,8 @@ def test_resolve_uses_default_channel_for_curated_family():
     resolved = registry.resolve("sourcemod")
 
     assert resolved.resolved_id == "sourcemod.stable"
+    assert resolved.hosts == ("example.invalid",)
+    assert resolved.destinations == ("tf/addons",)
 
 
 def test_resolve_uses_explicit_channel_for_curated_family():

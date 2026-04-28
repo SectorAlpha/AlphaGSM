@@ -11,9 +11,9 @@ class CuratedRelease:
     channel: str
     resolved_id: str
     url: str
-    hosts: list[str]
+    hosts: tuple[str, ...]
     archive_type: str
-    destinations: list[str]
+    destinations: tuple[str, ...]
     checksum: str | None = None
 
 
