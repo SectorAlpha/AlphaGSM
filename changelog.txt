@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-04-28
+- Server support: add the TF2 curated mod-support foundation with package-backed module wiring, curated registry metadata for SourceMod and MetaMod, and the first shared desired-state groundwork for server-side mod management.
+- Module loading: treat package-backed canonical modules such as `teamfortress2` as first-class catalog and parity entries so one canonical module id still maps to one import surface.
 - Server support: sync readyornotserver queryport and maxplayers into ReadyOrNot/Config/ServerConfig.ini during setup, update, and set.
 
 2026-04-26

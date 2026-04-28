@@ -71,6 +71,32 @@ alphagsm myteamfort update
 alphagsm myteamfort backup
 ```
 
+## Curated Mod Support
+
+AlphaGSM now has a TF2-first curated server-side mod foundation for
+package-backed installs that land inside the normal TF2 server tree.
+
+Use the curated workflow to declare the desired mod set and then reconcile it:
+
+```bash
+alphagsm myteamfort mod add curated sourcemod
+alphagsm myteamfort mod apply
+```
+
+Notes:
+
+- `sourcemod` is the main curated example and can be pinned to an explicit channel when the registry exposes one, for example `alphagsm myteamfort mod add curated sourcemod 1.12`.
+- The checked-in TF2 curated registry also carries package-backed metadata for `metamod`, so the same workflow applies there when you want MetaMod first.
+- `mod apply` is the point where AlphaGSM reconciles the desired curated entries into the TF2 install and keeps ownership tracking on AlphaGSM-managed files.
+
+## Workshop Status
+
+Workshop support is still experimental.
+
+- You can record a desired workshop item with `alphagsm myteamfort mod add workshop <numeric_id>`.
+- Workshop apply/download is not yet verified for TF2, so treat workshop entries as desired-state groundwork rather than a supported install path today.
+- Expect the curated path to be the supported operator flow for now.
+
 ## Notes
 
 - Module name: `teamfortress2`
@@ -93,5 +119,6 @@ alphagsm myteamfort backup
 ### Maps and Mods
 
 - **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Curated mod directories**: `tf/addons` and `tf/cfg`
+- **Curated mod examples**: `sourcemod`, `metamod`
+- **Workshop support**: Experimental desired-state support only; apply/download is not yet verified

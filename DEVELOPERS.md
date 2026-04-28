@@ -99,21 +99,26 @@ The server object merges these module-level definitions with the defaults at run
 
 ## Game Module Contract
 
-A game module is a Python file under `src/gamemodules/`.  The `Server` class
-dispatches user commands by calling named attributes on the module.  The full
-specification lives in [src/server/gamemodules.py](src/server/gamemodules.py).
-The skill-level checklist lives in
-[skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
+A game module is either a single Python file under `src/gamemodules/` or a
+package directory with an `__init__.py` file at the same top level. The
+`Server` class dispatches user commands by calling named attributes on the
+canonical module import surface. The full specification lives in
+[src/server/gamemodules.py](src/server/gamemodules.py). The skill-level
+checklist lives in [skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
 
 ### Module identity and aliases
 
-Canonical module ids are real Python modules under `src/gamemodules/`.
+Canonical module ids are real top-level Python modules or packages under
+`src/gamemodules/`.
 
 - Define user-facing aliases and namespace defaults in [src/server/module_aliases.json](src/server/module_aliases.json).
 - Resolve module names through [src/server/module_catalog.py](src/server/module_catalog.py) before importing a game module.
 - Persist the canonical module id in the server datastore even when the user created the server through an alias such as `tf2` or `cs2server`.
 - Do not add wrapper alias files such as `tf2.py` or namespace `DEFAULT.py` shims under `src/gamemodules/`; that routing now lives in the shared catalog.
 - Alias keys share the same namespace as canonical ids, and alias values must point directly at a real canonical module id.
+- For package-backed canonical modules, the directory name is the canonical id and `__init__.py` is the only public import surface that `Server(...)`, parity tooling, and static contract tests should treat as canonical.
+- Keep package internals such as `main.py`, `mods.py`, `layout.py`, or `workshop.py` as private implementation files. They do not get separate alias entries, parity rows, or standalone module identities.
+- When converting a file-backed module into a package-backed canonical module, preserve the exported lifecycle hooks from `__init__.py` so `import gamemodules.<module_id>` keeps working for existing callers and tests.
 
 Generated parity reporting also works at the canonical-module level:
 
@@ -163,6 +168,25 @@ Generated parity reporting also works at the canonical-module level:
 | `wipe` | `(server)` | Delete world/save data; alternatively set `wipe_paths` attribute |
 | `max_stop_wait` | attribute `int` | Max minutes to wait for graceful stop (default 5, capped at 5) |
 
+### Shared mod-support foundation
+
+Curated server-side mod support now has a shared core under
+[src/server/modsupport](src/server/modsupport).
+
+- `registry.py` resolves module-local curated registries from family plus optional channel/version into a concrete release id, URL, allowed hosts, archive type, and approved destination roots.
+- `downloads.py` owns trusted-host validation, optional checksum enforcement, safe archive extraction, and destination allowlisting so AlphaGSM only installs files into explicitly approved server paths.
+- `ownership.py` records the AlphaGSM-owned relative file manifest for each installed curated entry.
+- `reconcile.py` compares desired vs installed state so modules can add missing curated entries and remove only files that AlphaGSM previously recorded as owned.
+
+Modules that opt into curated mod support still own the game-specific layer:
+
+- keep the canonical module import surface stable, even when the implementation is package-backed
+- seed and persist the module-specific `mods` datastore shape
+- expose module commands such as `mod add ...`, `mod list`, and `mod apply`
+- ship the curated registry file beside the module package and keep its destination rules aligned with the real game layout
+- validate provider-specific desired entries such as curated families or workshop ids before saving them
+- fail clearly and non-destructively when a provider is still experimental or not yet verified for apply-time installation
+
 ### Operational expectations
 
 - `configure(...)` stores at minimum `port` and `dir` in `server.data`, initialises the backup data structure, and returns `(args, kwargs)` to forward to `install`
@@ -203,7 +227,7 @@ Static enforcement lives in `tests/unit_tests/test_runtime_contract_static.py`, 
 ### Representative implementations
 
 - [src/gamemodules/minecraft/vanilla.py](src/gamemodules/minecraft/vanilla.py)
-- [src/gamemodules/teamfortress2.py](src/gamemodules/teamfortress2.py)
+- [src/gamemodules/teamfortress2/__init__.py](src/gamemodules/teamfortress2/__init__.py)
 - [src/gamemodules/projectzomboid.py](src/gamemodules/projectzomboid.py)
 - [src/gamemodules/counterstrikeglobaloffensive.py](src/gamemodules/counterstrikeglobaloffensive.py)
 - [src/gamemodules/readyornotserver.py](src/gamemodules/readyornotserver.py) — example with `get_query_address` and `get_info_address`
