@@ -3,6 +3,7 @@ __pycache__
 *.bak
 alphagsm.conf
 .alphagsm-docker
+.worktrees/
 ~/
 env
 .coverage
