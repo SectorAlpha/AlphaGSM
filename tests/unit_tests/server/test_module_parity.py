@@ -62,19 +62,20 @@ def test_render_json_report_has_trailing_newline():
     assert output.endswith("\n")
 
 
-def test_rendered_module_parity_report_lists_teamfortress2_once():
+def test_checked_in_module_parity_report_matches_generated_artifacts():
+    repo_root = Path(".")
     catalog = load_default_module_catalog()
     rows = build_module_parity_rows(
         catalog=catalog,
-        repo_root=Path("."),
+        repo_root=repo_root,
     )
 
-    markdown = render_markdown_report(rows)
-    payload = render_json_report(rows)
-
-    assert markdown.count("| teamfortress2 |") == 1
-    assert "teamfortress2.main" not in markdown
-    assert payload.count('"canonical_id": "teamfortress2"') == 1
+    assert (repo_root / "docs" / "module_parity_report.md").read_text(
+        encoding="utf-8"
+    ) == render_markdown_report(rows)
+    assert (repo_root / "docs" / "module_parity_report.json").read_text(
+        encoding="utf-8"
+    ) == render_json_report(rows)
 
 
 def test_build_module_parity_rows_accepts_assignment_based_runtime_hooks():

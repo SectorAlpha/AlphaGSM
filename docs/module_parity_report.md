@@ -62,7 +62,7 @@
 | codwawserver | - | active | no | yes | status |
 | colserver | - | disabled | no | no | status |
 | conanexiles | - | disabled | no | no | status |
-| counterstrike2 | cs2server | active | yes | yes | - |
+| counterstrike2 | cs2, cs2server | active | yes | yes | - |
 | counterstrikeglobaloffensive | csgo, csgoserver | disabled | yes | no | - |
 | craftopiaserver | - | active | no | yes | status |
 | cryofallserver | - | disabled | no | no | status |
