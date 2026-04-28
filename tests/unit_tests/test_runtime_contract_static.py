@@ -47,9 +47,20 @@ def test_game_module_inventory_counts_teamfortress2_once():
 
 
 def _module_source(module_name):
-    """Return the source text for a game module."""
+    """Return the source text for a game module.
 
-    return _module_source_path(Path("."), module_name).read_text(encoding="utf-8")
+    For package-backed modules, concatenate all .py files in the package so
+    contract checks see the full implementation surface, not just __init__.py.
+    """
+
+    source_path = _module_source_path(Path("."), module_name)
+    if source_path.name == "__init__.py":
+        parts = [
+            p.read_text(encoding="utf-8")
+            for p in sorted(source_path.parent.rglob("*.py"))
+        ]
+        return "\n".join(parts)
+    return source_path.read_text(encoding="utf-8")
 
 
 def _runtime_contract_root(module_name):

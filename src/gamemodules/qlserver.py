@@ -107,7 +107,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=sync_server_config,
+    sync_server_config=lambda server: sync_server_config(server),  # pylint: disable=unnecessary-lambda
 )
 install.__doc__ = "Download the Quake Live dedicated server files via SteamCMD."
 
@@ -116,7 +116,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=sync_server_config,
+    sync_server_config=lambda server: sync_server_config(server),  # pylint: disable=unnecessary-lambda
 )
 
 restart = gamemodule_common.make_restart_hook()
