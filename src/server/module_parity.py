@@ -85,8 +85,15 @@ def render_json_report(rows: list[ModuleParityRow]) -> str:
 
 
 def _module_source(repo_root: Path, module_name: str) -> str:
+    return _module_source_path(repo_root, module_name).read_text(encoding="utf-8")
+
+
+def _module_source_path(repo_root: Path, module_name: str) -> Path:
     path = repo_root / "src" / "gamemodules" / Path(*module_name.split("."))
-    return path.with_suffix(".py").read_text(encoding="utf-8")
+    package_init = path / "__init__.py"
+    if package_init.exists():
+        return package_init
+    return path.with_suffix(".py")
 
 
 def _load_disabled_modules(path: Path) -> set[str]:

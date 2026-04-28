@@ -19,8 +19,15 @@ class ModuleCatalog:
 
     @classmethod
     def from_paths(cls, *, gamemodule_dir: Path, alias_path: Path) -> "ModuleCatalog":
-        canonical_modules = tuple(sorted(_canonical_module_names(gamemodule_dir)))
         payload = json.loads(alias_path.read_text(encoding="utf-8"))
+        canonical_modules = tuple(
+            sorted(
+                _canonical_module_names(
+                    gamemodule_dir,
+                    namespace_modules=set(payload.get("namespace_defaults", {})),
+                )
+            )
+        )
         catalog = cls(
             canonical_modules=canonical_modules,
             aliases=dict(payload.get("aliases", {})),
@@ -57,7 +64,9 @@ class ModuleCatalog:
         return normalized
 
 
-def _canonical_module_names(gamemodule_dir: Path) -> list[str]:
+def _canonical_module_names(
+    gamemodule_dir: Path, *, namespace_modules: set[str] | None = None
+) -> list[str]:
     helper_modules = {
         "factorio",
         "minecraft.jardownload",
@@ -65,18 +74,32 @@ def _canonical_module_names(gamemodule_dir: Path) -> list[str]:
         "minecraft.papermc",
         "terraria.common",
     }
-    names = []
+    namespace_modules = namespace_modules or set()
+    package_modules = {
+        ".".join(path.relative_to(gamemodule_dir).parent.parts)
+        for path in sorted(gamemodule_dir.rglob("__init__.py"))
+        if ".".join(path.relative_to(gamemodule_dir).parent.parts) not in namespace_modules
+    }
+    names = set()
     for path in sorted(gamemodule_dir.rglob("*.py")):
         if path.name == "__init__.py":
-            continue
-        module_name = ".".join(path.relative_to(gamemodule_dir).with_suffix("").parts)
+            module_name = ".".join(path.relative_to(gamemodule_dir).parent.parts)
+            if module_name in namespace_modules:
+                continue
+        else:
+            module_name = ".".join(path.relative_to(gamemodule_dir).with_suffix("").parts)
+            if any(
+                module_name == package_name or module_name.startswith(package_name + ".")
+                for package_name in package_modules
+            ):
+                continue
         if module_name in helper_modules:
             continue
         source = path.read_text(encoding="utf-8")
         if "ALIAS_TARGET =" in source:
             continue
-        names.append(module_name)
-    return names
+        names.add(module_name)
+    return sorted(names)
 
 
 def load_default_module_catalog() -> ModuleCatalog:

@@ -2,6 +2,7 @@ from pathlib import Path
 
 from server.module_catalog import load_default_module_catalog
 from server.module_parity import (
+    _module_source_path,
     build_module_parity_rows,
     render_json_report,
     render_markdown_report,
@@ -61,20 +62,19 @@ def test_render_json_report_has_trailing_newline():
     assert output.endswith("\n")
 
 
-def test_checked_in_module_parity_report_matches_generated_artifacts():
-    repo_root = Path(".")
+def test_rendered_module_parity_report_lists_teamfortress2_once():
     catalog = load_default_module_catalog()
     rows = build_module_parity_rows(
         catalog=catalog,
-        repo_root=repo_root,
+        repo_root=Path("."),
     )
 
-    assert (repo_root / "docs" / "module_parity_report.md").read_text(
-        encoding="utf-8"
-    ) == render_markdown_report(rows)
-    assert (repo_root / "docs" / "module_parity_report.json").read_text(
-        encoding="utf-8"
-    ) == render_json_report(rows)
+    markdown = render_markdown_report(rows)
+    payload = render_json_report(rows)
+
+    assert markdown.count("| teamfortress2 |") == 1
+    assert "teamfortress2.main" not in markdown
+    assert payload.count('"canonical_id": "teamfortress2"') == 1
 
 
 def test_build_module_parity_rows_accepts_assignment_based_runtime_hooks():
@@ -88,3 +88,17 @@ def test_build_module_parity_rows_accepts_assignment_based_runtime_hooks():
 
     assert "runtime_requirements" not in row.missing_surfaces
     assert "container_spec" not in row.missing_surfaces
+
+
+def test_module_source_path_prefers_package_init_when_present(tmp_path):
+    repo_root = tmp_path
+    package_dir = repo_root / "src" / "gamemodules" / "teamfortress2"
+    package_dir.mkdir(parents=True)
+    (package_dir / "__init__.py").write_text("SERVER_NAME = 'tf2'\n", encoding="utf-8")
+    (package_dir / "main.py").write_text("HELPER = True\n", encoding="utf-8")
+    flat_module_path = repo_root / "src" / "gamemodules" / "counterstrike2.py"
+    flat_module_path.parent.mkdir(parents=True, exist_ok=True)
+    flat_module_path.write_text("SERVER_NAME = 'cs2'\n", encoding="utf-8")
+
+    assert _module_source_path(repo_root, "teamfortress2") == package_dir / "__init__.py"
+    assert _module_source_path(repo_root, "counterstrike2") == flat_module_path

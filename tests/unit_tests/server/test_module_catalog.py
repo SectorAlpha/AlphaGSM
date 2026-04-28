@@ -120,3 +120,31 @@ def test_module_catalog_import_does_not_require_alphagsm_config(tmp_path):
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_catalog_counts_package_backed_canonical_module_once(tmp_path):
+    gamemodule_dir = tmp_path / "gamemodules"
+    tf2_package = gamemodule_dir / "teamfortress2"
+    tf2_package.mkdir(parents=True)
+    (tf2_package / "__init__.py").write_text("SERVER_NAME = 'tf2'\n", encoding="utf-8")
+    (tf2_package / "main.py").write_text("HELPER = True\n", encoding="utf-8")
+    (gamemodule_dir / "counterstrike2.py").write_text(
+        "SERVER_NAME = 'cs2'\n", encoding="utf-8"
+    )
+
+    alias_path = write_alias_file(
+        tmp_path,
+        """
+        {
+          "aliases": {},
+          "namespace_defaults": {}
+        }
+        """,
+    )
+
+    catalog = ModuleCatalog.from_paths(
+        gamemodule_dir=gamemodule_dir,
+        alias_path=alias_path,
+    )
+
+    assert catalog.canonical_modules == ("counterstrike2", "teamfortress2")

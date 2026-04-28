@@ -5,18 +5,9 @@ import shutil
 from pathlib import Path
 
 from server.module_catalog import load_default_module_catalog
+from server.module_parity import _module_source_path
 from importlib import import_module
 import server.runtime as runtime_module
-
-
-GAMEMODULE_DIR = Path("src/gamemodules")
-HELPER_MODULES = {
-    "factorio",
-    "minecraft.jardownload",
-    "minecraft.properties_config",
-    "minecraft.papermc",
-    "terraria.common",
-}
 
 GAME_CONFIG_HINTS = {
     '"port"',
@@ -49,11 +40,16 @@ def test_game_module_inventory_excludes_catalog_alias_keys():
     assert "minecraft.DEFAULT" not in module_names
 
 
+def test_game_module_inventory_counts_teamfortress2_once():
+    module_names = _game_module_names()
+
+    assert module_names.count("teamfortress2") == 1
+
+
 def _module_source(module_name):
     """Return the source text for a game module."""
 
-    path = GAMEMODULE_DIR.joinpath(*module_name.split(".")).with_suffix(".py")
-    return path.read_text(encoding="utf-8")
+    return _module_source_path(Path("."), module_name).read_text(encoding="utf-8")
 
 
 def _runtime_contract_root(module_name):
