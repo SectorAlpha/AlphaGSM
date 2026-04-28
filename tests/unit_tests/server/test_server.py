@@ -1,4 +1,7 @@
+import sys
+from importlib import import_module
 from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -754,6 +757,56 @@ def test_doset_skips_sync_server_config_without_explicit_config_keys():
 
     assert calls == []
     assert srv.data["hostname"] == "new"
+
+
+def test_doset_rewrites_real_non_valve_config_file_via_alias(monkeypatch, tmp_path):
+    sys.modules.pop("gamemodules.stnserver", None)
+    with patch.dict(
+        "sys.modules",
+        {
+            "screen": MagicMock(),
+            "utils.backups": MagicMock(),
+            "utils.backups.backups": MagicMock(),
+            "utils.steamcmd": MagicMock(),
+        },
+    ):
+        stnserver_module = import_module("gamemodules.stnserver")
+
+    config_dir = tmp_path / "Config"
+    config_dir.mkdir()
+    config_path = config_dir / "ServerConfig.txt"
+    config_path.write_text("Port=8888\nOtherKey=value\n", encoding="utf-8")
+
+    srv = make_server(
+        module=stnserver_module,
+        data=DummyData(
+            {
+                "port": 8888,
+                "dir": str(tmp_path),
+                "configfile": "Config/ServerConfig.txt",
+            }
+        ),
+    )
+
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "detect_conflicts",
+        lambda server, overrides=None, include_live=True: [],
+    )
+    monkeypatch.setattr(
+        server_module.port_manager,
+        "recommend_shift",
+        lambda server, max_offset=100, base_overrides=None: None,
+    )
+
+    srv.doset("gameport", "9999")
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        "Port=9999",
+        "OtherKey=value",
+    ]
+    assert srv.data["port"] == 9999
+    assert srv.data.saved == 1
 
 
 def test_doset_rejects_colliding_port_change_and_recommends_group_shift(monkeypatch):
