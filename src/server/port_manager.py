@@ -15,6 +15,7 @@ from utils.settings import settings
 
 from . import data as data_module
 from .errors import ServerError
+from .module_catalog import load_default_module_catalog
 from . import runtime as runtime_module
 
 
@@ -34,6 +35,7 @@ DATAPATH = os.path.expanduser(
 SERVERMODULEPACKAGE = settings.system.getsection("server").get(
     "servermodulespackage", "gamemodules."
 )
+MODULE_CATALOG = load_default_module_catalog()
 
 
 @dataclass(frozen=True)
@@ -133,17 +135,13 @@ def _resolve_module_name(module_name):
 
 
 def _resolve_module_name_fallback(name):
-    """Resolve a module name recursively when the canonical server resolver is unavailable."""
+    """Resolve a module name through the shared catalog when server.server is unavailable."""
 
+    canonical_name = MODULE_CATALOG.resolve(str(name))
     try:
-        module = import_module(SERVERMODULEPACKAGE + name)
+        module = import_module(SERVERMODULEPACKAGE + canonical_name)
     except ImportError:
         return None
-    if not hasattr(module, "__file__"):
-        return _resolve_module_name_fallback(name + ".DEFAULT")
-    alias_target = getattr(module, "ALIAS_TARGET", None)
-    if alias_target:
-        return _resolve_module_name_fallback(alias_target)
     runtime_module.ensure_runtime_hooks(module)
     return module
 

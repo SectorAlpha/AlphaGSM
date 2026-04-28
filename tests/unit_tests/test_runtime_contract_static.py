@@ -5,6 +5,7 @@ import shutil
 from importlib import import_module
 from pathlib import Path
 
+from server.module_catalog import load_default_module_catalog
 import server.runtime as runtime_module
 
 
@@ -35,15 +36,17 @@ DEFAULT_TEST_WORK_DIR = Path(
 
 
 def _game_module_names():
-    names = []
-    for path in sorted(GAMEMODULE_DIR.rglob("*.py")):
-        if path.name == "__init__.py":
-            continue
-        module_name = ".".join(path.relative_to(GAMEMODULE_DIR).with_suffix("").parts)
-        if module_name in HELPER_MODULES:
-            continue
-        names.append(module_name)
-    return names
+    catalog = load_default_module_catalog()
+    return list(catalog.canonical_modules)
+
+
+def test_game_module_inventory_excludes_catalog_alias_keys():
+    module_names = _game_module_names()
+
+    assert "tf2" not in module_names
+    assert "tf2server" not in module_names
+    assert "cs2server" not in module_names
+    assert "minecraft.DEFAULT" not in module_names
 
 
 def _module_source(module_name):
