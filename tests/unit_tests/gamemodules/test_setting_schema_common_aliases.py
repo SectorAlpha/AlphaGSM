@@ -3,6 +3,7 @@ from server.settable_keys import resolve_requested_key
 from gamemodules import inssserver
 from gamemodules import scpslserver
 from gamemodules import soulmask
+from gamemodules import stnserver
 from gamemodules import thefrontserver
 from gamemodules import twserver
 
@@ -41,3 +42,9 @@ def test_servername_style_servers_accept_hostname_aliases():
     resolved = resolve_requested_key("hostname", twserver.setting_schema)
 
     assert resolved.canonical_key == "servername"
+
+
+def test_port_style_servers_accept_gameport_aliases():
+    resolved = resolve_requested_key("gameport", stnserver.setting_schema)
+
+    assert resolved.canonical_key == "port"

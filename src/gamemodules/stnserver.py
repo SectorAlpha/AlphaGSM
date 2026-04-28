@@ -5,10 +5,12 @@ import os
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec, build_native_config_values
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
+from utils.simple_kv_config import rewrite_equals_config
 
 steam_app_id = 1502300
 steam_anonymous_login_possible = True
@@ -25,6 +27,15 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 command_functions = {}
 max_stop_wait = 1
 config_sync_keys = ("port",)
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The game port for the Survive the Nights server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_key="Port",
+    ),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Server_Linux_x64"):
@@ -77,15 +88,25 @@ def sync_server_config(server):
 
     config_dir = os.path.join(server.data["dir"], "Config")
     os.makedirs(config_dir, exist_ok=True)
-    config_path = os.path.join(server.data["dir"], server.data["configfile"])
-    with open(config_path, "w", encoding="utf-8") as f:
-        f.write("Port=%s\n" % server.data["port"])
+    config_path = os.path.join(
+        server.data["dir"],
+        server.data.get("configfile", "Config/ServerConfig.txt"),
+    )
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={"port": 8888},
+        require_explicit_key=True,
+        value_transform=lambda _spec, current_value: str(int(current_value)),
+    )
+    rewrite_equals_config(config_path, config_values)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Survive the Nights server files and optionally restart the server."
 
