@@ -100,6 +100,34 @@ def test_setting_schema_exposes_rtcw_launch_tokens():
     assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
     assert mod.setting_schema["startmap"].aliases == ("map",)
 
+
+def test_sync_server_config_updates_rtcw_server_cfg(tmp_path):
+    server = DummyServer("rtcw")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "fs_game": "main",
+            "hostname": "AlphaGSM rtcw",
+            "startmap": "mp_sub",
+        }
+    )
+    cfg_dir = tmp_path / "main"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nfs_game=osp\nstartmap=mp_beach\nset g_altStopwatchMode 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM rtcw"\n'
+        'fs_game=main\n'
+        'startmap=mp_sub\n'
+        'set g_altStopwatchMode 0\n'
+    )
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

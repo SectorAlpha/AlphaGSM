@@ -5,12 +5,13 @@ import os
 import screen
 import server.runtime as runtime_module
 from server import ServerError
-from server.settable_keys import build_launch_arg_values
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.github_releases import resolve_release_asset
 from utils.gamemodules import common as gamemodule_common
+from utils.simple_kv_config import rewrite_equals_config
 
 IOQ3_LATEST_RELEASE_API = "https://api.github.com/repos/ioquake/ioq3/releases/latest"
 
@@ -22,11 +23,36 @@ command_args = gamemodule_common.build_setup_version_download_command_args(
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("hostname", "fs_game", "startmap")
+_quake_launch_schema = gamemodule_common.build_quake_setting_schema(
+    include_fs_game=True,
+    port_tokens=("+set", "net_port"),
+    hostname_tokens=("+set", "sv_hostname"),
+)
 setting_schema = {
-    **gamemodule_common.build_quake_setting_schema(
-        include_fs_game=True,
-        port_tokens=("+set", "net_port"),
-        hostname_tokens=("+set", "sv_hostname"),
+    "port": _quake_launch_schema["port"],
+    "hostname": SettingSpec(
+        canonical_key="hostname",
+        aliases=_quake_launch_schema["hostname"].aliases,
+        description=_quake_launch_schema["hostname"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="hostname",
+        launch_arg_tokens=_quake_launch_schema["hostname"].launch_arg_tokens,
+    ),
+    "fs_game": SettingSpec(
+        canonical_key="fs_game",
+        description=_quake_launch_schema["fs_game"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="fs_game",
+        launch_arg_tokens=_quake_launch_schema["fs_game"].launch_arg_tokens,
+    ),
+    "startmap": SettingSpec(
+        canonical_key="startmap",
+        aliases=_quake_launch_schema["startmap"].aliases,
+        description=_quake_launch_schema["startmap"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="startmap",
+        launch_arg_tokens=_quake_launch_schema["startmap"].launch_arg_tokens,
     ),
     **gamemodule_common.build_versioned_download_setting_schema(),
     **gamemodule_common.build_executable_path_setting_schema(),
@@ -109,6 +135,32 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
     install_archive(server, detect_compression(server.data["download_name"]))
+    sync_server_config(server)
+
+
+def sync_server_config(server):
+    """Rewrite managed Quake 3 config entries from datastore values."""
+
+    fs_game = server.data.get("fs_game", "baseq3")
+    config_dir = os.path.join(server.data["dir"], fs_game)
+    os.makedirs(config_dir, exist_ok=True)
+    config_path = os.path.join(config_dir, "server.cfg")
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "hostname": "AlphaGSM %s" % (server.name,),
+            "fs_game": "baseq3",
+            "startmap": "q3dm17",
+        },
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            '"%s"' % (str(current_value),)
+            if spec.canonical_key == "hostname"
+            else str(current_value)
+        ),
+    )
+    rewrite_equals_config(config_path, config_values)
 
 
 def get_start_command(server):

@@ -69,7 +69,8 @@ alphagsm myq3server backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<fs_game>/server.cfg` (default `baseq3/server.cfg`)
+- `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg` immediately through the schema-backed config-sync path.
 - **Template**: See [server-templates/q3server/](../server-templates/q3server/) if available
 
 ### Maps and Mods

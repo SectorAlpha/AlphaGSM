@@ -100,6 +100,34 @@ def test_setting_schema_exposes_quake_launch_tokens():
     assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
     assert mod.setting_schema["startmap"].aliases == ("map",)
 
+
+def test_sync_server_config_updates_quake3_server_cfg(tmp_path):
+    server = DummyServer("q3")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "fs_game": "baseq3",
+            "hostname": "AlphaGSM q3",
+            "startmap": "q3dm6",
+        }
+    )
+    cfg_dir = tmp_path / "baseq3"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nfs_game=osp\nstartmap=q3dm17\nset g_gametype 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM q3"\n'
+        'fs_game=baseq3\n'
+        'startmap=q3dm6\n'
+        'set g_gametype 0\n'
+    )
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

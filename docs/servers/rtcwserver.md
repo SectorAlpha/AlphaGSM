@@ -69,7 +69,8 @@ alphagsm myrtcwserv backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<fs_game>/server.cfg` (default `main/server.cfg`)
+- `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg` immediately through the schema-backed config-sync path.
 - **Template**: See [server-templates/rtcwserver/](../server-templates/rtcwserver/) if available
 
 ### Maps and Mods
