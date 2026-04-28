@@ -120,6 +120,33 @@ def test_setting_schema_exposes_q2_launch_tokens():
     assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "hostname")
     assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "port")
 
+
+def test_sync_server_config_updates_q2_server_cfg(tmp_path):
+    server = DummyServer("q2")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "gamedir": "baseq2",
+            "hostname": "AlphaGSM q2",
+            "startmap": "q2dm8",
+        }
+    )
+    cfg_dir = tmp_path / "baseq2"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nstartmap=q2dm1\nset dmflags 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM q2"\n'
+        'startmap=q2dm8\n'
+        'set dmflags 0\n'
+    )
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

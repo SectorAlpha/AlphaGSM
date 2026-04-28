@@ -69,7 +69,8 @@ alphagsm myq2server backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<gamedir>/server.cfg` (default `baseq2/server.cfg`)
+- `set servername` and `set map` rewrite `<gamedir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Template**: See [server-templates/q2server/](../server-templates/q2server/) if available
 
 ### Maps and Mods
