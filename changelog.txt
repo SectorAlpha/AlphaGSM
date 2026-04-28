@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-04-28
+- Server support: sync readyornotserver queryport and maxplayers into ReadyOrNot/Config/ServerConfig.ini during setup, update, and set.
+
 2026-04-26
 - CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.
 - Documentation: add a dedicated host-install Docker runtime guide so running AlphaGSM on the host with Docker-backed game servers is documented separately from the manager-container workflow.

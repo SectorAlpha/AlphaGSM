@@ -6,9 +6,10 @@ import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import build_launch_arg_values
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 
 from utils.platform_info import IS_LINUX
+from utils.simple_kv_config import rewrite_equals_config
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -28,10 +29,53 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("queryport", "maxplayers")
 setting_schema = {
     **gamemodule_common.build_unreal_setting_schema(include_maxplayers=True),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
+setting_schema["queryport"] = SettingSpec(
+    canonical_key="queryport",
+    description="The query port for the server.",
+    value_type="integer",
+    apply_to=("datastore", "launch_args", "native_config"),
+    native_config_key="queryport",
+    launch_arg_format="-QueryPort={value}",
+    examples=("27015",),
+)
+setting_schema["maxplayers"] = SettingSpec(
+    canonical_key="maxplayers",
+    description="The maximum number of players.",
+    value_type="integer",
+    apply_to=("datastore", "launch_args", "native_config"),
+    native_config_key="maxplayers",
+    launch_arg_format="-MaxPlayers={value}",
+    examples=("16",),
+)
+
+
+def _config_path(server):
+    """Return the managed Ready or Not config path."""
+
+    return os.path.join(server.data["dir"], "ReadyOrNot", "Config", "ServerConfig.ini")
+
+
+def sync_server_config(server):
+    """Write template-backed Ready or Not settings into ServerConfig.ini."""
+
+    config_path = _config_path(server)
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "queryport": int(server.data.get("port", 7777)) + 1,
+            "maxplayers": 16,
+        },
+        value_transform=lambda _spec, value: str(value),
+        require_explicit_key=True,
+    )
+    rewrite_equals_config(config_path, config_values)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="ReadyOrNotServer.exe"):
@@ -71,6 +115,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Ready or Not server files via SteamCMD."
 
@@ -80,6 +125,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 
 restart = gamemodule_common.make_restart_hook()
