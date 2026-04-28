@@ -235,6 +235,23 @@ def test_tf2_status_warns_when_desired_mods_are_unapplied(capsys):
     assert "mods pending apply" in output.lower()
 
 
+def test_tf2_status_warns_when_mod_apply_has_errors(capsys):
+    server = DummyServer()
+    server.data["mods"] = {
+        "enabled": True,
+        "autoapply": True,
+        "desired": {"curated": [], "workshop": []},
+        "installed": [],
+        "errors": ["download failed"],
+    }
+
+    mod.status(server, verbose=True)
+
+    output = capsys.readouterr().out
+    assert "mod apply errors" in output.lower()
+    assert "download failed" in output
+
+
 def test_tf2_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

@@ -414,6 +414,9 @@ def status(server, verbose):
     pending_ids = sorted(desired_ids - installed_ids)
     if pending_ids:
         print("Mods pending apply: " + ", ".join(pending_ids))
+    error_messages = [str(message) for message in mods.get("errors", []) if str(message)]
+    if error_messages:
+        print("Mod apply errors: " + "; ".join(error_messages))
     return None
 
 

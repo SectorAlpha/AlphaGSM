@@ -30,6 +30,7 @@ def ensure_mod_state(server):
     desired.setdefault("curated", [])
     desired.setdefault("workshop", [])
     mods.setdefault("installed", [])
+    mods.setdefault("last_apply", None)
     mods.setdefault("errors", [])
     return mods
 
@@ -143,18 +144,23 @@ def apply_configured_mods(server):
     mods = ensure_mod_state(server)
     if not mods.get("enabled", True):
         return
-    if mods["desired"]["workshop"]:
-        raise_experimental_workshop_apply_error()
     try:
+        if mods["desired"]["workshop"]:
+            raise_experimental_workshop_apply_error()
         reconciled = reconcile_mod_state(
             desired=_desired_curated_entries(server),
             installed=_installed_entries(server),
             install_entry=lambda entry: _install_curated_entry(server, entry),
             remove_entry=lambda entry: _remove_owned_entry(server, entry),
         )
-    except ModSupportError as exc:
+    except (ModSupportError, ServerError) as exc:
+        mods["errors"] = [str(exc)]
+        server.data.save()
+        if isinstance(exc, ServerError):
+            raise
         raise ServerError(str(exc)) from exc
     mods["installed"] = _serialize_installed_entries(reconciled)
+    mods["last_apply"] = "success"
     mods["errors"] = []
     server.data.save()
 

@@ -171,3 +171,55 @@ def test_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_path):
 
     with pytest.raises(ServerError, match="Workshop support is experimental"):
         tf2.command_functions["mod"](server, "apply")
+
+    assert server.data["mods"]["errors"] == [
+        "Workshop support is experimental until a verified TF2 provider is implemented"
+    ]
+
+
+def test_mod_apply_clears_previous_errors_after_success(tmp_path, monkeypatch):
+    registry_path = tmp_path / "curated_mods.json"
+    archive_root = tmp_path / "archive-root"
+    payload = archive_root / "tf" / "addons" / "sourcemod" / "plugins"
+    payload.mkdir(parents=True)
+    (payload / "base.smx").write_text("plugin", encoding="utf-8")
+    archive_path = tmp_path / "sourcemod.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        archive.add(archive_root / "tf", arcname="tf")
+    registry_path.write_text(
+        json.dumps(
+            {
+                "families": {
+                    "sourcemod": {
+                        "default": "stable",
+                        "releases": {
+                            "stable": {
+                                "url": "http://127.0.0.1/sourcemod.tar.gz",
+                                "hosts": ["127.0.0.1"],
+                                "archive_type": "tar.gz",
+                                "destinations": ["tf/addons"],
+                            }
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    server = DummyServer()
+    tf2.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    server.data["mods"]["errors"] = ["old error"]
+    monkeypatch.setenv("ALPHAGSM_TF2_CURATED_REGISTRY_PATH", str(registry_path))
+    monkeypatch.setattr(
+        tf2_mods,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            archive_path, target_path
+        ),
+    )
+
+    tf2.command_functions["mod"](server, "add", "curated", "sourcemod")
+    tf2.command_functions["mod"](server, "apply")
+
+    assert server.data["mods"]["errors"] == []
+    assert server.data["mods"]["last_apply"] == "success"
