@@ -9,6 +9,7 @@ import pytest
 from utils.simple_kv_config import rewrite_space_config
 
 sys.modules.pop('gamemodules.teamfortress2', None)
+sys.modules.pop('gamemodules.teamfortress2.main', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.fileutils': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.teamfortress2 as mod
     from server import ServerError
