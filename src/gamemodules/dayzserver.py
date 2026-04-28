@@ -1,10 +1,12 @@
 """DayZ dedicated server lifecycle helpers."""
 
 import os
+import re
 
 import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec, build_native_config_values
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
@@ -24,6 +26,43 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("hostname", "serverpassword", "adminpassword", "maxplayers", "queryport")
+setting_schema = {
+    "hostname": SettingSpec(
+        canonical_key="hostname",
+        description="The advertised DayZ server name.",
+        apply_to=("datastore", "native_config"),
+        native_config_key="hostname",
+    ),
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        description="Optional join password.",
+        apply_to=("datastore", "native_config"),
+        native_config_key="password",
+        secret=True,
+    ),
+    "adminpassword": SettingSpec(
+        canonical_key="adminpassword",
+        description="Optional DayZ admin password.",
+        apply_to=("datastore", "native_config"),
+        native_config_key="passwordAdmin",
+        secret=True,
+    ),
+    "maxplayers": SettingSpec(
+        canonical_key="maxplayers",
+        description="Maximum allowed players.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_key="maxPlayers",
+    ),
+    "queryport": SettingSpec(
+        canonical_key="queryport",
+        description="Steam query port.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_key="steamQueryPort",
+    ),
+}
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="DayZServer"):
@@ -64,10 +103,47 @@ def configure(server, ask, port=None, dir=None, *, exe_name="DayZServer"):
     return gamemodule_common.finalize_configure(server)
 
 
+def sync_server_config(server):
+    """Rewrite managed serverDZ.cfg entries from datastore values."""
+
+    config_path = os.path.join(
+        server.data["dir"],
+        server.data.get("configfile", "serverDZ.cfg"),
+    )
+    if not os.path.isfile(config_path):
+        return
+    replacements = build_native_config_values(
+        server.data,
+        setting_schema,
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            str(int(current_value))
+            if spec.value_type == "integer"
+            else '"%s"' % (str(current_value),)
+        ),
+    )
+    if not replacements:
+        return
+    with open(config_path, encoding="utf-8") as fh:
+        content = fh.read()
+    new_content = content
+    for native_key, native_value in replacements.items():
+        new_content = re.sub(
+            rf'(^\s*{re.escape(native_key)}\s*=\s*)(.*?)(;\s*$)',
+            r'\g<1>' + native_value + r'\g<3>',
+            new_content,
+            flags=re.MULTILINE,
+        )
+    if new_content != content:
+        with open(config_path, "w", encoding="utf-8") as fh:
+            fh.write(new_content)
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the DayZ server files via SteamCMD."
 
@@ -76,6 +152,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the DayZ server files and optionally restart the server."
 
@@ -134,8 +211,17 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
-        str_keys=("configfile", "profilesdir", "cpu_count", "exe_name", "dir"),
+        int_keys=("port", "queryport", "maxplayers"),
+        str_keys=(
+            "configfile",
+            "profilesdir",
+            "cpu_count",
+            "exe_name",
+            "dir",
+            "hostname",
+            "serverpassword",
+            "adminpassword",
+        ),
         backup_module=backup_utils,
     )
 

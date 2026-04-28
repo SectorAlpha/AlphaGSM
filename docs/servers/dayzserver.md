@@ -53,7 +53,11 @@ Setup configures:
 ```bash
 alphagsm mydayzserv update
 alphagsm mydayzserv backup
+alphagsm mydayzserv set servername "AlphaGSM DayZ"
+alphagsm mydayzserv set queryport 2303
 ```
+
+`set servername`, `set serverpassword`, `set adminpassword`, `set maxplayers`, and `set queryport` rewrite `serverDZ.cfg` immediately through the schema-backed config-sync path.
 
 ## Notes
 
@@ -73,6 +77,7 @@ alphagsm mydayzserv backup
 
 - **Config file**: `serverDZ.cfg`
 - **Template**: See [server-templates/dayzserver/](../server-templates/dayzserver/) if available
+- **Schema-backed sync**: AlphaGSM keeps `hostname`, `password`, `passwordAdmin`, `maxPlayers`, and `steamQueryPort` aligned with `set`
 
 ### Maps and Mods
 
