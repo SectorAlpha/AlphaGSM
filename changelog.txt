@@ -14,6 +14,7 @@ high-level milestones.
 - Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
 
 2026-04-28
+- Server support: add schema-backed Quake 4 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
 - Server support: add schema-backed `etl_server.cfg` sync for `etlegacyserver` so `set servername` and `set port` rewrite the native ET: Legacy config.
 - Server support: add schema-backed `serverDZ.cfg` sync for `dayzserver` so `set servername`, `set serverpassword`, `set adminpassword`, `set maxplayers`, and `set queryport` rewrite the native DayZ config.
 - Server support: expand `sevendaystodie` schema-backed config sync so `set port`, `set servername`, `set maxplayers`, and `set serverpassword` rewrite `serverconfig.xml`.

@@ -63,6 +63,7 @@ def test_install(tmp_path):
     server.data["exe_name"] = "q4ded.x86"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
+    server.data["fs_game"] = "q4base"
     mod.install(server)
 
 def test_get_start_command(tmp_path):
@@ -97,6 +98,31 @@ def test_setting_schema_exposes_q4_launch_tokens():
     assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
     assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "si_name")
     assert mod.setting_schema["startmap"].aliases == ("map",)
+
+
+def test_sync_server_config_updates_q4_server_cfg_values(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["fs_game"] = "q4base"
+    server.data["hostname"] = "AlphaGSM Q4 Test"
+    server.data["startmap"] = "q4dm6"
+    config_dir = tmp_path / "q4base"
+    config_dir.mkdir()
+    config_path = config_dir / "server.cfg"
+    config_path.write_text(
+        'hostname="Old Name"\n'
+        'fs_game=q4base\n'
+        'startmap=q4dm1\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname="AlphaGSM Q4 Test"',
+        'fs_game=q4base',
+        'startmap=q4dm6',
+    ]
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

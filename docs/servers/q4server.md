@@ -52,7 +52,11 @@ Setup configures:
 ```bash
 alphagsm myq4server update
 alphagsm myq4server backup
+alphagsm myq4server set servername "AlphaGSM Q4"
+alphagsm myq4server set map q4dm6
 ```
+
+`set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg` immediately through the schema-backed config-sync path.
 
 ## Notes
 
@@ -69,8 +73,9 @@ alphagsm myq4server backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<fs_game>/server.cfg` (default `q4base/server.cfg`)
 - **Template**: See [server-templates/q4server/](../server-templates/q4server/) if available
+- **Schema-backed sync**: AlphaGSM keeps `hostname`, `fs_game`, and `startmap` aligned with `set`
 
 ### Maps and Mods
 

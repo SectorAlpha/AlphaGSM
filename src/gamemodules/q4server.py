@@ -5,10 +5,11 @@ import os
 import screen
 import server.runtime as runtime_module
 from server import ServerError
-from server.settable_keys import build_launch_arg_values
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from utils.simple_kv_config import rewrite_equals_config
 
 Q4_SERVER_URL = "https://cloud.quake4.net/files/quake4_linux_1.4.2.x86.run"
 Q4_SERVER_NAME = "quake4_linux_1.4.2.x86.run"
@@ -21,12 +22,38 @@ command_args = gamemodule_common.build_setup_download_command_args(
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("hostname", "fs_game", "startmap")
 setting_schema = {
-    **gamemodule_common.build_quake_setting_schema(
-        include_fs_game=True,
-        port_tokens=("+set", "net_port"),
-        hostname_tokens=("+set", "si_name"),
-    ),
+    **{
+        **gamemodule_common.build_quake_setting_schema(
+            include_fs_game=True,
+            port_tokens=("+set", "net_port"),
+            hostname_tokens=("+set", "si_name"),
+        ),
+        "fs_game": SettingSpec(
+            canonical_key="fs_game",
+            description="Game directory/mod to load.",
+            apply_to=("datastore", "launch_args", "native_config"),
+            native_config_key="fs_game",
+            launch_arg_tokens=("+set", "fs_game"),
+        ),
+        "hostname": SettingSpec(
+            canonical_key="hostname",
+            aliases=("servername",),
+            description="The advertised server name.",
+            apply_to=("datastore", "launch_args", "native_config"),
+            native_config_key="hostname",
+            launch_arg_tokens=("+set", "si_name"),
+        ),
+        "startmap": SettingSpec(
+            canonical_key="startmap",
+            aliases=("map",),
+            description="Map to start on.",
+            apply_to=("datastore", "launch_args", "native_config"),
+            native_config_key="startmap",
+            launch_arg_tokens=("+map",),
+        ),
+    },
     **gamemodule_common.build_download_source_setting_schema(),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
@@ -81,6 +108,32 @@ def install(server):
         server.data["url"] = Q4_SERVER_URL
         server.data.setdefault("download_name", Q4_SERVER_NAME)
     install_archive(server, detect_compression(server.data["download_name"]))
+    sync_server_config(server)
+
+
+def sync_server_config(server):
+    """Rewrite managed Quake 4 config entries from datastore values."""
+
+    fs_game = server.data.get("fs_game", "q4base")
+    config_dir = os.path.join(server.data["dir"], fs_game)
+    os.makedirs(config_dir, exist_ok=True)
+    config_path = os.path.join(config_dir, "server.cfg")
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "hostname": "AlphaGSM %s" % (server.name,),
+            "fs_game": "q4base",
+            "startmap": "q4dm1",
+        },
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            '"%s"' % (str(current_value),)
+            if spec.canonical_key == "hostname"
+            else str(current_value)
+        ),
+    )
+    rewrite_equals_config(config_path, config_values)
 
 
 def get_start_command(server):
