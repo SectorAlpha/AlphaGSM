@@ -429,16 +429,3 @@ def _extract_runtime_path_from_doc(doc_name: str) -> Path | None:
             if candidate and candidate.lower() != "source":
                 return Path(candidate)
     return None
-
-
-def _read_alias_target(path: Path) -> str | None:
-    tree = ast.parse(path.read_text(encoding="utf-8"))
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if not isinstance(target, ast.Name) or target.id != "ALIAS_TARGET":
-            continue
-        if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
-            return node.value.value
-    return None
