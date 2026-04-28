@@ -2,17 +2,22 @@
 
 from __future__ import annotations
 
+from server.modsupport.errors import ModSupportError
 from server.modsupport.models import DesiredModEntry, InstalledModEntry
 
 
 def reconcile_mod_state(*, desired, installed, install_entry, remove_entry) -> list[InstalledModEntry]:
     """Reconcile desired mod entries against the current installed state."""
+    for desired_entry in desired:
+        if desired_entry.resolved_id is None:
+            raise ModSupportError(
+                f"Desired mod entry {desired_entry.requested_id} must be resolved before reconciliation"
+            )
+
     installed_by_resolved_id = {
         entry.resolved_id: entry for entry in installed
     }
-    desired_resolved_ids = {
-        entry.resolved_id for entry in desired if entry.resolved_id is not None
-    }
+    desired_resolved_ids = {entry.resolved_id for entry in desired}
     new_installed_state: list[InstalledModEntry] = []
 
     for desired_entry in desired:
