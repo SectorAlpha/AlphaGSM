@@ -310,3 +310,17 @@ def checkvalue(server, key, *value):
     if key[0] == "maxplayers":
         return str(int(value[0]))
     raise ServerError("Unsupported key")
+
+
+def get_runtime_requirements(server):
+    """Helper module: no runtime metadata available.
+
+    This module is a collection of helper functions for the Terraria family
+    and is not a runnable gamemodule itself.
+    """
+    raise NotImplementedError("terraria.common is a helper module; call terraria.vanilla or terraria.tshock")
+
+
+def get_container_spec(server):
+    """Helper module: no container spec available."""
+    raise NotImplementedError("terraria.common is a helper module; call terraria.vanilla or terraria.tshock")

@@ -95,3 +95,13 @@ def get_start_command(server):
     here will raise to indicate it's not a runnable module.
     """
     raise NotImplementedError("PaperMC helper is not a runnable gamemodule")
+
+
+def get_runtime_requirements(server):
+    """PaperMC helper does not provide runtime metadata."""
+    raise NotImplementedError("PaperMC helper is not a runnable gamemodule")
+
+
+def get_container_spec(server):
+    """PaperMC helper does not provide a container launch spec."""
+    raise NotImplementedError("PaperMC helper is not a runnable gamemodule")

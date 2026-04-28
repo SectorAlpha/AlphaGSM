@@ -18,3 +18,13 @@ def get_start_command(server):
 		return _impl.get_start_command(server)
 	except Exception:
 		raise NotImplementedError("jardownload helper does not implement get_start_command")
+
+
+def get_runtime_requirements(server):
+    """This helper does not provide runtime metadata."""
+    raise NotImplementedError("jardownload helper is not a runnable gamemodule")
+
+
+def get_container_spec(server):
+    """This helper does not provide a container launch spec."""
+    raise NotImplementedError("jardownload helper is not a runnable gamemodule")

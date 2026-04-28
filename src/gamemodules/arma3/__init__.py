@@ -11,8 +11,18 @@ from .vanilla import *  # noqa: F401,F403
 try:
 	from . import vanilla as _vanilla
 	get_start_command = _vanilla.get_start_command
+	# Delegate runtime hooks to the vanilla module so the package-level
+	# `arma3` surface exposes the full runtime contract for static inspection.
+	get_runtime_requirements = _vanilla.get_runtime_requirements
+	get_container_spec = _vanilla.get_container_spec
 except Exception:
 	# If vanilla cannot be imported at static-analysis time, fall back to a
 	# placeholder that raises at runtime when invoked.
 	def get_start_command(server):
 		raise RuntimeError("Arma3 vanilla module unavailable")
+
+	def get_runtime_requirements(server):
+		raise RuntimeError("Arma3 vanilla runtime hooks unavailable")
+
+	def get_container_spec(server):
+		raise RuntimeError("Arma3 vanilla container spec unavailable")
