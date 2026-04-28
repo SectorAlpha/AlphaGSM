@@ -12,6 +12,7 @@ sys.modules.pop('gamemodules.teamfortress2', None)
 sys.modules.pop('gamemodules.teamfortress2.main', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.fileutils': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.teamfortress2 as mod
+    import gamemodules.teamfortress2.main as mod_main
     from server import ServerError
 
 
@@ -171,19 +172,19 @@ def test_prestart(tmp_path):
 def test_tf2_exposes_hibernating_console_info_hook():
     server = DummyServer()
 
-    with patch.object(mod, '_tf2_hibernation_allowed', return_value=True), patch.object(
-        mod, 'source_console_status', return_value={'name': 'AlphaGSM TF2 Server'}
+    with patch.object(mod_main, '_tf2_hibernation_allowed', return_value=True), patch.object(
+        mod_main, 'source_console_status', return_value={'name': 'AlphaGSM TF2 Server'}
     ):
         assert mod.get_hibernating_console_info(server) == {'name': 'AlphaGSM TF2 Server'}
 
-    with patch.object(mod, '_tf2_hibernation_allowed', return_value=False):
+    with patch.object(mod_main, '_tf2_hibernation_allowed', return_value=False):
         assert mod.get_hibernating_console_info(server) is None
 
 
 def test_tf2_query_and_info_address_use_source_query_address():
     server = DummyServer()
 
-    with patch.object(mod, 'source_query_address', return_value=('192.168.0.30', 27015, 'a2s')):
+    with patch.object(mod_main, 'source_query_address', return_value=('192.168.0.30', 27015, 'a2s')):
         assert mod.get_query_address(server) == ('192.168.0.30', 27015, 'a2s')
         assert mod.get_info_address(server) == ('192.168.0.30', 27015, 'a2s')
 

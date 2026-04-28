@@ -3,6 +3,7 @@ from pathlib import Path
 import gamemodules.counterstrikeglobaloffensive as csgo
 import gamemodules.counterstrike2 as cs2
 import gamemodules.teamfortress2 as tf2
+import gamemodules.teamfortress2.main as tf2_main
 
 
 class DummyData(dict):
@@ -63,7 +64,7 @@ def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
     launcher = tmp_path / "srcds_run_64"
     launcher.write_text("")
     doinstall_calls = []
-    monkeypatch.setattr(tf2, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
+    monkeypatch.setattr(tf2_main, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
 
     tf2.install(server)
 
@@ -244,7 +245,7 @@ def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):
     steamclient_src.write_text("")
 
     monkeypatch.setattr(tf2.steamcmd, "STEAMCMD_DIR", str(steam_root) + "/")
-    monkeypatch.setattr(tf2, "STEAMCLIENT_DST", str(sdk_dir / "steamclient.so"))
+    monkeypatch.setattr(tf2_main, "STEAMCLIENT_DST", str(sdk_dir / "steamclient.so"))
 
     tf2.prestart(server)
 
