@@ -37,9 +37,12 @@ def build_module_parity_rows(*, catalog, repo_root: Path) -> list[ModuleParityRo
         lowered = source.lower()
         if any(marker in lowered for marker in UNIMPLEMENTED_STATUS_MARKERS):
             missing.append("status")
-        if "def get_runtime_requirements(" not in source:
+        if (
+            "def get_runtime_requirements(" not in source
+            and "get_runtime_requirements =" not in source
+        ):
             missing.append("runtime_requirements")
-        if "def get_container_spec(" not in source:
+        if "def get_container_spec(" not in source and "get_container_spec =" not in source:
             missing.append("container_spec")
 
         rows.append(

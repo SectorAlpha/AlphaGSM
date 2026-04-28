@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 INTEGRATION_TEST_DIR = Path("tests/integration_tests")
+DISABLED_SERVERS_PATH = Path("disabled_servers.conf")
 SPECIAL_CASES = {"test_archive_backed_installs.py"}
 
 
@@ -13,6 +14,26 @@ def _integration_test_files():
         for path in INTEGRATION_TEST_DIR.glob("test_*.py")
         if path.name not in SPECIAL_CASES
     )
+
+
+def _disabled_module_names():
+    names = []
+    for raw_line in DISABLED_SERVERS_PATH.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        names.append(line.split("\t", 1)[0].strip())
+    return sorted(names)
+
+
+def test_disabled_modules_have_matching_integration_test_files():
+    offenders = []
+    for module_name in _disabled_module_names():
+        expected = INTEGRATION_TEST_DIR / ("test_" + module_name.replace(".", "_") + ".py")
+        if not expected.is_file():
+            offenders.append(f"{module_name}: missing {expected}")
+
+    assert offenders == []
 
 
 def test_integration_tests_do_not_allow_tcp_fallback_output():

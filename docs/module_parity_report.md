@@ -2,130 +2,130 @@
 
 | Canonical module | Aliases | Support state | Contract complete | Runtime verified | Missing surfaces |
 | --- | --- | --- | --- | --- | --- |
-| abfserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| accserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| acserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| ahl2server | - | active | no | yes | runtime_requirements, container_spec |
-| ahlserver | - | disabled | no | no | runtime_requirements, container_spec |
+| abfserver | - | disabled | no | no | status |
+| accserver | - | disabled | no | no | status |
+| acserver | - | active | no | yes | status |
+| ahl2server | - | active | yes | yes | - |
+| ahlserver | - | disabled | yes | no | - |
 | alienarenaserver | - | disabled | no | no | status |
-| aloftserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| argoserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| ark | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arksurvivalascended | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma2coserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma3.altislife | - | active | no | yes | runtime_requirements, container_spec |
-| arma3.desolationredux | - | active | no | yes | runtime_requirements, container_spec |
-| arma3.epoch | - | active | no | yes | runtime_requirements, container_spec |
-| arma3.exile | - | active | no | yes | runtime_requirements, container_spec |
-| arma3.headless | - | active | no | yes | runtime_requirements, container_spec |
-| arma3.vanilla | - | active | no | yes | runtime_requirements, container_spec |
-| arma3.wasteland | - | active | no | yes | runtime_requirements, container_spec |
-| arma3altislifeserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma3desolationreduxserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma3epochserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma3exileserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma3headlessserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma3server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| arma3wastelandserver | - | disabled | no | no | status, runtime_requirements, container_spec |
+| aloftserver | - | active | no | yes | status |
+| argoserver | - | disabled | no | no | status |
+| ark | - | disabled | no | no | status |
+| arksurvivalascended | - | disabled | no | no | status |
+| arma2coserver | - | disabled | no | no | status |
+| arma3.altislife | - | active | yes | yes | - |
+| arma3.desolationredux | - | active | yes | yes | - |
+| arma3.epoch | - | active | yes | yes | - |
+| arma3.exile | - | active | yes | yes | - |
+| arma3.headless | - | active | yes | yes | - |
+| arma3.vanilla | - | active | yes | yes | - |
+| arma3.wasteland | - | active | yes | yes | - |
+| arma3altislifeserver | - | disabled | no | no | status |
+| arma3desolationreduxserver | - | disabled | no | no | status |
+| arma3epochserver | - | disabled | no | no | status |
+| arma3exileserver | - | disabled | no | no | status |
+| arma3headlessserver | - | disabled | no | no | status |
+| arma3server | - | disabled | no | no | status |
+| arma3wastelandserver | - | disabled | no | no | status |
 | armarserver | - | active | no | yes | status |
-| askaserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| astroneerserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| atlasserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| atsserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| avserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| bannerlordserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| battlebitserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| battlecryoffreedomserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| bb2server | - | active | no | yes | runtime_requirements, container_spec |
-| bbserver | - | disabled | no | no | runtime_requirements, container_spec |
-| bdserver | - | active | no | yes | runtime_requirements, container_spec |
-| bf1942server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| bfvserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| blackops3server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| blackwakeserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| bmdmserver | - | active | no | yes | runtime_requirements, container_spec |
-| bobserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| boserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| brickadiaserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| brokeprotocolserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| bsserver | - | disabled | no | no | runtime_requirements, container_spec |
-| btlserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| btserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| ccserver | - | active | no | yes | runtime_requirements, container_spec |
-| chivalryserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| citadelserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| ckserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| cod2server | - | active | no | yes | status, runtime_requirements, container_spec |
-| cod4server | - | active | no | yes | status, runtime_requirements, container_spec |
-| codserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| coduoserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| codwawserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| colserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| conanexiles | - | disabled | no | no | status, runtime_requirements, container_spec |
-| counterstrike2 | cs2server | active | no | yes | runtime_requirements, container_spec |
-| counterstrikeglobaloffensive | csgo, csgoserver | disabled | no | no | runtime_requirements, container_spec |
-| craftopiaserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| cryofallserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| csczserver | - | active | no | yes | runtime_requirements, container_spec |
-| csserver | - | active | no | yes | runtime_requirements, container_spec |
-| cssserver | - | active | no | yes | runtime_requirements, container_spec |
-| dabserver | - | disabled | no | no | runtime_requirements, container_spec |
-| darkandlightserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| dayofdragonsserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| dayzarma2epochserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| dayzserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| deadmatterserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| deadpolyserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| dmcserver | - | active | no | yes | runtime_requirements, container_spec |
-| dodserver | - | active | no | yes | runtime_requirements, container_spec |
-| dodsserver | - | active | no | yes | runtime_requirements, container_spec |
-| doiserver | - | active | no | yes | runtime_requirements, container_spec |
-| dstserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| ducksideserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| dysserver | - | disabled | no | no | runtime_requirements, container_spec |
-| ecoserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| empyrionserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| emserver | - | active | no | yes | runtime_requirements, container_spec |
-| enshrouded | - | disabled | no | no | status, runtime_requirements, container_spec |
+| askaserver | - | disabled | no | no | status |
+| astroneerserver | - | disabled | no | no | status |
+| atlasserver | - | disabled | no | no | status |
+| atsserver | - | disabled | no | no | status |
+| avserver | - | active | no | yes | status |
+| bannerlordserver | - | disabled | no | no | status |
+| battlebitserver | - | disabled | no | no | status |
+| battlecryoffreedomserver | - | disabled | no | no | status |
+| bb2server | - | active | yes | yes | - |
+| bbserver | - | disabled | yes | no | - |
+| bdserver | - | active | yes | yes | - |
+| bf1942server | - | disabled | no | no | status |
+| bfvserver | - | disabled | no | no | status |
+| blackops3server | - | disabled | no | no | status |
+| blackwakeserver | - | disabled | no | no | status |
+| bmdmserver | - | active | yes | yes | - |
+| bobserver | - | disabled | no | no | status |
+| boserver | - | disabled | no | no | status |
+| brickadiaserver | - | active | no | yes | status |
+| brokeprotocolserver | - | disabled | no | no | status |
+| bsserver | - | disabled | yes | no | - |
+| btlserver | - | active | no | yes | status |
+| btserver | - | disabled | no | no | status |
+| ccserver | - | active | yes | yes | - |
+| chivalryserver | - | disabled | no | no | status |
+| citadelserver | - | disabled | no | no | status |
+| ckserver | - | active | no | yes | status |
+| cod2server | - | active | no | yes | status |
+| cod4server | - | active | no | yes | status |
+| codserver | - | active | no | yes | status |
+| coduoserver | - | active | no | yes | status |
+| codwawserver | - | active | no | yes | status |
+| colserver | - | disabled | no | no | status |
+| conanexiles | - | disabled | no | no | status |
+| counterstrike2 | cs2server | active | yes | yes | - |
+| counterstrikeglobaloffensive | csgo, csgoserver | disabled | yes | no | - |
+| craftopiaserver | - | active | no | yes | status |
+| cryofallserver | - | disabled | no | no | status |
+| csczserver | - | active | yes | yes | - |
+| csserver | - | active | yes | yes | - |
+| cssserver | - | active | yes | yes | - |
+| dabserver | - | disabled | yes | no | - |
+| darkandlightserver | - | disabled | no | no | status |
+| dayofdragonsserver | - | active | no | yes | status |
+| dayzarma2epochserver | - | disabled | no | no | status |
+| dayzserver | - | disabled | no | no | status |
+| deadmatterserver | - | disabled | no | no | status |
+| deadpolyserver | - | disabled | no | no | status |
+| dmcserver | - | active | yes | yes | - |
+| dodserver | - | active | yes | yes | - |
+| dodsserver | - | active | yes | yes | - |
+| doiserver | - | active | yes | yes | - |
+| dstserver | - | active | no | yes | status |
+| ducksideserver | - | active | no | yes | status |
+| dysserver | - | disabled | yes | no | - |
+| ecoserver | - | active | no | yes | status |
+| empyrionserver | - | disabled | no | no | status |
+| emserver | - | active | yes | yes | - |
+| enshrouded | - | disabled | no | no | status |
 | etlegacyserver | - | active | no | yes | status |
-| ets2server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| exfilserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| fearthenightserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| fofserver | - | active | no | yes | runtime_requirements, container_spec |
-| foundryserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| frozenflameserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| gmodserver | - | active | no | yes | runtime_requirements, container_spec |
-| goldeneyesourceserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| gravserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| groundbranchserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| gtafivemserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| heatserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| hellletlooseserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| hl2dmserver | - | active | no | yes | runtime_requirements, container_spec |
-| hldmserver | - | active | no | yes | runtime_requirements, container_spec |
-| hldmsserver | - | active | no | yes | runtime_requirements, container_spec |
-| hogwarpserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| hurtworldserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| hzserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| icarusserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| identityserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| insserver | - | active | no | yes | runtime_requirements, container_spec |
-| inssserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| interstellarriftserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| iosserver | - | disabled | no | no | runtime_requirements, container_spec |
-| jc2server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| jc3server | - | disabled | no | no | status, runtime_requirements, container_spec |
+| ets2server | - | disabled | no | no | status |
+| exfilserver | - | disabled | no | no | status |
+| fearthenightserver | - | disabled | no | no | status |
+| fofserver | - | active | yes | yes | - |
+| foundryserver | - | disabled | no | no | status |
+| frozenflameserver | - | active | no | yes | status |
+| gmodserver | - | active | yes | yes | - |
+| goldeneyesourceserver | - | active | no | yes | status |
+| gravserver | - | active | no | yes | status |
+| groundbranchserver | - | disabled | no | no | status |
+| gtafivemserver | - | active | no | yes | status |
+| heatserver | - | disabled | no | no | status |
+| hellletlooseserver | - | active | no | yes | status |
+| hl2dmserver | - | active | yes | yes | - |
+| hldmserver | - | active | yes | yes | - |
+| hldmsserver | - | active | yes | yes | - |
+| hogwarpserver | - | active | no | yes | status |
+| hurtworldserver | - | disabled | no | no | status |
+| hzserver | - | disabled | no | no | status |
+| icarusserver | - | disabled | no | no | status |
+| identityserver | - | active | no | yes | status |
+| insserver | - | active | yes | yes | - |
+| inssserver | - | active | no | yes | status |
+| interstellarriftserver | - | active | no | yes | status |
+| iosserver | - | disabled | yes | no | - |
+| jc2server | - | disabled | no | no | status |
+| jc3server | - | disabled | no | no | status |
 | jk2server | - | disabled | no | no | status |
-| kerbalspaceprogramserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| kf2server | - | active | no | yes | status, runtime_requirements, container_spec |
-| kfserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| l4d2server | - | disabled | no | no | runtime_requirements, container_spec |
-| l4dserver | - | active | no | yes | runtime_requirements, container_spec |
-| lastoasisserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| lifeisfeudalserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| longvinterserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| medievalengineersserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| memoriesofmarsserver | - | disabled | no | no | status, runtime_requirements, container_spec |
+| kerbalspaceprogramserver | - | active | no | yes | status |
+| kf2server | - | active | no | yes | status |
+| kfserver | - | disabled | no | no | status |
+| l4d2server | - | disabled | yes | no | - |
+| l4dserver | - | active | yes | yes | - |
+| lastoasisserver | - | disabled | no | no | status |
+| lifeisfeudalserver | - | disabled | no | no | status |
+| longvinterserver | - | disabled | no | no | status |
+| medievalengineersserver | - | disabled | no | no | status |
+| memoriesofmarsserver | - | disabled | no | no | status |
 | minecraft.bedrock | - | disabled | no | no | status |
 | minecraft.bungeecord | - | active | no | yes | status |
 | minecraft.custom | - | active | yes | yes | - |
@@ -134,105 +134,105 @@
 | minecraft.vanilla | - | active | yes | yes | - |
 | minecraft.velocity | - | active | yes | yes | - |
 | minecraft.waterfall | - | active | yes | yes | - |
-| miscreatedserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| mordserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| motortownserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| mtaserver | - | active | no | yes | status, runtime_requirements, container_spec |
+| miscreatedserver | - | disabled | no | no | status |
+| mordserver | - | active | no | yes | status |
+| motortownserver | - | active | no | yes | status |
+| mtaserver | - | active | no | yes | status |
 | mumbleserver | - | active | no | yes | status |
-| mw3server | - | active | no | yes | status, runtime_requirements, container_spec |
-| mxbikesserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| mythofempiresserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| ndserver | - | disabled | no | no | runtime_requirements, container_spec |
+| mw3server | - | active | no | yes | status |
+| mxbikesserver | - | active | no | yes | status |
+| mythofempiresserver | - | disabled | no | no | status |
+| ndserver | - | disabled | yes | no | - |
 | necserver | - | disabled | no | no | status |
-| nightingale | - | disabled | no | no | status, runtime_requirements, container_spec |
-| nmrihserver | - | active | no | yes | runtime_requirements, container_spec |
-| noonesurvivedserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| notdserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| nsserver | - | disabled | no | no | runtime_requirements, container_spec |
-| ohdserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| opforserver | - | active | no | yes | runtime_requirements, container_spec |
-| outpostzeroserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| palworld | - | disabled | no | no | status, runtime_requirements, container_spec |
-| pathoftitansserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| pcars2server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| pcarserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| pixarkserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| police1013server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| primalcarnageextinctionserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| projectzomboid | - | active | no | yes | status, runtime_requirements, container_spec |
-| pvkiiserver | - | active | no | yes | runtime_requirements, container_spec |
-| pvrserver | - | disabled | no | no | status, runtime_requirements, container_spec |
+| nightingale | - | disabled | no | no | status |
+| nmrihserver | - | active | yes | yes | - |
+| noonesurvivedserver | - | disabled | no | no | status |
+| notdserver | - | disabled | no | no | status |
+| nsserver | - | disabled | yes | no | - |
+| ohdserver | - | disabled | no | no | status |
+| opforserver | - | active | yes | yes | - |
+| outpostzeroserver | - | disabled | no | no | status |
+| palworld | - | disabled | no | no | status |
+| pathoftitansserver | - | active | no | yes | status |
+| pcars2server | - | disabled | no | no | status |
+| pcarserver | - | disabled | no | no | status |
+| pixarkserver | - | disabled | no | no | status |
+| police1013server | - | disabled | no | no | status |
+| primalcarnageextinctionserver | - | disabled | no | no | status |
+| projectzomboid | - | active | no | yes | status |
+| pvkiiserver | - | active | yes | yes | - |
+| pvrserver | - | disabled | no | no | status |
 | q2server | - | active | no | yes | status |
 | q3server | - | disabled | no | no | status |
 | q4server | - | disabled | no | no | status |
 | qlserver | - | active | no | yes | status |
 | qwserver | - | active | no | yes | status |
-| readyornotserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| redmserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| reignofdwarfserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| reignofkingsserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| remnantsserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| returntomoriaserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| ricochetserver | - | active | no | yes | runtime_requirements, container_spec |
-| rimworldtogetherserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| ror2server | - | active | no | yes | status, runtime_requirements, container_spec |
-| roserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| rs2server | risingstorm2vietnam | disabled | no | no | status, runtime_requirements, container_spec |
+| readyornotserver | - | disabled | no | no | status |
+| redmserver | - | active | no | yes | status |
+| reignofdwarfserver | - | disabled | no | no | status |
+| reignofkingsserver | - | active | no | yes | status |
+| remnantsserver | - | disabled | no | no | status |
+| returntomoriaserver | - | disabled | no | no | status |
+| ricochetserver | - | active | yes | yes | - |
+| rimworldtogetherserver | - | active | no | yes | status |
+| ror2server | - | active | no | yes | status |
+| roserver | - | disabled | no | no | status |
+| rs2server | risingstorm2vietnam | disabled | no | no | status |
 | rtcwserver | - | active | no | yes | status |
-| rust | - | disabled | no | no | status, runtime_requirements, container_spec |
+| rust | - | disabled | no | no | status |
 | rwserver | - | disabled | no | no | status |
-| saleblazersserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| sampserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| satisfactory | - | active | no | yes | status, runtime_requirements, container_spec |
-| scpslserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| scumserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| seserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| sevendaystodie | - | active | no | yes | status, runtime_requirements, container_spec |
-| sfcserver | - | disabled | no | no | runtime_requirements, container_spec |
-| silicaserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| skyrimtogetherrebornserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| smallandserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| sniperelite4server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| solserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| sonsoftheforestserver | - | disabled | no | no | status, runtime_requirements |
-| soulmask | - | active | no | yes | status, runtime_requirements, container_spec |
-| squad44server | - | active | no | yes | status, runtime_requirements, container_spec |
-| squadserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| ss14server | - | disabled | no | no | status, runtime_requirements, container_spec |
-| starbound | - | disabled | no | no | status, runtime_requirements, container_spec |
-| starruptureserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| stationeersserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| staxelserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| stnserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| stormworksserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| subnauticaserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| subsistenceserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| sunkenlandserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| svenserver | - | active | no | yes | runtime_requirements, container_spec |
-| teamfortress2 | tf2, tf2server | active | no | yes | runtime_requirements, container_spec |
-| terraria.tshock | - | active | no | yes | runtime_requirements, container_spec |
-| terraria.vanilla | - | active | no | yes | runtime_requirements, container_spec |
-| terratechworldsserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| tfcserver | - | active | no | yes | runtime_requirements, container_spec |
-| theforestserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| thefrontserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| tiserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| trackmaniaserver | - | disabled | no | no | status, runtime_requirements, container_spec |
+| saleblazersserver | - | disabled | no | no | status |
+| sampserver | - | disabled | no | no | status |
+| satisfactory | - | active | no | yes | status |
+| scpslserver | - | active | no | yes | status |
+| scumserver | - | disabled | no | no | status |
+| seserver | - | disabled | no | no | status |
+| sevendaystodie | - | active | no | yes | status |
+| sfcserver | - | disabled | yes | no | - |
+| silicaserver | - | disabled | no | no | status |
+| skyrimtogetherrebornserver | - | disabled | no | no | status |
+| smallandserver | - | active | no | yes | status |
+| sniperelite4server | - | disabled | no | no | status |
+| solserver | - | disabled | no | no | status |
+| sonsoftheforestserver | - | disabled | no | no | status |
+| soulmask | - | active | no | yes | status |
+| squad44server | - | active | no | yes | status |
+| squadserver | - | disabled | no | no | status |
+| ss14server | - | disabled | no | no | status |
+| starbound | - | disabled | no | no | status |
+| starruptureserver | - | disabled | no | no | status |
+| stationeersserver | - | disabled | no | no | status |
+| staxelserver | - | active | no | yes | status |
+| stnserver | - | disabled | no | no | status |
+| stormworksserver | - | disabled | no | no | status |
+| subnauticaserver | - | active | no | yes | status |
+| subsistenceserver | - | disabled | no | no | status |
+| sunkenlandserver | - | disabled | no | no | status |
+| svenserver | - | active | yes | yes | - |
+| teamfortress2 | tf2, tf2server | active | yes | yes | - |
+| terraria.tshock | - | active | yes | yes | - |
+| terraria.vanilla | - | active | yes | yes | - |
+| terratechworldsserver | - | disabled | no | no | status |
+| tfcserver | - | active | yes | yes | - |
+| theforestserver | - | disabled | no | no | status |
+| thefrontserver | - | disabled | no | no | status |
+| tiserver | - | disabled | no | no | status |
+| trackmaniaserver | - | disabled | no | no | status |
 | ts3server | - | active | no | yes | status |
-| tsserver | - | disabled | no | no | runtime_requirements, container_spec |
-| twserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| unturned | - | disabled | no | no | status, runtime_requirements, container_spec |
-| ut2k4server | - | active | no | yes | status, runtime_requirements, container_spec |
-| ut99server | - | active | no | yes | status, runtime_requirements |
-| valheim | - | disabled | no | no | status, runtime_requirements, container_spec |
-| veinserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| vintagestoryserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| vrserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| vsserver | - | disabled | no | no | runtime_requirements, container_spec |
-| warbandserver | - | disabled | no | no | status, runtime_requirements, container_spec |
+| tsserver | - | disabled | yes | no | - |
+| twserver | - | active | no | yes | status |
+| unturned | - | disabled | no | no | status |
+| ut2k4server | - | active | no | yes | status |
+| ut99server | - | active | no | yes | status |
+| valheim | - | disabled | no | no | status |
+| veinserver | - | disabled | no | no | status |
+| vintagestoryserver | - | active | no | yes | status |
+| vrserver | - | disabled | no | no | status |
+| vsserver | - | disabled | yes | no | - |
+| warbandserver | - | disabled | no | no | status |
 | wfserver | - | disabled | no | no | status |
-| wreckfestserver | - | disabled | no | no | status, runtime_requirements, container_spec |
-| wurmserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| xntserver | - | active | no | yes | status, runtime_requirements, container_spec |
-| zmrserver | - | disabled | no | no | runtime_requirements, container_spec |
-| zpsserver | - | disabled | no | no | runtime_requirements, container_spec |
+| wreckfestserver | - | disabled | no | no | status |
+| wurmserver | - | active | no | yes | status |
+| xntserver | - | active | no | yes | status |
+| zmrserver | - | disabled | yes | no | - |
+| zpsserver | - | disabled | yes | no | - |

@@ -75,3 +75,16 @@ def test_checked_in_module_parity_report_matches_generated_artifacts():
     assert (repo_root / "docs" / "module_parity_report.json").read_text(
         encoding="utf-8"
     ) == render_json_report(rows)
+
+
+def test_build_module_parity_rows_accepts_assignment_based_runtime_hooks():
+    catalog = load_default_module_catalog()
+    rows = build_module_parity_rows(
+        catalog=catalog,
+        repo_root=Path("."),
+    )
+
+    row = next(item for item in rows if item.canonical_id == "arma3.vanilla")
+
+    assert "runtime_requirements" not in row.missing_surfaces
+    assert "container_spec" not in row.missing_surfaces
