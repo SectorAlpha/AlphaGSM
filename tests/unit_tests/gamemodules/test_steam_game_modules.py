@@ -1,5 +1,4 @@
 import importlib
-from pathlib import Path
 
 import gamemodules.counterstrikeglobaloffensive as csgo
 import gamemodules.counterstrike2 as cs2
@@ -58,21 +57,63 @@ def test_csgo_configure_populates_game_defaults(tmp_path):
 
 
 def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
-    package_tf2 = importlib.import_module("gamemodules.teamfortress2")
     server = DummyServer()
     server.data.update({"dir": str(tmp_path) + "/", "Steam_AppID": 1, "Steam_anonymous_login_possible": True, "exe_name": "srcds_run"})
     cfg_path = tmp_path / "tf" / "cfg" / "server.cfg"
     launcher = tmp_path / "srcds_run_64"
     launcher.write_text("")
     doinstall_calls = []
-    monkeypatch.setattr(package_tf2, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
+    monkeypatch.setitem(
+        tf2.install.__globals__,
+        "doinstall",
+        lambda server_obj: doinstall_calls.append(server_obj),
+    )
 
-    package_tf2.install(server)
+    tf2.install(server)
 
     assert doinstall_calls == [server]
     assert cfg_path.exists()
     assert 'hostname "AlphaGSM TF2 Server"' in cfg_path.read_text()
     assert server.data["exe_name"] == "srcds_run_64"
+
+
+def test_tf2_install_applies_mods_when_autoapply_enabled(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "Steam_AppID": 1,
+            "Steam_anonymous_login_possible": True,
+            "exe_name": "srcds_run",
+            "mods": {
+                "enabled": True,
+                "autoapply": True,
+                "desired": {
+                    "curated": [
+                        {
+                            "requested_id": "sourcemod",
+                            "resolved_id": "sourcemod.stable",
+                        }
+                    ],
+                    "workshop": [],
+                },
+                "installed": [],
+                "errors": [],
+            },
+        }
+    )
+    calls = []
+
+    monkeypatch.setitem(tf2.install.__globals__, "doinstall", lambda server_obj: calls.append("base"))
+    monkeypatch.setitem(
+        tf2.install.__globals__,
+        "apply_configured_mods",
+        lambda server_obj: calls.append("mods"),
+    )
+
+    tf2.install(server)
+
+    assert calls == ["base", "mods"]
 
 
 def test_csgo_install_creates_config_file_when_missing(tmp_path, monkeypatch):
@@ -235,6 +276,46 @@ def test_steam_game_update_downloads_and_optionally_restarts(monkeypatch):
     assert ("/srv/csgo/", csgo.steam_app_id, csgo.steam_anonymous_login_possible, False) in calls
     assert tf2_server.start_calls == 1
     assert csgo_server.start_calls == 0
+
+
+def test_tf2_update_applies_mods_when_autoapply_enabled(monkeypatch):
+    tf2_server = DummyServer()
+    tf2_server.data.update(
+        {
+            "dir": "/srv/tf2/",
+            "mods": {
+                "enabled": True,
+                "autoapply": True,
+                "desired": {
+                    "curated": [
+                        {
+                            "requested_id": "sourcemod",
+                            "resolved_id": "sourcemod.stable",
+                        }
+                    ],
+                    "workshop": [],
+                },
+                "installed": [],
+                "errors": [],
+            },
+        }
+    )
+    calls = []
+
+    monkeypatch.setattr(
+        tf2.steamcmd,
+        "download",
+        lambda path, app_id, anon, validate=True: calls.append(("base", path, validate)),
+    )
+    monkeypatch.setitem(
+        tf2.update.__globals__,
+        "apply_configured_mods",
+        lambda server_obj: calls.append(("mods", server_obj.data["dir"])),
+    )
+
+    tf2.update(tf2_server, validate=True, restart=False)
+
+    assert calls == [("base", "/srv/tf2/", True), ("mods", "/srv/tf2/")]
 
 
 def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):

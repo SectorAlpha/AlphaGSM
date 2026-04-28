@@ -92,6 +92,37 @@ def test_install_disables_hibernation_during_integration(tmp_path, monkeypatch):
     assert "tf_allow_server_hibernation 0" in cfg_text
 
 
+def test_install_autoapplies_tf2_mods(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "srcds_run"
+    server.data["Steam_AppID"] = 232250
+    server.data["Steam_anonymous_login_possible"] = True
+    server.data["mods"] = {
+        "enabled": True,
+        "autoapply": True,
+        "desired": {
+            "curated": [{"requested_id": "sourcemod", "resolved_id": "sourcemod.stable"}],
+            "workshop": [],
+        },
+        "installed": [],
+        "errors": [],
+    }
+
+    original_doinstall = mod.install.__globals__["doinstall"]
+    original_apply = mod.install.__globals__["apply_configured_mods"]
+    try:
+        mod.install.__globals__["doinstall"] = lambda server_obj: None
+        apply_mock = MagicMock()
+        mod.install.__globals__["apply_configured_mods"] = apply_mock
+        mod.install(server)
+    finally:
+        mod.install.__globals__["doinstall"] = original_doinstall
+        mod.install.__globals__["apply_configured_mods"] = original_apply
+
+    apply_mock.assert_called_once_with(server)
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -100,6 +131,33 @@ def test_update_with_restart(tmp_path):
     mod.update(server, validate=True, restart=True)
     assert server._stopped
     assert server._started
+
+
+def test_update_autoapplies_tf2_mods(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 232250
+    server.data["Steam_anonymous_login_possible"] = True
+    server.data["mods"] = {
+        "enabled": True,
+        "autoapply": True,
+        "desired": {
+            "curated": [{"requested_id": "sourcemod", "resolved_id": "sourcemod.stable"}],
+            "workshop": [],
+        },
+        "installed": [],
+        "errors": [],
+    }
+
+    original_apply = mod.update.__globals__["apply_configured_mods"]
+    try:
+        apply_mock = MagicMock()
+        mod.update.__globals__["apply_configured_mods"] = apply_mock
+        mod.update(server, validate=False, restart=False)
+    finally:
+        mod.update.__globals__["apply_configured_mods"] = original_apply
+
+    apply_mock.assert_called_once_with(server)
 
 
 def test_update_no_restart(tmp_path):
@@ -161,6 +219,45 @@ def test_do_stop():
 def test_status():
     server = DummyServer()
     mod.status(server, verbose=True)
+
+
+def test_tf2_status_warns_when_desired_mods_are_unapplied(capsys):
+    server = DummyServer()
+    server.data["mods"] = {
+        "enabled": True,
+        "autoapply": True,
+        "desired": {
+            "curated": [
+                {"requested_id": "sourcemod", "resolved_id": "sourcemod.stable"}
+            ],
+            "workshop": [],
+        },
+        "installed": [],
+        "errors": [],
+    }
+
+    mod.status(server, verbose=True)
+
+    output = capsys.readouterr().out
+    assert "mods pending apply" in output.lower()
+
+
+def test_tf2_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["mods"] = {
+        "enabled": True,
+        "autoapply": True,
+        "desired": {
+            "curated": [],
+            "workshop": [{"workshop_id": "1234567890", "source_type": "workshop"}],
+        },
+        "installed": [],
+        "errors": [],
+    }
+
+    with pytest.raises(ServerError, match="Workshop support is experimental"):
+        mod.command_functions["mod"](server, "apply")
 
 
 def test_prestart(tmp_path):

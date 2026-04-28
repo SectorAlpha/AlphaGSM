@@ -22,7 +22,7 @@ from utils.valve_server import (
     wake_source_server_for_a2s,
 )
 from utils.gamemodules import common as gamemodule_common
-from .mods import ensure_mod_state, tf2_mod_command
+from .mods import apply_configured_mods, ensure_mod_state, tf2_mod_command
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
@@ -185,12 +185,15 @@ doinstall.__doc__ = "Download or refresh the TF2 server files via SteamCMD."
 def install(server):
     """Install or prepare the TF2 server files for this server object."""
 
-    _package_override("doinstall", doinstall)(server)
+    doinstall(server)
     if os.path.isfile(server.data["dir"] + "srcds_run_64"):
         server.data["exe_name"] = "srcds_run_64"
     elif os.path.isfile(server.data["dir"] + "srcds_run"):
         server.data["exe_name"] = "srcds_run"
     sync_server_config(server)
+    ensure_mod_state(server)
+    if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
+        apply_configured_mods(server)
     server.data.save()
 
 
@@ -221,12 +224,20 @@ def prestart(server, *args, **kwargs):
         os.symlink(steamclient_src, steamclient_dst)
 
 
-update = gamemodule_common.make_steamcmd_update_hook(
+_base_update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
-update.__doc__ = "Update the TF2 install through SteamCMD and optionally restart it."
+
+
+def update(server, validate=True, restart=False):
+    """Update the TF2 install through SteamCMD and optionally restart it."""
+
+    _base_update(server, validate=validate, restart=restart)
+    ensure_mod_state(server)
+    if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
+        apply_configured_mods(server)
 
 
 def get_start_command(server):
@@ -389,6 +400,20 @@ def status(server, verbose):
             server.query()
     except Exception as exc:
         print("Status check failed: " + str(exc))
+    mods = server.data.get("mods", {})
+    desired_ids = {
+        entry.get("resolved_id")
+        for entry in mods.get("desired", {}).get("curated", [])
+        if entry.get("resolved_id")
+    }
+    installed_ids = {
+        entry.get("resolved_id")
+        for entry in mods.get("installed", [])
+        if entry.get("resolved_id")
+    }
+    pending_ids = sorted(desired_ids - installed_ids)
+    if pending_ids:
+        print("Mods pending apply: " + ", ".join(pending_ids))
     return None
 
 
