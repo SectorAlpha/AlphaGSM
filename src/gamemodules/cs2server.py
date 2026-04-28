@@ -18,3 +18,9 @@ def get_container_spec(server):
     """Return the aliased Counter-Strike 2 container launch spec."""
 
     return _ALIAS_MODULE.get_container_spec(server)
+
+
+def get_start_command(server):
+    """Delegate start command to the Counter-Strike 2 module."""
+
+    return _ALIAS_MODULE.get_start_command(server)

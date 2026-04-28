@@ -256,6 +256,15 @@ def get_tshock_start_command(server):
     return cmd, server.data["dir"]
 
 
+def get_start_command(server):
+    """Helper module: not a concrete Terraria server. Call the specific
+    `terraria.vanilla` or `terraria.tshock` modules instead.
+    """
+    raise NotImplementedError(
+        "terraria.common is a helper module; call terraria.vanilla or terraria.tshock"
+    )
+
+
 def do_stop(server, j):
     """Stop a Terraria-family server using the console exit command."""
 

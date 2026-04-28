@@ -12,3 +12,6 @@ def get_runtime_requirements(server):
 
 def get_container_spec(server):
     return _ALIAS_MODULE.get_container_spec(server)
+
+def get_start_command(server):
+    return _ALIAS_MODULE.get_start_command(server)

@@ -152,6 +152,24 @@ The skill-level checklist lives in
 - `configure(...)` stores at minimum `port` and `dir` in `server.data`, initialises the backup data structure, and returns `(args, kwargs)` to forward to `install`
 - `install(...)` ensures the server filesystem is in a runnable state and calls `server.data.save()`
 - `get_start_command(...)` returns `(argv_list, working_dir)`
+
+Validating `get_start_command` implementations
+---------------------------------------------
+
+Use the provided script to statically validate gamemodules' `get_start_command` shape:
+
+```bash
+python3 scripts/validate_start_commands.py
+```
+
+This script performs a conservative check that `get_start_command` returns a tuple
+containing an argv-style list and a working-directory path (commonly `server.data["dir"]`).
+If you need a simple inventory of modules missing `get_start_command`, run:
+
+```bash
+python3 scripts/list_missing_start_commands.py
+```
+
 - schema-backed `set` keys should use `setting_schema` plus `resolve_requested_key(...)` in the shared `Server.set` flow, with `sync_server_config(server)` handling the on-disk native config update for datastore keys in `config_sync_keys`
 - every maintained game module must define `import server.runtime as runtime_module` when it uses shared Docker builders, plus explicit module-scope `get_runtime_requirements(...)` and `get_container_spec(...)` wrappers
 - choose the runtime family first, then call `server.runtime` builders or `utils.proton` helpers inside those wrappers; do not rely on runtime inference to add the hooks for you

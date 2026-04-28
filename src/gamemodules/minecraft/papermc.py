@@ -86,3 +86,12 @@ def resolve_download(project, version=None):
             "No stable build found for project '%s' version '%s'" % (project, version)
         )
     raise ServerError("No stable builds found for project '%s'" % (project,))
+
+
+def get_start_command(server):
+    """PaperMC helper module does not provide a runtime start command.
+
+    This helper exists to resolve downloads only. Calling `get_start_command`
+    here will raise to indicate it's not a runnable module.
+    """
+    raise NotImplementedError("PaperMC helper is not a runnable gamemodule")
