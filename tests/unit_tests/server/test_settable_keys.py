@@ -70,6 +70,39 @@ def test_resolve_requested_key_skips_common_alias_that_conflicts_with_other_key(
     assert resolved.canonical_key == "startmap"
 
 
+def test_resolve_requested_key_skips_worldname_common_alias_when_map_exists():
+    schema = {
+        "map": SettingSpec(
+            canonical_key="map",
+            description="Current map",
+            value_type="string",
+        ),
+        "worldname": SettingSpec(
+            canonical_key="worldname",
+            description="Current world",
+            value_type="string",
+        ),
+    }
+
+    resolved = resolve_requested_key("map", schema)
+
+    assert resolved.canonical_key == "map"
+
+
+def test_resolve_requested_key_uses_common_rcon_aliases_without_schema_repetition():
+    schema = {
+        "rconpassword": SettingSpec(
+            canonical_key="rconpassword",
+            description="RCON password",
+            value_type="string",
+        )
+    }
+
+    resolved = resolve_requested_key("querypassword", schema)
+
+    assert resolved.canonical_key == "rconpassword"
+
+
 def test_resolve_requested_key_rejects_unknown_input():
     with pytest.raises(KeyResolutionError, match="Unsupported setting key"):
         resolve_requested_key("madeupsetting", {})

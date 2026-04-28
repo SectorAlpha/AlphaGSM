@@ -33,16 +33,24 @@ class ResolvedSetting:
 
 
 COMMON_SETTING_ALIASES = {
+    "adminpassword": ("adminpass", "admin_password"),
     "bindaddress": ("bind_address",),
     "contactemail": ("email", "contact_email"),
-    "map": ("gamemap", "startmap", "level"),
-    "maxplayers": ("max_players",),
+    "hostname": ("servername", "server_name", "name"),
+    "map": ("gamemap", "startmap", "level", "worldname"),
+    "maxplayers": ("max_players", "users"),
     "port": ("gameport",),
     "queryport": ("query_port",),
-    "rconpassword": ("rconpass", "rcon_password"),
+    "rconpassword": (
+        "rconpass",
+        "rcon_password",
+        "querypassword",
+        "query_administrator_password",
+    ),
     "servername": ("hostname", "server_name", "name"),
     "serverpassword": ("sv_password", "svpassword", "password"),
-    "startmap": ("map",),
+    "startmap": ("map", "gamemap", "level", "world"),
+    "worldname": ("world", "world_name", "map", "gamemap", "levelname"),
 }
 
 

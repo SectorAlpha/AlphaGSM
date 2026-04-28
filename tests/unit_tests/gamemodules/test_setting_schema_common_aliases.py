@@ -1,0 +1,36 @@
+from server.settable_keys import resolve_requested_key
+
+from gamemodules import inssserver
+from gamemodules import scpslserver
+from gamemodules import soulmask
+from gamemodules import thefrontserver
+
+
+def test_hostname_style_servers_accept_servername_aliases():
+    resolved = resolve_requested_key("servername", inssserver.setting_schema)
+
+    assert resolved.canonical_key == "hostname"
+
+
+def test_worldname_style_servers_accept_map_aliases():
+    resolved = resolve_requested_key("map", thefrontserver.setting_schema)
+
+    assert resolved.canonical_key == "worldname"
+
+
+def test_adminpassword_style_servers_accept_adminpass_aliases():
+    resolved = resolve_requested_key("adminpass", soulmask.setting_schema)
+
+    assert resolved.canonical_key == "adminpassword"
+
+
+def test_rconpassword_style_servers_accept_querypassword_aliases():
+    resolved = resolve_requested_key("querypassword", scpslserver.setting_schema)
+
+    assert resolved.canonical_key == "rconpassword"
+
+
+def test_maxplayers_style_servers_accept_users_aliases():
+    resolved = resolve_requested_key("users", thefrontserver.setting_schema)
+
+    assert resolved.canonical_key == "maxplayers"
