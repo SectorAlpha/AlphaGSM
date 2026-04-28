@@ -120,6 +120,50 @@ def test_findmodule_resolves_alias_through_catalog(monkeypatch):
     assert resolved_module is real_module
 
 
+def test_load_disabled_servers_parses_reasons(monkeypatch, tmp_path):
+    disabled_path = tmp_path / "disabled_servers.conf"
+    disabled_path.write_text(
+        "# comment\n"
+        "bf1942server\tDownload domain is dead\n"
+        "minecraft.bedrock\tSetup hangs\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(server_module, "_DISABLED_SERVERS_PATH", str(disabled_path))
+
+    assert server_module._load_disabled_servers() == {
+        "bf1942server": "Download domain is dead",
+        "minecraft.bedrock": "Setup hangs",
+    }
+
+
+def test_findmodule_rejects_disabled_canonical_module_before_import(monkeypatch):
+    class FakeCatalog:
+        def resolve(self, name):
+            assert name == "tf2server"
+            return "teamfortress2"
+
+    monkeypatch.setattr(server_module, "MODULE_CATALOG", FakeCatalog(), raising=False)
+    monkeypatch.setattr(
+        server_module,
+        "_load_disabled_servers",
+        lambda: {"teamfortress2": "Known-broken in CI"},
+    )
+
+    def fail_import(_name):
+        raise AssertionError("disabled module should not be imported")
+
+    monkeypatch.setattr(server_module, "import_module", fail_import)
+
+    with pytest.raises(server_module.ServerError) as exc_info:
+        server_module._findmodule("tf2server")
+
+    message = str(exc_info.value)
+    assert "teamfortress2" in message
+    assert "Known-broken in CI" in message
+    assert "open an issue or submit a pull request" in message
+
+
 def test_server_init_creates_new_datastore_and_saves(monkeypatch, tmp_path):
     created = {}
 
