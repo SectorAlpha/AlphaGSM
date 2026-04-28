@@ -4,9 +4,10 @@ import os
 
 import screen
 from server import ServerError
-from server.settable_keys import build_launch_arg_values
+from server.settable_keys import build_launch_arg_values, build_native_config_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
+from utils.simple_kv_config import rewrite_equals_config
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
@@ -22,6 +23,7 @@ command_args = gamemodule_common.build_setup_download_command_args(
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("hostname", "moddir", "startmap")
 setting_schema = {
     **gamemodule_common.build_quake_setting_schema(
         include_fs_game=True,
@@ -86,6 +88,32 @@ def install(server):
         server.data["url"] = COD4_SERVER_URL
         server.data.setdefault("download_name", COD4_SERVER_NAME)
     install_archive(server, detect_compression(server.data["download_name"]))
+    sync_server_config(server)
+
+
+def sync_server_config(server):
+    """Rewrite the managed Call of Duty 4 server.cfg values from datastore state."""
+
+    moddir = str(server.data.get("moddir", "main"))
+    config_dir = os.path.join(server.data["dir"], moddir)
+    os.makedirs(config_dir, exist_ok=True)
+    config_path = os.path.join(config_dir, "server.cfg")
+    config_values = build_native_config_values(
+        server.data,
+        setting_schema,
+        defaults={
+            "hostname": "AlphaGSM %s" % (server.name,),
+            "moddir": "main",
+            "startmap": "mp_crash",
+        },
+        require_explicit_key=True,
+        value_transform=lambda spec, current_value: (
+            '"%s"' % (str(current_value),)
+            if spec.canonical_key == "hostname"
+            else str(current_value)
+        ),
+    )
+    rewrite_equals_config(config_path, config_values)
 
 
 def get_start_command(server):

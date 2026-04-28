@@ -98,6 +98,34 @@ def test_setting_schema_exposes_cod2_launch_tokens():
     assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
     assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
 
+
+def test_sync_server_config_updates_mod_server_cfg(tmp_path):
+    server = DummyServer("cod2")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "moddir": "main",
+            "hostname": "AlphaGSM cod2",
+            "startmap": "mp_dawnville",
+        }
+    )
+    cfg_dir = tmp_path / "main"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nmoddir=uo\nstartmap=mp_toujane\nset g_allowvote 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM cod2"\n'
+        'moddir=main\n'
+        'startmap=mp_dawnville\n'
+        'set g_allowvote 0\n'
+    )
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
