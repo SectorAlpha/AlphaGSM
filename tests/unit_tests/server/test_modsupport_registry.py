@@ -53,6 +53,22 @@ def test_resolve_rejects_unknown_family():
         registry.resolve("metamod")
 
 
+def test_resolve_rejects_unknown_release():
+    registry = CuratedRegistry(_families())
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod", "snapshot")
+
+
+def test_resolve_rejects_malformed_release_payload():
+    families = _families()
+    del families["sourcemod"]["releases"]["stable"]["hosts"]
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
 def test_loader_reads_registry_json(tmp_path):
     payload = {"families": _families()}
     registry_path = tmp_path / "curated-mods.json"
@@ -61,3 +77,11 @@ def test_loader_reads_registry_json(tmp_path):
     registry = CuratedRegistryLoader.load(registry_path)
 
     assert registry.resolve("sourcemod").resolved_id == "sourcemod.stable"
+
+
+def test_loader_rejects_malformed_wrapper(tmp_path):
+    registry_path = tmp_path / "curated-mods.json"
+    registry_path.write_text(json.dumps({"not_families": _families()}), encoding="utf-8")
+
+    with pytest.raises(ModSupportError, match=str(registry_path)):
+        CuratedRegistryLoader.load(registry_path)

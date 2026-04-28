@@ -25,7 +25,7 @@ class DesiredModEntry:
     channel: str | None = None
 
 
-@dataclass(frozen=True)
+@dataclass
 class InstalledModEntry:
     source_type: str
     resolved_id: str
