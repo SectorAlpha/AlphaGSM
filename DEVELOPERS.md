@@ -105,6 +105,22 @@ specification lives in [src/server/gamemodules.py](src/server/gamemodules.py).
 The skill-level checklist lives in
 [skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
 
+### Module identity and aliases
+
+Canonical module ids are real Python modules under `src/gamemodules/`.
+
+- Define user-facing aliases and namespace defaults in [src/server/module_aliases.json](src/server/module_aliases.json).
+- Resolve module names through [src/server/module_catalog.py](src/server/module_catalog.py) before importing a game module.
+- Persist the canonical module id in the server datastore even when the user created the server through an alias such as `tf2` or `cs2server`.
+- Do not add wrapper alias files such as `tf2.py` or namespace `DEFAULT.py` shims under `src/gamemodules/`; that routing now lives in the shared catalog.
+- Alias keys share the same namespace as canonical ids, and alias values must point directly at a real canonical module id.
+
+Generated parity reporting also works at the canonical-module level:
+
+- [scripts/generate_module_parity_report.py](scripts/generate_module_parity_report.py)
+- [docs/module_parity_report.md](docs/module_parity_report.md)
+- [docs/module_parity_report.json](docs/module_parity_report.json)
+
 ### Required module attributes
 
 | Attribute | Notes |

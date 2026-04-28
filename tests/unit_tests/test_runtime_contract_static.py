@@ -2,9 +2,10 @@
 
 import os
 import shutil
-from importlib import import_module
 from pathlib import Path
 
+from server.module_catalog import load_default_module_catalog
+from importlib import import_module
 import server.runtime as runtime_module
 
 
@@ -35,15 +36,17 @@ DEFAULT_TEST_WORK_DIR = Path(
 
 
 def _game_module_names():
-    names = []
-    for path in sorted(GAMEMODULE_DIR.rglob("*.py")):
-        if path.name == "__init__.py":
-            continue
-        module_name = ".".join(path.relative_to(GAMEMODULE_DIR).with_suffix("").parts)
-        if module_name in HELPER_MODULES:
-            continue
-        names.append(module_name)
-    return names
+    catalog = load_default_module_catalog()
+    return list(catalog.canonical_modules)
+
+
+def test_game_module_inventory_excludes_catalog_alias_keys():
+    module_names = _game_module_names()
+
+    assert "tf2" not in module_names
+    assert "tf2server" not in module_names
+    assert "cs2server" not in module_names
+    assert "minecraft.DEFAULT" not in module_names
 
 
 def _module_source(module_name):
@@ -75,12 +78,6 @@ class _FakeServer:
         self.name = name
         self.data = _DataStore(dir=str(base_dir / "server") + "/")
         self.module = None
-
-
-def _resolve_module(module):
-    while hasattr(module, "ALIAS_TARGET"):
-        module = import_module("gamemodules." + module.ALIAS_TARGET)
-    return module
 
 
 def _stub_download_resolution(module, module_name):
@@ -172,7 +169,7 @@ def test_all_game_modules_define_explicit_runtime_wrappers():
 def test_all_game_modules_resolve_valid_docker_manifests():
     offenders = []
     for module_name in _game_module_names():
-        module = _resolve_module(import_module("gamemodules." + module_name))
+        module = import_module("gamemodules." + module_name)
         original_resolvers = _stub_download_resolution(module, module_name)
         server_root = _runtime_contract_root(module_name)
         server = _FakeServer("it-" + module_name.replace(".", "-"), server_root)
