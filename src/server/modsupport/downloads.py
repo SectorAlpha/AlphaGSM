@@ -19,6 +19,9 @@ def download_to_cache(url, *, allowed_hosts, target_path, checksum=None):
     hostname = parsed.hostname
     if not hostname or hostname not in set(allowed_hosts):
         raise ModSupportError(f"Untrusted download host: {hostname or url}")
+    expected_checksum = None
+    if checksum is not None:
+        expected_checksum = _normalize_checksum(checksum)
 
     target_path = Path(target_path)
     target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -45,10 +48,9 @@ def download_to_cache(url, *, allowed_hosts, target_path, checksum=None):
             temp_path.unlink(missing_ok=True)
         raise ModSupportError(f"Failed to download {url}: {exc}") from exc
 
-    if checksum is not None:
-        expected = _normalize_checksum(checksum)
+    if expected_checksum is not None:
         actual = hasher.hexdigest()
-        if actual != expected:
+        if actual != expected_checksum:
             if temp_path is not None:
                 temp_path.unlink(missing_ok=True)
             raise ModSupportError(f"Checksum mismatch for {url}")
@@ -68,19 +70,16 @@ def extract_tarball_safe(tar_path, extract_root):
 
     try:
         with tarfile.open(tar_path) as archive:
-            for member in archive.getmembers():
-                destination = _safe_relative_destination(
-                    base_root=resolved_extract_root,
-                    relative_path=member.name,
-                    error_prefix="Refusing to extract unsafe archive path",
-                )
-                if member.issym() or member.islnk():
-                    raise ModSupportError(f"Refusing to extract unsafe archive member: {member.name}")
+            members = archive.getmembers()
+            validated_members = []
+            for member in members:
+                destination = _validate_tar_member(member, resolved_extract_root)
+                validated_members.append((member, destination))
+
+            for member, destination in validated_members:
                 if member.isdir():
                     destination.mkdir(parents=True, exist_ok=True)
                     continue
-                if not member.isfile():
-                    raise ModSupportError(f"Refusing to extract unsupported archive member: {member.name}")
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 extracted_file = archive.extractfile(member)
                 if extracted_file is None:
@@ -149,6 +148,21 @@ def _safe_relative_destination(*, base_root, relative_path, error_prefix):
         destination.relative_to(base_root)
     except ValueError as exc:
         raise ModSupportError(f"{error_prefix}: {relative_path}") from exc
+    return destination
+
+
+def _validate_tar_member(member, base_root):
+    destination = _safe_relative_destination(
+        base_root=base_root,
+        relative_path=member.name,
+        error_prefix="Refusing to extract unsafe archive path",
+    )
+    if member.issym() or member.islnk():
+        raise ModSupportError(f"Refusing to extract unsafe archive member: {member.name}")
+    if member.isdir():
+        return destination
+    if not member.isfile():
+        raise ModSupportError(f"Refusing to extract unsupported archive member: {member.name}")
     return destination
 
 

@@ -70,6 +70,27 @@ def test_extract_tarball_safe_rejects_hardlink_members(tmp_path):
         extract_tarball_safe(tar_path, extract_root)
 
 
+def test_extract_tarball_safe_does_not_leave_partial_files_when_later_member_is_invalid(tmp_path):
+    tar_path = tmp_path / "mod.tar"
+    extract_root = tmp_path / "extract"
+
+    with tarfile.open(tar_path, "w") as archive:
+        file_member = tarfile.TarInfo("tf/addons/real.txt")
+        payload = b"ok"
+        file_member.size = len(payload)
+        archive.addfile(file_member, io.BytesIO(payload))
+
+        link_member = tarfile.TarInfo("tf/addons/hard.txt")
+        link_member.type = tarfile.LNKTYPE
+        link_member.linkname = "tf/addons/real.txt"
+        archive.addfile(link_member)
+
+    with pytest.raises(ModSupportError, match="hard.txt"):
+        extract_tarball_safe(tar_path, extract_root)
+
+    assert not (extract_root / "tf" / "addons" / "real.txt").exists()
+
+
 def test_install_staged_tree_rejects_paths_outside_allowed_destinations(tmp_path):
     staged_root = tmp_path / "stage"
     server_root = tmp_path / "server"
@@ -158,6 +179,21 @@ def test_download_to_cache_cleans_up_partial_temp_file_on_stream_failure(tmp_pat
             "https://trusted.invalid/mod.tar.gz",
             allowed_hosts={"trusted.invalid"},
             target_path=target_path,
+        )
+
+    assert not target_path.exists()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_download_to_cache_rejects_unsupported_checksum_without_creating_temp_file(tmp_path):
+    target_path = tmp_path / "mod.tar.gz"
+
+    with pytest.raises(ModSupportError, match="Unsupported checksum algorithm"):
+        download_to_cache(
+            "https://trusted.invalid/mod.tar.gz",
+            allowed_hosts={"trusted.invalid"},
+            target_path=target_path,
+            checksum="md5:abc",
         )
 
     assert not target_path.exists()
