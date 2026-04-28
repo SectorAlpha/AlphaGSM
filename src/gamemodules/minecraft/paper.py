@@ -92,3 +92,15 @@ def get_container_spec(server):
         stdin_open=True,
         tty=True,
     )
+
+
+def status(server, verbose):
+    """Report PaperMC server status information."""
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
+    return None
