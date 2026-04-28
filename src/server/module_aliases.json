@@ -1,0 +1,15 @@
+{
+  "aliases": {
+    "tf2": "teamfortress2",
+    "tf2server": "teamfortress2",
+    "cs2server": "counterstrike2",
+    "csgo": "counterstrikeglobaloffensive",
+    "csgoserver": "counterstrikeglobaloffensive",
+    "risingstorm2vietnam": "rs2server"
+  },
+  "namespace_defaults": {
+    "minecraft": "minecraft.vanilla",
+    "terraria": "terraria.vanilla",
+    "arma3": "arma3.vanilla"
+  }
+}
