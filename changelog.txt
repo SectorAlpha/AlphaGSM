@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-04-29
+- Security: split schema-backed secret settings (passwords, RCON keys) into a separate `<name>.secrets.json` file written with mode 0o600, keeping plain-text credentials out of the world-readable main data file; the data store transparently merges both files so the rest of the code is unchanged, and `alphagsm data` redacts non-empty secret values rather than printing them.
 - Packaging: exclude `gamemodules.factorio` from PyInstaller collection so standalone binary builds succeed on all three platforms; the module still raises `NotImplementedError` on import as required by its unit test, but is never needed by the binary since factorio support is unimplemented.
 
 2026-04-28

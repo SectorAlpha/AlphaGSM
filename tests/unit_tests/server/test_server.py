@@ -17,6 +17,9 @@ class DummyData(dict):
     def save(self):
         self.saved += 1
 
+    def set_secret_keys(self, keys, secrets_filename):
+        pass
+
     def prettydump(self):
         return '{"ok": true}'
 

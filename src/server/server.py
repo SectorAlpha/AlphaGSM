@@ -399,6 +399,7 @@ class Server(object):
             raise ServerError("Invalid data store: No module specified")
         if module is None:
             truename, self.module = _findmodule(self.data["module"])
+        self._configure_secret_split()
         metadata_changed = runtime_module.sync_runtime_metadata(self, save=False)
         if truename != self.data["module"]:
             print(
@@ -433,6 +434,19 @@ class Server(object):
             else:
                 desc = desc + "\n\n" + extra_desc
         return desc
+
+    def _configure_secret_split(self):
+        """Wire up the secret-key split on the data store once the module is known."""
+        schema = self.get_setting_schema()
+        secret_storage_keys = {
+            spec.storage_key or spec.canonical_key
+            for spec in schema.values()
+            if spec.secret
+        }
+        self.data.set_secret_keys(
+            secret_storage_keys,
+            os.path.join(DATAPATH, self.name + ".secrets.json"),
+        )
 
     def get_setting_schema(self):
         """Return the schema-backed settings exposed by the module."""

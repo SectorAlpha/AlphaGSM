@@ -67,13 +67,49 @@ class JSONDataStore(MutableMapping):
             data = json.load(fp)
         self._dict = data
 
+    def set_secret_keys(self, keys, secrets_filename):
+        """Configure which keys are treated as secrets and their separate file.
+
+        After calling this, ``save()`` will write secret keys exclusively to
+        *secrets_filename* (mode 0o600) and keep all other keys in the main
+        file, migrating any secret keys currently in the main file on the next
+        save.  If *secrets_filename* already exists its contents are merged
+        into this store immediately so all keys remain accessible through the
+        normal mapping interface.
+        """
+        self._secret_keys = frozenset(keys)
+        self._secrets_filename = secrets_filename
+        if os.path.isfile(secrets_filename):
+            with open(secrets_filename, "r") as fp:
+                existing = json.load(fp)
+            self._dict.update(existing)
+
     def save(self):
         """Save the data to the data store's file."""
-        with open(self.filename, "w") as fp:
-            json.dump(self._dict, fp)
+        if getattr(self, "_secret_keys", None):
+            main_dict = {k: v for k, v in self._dict.items() if k not in self._secret_keys}
+            secrets_dict = {k: v for k, v in self._dict.items() if k in self._secret_keys}
+            with open(self.filename, "w") as fp:
+                json.dump(main_dict, fp)
+            fd = os.open(
+                self._secrets_filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600
+            )
+            with os.fdopen(fd, "w") as fp:
+                json.dump(secrets_dict, fp)
+            os.chmod(self._secrets_filename, 0o600)
+        else:
+            with open(self.filename, "w") as fp:
+                json.dump(self._dict, fp)
 
     def prettydump(self):
         """A pretty formated string version of the data for showing to users."""
+        secret_keys = getattr(self, "_secret_keys", None)
+        if secret_keys:
+            display = {
+                k: ("<redacted>" if k in secret_keys and v not in (None, "", [], {}, ()) else v)
+                for k, v in self._dict.items()
+            }
+            return json.dumps(display, indent=2, separators=(",", ": "), sort_keys=True)
         return json.dumps(self._dict, indent=2, separators=(",", ": "), sort_keys=True)
 
 
