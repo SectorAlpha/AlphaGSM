@@ -8,6 +8,7 @@ from server import ServerError
 from server.modsupport.downloads import (
     download_to_cache,
     extract_tarball_safe,
+    extract_zip_safe,
     install_staged_tree,
 )
 from server.modsupport.errors import ModSupportError
@@ -16,7 +17,7 @@ from server.modsupport.ownership import build_owned_manifest
 from server.modsupport.reconcile import reconcile_mod_state
 from server.modsupport.registry import CuratedRegistryLoader
 
-from .layout import ALLOWED_TF2_DESTINATIONS
+from .layout import ALLOWED_TF2_MOD_DESTINATIONS
 from .workshop import raise_experimental_workshop_apply_error, validate_workshop_id
 
 
@@ -113,20 +114,27 @@ def _install_curated_entry(server, desired_entry: DesiredModEntry) -> InstalledM
     stage_root = cache_root / f"{resolved.resolved_id}_stage"
     if stage_root.exists():
         shutil.rmtree(stage_root)
-    extract_tarball_safe(archive_path, stage_root)
+    if resolved.archive_type == "zip":
+        extract_zip_safe(archive_path, stage_root)
+    else:
+        extract_tarball_safe(archive_path, stage_root)
+    # Mod archives are packaged relative to the game directory (tf/), not the
+    # server root.  Install into tf/ so file paths resolve correctly.
+    server_root = Path(server.data["dir"])
+    server_game_dir = server_root / "tf"
     installed_paths = install_staged_tree(
         staged_root=stage_root,
-        server_root=Path(server.data["dir"]),
+        server_root=server_game_dir,
         allowed_destinations=tuple(
             destination
             for destination in resolved.destinations
-            if destination in ALLOWED_TF2_DESTINATIONS
+            if destination in ALLOWED_TF2_MOD_DESTINATIONS
         ),
     )
     return InstalledModEntry(
         source_type="curated",
         resolved_id=resolved.resolved_id,
-        installed_files=build_owned_manifest(Path(server.data["dir"]), installed_paths),
+        installed_files=build_owned_manifest(server_root, installed_paths),
     )
 
 

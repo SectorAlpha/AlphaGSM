@@ -17,6 +17,8 @@ import pytest
 
 from conftest import write_config
 from gamemodules.teamfortress2 import steam_app_id
+import gamemodules.teamfortress2 as tf2
+import gamemodules.teamfortress2.mods as tf2_mods
 
 pytestmark = pytest.mark.integration
 
@@ -32,6 +34,11 @@ def _require_integration_opt_in():
 def _require_steamcmd_opt_in():
     if os.environ.get("ALPHAGSM_RUN_STEAMCMD") != "1":
         pytest.skip("Set ALPHAGSM_RUN_STEAMCMD=1 to run SteamCMD integration tests")
+
+
+def _require_network_opt_in():
+    if os.environ.get("ALPHAGSM_RUN_NETWORK") != "1":
+        pytest.skip("Set ALPHAGSM_RUN_NETWORK=1 to run tests that hit the real network")
 
 
 def _require_command(name):
@@ -84,12 +91,12 @@ def _skip_for_known_tf2_setup_issue(result):
 
 def _build_curated_archive(tmp_path):
     archive_root = tmp_path / "archive-root"
-    payload = archive_root / "tf" / "addons" / "sourcemod" / "plugins"
+    payload = archive_root / "addons" / "sourcemod" / "plugins"
     payload.mkdir(parents=True)
     (payload / "base.smx").write_text("plugin", encoding="utf-8")
     archive_path = tmp_path / "sourcemod.tar.gz"
     with tarfile.open(archive_path, "w:gz") as archive:
-        archive.add(archive_root / "tf", arcname="tf")
+        archive.add(archive_root / "addons", arcname="addons")
     return archive_path
 
 
@@ -140,7 +147,7 @@ def test_tf2_curated_mod_cli_flow(tmp_path):
                                     "url": f"{base_url}/sourcemod.tar.gz",
                                     "hosts": ["127.0.0.1"],
                                     "archive_type": "tar.gz",
-                                    "destinations": ["tf/addons"],
+                                    "destinations": ["addons"],
                                 }
                             },
                         }
@@ -173,3 +180,50 @@ def test_tf2_curated_mod_cli_flow(tmp_path):
 
         dump_result = _run_and_assert_ok(env, server_name, "dump")
         assert "sourcemod.stable" in dump_result.stdout
+
+
+class _FakeData(dict):
+    """Minimal in-memory datastore used by network integration tests."""
+
+    def save(self):
+        pass
+
+
+class _FakeServer:
+    """Minimal server double for calling TF2 module functions directly."""
+
+    def __init__(self, install_dir: Path):
+        self.name = "net-sm-test"
+        self.data = _FakeData({"dir": str(install_dir) + "/"})
+
+
+def test_curated_sourcemod_live_download_and_install(tmp_path):
+    """Download and install SourceMod from the real sourcemod.net registry.
+
+    Guards:
+      ALPHAGSM_RUN_INTEGRATION=1  — general integration gate
+      ALPHAGSM_RUN_NETWORK=1      — explicitly opts in to live network I/O
+
+    This test does NOT require SteamCMD; it only installs mod files into a
+    temporary directory, not a full TF2 game server.
+    """
+    _require_integration_opt_in()
+    _require_network_opt_in()
+
+    install_dir = tmp_path / "tf2-server"
+    (install_dir / "tf").mkdir(parents=True)
+
+    server = _FakeServer(install_dir)
+    tf2.configure(server, ask=False, port=27015, dir=str(install_dir))
+    tf2.command_functions["mod"](server, "add", "curated", "sourcemod")
+    tf2.command_functions["mod"](server, "apply")
+
+    mods = server.data["mods"]
+    assert mods["last_apply"] == "success", f"apply failed — errors: {mods.get('errors')}"
+    assert mods["errors"] == []
+    assert any("sourcemod" in e["resolved_id"] for e in mods["installed"])
+
+    # SourceMod always places at least its plugins directory.
+    addons_dir = install_dir / "tf" / "addons" / "sourcemod"
+    assert addons_dir.exists(), f"tf/addons/sourcemod not found under {install_dir}"
+

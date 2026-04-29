@@ -22,13 +22,14 @@ from utils.valve_server import (
     wake_source_server_for_a2s,
 )
 from utils.gamemodules import common as gamemodule_common
+from .maps import apply_configured_maps, ensure_map_state, tf2_map_command
 from .mods import apply_configured_mods, ensure_mod_state, tf2_mod_command
 
 steam_app_id = 232250
 steam_anonymous_login_possible = True
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 
-commands = ("update", "restart", "mod")
+commands = ("update", "restart", "mod", "map")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The port for the server to listen on",
     "The directory to install the server in",
@@ -41,6 +42,14 @@ command_args["mod"] = CmdSpec(
         ArgSpec("EXTRA", "optional channel/version", str),
     ),
 )
+command_args["map"] = CmdSpec(
+    requiredarguments=(ArgSpec("ACTION", "map action", str),),
+    optionalarguments=(
+        ArgSpec("SOURCE", "curated", str),
+        ArgSpec("IDENTIFIER", "map name", str),
+        ArgSpec("EXTRA", "optional channel/version", str),
+    ),
+)
 
 # required still
 command_descriptions = {
@@ -50,6 +59,7 @@ command_descriptions = {
     ),
 }
 command_descriptions["mod"] = "Manage TF2 server-side mods and workshop items."
+command_descriptions["map"] = "Manage TF2 custom maps from the curated map registry."
 
 command_functions = {}
 command_functions["mod"] = tf2_mod_command
@@ -171,6 +181,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="srcds_run"):
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
     ensure_mod_state(server)
+    ensure_map_state(server)
     return gamemodule_common.finalize_configure(server)
 
 
@@ -194,6 +205,9 @@ def install(server):
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         _package_override("apply_configured_mods", apply_configured_mods)(server)
+    ensure_map_state(server)
+    if server.data["maps"]["enabled"] and server.data["maps"]["autoapply"]:
+        _package_override("apply_configured_maps", apply_configured_maps)(server)
     server.data.save()
 
 
@@ -238,6 +252,9 @@ def update(server, validate=True, restart=False):
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         _package_override("apply_configured_mods", apply_configured_mods)(server)
+    ensure_map_state(server)
+    if server.data["maps"]["enabled"] and server.data["maps"]["autoapply"]:
+        _package_override("apply_configured_maps", apply_configured_maps)(server)
 
 
 def get_start_command(server):
@@ -417,6 +434,24 @@ def status(server, verbose):
     error_messages = [str(message) for message in mods.get("errors", []) if str(message)]
     if error_messages:
         print("Mod apply errors: " + "; ".join(error_messages))
+    maps = server.data.get("maps", {})
+    pending_map_ids = sorted(
+        {
+            entry.get("resolved_id")
+            for entry in maps.get("desired", {}).get("curated", [])
+            if entry.get("resolved_id")
+        }
+        - {
+            entry.get("resolved_id")
+            for entry in maps.get("installed", [])
+            if entry.get("resolved_id")
+        }
+    )
+    if pending_map_ids:
+        print("Maps pending apply: " + ", ".join(pending_map_ids))
+    map_error_messages = [str(m) for m in maps.get("errors", []) if str(m)]
+    if map_error_messages:
+        print("Map apply errors: " + "; ".join(map_error_messages))
 
 
 def checkvalue(server, key, *value):
@@ -486,6 +521,7 @@ command_functions = {
     "update": update,
     "restart": restart,
     "mod": tf2_mod_command,
+    "map": tf2_map_command,
 }  # will have elements added as the functions are defined
 
 wake_a2s_query = wake_source_server_for_a2s

@@ -6,6 +6,7 @@ import hashlib
 import shutil
 import tarfile
 import tempfile
+import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -60,6 +61,22 @@ def download_to_cache(url, *, allowed_hosts, target_path, checksum=None):
     return target_path
 
 
+def stage_single_file(source_path, stage_root, destination_relative):
+    """Stage a single downloaded file at a relative destination inside stage_root.
+
+    Creates the parent directories and copies the file so that the subsequent
+    ``install_staged_tree`` call finds it at the expected location.
+    Returns a one-element list containing the absolute staged path (mirroring
+    the ``extract_tarball_safe`` return convention).
+    """
+    stage_root = Path(stage_root)
+    target = stage_root / destination_relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_path, target)
+    return [target]
+
+
+
 def extract_tarball_safe(tar_path, extract_root):
     """Extract a tarball while rejecting entries that escape the target root."""
     tar_path = Path(tar_path)
@@ -90,6 +107,40 @@ def extract_tarball_safe(tar_path, extract_root):
                     extracted_paths.append(destination)
     except (OSError, tarfile.TarError) as exc:
         raise ModSupportError(f"Failed to extract tarball {tar_path}: {exc}") from exc
+
+    return extracted_paths
+
+
+def extract_zip_safe(zip_path, extract_root):
+    """Extract a zip archive while rejecting entries that escape the target root."""
+    zip_path = Path(zip_path)
+    extract_root = Path(extract_root)
+    extract_root.mkdir(parents=True, exist_ok=True)
+    extracted_paths = []
+    resolved_root = extract_root.resolve()
+
+    try:
+        with zipfile.ZipFile(zip_path) as zf:
+            members = zf.infolist()
+            validated = []
+            for info in members:
+                destination = _safe_relative_destination(
+                    base_root=resolved_root,
+                    relative_path=info.filename,
+                    error_prefix="Refusing to extract unsafe zip path",
+                )
+                validated.append((info, destination))
+
+            for info, destination in validated:
+                if info.is_dir():
+                    destination.mkdir(parents=True, exist_ok=True)
+                    continue
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                with zf.open(info) as src, destination.open("wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                extracted_paths.append(destination)
+    except (OSError, zipfile.BadZipFile) as exc:
+        raise ModSupportError(f"Failed to extract zip {zip_path}: {exc}") from exc
 
     return extracted_paths
 
