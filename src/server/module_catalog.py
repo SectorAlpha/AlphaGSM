@@ -108,8 +108,22 @@ def _canonical_module_names(
 
 
 def load_default_module_catalog() -> ModuleCatalog:
+    import sys as _sys
+
+    alias_path = Path(__file__).resolve().with_name("module_aliases.json")
+    if getattr(_sys, "frozen", False):
+        # Running inside a PyInstaller bundle: .py source files are not
+        # extracted to disk, so the filesystem scan for canonical module names
+        # would return an empty set causing alias validation to fail.
+        # The aliases were verified at build time, so skip the scan.
+        payload = json.loads(alias_path.read_text(encoding="utf-8"))
+        return ModuleCatalog(
+            canonical_modules=(),
+            aliases=dict(payload.get("aliases", {})),
+            namespace_defaults=dict(payload.get("namespace_defaults", {})),
+        )
     root = Path(__file__).resolve().parents[1]
     return ModuleCatalog.from_paths(
         gamemodule_dir=root / "gamemodules",
-        alias_path=Path(__file__).resolve().with_name("module_aliases.json"),
+        alias_path=alias_path,
     )
