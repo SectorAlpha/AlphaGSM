@@ -35,7 +35,10 @@ def _rewrite_key_value_config(
                     lines.append(line)
     for key, value in config_values.items():
         lines.append("%s%s%s\n" % (key, separator, value))
-    with open(filename, "w", encoding=encoding) as handle:
+    # Game server config files must contain plaintext credentials because the
+    # game binary reads them directly.  Suppressing CodeQL
+    # py/clear-text-storage-sensitive-data: this write is intentional.
+    with open(filename, "w", encoding=encoding) as handle:  # lgtm[py/clear-text-storage-sensitive-data]
         handle.write("".join(lines))
 
 
