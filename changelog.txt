@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-04-29
+- Packaging: exclude `gamemodules.factorio` from PyInstaller collection so standalone binary builds succeed on all three platforms; the module still raises `NotImplementedError` on import as required by its unit test, but is never needed by the binary since factorio support is unimplemented.
+
 2026-04-28
 - Server support: add the TF2 curated mod-support foundation with package-backed module wiring, curated registry metadata for SourceMod and MetaMod, and the first shared desired-state groundwork for server-side mod management.
 - Server support: make TF2 curated mod apply persist mod-state errors and expose broken apply state through `status` so failed reconciliations are operationally visible.

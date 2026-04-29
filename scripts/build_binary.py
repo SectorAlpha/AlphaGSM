@@ -138,6 +138,8 @@ def main():
                 "downloadermodules",
                 "--collect-submodules",
                 "gamemodules",
+                "--exclude-module",
+                "gamemodules.factorio",
                 "--collect-submodules",
                 "screen",
                 "--collect-submodules",
