@@ -2,6 +2,7 @@
 __pycache__
 *.bak
 alphagsm.conf
+*.secrets.json
 .alphagsm-docker
 .worktrees/
 ~/
