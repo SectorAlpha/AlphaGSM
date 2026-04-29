@@ -6,6 +6,7 @@ import screen
 from server import ServerError
 
 import server.runtime as runtime_module
+from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
@@ -16,6 +17,13 @@ command_args = gamemodule_common.build_setup_command_args(
 )
 command_descriptions = {}
 command_functions = {}
+setting_schema = {
+    "adminpassword": SettingSpec(
+        canonical_key="adminpassword",
+        description="Server admin password.",
+        secret=True,
+    ),
+}
 max_stop_wait = 1
 
 

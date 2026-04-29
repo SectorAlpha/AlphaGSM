@@ -8,6 +8,7 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
+from server.settable_keys import SettingSpec
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 233780
@@ -23,6 +24,13 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Arma 3 headless client.",
 )
 command_functions = {}
+setting_schema = {
+    "password": SettingSpec(
+        canonical_key="password",
+        description="Password required to connect to the Arma 3 server.",
+        secret=True,
+    ),
+}
 max_stop_wait = 1
 
 

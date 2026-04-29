@@ -3,6 +3,7 @@
 import os
 
 import server.runtime as runtime_module
+from server.settable_keys import SettingSpec
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -24,6 +25,13 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the ASKA dedicated server.",
 )
 command_functions = {}
+setting_schema = {
+    "password": SettingSpec(
+        canonical_key="password",
+        description="Password required to join the server.",
+        secret=True,
+    ),
+}
 max_stop_wait = 1
 
 

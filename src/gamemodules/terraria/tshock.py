@@ -15,6 +15,7 @@ from .common import (
     install_archive,
     message,
     resolve_tshock_download,
+    setting_schema,
     status,
 )
 from utils.gamemodules import common as gamemodule_common

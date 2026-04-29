@@ -14,6 +14,7 @@ import urllib.request
 import downloader
 import screen
 from server import ServerError
+from server.settable_keys import SettingSpec
 from utils import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.gamemodules import common as gamemodule_common
@@ -33,6 +34,13 @@ command_args = gamemodule_common.build_setup_version_url_command_args(
 )
 command_descriptions = {}
 command_functions = {}
+setting_schema = {
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        description="Password required to join the server.",
+        secret=True,
+    ),
+}
 
 
 def _read_text(url):

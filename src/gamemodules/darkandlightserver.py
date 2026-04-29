@@ -10,6 +10,7 @@ from server import ServerError
 from utils.platform_info import IS_LINUX
 
 import server.runtime as runtime_module
+from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
@@ -26,6 +27,18 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Dark and Light dedicated server.",
 )
 command_functions = {}
+setting_schema = {
+    "adminpassword": SettingSpec(
+        canonical_key="adminpassword",
+        description="Server admin password.",
+        secret=True,
+    ),
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        description="Password required to join the server.",
+        secret=True,
+    ),
+}
 max_stop_wait = 1
 
 

@@ -8,6 +8,7 @@ from server import ServerError
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
+from server.settable_keys import SettingSpec
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 896660
@@ -23,6 +24,13 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Valheim dedicated server.",
 )
 command_functions = {}
+setting_schema = {
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        description="Password required to join the server.",
+        secret=True,
+    ),
+}
 max_stop_wait = 1
 
 
