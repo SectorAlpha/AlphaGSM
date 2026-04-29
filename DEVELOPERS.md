@@ -157,7 +157,7 @@ Generated parity reporting also works at the canonical-module level:
 | `prestart` | `(server, *args, **kwargs)` | Run before the screen session starts (e.g. symlink Steam libraries) |
 | `poststart` | `(server, *args, **kwargs)` | Run after the screen session starts (e.g. send init commands) |
 | `postset` | `(server, key, **kwargs)` | React after a `set` data-store change |
-| `setting_schema` | module-level `dict[str, SettingSpec]` | Declare schema-backed `set` keys, aliases, examples, and secrecy for discovery |
+| `setting_schema` | module-level `dict[str, SettingSpec]` | Declare schema-backed `set` keys, aliases, examples, and secrecy for discovery; entries with `secret=True` are automatically routed to the mode-0o600 secrets file (see [Secrets File](#secrets-file)) |
 | `config_sync_keys` | module-level `tuple[str, ...]` | List datastore keys that should auto-sync into native game config files |
 | `sync_server_config` | `(server)` | Rewrite the native config file from datastore-backed values |
 | `list_setting_values` | `(server, canonical_key)` | Return enumerable values for schema-backed keys such as maps |
@@ -270,6 +270,42 @@ Port ownership is derived from:
 - hosted-IP keys such as `bindaddress`, `publicip`, `externalip`, and `hostip`
 - runtime/container `ports` metadata
 - local query/info hooks when they imply an additional claimed local port
+
+### Secrets File
+
+Keys declared as `secret=True` in a module's `setting_schema` are stored in a separate
+`<name>.secrets.json` file rather than the main `<name>.json` data file.
+
+- `Server.__init__` calls `_configure_secret_split()` immediately after the module is loaded.
+  That method collects every storage key whose `SettingSpec` carries `secret=True` and passes
+  them to `JSONDataStore.set_secret_keys(keys, secrets_path)`.
+- At save time the data store writes secret keys exclusively to `<name>.secrets.json` using
+  `os.open(…, O_WRONLY | O_CREAT | O_TRUNC, 0o600)` so the file is never readable by other
+  system users. It then `os.chmod`s the file to enforce `0o600` after write.
+- At load time the data store merges the secrets file back into the in-memory dict, so the
+  rest of the code operates on a single unified namespace.
+- `alphagsm data` (which calls `prettydump()`) redacts any non-empty secret value as
+  `<redacted>` rather than printing the plaintext.
+- If a module has no `setting_schema`, or none of its schema entries carry `secret=True`,
+  no secrets file is created and the data store behaves exactly as before.
+
+To mark a password or token field as secret in a new or existing module:
+
+```python
+from server.settable_keys import SettingSpec
+
+setting_schema = {
+    "adminpassword": SettingSpec(
+        canonical_key="adminpassword",
+        description="Server admin password.",
+        secret=True,
+    ),
+}
+```
+
+Modules that only need secrecy and have no other schema requirements can provide a minimal
+`setting_schema` containing only the password entries. Non-password `set` operations on
+non-schema keys still fall through to `checkvalue` / `str_keys` unchanged.
 
 ## Download And Install Pipeline
 
