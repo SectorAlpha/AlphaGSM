@@ -6,6 +6,7 @@ import re
 
 _EQUALS_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(.*?)(\s*)\Z")
 _SPACE_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)[ ](?:[ \t]*(.*?))?(\s*)\Z")
+_SPACE_SINGLE_TOKEN_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*) (\S*)(\s*)\Z")
 
 
 def _rewrite_key_value_config(
@@ -53,6 +54,21 @@ def rewrite_space_config(filename, config_values, encoding="utf-8"):
         filename,
         config_values,
         pattern=_SPACE_PATTERN,
+        separator=" ",
+        encoding=encoding,
+    )
+
+
+def rewrite_single_token_space_config(filename, config_values, encoding="utf-8"):
+    """Like rewrite_space_config but only rewrites lines where the existing value is a single token.
+
+    Lines where the existing value contains spaces are left unchanged and the new
+    value is appended at the end instead.
+    """
+    _rewrite_key_value_config(
+        filename,
+        config_values,
+        pattern=_SPACE_SINGLE_TOKEN_PATTERN,
         separator=" ",
         encoding=encoding,
     )

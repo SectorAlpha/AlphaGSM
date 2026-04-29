@@ -2,6 +2,7 @@ import gamemodules.minecraft.paper as paper
 import gamemodules.minecraft.papermc as papermc
 import gamemodules.minecraft.velocity as velocity
 import gamemodules.minecraft.waterfall as waterfall
+import utils.gamemodules.papermc as papermc_impl
 
 
 class DummyData(dict):
@@ -35,7 +36,7 @@ def test_papermc_resolve_download_chooses_latest_stable_build(monkeypatch):
             },
         ],
     }
-    monkeypatch.setattr(papermc, "_read_json", lambda url: responses[url])
+    monkeypatch.setattr(papermc_impl, "_read_json", lambda url: responses[url])
 
     version, url = papermc.resolve_download("paper")
 

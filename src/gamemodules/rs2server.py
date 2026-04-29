@@ -44,7 +44,8 @@ setting_schema = {
 
 
 def _config_path(server):
-    return os.path.join(server.data["dir"], server.data["configfile"])
+    configfile = server.data.get("configfile", "ROGame/Config/PCServer-ROGame.ini")
+    return os.path.join(server.data["dir"], configfile)
 
 
 def _rewrite_ini_setting(path, section_name, key_name, value):

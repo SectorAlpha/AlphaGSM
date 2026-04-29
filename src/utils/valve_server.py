@@ -14,7 +14,7 @@ from server.errors import ServerError
 from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
 from utils.backups import backups as backup_utils
 from utils.fileutils import make_empty_file
-from utils.simple_kv_config import rewrite_space_config
+from utils.simple_kv_config import rewrite_space_config, rewrite_single_token_space_config
 from utils.gamemodules import common as gamemodule_common
 from utils.settings import settings
 import utils.steamcmd as steamcmd
@@ -373,7 +373,7 @@ def _ensure_steamclient_link():
 def updateconfig(filename, config_values):
     """Rewrite a simple key/value config file while preserving unknown lines."""
 
-    rewrite_space_config(filename, config_values)
+    rewrite_single_token_space_config(filename, config_values)
 
 
 def validate_source_startmap(server, game_dir, startmap):

@@ -30,6 +30,7 @@ def test_extract_template_defaults_for_representative_modules():
         [
             ("queryport", "27015"),
             ("configfile", "ROGame/Config/PCServer-ROGame.ini"),
+            ("servername", "AlphaGSM <server name>"),
             ("port", 7777),
         ]
     )

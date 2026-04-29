@@ -1,6 +1,7 @@
 import gamemodules.terraria.common as terraria_common
 import gamemodules.terraria.tshock as tshock
 import gamemodules.terraria.vanilla as vanilla
+import utils.gamemodules.terraria.common as terraria_common_impl
 
 
 class DummyData(dict):
@@ -27,7 +28,7 @@ def test_resolve_terraria_download_uses_explicit_version():
 
 def test_resolve_terraria_download_finds_latest_from_homepage(monkeypatch):
     monkeypatch.setattr(
-        terraria_common,
+        terraria_common_impl,
         "_head_ok",
         lambda url: "1457" not in url,
     )
@@ -40,7 +41,7 @@ def test_resolve_terraria_download_finds_latest_from_homepage(monkeypatch):
 
 def test_resolve_tshock_download_picks_zip_asset(monkeypatch):
     monkeypatch.setattr(
-        terraria_common,
+        terraria_common_impl,
         "_read_json",
         lambda url: {
             "tag_name": "v5.2.3",

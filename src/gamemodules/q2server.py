@@ -42,7 +42,6 @@ _quake_launch_schema = gamemodule_common.build_quake_setting_schema(
     hostname_before_port=True,
 )
 setting_schema = {
-    "port": _quake_launch_schema["port"],
     "fs_game": _quake_launch_schema["fs_game"],
     "hostname": SettingSpec(
         canonical_key="hostname",
@@ -52,6 +51,7 @@ setting_schema = {
         native_config_key="hostname",
         launch_arg_tokens=_quake_launch_schema["hostname"].launch_arg_tokens,
     ),
+    "port": _quake_launch_schema["port"],
     "startmap": SettingSpec(
         canonical_key="startmap",
         aliases=_quake_launch_schema["startmap"].aliases,

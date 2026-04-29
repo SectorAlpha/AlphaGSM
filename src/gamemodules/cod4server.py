@@ -4,7 +4,7 @@ import os
 
 import screen
 from server import ServerError
-from server.settable_keys import build_launch_arg_values, build_native_config_values
+from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.simple_kv_config import rewrite_equals_config
@@ -24,15 +24,39 @@ command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
 config_sync_keys = ("hostname", "moddir", "startmap")
+_quake_launch_schema = gamemodule_common.build_quake_setting_schema(
+    include_fs_game=True,
+    game_key="moddir",
+    game_description="The active Call of Duty 4 mod directory.",
+    fs_game_tokens=("+set", "fs_game"),
+    port_tokens=("+set", "net_port"),
+    hostname_tokens=("+set", "sv_hostname"),
+    hostname_before_port=True,
+)
 setting_schema = {
-    **gamemodule_common.build_quake_setting_schema(
-        include_fs_game=True,
-        game_key="moddir",
-        game_description="The active Call of Duty 4 mod directory.",
-        fs_game_tokens=("+set", "fs_game"),
-        port_tokens=("+set", "net_port"),
-        hostname_tokens=("+set", "sv_hostname"),
-        hostname_before_port=True,
+    "fs_game": SettingSpec(
+        canonical_key="moddir",
+        description=_quake_launch_schema["fs_game"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="moddir",
+        launch_arg_tokens=_quake_launch_schema["fs_game"].launch_arg_tokens,
+        examples=_quake_launch_schema["fs_game"].examples,
+    ),
+    "hostname": SettingSpec(
+        canonical_key="hostname",
+        description=_quake_launch_schema["hostname"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="hostname",
+        launch_arg_tokens=_quake_launch_schema["hostname"].launch_arg_tokens,
+    ),
+    "port": _quake_launch_schema["port"],
+    "startmap": SettingSpec(
+        canonical_key="startmap",
+        aliases=_quake_launch_schema["startmap"].aliases,
+        description=_quake_launch_schema["startmap"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="startmap",
+        launch_arg_tokens=_quake_launch_schema["startmap"].launch_arg_tokens,
     ),
     **gamemodule_common.build_download_source_setting_schema(),
     **gamemodule_common.build_executable_path_setting_schema(),

@@ -30,6 +30,13 @@ _quake_launch_schema = gamemodule_common.build_quake_setting_schema(
     hostname_tokens=("+set", "sv_hostname"),
 )
 setting_schema = {
+    "fs_game": SettingSpec(
+        canonical_key="fs_game",
+        description=_quake_launch_schema["fs_game"].description,
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="fs_game",
+        launch_arg_tokens=_quake_launch_schema["fs_game"].launch_arg_tokens,
+    ),
     "port": _quake_launch_schema["port"],
     "hostname": SettingSpec(
         canonical_key="hostname",
@@ -38,13 +45,6 @@ setting_schema = {
         apply_to=("datastore", "launch_args", "native_config"),
         native_config_key="hostname",
         launch_arg_tokens=_quake_launch_schema["hostname"].launch_arg_tokens,
-    ),
-    "fs_game": SettingSpec(
-        canonical_key="fs_game",
-        description=_quake_launch_schema["fs_game"].description,
-        apply_to=("datastore", "launch_args", "native_config"),
-        native_config_key="fs_game",
-        launch_arg_tokens=_quake_launch_schema["fs_game"].launch_arg_tokens,
     ),
     "startmap": SettingSpec(
         canonical_key="startmap",
