@@ -7,6 +7,10 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-04-30
+- CI: trigger `build-runtime-family-images` on `release_v1` to publish the updated `simple-tcp` runtime image (with `mumble-server` installed) so the Mumble Docker backend integration test can pass.
+- Security: suppress CodeQL `py/clear-text-storage-sensitive-data` false-positives in `valve_server.py` where plaintext game-server credentials are written intentionally to Source engine config files read directly by the binary.
+
 2026-04-29
 - Security: split schema-backed secret settings (passwords, RCON keys) into a separate `<name>.secrets.json` file written with mode 0o600, keeping plain-text credentials out of the world-readable main data file; the data store transparently merges both files so the rest of the code is unchanged, and `alphagsm data` redacts non-empty secret values rather than printing them.
 - Security: add `secret=True` SettingSpec entries for password fields in all remaining legacy game modules (ark, arksurvivalascended, atlasserver, valheim, gravserver, darkandlightserver, projectzomboid, askaserver, bobserver, stationeersserver, arma3headlessserver, terraria vanilla and tshock) so their passwords are routed into the mode-0o600 secrets file instead of the world-readable main data file.

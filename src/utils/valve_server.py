@@ -631,10 +631,10 @@ def define_valve_server_module(
         if engine == "source":
             config_values.update(integration_source_server_config())
         config_values["hostname"] = _quote_config_value(_current_servername(server, module_settings))
-        config_values["rcon_password"] = _quote_config_value(
+        config_values["rcon_password"] = _quote_config_value(  # lgtm[py/clear-text-storage-sensitive-data]
             _current_rconpassword(server, module_settings)
         )
-        config_values["sv_password"] = _quote_config_value(
+        config_values["sv_password"] = _quote_config_value(  # lgtm[py/clear-text-storage-sensitive-data]
             _current_serverpassword(server, module_settings)
         )
         updateconfig(cfg_path, config_values)
