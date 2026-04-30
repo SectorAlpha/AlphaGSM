@@ -90,6 +90,7 @@ def test_tshock_configure_sets_dotnet_defaults(tmp_path, monkeypatch):
     assert server.data["url"] == "http://example.com/tshock.zip"
     assert server.data["dotnetpath"] == "dotnet"
     assert server.data["backupfiles"] == ["Worlds", "serverconfig.txt", "tshock"]
+    assert server.data["mods"]["desired"]["url"] == []
 
 
 def test_terraria_install_archive_copies_downloaded_tree(tmp_path, monkeypatch):

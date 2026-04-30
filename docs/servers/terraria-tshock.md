@@ -75,5 +75,22 @@ alphagsm mytshock backup
 ### Maps and Mods
 
 - **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Mod directory**: `ServerPlugins/`
 - **Workshop support**: No
+
+## Plugin Sources
+
+TShock plugin management is separate from vanilla Terraria and uses its own
+AlphaGSM cache/state root.
+
+- AlphaGSM stores TShock plugin cache/state under `.alphagsm/mods/terraria-tshock/` so it does not collide with other Terraria variants.
+- Current plugin source support is `url`, which accepts direct plugin `.dll` downloads and `.zip` plugin packages.
+- AlphaGSM records installed plugin files per entry so `mod cleanup` removes only tracked plugins and leaves unrelated files alone.
+
+Examples:
+
+```bash
+alphagsm mytshock mod add url https://plugins.example.invalid/ExamplePlugin.dll
+alphagsm mytshock mod apply
+alphagsm mytshock mod cleanup
+```

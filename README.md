@@ -223,6 +223,15 @@ Minecraft variants stay separate:
 ./alphagsm mypaper mod cleanup
 ```
 
+TShock also keeps plugin cache/state isolated under its own variant-specific
+directory:
+
+```bash
+./alphagsm mytshock mod add url https://plugins.example.invalid/ExamplePlugin.dll
+./alphagsm mytshock mod apply
+./alphagsm mytshock mod cleanup
+```
+
 Show help:
 
 ```bash
