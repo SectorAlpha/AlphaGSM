@@ -176,6 +176,7 @@ Curated server-side mod support now has a shared core under
 - `registry.py` resolves module-local curated registries from family plus optional channel/version into a concrete release id, URL, allowed hosts, archive type, and approved destination roots.
 - `downloads.py` owns trusted-host validation, optional checksum enforcement, safe archive extraction, and destination allowlisting so AlphaGSM only installs files into explicitly approved server paths.
 - `ownership.py` records the AlphaGSM-owned relative file manifest for each installed curated entry.
+- `providers.py` owns shared external-provider helpers such as GameBanana item resolution and Workshop id validation. These providers are not TF2-specific; individual game modules decide whether and how to install their payloads safely.
 - `reconcile.py` compares desired vs installed state so modules can add missing curated entries and remove only files that AlphaGSM previously recorded as owned.
 
 Modules that opt into curated mod support still own the game-specific layer:
@@ -191,6 +192,7 @@ When a module supports more than one source class, keep the distinction explicit
 
 - `manifest` or `curated` means AlphaGSM owns the catalog entry through a checked-in registry file and resolves a known family plus optional channel/version into a concrete release.
 - provider-id sources such as `gamebanana` or `workshop` mean the user supplied an external item id and AlphaGSM resolves live metadata from that provider at apply time.
+- Treat provider-id sources as shared integrations that can be reused across modules; do not bury provider-resolution code under one game package unless the upstream service is genuinely game-specific.
 - Prefer documenting `manifest` as the public user-facing term when the command surface needs to distinguish AlphaGSM-owned entries from external provider ids, but keep `curated` accepted when older commands or datastore state already use that name.
 - Keep these source classes separate in the datastore so support expectations, reproducibility, and future update semantics stay clear.
 

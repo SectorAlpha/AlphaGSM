@@ -14,13 +14,16 @@ from server.modsupport.downloads import (
 from server.modsupport.errors import ModSupportError
 from server.modsupport.models import DesiredModEntry, InstalledModEntry
 from server.modsupport.ownership import build_owned_manifest
+from server.modsupport.providers import (
+    GAMEBANANA_ALLOWED_HOSTS,
+    resolve_gamebanana_mod,
+    validate_workshop_id,
+)
 from server.modsupport.reconcile import reconcile_mod_state
 from server.modsupport.registry import CuratedRegistryLoader
 import utils.steamcmd as steamcmd
 
-from .gamebanana import GAMEBANANA_ALLOWED_HOSTS, resolve_gamebanana_mod
 from .layout import ALLOWED_TF2_MOD_DESTINATIONS
-from .workshop import validate_workshop_id
 
 
 TF2_WORKSHOP_APP_ID = 440

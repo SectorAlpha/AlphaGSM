@@ -61,6 +61,8 @@ external provider ids.
   resolves the current downloadable archive from GameBanana.
 - `workshop` means you provide a numeric Steam Workshop item id and AlphaGSM
   tries to download it through SteamCMD.
+- GameBanana and Workshop are shared external providers, not TF2-owned
+  registries. TF2 currently just consumes those provider integrations.
 - `curated` still works as a compatibility alias for `manifest`.
 
 Examples:

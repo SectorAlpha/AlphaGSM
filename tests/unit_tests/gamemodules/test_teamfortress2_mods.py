@@ -389,6 +389,46 @@ def test_mod_cleanup_removes_installed_files_and_resets_state(tmp_path):
     assert server.data["mods"]["last_apply"] == "cleanup"
 
 
+def test_mod_cleanup_removes_only_files_recorded_per_mod(tmp_path):
+    server = DummyServer()
+    tf2.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+
+    first_owned = (
+        Path(server.data["dir"]) / "tf" / "addons" / "sourcemod" / "plugins" / "first.smx"
+    )
+    second_owned = (
+        Path(server.data["dir"]) / "tf" / "addons" / "metamod" / "bin" / "second.vdf"
+    )
+    unowned_file = (
+        Path(server.data["dir"]) / "tf" / "addons" / "sourcemod" / "plugins" / "manual.smx"
+    )
+
+    first_owned.parent.mkdir(parents=True)
+    second_owned.parent.mkdir(parents=True)
+    first_owned.write_text("first", encoding="utf-8")
+    second_owned.write_text("second", encoding="utf-8")
+    unowned_file.write_text("manual", encoding="utf-8")
+
+    server.data["mods"]["installed"] = [
+        {
+            "source_type": "gamebanana",
+            "resolved_id": "gamebanana.12345.777",
+            "installed_files": ["tf/addons/sourcemod/plugins/first.smx"],
+        },
+        {
+            "source_type": "workshop",
+            "resolved_id": "workshop.1234567890",
+            "installed_files": ["tf/addons/metamod/bin/second.vdf"],
+        },
+    ]
+
+    tf2.command_functions["mod"](server, "cleanup")
+
+    assert not first_owned.exists()
+    assert not second_owned.exists()
+    assert unowned_file.exists()
+
+
 def _make_sourcemod_archive(tmp_path):
     """Build a minimal fake sourcemod tar.gz for local HTTP tests."""
     archive_root = tmp_path / "archive-root"

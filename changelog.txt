@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-04-30
+- Dev: move GameBanana and Workshop provider helpers into the shared mod-support layer so external provider integrations are not modeled as TF2-specific code.
 - Documentation: describe TF2 `manifest` vs external provider-id mod sources in the user and developer guides, and accept `manifest` as a clearer compatibility alias for the existing curated registry source.
 - Server support: let TF2 `mod` reset installed state with `cleanup`, resolve GameBanana item ids to downloadable archives, and make workshop apply attempt a first-pass SteamCMD download into approved server-side mod destinations.
 - CLI: harden `self-update` so bundled binaries update only from real release version numbers, source checkouts cannot accidentally replace their Python interpreter via `--source binary`, and `main`/`master` git installs fast-forward with `git pull --ff-only`.

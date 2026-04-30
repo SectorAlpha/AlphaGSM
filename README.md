@@ -190,6 +190,8 @@ provider ids:
   reproducible path for entries such as SourceMod and MetaMod.
 - `gamebanana` and `workshop` use a provider item id that AlphaGSM resolves
   live from that external service.
+- GameBanana and Steam Workshop are universal provider types rather than
+  TF2-only catalogs. TF2 is just the first module using them here.
 - `curated` is still accepted as a compatibility alias for `manifest`.
 
 Examples:

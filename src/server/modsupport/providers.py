@@ -1,4 +1,4 @@
-"""Helpers for resolving TF2 GameBanana downloads by item id."""
+"""Shared helpers for external mod providers such as GameBanana and Workshop."""
 
 from __future__ import annotations
 
@@ -8,10 +8,12 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from server import ServerError
-from server.modsupport.errors import ModSupportError
+
+from .errors import ModSupportError
 
 
 _GAMEBANANA_ID_RE = re.compile(r"^[0-9]+$")
+_WORKSHOP_ID_RE = re.compile(r"^[0-9]+$")
 _GAMEBANANA_FILES_API = "https://gamebanana.com/apiv11/Mod/{item_id}?_csvProperties=_aFiles"
 _SUPPORTED_ARCHIVE_SUFFIXES = (
     (".tar.gz", "tar"),
@@ -32,6 +34,14 @@ def validate_gamebanana_id(raw_value: str) -> str:
 
     if not _GAMEBANANA_ID_RE.match(str(raw_value)):
         raise ServerError("GameBanana entries require a numeric item id")
+    return str(raw_value)
+
+
+def validate_workshop_id(raw_value: str) -> str:
+    """Return a normalized workshop item id or raise for invalid input."""
+
+    if not _WORKSHOP_ID_RE.match(str(raw_value)):
+        raise ServerError("Workshop entries require a numeric workshop id")
     return str(raw_value)
 
 
