@@ -52,10 +52,12 @@ def test_cs2_uses_shared_space_config_writer():
 
 def test_command_args_expose_setup_update_and_restart():
     assert "setup" in mod.command_args
+    assert "mod" in mod.command_args
     assert "update" in mod.command_args
     assert "restart" in mod.command_args
     assert mod.command_args["setup"].optionalarguments[0].name == "PORT"
     assert mod.command_args["setup"].optionalarguments[1].name == "DIR"
+    assert mod.command_args["mod"].requiredarguments[0].name == "ACTION"
     assert mod.command_args["update"].options[0].keyword == "validate"
     assert mod.command_args["update"].options[1].keyword == "restart"
 

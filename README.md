@@ -204,6 +204,16 @@ Examples:
 ./alphagsm mytf2 mod cleanup
 ```
 
+CS2 also exposes provider-id based server-side mod management for `gamebanana`
+and `workshop` sources:
+
+```bash
+./alphagsm mycs2 mod add gamebanana 12345
+./alphagsm mycs2 mod add workshop 1234567890
+./alphagsm mycs2 mod apply
+./alphagsm mycs2 mod cleanup
+```
+
 Show help:
 
 ```bash

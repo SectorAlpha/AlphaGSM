@@ -81,4 +81,25 @@ Setup configures:
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: AlphaGSM can now track provider-id based CS2 server-side mod installs.
+
+## Mod Sources
+
+CS2 currently supports external provider-id mod sources rather than an
+AlphaGSM-owned manifest.
+
+- `gamebanana` means you provide a numeric GameBanana item id and AlphaGSM
+	resolves the current downloadable archive from GameBanana.
+- `workshop` means you provide a numeric Steam Workshop item id and AlphaGSM
+	tries to download it through SteamCMD.
+- AlphaGSM records the files installed for each CS2 mod entry so `mod cleanup`
+	removes only tracked files and leaves unrelated files alone.
+
+Examples:
+
+```bash
+alphagsm mycs2 mod add gamebanana 12345
+alphagsm mycs2 mod add workshop 1234567890
+alphagsm mycs2 mod apply
+alphagsm mycs2 mod cleanup
+```
