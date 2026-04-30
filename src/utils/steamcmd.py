@@ -178,6 +178,47 @@ def download(
     raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
 
 
+def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonymous_login_possible):
+    """Download a Steam workshop item and return its extracted content directory."""
+
+    install_steamcmd()
+    path = _normalise_install_path(path)
+    content_dir = os.path.join(
+        path,
+        "steamapps",
+        "workshop",
+        "content",
+        str(workshop_app_id),
+        str(workshop_item_id),
+    )
+
+    print("Running SteamCMD workshop download")
+    proc_list = [STEAMCMD_EXE]
+    proc_list.extend(["+force_install_dir", path])
+    proc_list.extend(_get_login_args(steam_anonymous_login_possible))
+    proc_list.extend(
+        ["+workshop_download_item", str(workshop_app_id), str(workshop_item_id), "+quit"]
+    )
+    last_output = ""
+    for attempt in range(STEAMCMD_RETRIES):
+        proc = sp.run(
+            proc_list, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False
+        )
+        print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+        last_output = proc.stdout
+        if proc.returncode == 0 and os.path.isdir(content_dir):
+            _ensure_steamclient_symlinks()
+            return content_dir
+        if attempt + 1 < STEAMCMD_RETRIES:
+            retry_delay = _steamcmd_retry_delay(proc.stdout, workshop_app_id)
+            print(
+                "SteamCMD did not complete workshop download cleanly, retrying in %ss..."
+                % (retry_delay,)
+            )
+            time.sleep(retry_delay)
+    raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
+
+
 def get_autoupdate_script(name, path, app_id, force=False, mod=None):
     """
     Gets the autoupdate script

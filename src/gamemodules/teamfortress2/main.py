@@ -37,8 +37,8 @@ command_args = gamemodule_common.build_setup_update_restart_command_args(
 command_args["mod"] = CmdSpec(
     requiredarguments=(ArgSpec("ACTION", "mod action", str),),
     optionalarguments=(
-        ArgSpec("SOURCE", "curated or workshop", str),
-        ArgSpec("IDENTIFIER", "family or workshop id", str),
+        ArgSpec("SOURCE", "manifest/curated, gamebanana, or workshop", str),
+        ArgSpec("IDENTIFIER", "family, GameBanana id, or workshop id", str),
         ArgSpec("EXTRA", "optional channel/version", str),
     ),
 )
@@ -58,7 +58,7 @@ command_descriptions = {
         "Restarts the game server without killing the process.",
     ),
 }
-command_descriptions["mod"] = "Manage TF2 server-side mods and workshop items."
+command_descriptions["mod"] = "Manage TF2 server-side mods from the AlphaGSM manifest or external GameBanana/workshop ids."
 command_descriptions["map"] = "Manage TF2 custom maps from the curated map registry."
 
 command_functions = {}

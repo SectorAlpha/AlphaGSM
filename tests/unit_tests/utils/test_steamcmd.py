@@ -190,6 +190,59 @@ def test_download_does_not_add_platform_flag_by_default(monkeypatch):
     assert "+@sSteamCmdForcePlatformType" not in cmd
 
 
+def test_download_workshop_item_runs_steamcmd_and_returns_content_dir(tmp_path, monkeypatch):
+    calls = []
+    content_dir = tmp_path / "workshop" / "steamapps" / "workshop" / "content" / "440" / "12345"
+
+    def fake_run(cmd, stdout, stderr, text, check):
+        calls.append(cmd)
+        content_dir.mkdir(parents=True)
+        return sp.CompletedProcess(cmd, 0, "Workshop item downloaded\n")
+
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
+    monkeypatch.setattr(steamcmd_module.sp, "run", fake_run)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: str(tmp_path / "workshop"))
+
+    result = steamcmd_module.download_workshop_item("ignored", 440, 12345, True)
+
+    assert result == str(content_dir)
+    assert calls[0] == "install"
+    assert calls[1] == [
+        "/steam/steamcmd.sh",
+        "+force_install_dir",
+        str(tmp_path / "workshop"),
+        "+login",
+        "anonymous",
+        "+workshop_download_item",
+        "440",
+        "12345",
+        "+quit",
+    ]
+
+
+def test_download_workshop_item_raises_when_content_dir_never_appears(monkeypatch):
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: sp.CompletedProcess(
+            cmd,
+            0,
+            "ERROR! Failed to download workshop item\n",
+        ),
+    )
+
+    import pytest
+    with pytest.raises(sp.CalledProcessError):
+        steamcmd_module.download_workshop_item("/srv/workshop", 440, 12345, True)
+
+
 def test_get_autoupdate_script_writes_template(tmp_path, monkeypatch):
     scripts_dir = tmp_path / "scripts"
     template = tmp_path / "steamcmd_gamescript_template.txt"

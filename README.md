@@ -183,6 +183,25 @@ Update a Steam game server:
 ./alphagsm mytf2 update -r
 ```
 
+TF2 mod sources are split into AlphaGSM-owned manifest entries and external
+provider ids:
+
+- `manifest` uses AlphaGSM's known mod registry. This is the supported,
+  reproducible path for entries such as SourceMod and MetaMod.
+- `gamebanana` and `workshop` use a provider item id that AlphaGSM resolves
+  live from that external service.
+- `curated` is still accepted as a compatibility alias for `manifest`.
+
+Examples:
+
+```bash
+./alphagsm mytf2 mod add manifest sourcemod
+./alphagsm mytf2 mod add gamebanana 12345
+./alphagsm mytf2 mod add workshop 1234567890
+./alphagsm mytf2 mod apply
+./alphagsm mytf2 mod cleanup
+```
+
 Show help:
 
 ```bash

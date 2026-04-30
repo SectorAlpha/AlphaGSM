@@ -8,6 +8,7 @@ import socket
 import socketserver
 import tarfile
 import threading
+import zipfile
 
 import pytest
 
@@ -39,6 +40,7 @@ def test_configure_seeds_mod_state_defaults(tmp_path):
     assert server.data["mods"]["enabled"] is True
     assert server.data["mods"]["autoapply"] is True
     assert server.data["mods"]["desired"]["curated"] == []
+    assert server.data["mods"]["desired"]["gamebanana"] == []
     assert server.data["mods"]["desired"]["workshop"] == []
 
 
@@ -47,6 +49,17 @@ def test_mod_add_curated_uses_default_channel(tmp_path):
     tf2.configure(server, ask=False, port=27015, dir=str(tmp_path))
 
     tf2.command_functions["mod"](server, "add", "curated", "sourcemod")
+
+    entry = server.data["mods"]["desired"]["curated"][0]
+    assert entry["requested_id"] == "sourcemod"
+    assert entry["resolved_id"] == "sourcemod.stable"
+
+
+def test_mod_add_manifest_alias_uses_curated_registry(tmp_path):
+    server = DummyServer()
+    tf2.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    tf2.command_functions["mod"](server, "add", "manifest", "sourcemod")
 
     entry = server.data["mods"]["desired"]["curated"][0]
     assert entry["requested_id"] == "sourcemod"
@@ -103,6 +116,7 @@ def test_mod_add_workshop_accepts_numeric_id_only(tmp_path):
 
     tf2.command_functions["mod"](server, "add", "workshop", "1234567890")
     assert server.data["mods"]["desired"]["workshop"][0]["workshop_id"] == "1234567890"
+    assert server.data["mods"]["desired"]["workshop"][0]["resolved_id"] == "workshop.1234567890"
 
     with pytest.raises(ServerError, match="numeric workshop id"):
         tf2.command_functions["mod"](server, "add", "workshop", "map_bad")
@@ -116,6 +130,53 @@ def test_mod_add_workshop_rejects_duplicate_id(tmp_path):
 
     with pytest.raises(ServerError, match="already present in desired state"):
         tf2.command_functions["mod"](server, "add", "workshop", "1234567890")
+
+
+def test_mod_add_gamebanana_resolves_and_persists_entry(tmp_path, monkeypatch):
+    server = DummyServer()
+    tf2.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(
+        tf2_mods,
+        "resolve_gamebanana_mod",
+        lambda item_id: {
+            "source_type": "gamebanana",
+            "requested_id": item_id,
+            "resolved_id": f"gamebanana.{item_id}.777",
+            "file_id": "777",
+            "download_url": "https://gamebanana.com/dl/777",
+            "archive_type": "zip",
+            "filename": "tf2mod.zip",
+        },
+    )
+
+    tf2.command_functions["mod"](server, "add", "gamebanana", "12345")
+
+    entry = server.data["mods"]["desired"]["gamebanana"][0]
+    assert entry["requested_id"] == "12345"
+    assert entry["resolved_id"] == "gamebanana.12345.777"
+
+
+def test_mod_add_gamebanana_rejects_duplicate_requested_entry(tmp_path, monkeypatch):
+    server = DummyServer()
+    tf2.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(
+        tf2_mods,
+        "resolve_gamebanana_mod",
+        lambda item_id: {
+            "source_type": "gamebanana",
+            "requested_id": item_id,
+            "resolved_id": f"gamebanana.{item_id}.777",
+            "file_id": "777",
+            "download_url": "https://gamebanana.com/dl/777",
+            "archive_type": "zip",
+            "filename": "tf2mod.zip",
+        },
+    )
+
+    tf2.command_functions["mod"](server, "add", "gamebanana", "12345")
+
+    with pytest.raises(ServerError, match="already present in desired state"):
+        tf2.command_functions["mod"](server, "add", "gamebanana", "12345")
 
 
 def test_mod_apply_installs_curated_entry_from_override_registry(tmp_path, monkeypatch):
@@ -166,19 +227,27 @@ def test_mod_apply_installs_curated_entry_from_override_registry(tmp_path, monke
     assert server.data["mods"]["installed"][0]["resolved_id"] == "sourcemod.stable"
 
 
-def test_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_path):
+def test_mod_apply_installs_workshop_entry_from_downloaded_item(tmp_path, monkeypatch):
     server = DummyServer()
     tf2.configure(server, ask=False, port=27015, dir=str(tmp_path))
-    server.data["mods"]["desired"]["workshop"].append(
-        {"workshop_id": "1234567890", "source_type": "workshop"}
+    workshop_root = tmp_path / "workshop-cache" / "steamapps" / "workshop" / "content" / "440" / "1234567890"
+    payload = workshop_root / "addons" / "sourcemod" / "plugins"
+    payload.mkdir(parents=True)
+    (payload / "from_workshop.smx").write_text("plugin", encoding="utf-8")
+    monkeypatch.setattr(
+        tf2_mods.steamcmd,
+        "download_workshop_item",
+        lambda path, workshop_app_id, workshop_item_id, steam_anonymous_login_possible: str(
+            workshop_root
+        ),
     )
 
-    with pytest.raises(ServerError, match="Workshop support is experimental"):
-        tf2.command_functions["mod"](server, "apply")
+    tf2.command_functions["mod"](server, "add", "workshop", "1234567890")
+    tf2.command_functions["mod"](server, "apply")
 
-    assert server.data["mods"]["errors"] == [
-        "Workshop support is experimental until a verified TF2 provider is implemented"
-    ]
+    installed_file = Path(server.data["dir"]) / "tf" / "addons" / "sourcemod" / "plugins" / "from_workshop.smx"
+    assert installed_file.exists()
+    assert server.data["mods"]["installed"][0]["resolved_id"] == "workshop.1234567890"
 
 
 def test_mod_apply_clears_previous_errors_after_success(tmp_path, monkeypatch):
@@ -227,6 +296,97 @@ def test_mod_apply_clears_previous_errors_after_success(tmp_path, monkeypatch):
 
     assert server.data["mods"]["errors"] == []
     assert server.data["mods"]["last_apply"] == "success"
+
+
+def test_mod_apply_installs_gamebanana_zip_entry(tmp_path, monkeypatch):
+    server = DummyServer()
+    tf2.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    archive_root = tmp_path / "archive-root"
+    plugin_dir = archive_root / "tf" / "addons" / "sourcemod" / "plugins"
+    plugin_dir.mkdir(parents=True)
+    (plugin_dir / "banana.smx").write_text("plugin", encoding="utf-8")
+    archive_path = tmp_path / "banana.zip"
+    with zipfile.ZipFile(archive_path, "w") as zf:
+        zf.write(plugin_dir / "banana.smx", "tf/addons/sourcemod/plugins/banana.smx")
+
+    monkeypatch.setattr(
+        tf2_mods,
+        "resolve_gamebanana_mod",
+        lambda item_id: {
+            "source_type": "gamebanana",
+            "requested_id": item_id,
+            "resolved_id": f"gamebanana.{item_id}.777",
+            "file_id": "777",
+            "download_url": "https://gamebanana.com/dl/777",
+            "archive_type": "zip",
+            "filename": "banana.zip",
+        },
+    )
+    monkeypatch.setattr(
+        tf2_mods,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            archive_path, target_path
+        ),
+    )
+
+    tf2.command_functions["mod"](server, "add", "gamebanana", "12345")
+    tf2.command_functions["mod"](server, "apply")
+
+    installed_file = (
+        Path(server.data["dir"]) / "tf" / "addons" / "sourcemod" / "plugins" / "banana.smx"
+    )
+    assert installed_file.exists()
+    assert server.data["mods"]["installed"][0]["resolved_id"] == "gamebanana.12345.777"
+
+
+def test_mod_cleanup_removes_installed_files_and_resets_state(tmp_path):
+    server = DummyServer()
+    tf2.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    installed_file = (
+        Path(server.data["dir"]) / "tf" / "addons" / "sourcemod" / "plugins" / "cleanup.smx"
+    )
+    installed_file.parent.mkdir(parents=True)
+    installed_file.write_text("plugin", encoding="utf-8")
+    cache_file = Path(server.data["dir"]) / ".alphagsm" / "mods" / "cached.txt"
+    cache_file.parent.mkdir(parents=True)
+    cache_file.write_text("cache", encoding="utf-8")
+    server.data["mods"]["desired"]["curated"].append(
+        {"requested_id": "sourcemod", "resolved_id": "sourcemod.stable", "channel": "stable"}
+    )
+    server.data["mods"]["desired"]["gamebanana"].append(
+        {
+            "requested_id": "12345",
+            "resolved_id": "gamebanana.12345.777",
+            "download_url": "https://gamebanana.com/dl/777",
+            "archive_type": "zip",
+            "filename": "banana.zip",
+        }
+    )
+    server.data["mods"]["desired"]["workshop"].append(
+        {"workshop_id": "1234567890", "resolved_id": "workshop.1234567890"}
+    )
+    server.data["mods"]["installed"] = [
+        {
+            "source_type": "gamebanana",
+            "resolved_id": "gamebanana.12345.777",
+            "installed_files": ["tf/addons/sourcemod/plugins/cleanup.smx"],
+        }
+    ]
+    server.data["mods"]["errors"] = ["old error"]
+
+    tf2.command_functions["mod"](server, "cleanup")
+
+    assert not installed_file.exists()
+    assert not cache_file.exists()
+    assert server.data["mods"]["desired"] == {
+        "curated": [],
+        "gamebanana": [],
+        "workshop": [],
+    }
+    assert server.data["mods"]["installed"] == []
+    assert server.data["mods"]["errors"] == []
+    assert server.data["mods"]["last_apply"] == "cleanup"
 
 
 def _make_sourcemod_archive(tmp_path):

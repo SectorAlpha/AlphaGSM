@@ -10,6 +10,7 @@ import stat
 import subprocess as sp
 import sys
 import tempfile
+import urllib.error
 import urllib.request
 
 from utils.cmdparse import cmdparse
@@ -22,6 +23,7 @@ from .version import REPO_ROOT, get_version
 LATEST_RELEASE_API = "https://api.github.com/repos/SectorAlpha/AlphaGSM/releases/latest"
 ALLOWED_GIT_UPDATE_BRANCHES = ("master", "main")
 ALLOWED_GIT_UPDATE_PREFIXES = ("release",)
+RELEASE_VERSION_PATTERN = re.compile(r"^\d+(?:\.\d+)*$")
 
 SELF_UPDATE_CMDSPEC = CmdSpec(
     options=(
@@ -148,7 +150,10 @@ def _run_git_self_update(*, check=False):
             "Working tree is dirty; commit or stash local changes before running self-update."
         )
 
-    _git_run(["merge", "--ff-only", upstream_ref])
+    if branch in ALLOWED_GIT_UPDATE_BRANCHES:
+        _git_run(["pull", "--ff-only", remote_name, remote_branch])
+    else:
+        _git_run(["merge", "--ff-only", upstream_ref])
     print("Updated AlphaGSM to %s" % (_git_output(["rev-parse", "--short", "HEAD"]),))
     print("Restart AlphaGSM to use the updated codebase")
     return 0
@@ -192,7 +197,10 @@ def _git_run(args):
 def _run_binary_self_update(*, check=False):
     """Check for or apply a bundled-binary self-update."""
 
-    release_data = read_json(LATEST_RELEASE_API)
+    try:
+        release_data = read_json(LATEST_RELEASE_API)
+    except Exception as ex:  # pragma: no cover - exact exception type depends on transport failure
+        raise SelfUpdateError("Unable to query the latest AlphaGSM release metadata.") from ex
     latest_version = _normalize_release_version(release_data.get("tag_name", ""))
     current_version = _normalize_release_version(get_version())
 
@@ -210,13 +218,27 @@ def _run_binary_self_update(*, check=False):
     if check:
         return 0
 
+    if not getattr(sys, "frozen", False):
+        raise SelfUpdateError(
+            "Binary self-update can only replace a bundled AlphaGSM binary. "
+            "Use --check from source checkouts."
+        )
+
     if os.name == "nt":
         raise SelfUpdateError(
             "Binary self-update is not supported while running on Windows; replace the executable manually."
         )
 
-    binary_asset, checksum_asset = _select_release_assets(release_data, latest_version)
-    _replace_current_binary(binary_asset["browser_download_url"], checksum_asset["browser_download_url"])
+    try:
+        binary_asset, checksum_asset = _select_release_assets(release_data, latest_version)
+        _replace_current_binary(
+            binary_asset["browser_download_url"],
+            checksum_asset["browser_download_url"],
+        )
+    except SelfUpdateError:
+        raise
+    except (OSError, urllib.error.URLError, ValueError) as ex:
+        raise SelfUpdateError("Binary self-update failed.") from ex
     print("Updated AlphaGSM binary to %s" % (latest_version,))
     print("Restart AlphaGSM to use the new binary")
     return 0
@@ -323,11 +345,22 @@ def _is_newer_version(latest_version, current_version):
         return True
     if latest_version == current_version:
         return False
-    return _version_key(latest_version) > _version_key(current_version)
+    latest_release_key = _release_version_key(latest_version)
+    current_release_key = _release_version_key(current_version)
+    if latest_release_key is None:
+        return latest_version != current_version
+    if current_release_key is None:
+        return True
+    width = max(len(latest_release_key), len(current_release_key))
+    latest_release_key = latest_release_key + (0,) * (width - len(latest_release_key))
+    current_release_key = current_release_key + (0,) * (width - len(current_release_key))
+    return latest_release_key > current_release_key
 
 
-def _version_key(version):
-    """Return a simple comparable key for release-like version strings."""
+def _release_version_key(version):
+    """Return integer release components for dotted numeric versions."""
 
-    tokens = re.findall(r"\d+|[A-Za-z]+", _normalize_release_version(version))
-    return tuple((0, int(token)) if token.isdigit() else (1, token.lower()) for token in tokens)
+    version = _normalize_release_version(version)
+    if not RELEASE_VERSION_PATTERN.fullmatch(version):
+        return None
+    return tuple(int(part) for part in version.split("."))

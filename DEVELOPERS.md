@@ -187,6 +187,13 @@ Modules that opt into curated mod support still own the game-specific layer:
 - validate provider-specific desired entries such as curated families or workshop ids before saving them
 - fail clearly and non-destructively when a provider is still experimental or not yet verified for apply-time installation
 
+When a module supports more than one source class, keep the distinction explicit:
+
+- `manifest` or `curated` means AlphaGSM owns the catalog entry through a checked-in registry file and resolves a known family plus optional channel/version into a concrete release.
+- provider-id sources such as `gamebanana` or `workshop` mean the user supplied an external item id and AlphaGSM resolves live metadata from that provider at apply time.
+- Prefer documenting `manifest` as the public user-facing term when the command surface needs to distinguish AlphaGSM-owned entries from external provider ids, but keep `curated` accepted when older commands or datastore state already use that name.
+- Keep these source classes separate in the datastore so support expectations, reproducibility, and future update semantics stay clear.
+
 ### Operational expectations
 
 - `configure(...)` stores at minimum `port` and `dir` in `server.data`, initialises the backup data structure, and returns `(args, kwargs)` to forward to `install`

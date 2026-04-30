@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import urllib.error
 
 import pytest
 
@@ -62,6 +63,27 @@ def test_git_self_update_noops_when_current_matches_upstream(monkeypatch, capsys
     assert "No update available" in capsys.readouterr().out
 
 
+def test_git_self_update_pulls_main_branch(monkeypatch):
+    monkeypatch.setattr(self_update, "get_version", lambda: "1.2.3")
+    outputs = {
+        ("rev-parse", "--abbrev-ref", "HEAD"): "main",
+        ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"): "origin/main",
+        ("rev-parse", "HEAD"): "1111",
+        ("rev-parse", "origin/main"): "2222",
+        ("merge-base", "HEAD", "origin/main"): "1111",
+        ("status", "--porcelain"): "",
+        ("rev-parse", "--short", "HEAD"): "2222",
+    }
+    calls = []
+    monkeypatch.setattr(self_update, "_git_output", lambda args: outputs[tuple(args)])
+    monkeypatch.setattr(self_update, "_git_run", lambda args: calls.append(tuple(args)))
+
+    result = self_update._run_git_self_update(check=False)
+
+    assert result == 0
+    assert ("pull", "--ff-only", "origin", "main") in calls
+
+
 def test_binary_self_update_noops_when_latest_matches_current(monkeypatch, capsys):
     monkeypatch.setattr(self_update, "get_version", lambda: "1.2.3")
     monkeypatch.setattr(
@@ -74,3 +96,41 @@ def test_binary_self_update_noops_when_latest_matches_current(monkeypatch, capsy
 
     assert result == 0
     assert "No update available" in capsys.readouterr().out
+
+
+def test_binary_self_update_treats_non_release_build_as_older(monkeypatch, capsys):
+    monkeypatch.setattr(self_update, "get_version", lambda: "8ca961a")
+    monkeypatch.setattr(
+        self_update,
+        "read_json",
+        lambda url: {"tag_name": "v1.2.3", "assets": []},
+    )
+
+    result = self_update._run_binary_self_update(check=True)
+
+    assert result == 0
+    assert "Update available" in capsys.readouterr().out
+
+
+def test_binary_self_update_refuses_apply_from_source_checkout(monkeypatch):
+    monkeypatch.setattr(self_update, "get_version", lambda: "1.2.2")
+    monkeypatch.setattr(
+        self_update,
+        "read_json",
+        lambda url: {"tag_name": "v1.2.3", "assets": []},
+    )
+    monkeypatch.setattr(self_update.sys, "frozen", False, raising=False)
+
+    with pytest.raises(self_update.SelfUpdateError, match="bundled AlphaGSM binary"):
+        self_update._run_binary_self_update(check=False)
+
+
+def test_binary_self_update_normalizes_release_lookup_failures(monkeypatch):
+    monkeypatch.setattr(
+        self_update,
+        "read_json",
+        lambda url: (_ for _ in ()).throw(urllib.error.URLError("down")),
+    )
+
+    with pytest.raises(self_update.SelfUpdateError, match="latest AlphaGSM release metadata"):
+        self_update._run_binary_self_update(check=False)
