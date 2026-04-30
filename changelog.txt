@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-04-30
+- CLI: add a top-level `self-update` command that checks for newer AlphaGSM releases, fast-forwards tracked git installs only on stable branches (`master`, `main`, `release*`), and lets standalone binaries update from GitHub release assets only when a newer version exists.
 - CI: trigger `build-runtime-family-images` on `release_v1` to publish the updated `simple-tcp` runtime image (with `mumble-server` installed) so the Mumble Docker backend integration test can pass.
 - Security: suppress CodeQL `py/clear-text-storage-sensitive-data` false-positives in `valve_server.py` where plaintext game-server credentials are written intentionally to Source engine config files read directly by the binary.
 

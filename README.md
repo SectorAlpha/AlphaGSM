@@ -189,6 +189,19 @@ Show help:
 ./alphagsm --help
 ```
 
+Check whether AlphaGSM itself has an update available:
+
+```bash
+./alphagsm self-update --check
+```
+
+Apply a self-update when running from a tracked stable git branch or a
+standalone release binary:
+
+```bash
+./alphagsm self-update
+```
+
 ## The Best Real Examples
 
 If you want examples that show the exact order of commands that work in this repository, use the smoke-test scripts:

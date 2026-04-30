@@ -3,6 +3,7 @@
 from utils.cmdparse import cmdparse
 from server import Server, ServerError, server as servermodule
 from . import multiplexer as mp
+from . import self_update
 import subprocess as sp
 import screen
 import os
@@ -60,6 +61,9 @@ def main(name, args):
         print("AlphaGSM %s" % (get_version(),))
         return 0
 
+    if len(args) >= 1 and args[0].lower() == "self-update":
+        return self_update.run_self_update(name, args[1:], stderr=stderr)
+
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]
     #  if no arguments are called
@@ -95,6 +99,7 @@ def main(name, args):
             "logs",
             "compose",
             "ps",
+            "self-update",
         )
         + Server.default_commands
     )
@@ -588,6 +593,8 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            checking what servers a wildcard matched or in
                            scripts to list the servers in a script processable
                            way.
+          self-update [OPTION]... : Check for a newer AlphaGSM release and
+                           apply it when supported.
         """),
             file=file,
         )
@@ -595,6 +602,12 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         #  if there is no server, then return a default set of server commands
         #  that are typical of every game server
         if server is None:
+            cmdparse.shorthelp(
+                "self-update",
+                self_update.SELF_UPDATE_DESCRIPTION,
+                self_update.SELF_UPDATE_CMDSPEC,
+                file=file,
+            )
             for cmd in Server.default_commands:
                 cmdparse.shorthelp(
                     cmd,
@@ -613,6 +626,14 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         #  if we have a command, return help relating to the command to the
         #  specific command
         if server is None:
+            if cmd == "self-update":
+                cmdparse.longhelp(
+                    cmd,
+                    self_update.SELF_UPDATE_DESCRIPTION,
+                    self_update.SELF_UPDATE_CMDSPEC,
+                    file=file,
+                )
+                return
             if cmd not in Server.default_commands:
                 print("Unknown Command", file=file)
                 print(file=file)

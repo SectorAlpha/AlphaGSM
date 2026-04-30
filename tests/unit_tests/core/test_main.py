@@ -209,8 +209,18 @@ def test_main_handles_help_banned_names_and_multi_server_paths(monkeypatch):
 def test_main_rejects_wrapper_subcommands_as_server_names(monkeypatch):
     monkeypatch.setattr(main_module, "help", lambda *args, **kwargs: None)
 
-    for banned_name in ("up", "down", "start", "stop", "shell", "logs", "compose", "ps"):
+    for banned_name in ("up", "down", "start", "stop", "shell", "logs", "compose", "ps", "self-update"):
         assert main_module.main("alphagsm", [banned_name, "status"]) == 2
+
+
+def test_main_dispatches_top_level_self_update(monkeypatch):
+    calls = []
+    monkeypatch.setattr(main_module.self_update, "run_self_update", lambda name, args, stderr=None: calls.append((name, args)) or 17)
+
+    result = main_module.main("alphagsm", ["self-update", "--check"])
+
+    assert result == 17
+    assert calls == [("alphagsm", ["--check"])]
 
 
 def test_print_handled_ex_uses_traceback_in_debug(monkeypatch):
