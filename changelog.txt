@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-04-30
+- Server support: add Paper `mod` commands for direct plugin jar URLs, storing AlphaGSM-managed plugin cache/state under `.alphagsm/mods/minecraft-paper/` so Minecraft variants stay isolated and `mod cleanup` removes only tracked plugin files.
 - Server support: add Counter-Strike 2 `mod` commands for GameBanana and Steam Workshop provider ids, including owned-file tracking so `mod cleanup` removes only AlphaGSM-tracked CS2 mod files.
 - Dev: move GameBanana and Workshop provider helpers into the shared mod-support layer so external provider integrations are not modeled as TF2-specific code.
 - Documentation: describe TF2 `manifest` vs external provider-id mod sources in the user and developer guides, and accept `manifest` as a clearer compatibility alias for the existing curated registry source.

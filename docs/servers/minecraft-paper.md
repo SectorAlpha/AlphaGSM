@@ -84,4 +84,20 @@ alphagsm mypaper backup
 - **Mod directory**: `plugins/`
 - **Workshop support**: No
 - **Map notes**: The world directory contains all world data. Delete it to regenerate.
-- **Mod notes**: Place plugin .jar files in the `plugins/` directory and restart.
+- **Mod notes**: AlphaGSM can track direct plugin jar URLs for Paper and install them into `plugins/`.
+
+## Plugin Sources
+
+Paper plugin management is separate from other Minecraft variants.
+
+- AlphaGSM stores Paper plugin cache/state under `.alphagsm/mods/minecraft-paper/` so it does not collide with vanilla, Bedrock, or proxy variants.
+- Current plugin source support is `url`, which installs a direct plugin `.jar` into `plugins/`.
+- AlphaGSM records installed plugin files per entry so `mod cleanup` removes only tracked plugins and leaves unrelated files alone.
+
+Examples:
+
+```bash
+alphagsm mypaper mod add url https://plugins.example.invalid/TestPlugin.jar
+alphagsm mypaper mod apply
+alphagsm mypaper mod cleanup
+```

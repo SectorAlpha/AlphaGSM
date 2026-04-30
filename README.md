@@ -214,6 +214,15 @@ and `workshop` sources:
 ./alphagsm mycs2 mod cleanup
 ```
 
+Paper exposes direct plugin jar management with a variant-specific cache root so
+Minecraft variants stay separate:
+
+```bash
+./alphagsm mypaper mod add url https://plugins.example.invalid/TestPlugin.jar
+./alphagsm mypaper mod apply
+./alphagsm mypaper mod cleanup
+```
+
 Show help:
 
 ```bash

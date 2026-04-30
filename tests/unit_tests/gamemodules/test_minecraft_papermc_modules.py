@@ -69,6 +69,7 @@ def test_paper_configure_resolves_download_and_delegates_to_custom(tmp_path, mon
     assert server.data["version"] == "1.21.10"
     assert server.data["url"] == "http://example.com/paper.jar"
     assert server.data["download_name"] == "paper.jar"
+    assert server.data["mods"]["desired"]["url"] == []
     assert calls["exe_name"] == "paper.jar"
 
 
