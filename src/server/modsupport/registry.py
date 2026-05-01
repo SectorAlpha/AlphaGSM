@@ -68,6 +68,11 @@ class CuratedRegistry:
                     release_id=f"{family}.{resolved_channel}",
                 ),
                 destinations=destinations,
+                dependencies=_coerce_optional_string_sequence(
+                    release_payload.get("dependencies"),
+                    field_name="dependencies",
+                    release_id=f"{family}.{resolved_channel}",
+                ),
                 checksum=_coerce_optional_string_scalar(
                     release_payload.get("checksum"),
                     field_name="checksum",
@@ -78,6 +83,40 @@ class CuratedRegistry:
             raise ModSupportError(
                 f"Malformed curated mod release payload: {family}.{resolved_channel}"
             ) from exc
+
+    def resolve_with_dependencies(
+        self,
+        family: str,
+        channel: str | None = None,
+    ) -> tuple[CuratedRelease, ...]:
+        """Resolve one curated release plus its dependencies in install order."""
+
+        resolved_releases: list[CuratedRelease] = []
+        visited: set[str] = set()
+        resolving: set[str] = set()
+
+        def _visit(requested_family: str, requested_channel: str | None):
+            resolved = self.resolve(requested_family, requested_channel)
+            if resolved.resolved_id in visited:
+                return
+            if resolved.resolved_id in resolving:
+                raise ModSupportError(
+                    f"Curated mod dependency cycle detected at {resolved.resolved_id}"
+                )
+
+            resolving.add(resolved.resolved_id)
+            for dependency in resolved.dependencies:
+                dependency_family, dependency_channel = _parse_dependency_spec(
+                    dependency,
+                    release_id=resolved.resolved_id,
+                )
+                _visit(dependency_family, dependency_channel)
+            resolving.remove(resolved.resolved_id)
+            visited.add(resolved.resolved_id)
+            resolved_releases.append(resolved)
+
+        _visit(family, channel)
+        return tuple(resolved_releases)
 
 
 class CuratedRegistryLoader:
@@ -133,3 +172,30 @@ def _coerce_optional_string_scalar(value, *, field_name: str, release_id: str) -
     if value is None:
         return None
     return _coerce_string_scalar(value, field_name=field_name, release_id=release_id)
+
+
+def _coerce_optional_string_sequence(
+    value,
+    *,
+    field_name: str,
+    release_id: str,
+) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    return _coerce_string_sequence(value, field_name=field_name, release_id=release_id)
+
+
+def _parse_dependency_spec(dependency: str, *, release_id: str) -> tuple[str, str | None]:
+    if not dependency:
+        raise ModSupportError(
+            f"Malformed curated mod release payload: {release_id} field 'dependencies'"
+            " must contain non-empty dependency identifiers"
+        )
+
+    family, separator, channel = dependency.partition(".")
+    if not family or (separator and not channel):
+        raise ModSupportError(
+            f"Malformed curated mod release payload: {release_id} field 'dependencies'"
+            " must contain '<family>' or '<family>.<channel>' identifiers"
+        )
+    return family, channel or None

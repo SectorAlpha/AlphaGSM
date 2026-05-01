@@ -54,6 +54,26 @@ alphagsm myrtcwserv update
 alphagsm myrtcwserv backup
 ```
 
+## Mod Sources
+
+RTCW content management currently targets the active `fs_game` directory under
+the server root. By default that is `main/`, but if you set a custom `fs_game`
+value, AlphaGSM installs into that directory instead.
+
+- Current mod source support is direct `url` entries only.
+- `mod add url <https-url>` accepts direct `.pk3` URLs and supported archive URLs such as `.zip`, `.7z`, or tar variants when the payload exposes either `<fs_game>/<name>.pk3` or bare `.pk3` files at the archive root.
+- `mod cleanup` removes only AlphaGSM-tracked `.pk3` files and keeps its cache/state under `.alphagsm/mods/rtcwserver/`.
+- The first RTCW slice intentionally stops at `.pk3` content and does not try to install arbitrary extracted scripts or binaries.
+
+Examples:
+
+```bash
+alphagsm myrtcwserv mod add url https://example.invalid/mappack.zip
+alphagsm myrtcwserv mod add url https://example.invalid/pak-custom.pk3
+alphagsm myrtcwserv mod apply
+alphagsm myrtcwserv mod cleanup
+```
+
 ## Notes
 
 - Module name: `rtcwserver`
@@ -75,6 +95,7 @@ alphagsm myrtcwserv backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<fs_game>/` (default `main/`)
+- **Mod directory**: `<fs_game>/` (default `main/`)
+- **Mod notes**: AlphaGSM can now track direct `.pk3` and archive `url` entries for RTCW, install approved `.pk3` payloads into the active `fs_game` directory, and clean up only AlphaGSM-managed files from `.alphagsm/mods/rtcwserver/`.
 - **Workshop support**: No

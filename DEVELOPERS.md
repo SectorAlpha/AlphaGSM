@@ -99,17 +99,19 @@ The server object merges these module-level definitions with the defaults at run
 
 ## Game Module Contract
 
-A game module is either a single Python file under `src/gamemodules/` or a
-package directory with an `__init__.py` file at the same top level. The
-`Server` class dispatches user commands by calling named attributes on the
-canonical module import surface. The full specification lives in
+A canonical top-level game module is a package directory under
+`src/gamemodules/<name>/` with an `__init__.py` import surface. The `Server`
+class dispatches user commands by calling named attributes on the canonical
+module import surface. The full specification lives in
 [src/server/gamemodules.py](src/server/gamemodules.py). The skill-level
 checklist lives in [skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
 
+For top-level game modules, keep the implementation in `main.py` and reserve
+`__init__.py` for the canonical re-export surface.
+
 ### Module identity and aliases
 
-Canonical module ids are real top-level Python modules or packages under
-`src/gamemodules/`.
+Canonical module ids are real top-level package names under `src/gamemodules/`.
 
 - Define user-facing aliases and namespace defaults in [src/server/module_aliases.json](src/server/module_aliases.json).
 - Resolve module names through [src/server/module_catalog.py](src/server/module_catalog.py) before importing a game module.
@@ -176,7 +178,10 @@ Curated server-side mod support now has a shared core under
 - `registry.py` resolves module-local curated registries from family plus optional channel/version into a concrete release id, URL, allowed hosts, archive type, and approved destination roots.
 - `downloads.py` owns trusted-host validation, optional checksum enforcement, safe archive extraction, and destination allowlisting so AlphaGSM only installs files into explicitly approved server paths.
 - `ownership.py` records the AlphaGSM-owned relative file manifest for each installed curated entry.
-- `providers.py` owns shared external-provider helpers such as GameBanana item resolution and Workshop id validation. These providers are not TF2-specific; individual game modules decide whether and how to install their payloads safely.
+- `providers.py` owns shared external-provider helpers such as GameBanana item resolution, Mod DB page resolution, Workshop id validation, and direct URL normalization for plugin-style modules. These providers are not TF2-specific; individual game modules decide whether and how to install their payloads safely.
+- `plugin_jars.py` packages the repeated desired-state, checked-in manifest resolution, dependency expansion, direct URL handling for plugin payloads, Mod DB archive installs, and owned-file cleanup flow for plugin-style modules such as Paper, the proxy family, and TShock.
+- `source_addons.py` packages the repeated desired-state, manifest registry loading, archive staging, GameBanana/Mod DB/workshop intake, direct single-file URL handling, and owned-file cleanup flow for Source-engine games that install addons under a known game directory.
+- Thin Source wrappers that share the same `addons/` layout can reuse one checked-in registry under [src/gamemodules/source_curated_mods.json](src/gamemodules/source_curated_mods.json) via `load_shared_source_curated_registry()` instead of carrying identical MetaMod/SourceMod manifests per module.
 - `reconcile.py` compares desired vs installed state so modules can add missing curated entries and remove only files that AlphaGSM previously recorded as owned.
 
 Modules that opt into curated mod support still own the game-specific layer:
@@ -191,7 +196,8 @@ Modules that opt into curated mod support still own the game-specific layer:
 When a module supports more than one source class, keep the distinction explicit:
 
 - `manifest` or `curated` means AlphaGSM owns the catalog entry through a checked-in registry file and resolves a known family plus optional channel/version into a concrete release.
-- provider-id sources such as `gamebanana` or `workshop` mean the user supplied an external item id and AlphaGSM resolves live metadata from that provider at apply time.
+- provider-backed sources such as `gamebanana`, `workshop`, or `moddb` mean the user supplied either an external item id or a canonical provider page URL and AlphaGSM resolves live metadata from that provider at apply time.
+- direct `url` sources mean the user supplied a concrete download URL and AlphaGSM still validates scheme, filename shape, destination roots, and owned-file cleanup through the shared mod-support layer.
 - Treat provider-id sources as shared integrations that can be reused across modules; do not bury provider-resolution code under one game package unless the upstream service is genuinely game-specific.
 - Prefer documenting `manifest` as the public user-facing term when the command surface needs to distinguish AlphaGSM-owned entries from external provider ids, but keep `curated` accepted when older commands or datastore state already use that name.
 - Keep these source classes separate in the datastore so support expectations, reproducibility, and future update semantics stay clear.

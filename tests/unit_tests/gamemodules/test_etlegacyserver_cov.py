@@ -60,7 +60,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 
 def test_configure_resolves_download(tmp_path):
     server = DummyServer()
-    with patch.object(mod, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
+    with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
         mod.configure(server, ask=False, port=27960, dir=str(tmp_path))
     assert server.data['url'] == 'https://example.com/etl.tar.gz'
     assert server.data['version'] == '2.83'
@@ -81,7 +81,7 @@ def test_install_resolves_download(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "etl.x86_64"
     server.data["download_name"] = "test.tar.gz"
-    with patch.object(mod, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
+    with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/etl.tar.gz'
 

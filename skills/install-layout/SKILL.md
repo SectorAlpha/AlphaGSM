@@ -21,6 +21,8 @@ Use this skill when validating where AlphaGSM installs a server and how the modu
 - Config files are either in a conventional location or stored explicitly in `server.data`, and docs/templates should mirror that real path and filename.
 - Archive-backed installs should be flattened into a stable root rather than leaving versioned wrapper directories in the way.
 - Smoke tests, integration tests, and docs should all point at the same on-disk layout.
+- Module-local checked-in assets such as curated manifests should live beside the canonical module implementation inside the module package.
+- Top-level user-facing game modules should use a package directory (`<module>/__init__.py`, `main.py`, local manifests) rather than a flat `<module>.py` file.
 
 ## What To Check
 
@@ -45,3 +47,4 @@ Use this skill when validating where AlphaGSM installs a server and how the modu
 - Reuse shared helpers such as `utils/archive_install.py` where possible instead of bespoke copy trees.
 - Update docs immediately after the real install path changes.
 - Rename server-template files to the real runtime filename whenever the module or verified docs establish one stable config path.
+- Keep top-level game modules package-backed even when they are currently simple, and keep the primary implementation in `main.py`, so future support files and curated manifests do not need a later layout migration.

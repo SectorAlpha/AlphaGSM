@@ -1,20 +1,15 @@
 """PaperMC-specific setup and install helpers."""
 
-import hashlib
 from pathlib import Path
-import shutil
-from urllib.parse import urlparse
 
 from .custom import *
 from . import custom as cust
 from .papermc import resolve_download
-from server import ServerError
-from server.modsupport.downloads import download_to_cache, install_staged_tree, stage_single_file
-from server.modsupport.errors import ModSupportError
-from server.modsupport.models import DesiredModEntry, InstalledModEntry
-from server.modsupport.ownership import build_owned_manifest
-from server.modsupport.reconcile import reconcile_mod_state
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from server.modsupport.downloads import download_to_cache
+from server.modsupport.plugin_jars import build_plugin_jar_mod_support
+from server.modsupport.providers import resolve_direct_url_entry, resolve_moddb_entry
+from server.modsupport.registry import CuratedRegistryLoader
+from utils.cmdparse.cmdspec import CmdSpec, OptSpec
 from utils.gamemodules.minecraft.jardownload import install_downloaded_jar
 
 
@@ -25,7 +20,6 @@ command_args = command_args.copy()
 command_descriptions = command_descriptions.copy()
 command_functions = command_functions.copy()
 
-ALLOWED_PAPER_PLUGIN_DESTINATIONS = ("plugins",)
 PAPER_MOD_CACHE_DIRNAME = "minecraft-paper"
 
 command_args["setup"] = command_args["setup"].combine(
@@ -50,212 +44,28 @@ command_args["setup"] = command_args["setup"].combine(
         )
     )
 )
-command_args["mod"] = CmdSpec(
-    requiredarguments=(ArgSpec("ACTION", "mod action", str),),
-    optionalarguments=(
-        ArgSpec("SOURCE", "url", str),
-        ArgSpec("IDENTIFIER", "plugin jar url", str),
-        ArgSpec("EXTRA", "optional plugin filename", str),
-    ),
+def load_paper_curated_registry(server=None):
+    """Load the checked-in Paper plugin registry or an override file."""
+
+    del server
+    override = os.environ.get("ALPHAGSM_PAPER_CURATED_MODS_PATH")
+    path = Path(override) if override else Path(__file__).with_name("curated_paper_plugins.json")
+    return CuratedRegistryLoader.load(path)
+MOD_SUPPORT = build_plugin_jar_mod_support(
+    game_label="Paper",
+    curated_registry_loader=load_paper_curated_registry,
+    cache_namespace=PAPER_MOD_CACHE_DIRNAME,
+    download_to_cache_getter=lambda: download_to_cache,
+    resolve_direct_url_entry_getter=lambda: resolve_direct_url_entry,
+    resolve_moddb_entry_getter=lambda: resolve_moddb_entry,
 )
-command_descriptions["mod"] = "Manage Paper plugin jars from direct download URLs."
-
-
-def ensure_mod_state(server):
-    """Seed the Paper plugin datastore shape and return it."""
-
-    mods = server.data.setdefault("mods", {})
-    mods.setdefault("enabled", True)
-    mods.setdefault("autoapply", True)
-    desired = mods.setdefault("desired", {})
-    desired.setdefault("url", [])
-    mods.setdefault("installed", [])
-    mods.setdefault("last_apply", None)
-    mods.setdefault("errors", [])
-    return mods
-
-
-def _cache_root(server) -> Path:
-    return Path(server.data["dir"]) / ".alphagsm" / "mods" / PAPER_MOD_CACHE_DIRNAME
-
-
-def _resolve_plugin_url(url: str, filename: str | None = None) -> dict:
-    parsed = urlparse(str(url))
-    if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        raise ServerError("Paper mod url entries require an http or https URL")
-
-    resolved_filename = filename or Path(parsed.path).name
-    if not resolved_filename or not resolved_filename.endswith(".jar"):
-        raise ServerError("Paper mod url entries require a plugin .jar filename")
-
-    digest = hashlib.sha256(str(url).encode("utf-8")).hexdigest()[:12]
-    return {
-        "source_type": "url",
-        "requested_id": str(url),
-        "resolved_id": f"url.{digest}.{resolved_filename}",
-        "download_url": str(url),
-        "filename": resolved_filename,
-        "allowed_host": parsed.hostname,
-    }
-
-
-def _reject_duplicate_url_entry(mods, requested_id):
-    for entry in mods["desired"]["url"]:
-        if entry.get("requested_id") == requested_id:
-            raise ServerError(f"Paper mod '{requested_id}' is already present in desired state")
-
-
-def _desired_entries(server) -> list[DesiredModEntry]:
-    return [
-        DesiredModEntry(
-            source_type="url",
-            requested_id=entry["requested_id"],
-            resolved_id=entry.get("resolved_id"),
-        )
-        for entry in ensure_mod_state(server)["desired"]["url"]
-    ]
-
-
-def _installed_entries(server) -> list[InstalledModEntry]:
-    return [
-        InstalledModEntry(
-            source_type=entry["source_type"],
-            resolved_id=entry["resolved_id"],
-            installed_files=list(entry.get("installed_files", [])),
-        )
-        for entry in ensure_mod_state(server).get("installed", [])
-    ]
-
-
-def _serialize_installed_entries(entries: list[InstalledModEntry]) -> list[dict]:
-    return [
-        {
-            "source_type": entry.source_type,
-            "resolved_id": entry.resolved_id,
-            "installed_files": list(entry.installed_files),
-        }
-        for entry in entries
-    ]
-
-
-def _desired_record(server, resolved_id: str) -> dict:
-    for entry in ensure_mod_state(server)["desired"]["url"]:
-        if entry.get("resolved_id") == resolved_id:
-            return entry
-    raise ModSupportError(f"Missing desired-state metadata for Paper plugin '{resolved_id}'")
-
-
-def _install_url_entry(server, desired_entry: DesiredModEntry) -> InstalledModEntry:
-    desired_record = _desired_record(server, desired_entry.resolved_id)
-    cache_root = _cache_root(server) / "url"
-    cache_root.mkdir(parents=True, exist_ok=True)
-    archive_path = cache_root / desired_record["filename"]
-    download_to_cache(
-        desired_record["download_url"],
-        allowed_hosts=(desired_record["allowed_host"],),
-        target_path=archive_path,
-    )
-    stage_root = cache_root / f"{desired_entry.resolved_id}_stage"
-    if stage_root.exists():
-        shutil.rmtree(stage_root)
-    stage_single_file(archive_path, stage_root, f"plugins/{desired_record['filename']}")
-    server_root = Path(server.data["dir"])
-    installed_paths = install_staged_tree(
-        staged_root=stage_root,
-        server_root=server_root,
-        allowed_destinations=ALLOWED_PAPER_PLUGIN_DESTINATIONS,
-    )
-    return InstalledModEntry(
-        source_type="url",
-        resolved_id=desired_entry.resolved_id,
-        installed_files=build_owned_manifest(server_root, installed_paths),
-    )
-
-
-def _install_entry(server, desired_entry: DesiredModEntry) -> InstalledModEntry:
-    if desired_entry.source_type == "url":
-        return _install_url_entry(server, desired_entry)
-    raise ModSupportError(f"Unsupported Paper mod source: {desired_entry.source_type}")
-
-
-def _remove_owned_entry(server, installed_entry: InstalledModEntry) -> None:
-    server_root = Path(server.data["dir"])
-    for relative_path in installed_entry.installed_files:
-        target = server_root / relative_path
-        if target.exists():
-            target.unlink()
-
-        current = target.parent
-        while current != server_root and current.exists():
-            try:
-                current.rmdir()
-            except OSError:
-                break
-            current = current.parent
-
-
-def cleanup_configured_mods(server):
-    """Remove installed Paper plugin files and reset tracked plugin state."""
-
-    mods = ensure_mod_state(server)
-    for installed_entry in _installed_entries(server):
-        _remove_owned_entry(server, installed_entry)
-    shutil.rmtree(_cache_root(server), ignore_errors=True)
-    mods["desired"] = {"url": []}
-    mods["installed"] = []
-    mods["last_apply"] = "cleanup"
-    mods["errors"] = []
-    server.data.save()
-
-
-def apply_configured_mods(server):
-    """Reconcile configured Paper plugins into the plugins directory."""
-
-    mods = ensure_mod_state(server)
-    if not mods.get("enabled", True):
-        return
-    try:
-        reconciled = reconcile_mod_state(
-            desired=_desired_entries(server),
-            installed=_installed_entries(server),
-            install_entry=lambda entry: _install_entry(server, entry),
-            remove_entry=lambda entry: _remove_owned_entry(server, entry),
-        )
-    except (ModSupportError, ServerError) as exc:
-        mods["errors"] = [str(exc)]
-        server.data.save()
-        if isinstance(exc, ServerError):
-            raise
-        raise ServerError(str(exc)) from exc
-    mods["installed"] = _serialize_installed_entries(reconciled)
-    mods["last_apply"] = "success"
-    mods["errors"] = []
-    server.data.save()
-
-
-def paper_mod_command(server, action, source=None, identifier=None, extra=None, **kwargs):
-    """Handle the Paper ``mod`` command desired-state subcommands."""
-
-    del kwargs
-    mods = ensure_mod_state(server)
-    if action == "list":
-        print(mods)
-        return
-    if action == "apply":
-        apply_configured_mods(server)
-        return
-    if action == "cleanup":
-        cleanup_configured_mods(server)
-        return
-    if action == "add" and source == "url":
-        if not identifier:
-            raise ServerError("Paper mod add url requires a plugin jar URL")
-        resolved = _resolve_plugin_url(identifier, extra)
-        _reject_duplicate_url_entry(mods, resolved["requested_id"])
-        mods["desired"]["url"].append(resolved)
-        server.data.save()
-        return
-    raise ServerError("Unsupported Paper mod command")
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions.update(MOD_SUPPORT.command_functions)
+ensure_mod_state = MOD_SUPPORT.ensure_mod_state
+apply_configured_mods = MOD_SUPPORT.apply_configured_mods
+cleanup_configured_mods = MOD_SUPPORT.cleanup_configured_mods
+paper_mod_command = MOD_SUPPORT.command_functions["mod"]
 
 
 def configure(
@@ -334,4 +144,3 @@ def status(server, verbose):
         print("Status check failed: " + str(exc))
 
 
-command_functions["mod"] = paper_mod_command

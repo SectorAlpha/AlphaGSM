@@ -57,9 +57,15 @@ The goal is that a user can create and operate a new server type using the same 
 
 ## Game Module Function Contract
 
-Every game module is a Python file under `src/gamemodules/`.  The `Server`
-class (in `src/server/server.py`) calls into the module via named attributes.
-Use this table as a checklist when writing or reviewing a module.
+Every canonical top-level game module is a package-backed Python module under
+`src/gamemodules/<name>/` with `__init__.py` as the import surface. The
+`Server` class (in `src/server/server.py`) calls into that canonical module
+surface via named attributes. Use this table as a checklist when writing or
+reviewing a module.
+
+Flat `.py` files are still fine for helper submodules that live inside an
+existing package-backed game family, but top-level user-facing game modules
+should now be directories, with the main implementation in `main.py`.
 
 ### Required functions — every module must have these
 
@@ -106,6 +112,9 @@ Use this table as a checklist when writing or reviewing a module.
 Before marking a new game module complete, verify all of these:
 
 - [ ] `commands`, `command_args`, `command_descriptions`, `command_functions` are defined
+- [ ] the canonical top-level module import surface is `<module>/__init__.py`
+- [ ] the primary top-level module implementation lives in `<module>/main.py`
+- [ ] if the module carries local curated manifests or multiple support files, those assets live beside the package-backed module implementation instead of as sibling top-level files
 - [ ] `configure` stores at minimum `port` and `dir` in `server.data`
 - [ ] `configure` initialises `server.data["backup"]` with a default profile and schedule
 - [ ] `configure` returns `((), {})` (or args/kwargs to forward to `install`)
@@ -131,6 +140,19 @@ Before marking a new game module complete, verify all of these:
 - [ ] the integration test exercises the AlphaGSM lifecycle, including `create`, `setup`, `start`, readiness, `status`, `query`, `info`, `info --json`, and `stop`
 - [ ] Source-engine integration coverage either keeps the server awake or wires an explicit wake-on-query/info hook rather than accepting hibernation as "good enough"
 - [ ] The module passes `make lint` with a score of `10.00/10`
+
+## Curated Mod And Plugin Work
+
+When a module exposes `mod add manifest ...` or another checked-in curated
+registry flow, treat that registry as part of the module lifecycle contract.
+
+- Prefer popular, high-value curated families backed by authoritative release assets.
+- Declare dependencies in the checked-in registry instead of relying on docs or user ordering.
+- Make the desired/apply path install declared dependencies automatically.
+- Keep the registry beside the canonical module implementation when the module is package-backed.
+- If a checked-in registry is intentionally shared across multiple game modules through one helper surface, keep it in the shared helper path instead of forcing it into an unrelated canonical module package.
+- Expand shared helpers when upstream payloads reveal a real packaging gap, rather than hardcoding one-off install logic in a single module.
+- Add unit coverage for checked-in manifest resolution and at least one apply/install path when the payload shape is new.
 
 ## Test Expectations For New Server Types
 

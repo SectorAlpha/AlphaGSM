@@ -76,6 +76,27 @@ alphagsm mywfserver backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<fs_game>/`
+- **Mod directory**: `<install_dir>/<fs_game>/`
 - **Workshop support**: No
+
+## Mod Sources
+
+Warfork supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<fs_game>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `fs_game` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm mywfserver mod add url https://example.com/mappack.pk3
+alphagsm mywfserver mod add url https://example.com/custom-content.zip
+alphagsm mywfserver mod apply
+alphagsm mywfserver mod cleanup
+```

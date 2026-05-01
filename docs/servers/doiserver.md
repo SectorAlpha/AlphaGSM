@@ -92,5 +92,6 @@ alphagsm mydoiserve backup
 - **Map directory**: `doi/maps/`
 - **Mod directory**: `doi/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/doi/`.
 - **Map install**: Copy `.bsp` files into `doi/maps/` and add to `doi/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `doi/addons/`.

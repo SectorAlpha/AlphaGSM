@@ -26,6 +26,212 @@ def test_validate_workshop_id_rejects_non_numeric_value():
         providers_module.validate_workshop_id("map_bad")
 
 
+def test_resolve_direct_url_entry_accepts_http_plugin_url():
+    resolved = providers_module.resolve_direct_url_entry(
+        "https://plugins.example.invalid/TestPlugin.jar",
+        allowed_suffixes={".jar": "jar"},
+        entry_label="Proxy mod url entries",
+        filename_description="a plugin .jar filename",
+    )
+
+    assert resolved["requested_id"] == "https://plugins.example.invalid/TestPlugin.jar"
+    assert resolved["filename"] == "TestPlugin.jar"
+    assert resolved["allowed_host"] == "plugins.example.invalid"
+    assert resolved["archive_type"] == "jar"
+
+
+def test_resolve_direct_url_entry_rejects_bad_scheme():
+    with pytest.raises(ServerError, match="http or https URL"):
+        providers_module.resolve_direct_url_entry(
+            "ftp://plugins.example.invalid/TestPlugin.jar",
+            allowed_suffixes={".jar": "jar"},
+            entry_label="Proxy mod url entries",
+            filename_description="a plugin .jar filename",
+        )
+
+
+def test_resolve_direct_url_entry_rejects_unapproved_filename():
+    with pytest.raises(ServerError, match="plugin .jar filename"):
+        providers_module.resolve_direct_url_entry(
+            "https://plugins.example.invalid/download",
+            allowed_suffixes={".jar": "jar"},
+            entry_label="Proxy mod url entries",
+            filename_description="a plugin .jar filename",
+        )
+
+
+class _Headers:
+    def get_content_charset(self):
+        return "utf-8"
+
+
+def test_resolve_mta_community_entry_uses_latest_download_flow(monkeypatch):
+    responses = iter(
+        [
+            """
+            <html>
+              <body>
+                <a href="?p=resources&amp;s=download&amp;resource=19052&amp;selectincludes=1">Download latest version</a>
+              </body>
+            </html>
+            """,
+            """
+            <html>
+              <body>
+                The download should start shortly...
+                <a href="modules/resources/doDownload.php?file=fps_by_districtzero_1.0.0.zip&amp;name=fps_by_districtzero.zip">here</a>
+              </body>
+            </html>
+            """,
+        ]
+    )
+
+    class Response:
+        headers = _Headers()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return next(responses).encode("utf-8")
+
+    monkeypatch.setattr(providers_module, "urlopen", lambda request, timeout: Response())
+
+    resolved = providers_module.resolve_mta_community_entry(
+        "https://community.multitheftauto.com/?p=resources&s=details&id=19052"
+    )
+
+    assert resolved["requested_id"] == "https://community.multitheftauto.com/index.php?p=resources&s=details&id=19052"
+    assert resolved["resolved_id"] == "mtacommunity.19052.fps_by_districtzero_1.0.0"
+    assert resolved["download_page_url"] == (
+        "https://community.multitheftauto.com/index.php?p=resources&s=download&resource=19052&selectincludes=1"
+    )
+    assert resolved["asset_path"] == (
+        "modules/resources/doDownload.php?file=fps_by_districtzero_1.0.0.zip&name=fps_by_districtzero.zip"
+    )
+    assert resolved["filename"] == "fps_by_districtzero.zip"
+    assert resolved["archive_type"] == "zip"
+    assert resolved["resource_name"] == "fps_by_districtzero"
+
+
+def test_resolve_mta_community_entry_rejects_non_canonical_page_url():
+    with pytest.raises(ServerError, match="canonical resource detail page URL"):
+        providers_module.resolve_mta_community_entry(
+            "https://community.multitheftauto.com/index.php?p=resources&s=download&resource=19052"
+        )
+
+
+def test_resolve_moddb_entry_uses_downloads_start_link(monkeypatch):
+    payload = """
+    <html>
+      <body>
+        <div>Filename</div>
+        <div>CAGE8.zip</div>
+        <a href="https://www.moddb.com/downloads/start/308604">Download Now</a>
+      </body>
+    </html>
+    """
+
+    class Response:
+        headers = _Headers()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return payload.encode("utf-8")
+
+    monkeypatch.setattr(providers_module, "urlopen", lambda request, timeout: Response())
+
+    resolved = providers_module.resolve_moddb_entry(
+        "https://www.moddb.com/mods/cage-eight/downloads/cage-eight"
+    )
+
+    assert resolved["requested_id"] == "https://www.moddb.com/mods/cage-eight/downloads/cage-eight"
+    assert resolved["resolved_id"] == "moddb.downloads.308604"
+    assert resolved["download_url"] == "https://www.moddb.com/downloads/start/308604"
+    assert resolved["filename"] == "CAGE8.zip"
+    assert resolved["archive_type"] == "zip"
+
+
+def test_resolve_moddb_entry_uses_addons_start_link(monkeypatch):
+    payload = """
+    <html>
+      <body>
+        <div>Filename</div>
+        <div>z_zm134_minigun.tar.gz</div>
+        <a href="https://www.moddb.com/addons/start/308655">Download Now</a>
+      </body>
+    </html>
+    """
+
+    class Response:
+        headers = _Headers()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return payload.encode("utf-8")
+
+    monkeypatch.setattr(providers_module, "urlopen", lambda request, timeout: Response())
+
+    resolved = providers_module.resolve_moddb_entry(
+        "https://www.moddb.com/games/return-to-castle-wolfenstein/addons/m134-minigun1"
+    )
+
+    assert resolved["resolved_id"] == "moddb.addons.308655"
+    assert resolved["download_url"] == "https://www.moddb.com/addons/start/308655"
+    assert resolved["archive_type"] == "tar"
+
+
+def test_resolve_moddb_entry_rejects_non_canonical_page_url():
+    with pytest.raises(ServerError, match="canonical mod or addon page URL"):
+        providers_module.resolve_moddb_entry("https://www.moddb.com/downloads/start/308604")
+
+
+def test_resolve_moddb_entry_accepts_7z_archive(monkeypatch):
+    payload = """
+    <html>
+      <body>
+        <div>Filename</div>
+        <div>z_zm134_minigun.7z</div>
+        <a href="https://www.moddb.com/addons/start/308655">Download Now</a>
+      </body>
+    </html>
+    """
+
+    class Response:
+        headers = _Headers()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return payload.encode("utf-8")
+
+    monkeypatch.setattr(providers_module, "urlopen", lambda request, timeout: Response())
+
+    resolved = providers_module.resolve_moddb_entry(
+        "https://www.moddb.com/games/return-to-castle-wolfenstein/addons/m134-minigun1"
+    )
+
+    assert resolved["archive_type"] == "7z"
+    assert resolved["download_url"] == "https://www.moddb.com/addons/start/308655"
+
+
 def test_resolve_gamebanana_mod_chooses_latest_supported_clean_archive(monkeypatch):
     payload = {
         "_aFiles": [

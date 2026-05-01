@@ -91,5 +91,18 @@ alphagsm myl4d2serv backup
 - **Map directory**: `left4dead2/maps/`
 - **Mod directory**: `left4dead2/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM can now manage Left 4 Dead 2 addons from checked-in `manifest` entries plus direct `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular Source admin/plugin stacks such as MetaMod and SourceMod. Direct URLs can point at `.vpk` files or supported archives; provider-backed and manifest sources currently install supported archives only. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps its cache/state under `.alphagsm/mods/left4dead2/`.
 - **Map install**: Copy `.bsp` files into `left4dead2/maps/` and add to `left4dead2/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `left4dead2/addons/`.
+
+Examples:
+
+```bash
+alphagsm myl4d2 mod add manifest metamod
+alphagsm myl4d2 mod add manifest sourcemod
+alphagsm myl4d2 mod add url https://mods.example.invalid/custom-campaign.vpk
+alphagsm myl4d2 mod add gamebanana 12345
+alphagsm myl4d2 mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+alphagsm myl4d2 mod apply
+alphagsm myl4d2 mod cleanup
+```

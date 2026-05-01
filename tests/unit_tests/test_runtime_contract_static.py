@@ -101,25 +101,34 @@ def _stub_download_resolution(module, module_name):
             return resolved, download_name, url
         return resolved, url
 
-    for attribute_name in dir(module):
-        original = getattr(module, attribute_name, None)
-        if not callable(original):
-            continue
-        if (
-            ("resolve" not in attribute_name or "download" not in attribute_name)
-            and "file_url" not in attribute_name
-        ):
-            continue
-        originals[attribute_name] = original
-        if "file_url" in attribute_name:
-            setattr(
-                module,
-                attribute_name,
-                lambda *args, **kwargs: "https://example.invalid/%s.zip"
-                % (module_name.replace(".", "-"),),
-            )
-        else:
-            setattr(module, attribute_name, _fake_resolve_download)
+    targets = [module]
+    try:
+        main_module = import_module(module.__name__ + ".main")
+    except ImportError:
+        main_module = None
+    if main_module is not None and main_module is not module:
+        targets.append(main_module)
+
+    for target in targets:
+        for attribute_name in dir(target):
+            original = getattr(target, attribute_name, None)
+            if not callable(original):
+                continue
+            if (
+                ("resolve" not in attribute_name or "download" not in attribute_name)
+                and "file_url" not in attribute_name
+            ):
+                continue
+            originals[(target, attribute_name)] = original
+            if "file_url" in attribute_name:
+                setattr(
+                    target,
+                    attribute_name,
+                    lambda *args, **kwargs: "https://example.invalid/%s.zip"
+                    % (module_name.replace(".", "-"),),
+                )
+                continue
+            setattr(target, attribute_name, _fake_resolve_download)
 
     return originals
 
@@ -212,8 +221,8 @@ def test_all_game_modules_resolve_valid_docker_manifests():
                 offenders.append(module_name + ": missing working_dir")
                 continue
         finally:
-            for attribute_name, original in original_resolvers.items():
-                setattr(module, attribute_name, original)
+            for (target, attribute_name), original in original_resolvers.items():
+                setattr(target, attribute_name, original)
             shutil.rmtree(server_root, ignore_errors=True)
 
     assert offenders == []

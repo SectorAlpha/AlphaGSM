@@ -19,3 +19,12 @@ Each skill lives in its own directory and exposes a `SKILL.md` file.
 
 - [../AGENTS.md](../AGENTS.md)
 - [../SKILLS.md](../SKILLS.md)
+
+## Repository Conventions
+
+Repo-local skills should follow the same core repository conventions captured in
+[../AGENTS.md](../AGENTS.md), especially:
+
+- canonical game modules may be flat files or package-backed directories
+- package-backed modules should keep checked-in curated manifests beside their implementation
+- curated mod/plugin/addon guidance should prefer popular families with authoritative release assets and explicit dependency wiring

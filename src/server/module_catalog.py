@@ -92,6 +92,9 @@ def _canonical_module_names(
             ):
                 continue
         else:
+            relative_parts = path.relative_to(gamemodule_dir).parts
+            if path.stem == "main" and len(relative_parts) == 2:
+                continue
             module_name = ".".join(path.relative_to(gamemodule_dir).with_suffix("").parts)
             if any(
                 module_name == package_name or module_name.startswith(package_name + ".")

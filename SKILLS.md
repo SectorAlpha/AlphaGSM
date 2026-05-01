@@ -21,4 +21,5 @@ All repo-local skills live under [skills](skills).
 ## Related Guidance
 
 - [AGENTS.md](AGENTS.md) — includes integration test timeout policy
+- [AGENTS.md](AGENTS.md) — also includes canonical game-module layout and curated mod/plugin guidance
 - [skills/README.md](skills/README.md)

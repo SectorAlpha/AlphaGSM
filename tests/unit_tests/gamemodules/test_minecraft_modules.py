@@ -423,6 +423,8 @@ def test_bungeecord_configure_install_and_checkvalue(tmp_path):
     assert args == ()
     assert kwargs == {}
     assert server.data["dir"] == str(tmp_path)
+    assert server.data["mods"]["desired"]["url"] == []
+    assert server.data["mod_cache_dirname"] == "minecraft-bungeecord"
     assert bungeecord.get_start_command(server) == (["java", "-Xmx256M", "-jar", "BungeeCord.jar"], str(tmp_path))
     assert bungeecord.checkvalue(server, "exe_name", "proxy.jar") == "proxy.jar"
 

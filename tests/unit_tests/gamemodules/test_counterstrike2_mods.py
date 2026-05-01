@@ -42,6 +42,7 @@ def test_configure_seeds_mod_state_defaults(tmp_path):
     assert server.data["mods"]["enabled"] is True
     assert server.data["mods"]["autoapply"] is True
     assert server.data["mods"]["desired"]["gamebanana"] == []
+    assert server.data["mods"]["desired"]["moddb"] == []
     assert server.data["mods"]["desired"]["workshop"] == []
 
 
@@ -80,6 +81,34 @@ def test_mod_add_workshop_accepts_numeric_id_only(tmp_path):
 
     with pytest.raises(mod.ServerError, match="numeric workshop id"):
         mod.command_functions["mod"](server, "add", "workshop", "map_bad")
+
+
+def test_mod_add_moddb_resolves_and_persists_entry(tmp_path, monkeypatch):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(
+        mod,
+        "resolve_moddb_entry",
+        lambda page_url: {
+            "source_type": "moddb",
+            "requested_id": page_url,
+            "resolved_id": "moddb.downloads.308604",
+            "download_url": "https://www.moddb.com/downloads/start/308604",
+            "archive_type": "zip",
+            "filename": "cs2mod.zip",
+        },
+    )
+
+    mod.command_functions["mod"](
+        server,
+        "add",
+        "moddb",
+        "https://www.moddb.com/mods/cage-eight/downloads/cage-eight",
+    )
+
+    entry = server.data["mods"]["desired"]["moddb"][0]
+    assert entry["requested_id"] == "https://www.moddb.com/mods/cage-eight/downloads/cage-eight"
+    assert entry["resolved_id"] == "moddb.downloads.308604"
 
 
 def test_mod_apply_installs_gamebanana_zip_entry(tmp_path, monkeypatch):
@@ -143,6 +172,50 @@ def test_mod_apply_installs_workshop_entry_from_downloaded_item(tmp_path, monkey
     installed_file = Path(server.data["dir"]) / "game" / "csgo" / "addons" / "sourcemod" / "from_workshop.vdf"
     assert installed_file.exists()
     assert server.data["mods"]["installed"][0]["resolved_id"] == "workshop.1234567890"
+
+
+def test_mod_apply_installs_moddb_zip_entry(tmp_path, monkeypatch):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    archive_root = tmp_path / "archive-root"
+    plugin_dir = archive_root / "game" / "csgo" / "addons" / "metamod"
+    plugin_dir.mkdir(parents=True)
+    (plugin_dir / "moddb.vdf").write_text("plugin", encoding="utf-8")
+    archive_path = tmp_path / "moddb.zip"
+    with zipfile.ZipFile(archive_path, "w") as zf:
+        zf.write(plugin_dir / "moddb.vdf", "game/csgo/addons/metamod/moddb.vdf")
+
+    monkeypatch.setattr(
+        mod,
+        "resolve_moddb_entry",
+        lambda page_url: {
+            "source_type": "moddb",
+            "requested_id": page_url,
+            "resolved_id": "moddb.downloads.308604",
+            "download_url": "https://www.moddb.com/downloads/start/308604",
+            "archive_type": "zip",
+            "filename": "moddb.zip",
+        },
+    )
+    monkeypatch.setattr(
+        mod,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            archive_path, target_path
+        ),
+    )
+
+    mod.command_functions["mod"](
+        server,
+        "add",
+        "moddb",
+        "https://www.moddb.com/mods/cage-eight/downloads/cage-eight",
+    )
+    mod.command_functions["mod"](server, "apply")
+
+    installed_file = Path(server.data["dir"]) / "game" / "csgo" / "addons" / "metamod" / "moddb.vdf"
+    assert installed_file.exists()
+    assert server.data["mods"]["installed"][0]["resolved_id"] == "moddb.downloads.308604"
 
 
 def test_mod_cleanup_removes_only_files_recorded_per_mod(tmp_path):

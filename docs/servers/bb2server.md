@@ -92,5 +92,6 @@ alphagsm mybb2serve backup
 - **Map directory**: `brainbread2/maps/`
 - **Mod directory**: `brainbread2/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/brainbread2/`.
 - **Map install**: Copy `.bsp` files into `brainbread2/maps/` and add to `brainbread2/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `brainbread2/addons/`.

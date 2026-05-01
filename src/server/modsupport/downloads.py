@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import shutil as shutil_module
+import subprocess as sp
 import shutil
 import tarfile
 import tempfile
@@ -145,6 +148,63 @@ def extract_zip_safe(zip_path, extract_root):
     return extracted_paths
 
 
+def extract_7z_safe(archive_path, extract_root):
+    """Extract a 7z archive while rejecting unsafe paths and symlinks."""
+
+    archive_path = Path(archive_path)
+    extract_root = Path(extract_root)
+    extract_root.mkdir(parents=True, exist_ok=True)
+    resolved_root = extract_root.resolve()
+    seven_zip = _find_7z_executable()
+    entries = _list_7z_entries(seven_zip, archive_path)
+    for entry in entries:
+        try:
+            _safe_relative_destination(
+                base_root=resolved_root,
+                relative_path=entry,
+                error_prefix="Refusing to extract unsafe 7z path",
+            )
+        except ModSupportError as exc:
+            raise ModSupportError(f"Refusing to extract unsafe 7z path: {entry}") from exc
+
+    try:
+        sp.run(
+            [seven_zip, "x", f"-o{extract_root}", "-y", str(archive_path)],
+            check=True,
+            stdout=sp.DEVNULL,
+            stderr=sp.PIPE,
+            text=True,
+        )
+    except (OSError, sp.CalledProcessError) as exc:
+        raise ModSupportError(f"Failed to extract 7z {archive_path}: {exc}") from exc
+
+    extracted_paths = []
+    for root, dirnames, filenames in os.walk(extract_root):
+        root_path = Path(root)
+        for dirname in list(dirnames):
+            dir_path = root_path / dirname
+            if dir_path.is_symlink():
+                raise ModSupportError(
+                    f"Refusing to extract unsafe 7z member: {dir_path.relative_to(extract_root).as_posix()}"
+                )
+        for filename in filenames:
+            file_path = root_path / filename
+            if file_path.is_symlink():
+                raise ModSupportError(
+                    f"Refusing to extract unsafe 7z member: {file_path.relative_to(extract_root).as_posix()}"
+                )
+            resolved_file = file_path.resolve()
+            try:
+                resolved_file.relative_to(resolved_root)
+            except ValueError as exc:
+                raise ModSupportError(
+                    f"Refusing to extract unsafe 7z path: {file_path.relative_to(extract_root).as_posix()}"
+                ) from exc
+            extracted_paths.append(file_path)
+
+    return extracted_paths
+
+
 def install_staged_tree(*, staged_root, server_root, allowed_destinations):
     """Install staged files into approved server destinations only."""
     staged_root = Path(staged_root).resolve()
@@ -213,6 +273,38 @@ def _validate_tar_member(member, base_root):
     if not member.isfile():
         raise ModSupportError(f"Refusing to extract unsupported archive member: {member.name}")
     return destination
+
+
+def _find_7z_executable():
+    seven_zip = shutil_module.which("7zz") or shutil_module.which("7z")
+    if seven_zip:
+        return seven_zip
+    raise ModSupportError(
+        "7z extraction requires a 7z-compatible extractor. Install p7zip-full or another package that provides 7z/7zz."
+    )
+
+
+def _list_7z_entries(seven_zip, archive_path):
+    try:
+        result = sp.run(
+            [seven_zip, "l", "-slt", str(archive_path)],
+            check=True,
+            stdout=sp.PIPE,
+            stderr=sp.PIPE,
+            text=True,
+        )
+    except (OSError, sp.CalledProcessError) as exc:
+        raise ModSupportError(f"Failed to inspect 7z {archive_path}: {exc}") from exc
+
+    entries = []
+    for line in result.stdout.splitlines():
+        if not line.startswith("Path = "):
+            continue
+        entry = line.split(" = ", 1)[1].strip()
+        if not entry or entry == str(archive_path):
+            continue
+        entries.append(entry)
+    return entries
 
 
 def _normalize_checksum(checksum):

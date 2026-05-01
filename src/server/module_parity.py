@@ -85,7 +85,13 @@ def render_json_report(rows: list[ModuleParityRow]) -> str:
 
 
 def _module_source(repo_root: Path, module_name: str) -> str:
-    return _module_source_path(repo_root, module_name).read_text(encoding="utf-8")
+    source_path = _module_source_path(repo_root, module_name)
+    if source_path.name == "__init__.py":
+        return "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sorted(source_path.parent.rglob("*.py"))
+        )
+    return source_path.read_text(encoding="utf-8")
 
 
 def _module_source_path(repo_root: Path, module_name: str) -> Path:

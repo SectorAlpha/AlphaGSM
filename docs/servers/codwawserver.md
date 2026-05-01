@@ -75,6 +75,27 @@ alphagsm mycodwawse backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<moddir>/`
+- **Mod directory**: `<install_dir>/<moddir>/`
 - **Workshop support**: No
+
+## Mod Sources
+
+Call of Duty: World at War supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<moddir>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `moddir` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm mycodwawse mod add url https://example.com/mappack.pk3
+alphagsm mycodwawse mod add url https://example.com/custom-content.zip
+alphagsm mycodwawse mod apply
+alphagsm mycodwawse mod cleanup
+```

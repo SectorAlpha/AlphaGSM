@@ -370,7 +370,14 @@ def _build_argument_defaults(function_node: ast.FunctionDef) -> dict[str, object
 
 def _resolve_module_path(template_dir_name: str) -> Path:
     module_name = TEMPLATE_MODULE_ALIASES.get(template_dir_name, template_dir_name)
-    path = MODULE_ROOT.joinpath(*MODULE_CATALOG.resolve(module_name).split(".")).with_suffix(".py")
+    path = MODULE_ROOT.joinpath(*MODULE_CATALOG.resolve(module_name).split("."))
+    package_main = path / "main.py"
+    if package_main.exists():
+        return package_main
+    package_init = path / "__init__.py"
+    if package_init.exists():
+        return package_init
+    path = path.with_suffix(".py")
     if not path.exists():
         raise FileNotFoundError(f"No game module found for template directory {template_dir_name!r}")
     return path

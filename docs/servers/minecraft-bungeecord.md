@@ -54,6 +54,21 @@ alphagsm mybungeeco update
 alphagsm mybungeeco backup
 ```
 
+Built-in manifest plugin families, direct plugin jars, and provider-hosted
+plugin archives can all be managed through AlphaGSM:
+
+```bash
+alphagsm mybungeeco mod add manifest viaversion
+alphagsm mybungeeco mod add manifest viabackwards
+alphagsm mybungeeco mod add manifest viarewind
+alphagsm mybungeeco mod add manifest luckperms
+alphagsm mybungeeco mod add manifest geyser
+alphagsm mybungeeco mod add url https://plugins.example.invalid/TestPlugin.jar
+alphagsm mybungeeco mod add moddb https://www.moddb.com/mods/proxy-pack/downloads/proxy-pack
+alphagsm mybungeeco mod apply
+alphagsm mybungeeco mod cleanup
+```
+
 ## Notes
 
 - Module name: `minecraft.bungeecord`
@@ -84,4 +99,4 @@ alphagsm mybungeeco backup
 - **Mod directory**: `plugins/`
 - **Workshop support**: No
 - **Map notes**: BungeeCord is a proxy and does not host worlds.
-- **Mod notes**: Place BungeeCord plugin .jar files in the `plugins/` directory.
+- **Mod notes**: AlphaGSM can install built-in manifest families such as `viaversion`, `viabackwards`, `viarewind`, `luckperms`, and `geyser`, place plugin `.jar` files from direct URLs into `plugins/`, and install Mod DB-backed archives when they contain plugin payloads under approved proxy plugin paths. `mod cleanup` removes only AlphaGSM-managed plugin files. The checked-in manifest now auto-installs ViaVersion-stack prerequisites when needed and selects the Bungee-compatible jar for variant-specific families. BungeeCord keeps its own cache/state under `.alphagsm/mods/minecraft-bungeecord/`.

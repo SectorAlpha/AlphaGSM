@@ -90,6 +90,9 @@ AlphaGSM-owned manifest.
 
 - `gamebanana` means you provide a numeric GameBanana item id and AlphaGSM
 	resolves the current downloadable archive from GameBanana.
+- `moddb` means you provide a canonical Mod DB download or addon page URL and
+	AlphaGSM resolves Mod DB's start-download link when the file is a supported
+	zip or tar archive.
 - `workshop` means you provide a numeric Steam Workshop item id and AlphaGSM
 	tries to download it through SteamCMD.
 - AlphaGSM records the files installed for each CS2 mod entry so `mod cleanup`
@@ -99,6 +102,7 @@ Examples:
 
 ```bash
 alphagsm mycs2 mod add gamebanana 12345
+alphagsm mycs2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
 alphagsm mycs2 mod add workshop 1234567890
 alphagsm mycs2 mod apply
 alphagsm mycs2 mod cleanup

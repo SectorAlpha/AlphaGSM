@@ -34,6 +34,9 @@ Read these first:
 - Treat smoke-test command order as the canonical user flow.
 - If the smoke test uses an important `set` step, include it.
 - If the smoke test shows a full working lifecycle, summarize that lifecycle in the docs.
+- If a module now exposes checked-in manifest families for popular mods/addons/plugins, document the real family ids users can paste.
+- If manifest installs pull in dependencies automatically, call that out plainly instead of assuming users know the order.
+- When a module-local curated registry moves into a package directory, update docs and developer notes to reference the canonical module path rather than the old flat-file layout.
 
 ## Running Smoke Tests
 

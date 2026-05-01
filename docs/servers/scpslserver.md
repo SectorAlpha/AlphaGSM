@@ -97,5 +97,26 @@ alphagsm myscpslser backup
 ### Maps and Mods
 
 - **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Mod directory**: `home/.config/SCP Secret Laboratory/LabAPI/plugins/`
+- **Dependency directory**: `home/.config/SCP Secret Laboratory/LabAPI/dependencies/`
 - **Workshop support**: No
+
+## Plugin Sources
+
+AlphaGSM's current SCP:SL plugin support targets the official LabAPI loader that ships with modern dedicated-server builds.
+
+- AlphaGSM stores SCP:SL plugin cache/state under `.alphagsm/mods/scpslserver/`.
+- Current plugin source support is `manifest` and `url`.
+- `manifest` uses AlphaGSM's checked-in SCP:SL plugin registry. Current built-in families are `betterhelpcommand` for BetterHelpCommand-LabAPI, `escapeplan` for EscapePlan, and `respawntimer` for RespawnTimer.
+- `url` accepts direct LabAPI plugin `.dll` downloads and supported plugin archives.
+- Archive payloads can already be laid out relative to the LabAPI root with `plugins/` and `dependencies/`, or expose a bare plugin-root `.dll` that AlphaGSM stages into `plugins/global/`.
+- `mod cleanup` removes only AlphaGSM-tracked LabAPI plugin files and leaves unrelated manual plugins alone.
+
+EXILED is intentionally out of scope for this first slice because it requires a heavier framework bootstrap and managed-assembly patching than the official LabAPI plugin loader.
+
+```bash
+alphagsm myscpslser mod add manifest betterhelpcommand
+alphagsm myscpslser mod add url https://plugins.example.invalid/ExamplePlugin.dll
+alphagsm myscpslser mod apply
+alphagsm myscpslser mod cleanup
+```

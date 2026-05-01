@@ -59,9 +59,12 @@ external provider ids.
   most predictable result.
 - `gamebanana` means you provide a numeric GameBanana item id and AlphaGSM
   resolves the current downloadable archive from GameBanana.
+- `moddb` means you provide a canonical Mod DB download or addon page URL and
+  AlphaGSM resolves Mod DB's start-download link when the file is a supported
+  zip or tar archive.
 - `workshop` means you provide a numeric Steam Workshop item id and AlphaGSM
   tries to download it through SteamCMD.
-- GameBanana and Workshop are shared external providers, not TF2-owned
+- GameBanana, Mod DB, and Workshop are shared external providers, not TF2-owned
   registries. TF2 currently just consumes those provider integrations.
 - `curated` still works as a compatibility alias for `manifest`.
 
@@ -70,6 +73,7 @@ Examples:
 ```bash
 alphagsm mytf2 mod add manifest sourcemod
 alphagsm mytf2 mod add gamebanana 12345
+alphagsm mytf2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
 alphagsm mytf2 mod add workshop 1234567890
 alphagsm mytf2 mod apply
 alphagsm mytf2 mod cleanup

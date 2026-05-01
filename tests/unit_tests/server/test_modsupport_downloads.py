@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 import tarfile
 from urllib.error import URLError
 
@@ -7,6 +8,7 @@ import pytest
 from server.modsupport import downloads as downloads_module
 from server.modsupport.downloads import (
     download_to_cache,
+    extract_7z_safe,
     extract_tarball_safe,
     install_staged_tree,
 )
@@ -198,3 +200,55 @@ def test_download_to_cache_rejects_unsupported_checksum_without_creating_temp_fi
 
     assert not target_path.exists()
     assert list(tmp_path.iterdir()) == []
+
+
+def test_extract_7z_safe_requires_7z_extractor(tmp_path, monkeypatch):
+    monkeypatch.setattr(downloads_module.shutil_module, "which", lambda name: None)
+
+    with pytest.raises(ModSupportError, match="7z-compatible extractor"):
+        extract_7z_safe(tmp_path / "mod.7z", tmp_path / "extract")
+
+
+def test_extract_7z_safe_rejects_unsafe_listed_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(downloads_module.shutil_module, "which", lambda name: "/usr/bin/7z")
+
+    class Result:
+        def __init__(self, stdout=""):
+            self.stdout = stdout
+            self.stderr = ""
+
+    def fake_run(args, check, stdout=None, stderr=None, text=None):
+        if args[1] == "l":
+            return Result(stdout="Path = ../escape.txt\n")
+        raise AssertionError("extract should not run when listing is unsafe")
+
+    monkeypatch.setattr(downloads_module.sp, "run", fake_run)
+
+    with pytest.raises(ModSupportError, match="unsafe 7z path"):
+        extract_7z_safe(tmp_path / "mod.7z", tmp_path / "extract")
+
+
+def test_extract_7z_safe_extracts_listed_files(tmp_path, monkeypatch):
+    extract_root = tmp_path / "extract"
+    monkeypatch.setattr(downloads_module.shutil_module, "which", lambda name: "/usr/bin/7z")
+
+    class Result:
+        def __init__(self, stdout=""):
+            self.stdout = stdout
+            self.stderr = ""
+
+    def fake_run(args, check, stdout=None, stderr=None, text=None):
+        if args[1] == "l":
+            return Result(stdout="Path = tf/addons/test.vdf\n")
+        if args[1] == "x":
+            target = extract_root / "tf" / "addons" / "test.vdf"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("plugin", encoding="utf-8")
+            return Result(stdout="")
+        raise AssertionError(f"unexpected command: {args}")
+
+    monkeypatch.setattr(downloads_module.sp, "run", fake_run)
+
+    extracted = extract_7z_safe(tmp_path / "mod.7z", extract_root)
+
+    assert extracted == [Path(extract_root / "tf" / "addons" / "test.vdf")]

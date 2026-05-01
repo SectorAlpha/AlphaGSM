@@ -92,5 +92,18 @@ alphagsm myinsserve backup
 - **Map directory**: `insurgency/maps/`
 - **Mod directory**: `insurgency/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM can now manage Insurgency addons from checked-in `manifest` entries plus direct archive `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular Source admin/plugin stacks such as MetaMod and SourceMod. Archives must unpack into approved addon paths under `insurgency/addons/`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/insurgency/`.
 - **Map install**: Copy `.bsp` files into `insurgency/maps/` and add to `insurgency/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `insurgency/addons/`.
+
+Examples:
+
+```bash
+alphagsm myins mod add manifest metamod
+alphagsm myins mod add manifest sourcemod
+alphagsm myins mod add url https://mods.example.invalid/ins-addon-pack.zip
+alphagsm myins mod add gamebanana 12345
+alphagsm myins mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+alphagsm myins mod apply
+alphagsm myins mod cleanup
+```

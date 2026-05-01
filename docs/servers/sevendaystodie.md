@@ -59,6 +59,24 @@ alphagsm mysevenday set maxplayers 12
 
 `set port`, `set servername`, `set maxplayers`, and `set serverpassword` rewrite `serverconfig.xml` immediately through the schema-backed config-sync path.
 
+## Mod Sources
+
+7 Days to Die mod management currently targets the built-in `Mods/` directory
+under the server root.
+
+- Current mod source support is direct archive `url` entries only.
+- `mod add url <https-url>` accepts supported archive URLs such as `.zip`, `.7z`, or tar variants when the payload exposes either `Mods/<name>/...`, a single top-level modlet directory containing `ModInfo.xml`, or multiple sibling modlet directories that each contain `ModInfo.xml`.
+- `mod cleanup` removes only AlphaGSM-tracked modlet files and keeps its cache/state under `.alphagsm/mods/sevendaystodie/`.
+- This first 7DTD slice intentionally focuses on built-in modlets and does not try to bootstrap an external framework.
+
+Examples:
+
+```bash
+alphagsm mysevenday mod add url https://example.invalid/servertools.zip
+alphagsm mysevenday mod apply
+alphagsm mysevenday mod cleanup
+```
+
 ## Notes
 
 - Module name: `sevendaystodie`
@@ -82,5 +100,6 @@ alphagsm mysevenday set maxplayers 12
 ### Maps and Mods
 
 - **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Mod directory**: `Mods/`
+- **Mod notes**: AlphaGSM can now track direct archive `url` entries for 7 Days to Die modlets, install recognized modlet payloads into `Mods/`, and clean up only AlphaGSM-managed files from `.alphagsm/mods/sevendaystodie/`.
 - **Workshop support**: No

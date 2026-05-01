@@ -94,6 +94,7 @@ alphagsm mysfcserve backup
 - **Map directory**: `sfclassic/maps/`
 - **Mod directory**: `sfclassic/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/sfclassic/`.
 - **Current status**: Disabled in CI. The public SourceForts payload can be downloaded, but its own `gameinfo.txt` declares `SteamAppId 243750` and requires a legitimate Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer install. Anonymous SteamCMD app `244310` is not enough; the combined server exits at `soundemittersystem.so` before readiness.
 - **Map install**: Copy `.bsp` files into `sfclassic/maps/` and add to `sfclassic/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `sfclassic/addons/`.

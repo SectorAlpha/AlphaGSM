@@ -54,12 +54,16 @@ def configure(
         server.data["version"] = version
     server.data["url"] = url
     server.data["download_name"] = download_name
+    server.data["mod_cache_dirname"] = "minecraft-waterfall"
+    server.data["mod_label"] = "Waterfall"
     return proxy_base.configure(server, ask, port=port, dir=dir, exe_name=exe_name)
 
 
 def install(server, *, eula=False):
     """Download or validate the configured Waterfall proxy jar."""
 
+    server.data.setdefault("mod_cache_dirname", "minecraft-waterfall")
+    server.data.setdefault("mod_label", "Waterfall")
     install_downloaded_jar(server)
     proxy_base.install(server)
 

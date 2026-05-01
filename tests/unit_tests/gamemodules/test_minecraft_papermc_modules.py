@@ -106,6 +106,8 @@ def test_proxy_family_modules_resolve_download_and_delegate_to_bungeecord(
     assert ("waterfall", str(tmp_path / "waterfall"), "waterfall.jar") in calls
     assert velocity_server.data["download_name"] == "velocity.jar"
     assert waterfall_server.data["download_name"] == "waterfall.jar"
+    assert velocity_server.data["mod_cache_dirname"] == "minecraft-velocity"
+    assert waterfall_server.data["mod_cache_dirname"] == "minecraft-waterfall"
 
 
 def test_paper_and_proxy_installs_delegate_to_shared_download_helper(monkeypatch):

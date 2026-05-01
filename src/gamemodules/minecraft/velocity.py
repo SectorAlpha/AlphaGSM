@@ -63,12 +63,16 @@ def configure(
         server.data["version"] = version
     server.data["url"] = url
     server.data["download_name"] = download_name
+    server.data["mod_cache_dirname"] = "minecraft-velocity"
+    server.data["mod_label"] = "Velocity"
     return proxy_base.configure(server, ask, port=port, dir=dir, exe_name=exe_name)
 
 
 def install(server, *, eula=False):
     """Download or validate the configured Velocity proxy jar."""
 
+    server.data.setdefault("mod_cache_dirname", "minecraft-velocity")
+    server.data.setdefault("mod_label", "Velocity")
     install_downloaded_jar(server)
     proxy_base.install(server)
     # Velocity uses velocity.toml instead of config.yml - update its bind address.

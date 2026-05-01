@@ -79,6 +79,27 @@ alphagsm myq4server set map q4dm6
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<fs_game>/`
+- **Mod directory**: `<install_dir>/<fs_game>/`
 - **Workshop support**: No
+
+## Mod Sources
+
+Quake 4 supports AlphaGSM-managed direct `url` mod sources for content-only `.pk4` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk4` URL
+- an archive containing bare `.pk4` files at the archive root
+- an archive containing `<fs_game>/<name>.pk4`
+
+AlphaGSM installs approved `.pk4` content into the active `fs_game` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm myq4server mod add url https://example.com/mappack.pk4
+alphagsm myq4server mod add url https://example.com/custom-content.zip
+alphagsm myq4server mod apply
+alphagsm myq4server mod cleanup
+```

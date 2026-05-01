@@ -8,6 +8,17 @@ from server.modsupport.registry import CuratedRegistry, CuratedRegistryLoader
 
 def _families():
     return {
+        "metamod": {
+            "default": "stable",
+            "releases": {
+                "stable": {
+                    "url": "https://example.invalid/metamod-stable.zip",
+                    "hosts": ["example.invalid"],
+                    "archive_type": "zip",
+                    "destinations": ["tf/addons"],
+                }
+            },
+        },
         "sourcemod": {
             "default": "stable",
             "releases": {
@@ -16,6 +27,7 @@ def _families():
                     "hosts": ["example.invalid"],
                     "archive_type": "zip",
                     "destinations": ["tf/addons"],
+                    "dependencies": ["metamod"],
                 },
                 "1.12": {
                     "url": "https://example.invalid/sourcemod-1.12.zip",
@@ -36,6 +48,7 @@ def test_resolve_uses_default_channel_for_curated_family():
     assert resolved.resolved_id == "sourcemod.stable"
     assert resolved.hosts == ("example.invalid",)
     assert resolved.destinations == ("tf/addons",)
+    assert resolved.dependencies == ("metamod",)
 
 
 def test_resolve_uses_explicit_channel_for_curated_family():
@@ -50,7 +63,7 @@ def test_resolve_rejects_unknown_family():
     registry = CuratedRegistry(_families())
 
     with pytest.raises(ModSupportError):
-        registry.resolve("metamod")
+        registry.resolve("notarealfamily")
 
 
 def test_resolve_rejects_unknown_release():
@@ -126,6 +139,32 @@ def test_resolve_rejects_none_archive_type():
 def test_resolve_rejects_non_string_checksum():
     families = _families()
     families["sourcemod"]["releases"]["stable"]["checksum"] = 123
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError):
+        registry.resolve("sourcemod")
+
+
+def test_resolve_with_dependencies_returns_install_order():
+    registry = CuratedRegistry(_families())
+
+    resolved = registry.resolve_with_dependencies("sourcemod")
+
+    assert [entry.resolved_id for entry in resolved] == ["metamod.stable", "sourcemod.stable"]
+
+
+def test_resolve_with_dependencies_rejects_cycles():
+    families = _families()
+    families["metamod"]["releases"]["stable"]["dependencies"] = ["sourcemod"]
+    registry = CuratedRegistry(families)
+
+    with pytest.raises(ModSupportError, match="dependency cycle"):
+        registry.resolve_with_dependencies("sourcemod")
+
+
+def test_resolve_rejects_non_string_dependencies_entries():
+    families = _families()
+    families["sourcemod"]["releases"]["stable"]["dependencies"] = [123]
     registry = CuratedRegistry(families)
 
     with pytest.raises(ModSupportError):

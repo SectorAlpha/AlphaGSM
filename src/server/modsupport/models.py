@@ -14,6 +14,7 @@ class CuratedRelease:  # pylint: disable=too-many-instance-attributes
     hosts: tuple[str, ...]
     archive_type: str
     destinations: tuple[str, ...]
+    dependencies: tuple[str, ...] = ()
     checksum: str | None = None
 
 

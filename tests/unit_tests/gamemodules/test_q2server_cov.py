@@ -61,7 +61,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 
 def test_configure_resolves_download(tmp_path):
     server = DummyServer()
-    with patch.object(mod, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')):
+    with patch.object(mod._main, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')):
         mod.configure(server, ask=False, port=27910, dir=str(tmp_path))
     assert server.data['url'] == 'https://example.com/q2.tar.gz'
     assert server.data['version'] == '0.21.4'
@@ -80,8 +80,8 @@ def test_install_resolves_download(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "q2ded"
-    with patch.object(mod, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')), \
-         patch.object(mod, '_install_from_source'):
+    with patch.object(mod._main, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')), \
+         patch.object(mod._main, '_install_from_source'):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/q2.tar.gz'
     assert server.data['version'] == '0.21.4'

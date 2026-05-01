@@ -31,6 +31,72 @@ Keep documentation split by audience:
 - `DEVELOPERS.md`
   technical, detailed, implementation-focused
 
+## Game Module Layout
+
+Treat the module import surface and its checked-in assets as one unit.
+
+- Canonical top-level game server modules should use a package-backed layout
+  under `src/gamemodules/<name>/` with `__init__.py` as the canonical import
+  surface.
+- Keep flat `.py` files only for internal helper submodules that live under an
+  already-package-backed game family, such as `minecraft/paper.py` or
+  `terraria/tshock.py`.
+- For package-backed top-level game server modules, keep the canonical import
+  surface in `__init__.py` and put the main implementation in a nearby
+  `main.py`.
+- Prefer package-local manifest filenames such as `curated_mods.json` or
+  `curated_plugins.json` beside the implementation instead of sibling flat
+  files like `src/gamemodules/<name>_curated_mods.json`.
+- When converting a flat module into a package, keep the canonical module id
+  stable so `import_module("gamemodules.<name>")` continues to work.
+
+## Curated Mod And Plugin Guidance
+
+Treat checked-in mod/plugin/addon manifests as part of the supported product
+surface, not ad hoc download shortcuts.
+
+Default scope for mod-support work in this repository is **multiplayer server
+content only**.
+
+- Prioritize popular, high-value mods/addons/plugins with stable,
+  authoritative release assets.
+- Prioritize dedicated-server-compatible multiplayer content such as admin
+  tooling, server frameworks, moderation tools, server-side gameplay rules,
+  maps, and other assets that a hosted multiplayer server can actually load
+  and serve.
+- Ignore single-player-only, client-only, local-only, campaign/story-only,
+  save-editing, or otherwise non-dedicated-server mod ecosystems unless the
+  user explicitly asks for them.
+- When scouting new mod-support targets, reject candidates whose mod scene is
+  primarily single-player or whose popular mods are not meaningfully usable on
+  a hosted multiplayer dedicated server.
+- Prefer immutable or authoritative download sources such as:
+  - GitHub release assets
+  - official project download archives
+  - other upstream-hosted versioned release files
+- Do not point checked-in manifests at moving repository branches or vague
+  "latest source" downloads when a real release artifact exists.
+- Colocate a module's checked-in curated manifest with that module's package
+  whenever the module has enough local assets to justify a directory layout.
+- Keep genuinely shared registries shared. If one checked-in manifest is owned
+  by a cross-module helper and intentionally serves multiple server modules,
+  do not invent a fake canonical game-module package just to relocate that
+  file.
+- Declare manifest dependencies explicitly and keep apply/install paths
+  dependency-aware so requesting a higher-level family installs prerequisites
+  automatically.
+- When a provider or release ships a different payload shape than the current
+  helper expects, fix the shared install path at the root cause before adding
+  more manifest entries.
+- For Source-family addon work, distinguish clearly between:
+  - archive-backed addon payloads
+  - bare addon-root archives
+  - single-file addon payloads such as `.gma` or `.vpk`
+- Only add checked-in entries for payload types the module's current install
+  path can actually stage and clean up safely.
+- When expanding a checked-in curated manifest, update tests, docs, and
+  changelog entries in the same change.
+
 ## Changelog Discipline
 
 Keep `changelog.txt` current for every PR that changes user-visible behaviour,

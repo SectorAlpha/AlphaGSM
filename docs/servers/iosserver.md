@@ -92,5 +92,6 @@ alphagsm myiosserve backup
 - **Map directory**: `iosoccer/maps/`
 - **Mod directory**: `iosoccer/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/iosoccer/`.
 - **Map install**: Copy `.bsp` files into `iosoccer/maps/` and add to `iosoccer/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `iosoccer/addons/`.
