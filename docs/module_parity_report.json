@@ -1983,11 +1983,8 @@
       "tf2server"
     ],
     "canonical_id": "teamfortress2",
-    "contract_complete": false,
-    "missing_surfaces": [
-      "runtime_requirements",
-      "container_spec"
-    ],
+    "contract_complete": true,
+    "missing_surfaces": [],
     "runtime_verified": true,
     "support_state": "active"
   },

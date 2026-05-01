@@ -405,7 +405,7 @@ def build_source_addon_mod_support(
         archive_path = cache_root / archive_name
         _download_to_cache()(
             resolved.url,
-            allowed_hosts=resolved.hosts,
+            allowed_hosts=list(resolved.hosts),
             target_path=archive_path,
             checksum=resolved.checksum,
         )

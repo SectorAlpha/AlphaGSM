@@ -1,8 +1,7 @@
 """Canonical package import surface for this game module."""
 
-from .main import *  # noqa: F401,F403
-from . import main as _main
+from server.package_loader import load_package_surface
 
 
-def __getattr__(name):
-    return getattr(_main, name)
+load_package_surface(globals())
+del load_package_surface

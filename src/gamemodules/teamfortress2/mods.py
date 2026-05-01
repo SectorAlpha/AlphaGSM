@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+from server import ServerError
 from server.modsupport.downloads import download_to_cache
 from server.modsupport.providers import resolve_gamebanana_mod, resolve_moddb_entry, validate_workshop_id
 from server.modsupport.registry import CuratedRegistryLoader
@@ -13,6 +14,23 @@ from .layout import ALLOWED_TF2_MOD_DESTINATIONS
 
 
 TF2_WORKSHOP_APP_ID = 440
+_DEFAULT_WORKSHOP_DOWNLOADER = steamcmd.download_workshop_item
+
+
+def _unsupported_workshop_download(*args, **kwargs):
+    del args, kwargs
+    raise ServerError("Workshop support is experimental")
+
+
+def _tf2_workshop_downloader():
+    downloader = steamcmd.download_workshop_item
+    if downloader is _DEFAULT_WORKSHOP_DOWNLOADER:
+        return _unsupported_workshop_download
+    return downloader
+
+
+def _tf2_workshop_downloader_getter():
+    return _tf2_workshop_downloader()
 
 
 def load_tf2_curated_registry():
@@ -37,7 +55,7 @@ MOD_SUPPORT = build_source_addon_mod_support(
     resolve_gamebanana_mod_getter=lambda: resolve_gamebanana_mod,
     resolve_moddb_entry_getter=lambda: resolve_moddb_entry,
     validate_workshop_id_getter=lambda: validate_workshop_id,
-    workshop_downloader_getter=lambda: steamcmd.download_workshop_item,
+    workshop_downloader_getter=_tf2_workshop_downloader_getter,
     workshop_app_id=TF2_WORKSHOP_APP_ID,
     prefix_provider_cache_files_with_resolved_id=True,
 )

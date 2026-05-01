@@ -235,8 +235,6 @@ def _run_binary_self_update(*, check=False):
             binary_asset["browser_download_url"],
             checksum_asset["browser_download_url"],
         )
-    except SelfUpdateError:
-        raise
     except (OSError, urllib.error.URLError, ValueError) as ex:
         raise SelfUpdateError("Binary self-update failed.") from ex
     print("Updated AlphaGSM binary to %s" % (latest_version,))

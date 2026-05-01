@@ -209,7 +209,7 @@
 | subsistenceserver | - | disabled | no | no | status |
 | sunkenlandserver | - | disabled | no | no | status |
 | svenserver | - | active | yes | yes | - |
-| teamfortress2 | tf2, tf2server | active | no | yes | runtime_requirements, container_spec |
+| teamfortress2 | tf2, tf2server | active | yes | yes | - |
 | terraria.tshock | - | active | yes | yes | - |
 | terraria.vanilla | - | active | yes | yes | - |
 | terratechworldsserver | - | disabled | no | no | status |

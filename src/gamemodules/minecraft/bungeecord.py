@@ -263,5 +263,3 @@ def get_query_address(server):
     """Return the TCP endpoint used by the ``query`` command."""
 
     return (runtime_module.resolve_query_host(server), server.data["port"], "tcp")
-
-
