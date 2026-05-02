@@ -52,7 +52,6 @@ def configure(
     gamemodule_common.set_server_defaults(
         server,
         {
-            "queryport": "27015",
             "servername": "AlphaGSM %s" % (server.name,),
             "worldname": server.name,
             "maxplayers": "32",
@@ -70,6 +69,7 @@ def configure(
         default_port=7777,
         prompt="Please specify the game port to use for this server:",
     )
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
     gamemodule_common.configure_install_dir(
         server,
         ask,

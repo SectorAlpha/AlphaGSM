@@ -1,6 +1,7 @@
 """Minecraft Bedrock Edition dedicated server helpers."""
 
 import os
+import re
 import shutil
 import time
 import urllib.error
@@ -21,14 +22,32 @@ from .custom import updateconfig
 
 import server.runtime as runtime_module
 
-BEDROCK_DOWNLOAD_PAGE = "https://www.minecraft.net/en-us/download/server/bedrock"
+BEDROCK_DOWNLOAD_PAGES = (
+    "https://www.minecraft.net/en-us/download/server/bedrock",
+    "https://www.minecraft.net/en-us/download/server/bedrock/",
+)
 BEDROCK_URL_TEMPLATE = (
     "https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-%s.zip"
 )
-BEDROCK_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
+BEDROCK_HTTP_HEADERS = {
+    # Minecraft.net has been more reliable in CI when the request looks like a normal
+    # browser page fetch instead of a custom automation client.
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+}
 BEDROCK_HTTP_RETRIES = 3
 BEDROCK_HTTP_RETRY_DELAY_SECONDS = 5
 BEDROCK_HTTP_TIMEOUT_SECONDS = 60
+BEDROCK_DOWNLOAD_URL_RE = re.compile(
+    r"https://www\.minecraft\.net/bedrockdedicatedserver/bin-linux/"
+    r"bedrock-server-([0-9.]+)\.zip"
+)
 
 commands = ()
 command_args = {
@@ -73,20 +92,19 @@ setting_schema = build_setting_schema(
 def _read_download_page():
     """Return the Bedrock download page HTML."""
 
-    request = urllib.request.Request(
-        BEDROCK_DOWNLOAD_PAGE, headers={"User-Agent": BEDROCK_USER_AGENT}
-    )
     last_error = None
-    for attempt in range(BEDROCK_HTTP_RETRIES):
-        try:
-            with urllib.request.urlopen(
-                request, timeout=BEDROCK_HTTP_TIMEOUT_SECONDS
-            ) as response:
-                return response.read().decode("utf-8")
-        except (OSError, urllib.error.URLError) as exc:
-            last_error = exc
-            if attempt + 1 < BEDROCK_HTTP_RETRIES:
-                time.sleep(BEDROCK_HTTP_RETRY_DELAY_SECONDS)
+    for page_url in BEDROCK_DOWNLOAD_PAGES:
+        request = urllib.request.Request(page_url, headers=BEDROCK_HTTP_HEADERS)
+        for attempt in range(BEDROCK_HTTP_RETRIES):
+            try:
+                with urllib.request.urlopen(
+                    request, timeout=BEDROCK_HTTP_TIMEOUT_SECONDS
+                ) as response:
+                    return response.read().decode("utf-8", errors="ignore")
+            except (OSError, urllib.error.URLError) as exc:
+                last_error = exc
+                if attempt + 1 < BEDROCK_HTTP_RETRIES:
+                    time.sleep(BEDROCK_HTTP_RETRY_DELAY_SECONDS)
     raise ServerError(
         "Unable to fetch the Bedrock dedicated server download page"
     ) from last_error
@@ -98,15 +116,11 @@ def resolve_bedrock_download(version=None):
     if version not in (None, "", "latest"):
         return version, BEDROCK_URL_TEMPLATE % (version,)
     page = _read_download_page()
-    marker = "https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-"
-    start = page.find(marker)
-    if start < 0:
+    match = BEDROCK_DOWNLOAD_URL_RE.search(page)
+    if match is None:
         raise ServerError("Unable to locate the latest Bedrock dedicated server download")
-    end = page.find(".zip", start)
-    if end < 0:
-        raise ServerError("Unable to parse the latest Bedrock dedicated server download")
-    url = page[start : end + 4]
-    version = url.rsplit("bedrock-server-", 1)[1][:-4]
+    version = match.group(1)
+    url = match.group(0)
     return version, url
 
 

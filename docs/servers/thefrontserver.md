@@ -44,7 +44,8 @@ alphagsm mythefront stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default `7777`)
+- the Steam query port (defaults to `port + 1` unless you already set `queryport`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +59,8 @@ alphagsm mythefront backup
 ## Notes
 
 - Module name: `thefrontserver`
-- Default port: 27015
+- Default game port: `7777`
+- Default query port: `7778`
 
 ## Developer Notes
 

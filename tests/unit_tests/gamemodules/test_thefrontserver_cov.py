@@ -39,6 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['queryport'] == '7778'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -60,6 +61,12 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
     server = DummyServer()
     mod.configure(server, ask=True)
+
+
+def test_configure_queryport_follows_selected_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=9000, dir=str(tmp_path))
+    assert server.data['queryport'] == '9001'
 
 
 def test_install(tmp_path):
