@@ -45,7 +45,7 @@ alphagsm mythefront stop
 Setup configures:
 
 - the game port (default `7777`)
-- the Steam query port (defaults to `port + 1` unless you already set `queryport`)
+- the Steam query port (defaults to `port + 2` unless you already set `queryport`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -60,7 +60,9 @@ alphagsm mythefront backup
 
 - Module name: `thefrontserver`
 - Default game port: `7777`
-- Default query port: `7778`
+- Default beacon port: `7778`
+- Default query port: `7779`
+- Default shutdown-service port: `7780`
 
 ## Developer Notes
 
@@ -75,6 +77,7 @@ alphagsm mythefront backup
 
 - **Config file**: See game module source
 - **Max players**: `32`
+- **Launch shape**: `TheFrontServer ProjectWar ProjectWar_Start?Listen?MaxPlayers=<n> -server -game ... -port=<port> -BeaconPort=<port+1> -QueryPort=<port+2> -ShutDownServicePort=<port+3>`
 - **Template**: See [server-templates/thefrontserver/](../server-templates/thefrontserver/) if available
 
 ### Maps and Mods

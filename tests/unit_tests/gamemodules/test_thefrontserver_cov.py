@@ -39,7 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
-    assert server.data['queryport'] == '7778'
+    assert server.data['queryport'] == '7779'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -66,7 +66,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_configure_queryport_follows_selected_port(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=9000, dir=str(tmp_path))
-    assert server.data['queryport'] == '9001'
+    assert server.data['queryport'] == '9002'
 
 
 def test_install(tmp_path):
@@ -121,22 +121,37 @@ def test_get_start_command(tmp_path):
     exe_path = tmp_path / "ProjectWar/Binaries/Linux/TheFrontServer"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
-    server.data["port"] = 27015
-    server.data["queryport"] = 27015
+    server.data["port"] = 7777
+    server.data["queryport"] = 7779
+    server.data["maxplayers"] = 32
+    server.data["servername"] = "AlphaGSM Test Front"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "./ProjectWar/Binaries/Linux/TheFrontServer",
+        "ProjectWar",
+        "ProjectWar_Start?Listen?MaxPlayers=32",
         "-server",
+        "-game",
+        "-QueueThreshold=32",
+        "-ServerName=AlphaGSM Test Front",
         "-log",
-        "-Port=27015",
-        "-QueryPort=27015",
-        "-MULTIHOME=0.0.0.0",
+        "-locallogtimes",
+        "-EnableParallelCharacterMovementTickFunction",
+        "-EnableParallelCharacterTickFunction",
+        "-UseDynamicPhysicsScene",
+        "-port=7777",
+        "-BeaconPort=7778",
+        "-QueryPort=7779",
+        "-Game.PhysicsVehicle=false",
+        "-ansimalloc",
+        "-Game.MaxFrameRate=35",
+        "-ShutDownServicePort=7780",
     ]
     assert cwd == server.data["dir"]
 
 
 def test_setting_schema_exposes_thefront_launch_formats():
-    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["port"].launch_arg_format == "-port={value}"
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 

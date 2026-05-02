@@ -26,10 +26,13 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 command_functions = {}
 max_stop_wait = 1
 setting_schema = {
-    **gamemodule_common.build_unreal_setting_schema(),
+    **gamemodule_common.build_unreal_setting_schema(
+        include_maxplayers=True,
+        include_servername=True,
+        port_format="-port={value}",
+    ),
     "servername": SettingSpec(canonical_key="servername", description="The advertised server name."),
     "worldname": SettingSpec(canonical_key="worldname", description="The world name."),
-    "maxplayers": SettingSpec(canonical_key="maxplayers", value_type="integer", description="The maximum players."),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
 
@@ -69,7 +72,7 @@ def configure(
         default_port=7777,
         prompt="Please specify the game port to use for this server:",
     )
-    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 2))
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -115,19 +118,35 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    dynamic_args = build_launch_arg_values(
-        server.data,
-        {"port": setting_schema["port"], "queryport": setting_schema["queryport"]},
-        require_explicit_tokens=True,
-        value_transform=lambda _spec, current_value: str(current_value),
-    )
+
+    port = int(server.data["port"])
+    beacon_port = port + 1
+    query_port = int(server.data.get("queryport", port + 2))
+    shutdown_service_port = port + 3
+    maxplayers = int(server.data.get("maxplayers", 32))
+    server_name = str(server.data.get("servername", "AlphaGSM %s" % (server.name,)))
+
     return (
         [
             "./" + server.data["exe_name"],
+            "ProjectWar",
+            "ProjectWar_Start?Listen?MaxPlayers=%s" % (maxplayers,),
             "-server",
+            "-game",
+            "-QueueThreshold=%s" % (maxplayers,),
+            "-ServerName=%s" % (server_name,),
             "-log",
-            *dynamic_args,
-            "-MULTIHOME=0.0.0.0",
+            "-locallogtimes",
+            "-EnableParallelCharacterMovementTickFunction",
+            "-EnableParallelCharacterTickFunction",
+            "-UseDynamicPhysicsScene",
+            "-port=%s" % (port,),
+            "-BeaconPort=%s" % (beacon_port,),
+            "-QueryPort=%s" % (query_port,),
+            "-Game.PhysicsVehicle=false",
+            "-ansimalloc",
+            "-Game.MaxFrameRate=35",
+            "-ShutDownServicePort=%s" % (shutdown_service_port,),
         ],
         server.data["dir"],
     )
