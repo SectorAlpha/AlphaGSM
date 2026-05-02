@@ -44,6 +44,7 @@ BEDROCK_HTTP_HEADERS = {
 BEDROCK_HTTP_RETRIES = 3
 BEDROCK_HTTP_RETRY_DELAY_SECONDS = 5
 BEDROCK_HTTP_TIMEOUT_SECONDS = 60
+BEDROCK_FALLBACK_VERSION = "1.26.14.1"
 BEDROCK_DOWNLOAD_URL_RE = re.compile(
     r"https://www\.minecraft\.net/bedrockdedicatedserver/bin-linux/"
     r"bedrock-server-([0-9.]+)\.zip"
@@ -118,7 +119,10 @@ def resolve_bedrock_download(version=None):
     page = _read_download_page()
     match = BEDROCK_DOWNLOAD_URL_RE.search(page)
     if match is None:
-        raise ServerError("Unable to locate the latest Bedrock dedicated server download")
+        # Minecraft.net now embeds Bedrock download choices behind frontend config ids
+        # in the raw HTML. Keep setup working by falling back to the last verified
+        # official Linux version until Mojang exposes a stable non-JS resolver again.
+        return BEDROCK_FALLBACK_VERSION, BEDROCK_URL_TEMPLATE % (BEDROCK_FALLBACK_VERSION,)
     version = match.group(1)
     url = match.group(0)
     return version, url

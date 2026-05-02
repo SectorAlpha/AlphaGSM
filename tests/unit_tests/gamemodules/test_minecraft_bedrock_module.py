@@ -49,6 +49,19 @@ def test_resolve_bedrock_download_parses_latest_page(monkeypatch):
     assert url.endswith("/bedrock-server-1.21.100.6.zip")
 
 
+def test_resolve_bedrock_download_falls_back_when_page_has_only_frontend_config(monkeypatch):
+    monkeypatch.setattr(
+        bedrock,
+        "_read_download_page",
+        lambda: '{"downloadType1":"serverBedrockLinux","downloadType2":"serverBedrockPreviewLinux"}',
+    )
+
+    version, url = bedrock.resolve_bedrock_download()
+
+    assert version == bedrock.BEDROCK_FALLBACK_VERSION
+    assert url.endswith(f"/bedrock-server-{bedrock.BEDROCK_FALLBACK_VERSION}.zip")
+
+
 def test_bedrock_configure_sets_defaults(tmp_path, monkeypatch):
     server = DummyServer("bedrock")
     monkeypatch.setattr(
