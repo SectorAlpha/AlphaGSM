@@ -124,6 +124,7 @@ def test_download_accepts_custom_timeout(url_module, tmp_path, monkeypatch):
             pass
 
     monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 0)
 
     url_module.download(str(tmp_path), ("http://example.com/file", "server.zip", "zip", "300"))
 
