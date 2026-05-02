@@ -1,5 +1,4 @@
 import importlib
-import io
 import os
 import sys
 import urllib.error
@@ -43,6 +42,54 @@ def test_download_wraps_url_errors(url_module, tmp_path, monkeypatch):
 
     with pytest.raises(url_module.DownloaderError, match="Can't download file"):
         url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
+
+
+def test__download_url_falls_back_to_curl_on_url_error(url_module, tmp_path, monkeypatch):
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        raise urllib.error.URLError("timed out")
+
+    def fake_curl(url, targetname, timeout):
+        calls.append((url, targetname, timeout))
+        with open(targetname, "wb"):
+            pass
+        return targetname
+
+    monkeypatch.setattr(url_module.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(url_module, "_download_url_with_curl", fake_curl)
+
+    target = tmp_path / "server.zip"
+    result = url_module._download_url("http://example.com/file", str(target), timeout=300)
+
+    assert result == str(target)
+    assert calls == [("http://example.com/file", str(target), 300)]
+
+
+def test__download_url_preserves_original_error_when_curl_unavailable(url_module, tmp_path, monkeypatch):
+    def fake_urlopen(request, timeout):
+        raise urllib.error.URLError("timed out")
+
+    def fake_curl(url, targetname, timeout):
+        raise FileNotFoundError("curl missing")
+
+    monkeypatch.setattr(url_module.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(url_module, "_download_url_with_curl", fake_curl)
+
+    with pytest.raises(urllib.error.URLError, match="timed out"):
+        url_module._download_url("http://example.com/file", str(tmp_path / "server.zip"), timeout=300)
+
+
+def test__download_url_with_curl_raises_os_error_on_failure(url_module, tmp_path, monkeypatch):
+    monkeypatch.setattr(url_module.shutil, "which", lambda name: "/usr/bin/curl")
+    monkeypatch.setattr(
+        url_module.sp,
+        "run",
+        lambda *args, **kwargs: type("Result", (), {"returncode": 22, "stderr": "curl: (22) 404"})(),
+    )
+
+    with pytest.raises(OSError, match="curl: \(22\) 404"):
+        url_module._download_url_with_curl("http://example.com/file", str(tmp_path / "server.zip"), 300)
 
 
 def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkeypatch):

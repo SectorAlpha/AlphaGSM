@@ -32,22 +32,69 @@ def reporthook(blocknum, blocksize, totalsize):
         print()
 
 
+def _download_url_with_curl(url, targetname, timeout):
+    """Download *url* to *targetname* with curl when urllib stalls."""
+
+    curl_path = shutil.which("curl")
+    if curl_path is None:
+        raise FileNotFoundError("curl is not available")
+    ret = sp.run(
+        [
+            curl_path,
+            "--fail",
+            "--location",
+            "--silent",
+            "--show-error",
+            "--retry",
+            str(URL_RETRIES),
+            "--retry-delay",
+            str(URL_RETRY_DELAY_SECONDS),
+            "--retry-all-errors",
+            "--user-agent",
+            USER_AGENT,
+            "--connect-timeout",
+            str(min(30, timeout)),
+            "--speed-time",
+            str(timeout),
+            "--speed-limit",
+            "1",
+            "--output",
+            targetname,
+            url,
+        ],
+        check=False,
+        stdout=sp.DEVNULL,
+        stderr=sp.PIPE,
+        text=True,
+    )
+    if ret.returncode != 0:
+        stderr = (ret.stderr or "").strip()
+        raise OSError(stderr or "curl download failed")
+    return targetname
+
+
 def _download_url(url, targetname, timeout=URL_TIMEOUT_SECONDS):
     """Download *url* to *targetname* using a proper User-Agent header."""
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        totalsize = int(response.headers.get("Content-Length", -1))
-        blocksize = 8192
-        blocknum = 0
-        with open(targetname, "wb") as out:
-            while True:
-                buf = response.read(blocksize)
-                if not buf:
-                    break
-                out.write(buf)
-                blocknum += 1
-                reporthook(blocknum, blocksize, totalsize)
-    return targetname
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            totalsize = int(response.headers.get("Content-Length", -1))
+            blocksize = 8192
+            blocknum = 0
+            with open(targetname, "wb") as out:
+                while True:
+                    buf = response.read(blocksize)
+                    if not buf:
+                        break
+                    out.write(buf)
+                    blocknum += 1
+                    reporthook(blocknum, blocksize, totalsize)
+        return targetname
+    except (OSError, urllib.error.URLError) as exc:
+        try:
+            return _download_url_with_curl(url, targetname, timeout)
+        except (FileNotFoundError, OSError):
+            raise exc
 
 
 def _parse_timeout_seconds(value):
