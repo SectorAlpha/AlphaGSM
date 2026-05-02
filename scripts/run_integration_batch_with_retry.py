@@ -20,11 +20,21 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _normalize_collection_target(name: str) -> str:
+    if not name:
+        return name
+    if "::" in name or "/" in name or name.endswith(".py"):
+        return name
+    if name.startswith("tests.") or name.startswith("test_"):
+        return name.replace(".", "/") + ".py"
+    return name
+
+
 def pytest_nodeid_from_testcase(testcase: ET.Element) -> str:
     classname = testcase.attrib.get("classname", "")
     name = testcase.attrib.get("name", "")
     if not classname:
-        return name
+        return _normalize_collection_target(name)
 
     parts = classname.split(".")
     module_index = next((index for index, part in enumerate(parts) if part.startswith("test_")), None)
@@ -158,16 +168,6 @@ def main() -> int:
         print("Could not isolate failing tests from JUnit XML; retrying the full shard once.")
 
     retry_exit = run_pytest(retry_targets, retry_results_file)
-    if isolated_retry and retry_exit in {4, 5}:
-        print(
-            "Isolated retry produced a pytest usage/no-tests exit code; "
-            "retrying the full shard once instead."
-        )
-        if retry_results_file.exists():
-            retry_results_file.unlink()
-        retry_targets = list(args.tests)
-        isolated_retry = False
-        retry_exit = run_pytest(retry_targets, retry_results_file)
 
     if isolated_retry:
         merge_junit_reports(results_file, retry_results_file, results_file)

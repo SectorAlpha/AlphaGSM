@@ -1,3 +1,7 @@
 """Package-backed canonical Garry's Mod module."""
 
-from .main import *  # noqa: F401,F403
+from server.package_loader import load_package_surface
+
+
+load_package_surface(globals())
+del load_package_surface

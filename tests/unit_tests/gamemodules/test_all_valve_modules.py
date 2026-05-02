@@ -92,6 +92,13 @@ def test_gmodserver_install_downloads_mountable_source_content(monkeypatch, tmp_
     assert '"ep2"' in mountdepots
 
 
+def test_gmodserver_exports_private_mount_constants():
+    mod = importlib.import_module("gamemodules.gmodserver")
+
+    assert mod._GMOD_CONTENT_INSTALLS[0] == ("cstrike", 232330, "cstrike")
+    assert "hl2mp" in mod._GMOD_MOUNTDEPOTS_DEFAULTS
+
+
 # ── Counter-Strike: Source ───────────────────────────────────────────────────
 
 def test_cssserver_configure(tmp_path):

@@ -60,6 +60,20 @@ def test_pytest_nodeid_from_testcase_supports_module_and_class_cases():
     )
 
 
+def test_pytest_nodeid_from_testcase_maps_collection_errors_to_file_paths():
+    retry = load_retry_module()
+
+    collection_case = ET.Element(
+        "testcase",
+        classname="",
+        name="tests.integration_tests.test_gmodserver",
+    )
+
+    assert retry.pytest_nodeid_from_testcase(collection_case) == (
+        "tests/integration_tests/test_gmodserver.py"
+    )
+
+
 def test_failing_test_nodeids_returns_only_failed_cases(tmp_path):
     retry = load_retry_module()
     report = tmp_path / "results.xml"
@@ -119,7 +133,7 @@ def test_workflow_uses_integration_retry_helper():
     assert "--results-file results.xml" in text
 
 
-def test_main_falls_back_to_full_shard_after_usage_error(tmp_path, monkeypatch):
+def test_main_retries_only_failed_collection_target(tmp_path, monkeypatch):
     retry = load_retry_module()
     results_file = tmp_path / "results.xml"
     retry_results_file = tmp_path / "retry.xml"
@@ -141,30 +155,22 @@ def test_main_falls_back_to_full_shard_after_usage_error(tmp_path, monkeypatch):
             write_report(
                 report_path,
                 [
-                    ("tests.integration_tests.test_gmodserver", "test_gmodserver_lifecycle", "failure"),
+                    ("", "tests.integration_tests.test_gmodserver", "error"),
                 ],
             )
-            return 1
-        if len(calls) == 2:
-            return 4
+            return 2
         write_report(
             report_path,
             [
-                ("tests.integration_tests.test_gmodserver", "test_gmodserver_lifecycle", "passed"),
+                ("", "tests.integration_tests.test_gmodserver", "error"),
             ],
         )
-        return 0
+        return 2
 
     monkeypatch.setattr(retry, "run_pytest", fake_run_pytest)
 
-    assert retry.main() == 0
+    assert retry.main() == 2
     assert calls == [
         ["tests/integration_tests/test_gmodserver.py"],
-        ["tests/integration_tests/test_gmodserver.py::test_gmodserver_lifecycle"],
         ["tests/integration_tests/test_gmodserver.py"],
     ]
-
-    cases = _testcase_map(results_file)
-    assert cases[("tests.integration_tests.test_gmodserver", "test_gmodserver_lifecycle")].find(
-        "failure"
-    ) is None
