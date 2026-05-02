@@ -25,7 +25,6 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Server starts but crashes during initialization before log markers appear (crash pattern)")
 def test_chivalryserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
