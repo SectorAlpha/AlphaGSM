@@ -107,13 +107,13 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Necesse is a Java game server; use a TCP ping on the game port."""
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+    """Necesse exposes a UDP game port without a richer public query protocol."""
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
-    """Return the TCP address used by the info command."""
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+    """Return the UDP address used by the info command."""
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def do_stop(server, j):
@@ -158,7 +158,7 @@ def get_runtime_requirements(server):
     return runtime_module.build_runtime_requirements(
         server,
         family="java",
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
         env={
             "ALPHAGSM_JAVA_MAJOR": str(java_major),
             "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "server.jar"),
@@ -172,7 +172,7 @@ def get_container_spec(server):
         server,
         family="java",
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
         env=requirements.get("env", {}),
         stdin_open=True,
         tty=True,
