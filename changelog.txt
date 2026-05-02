@@ -17,6 +17,7 @@ high-level milestones.
 - Server support: keep `minecraft.bedrock setup` working when Minecraft.net returns only frontend Bedrock download-type ids in raw HTML by falling back to the last verified official Linux Bedrock version instead of failing latest-version resolution outright.
 - Server support: align `thefrontserver` with the published dedicated-server launch contract by using `ProjectWar`/`ProjectWar_Start`, adding the required Unreal-style runtime flags, and shifting its default query port family to `port+2` with implicit beacon and shutdown-service offsets.
 - Server support: let `minecraft.bedrock` request a longer timeout for the official Linux zip download so CI does not abort large Mojang archive fetches after the shared 60-second URL timeout.
+- Server support: make shared direct URL downloads retry transient `OSError` disconnects such as `Remote end closed connection without response`, which Bedrock now hits while fetching Mojang's official server archive in CI.
 
 2026-04-30
 - Server support: add Call of Duty 4 pk3 content management so `cod4server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir`, keep that directory in the managed backup targets, and clean up only AlphaGSM-managed files.

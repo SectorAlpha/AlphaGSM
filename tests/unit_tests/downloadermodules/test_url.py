@@ -66,6 +66,27 @@ def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkey
     assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
 
 
+def test_download_retries_on_os_error_and_succeeds(url_module, tmp_path, monkeypatch):
+    calls = []
+    sleeps = []
+
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
+        calls.append((url, timeout))
+        if len(calls) < 2:
+            raise OSError("Remote end closed connection without response")
+        with open(targetname, "wb"):
+            pass
+
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
+
+    assert len(calls) == 2
+    assert calls == [("http://example.com/file", url_module.URL_TIMEOUT_SECONDS)] * 2
+    assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
+
+
 def test_download_raises_after_all_retries_exhausted(url_module, tmp_path, monkeypatch):
     calls = []
     sleeps = []
@@ -83,6 +104,17 @@ def test_download_raises_after_all_retries_exhausted(url_module, tmp_path, monke
     assert len(calls) == url_module.URL_RETRIES
     assert calls == [("http://example.com/file", url_module.URL_TIMEOUT_SECONDS)] * url_module.URL_RETRIES
     assert len(sleeps) == url_module.URL_RETRIES - 1
+
+
+def test_download_wraps_os_errors(url_module, tmp_path, monkeypatch):
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
+        raise OSError("Remote end closed connection without response")
+
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: None)
+
+    with pytest.raises(url_module.DownloaderError, match="Can't download file"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
 
 
 def test_download_removes_partial_file_between_retries(url_module, tmp_path, monkeypatch):

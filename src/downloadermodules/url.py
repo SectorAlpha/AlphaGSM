@@ -87,7 +87,7 @@ def download(path,args):
             _download_url(url, part_targetname, timeout=timeout)
             os.replace(part_targetname, targetname)
             break
-        except urllib.error.URLError as ex:
+        except (OSError, urllib.error.URLError) as ex:
             reason = ex.reason if hasattr(ex, 'reason') else str(ex)
             print("Error downloading " + str(targetname) + ": " + str(reason))
             try:
