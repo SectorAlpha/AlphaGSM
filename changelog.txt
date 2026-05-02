@@ -11,6 +11,8 @@ high-level milestones.
 - CI: re-enable integration coverage for `atlasserver`, `ets2server`, `pcarserver`, `pvrserver`, `minecraft.bedrock`, `chivalryserver`, `solserver`, `stnserver`, `exfilserver`, `thefrontserver`, and `necserver` so GitHub Actions surfaces their current lifecycle failures again.
 - Server support: make `minecraft.bedrock` report `query` over TCP and `info` over SLP through explicit runtime-aware hooks, and make `thefrontserver` report `query` and `info` over its dedicated A2S query port instead of falling back to the generic localhost heuristics.
 - CI: stop relying on generic startup log markers for `atlasserver`, `chivalryserver`, `ets2server`, `pcarserver`, `pvrserver`, and `stnserver`, align `necserver`'s integration TCP probe with the detected query host, and give `solserver` a longer A2S readiness budget.
+- Server support: add request timeouts and retries to direct URL downloads, make Bedrock's official download-page lookup retry transient network failures, ensure the staged `bedrock_server` binary stays executable after install, remove The Front's hard-coded positional launch argument, and treat `necserver` query/info as generic UDP reachability instead of TCP.
+- CI: make `thefrontserver` wait for real A2S readiness via `info --json`, and make `necserver` validate UDP readiness and shutdown using the module's actual query contract.
 
 2026-04-30
 - Server support: add Call of Duty 4 pk3 content management so `cod4server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir`, keep that directory in the managed backup targets, and clean up only AlphaGSM-managed files.

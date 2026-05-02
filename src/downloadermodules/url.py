@@ -2,6 +2,7 @@
 
 from downloader import DownloaderError
 from datetime import date
+import urllib.error
 import urllib.request
 import os.path
 import shutil
@@ -11,6 +12,7 @@ import time
 
 URL_RETRIES = 3
 URL_RETRY_DELAY_SECONDS = 5
+URL_TIMEOUT_SECONDS = 60
 
 USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 
@@ -33,7 +35,7 @@ def reporthook(blocknum, blocksize, totalsize):
 def _download_url(url, targetname):
     """Download *url* to *targetname* using a proper User-Agent header."""
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request) as response:
+    with urllib.request.urlopen(request, timeout=URL_TIMEOUT_SECONDS) as response:
         totalsize = int(response.headers.get("Content-Length", -1))
         blocksize = 8192
         blocknum = 0

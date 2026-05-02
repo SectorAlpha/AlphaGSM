@@ -505,6 +505,28 @@ def wait_for_udp_closed(host, port, timeout_seconds):
         time.sleep(2)
     raise AssertionError(f"UDP port {host}:{port} still responds after {timeout_seconds}s")
 
+
+def wait_for_generic_udp_closed(host, port, timeout_seconds, payload=b"\x00"):
+    """Wait until a generic UDP listener on *host:port* stops accepting traffic."""
+
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(2)
+                sock.connect((host, int(port)))
+                sock.send(payload)
+                try:
+                    sock.recv(1)
+                except socket.timeout:
+                    pass
+        except OSError:
+            return
+        time.sleep(2)
+    raise AssertionError(
+        f"UDP port {host}:{port} still accepts traffic after {timeout_seconds}s"
+    )
+
 def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None):
     """Poll A2S_INFO on *host*:*port* until the server responds.
 

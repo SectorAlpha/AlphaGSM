@@ -2,6 +2,8 @@
 
 import os
 import shutil
+import time
+import urllib.error
 import urllib.request
 
 import downloader
@@ -24,6 +26,9 @@ BEDROCK_URL_TEMPLATE = (
     "https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-%s.zip"
 )
 BEDROCK_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
+BEDROCK_HTTP_RETRIES = 3
+BEDROCK_HTTP_RETRY_DELAY_SECONDS = 5
+BEDROCK_HTTP_TIMEOUT_SECONDS = 60
 
 commands = ()
 command_args = {
@@ -71,8 +76,20 @@ def _read_download_page():
     request = urllib.request.Request(
         BEDROCK_DOWNLOAD_PAGE, headers={"User-Agent": BEDROCK_USER_AGENT}
     )
-    with urllib.request.urlopen(request) as response:
-        return response.read().decode("utf-8")
+    last_error = None
+    for attempt in range(BEDROCK_HTTP_RETRIES):
+        try:
+            with urllib.request.urlopen(
+                request, timeout=BEDROCK_HTTP_TIMEOUT_SECONDS
+            ) as response:
+                return response.read().decode("utf-8")
+        except (OSError, urllib.error.URLError) as exc:
+            last_error = exc
+            if attempt + 1 < BEDROCK_HTTP_RETRIES:
+                time.sleep(BEDROCK_HTTP_RETRY_DELAY_SECONDS)
+    raise ServerError(
+        "Unable to fetch the Bedrock dedicated server download page"
+    ) from last_error
 
 
 def resolve_bedrock_download(version=None):
@@ -218,6 +235,7 @@ def install(server):
             "url", (server.data["url"], server.data["download_name"], "zip")
         )
         _sync_tree(_resolve_archive_root(downloadpath), server.data["dir"])
+        os.chmod(executable, os.stat(executable).st_mode | 0o111)
         server.data["current_url"] = server.data["url"]
 
     sync_server_config(server)

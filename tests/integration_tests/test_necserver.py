@@ -7,7 +7,6 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     pick_free_tcp_port,
-    wait_for_tcp_open,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -15,8 +14,8 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
+    wait_for_info_protocol,
+    wait_for_generic_udp_closed,
 )
 from gamemodules.necserver import steam_app_id
 from utils.valve_server import detect_query_host
@@ -66,30 +65,31 @@ def test_necserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_tcp_open(query_host, port, 300, log_path=log_path)
+        wait_for_info_protocol(env, server_name, "udp", 300)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
+        assert any(
+            marker in query_result.stdout
+            for marker in ("Server is responding", "Server port is open")
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "Players     : 0/" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
+        assert "Server port is open" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
         )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed(query_host, port, STOP_TIMEOUT)
+    wait_for_generic_udp_closed(query_host, port, STOP_TIMEOUT)

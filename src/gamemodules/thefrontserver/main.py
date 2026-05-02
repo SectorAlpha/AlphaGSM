@@ -124,7 +124,6 @@ def get_start_command(server):
     return (
         [
             "./" + server.data["exe_name"],
-            "TheFront",
             "-server",
             "-log",
             *dynamic_args,
