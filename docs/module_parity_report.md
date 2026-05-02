@@ -30,7 +30,7 @@
 | armarserver | - | active | no | yes | status |
 | askaserver | - | disabled | no | no | status |
 | astroneerserver | - | disabled | no | no | status |
-| atlasserver | - | disabled | no | no | status |
+| atlasserver | - | active | no | yes | status |
 | atsserver | - | disabled | no | no | status |
 | avserver | - | active | no | yes | status |
 | bannerlordserver | - | disabled | no | no | status |
@@ -52,7 +52,7 @@
 | btlserver | - | active | no | yes | status |
 | btserver | - | disabled | no | no | status |
 | ccserver | - | active | yes | yes | - |
-| chivalryserver | - | disabled | no | no | status |
+| chivalryserver | - | active | no | yes | status |
 | citadelserver | - | disabled | no | no | status |
 | ckserver | - | active | no | yes | status |
 | cod2server | - | active | no | yes | status |
@@ -88,8 +88,8 @@
 | emserver | - | active | yes | yes | - |
 | enshrouded | - | disabled | no | no | status |
 | etlegacyserver | - | active | no | yes | status |
-| ets2server | - | disabled | no | no | status |
-| exfilserver | - | disabled | no | no | status |
+| ets2server | - | active | no | yes | status |
+| exfilserver | - | active | no | yes | status |
 | fearthenightserver | - | disabled | no | no | status |
 | fofserver | - | active | yes | yes | - |
 | foundryserver | - | disabled | no | no | status |
@@ -126,7 +126,7 @@
 | longvinterserver | - | disabled | no | no | status |
 | medievalengineersserver | - | disabled | no | no | status |
 | memoriesofmarsserver | - | disabled | no | no | status |
-| minecraft.bedrock | - | disabled | no | no | status |
+| minecraft.bedrock | - | active | no | yes | status |
 | minecraft.bungeecord | - | active | no | yes | status |
 | minecraft.custom | - | active | yes | yes | - |
 | minecraft.paper | - | active | yes | yes | - |
@@ -143,7 +143,7 @@
 | mxbikesserver | - | active | no | yes | status |
 | mythofempiresserver | - | disabled | no | no | status |
 | ndserver | - | disabled | yes | no | - |
-| necserver | - | disabled | no | no | status |
+| necserver | - | active | no | yes | status |
 | nightingale | - | disabled | no | no | status |
 | nmrihserver | - | active | yes | yes | - |
 | noonesurvivedserver | - | disabled | no | no | status |
@@ -155,13 +155,13 @@
 | palworld | - | disabled | no | no | status |
 | pathoftitansserver | - | active | no | yes | status |
 | pcars2server | - | disabled | no | no | status |
-| pcarserver | - | disabled | no | no | status |
+| pcarserver | - | active | no | yes | status |
 | pixarkserver | - | disabled | no | no | status |
 | police1013server | - | disabled | no | no | status |
 | primalcarnageextinctionserver | - | disabled | no | no | status |
 | projectzomboid | - | active | no | yes | status |
 | pvkiiserver | - | active | yes | yes | - |
-| pvrserver | - | disabled | no | no | status |
+| pvrserver | - | active | no | yes | status |
 | q2server | - | active | no | yes | status |
 | q3server | - | disabled | no | no | status |
 | q4server | - | disabled | no | no | status |
@@ -193,7 +193,7 @@
 | skyrimtogetherrebornserver | - | disabled | no | no | status |
 | smallandserver | - | active | no | yes | status |
 | sniperelite4server | - | disabled | no | no | status |
-| solserver | - | disabled | no | no | status |
+| solserver | - | active | no | yes | status |
 | sonsoftheforestserver | - | disabled | no | no | status |
 | soulmask | - | active | no | yes | status |
 | squad44server | - | active | no | yes | status |
@@ -203,7 +203,7 @@
 | starruptureserver | - | disabled | no | no | status |
 | stationeersserver | - | disabled | no | no | status |
 | staxelserver | - | active | no | yes | status |
-| stnserver | - | disabled | no | no | status |
+| stnserver | - | active | no | yes | status |
 | stormworksserver | - | disabled | no | no | status |
 | subnauticaserver | - | active | no | yes | status |
 | subsistenceserver | - | disabled | no | no | status |
@@ -215,7 +215,7 @@
 | terratechworldsserver | - | disabled | no | no | status |
 | tfcserver | - | active | yes | yes | - |
 | theforestserver | - | disabled | no | no | status |
-| thefrontserver | - | disabled | no | no | status |
+| thefrontserver | - | active | no | yes | status |
 | tiserver | - | disabled | no | no | status |
 | trackmaniaserver | - | disabled | no | no | status |
 | ts3server | - | active | no | yes | status |
