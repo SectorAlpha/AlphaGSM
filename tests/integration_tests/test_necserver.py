@@ -19,6 +19,7 @@ from conftest import (
     wait_for_udp_closed,
 )
 from gamemodules.necserver import steam_app_id
+from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
@@ -40,6 +41,7 @@ def test_necserver_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    query_host = detect_query_host()
 
     # create
     run_and_assert_ok(env, server_name, "create", "necserver")
@@ -64,7 +66,7 @@ def test_necserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_tcp_open("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_tcp_open(query_host, port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -90,4 +92,4 @@ def test_necserver_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_tcp_closed(query_host, port, STOP_TIMEOUT)
