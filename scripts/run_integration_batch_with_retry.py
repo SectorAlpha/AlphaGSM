@@ -158,6 +158,17 @@ def main() -> int:
         print("Could not isolate failing tests from JUnit XML; retrying the full shard once.")
 
     retry_exit = run_pytest(retry_targets, retry_results_file)
+    if isolated_retry and retry_exit in {4, 5}:
+        print(
+            "Isolated retry produced a pytest usage/no-tests exit code; "
+            "retrying the full shard once instead."
+        )
+        if retry_results_file.exists():
+            retry_results_file.unlink()
+        retry_targets = list(args.tests)
+        isolated_retry = False
+        retry_exit = run_pytest(retry_targets, retry_results_file)
+
     if isolated_retry:
         merge_junit_reports(results_file, retry_results_file, results_file)
     elif retry_results_file.exists():
