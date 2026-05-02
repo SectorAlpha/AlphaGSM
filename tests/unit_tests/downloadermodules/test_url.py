@@ -23,7 +23,10 @@ def test_reporthook_prints_progress_for_known_size(url_module, capsys):
 
 def test_download_rejects_too_many_arguments(url_module, tmp_path):
     with pytest.raises(url_module.DownloaderError, match="Too many arguments"):
-        url_module.download(str(tmp_path), ("http://example.com/file", "server.jar", "zip", "extra"))
+        url_module.download(
+            str(tmp_path),
+            ("http://example.com/file", "server.jar", "zip", "120", "extra"),
+        )
 
 
 def test_download_rejects_unknown_decompression(url_module, tmp_path):
@@ -32,7 +35,7 @@ def test_download_rejects_unknown_decompression(url_module, tmp_path):
 
 
 def test_download_wraps_url_errors(url_module, tmp_path, monkeypatch):
-    def fake_download_url(url, targetname):
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
         raise urllib.error.URLError("offline")
 
     monkeypatch.setattr(url_module, "_download_url", fake_download_url)
@@ -46,8 +49,8 @@ def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkey
     calls = []
     sleeps = []
 
-    def fake_download_url(url, targetname):
-        calls.append(url)
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
+        calls.append((url, timeout))
         if len(calls) < 2:
             raise urllib.error.URLError("transient")
         with open(targetname, "wb"):
@@ -59,6 +62,7 @@ def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkey
     url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
 
     assert len(calls) == 2
+    assert calls == [("http://example.com/file", url_module.URL_TIMEOUT_SECONDS)] * 2
     assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
 
 
@@ -66,8 +70,8 @@ def test_download_raises_after_all_retries_exhausted(url_module, tmp_path, monke
     calls = []
     sleeps = []
 
-    def fake_download_url(url, targetname):
-        calls.append(url)
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
+        calls.append((url, timeout))
         raise urllib.error.URLError("offline")
 
     monkeypatch.setattr(url_module, "_download_url", fake_download_url)
@@ -77,6 +81,7 @@ def test_download_raises_after_all_retries_exhausted(url_module, tmp_path, monke
         url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
 
     assert len(calls) == url_module.URL_RETRIES
+    assert calls == [("http://example.com/file", url_module.URL_TIMEOUT_SECONDS)] * url_module.URL_RETRIES
     assert len(sleeps) == url_module.URL_RETRIES - 1
 
 
@@ -85,8 +90,8 @@ def test_download_removes_partial_file_between_retries(url_module, tmp_path, mon
     removed = []
     part_target = str(tmp_path / "server.jar.part")
 
-    def fake_download_url(url, targetname):
-        calls.append(url)
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
+        calls.append((url, timeout))
         # Simulate a partial file written before failure
         with open(targetname, "wb"):
             pass
@@ -106,7 +111,28 @@ def test_download_removes_partial_file_between_retries(url_module, tmp_path, mon
     url_module.download(str(tmp_path), ("http://example.com/file", "server.jar"))
 
     assert len(calls) == 2
+    assert calls == [("http://example.com/file", url_module.URL_TIMEOUT_SECONDS)] * 2
     assert part_target in removed
+
+
+def test_download_accepts_custom_timeout(url_module, tmp_path, monkeypatch):
+    calls = []
+
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
+        calls.append((url, timeout))
+        with open(targetname, "wb"):
+            pass
+
+    monkeypatch.setattr(url_module, "_download_url", fake_download_url)
+
+    url_module.download(str(tmp_path), ("http://example.com/file", "server.zip", "zip", "300"))
+
+    assert calls == [("http://example.com/file", 300)]
+
+
+def test_download_rejects_invalid_timeout(url_module, tmp_path):
+    with pytest.raises(url_module.DownloaderError, match="Invalid download timeout"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server.zip", "zip", "0"))
 
 
 @pytest.mark.parametrize(
@@ -122,7 +148,7 @@ def test_download_removes_partial_file_between_retries(url_module, tmp_path, mon
 def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, compression, expected_cmd):
     calls = []
 
-    def fake_download_url(url, targetname):
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
         with open(targetname, "wb"):
             pass
 
@@ -140,7 +166,7 @@ def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, com
 
 
 def test_download_raises_when_extractor_fails(url_module, tmp_path, monkeypatch):
-    def fake_download_url(url, targetname):
+    def fake_download_url(url, targetname, timeout=url_module.URL_TIMEOUT_SECONDS):
         with open(targetname, "wb"):
             pass
 

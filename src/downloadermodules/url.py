@@ -32,10 +32,10 @@ def reporthook(blocknum, blocksize, totalsize):
         print()
 
 
-def _download_url(url, targetname):
+def _download_url(url, targetname, timeout=URL_TIMEOUT_SECONDS):
     """Download *url* to *targetname* using a proper User-Agent header."""
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=URL_TIMEOUT_SECONDS) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         totalsize = int(response.headers.get("Content-Length", -1))
         blocksize = 8192
         blocknum = 0
@@ -49,19 +49,34 @@ def _download_url(url, targetname):
                 reporthook(blocknum, blocksize, totalsize)
     return targetname
 
+
+def _parse_timeout_seconds(value):
+    """Parse a positive per-download timeout value."""
+
+    try:
+        timeout = int(value)
+    except (TypeError, ValueError) as exc:
+        raise DownloaderError("Invalid download timeout") from exc
+    if timeout <= 0:
+        raise DownloaderError("Invalid download timeout")
+    return timeout
+
 def download(path,args):
     """Download a file to a target path and optionally decompress it in place."""
     url,targetname,*args=args
     targetname=os.path.join(path,targetname)
     decompress=None
-    if len(args)>1:
+    timeout = URL_TIMEOUT_SECONDS
+    if len(args)>2:
         raise DownloaderError("Too many arguments")
-    elif len(args)==1:
+    elif len(args)>=1:
         decompress=args[0]
         if decompress not in ["zip","tar","gz","tgz","tar.gz","tar.bz2","tar.xz","7z"]:
             raise DownloaderError("Unknown decompression type")
         if decompress in ["gz"]: # compression without filenames
             targetname+="."+decompress
+        if len(args)==2:
+            timeout = _parse_timeout_seconds(args[1])
     part_targetname = targetname + ".part"
     for attempt in range(URL_RETRIES):
         try:
@@ -69,7 +84,7 @@ def download(path,args):
                 os.remove(part_targetname)
             except FileNotFoundError:
                 pass
-            _download_url(url, part_targetname)
+            _download_url(url, part_targetname, timeout=timeout)
             os.replace(part_targetname, targetname)
             break
         except urllib.error.URLError as ex:

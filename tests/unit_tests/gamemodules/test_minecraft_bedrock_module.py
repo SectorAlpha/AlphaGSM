@@ -124,13 +124,29 @@ def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monk
     executable.parent.mkdir(parents=True)
     executable.write_text("")
     updates = []
+    download_calls = []
 
-    monkeypatch.setattr(bedrock.downloader, "getpath", lambda module, args: str(download_root))
+    monkeypatch.setattr(
+        bedrock.downloader,
+        "getpath",
+        lambda module, args: download_calls.append((module, args)) or str(download_root),
+    )
     monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
 
     bedrock.install(server)
 
     assert (tmp_path / "server" / "bedrock_server").exists()
+    assert download_calls == [
+        (
+            "url",
+            (
+                "http://example.com/bedrock.zip",
+                "bedrock-server.zip",
+                "zip",
+                str(bedrock.BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS),
+            ),
+        )
+    ]
     assert updates[0][0].endswith("server.properties")
     assert updates[0][1]["server-port"] == "19132"
     assert updates[0][1]["level-name"] == "world_one"

@@ -44,6 +44,7 @@ BEDROCK_HTTP_HEADERS = {
 BEDROCK_HTTP_RETRIES = 3
 BEDROCK_HTTP_RETRY_DELAY_SECONDS = 5
 BEDROCK_HTTP_TIMEOUT_SECONDS = 60
+BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS = 300
 BEDROCK_FALLBACK_VERSION = "1.26.14.1"
 BEDROCK_DOWNLOAD_URL_RE = re.compile(
     r"https://www\.minecraft\.net/bedrockdedicatedserver/bin-linux/"
@@ -250,7 +251,13 @@ def install(server):
         or not os.path.isfile(executable)
     ):
         downloadpath = downloader.getpath(
-            "url", (server.data["url"], server.data["download_name"], "zip")
+            "url",
+            (
+                server.data["url"],
+                server.data["download_name"],
+                "zip",
+                str(BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS),
+            ),
         )
         _sync_tree(_resolve_archive_root(downloadpath), server.data["dir"])
         os.chmod(executable, os.stat(executable).st_mode | 0o111)
