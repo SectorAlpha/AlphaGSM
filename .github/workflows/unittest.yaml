@@ -352,7 +352,9 @@ jobs:
             export SDL_VIDEODRIVER=offscreen
             export SDL_AUDIODRIVER=dummy
             export DISPLAY=
-            pytest -rs --junit-xml=results.xml ${{ matrix.files }}
+            python3 scripts/run_integration_batch_with_retry.py \
+              --results-file results.xml \
+              ${{ matrix.files }}
           "
       - name: Upload integration test results
         if: always()
