@@ -119,7 +119,6 @@ def test_get_start_command(tmp_path):
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "./ProjectWar/Binaries/Linux/TheFrontServer",
-        "TheFront",
         "-server",
         "-log",
         "-Port=27015",
