@@ -180,6 +180,11 @@ def download(path,args):
                 time.sleep(URL_RETRY_DELAY_SECONDS)
             else:
                 raise DownloaderError("Can't download file") from ex
+            if transport == "curl" and resume:
+                try:
+                    os.remove(part_targetname)
+                except FileNotFoundError:
+                    pass
     if decompress == "zip":
         ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
         if ret!=0:

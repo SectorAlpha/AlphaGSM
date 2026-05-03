@@ -267,11 +267,13 @@ def test_download_uses_curl_transport_with_resume(url_module, tmp_path, monkeypa
     assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
 
 
-def test_download_with_curl_transport_keeps_partial_between_retries(url_module, tmp_path, monkeypatch):
+def test_download_with_curl_transport_restarts_clean_after_failed_resume(url_module, tmp_path, monkeypatch):
+    calls = []
     removed = []
     part_target = tmp_path / "server.zip.part"
 
     def fake_download_url_with_curl(url, targetname, timeout, resume=False, retries=url_module.URL_RETRIES):
+        calls.append((url, targetname, timeout, resume, retries))
         with open(targetname, "ab") as handle:
             handle.write(b"data")
         raise OSError("Remote end closed connection without response")
@@ -292,7 +294,12 @@ def test_download_with_curl_transport_keeps_partial_between_retries(url_module, 
             ("http://example.com/file", "server.zip", "zip", "300", "curl"),
         )
 
-    assert removed == [str(part_target)]
+    assert calls == [
+        ("http://example.com/file", str(part_target), 300, False, 0),
+        ("http://example.com/file", str(part_target), 300, True, 0),
+        ("http://example.com/file", str(part_target), 300, False, 0),
+    ]
+    assert removed == [str(part_target), str(part_target)]
 
 
 @pytest.mark.parametrize(
