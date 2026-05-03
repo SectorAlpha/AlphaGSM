@@ -42,6 +42,7 @@ def _download_url_with_curl(url, targetname, timeout, resume=False):
         curl_path,
         "--fail",
         "--location",
+        "--http1.1",
         "--silent",
         "--show-error",
         "--retry",

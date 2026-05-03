@@ -92,6 +92,23 @@ def test__download_url_with_curl_raises_os_error_on_failure(url_module, tmp_path
         url_module._download_url_with_curl("http://example.com/file", str(tmp_path / "server.zip"), 300)
 
 
+def test__download_url_with_curl_forces_http11(url_module, tmp_path, monkeypatch):
+    commands = []
+
+    monkeypatch.setattr(url_module.shutil, "which", lambda name: "/usr/bin/curl")
+
+    def fake_run(command, **kwargs):
+        commands.append(command)
+        return type("Result", (), {"returncode": 0, "stderr": ""})()
+
+    monkeypatch.setattr(url_module.sp, "run", fake_run)
+
+    url_module._download_url_with_curl("http://example.com/file", str(tmp_path / "server.zip"), 300)
+
+    assert commands
+    assert "--http1.1" in commands[0]
+
+
 def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkeypatch):
     calls = []
     sleeps = []
