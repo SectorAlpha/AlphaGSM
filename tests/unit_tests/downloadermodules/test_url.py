@@ -88,7 +88,7 @@ def test__download_url_with_curl_raises_os_error_on_failure(url_module, tmp_path
         lambda *args, **kwargs: type("Result", (), {"returncode": 22, "stderr": "curl: (22) 404"})(),
     )
 
-    with pytest.raises(OSError, match="curl: \(22\) 404"):
+    with pytest.raises(OSError, match=r"curl: \(22\) 404"):
         url_module._download_url_with_curl("http://example.com/file", str(tmp_path / "server.zip"), 300)
 
 
@@ -273,7 +273,7 @@ def test_download_with_curl_transport_keeps_partial_between_retries(url_module, 
             ("http://example.com/file", "server.zip", "zip", "300", "curl"),
         )
 
-    assert str(part_target) not in removed
+    assert removed == [str(part_target)]
 
 
 @pytest.mark.parametrize(
