@@ -299,7 +299,7 @@ def test_download_with_curl_transport_restarts_clean_after_failed_resume(url_mod
         ("http://example.com/file", str(part_target), 300, True, 0),
         ("http://example.com/file", str(part_target), 300, False, 0),
     ]
-    assert removed == [str(part_target), str(part_target)]
+    assert removed == [str(part_target), str(part_target), str(part_target)]
 
 
 @pytest.mark.parametrize(
