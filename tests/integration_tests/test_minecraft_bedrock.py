@@ -23,6 +23,7 @@ START_TIMEOUT = 900
 STOP_TIMEOUT = 90
 
 
+@pytest.mark.timeout(3600)  # 60 min: slow Mojang archive fetch + setup/start on CI
 def test_minecraft_bedrock_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")
