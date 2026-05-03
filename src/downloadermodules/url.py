@@ -32,7 +32,7 @@ def reporthook(blocknum, blocksize, totalsize):
         print()
 
 
-def _download_url_with_curl(url, targetname, timeout, resume=False):
+def _download_url_with_curl(url, targetname, timeout, resume=False, retries=URL_RETRIES):
     """Download *url* to *targetname* with curl when urllib stalls."""
 
     curl_path = shutil.which("curl")
@@ -46,7 +46,7 @@ def _download_url_with_curl(url, targetname, timeout, resume=False):
         "--silent",
         "--show-error",
         "--retry",
-        str(URL_RETRIES),
+        str(retries),
         "--retry-delay",
         str(URL_RETRY_DELAY_SECONDS),
         "--retry-all-errors",
@@ -156,7 +156,13 @@ def download(path,args):
                 except FileNotFoundError:
                     pass
             if transport == "curl":
-                _download_url_with_curl(url, part_targetname, timeout=timeout, resume=resume)
+                _download_url_with_curl(
+                    url,
+                    part_targetname,
+                    timeout=timeout,
+                    resume=resume,
+                    retries=0,
+                )
             else:
                 _download_url(url, part_targetname, timeout=timeout)
             os.replace(part_targetname, targetname)

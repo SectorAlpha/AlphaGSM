@@ -50,8 +50,8 @@ def test__download_url_falls_back_to_curl_on_url_error(url_module, tmp_path, mon
     def fake_urlopen(request, timeout):
         raise urllib.error.URLError("timed out")
 
-    def fake_curl(url, targetname, timeout):
-        calls.append((url, targetname, timeout))
+    def fake_curl(url, targetname, timeout, resume=False, retries=url_module.URL_RETRIES):
+        calls.append((url, targetname, timeout, resume, retries))
         with open(targetname, "wb"):
             pass
         return targetname
@@ -63,14 +63,14 @@ def test__download_url_falls_back_to_curl_on_url_error(url_module, tmp_path, mon
     result = url_module._download_url("http://example.com/file", str(target), timeout=300)
 
     assert result == str(target)
-    assert calls == [("http://example.com/file", str(target), 300)]
+    assert calls == [("http://example.com/file", str(target), 300, False, url_module.URL_RETRIES)]
 
 
 def test__download_url_preserves_original_error_when_curl_unavailable(url_module, tmp_path, monkeypatch):
     def fake_urlopen(request, timeout):
         raise urllib.error.URLError("timed out")
 
-    def fake_curl(url, targetname, timeout):
+    def fake_curl(url, targetname, timeout, resume=False, retries=url_module.URL_RETRIES):
         raise FileNotFoundError("curl missing")
 
     monkeypatch.setattr(url_module.urllib.request, "urlopen", fake_urlopen)
@@ -107,6 +107,8 @@ def test__download_url_with_curl_forces_http11(url_module, tmp_path, monkeypatch
 
     assert commands
     assert "--http1.1" in commands[0]
+    retry_index = commands[0].index("--retry")
+    assert commands[0][retry_index + 1] == str(url_module.URL_RETRIES)
 
 
 def test_download_retries_on_url_error_and_succeeds(url_module, tmp_path, monkeypatch):
@@ -242,8 +244,8 @@ def test_download_uses_curl_transport_with_resume(url_module, tmp_path, monkeypa
     sleeps = []
     part_target = tmp_path / "server.zip.part"
 
-    def fake_download_url_with_curl(url, targetname, timeout, resume=False):
-        calls.append((url, targetname, timeout, resume))
+    def fake_download_url_with_curl(url, targetname, timeout, resume=False, retries=url_module.URL_RETRIES):
+        calls.append((url, targetname, timeout, resume, retries))
         with open(targetname, "ab") as handle:
             handle.write(b"data")
         if len(calls) < 2:
@@ -259,8 +261,8 @@ def test_download_uses_curl_transport_with_resume(url_module, tmp_path, monkeypa
     )
 
     assert calls == [
-        ("http://example.com/file", str(part_target), 300, False),
-        ("http://example.com/file", str(part_target), 300, True),
+        ("http://example.com/file", str(part_target), 300, False, 0),
+        ("http://example.com/file", str(part_target), 300, True, 0),
     ]
     assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
 
@@ -269,7 +271,7 @@ def test_download_with_curl_transport_keeps_partial_between_retries(url_module, 
     removed = []
     part_target = tmp_path / "server.zip.part"
 
-    def fake_download_url_with_curl(url, targetname, timeout, resume=False):
+    def fake_download_url_with_curl(url, targetname, timeout, resume=False, retries=url_module.URL_RETRIES):
         with open(targetname, "ab") as handle:
             handle.write(b"data")
         raise OSError("Remote end closed connection without response")
