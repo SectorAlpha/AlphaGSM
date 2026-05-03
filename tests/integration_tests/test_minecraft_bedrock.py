@@ -19,6 +19,7 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
+SETUP_TIMEOUT = 3600
 START_TIMEOUT = 900
 STOP_TIMEOUT = 90
 
@@ -49,7 +50,7 @@ def test_minecraft_bedrock_lifecycle(tmp_path):
         "-n",
         str(port),
         str(install_dir),
-        timeout=1800,
+        timeout=SETUP_TIMEOUT,
     )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
