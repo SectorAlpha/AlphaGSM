@@ -68,7 +68,24 @@ def test_install(tmp_path):
     server.data["exe_name"] = "ReadyOrNotServer.exe"
     server.data["Steam_AppID"] = 950290
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["queryport"] = 7778
+    server.data["maxplayers"] = 16
     mod.install(server)
+    assert (tmp_path / "ReadyOrNot" / "Config" / "ServerConfig.ini").read_text() == "queryport=7778\nmaxplayers=16\n"
+
+
+def test_sync_server_config_updates_server_config_ini(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["queryport"] = 7788
+    server.data["maxplayers"] = 20
+    config_dir = tmp_path / "ReadyOrNot" / "Config"
+    config_dir.mkdir(parents=True)
+    (config_dir / "ServerConfig.ini").write_text("queryport=7778\nmaxplayers=16\nextra=keep\n")
+
+    mod.sync_server_config(server)
+
+    assert (config_dir / "ServerConfig.ini").read_text() == "queryport=7788\nmaxplayers=20\nextra=keep\n"
 
 
 def test_update_with_restart(tmp_path):
@@ -117,7 +134,23 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "ReadyOrNotServer.exe",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-MaxPlayers=27015",
+        "-log",
+        "-unattended",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_readyornot_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["queryport"].native_config_key == "queryport"
+    assert mod.setting_schema["maxplayers"].native_config_key == "maxplayers"
 
 
 def test_get_start_command_missing_exe(tmp_path):

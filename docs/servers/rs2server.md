@@ -72,6 +72,7 @@ alphagsm myrs2serve backup
 ### Server Configuration
 
 - **Config file**: `ROGame/Config/PCServer-ROGame.ini`
+- `set servername` rewrites `[/Script/Engine.GameReplicationInfo] ServerName` in `ROGame/Config/PCServer-ROGame.ini` through the schema-backed config-sync path.
 - **Template**: See [server-templates/rs2server/](../server-templates/rs2server/) if available
 
 ### Maps and Mods

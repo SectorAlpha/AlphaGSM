@@ -56,6 +56,32 @@ alphagsm myut99serv update
 alphagsm myut99serv backup
 ```
 
+## Mod Sources
+
+Unreal Tournament 99 content management currently targets the canonical custom
+content directories under the server root:
+
+- `Maps/`
+- `Music/`
+- `Sounds/`
+- `Textures/`
+
+Current mod source support is direct `url` entries only.
+
+- `mod add url <https-url>` accepts supported archive URLs such as `.zip`, `.7z`, or tar variants when the payload unpacks into the approved UT99 content directories above.
+- `mod add url <https-url>` also accepts direct content-file URLs such as `.unr`, `.utx`, `.uax`, and `.umx`; AlphaGSM places each file into the matching canonical content directory automatically.
+- `mod cleanup` removes only AlphaGSM-tracked files and keeps its cache/state under `.alphagsm/mods/ut99server/`.
+- The first UT99 content slice intentionally excludes `System/` payloads, code packages, and mutators; archives that require those paths are rejected instead of being partially installed.
+
+Examples:
+
+```bash
+alphagsm myut99serv mod add url https://example.invalid/mappack.zip
+alphagsm myut99serv mod add url https://example.invalid/DM-Deck-Test.unr
+alphagsm myut99serv mod apply
+alphagsm myut99serv mod cleanup
+```
+
 ## Notes
 
 - Module name: `ut99server`
@@ -83,6 +109,7 @@ alphagsm myut99serv backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `Maps/`
+- **Mod directory**: `Maps/`, `Music/`, `Sounds/`, `Textures/`
+- **Mod notes**: AlphaGSM can now track direct archive and direct content-file `url` entries for UT99, install only approved custom-content payloads, and clean up only AlphaGSM-managed files from `.alphagsm/mods/ut99server/`. The initial UT99 content surface rejects `System/` payloads on purpose.
 - **Workshop support**: No

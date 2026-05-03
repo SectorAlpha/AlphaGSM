@@ -44,7 +44,7 @@ alphagsm myenshroud stop
 
 Setup configures:
 
-- the game port (default 15638)
+- the game port (default 15637)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,20 +58,22 @@ alphagsm myenshroud backup
 ## Notes
 
 - Module name: `enshrouded`
-- Default port: 15638
+- Default game port: `15637`
+- Default query port: `15638`
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `enshrouded_server`
-- **Location**: `<install_dir>/enshrouded_server`
+- **Executable**: `enshrouded_server.exe`
+- **Location**: `<install_dir>/enshrouded_server.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `2278520`
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `enshrouded_server.json`
+- **Notes**: `queryPort` and the JSON settings live in `enshrouded_server.json`; AlphaGSM still supplies the separate game port and save-name via launch arguments
 - **Template**: See [server-templates/enshrouded/](../server-templates/enshrouded/) if available
 
 ### Maps and Mods

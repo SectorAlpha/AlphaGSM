@@ -65,7 +65,39 @@ def test_install(tmp_path):
     server.data["exe_name"] = "startserver.sh"
     server.data["Steam_AppID"] = 294420
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["configfile"] = "serverconfig.xml"
+    server.data["port"] = 26900
+    (tmp_path / "serverconfig.xml").write_text('<property name="ServerPort" value="26900"/>\n')
     mod.install(server)
+
+
+def test_sync_server_config_updates_serverconfig_values(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "serverconfig.xml"
+    server.data["port"] = 26901
+    server.data["servername"] = "AlphaGSM 7DTD Test"
+    server.data["maxplayers"] = 12
+    server.data["serverpassword"] = "secret"
+    config_path = tmp_path / "serverconfig.xml"
+    config_path.write_text(
+        '<property name="ServerPort" value="26900"/>\n'
+        '<property name="ServerName" value="Old Name"/>\n'
+        '<property name="ServerMaxPlayerCount" value="8"/>\n'
+        '<property name="ServerPassword" value=""/>\n'
+        '<property name="Region" value="NorthAmericaEast"/>\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        '<property name="ServerPort" value="26901"/>',
+        '<property name="ServerName" value="AlphaGSM 7DTD Test"/>',
+        '<property name="ServerMaxPlayerCount" value="12"/>',
+        '<property name="ServerPassword" value="secret"/>',
+        '<property name="Region" value="NorthAmericaEast"/>',
+    ]
 
 
 def test_update_with_restart(tmp_path):
@@ -170,6 +202,12 @@ def test_checkvalue_port():
     assert result == 12345
 
 
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "16")
+    assert result == 16
+
+
 def test_checkvalue_configfile():
     server = DummyServer()
     result = mod.checkvalue(server, ("configfile",), "/test/value")
@@ -186,6 +224,18 @@ def test_checkvalue_dir():
     server = DummyServer()
     result = mod.checkvalue(server, ("dir",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM 7DTD")
+    assert result == "AlphaGSM 7DTD"
+
+
+def test_checkvalue_serverpassword():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("serverpassword",), "secret")
+    assert result == "secret"
 
 
 def test_checkvalue_backup():

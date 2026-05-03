@@ -1,0 +1,136 @@
+{
+  "families": {
+    "banguard": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/zyrafaq/BanGuard-plugin/releases/download/v0.2.0/BanGuard.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "smartregions": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/ZakFahey/SmartRegions/releases/download/tshock-6.1/SmartRegions.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "omni": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/sgkoishi/yaaiomni/releases/download/v205/Artifact.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "perplayerloot": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/xcodian/PerPlayerLoot/releases/download/2.0/PerPlayerLoot.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "autoteam": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/TerraTrapezium/AutoTeam/releases/download/v1.0.0/AutoTeam.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "facommands": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/MineBartekSA/FACommands/releases/download/v1.8.0/FACommands.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "timeranks": {
+      "default": "1.1",
+      "releases": {
+        "1.1": {
+          "url": "https://github.com/RenderBr/TimeRanks/releases/download/1.1/TimeRanks.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "ranksystem": {
+      "default": "2.0.5",
+      "releases": {
+        "2.0.5": {
+          "url": "https://github.com/Average-Org/RankSystem/releases/download/2.0.5/RankSystem.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "qol": {
+      "default": "v1.3.3",
+      "releases": {
+        "v1.3.3": {
+          "url": "https://github.com/Emre-Cebeci/QoL/releases/download/v1.3.3/QoL.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "replenisher": {
+      "default": "v1.2.4",
+      "releases": {
+        "v1.2.4": {
+          "url": "https://github.com/Emre-Cebeci/Replenisher/releases/download/v1.2.4/Replenisher.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "bagger": {
+      "default": "v1.3.1",
+      "releases": {
+        "v1.3.1": {
+          "url": "https://github.com/Emre-Cebeci/Bagger/releases/download/v1.3.1/Bagger.dll",
+          "hosts": ["github.com"],
+          "archive_type": "dll",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    },
+    "tslootchest": {
+      "default": "v1.4.0",
+      "releases": {
+        "v1.4.0": {
+          "url": "https://github.com/matheus-fsc/TSLootChest/releases/download/v1.4.0/TSLootChest-v1.4.0.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": ["ServerPlugins"]
+        }
+      }
+    }
+  }
+}

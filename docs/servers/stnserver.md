@@ -53,7 +53,10 @@ Setup configures:
 ```bash
 alphagsm mystnserve update
 alphagsm mystnserve backup
+alphagsm mystnserve set port 9999
 ```
+
+`set port` rewrites `Config/ServerConfig.txt` immediately through the schema-backed config-sync path. The shared alias layer also accepts `gameport` for this module.
 
 ## Notes
 
@@ -73,6 +76,7 @@ alphagsm mystnserve backup
 
 - **Config file**: `Config/ServerConfig.txt`
 - **Template**: See [server-templates/stnserver/](../server-templates/stnserver/) if available
+- **Schema-backed sync**: AlphaGSM keeps `Port=` aligned with `set port`
 
 ### Maps and Mods
 

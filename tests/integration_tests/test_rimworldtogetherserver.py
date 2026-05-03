@@ -66,13 +66,13 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            f"Server port is open (TCP ping on port {port}" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            f"Server port is open (TCP ping on port {port}" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
@@ -81,6 +81,12 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
         _info_data = _info_json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "tcp", (
             f"Expected tcp protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data["port"] == port, (
+            f"Expected configured port in info JSON: {_info_data!r}"
+        )
+        assert "latency_ms" in _info_data, (
+            f"Expected TCP latency in info JSON: {_info_data!r}"
         )
     finally:
         # stop

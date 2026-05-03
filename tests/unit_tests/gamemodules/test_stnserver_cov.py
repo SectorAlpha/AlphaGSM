@@ -70,6 +70,35 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_sync_server_config_updates_port_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "Config" / "ServerConfig.txt").read_text() == "Port=9999\n"
+
+
+def test_sync_server_config_preserves_unknown_config_lines(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+    config_dir = tmp_path / "Config"
+    config_dir.mkdir()
+    config_path = config_dir / "ServerConfig.txt"
+    config_path.write_text("Name=Alpha\nPort=8888\n", encoding="utf-8")
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        "Name=Alpha",
+        "Port=9999",
+    ]
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

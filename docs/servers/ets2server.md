@@ -71,7 +71,7 @@ alphagsm myets2serv backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `server_config.sii`
 - **Template**: See [server-templates/ets2server/](../server-templates/ets2server/) if available
 
 ### Maps and Mods

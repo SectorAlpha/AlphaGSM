@@ -1,0 +1,182 @@
+AlphaGSM changelog
+==================
+
+Current release notes should be updated in every PR that changes user-facing behaviour,
+server support, CI, packaging, or workflow defaults.
+
+Historical detail lives in git history. Keep this file focused on release-facing notes and
+high-level milestones.
+
+2026-05-02
+- CI: re-enable integration coverage for `atlasserver`, `ets2server`, `pcarserver`, `pvrserver`, `minecraft.bedrock`, `chivalryserver`, `solserver`, `stnserver`, `exfilserver`, `thefrontserver`, and `necserver` so GitHub Actions surfaces their current lifecycle failures again.
+- Server support: make `minecraft.bedrock` report `query` over TCP and `info` over SLP through explicit runtime-aware hooks, and make `thefrontserver` report `query` and `info` over its dedicated A2S query port instead of falling back to the generic localhost heuristics.
+- CI: stop relying on generic startup log markers for `atlasserver`, `chivalryserver`, `ets2server`, `pcarserver`, `pvrserver`, and `stnserver`, align `necserver`'s integration TCP probe with the detected query host, and give `solserver` a longer A2S readiness budget.
+- Server support: add request timeouts and retries to direct URL downloads, make Bedrock's official download-page lookup retry transient network failures, ensure the staged `bedrock_server` binary stays executable after install, remove The Front's hard-coded positional launch argument, and treat `necserver` query/info as generic UDP reachability instead of TCP.
+- CI: make `thefrontserver` wait for real A2S readiness via `info --json`, and make `necserver` validate UDP readiness and shutdown using the module's actual query contract.
+- Server support: make `thefrontserver` derive its default A2S query port from the chosen game port on new installs instead of pinning fresh servers to `27015`, and make the Bedrock latest-version resolver fetch the official download page with browser-style headers plus a fallback page URL before extracting the Linux zip link.
+- Server support: keep `minecraft.bedrock setup` working when Minecraft.net returns only frontend Bedrock download-type ids in raw HTML by falling back to the last verified official Linux Bedrock version instead of failing latest-version resolution outright.
+- Server support: align `thefrontserver` with the published dedicated-server launch contract by using `ProjectWar`/`ProjectWar_Start`, adding the required Unreal-style runtime flags, and shifting its default query port family to `port+2` with implicit beacon and shutdown-service offsets.
+- Server support: let `minecraft.bedrock` request a longer timeout for the official Linux zip download so CI does not abort large Mojang archive fetches after the shared 60-second URL timeout.
+- Server support: make shared direct URL downloads retry transient `OSError` disconnects such as `Remote end closed connection without response`, which Bedrock now hits while fetching Mojang's official server archive in CI.
+- Server support: fall back to `curl` for shared direct URL downloads when Python's `urllib` stalls or drops large transfers, keeping Bedrock's official Mojang archive fetch on a more resilient transfer path in CI.
+- Server support: let direct URL downloads opt into resumable `curl` retries, and use that resumable transport for `minecraft.bedrock` so partial Mojang archive downloads survive mid-transfer disconnects instead of restarting from byte zero.
+
+2026-04-30
+- Server support: add Call of Duty 4 pk3 content management so `cod4server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir`, keep that directory in the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add QuakeWorld pak content management so `qwserver` can track direct `.pak` and archive `url` entries, install approved `.pak` payloads into `qw/`, keep that directory in the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Quake 2 pak content management so `q2server` can track direct `.pak` and archive `url` entries, install approved `.pak` payloads into the active `gamedir`, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Jedi Outcast pk3 content management so `jk2server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `fs_game` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Call of Duty: World at War pk3 content management so `codwawserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Call of Duty: United Offensive pk3 content management so `coduoserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Call of Duty pk3 content management so `codserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Call of Duty 2 pk3 content management so `cod2server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Warfork pk3 content management so `wfserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `fs_game` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Quake 4 pk4 content management so `q4server` can track direct `.pk4` and archive `url` entries, install approved `.pk4` payloads into the active `fs_game` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Alien Arena pk3 content management so `alienarenaserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `game` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Quake Live pk3 content management so `qlserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the directory implied by `servercfg`, add that content directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add ET: Legacy pk3 content management so `etlegacyserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `fs_game` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add RTCW pk3 content management so `rtcwserver` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `fs_game` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add Quake 3 pk3 content management so `q3server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `fs_game` directory, add that directory to the managed backup targets, and clean up only AlphaGSM-managed files.
+- Server support: add 7 Days to Die modlet management so `sevendaystodie` can track direct archive `url` entries, install recognized modlet payloads into `Mods/`, include `Mods/` in the managed backup targets, and clean up only AlphaGSM-managed modlet files.
+- Server support: add a first Unreal Tournament 99 content-management slice so `ut99server` can track direct archive and direct content-file `url` entries, install approved payloads into the canonical custom-content directories (`Maps`, `Music`, `Sounds`, `Textures`), and clean up only AlphaGSM-managed files while explicitly rejecting `System/` payloads.
+- Server support: add a first Unreal Tournament 2004 content-management slice so `ut2k4server` can track direct archive and direct content-file `url` entries, install approved payloads into the canonical custom-content directories (`Animations`, `KarmaData`, `Maps`, `Music`, `Sounds`, `StaticMeshes`, `Textures`), and clean up only AlphaGSM-managed files while explicitly rejecting `System/` payloads.
+- Server support: add SCP: Secret Laboratory LabAPI plugin management so `scpslserver` can track desired manifest and direct plugin-url state, install `.dll` or archive payloads into `home/.config/SCP Secret Laboratory/LabAPI/{plugins,dependencies}/`, clean up only AlphaGSM-managed plugin files, and seed the checked-in manifest with BetterHelpCommand-LabAPI, EscapePlan, and RespawnTimer.
+- Server support: add Multi Theft Auto resource management so `mtaserver` can track desired manifest, direct-url, and MTA community resource entries, install resource packs into `mods/deathmatch/resources/`, clean up only AlphaGSM-managed resource files, and seed low-risk built-in manifest families such as `pattach`, `chat2`, and `animationspanel`.
+- Server support: expand the checked-in TShock plugin registry with Bagger, QoL, RankSystem, Replenisher, TimeRanks, and TSLootChest, and accept bare-root TShock plugin release zips so archive-backed upstream releases such as Omni install through the normal manifest/url flows.
+- Dev: move all top-level package-backed game-module implementations to `main.py` and leave `__init__.py` as the canonical import surface, while updating helper tooling that still read package modules from `__init__.py` only.
+- Dev: align `DEVELOPERS.md` and the install-layout skill with the new repo-wide package-backed top-level game-module layout.
+- Dev: convert the remaining top-level flat game modules under `src/gamemodules/` into package-backed directories with `__init__.py` import surfaces, and update legacy tooling that still assumed canonical modules lived at `<module>.py`.
+- Dev: clarify in `AGENTS.md` and the lifecycle skill that genuinely shared curated registries, such as the shared Source addon manifest, should remain shared under their helper path rather than being forced into an unrelated canonical game-module package.
+- Dev: add canonical `__init__.py` package surfaces for `minecraft` and `terraria`, matching the package-backed game-module convention while preserving their existing namespace-default routing to the vanilla variants.
+- Dev: convert `hl2dmserver`, `insserver`, and `l4d2server` from flat module files into package-backed module directories so their implementations and checked-in curated manifests live together under one module path.
+- Dev: update `AGENTS.md` and the repo-local skills to treat package-backed game modules and colocated curated manifests as the preferred layout once a server accumulates multiple implementation files or checked-in mod/plugin registries, and to document the recent curated mod/addon guidance around authoritative release assets and dependency-aware manifest installs.
+- Dev: convert `gmodserver` from a flat module file into a package-backed module directory so its implementation and checked-in curated manifest live together under one module path.
+- Server support: let checked-in Source-addon manifests install single-file payloads where the module already supports them, and seed `gmodserver` with the popular AdvDupe2 `.gma` release as a curated manifest family.
+- Server support: extend Garry's Mod addon installs to accept bare addon-root archives and expand the checked-in GMod manifest with popular ULib and ULX families, including automatic ULib dependency installation for `mod add manifest ulx`.
+- Server support: expand the checked-in TShock plugin manifest with additional curated families including PerPlayerLoot, AutoTeam, and FACommands using immutable GitHub release DLL assets.
+- Server support: split the checked-in proxy plugin manifest by proxy variant so BungeeCord and Waterfall can install Bungee-compatible curated jars while Velocity installs Velocity-specific curated jars for families such as LuckPerms and Geyser.
+- Server support: expand the checked-in Paper plugin manifest with popular curated families including LuckPerms, Vault, PlaceholderAPI, ProtocolLib, DiscordSRV, and EssentialsX plus companion jars such as EssentialsXChat, EssentialsXSpawn, EssentialsXProtect, and EssentialsXAntiBuild.
+- Server support: teach checked-in Paper and proxy plugin manifests to auto-install declared dependencies, so adding `viarewind` now also installs the required ViaBackwards and ViaVersion jars in the correct order.
+- Dev: extract the shared `plugins/` mod-management path into `src/server/modsupport/plugin_jars.py` so Paper and the proxy family reuse one desired-state/apply/cleanup implementation instead of carrying near-identical plugin logic in each module.
+- Server support: add a checked-in Paper plugin manifest so `mod add manifest viaversion`, `viabackwards`, and `viarewind` install reproducible plugin jars through the existing Paper plugin flow and its variant-specific cache root.
+- Server support: add a checked-in proxy plugin manifest for BungeeCord, Velocity, and Waterfall so `mod add manifest viaversion`, `viabackwards`, and `viarewind` install reproducible proxy jars through the existing proxy plugin flow and variant-specific cache roots.
+- Server support: roll the shared Source addon flow out to the remaining thin Valve/Source wrappers with standard `addons/` layouts, including Action: Source, Black Mesa: Deathmatch, BrainBread 2, Blade Symphony, Codename CURE, Counter-Strike: Source, Double Action: Boogaloo, Day of Infamy, Day of Defeat: Source, Dystopia, Empires Mod, Fistful of Frags, Half-Life Deathmatch: Source, IOSoccer, Left 4 Dead, Nuclear Dawn, No More Room in Hell, Pirates Vikings & Knights II, SourceForts Classic, Zombie Panic! Source, and Zombie Master: Reborn.
+- Dev: add a shared curated Source addon registry so thin Source wrappers can expose `mod add manifest metamod|sourcemod` without duplicating the same registry file per module.
+- Server support: add checked-in TShock plugin manifest entries for `banguard`, `smartregions`, and `omni`, and expose `mod add manifest <family>` alongside the existing TShock url and Mod DB plugin flows.
+- Server support: add checked-in manifest registries for `gmodserver`, `l4d2server`, `insserver`, and `hl2dmserver`, seeding popular Source admin/plugin stacks such as MetaMod and SourceMod alongside the existing provider-backed addon flows.
+- Dev: extend the shared Source-addon mod helper so popular Source games can expose `mod add manifest <family>` using module-local curated registries without duplicating TF2-style manifest logic.
+- Server support: add provider-backed addon management for `insserver` and `hl2dmserver`, including direct archive URLs plus GameBanana and Mod DB archive installs with owned-file cleanup and per-game cache roots.
+- Server support: add provider-backed addon management for `gmodserver` and `l4d2server`, including direct URL installs for `.gma` and `.vpk` files plus GameBanana and Mod DB archive installs with owned-file cleanup and per-game cache roots.
+- Dev: add a shared Source-addon mod-support helper so popular Source games can reuse one desired-state and safe-install path instead of re-implementing addon staging per module.
+- Server support: add Mod DB-backed TShock plugin support so `mod add moddb <page-url>` can install approved archives into `ServerPlugins/` and `tshock/` with owned-file cleanup and the TShock-specific cache root.
+- Server support: add Mod DB-backed plugin archive support to `minecraft.paper` so `mod add moddb <page-url>` can install approved plugin payloads into `plugins/` with owned-file cleanup and the Paper-specific cache root.
+- Server support: add Mod DB-backed proxy plugin support to BungeeCord, Velocity, and Waterfall so `mod add moddb <page-url>` can install approved plugin archives into `plugins/` with owned-file cleanup and variant-specific cache roots.
+- Server support: extend shared mod-support archive handling to support `.7z` payloads through the existing `7z`/`7zz` host dependency, letting Mod DB-backed TF2 and CS2 entries accept real 7z archives instead of rejecting them at resolve time.
+- Server support: add Mod DB-backed `mod add moddb <page-url>` support for TF2 and CS2 by resolving canonical Mod DB download/addon pages into site start-download links when the payload is a supported zip or tar archive.
+- Dev: extend the shared mod-support provider layer with Mod DB page parsing so archive-install modules can reuse one provider resolver instead of scraping Mod DB ad hoc per game.
+- Server support: add BungeeCord, Velocity, and Waterfall `mod` commands for direct plugin jar URLs, with per-variant `.alphagsm/mods/minecraft-<variant>/` cache roots and owned-file cleanup so `mod cleanup` removes only AlphaGSM-tracked plugin files.
+- Dev: teach the shared mod-support provider layer to normalize direct URL entries so plugin-style modules can reuse one validation path instead of re-implementing URL parsing per game.
+- Server support: add TShock `mod` commands for direct plugin URLs, storing AlphaGSM-managed plugin cache/state under `.alphagsm/mods/terraria-tshock/` so Terraria variants stay isolated and `mod cleanup` removes only tracked plugin files.
+- Server support: add Paper `mod` commands for direct plugin jar URLs, storing AlphaGSM-managed plugin cache/state under `.alphagsm/mods/minecraft-paper/` so Minecraft variants stay isolated and `mod cleanup` removes only tracked plugin files.
+- Server support: add Counter-Strike 2 `mod` commands for GameBanana and Steam Workshop provider ids, including owned-file tracking so `mod cleanup` removes only AlphaGSM-tracked CS2 mod files.
+- Dev: move GameBanana and Workshop provider helpers into the shared mod-support layer so external provider integrations are not modeled as TF2-specific code.
+- Documentation: describe TF2 `manifest` vs external provider-id mod sources in the user and developer guides, and accept `manifest` as a clearer compatibility alias for the existing curated registry source.
+- Server support: let TF2 `mod` reset installed state with `cleanup`, resolve GameBanana item ids to downloadable archives, and make workshop apply attempt a first-pass SteamCMD download into approved server-side mod destinations.
+- CLI: harden `self-update` so bundled binaries update only from real release version numbers, source checkouts cannot accidentally replace their Python interpreter via `--source binary`, and `main`/`master` git installs fast-forward with `git pull --ff-only`.
+- CLI: add a top-level `self-update` command that checks for newer AlphaGSM releases, fast-forwards tracked git installs only on stable branches (`master`, `main`, `release*`), and lets standalone binaries update from GitHub release assets only when a newer version exists.
+- CI: trigger `build-runtime-family-images` on `release_v1` to publish the updated `simple-tcp` runtime image (with `mumble-server` installed) so the Mumble Docker backend integration test can pass.
+- Security: suppress CodeQL `py/clear-text-storage-sensitive-data` false-positives in `valve_server.py` where plaintext game-server credentials are written intentionally to Source engine config files read directly by the binary.
+
+2026-04-29
+- Security: split schema-backed secret settings (passwords, RCON keys) into a separate `<name>.secrets.json` file written with mode 0o600, keeping plain-text credentials out of the world-readable main data file; the data store transparently merges both files so the rest of the code is unchanged, and `alphagsm data` redacts non-empty secret values rather than printing them.
+- Security: add `secret=True` SettingSpec entries for password fields in all remaining legacy game modules (ark, arksurvivalascended, atlasserver, valheim, gravserver, darkandlightserver, projectzomboid, askaserver, bobserver, stationeersserver, arma3headlessserver, terraria vanilla and tshock) so their passwords are routed into the mode-0o600 secrets file instead of the world-readable main data file.
+- Packaging: exclude `gamemodules.factorio` from PyInstaller collection so standalone binary builds succeed on all three platforms; the module still raises `NotImplementedError` on import as required by its unit test, but is never needed by the binary since factorio support is unimplemented.
+
+2026-04-28
+- Server support: add the TF2 curated mod-support foundation with package-backed module wiring, curated registry metadata for SourceMod and MetaMod, and the first shared desired-state groundwork for server-side mod management.
+- Server support: make TF2 curated mod apply persist mod-state errors and expose broken apply state through `status` so failed reconciliations are operationally visible.
+- Module loading: treat package-backed canonical modules such as `teamfortress2` as first-class catalog and parity entries so one canonical module id still maps to one import surface.
+- Server support: sync readyornotserver queryport and maxplayers into ReadyOrNot/Config/ServerConfig.ini during setup, update, and set.
+
+2026-04-26
+- CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.
+- Documentation: add a dedicated host-install Docker runtime guide so running AlphaGSM on the host with Docker-backed game servers is documented separately from the manager-container workflow.
+- Release prep: stamp standalone binaries with a shared AlphaGSM version, stage release-ready artifacts with SHA256 sidecars, and add a tag-driven GitHub release workflow for Linux, Windows, and macOS builds.
+- Docker runtime: make the shared `simple-tcp` family image install `mumble-server` and promote the default Mumble backend lifecycle case to active matrix coverage.
+
+2026-04-28
+- Server support: add schema-backed Rising Storm 2 config sync so `set servername` rewrites `ServerName` in `ROGame/Config/PCServer-ROGame.ini`.
+- Server support: add schema-backed Quake 2 config sync so `set servername` and `set map` rewrite `<gamedir>/server.cfg`.
+- Server support: add schema-backed RTCW config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed Quake 3 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed `server.cfg` sync for `codserver`, `cod2server`, `cod4server`, `coduoserver`, and `codwawserver` so `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg`.
+- Server support: add schema-backed Quake Live config sync so `set servername` and `set map` rewrite `baseq3/server.cfg`.
+- Server support: add schema-backed Quake 4 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed `etl_server.cfg` sync for `etlegacyserver` so `set servername` and `set port` rewrite the native ET: Legacy config.
+- Core: replace alias-wrapper module routing with a canonical module catalog and central alias metadata; alias wrapper files such as `tf2.py`, `cs2server.py`, and namespace `DEFAULT.py` shims are removed.
+- Tools: add a generated canonical module parity report and a CI enforcement step that fails on stale parity artifacts.
+- Server support: add schema-backed `serverDZ.cfg` sync for `dayzserver` so `set servername`, `set serverpassword`, `set adminpassword`, `set maxplayers`, and `set queryport` rewrite the native DayZ config.
+- Server support: expand `sevendaystodie` schema-backed config sync so `set port`, `set servername`, `set maxplayers`, and `set serverpassword` rewrite `serverconfig.xml`.
+- Server support: move `wreckfestserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `server_config.cfg` through the shared equals-config helper.
+- Server support: move `stnserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `Config/ServerConfig.txt` through the shared config helper.
+- Server support: make `twserver` sync schema-backed `set port` and `set servername` changes into `autoexec.cfg`, and harden space-delimited config rewrites so quoted multi-word values update in place.
+- Module loading: replace game-module alias wrapper files and namespace `DEFAULT.py` shims with a shared canonical catalog in `src/server/module_aliases.json`, and persist canonical module ids in server data even when users create servers through aliases.
+- Release prep: add generated `docs/module_parity_report.md` and `docs/module_parity_report.json` artifacts plus test/script enforcement so canonical module parity gaps and alias coverage stay visible in CI.
+- Tests: add an opt-in backend integration test that exercises AlphaGSM CLI
+	commands (`create`, `set image`, `setup`, `start`, `status`, `info`, `query`, `stop`) against
+	the Docker runtime to validate CLI/runtime integration in CI environments.
+- Dev: normalize `get_start_command(server)` across gamemodules so static
+	validators and container builders can reliably introspect start commands.
+- Tools: add static validators and helper scripts to audit `get_start_command`
+	and `get_container_spec` implementations, plus docs summarising audit
+	results and remediation guidance.
+
+2026-04-17
+- CLI: add canonical `set` discovery and alias routing for schema-backed keys so modules can expose shared names like `gamemap` while still writing the underlying storage key.
+- Server support: roll Team Fortress 2 into the schema-backed `set` flow with map aliasing, `server.cfg` password syncing, and installed-map discovery.
+
+2026-04-16
+- Documentation: rename the MTA, RedM, ATS, and ETS2 server-template examples to their real upstream config filenames and reshape the sample contents to match the native config formats.
+- Documentation: add `scripts/audit_server_templates.py` so template filename mismatches can be checked against module and server-guide config-path evidence.
+- Documentation: tighten the server-template authoring guidance in the repo skills and developer docs so template files should mimic the real server config path, filename, and structure as closely as verified evidence allows.
+- Documentation: add a canonical `docs/server-templates/_template/` scaffold and document that real runtime filenames should only be used when the module or server guide identifies a stable config path, leaving `alphagsm-example.cfg` for AlphaGSM-only reference templates.
+- Documentation: replace the remaining README-only server-template directories with concrete config/example files across the full server catalog, using module-backed filenames where available and AlphaGSM example-value files otherwise.
+- Documentation: add docs/server-templates entries across the game-server catalog and expand the practical templates with fuller default config samples, while marking generated or runtime-owned schemas explicitly instead of leaving thin placeholders.
+- Server support: re-enable rimworldtogetherserver after updating the live Configs/ServerConfig.json port and aligning its TCP integration checks with the shared query/info contract.
+- CLI: make `set` trigger module config-sync hooks only for explicitly declared game-config keys, so valid server config values sync immediately while AlphaGSM-only keys do not.
+- Server support: extend the explicit config-sync contract to mumbleserver, craftopiaserver, and scpslserver so `set` updates their managed INI/text server config values immediately.
+- Server support: let Java Minecraft modules sync `port`, `gamemode`, `difficulty`, and `maxplayers` back into server.properties through the shared custom/vanilla/paper lifecycle path.
+- Server support: validate `set startmap` against installed `.bsp` files for low-risk Source server batches so obvious bad map names fail before start.
+
+2026-04-15
+- Release prep: set the preferred local integration-test work directory to /media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme when available.
+- Release prep: add changelog discipline guidance via AGENTS.md and skills/changelog-discipline/SKILL.md.
+- Release prep: update user-facing CLI and project text to reference 2026 and point to changelog.txt.
+- CI: add cross-platform standalone binary build smoke jobs for Linux, Windows, and macOS artifacts.
+
+Historical highlights
+---------------------
+
+2014
+- Initial repository created.
+
+2015
+- Built the first AlphaGSM CLI foundation, including command parsing, output multiplexing, and early Minecraft support.
+- Renamed the project from sagsm/samanager to AlphaGSM and expanded early documentation.
+
+2016
+- Added downloader, settings, backup, activation, and update workflows that shaped the current lifecycle model.
+- Expanded Minecraft variants and Steam-oriented support while stabilising the configuration system.
+
+2017
+- Continued Steam/public branch integration work and small maintenance merges.
+
+2021
+- Refreshed GitHub-facing documentation.
+
+2024
+- Resumed active maintenance on the live branch.
+
+2026
+- Accelerated platform and runtime work across Windows compatibility, Proton, Docker runtime families, docs/wiki automation, more commands, and broader game-module coverage.
+- Hardened CI and release workflows with runtime image publishing, port-collision fixes, and tighter test workflows.

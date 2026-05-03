@@ -67,6 +67,7 @@ def test_install(tmp_path):
     server.data["exe_name"] = "qzeroded.x64"
     server.data["Steam_AppID"] = 349090
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["servercfg"] = "baseq3/server.cfg"
     mod.install(server)
 
 
@@ -116,7 +117,83 @@ def test_get_start_command(tmp_path):
     server.data["servercfg"] = "test"
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./qzeroded.x64",
+        "+set",
+        "fs_homepath",
+        server.data["dir"],
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_container_spec_uses_container_homepath(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "qzeroded.x64"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["servercfg"] = "server.cfg"
+    server.data["startmap"] = "campgrounds"
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["command"] == [
+        "./qzeroded.x64",
+        "+set",
+        "fs_homepath",
+        "/srv/server",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "server.cfg",
+        "+map",
+        "campgrounds",
+    ]
+
+
+def test_setting_schema_exposes_quake_live_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["startmap"].aliases == ("map",)
+    assert mod.setting_schema["homepath"].storage_key == "dir"
+    assert mod.setting_schema["servercfg"].launch_arg_tokens == ("+exec",)
+
+
+def test_sync_server_config_updates_quake_live_server_cfg(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servercfg"] = "baseq3/server.cfg"
+    server.data["hostname"] = "AlphaGSM QL Test"
+    server.data["startmap"] = "asylum"
+    config_dir = tmp_path / "baseq3"
+    config_dir.mkdir()
+    config_path = config_dir / "server.cfg"
+    config_path.write_text(
+        'hostname="Old Name"\n'
+        'startmap=campgrounds\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname="AlphaGSM QL Test"',
+        'startmap=asylum',
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):

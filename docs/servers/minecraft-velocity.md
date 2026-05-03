@@ -54,6 +54,21 @@ alphagsm myvelocity update
 alphagsm myvelocity backup
 ```
 
+Built-in manifest plugin families, direct plugin jars, and provider-hosted
+plugin archives can all be managed through AlphaGSM:
+
+```bash
+alphagsm myvelocity mod add manifest viaversion
+alphagsm myvelocity mod add manifest viabackwards
+alphagsm myvelocity mod add manifest viarewind
+alphagsm myvelocity mod add manifest luckperms
+alphagsm myvelocity mod add manifest geyser
+alphagsm myvelocity mod add url https://plugins.example.invalid/TestPlugin.jar
+alphagsm myvelocity mod add moddb https://www.moddb.com/mods/proxy-pack/downloads/proxy-pack
+alphagsm myvelocity mod apply
+alphagsm myvelocity mod cleanup
+```
+
 ## Notes
 
 - Module name: `minecraft.velocity`
@@ -84,4 +99,4 @@ alphagsm myvelocity backup
 - **Mod directory**: `plugins/`
 - **Workshop support**: No
 - **Map notes**: Velocity is a proxy and does not host worlds.
-- **Mod notes**: Place Velocity plugin .jar files in the `plugins/` directory.
+- **Mod notes**: AlphaGSM can install built-in manifest families such as `viaversion`, `viabackwards`, `viarewind`, `luckperms`, and `geyser`, place plugin `.jar` files from direct URLs into `plugins/`, and install Mod DB-backed archives when they contain plugin payloads under approved proxy plugin paths. `mod cleanup` removes only AlphaGSM-managed plugin files. The checked-in manifest now auto-installs ViaVersion-stack prerequisites when needed and selects the Velocity-compatible jar for variant-specific families. Velocity keeps its own cache/state under `.alphagsm/mods/minecraft-velocity/`.

@@ -953,6 +953,166 @@ def get_container_spec(server, *args, **kwargs):
     return merged
 
 
+def _get_module_runtime_requirements(server):
+    """Return normalized module-declared runtime requirements for *server*."""
+
+    module = getattr(server, "module", None)
+    if module is not None:
+        ensure_runtime_hooks(module)
+    hook = _get_module_hook(module, "get_runtime_requirements") if module is not None else None
+    if hook is None:
+        return {}
+    return normalize_runtime_requirements(hook(server) or {}, server.name)
+
+
+def get_runtime_doctor_report(server):
+    """Return a runtime diagnostics snapshot for *server*."""
+
+    report = {
+        "server": server.name,
+    }
+    try:
+        report["configured_backend"] = _get_configured_runtime_name()
+    except RuntimeError as ex:
+        report["configured_backend_error"] = str(ex)
+        return report
+
+    try:
+        module_requirements = _get_module_runtime_requirements(server)
+    except Exception as ex:  # pragma: no cover - defensive diagnostics path
+        report["module_runtime_error"] = str(ex)
+        return report
+
+    if module_requirements:
+        report["module_runtime"] = module_requirements.get("runtime", "process")
+        if module_requirements.get("runtime_family"):
+            report["module_runtime_family"] = module_requirements["runtime_family"]
+
+    try:
+        metadata = resolve_runtime_metadata(server)
+    except Exception as ex:  # pragma: no cover - defensive diagnostics path
+        report["runtime_resolution_error"] = str(ex)
+        return report
+
+    runtime_name = metadata.get("runtime", "process")
+    report["resolved_runtime"] = runtime_name
+    report["running"] = get_runtime(server).is_running(server)
+
+    if runtime_name != "docker":
+        return report
+
+    report["runtime_family"] = metadata.get("runtime_family", "unknown")
+    report["image"] = metadata.get("image", "")
+    report["container_name"] = metadata.get("container_name", "")
+    report["network_mode"] = metadata.get("network_mode", "")
+    report["stop_mode"] = metadata.get("stop_mode", "")
+
+    try:
+        spec = get_container_spec(server)
+    except Exception as ex:  # pragma: no cover - defensive diagnostics path
+        report["container_spec_error"] = str(ex)
+        return report
+
+    report["mount_count"] = len(spec.get("mounts") or ())
+    report["port_count"] = len(spec.get("ports") or ())
+
+    runtime = ContainerRuntime()
+    try:
+        docker_cli = runtime.docker_cli_version()
+        report["docker_cli"] = docker_cli or "ok"
+    except RuntimeError as ex:
+        report["docker_cli_error"] = str(ex)
+        return report
+
+    try:
+        runtime.validate_mount_path_identity(spec)
+        report["mount_path_identity"] = "ok"
+    except RuntimeError as ex:
+        report["mount_path_identity_error"] = str(ex)
+
+    image = spec.get("image")
+    if image:
+        report["image_present"] = runtime.image_exists(image)
+
+    container_name = spec.get("container_name")
+    if container_name:
+        container_state = runtime.container_running_state(container_name)
+        if container_state is True:
+            report["container_state"] = "running"
+        elif container_state is False:
+            report["container_state"] = "stopped"
+        else:
+            report["container_state"] = "missing"
+
+    return report
+
+
+def print_runtime_doctor_report(server):
+    """Print a human-readable runtime diagnostics snapshot for *server*."""
+
+    report = get_runtime_doctor_report(server)
+    print("Runtime doctor for " + server.name)
+
+    configured_backend = report.get("configured_backend")
+    if configured_backend is not None:
+        print("Configured backend: " + configured_backend)
+    if "configured_backend_error" in report:
+        print("Backend error: " + report["configured_backend_error"])
+        return report
+
+    module_runtime = report.get("module_runtime")
+    if module_runtime is not None:
+        line = "Module runtime preference: " + module_runtime
+        module_family = report.get("module_runtime_family")
+        if module_family:
+            line += " (family " + module_family + ")"
+        print(line)
+
+    resolved_runtime = report.get("resolved_runtime", "unknown")
+    print("Resolved runtime: " + resolved_runtime)
+    print("Currently running: " + ("yes" if report.get("running") else "no"))
+
+    if "module_runtime_error" in report:
+        print("Module runtime error: " + report["module_runtime_error"])
+        return report
+    if "runtime_resolution_error" in report:
+        print("Runtime resolution error: " + report["runtime_resolution_error"])
+        return report
+    if resolved_runtime != "docker":
+        return report
+
+    print("Runtime family: " + report.get("runtime_family", "unknown"))
+    print("Image: " + report.get("image", ""))
+    print("Container name: " + report.get("container_name", ""))
+    print("Network mode: " + report.get("network_mode", ""))
+    print("Stop mode: " + report.get("stop_mode", ""))
+    print("Mount entries: " + str(report.get("mount_count", 0)))
+    print("Published ports: " + str(report.get("port_count", 0)))
+
+    if "container_spec_error" in report:
+        print("Container spec error: " + report["container_spec_error"])
+        return report
+
+    if "docker_cli" in report:
+        print("Docker CLI: ok (client " + report["docker_cli"] + ")")
+    else:
+        print("Docker CLI: error")
+    if "docker_cli_error" in report:
+        print("Docker CLI error: " + report["docker_cli_error"])
+        return report
+
+    if "image_present" in report:
+        print("Image present locally: " + ("yes" if report["image_present"] else "no"))
+    if "container_state" in report:
+        print("Container state: " + report["container_state"])
+    if "mount_path_identity_error" in report:
+        print("Mount path identity: error")
+        print(report["mount_path_identity_error"])
+    elif "mount_path_identity" in report:
+        print("Mount path identity: " + report["mount_path_identity"])
+    return report
+
+
 class BaseRuntime:
     """Base runtime surface."""
 
@@ -1080,6 +1240,29 @@ class ContainerRuntime(BaseRuntime):
         """Reject bind mounts that are not host-visible in manager-container mode."""
 
         validate_mount_path_identity(spec.get("mounts", ()))
+
+    def docker_cli_version(self):
+        """Return the local Docker client version string."""
+
+        return self._run_check_output(
+            ["docker", "version", "--format", "{{.Client.Version}}"],
+            text=True,
+        ).strip()
+
+    def validate_mount_path_identity(self, spec):
+        """Public wrapper for bind-mount identity validation."""
+
+        self._validate_mount_path_identity(spec)
+
+    def image_exists(self, image):
+        """Public wrapper that reports whether an image is present locally."""
+
+        return self._image_exists(image)
+
+    def container_running_state(self, name):
+        """Public wrapper that returns the current container running state."""
+
+        return self._container_running_state(name)
 
     def _ensure_runtime_image_available(self, spec):
         """Ensure the runtime image exists locally before starting the container.

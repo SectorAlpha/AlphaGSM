@@ -76,6 +76,27 @@ alphagsm myalienare backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<game>/`
+- **Mod directory**: `<install_dir>/<game>/`
 - **Workshop support**: No
+
+## Mod Sources
+
+Alien Arena supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<game>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `game` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm myalienare mod add url https://example.com/mappack.pk3
+alphagsm myalienare mod add url https://example.com/custom-content.zip
+alphagsm myalienare mod apply
+alphagsm myalienare mod cleanup
+```

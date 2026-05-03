@@ -118,7 +118,50 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "Binaries/Win64/VNGame.exe",
+        "VNTE-CuChi?maxplayers=64",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-ConfigSubDir=PCServer",
+        "-log",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_rs2_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["servername"].native_config_key == "ServerName"
+
+
+def test_sync_server_config_updates_rs2_ini_server_name(tmp_path):
+    server = DummyServer("rs2")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "configfile": "ROGame/Config/PCServer-ROGame.ini",
+            "servername": "AlphaGSM RS2",
+        }
+    )
+    ini_path = tmp_path / "ROGame/Config/PCServer-ROGame.ini"
+    ini_path.parent.mkdir(parents=True)
+    ini_path.write_text(
+        "[/Script/Engine.GameReplicationInfo]\n"
+        "ServerName=Old RS2\n\n"
+        "[/Script/ROGame.ROGameInfoTerritories]\n"
+        "RoundTimeLimit=600\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert ini_path.read_text(encoding="utf-8") == (
+        "[/Script/Engine.GameReplicationInfo]\n"
+        "ServerName=AlphaGSM RS2\n\n"
+        "[/Script/ROGame.ROGameInfoTerritories]\n"
+        "RoundTimeLimit=600\n"
+    )
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -188,6 +231,12 @@ def test_checkvalue_configfile():
     server = DummyServer()
     result = mod.checkvalue(server, ("configfile",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM RS2")
+    assert result == "AlphaGSM RS2"
 
 
 def test_checkvalue_exe_name():

@@ -1,38 +1,78 @@
 """Static contract tests for Docker runtime metadata coverage."""
 
 import os
-from importlib import import_module
+import shutil
 from pathlib import Path
 
+from server.module_catalog import load_default_module_catalog
+from server.module_parity import _module_source_path
+from importlib import import_module
 import server.runtime as runtime_module
 
-
-GAMEMODULE_DIR = Path("src/gamemodules")
-HELPER_MODULES = {
-    "factorio",
-    "minecraft.jardownload",
-    "minecraft.papermc",
-    "terraria.common",
+GAME_CONFIG_HINTS = {
+    '"port"',
+    '"queryport"',
+    '"maxplayers"',
+    '"servername"',
+    '"hostname"',
+    '"map"',
+    '"scenarioid"',
+    '"gamemode"',
+    '"difficulty"',
+    '"levelname"',
 }
+DEFAULT_TEST_WORK_DIR = Path(
+    "/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+)
 
 
 def _game_module_names():
-    names = []
-    for path in sorted(GAMEMODULE_DIR.rglob("*.py")):
-        if path.name == "__init__.py":
-            continue
-        module_name = ".".join(path.relative_to(GAMEMODULE_DIR).with_suffix("").parts)
-        if module_name in HELPER_MODULES:
-            continue
-        names.append(module_name)
-    return names
+    catalog = load_default_module_catalog()
+    return list(catalog.canonical_modules)
+
+
+def test_game_module_inventory_excludes_catalog_alias_keys():
+    module_names = _game_module_names()
+
+    assert "tf2" not in module_names
+    assert "tf2server" not in module_names
+    assert "cs2server" not in module_names
+    assert "minecraft.DEFAULT" not in module_names
+
+
+def test_game_module_inventory_counts_teamfortress2_once():
+    module_names = _game_module_names()
+
+    assert module_names.count("teamfortress2") == 1
 
 
 def _module_source(module_name):
-    """Return the source text for a game module."""
+    """Return the source text for a game module.
 
-    path = GAMEMODULE_DIR.joinpath(*module_name.split(".")).with_suffix(".py")
-    return path.read_text(encoding="utf-8")
+    For package-backed modules, concatenate all .py files in the package so
+    contract checks see the full implementation surface, not just __init__.py.
+    """
+
+    source_path = _module_source_path(Path("."), module_name)
+    if source_path.name == "__init__.py":
+        parts = [
+            p.read_text(encoding="utf-8")
+            for p in sorted(source_path.parent.rglob("*.py"))
+        ]
+        return "\n".join(parts)
+    return source_path.read_text(encoding="utf-8")
+
+
+def _runtime_contract_root(module_name):
+    work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
+    if not work_dir and DEFAULT_TEST_WORK_DIR.exists():
+        work_dir = str(DEFAULT_TEST_WORK_DIR)
+    if work_dir:
+        root = Path(work_dir).expanduser() / "pytest-runtime-contract" / module_name.replace(".", "-")
+    else:
+        root = Path("/tmp") / module_name.replace(".", "-")
+    shutil.rmtree(root, ignore_errors=True)
+    return root
 
 
 class _DataStore(dict):
@@ -45,12 +85,6 @@ class _FakeServer:
         self.name = name
         self.data = _DataStore(dir=str(base_dir / "server") + "/")
         self.module = None
-
-
-def _resolve_module(module):
-    while hasattr(module, "ALIAS_TARGET"):
-        module = import_module("gamemodules." + module.ALIAS_TARGET)
-    return module
 
 
 def _stub_download_resolution(module, module_name):
@@ -67,25 +101,34 @@ def _stub_download_resolution(module, module_name):
             return resolved, download_name, url
         return resolved, url
 
-    for attribute_name in dir(module):
-        original = getattr(module, attribute_name, None)
-        if not callable(original):
-            continue
-        if (
-            ("resolve" not in attribute_name or "download" not in attribute_name)
-            and "file_url" not in attribute_name
-        ):
-            continue
-        originals[attribute_name] = original
-        if "file_url" in attribute_name:
-            setattr(
-                module,
-                attribute_name,
-                lambda *args, **kwargs: "https://example.invalid/%s.zip"
-                % (module_name.replace(".", "-"),),
-            )
-        else:
-            setattr(module, attribute_name, _fake_resolve_download)
+    targets = [module]
+    try:
+        main_module = import_module(module.__name__ + ".main")
+    except ImportError:
+        main_module = None
+    if main_module is not None and main_module is not module:
+        targets.append(main_module)
+
+    for target in targets:
+        for attribute_name in dir(target):
+            original = getattr(target, attribute_name, None)
+            if not callable(original):
+                continue
+            if (
+                ("resolve" not in attribute_name or "download" not in attribute_name)
+                and "file_url" not in attribute_name
+            ):
+                continue
+            originals[(target, attribute_name)] = original
+            if "file_url" in attribute_name:
+                setattr(
+                    target,
+                    attribute_name,
+                    lambda *args, **kwargs: "https://example.invalid/%s.zip"
+                    % (module_name.replace(".", "-"),),
+                )
+                continue
+            setattr(target, attribute_name, _fake_resolve_download)
 
     return originals
 
@@ -129,9 +172,12 @@ def test_all_game_modules_define_explicit_runtime_wrappers():
         source = _module_source(module_name)
         if "import server.runtime as runtime_module" not in source:
             offenders.append(module_name + ": missing runtime_module import")
-        if "def get_runtime_requirements(" not in source:
+        if (
+            "def get_runtime_requirements(" not in source
+            and "get_runtime_requirements = " not in source
+        ):
             offenders.append(module_name + ": missing get_runtime_requirements")
-        if "def get_container_spec(" not in source:
+        if "def get_container_spec(" not in source and "get_container_spec = " not in source:
             offenders.append(module_name + ": missing get_container_spec")
     assert offenders == []
 
@@ -139,9 +185,10 @@ def test_all_game_modules_define_explicit_runtime_wrappers():
 def test_all_game_modules_resolve_valid_docker_manifests():
     offenders = []
     for module_name in _game_module_names():
-        module = _resolve_module(import_module("gamemodules." + module_name))
+        module = import_module("gamemodules." + module_name)
         original_resolvers = _stub_download_resolution(module, module_name)
-        server = _FakeServer("it-" + module_name.replace(".", "-"), Path("/tmp") / module_name.replace(".", "-"))
+        server_root = _runtime_contract_root(module_name)
+        server = _FakeServer("it-" + module_name.replace(".", "-"), server_root)
         server.module = module
         try:
             configure = getattr(module, "configure", None)
@@ -174,7 +221,38 @@ def test_all_game_modules_resolve_valid_docker_manifests():
                 offenders.append(module_name + ": missing working_dir")
                 continue
         finally:
-            for attribute_name, original in original_resolvers.items():
-                setattr(module, attribute_name, original)
+            for (target, attribute_name), original in original_resolvers.items():
+                setattr(target, attribute_name, original)
+            shutil.rmtree(server_root, ignore_errors=True)
+
+    assert offenders == []
+
+
+def test_managed_config_modules_declare_config_sync_contract():
+    offenders = []
+    for module_name in _game_module_names():
+        source = _module_source(module_name)
+        has_sync_function = "def sync_server_config(" in source
+        has_config_sync_keys = "config_sync_keys" in source or "set_sync_keys" in source
+
+        if has_sync_function and not has_config_sync_keys:
+            offenders.append(module_name + ": missing config_sync_keys for sync_server_config")
+            continue
+
+        manages_real_config = (
+            'setdefault("configfile"' in source
+            and "def checkvalue(" in source
+            and any(hint in source for hint in GAME_CONFIG_HINTS)
+            and (
+                "updateconfig(" in source
+                or "json.dump(" in source
+                or "xml.etree" in source
+                or "ElementTree" in source
+                or "server.json" in source
+            )
+        )
+
+        if manages_real_config and not has_config_sync_keys:
+            offenders.append(module_name + ": manages real server config but missing config_sync_keys")
 
     assert offenders == []

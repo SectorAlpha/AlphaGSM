@@ -71,7 +71,7 @@ def test_sdtd_configure_sets_defaults(tmp_path):
 
     assert server.data["Steam_AppID"] == 294420
     assert server.data["configfile"] == "serverconfig.xml"
-    assert server.data["backupfiles"] == ["Saves", "serverconfig.xml", "startserver.sh"]
+    assert server.data["backupfiles"] == ["Saves", "Mods", "serverconfig.xml", "startserver.sh"]
 
 
 def test_sdtd_get_start_command_uses_configfile(tmp_path):

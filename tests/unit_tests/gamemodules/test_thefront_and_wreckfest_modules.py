@@ -36,14 +36,21 @@ def test_thefrontserver_get_start_command_builds_expected_args(tmp_path):
             "dir": str(tmp_path) + "/",
             "exe_name": "ProjectWar/Binaries/Linux/TheFrontServer",
             "port": 7777,
-            "queryport": 27015,
+            "queryport": 7779,
+            "maxplayers": 32,
+            "servername": "AlphaGSM Front",
         }
     )
 
     cmd, cwd = thefrontserver.get_start_command(server)
 
     assert cmd[0] == "./ProjectWar/Binaries/Linux/TheFrontServer"
-    assert "-Port=7777" in cmd
+    assert cmd[1] == "ProjectWar"
+    assert "ProjectWar_Start?Listen?MaxPlayers=32" in cmd
+    assert "-port=7777" in cmd
+    assert "-BeaconPort=7778" in cmd
+    assert "-QueryPort=7779" in cmd
+    assert "-ShutDownServicePort=7780" in cmd
     assert cwd == server.data["dir"]
 
 

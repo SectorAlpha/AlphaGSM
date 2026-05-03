@@ -52,7 +52,12 @@ Setup configures:
 ```bash
 alphagsm myq2server update
 alphagsm myq2server backup
+alphagsm myq2server set servername "AlphaGSM Q2"
+alphagsm myq2server set gamedir custom
+alphagsm myq2server set map q2dm8
 ```
+
+`set servername`, `set gamedir`, and `set map` rewrite `<gamedir>/server.cfg` immediately through the schema-backed config-sync path.
 
 ## Notes
 
@@ -69,11 +74,33 @@ alphagsm myq2server backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<gamedir>/server.cfg` (default `baseq2/server.cfg`)
+- **Schema-backed sync**: AlphaGSM keeps `hostname`, `gamedir`, and `startmap` aligned with `set`
 - **Template**: See [server-templates/q2server/](../server-templates/q2server/) if available
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<gamedir>/`
+- **Mod directory**: `<install_dir>/<gamedir>/`
 - **Workshop support**: No
+
+## Mod Sources
+
+Quake 2 supports AlphaGSM-managed direct `url` mod sources for content-only `.pak` payloads.
+
+Supported payload shapes:
+
+- a direct `.pak` URL
+- an archive containing bare `.pak` files at the archive root
+- an archive containing `<gamedir>/<name>.pak`
+
+AlphaGSM installs approved `.pak` content into the active `gamedir`, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm myq2server mod add url https://example.com/pak1.pak
+alphagsm myq2server mod add url https://example.com/custom-content.zip
+alphagsm myq2server mod apply
+alphagsm myq2server mod cleanup
+```

@@ -67,7 +67,41 @@ def test_install(tmp_path):
     server.data["exe_name"] = "DayZServer"
     server.data["Steam_AppID"] = 223350
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["configfile"] = "serverDZ.cfg"
+    (tmp_path / "serverDZ.cfg").write_text('hostname = "Old Name";\n', encoding="utf-8")
     mod.install(server)
+
+
+def test_sync_server_config_updates_serverdz_cfg_values(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "serverDZ.cfg"
+    server.data["hostname"] = "AlphaGSM DayZ Test"
+    server.data["serverpassword"] = "joinsecret"
+    server.data["adminpassword"] = "adminsecret"
+    server.data["maxplayers"] = 48
+    server.data["queryport"] = 2303
+    config_path = tmp_path / "serverDZ.cfg"
+    config_path.write_text(
+        'hostname = "Old Name";\n'
+        'password = "";\n'
+        'passwordAdmin = "";\n'
+        'maxPlayers = 60;\n'
+        'steamQueryPort = 2304;\n'
+        'verifySignatures = 2;\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname = "AlphaGSM DayZ Test";',
+        'password = "joinsecret";',
+        'passwordAdmin = "adminsecret";',
+        'maxPlayers = 48;',
+        'steamQueryPort = 2303;',
+        'verifySignatures = 2;',
+    ]
 
 
 def test_update_with_restart(tmp_path):
@@ -178,6 +212,18 @@ def test_checkvalue_port():
     assert result == 12345
 
 
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "2303")
+    assert result == 2303
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "40")
+    assert result == 40
+
+
 def test_checkvalue_configfile():
     server = DummyServer()
     result = mod.checkvalue(server, ("configfile",), "/test/value")
@@ -194,6 +240,24 @@ def test_checkvalue_cpu_count():
     server = DummyServer()
     result = mod.checkvalue(server, ("cpu_count",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_hostname():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("hostname",), "AlphaGSM DayZ")
+    assert result == "AlphaGSM DayZ"
+
+
+def test_checkvalue_serverpassword():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("serverpassword",), "joinsecret")
+    assert result == "joinsecret"
+
+
+def test_checkvalue_adminpassword():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("adminpassword",), "adminsecret")
+    assert result == "adminsecret"
 
 
 def test_checkvalue_exe_name():

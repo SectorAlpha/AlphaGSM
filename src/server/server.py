@@ -13,8 +13,11 @@ import os
 import subprocess as sp
 import copy
 from . import data
+from .module_catalog import load_default_module_catalog
 from . import port_manager
 from . import runtime as runtime_module
+from .settable_keys import KeyResolutionError, resolve_requested_key
+from .settable_keys import get_effective_aliases
 from .errors import ServerError
 from importlib import import_module
 import screen
@@ -42,6 +45,7 @@ _DISABLED_SERVERS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "disabled_servers.conf",
 )
+MODULE_CATALOG = load_default_module_catalog()
 
 
 def _load_disabled_servers():
@@ -95,35 +99,26 @@ def _get_module_hook(module, hook_name):
 
 
 def _findmodule(name):
-    """Resolve a game module name, following namespace and alias indirection."""
+    """Resolve a game module name through the canonical catalog."""
+
+    requested_name = str(name)
+    name = MODULE_CATALOG.resolve(requested_name)
     disabled = _load_disabled_servers()
-    while True:
-        name = str(name)
-        if name in disabled:
-            raise ServerError(
-                "Server module '" + name + "' is currently disabled: "
-                + disabled[name]
-                + "\nIf you'd like to help fix this, please open an issue or "
-                "submit a pull request."
-            )
-        if len(name) < 2 and all(
-            (len(el) > 0 and el.isalnum()) for el in name.split(".")
-        ):
-            raise ServerError("Invalid module requested: " + self.data["module"])
-        try:
-            module = import_module(SERVERMODULEPACKAGE + name)
-        except ImportError as ex:
-            raise ServerError("Can't find module: " + name, ex)
-        if not hasattr(
-            module, "__file__"
-        ):  # no filesystem path so must be a namespace path
-            name = name + ".DEFAULT"
-            continue
-        try:
-            name = module.ALIAS_TARGET
-        except AttributeError:
-            runtime_module.ensure_runtime_hooks(module)
-            return name, module
+    if name in disabled:
+        raise ServerError(
+            "Server module '" + name + "' is currently disabled: "
+            + disabled[name]
+            + "\nIf you'd like to help fix this, please open an issue or "
+            "submit a pull request."
+        )
+    if len(name) < 2 and all((len(el) > 0 and el.isalnum()) for el in name.split(".")):
+        raise ServerError("Invalid module requested: " + name)
+    try:
+        module = import_module(SERVERMODULEPACKAGE + name)
+    except ImportError as ex:
+        raise ServerError("Can't find module: " + name, ex)
+    runtime_module.ensure_runtime_hooks(module)
+    return name, module
 
 
 def find_module(name):
@@ -171,6 +166,7 @@ class Server(object):
         "wipe",
         "query",
         "info",
+        "doctor",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -248,12 +244,10 @@ class Server(object):
         ),
         "dump": CmdSpec(),
         "set": CmdSpec(
-            requiredarguments=(
-                ArgSpec(
-                    "KEY", "The key to set in the form of dot seperated elements", str
-                ),
-            ),
             optionalarguments=(
+                ArgSpec(
+                    "KEY", "The key to set or inspect in the form of dot seperated elements", str
+                ),
                 ArgSpec(
                     "VALUE",
                     "The value to set. New nodes in the structure will be created as needed. "
@@ -262,6 +256,40 @@ class Server(object):
                 ),
             ),
             repeatable=True,
+            options=(
+                OptSpec(
+                    "l",
+                    ["list"],
+                    "List schema-backed keys for this server",
+                    "list_settings",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "d",
+                    ["describe"],
+                    "Describe the requested key instead of setting it",
+                    "describe",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "V",
+                    ["values"],
+                    "List allowed values for the requested key",
+                    "values",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "v",
+                    ["verbose"],
+                    "Show verbose metadata in discovery output",
+                    "verbose",
+                    None,
+                    True,
+                ),
+            ),
         ),
         "backup": CmdSpec(),
         "restore": CmdSpec(
@@ -296,6 +324,7 @@ class Server(object):
                 ),
             )
         ),
+        "doctor": CmdSpec(),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -316,7 +345,7 @@ class Server(object):
         "dump": "Dump the servers data store.",
         "set": "Set a parameter in data store to a new value.\nFor keys that index into lists the special entry 'APPEND' my be used to create a new "
         "entry at the end of the list. Also for some keys value 'DELETE' is a value that causes the entry to be deleted.\n\n"
-        "Which values are changable is game module dependent",
+        "Which values are changable is game module dependent.\nUse -l / --list to inspect schema-backed keys, -d / --describe to inspect a key, and -V / --values to list allowed values when a module exposes them.",
         "backup": "Backup the game server",
         "restore": "Restore the game server from a backup.\n"
         "With no argument, lists available backups with their index numbers.\n"
@@ -333,6 +362,7 @@ class Server(object):
         "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.\n"
         "Use -j / --json to emit the result as a JSON object.\n"
         "Use -d / --detailed to include extended data (e.g. TeamSpeak 3 channel list).",
+        "doctor": "Print runtime diagnostics for this server, including the effective backend, Docker image/container details, and local runtime health checks.",
     }
 
     def __init__(self, name, module=None):
@@ -345,6 +375,7 @@ class Server(object):
         """
         self.name = name
         if module is not None:
+            truename, self.module = _findmodule(module)
             if not os.path.isdir(DATAPATH):
                 try:
                     os.makedirs(DATAPATH)
@@ -353,7 +384,7 @@ class Server(object):
                         "Data Path doesn't exist and can't create it", DATAPATH
                     )
             self.data = data.JSONDataStore(
-                os.path.join(DATAPATH, name + ".json"), {"module": module}
+                os.path.join(DATAPATH, name + ".json"), {"module": truename}
             )
             try:
                 self.data.save()
@@ -366,7 +397,9 @@ class Server(object):
                 raise ServerError("Error reading data", ex)
         if "module" not in self.data:
             raise ServerError("Invalid data store: No module specified")
-        truename, self.module = _findmodule(self.data["module"])
+        if module is None:
+            truename, self.module = _findmodule(self.data["module"])
+        self._configure_secret_split()
         metadata_changed = runtime_module.sync_runtime_metadata(self, save=False)
         if truename != self.data["module"]:
             print(
@@ -401,6 +434,104 @@ class Server(object):
             else:
                 desc = desc + "\n\n" + extra_desc
         return desc
+
+    def _configure_secret_split(self):
+        """Wire up the secret-key split on the data store once the module is known."""
+        schema = self.get_setting_schema()
+        secret_storage_keys = {
+            spec.storage_key or spec.canonical_key
+            for spec in schema.values()
+            if spec.secret
+        }
+        self.data.set_secret_keys(
+            secret_storage_keys,
+            os.path.join(DATAPATH, self.name + ".secrets.json"),
+        )
+
+    def get_setting_schema(self):
+        """Return the schema-backed settings exposed by the module."""
+        if not hasattr(self.module, "setting_schema"):
+            return {}
+        schema = getattr(self.module, "setting_schema")
+        if isinstance(schema, MappingABC):
+            return schema
+        raise ServerError(
+            "Module setting_schema must be a mapping, got " + type(schema).__name__
+        )
+
+    def _iter_setting_schema_items(self):
+        """Yield schema items in a stable order for discovery output."""
+        schema = self.get_setting_schema()
+        for canonical_key, spec in sorted(
+            schema.items(), key=lambda item: str(item[1].canonical_key)
+        ):
+            yield canonical_key, spec
+
+    def _print_setting_schema_list(self, verbose=False):
+        """Print the schema-backed setting keys exposed by the module."""
+        schema = self.get_setting_schema()
+        if not schema:
+            print("No schema-backed settings are exposed by this server.")
+            return
+        for _, spec in self._iter_setting_schema_items():
+            aliases = ", ".join(get_effective_aliases(spec, schema))
+            line = spec.canonical_key
+            if aliases:
+                line += " (aliases: " + aliases + ")"
+            if spec.description:
+                line += ": " + spec.description
+            if verbose:
+                details = []
+                if spec.storage_key and spec.storage_key != spec.canonical_key:
+                    details.append("storage key=" + spec.storage_key)
+                if spec.value_type:
+                    details.append("type=" + spec.value_type)
+                if spec.apply_to:
+                    details.append("applies to=" + ", ".join(spec.apply_to))
+                if spec.secret:
+                    details.append("secret")
+                if spec.examples:
+                    details.append("examples=" + ", ".join(spec.examples))
+                if details:
+                    line += " [" + "; ".join(details) + "]"
+            print(line)
+
+    def _print_setting_schema_description(self, requested_key):
+        """Print the description for a schema-backed setting key."""
+        resolved = resolve_requested_key(requested_key, self.get_setting_schema())
+        spec = resolved.spec
+        aliases = get_effective_aliases(spec, self.get_setting_schema())
+        print("Requested key: " + resolved.input_key)
+        print("Canonical key: " + resolved.canonical_key)
+        if resolved.storage_key != resolved.canonical_key:
+            print("Storage key: " + resolved.storage_key)
+        if aliases:
+            print("Aliases: " + ", ".join(aliases))
+        if spec.value_type:
+            print("Type: " + spec.value_type)
+        if spec.apply_to:
+            print("Applies to: " + ", ".join(spec.apply_to))
+        print("Secret: " + ("yes" if spec.secret else "no"))
+        if spec.description:
+            print("Description: " + spec.description)
+        if spec.examples:
+            print("Examples: " + ", ".join(spec.examples))
+
+    def _print_setting_schema_values(self, requested_key):
+        """Print allowed values for a schema-backed key if the module exposes them."""
+        resolved = resolve_requested_key(requested_key, self.get_setting_schema())
+        list_values_fn = getattr(self.module, "list_setting_values", None)
+        if not callable(list_values_fn):
+            raise ServerError(
+                "Module does not expose allowed values for '" + resolved.canonical_key + "'"
+            )
+        values = list_values_fn(self, resolved.canonical_key)
+        if values is None:
+            raise ServerError(
+                "Module does not expose allowed values for '" + resolved.canonical_key + "'"
+            )
+        for value in values:
+            print(value)
 
     def run_command(self, command, *args, **kwargs):
         """Run the specified command with the specified arguments on this server
@@ -451,6 +582,8 @@ class Server(object):
                 self.query(*args, **kwargs)
             elif command == "info":
                 self.info(*args, **kwargs)
+            elif command == "doctor":
+                self.doctor(*args, **kwargs)
         elif command in self.module.commands:
             self.module.command_functions[command](self, *args, **kwargs)
         else:
@@ -579,6 +712,11 @@ class Server(object):
             runtime_module.show_server_logs(self, lines=lines)
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
+
+    def doctor(self, **kwargs):
+        """Print runtime diagnostics for this server."""
+
+        runtime_module.print_runtime_doctor_report(self)
 
     def restore(self, backup=None, **kwargs):
         """Restore the server from a backup archive.
@@ -1228,9 +1366,71 @@ class Server(object):
         else:
             data[key[-1]] = value
 
-    def doset(self, key, *args, **kwargs):
-        """Set a value in the data store. The value will be check and post set actions may be run"""
-        types, key = _parsekey(key)
+    def _run_set_sync_hooks(self, key, *args, **kwargs):
+        """Run any module hooks that keep real server config aligned after ``set``."""
+
+        top_level_key = str(key[0]).lower() if key else None
+        sync_fn = getattr(self.module, "sync_server_config", None)
+        if sync_fn is not None:
+            configured_keys = getattr(self.module, "config_sync_keys", None)
+            if configured_keys is None:
+                configured_keys = getattr(self.module, "set_sync_keys", None)
+            if configured_keys is not None:
+                normalized_keys = {str(config_key).lower() for config_key in configured_keys}
+                should_sync = top_level_key in normalized_keys
+            else:
+                should_sync = False
+            if should_sync:
+                sync_fn(self)
+
+        postset_fn = getattr(self.module, "postset", None)
+        if postset_fn is not None:
+            postset_fn(self, key, *args, **kwargs)
+
+    def doset(  # pylint: disable=keyword-arg-before-vararg
+        self,
+        key=None,
+        *args,
+        list_settings=False,
+        describe=False,
+        values=False,
+        verbose=False,
+        **kwargs,
+    ):
+        """Set a value in the data store or inspect schema-backed setting metadata."""
+        if list_settings:
+            self._print_setting_schema_list(verbose=verbose)
+            return
+        if describe:
+            if key is None:
+                raise ServerError("Error: set --describe requires a key")
+            try:
+                self._print_setting_schema_description(key)
+            except KeyResolutionError as ex:
+                raise ServerError(str(ex))
+            return
+        if values:
+            if key is None:
+                raise ServerError("Error: set --values requires a key")
+            try:
+                self._print_setting_schema_values(key)
+            except KeyResolutionError as ex:
+                raise ServerError(str(ex))
+            return
+        if key is None:
+            raise ServerError("Error: set requires a key")
+
+        resolved = None
+        schema = self.get_setting_schema()
+        if schema:
+            try:
+                resolved = resolve_requested_key(key, schema)
+            except KeyResolutionError as ex:
+                if "Ambiguous setting key" in str(ex):
+                    raise ServerError(str(ex))
+                resolved = None
+        effective_key = resolved.storage_key if resolved is not None else key
+        types, key = _parsekey(effective_key)
         runtime_managed_key = runtime_module.handles_set_key(key)
         if runtime_managed_key:
             try:
@@ -1260,12 +1460,7 @@ class Server(object):
                     )
                 )
         self._apply_set_value(self.data, types, key, value)
-        try:
-            fn = self.module.postset
-        except AttributeError:
-            pass
-        else:
-            fn(server, key, *args, **kwargs)
+        self._run_set_sync_hooks(key, *args, **kwargs)
         if (
             len(key) == 1
             and value != "DELETE"

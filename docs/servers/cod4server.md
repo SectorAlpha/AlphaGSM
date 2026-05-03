@@ -69,11 +69,33 @@ alphagsm mycod4serv backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
+- `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Template**: See [server-templates/cod4server/](../server-templates/cod4server/) if available
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<moddir>/`
+- **Mod directory**: `<install_dir>/<moddir>/` (default `<install_dir>/main/`)
 - **Workshop support**: No
+
+## Mod Sources
+
+Call of Duty 4 supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<moddir>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `moddir`, tracks only the files it owns, and keeps the active `moddir` in the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm mycod4serv mod add url https://example.com/custom.pk3
+alphagsm mycod4serv mod add url https://example.com/custom-pack.zip
+alphagsm mycod4serv mod apply
+alphagsm mycod4serv mod cleanup
+```

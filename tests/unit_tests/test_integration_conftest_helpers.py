@@ -122,6 +122,7 @@ def test_build_integration_tmp_path_uses_work_dir(monkeypatch, tmp_path):
 def test_build_integration_tmp_path_falls_back_to_pytest_factory(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     monkeypatch.delenv("ALPHAGSM_WORK_DIR", raising=False)
+    monkeypatch.setattr(helpers, "DEFAULT_INTEGRATION_WORK_DIR", tmp_path / "missing-default")
 
     expected = tmp_path / "fallback"
 

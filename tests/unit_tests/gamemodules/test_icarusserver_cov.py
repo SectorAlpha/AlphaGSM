@@ -119,7 +119,21 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["servername"] = "test"
     server.data["worldname"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "IcarusServer.exe",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-ServerName=test",
+        "-WorldName=test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_icarus_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-ServerName={value}"
+    assert mod.setting_schema["worldname"].launch_arg_format == "-WorldName={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

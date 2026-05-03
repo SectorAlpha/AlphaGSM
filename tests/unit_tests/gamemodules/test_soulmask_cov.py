@@ -132,7 +132,40 @@ def test_get_start_command(tmp_path):
     server.data["servername"] = "test"
     server.data["serverpassword"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./WSServer.sh",
+        "test",
+        "-server",
+        "-log",
+        "-forcepassthrough",
+        "-UTF8Output",
+        "-SteamServerName=test",
+        "-MaxPlayers=27015",
+        "-PSW=test",
+        "-adminpsw=test",
+        "-MULTIHOME=test",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-EchoPort=test",
+        "-saving=test",
+        "-backup=test",
+        '-mod="test"',
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_launch_formats():
+    assert mod.setting_schema["level"].launch_arg_format == "{value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-SteamServerName={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["serverpassword"].launch_arg_format == "-PSW={value}"
+    assert mod.setting_schema["adminpassword"].launch_arg_format == "-adminpsw={value}"
+    assert mod.setting_schema["bindaddress"].launch_arg_format == "-MULTIHOME={value}"
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["echoport"].launch_arg_format == "-EchoPort={value}"
+    assert mod.setting_schema["savinginterval"].launch_arg_format == "-saving={value}"
+    assert mod.setting_schema["backupinterval"].launch_arg_format == "-backup={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

@@ -54,6 +54,21 @@ alphagsm mywaterfal update
 alphagsm mywaterfal backup
 ```
 
+Built-in manifest plugin families, direct plugin jars, and provider-hosted
+plugin archives can all be managed through AlphaGSM:
+
+```bash
+alphagsm mywaterfal mod add manifest viaversion
+alphagsm mywaterfal mod add manifest viabackwards
+alphagsm mywaterfal mod add manifest viarewind
+alphagsm mywaterfal mod add manifest luckperms
+alphagsm mywaterfal mod add manifest geyser
+alphagsm mywaterfal mod add url https://plugins.example.invalid/TestPlugin.jar
+alphagsm mywaterfal mod add moddb https://www.moddb.com/mods/proxy-pack/downloads/proxy-pack
+alphagsm mywaterfal mod apply
+alphagsm mywaterfal mod cleanup
+```
+
 ## Notes
 
 - Module name: `minecraft.waterfall`
@@ -84,4 +99,4 @@ alphagsm mywaterfal backup
 - **Mod directory**: `plugins/`
 - **Workshop support**: No
 - **Map notes**: Waterfall is a proxy and does not host worlds.
-- **Mod notes**: Place Waterfall plugin .jar files in the `plugins/` directory.
+- **Mod notes**: AlphaGSM can install built-in manifest families such as `viaversion`, `viabackwards`, `viarewind`, `luckperms`, and `geyser`, place plugin `.jar` files from direct URLs into `plugins/`, and install Mod DB-backed archives when they contain plugin payloads under approved proxy plugin paths. `mod cleanup` removes only AlphaGSM-managed plugin files. The checked-in manifest now auto-installs ViaVersion-stack prerequisites when needed and selects the Bungee-compatible jar for variant-specific families. Waterfall keeps its own cache/state under `.alphagsm/mods/minecraft-waterfall/`.

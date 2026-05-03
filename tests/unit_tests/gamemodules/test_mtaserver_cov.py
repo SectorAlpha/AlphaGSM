@@ -9,6 +9,7 @@ import pytest
 sys.modules.pop('gamemodules.mtaserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.mtaserver as mod
+    import gamemodules.mtaserver.main as mod_main
     from server import ServerError
 
 class DummyData(dict):
@@ -36,6 +37,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=22003, dir=str(tmp_path), url="https://example.com/test.zip", download_name="test.zip", version="1.0")
     assert server.data['port'] == 22003
+    assert server.data['mods']['desired']['url'] == []
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
@@ -57,7 +59,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 
 def test_configure_resolves_download(tmp_path):
     server = DummyServer()
-    with patch.object(mod, 'resolve_download', return_value=('1.6', 'https://example.com/mta.tar.gz')):
+    with patch.object(mod_main, 'resolve_download', return_value=('1.6', 'https://example.com/mta.tar.gz')):
         mod.configure(server, ask=False, port=22003, dir=str(tmp_path))
     assert server.data['url'] == 'https://example.com/mta.tar.gz'
     assert server.data['version'] == '1.6'
@@ -76,9 +78,10 @@ def test_install_resolves_download(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "mta-server64"
     server.data["download_name"] = "test.tar.gz"
-    with patch.object(mod, 'resolve_download', return_value=('1.6', 'https://example.com/mta.tar.gz')):
+    with patch.object(mod_main, 'resolve_download', return_value=('1.6', 'https://example.com/mta.tar.gz')):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/mta.tar.gz'
+
 
 def test_get_start_command(tmp_path):
     server = DummyServer()

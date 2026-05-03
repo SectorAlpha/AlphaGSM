@@ -44,7 +44,9 @@ alphagsm myreadyorn stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port written to `ReadyOrNot/Config/ServerConfig.ini` (default `port + 1`)
+- the max player count written to `ReadyOrNot/Config/ServerConfig.ini` (default `16`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +60,7 @@ alphagsm myreadyorn backup
 ## Notes
 
 - Module name: `readyornotserver`
-- Default port: 27015
+- Default port: 7777
 
 ## Developer Notes
 
@@ -71,9 +73,10 @@ alphagsm myreadyorn backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<install_dir>/ReadyOrNot/Config/ServerConfig.ini`
 - **Max players**: `16`
-- **Template**: See [server-templates/readyornotserver/](../server-templates/readyornotserver/) if available
+- **Managed keys**: `queryport`, `maxplayers`
+- **Template**: See [server-templates/readyornotserver/](../server-templates/readyornotserver/)
 
 ### Maps and Mods
 

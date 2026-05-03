@@ -15,16 +15,31 @@ TESTS_DIR = "tests/gamemodules"
 VALVE_MODULES = set()
 
 
+def _top_level_module_entries():
+    entries = []
+    for name in sorted(os.listdir(GAMEMODULES_DIR)):
+        path = os.path.join(GAMEMODULES_DIR, name)
+        if os.path.isfile(path) and name.endswith(".py") and name != "__init__.py":
+            entries.append((name[:-3], path))
+            continue
+        if not os.path.isdir(path) or name == "__pycache__":
+            continue
+        main_path = os.path.join(path, "main.py")
+        init_path = os.path.join(path, "__init__.py")
+        if os.path.isfile(main_path):
+            entries.append((name, main_path))
+        elif os.path.isfile(init_path):
+            entries.append((name, init_path))
+    return entries
+
+
 def find_valve_modules():
     """Find all modules that use define_valve_server_module."""
-    for fname in os.listdir(GAMEMODULES_DIR):
-        if not fname.endswith(".py"):
-            continue
-        fpath = os.path.join(GAMEMODULES_DIR, fname)
+    for modname, fpath in _top_level_module_entries():
         with open(fpath) as f:
             src = f.read()
         if "define_valve_server_module" in src:
-            VALVE_MODULES.add(fname[:-3])
+            VALVE_MODULES.add(modname)
 
 
 def get_function_source(source, funcname):
@@ -656,14 +671,7 @@ def main():
     generated = 0
     skipped = 0
 
-    for fname in sorted(os.listdir(GAMEMODULES_DIR)):
-        if not fname.endswith(".py") or fname == "__init__.py":
-            continue
-        fpath = os.path.join(GAMEMODULES_DIR, fname)
-        if not os.path.isfile(fpath):
-            continue
-
-        modname = fname[:-3]
+    for modname, fpath in _top_level_module_entries():
         if modname in VALVE_MODULES:
             skipped += 1
             continue

@@ -93,6 +93,7 @@ alphagsm myndserver backup
 - **Map directory**: `nucleardawn/maps/`
 - **Mod directory**: `nucleardawn/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/nucleardawn/`.
 - **Current status**: The anonymous dedicated-server app currently installs only a partial `nucleardawn` tree in CI. It is missing the core game payload needed for a working server, so this module remains disabled until the missing content source is identified.
 - **Map install**: Copy `.bsp` files into `nucleardawn/maps/` and add to `nucleardawn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `nucleardawn/addons/`.

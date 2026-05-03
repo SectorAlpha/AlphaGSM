@@ -17,6 +17,9 @@ It can run directly on the host, or optionally run as a Docker "manager"
 container that launches Docker-backed game-server containers through the host
 daemon.
 
+It can also run directly on the host while still using Docker as the runtime for
+individual game servers.
+
 If you want the Docker-manager route, there is also a root wrapper script:
 
 For many first-time setups, this is the quickest way to get started because it
@@ -74,6 +77,9 @@ If you want the quickest first run, start with the Docker-manager path above.
 The host install below is still the right option when you want AlphaGSM running
 directly on the machine instead of through Docker.
 
+If you want AlphaGSM on the host but want supported game servers to start as
+Docker containers, see [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md).
+
 ### 1. Install the Python packages
 
 ```bash
@@ -100,6 +106,15 @@ Team Fortress 2:
 
 ```bash
 ./alphagsm mytf2 create teamfortress2
+```
+
+TF2 also exposes canonical `set` aliases and discovery:
+
+```bash
+./alphagsm mytf2 set --list
+./alphagsm mytf2 set gamemap --describe
+./alphagsm mytf2 set gamemap cp_dustbowl
+./alphagsm mytf2 set rconpassword secret
 ```
 
 Counter-Strike 2:
@@ -133,6 +148,14 @@ Setup may ask for:
 ./alphagsm mymc status
 ```
 
+If you configured `[runtime] backend = docker`, use the runtime doctor command
+before `start` when you want to confirm which backend, image, and container
+state AlphaGSM will use:
+
+```bash
+./alphagsm mymc doctor
+```
+
 ### 7. Stop it later
 
 ```bash
@@ -160,10 +183,170 @@ Update a Steam game server:
 ./alphagsm mytf2 update -r
 ```
 
+TF2 mod sources are split into AlphaGSM-owned manifest entries and external
+provider ids:
+
+- `manifest` uses AlphaGSM's known mod registry. This is the supported,
+  reproducible path for entries such as SourceMod and MetaMod.
+- `gamebanana` and `workshop` use a provider item id that AlphaGSM resolves
+  live from that external service.
+- `moddb` uses a canonical Mod DB download or addon page URL that AlphaGSM
+  resolves to Mod DB's own start-download link when the file is a supported
+  zip or tar archive.
+- GameBanana, Mod DB, and Steam Workshop are universal provider types rather
+  than TF2-only catalogs. TF2 is just one module using them here.
+- `curated` is still accepted as a compatibility alias for `manifest`.
+
+Examples:
+
+```bash
+./alphagsm mytf2 mod add manifest sourcemod
+./alphagsm mytf2 mod add gamebanana 12345
+./alphagsm mytf2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
+./alphagsm mytf2 mod add workshop 1234567890
+./alphagsm mytf2 mod apply
+./alphagsm mytf2 mod cleanup
+```
+
+CS2 also exposes provider-based server-side mod management for `gamebanana`,
+`moddb`, and `workshop` sources:
+
+```bash
+./alphagsm mycs2 mod add gamebanana 12345
+./alphagsm mycs2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
+./alphagsm mycs2 mod add workshop 1234567890
+./alphagsm mycs2 mod apply
+./alphagsm mycs2 mod cleanup
+```
+
+Paper exposes plugin management with a variant-specific cache root so
+Minecraft variants stay separate, with a checked-in `manifest` for reproducible
+plugin families such as `viaversion`, `viabackwards`, `viarewind`,
+`luckperms`, `vault`, `placeholderapi`, `protocollib`, `essentialsx`,
+`essentialsxchat`, `essentialsxspawn`, `essentialsxprotect`,
+`essentialsxantibuild`, and `discordsrv`, direct `url` support for single
+jars, and `moddb` support for provider-hosted archives:
+
+```bash
+./alphagsm mypaper mod add manifest viaversion
+./alphagsm mypaper mod add manifest viabackwards
+./alphagsm mypaper mod add manifest viarewind
+./alphagsm mypaper mod add manifest luckperms
+./alphagsm mypaper mod add manifest essentialsxchat
+./alphagsm mypaper mod add url https://plugins.example.invalid/TestPlugin.jar
+./alphagsm mypaper mod add moddb https://www.moddb.com/mods/paper-plugin-pack/downloads/paper-plugin-pack
+./alphagsm mypaper mod apply
+./alphagsm mypaper mod cleanup
+```
+
+`viabackwards` layers on top of `viaversion`, and `viarewind` layers on top of
+both. `essentialsxchat` layers on top of `essentialsx`. AlphaGSM now installs
+those prerequisites automatically for the checked-in Paper manifest entries.
+
+BungeeCord, Velocity, and Waterfall now expose the same plugin-management flow,
+with checked-in proxy-aware `manifest` registries for reproducible proxy-plugin
+families such as `viaversion`, `viabackwards`, `viarewind`, `luckperms`, and
+`geyser`, direct `url` support for single jars, `moddb` support for
+provider-hosted archives, and a separate
+`.alphagsm/mods/minecraft-<variant>/` cache/state root for each proxy variant:
+
+```bash
+./alphagsm myproxy mod add manifest viaversion
+./alphagsm myproxy mod add manifest viabackwards
+./alphagsm myproxy mod add manifest viarewind
+./alphagsm myproxy mod add manifest luckperms
+./alphagsm myproxy mod add manifest geyser
+./alphagsm myproxy mod add url https://plugins.example.invalid/TestPlugin.jar
+./alphagsm myproxy mod add moddb https://www.moddb.com/mods/proxy-pack/downloads/proxy-pack
+./alphagsm myproxy mod apply
+./alphagsm myproxy mod cleanup
+```
+
+`viabackwards` layers on top of `viaversion`, and `viarewind` layers on top of
+both. AlphaGSM now installs those prerequisites automatically for the checked-in
+proxy manifest entries, and it selects the matching Bungee-compatible or
+Velocity-compatible jar automatically for families like `luckperms` and
+`geyser`.
+
+Use that flow with `minecraft.bungeecord`, `minecraft.velocity`, or
+`minecraft.waterfall`.
+
+TShock also keeps plugin cache/state isolated under its own variant-specific
+directory:
+
+```bash
+./alphagsm mytshock mod add manifest banguard
+./alphagsm mytshock mod add manifest smartregions
+./alphagsm mytshock mod add manifest perplayerloot
+./alphagsm mytshock mod add url https://plugins.example.invalid/ExamplePlugin.dll
+./alphagsm mytshock mod add moddb https://www.moddb.com/mods/example/downloads/example-plugin-pack
+./alphagsm mytshock mod apply
+./alphagsm mytshock mod cleanup
+```
+
+The built-in TShock manifest currently seeds a few common plugin families with
+checked-in release URLs, including `banguard`, `smartregions`, `omni`,
+`perplayerloot`, `autoteam`, and `facommands`.
+
+Popular Source games now expose the same desired-state flow for server-side
+addons. Garry's Mod accepts direct `.gma` URLs plus GameBanana and Mod DB
+archive installs, while Left 4 Dead 2 accepts direct `.vpk` URLs plus the same
+archive providers. Both now also accept checked-in `manifest` entries for
+popular admin/plugin stacks such as MetaMod and SourceMod, while Garry's Mod
+also carries checked-in `ulib`, `ulx`, and `advdupe2` families and can install
+bare addon-root archives into `garrysmod/addons/<family-or-archive-name>/`.
+Adding `ulx` now also installs its checked-in `ulib` dependency
+automatically, and checked-in GMod manifest entries can install single-file
+`.gma` assets such as AdvDupe2. Both keep owned-file cleanup under separate
+cache roots:
+
+```bash
+./alphagsm mygmod mod add manifest metamod
+./alphagsm mygmod mod add manifest sourcemod
+./alphagsm mygmod mod add manifest ulib
+./alphagsm mygmod mod add manifest ulx
+./alphagsm mygmod mod add manifest advdupe2
+./alphagsm mygmod mod add url https://addons.example.invalid/example-addon.gma
+./alphagsm mygmod mod add gamebanana 12345
+./alphagsm mygmod mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+./alphagsm mygmod mod apply
+./alphagsm myl4d2 mod add manifest metamod
+./alphagsm myl4d2 mod add manifest sourcemod
+./alphagsm myl4d2 mod add url https://mods.example.invalid/custom-campaign.vpk
+./alphagsm myl4d2 mod add gamebanana 12345
+./alphagsm myl4d2 mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+./alphagsm myl4d2 mod apply
+```
+
+The same shared addon flow now also covers `insserver` and `hl2dmserver`, using
+`manifest`, direct archive URLs, `gamebanana`, and `moddb` sources for payloads
+that install under `insurgency/addons/` or `hl2mp/addons/`.
+
+The same flow now also covers the remaining thin Source wrappers with standard
+`addons/` layouts, including `ahl2server`, `bb2server`, `bmdmserver`,
+`bsserver`, `ccserver`, `cssserver`, `dabserver`, `doiserver`, `dodsserver`,
+`dysserver`, `emserver`, `fofserver`, `hldmsserver`, `iosserver`, `l4dserver`,
+`ndserver`, `nmrihserver`, `pvkiiserver`, `sfcserver`, `zmrserver`, and
+`zpsserver`. Their built-in shared Source manifest currently exposes the
+`metamod` and `sourcemod` admin/plugin families.
+
 Show help:
 
 ```bash
 ./alphagsm --help
+```
+
+Check whether AlphaGSM itself has an update available:
+
+```bash
+./alphagsm self-update --check
+```
+
+Apply a self-update when running from a tracked stable git branch or a
+standalone release binary:
+
+```bash
+./alphagsm self-update
 ```
 
 ## The Best Real Examples
@@ -186,6 +369,7 @@ These scripts are useful because they show a full real flow:
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md)
 - [Run AlphaGSM In Docker](docs/docker-manager.md)
 - [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
 - [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
@@ -211,3 +395,4 @@ Use:
 - GitHub: https://github.com/SectorAlpha/AlphaGSM
 - License: GPL v3.0, see [LICENSE](LICENSE)
 - Credits: see [CREDITS](CREDITS)
+- Changelog: [changelog.txt](changelog.txt)

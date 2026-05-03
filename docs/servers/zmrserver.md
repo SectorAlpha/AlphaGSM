@@ -94,6 +94,7 @@ alphagsm myzmrserve backup
 - **Map directory**: `zombie_master_reborn/maps/`
 - **Mod directory**: `zombie_master_reborn/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/zombie_master_reborn/`.
 - **Current status**: Anonymous SteamCMD only provides the generic Source SDK 2013 dedicated server scaffold. It does not include the `zombie_master_reborn` mod payload, so this module remains disabled until a real content source or additional install step is implemented.
 - **Map install**: Copy `.bsp` files into `zombie_master_reborn/maps/` and add to `zombie_master_reborn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `zombie_master_reborn/addons/`.

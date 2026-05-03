@@ -13,9 +13,8 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.thefrontserver import steam_app_id
 
@@ -52,13 +51,7 @@ def test_thefrontserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")

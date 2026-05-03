@@ -97,25 +97,19 @@ class DownloaderError(Exception):
 
 def _findmodule(name):
     """Resolve a downloader module name, following namespace and alias indirection."""
-    while True:
-        name = str(name)
-        if len(name) < 2 and all(
-            (len(el) > 0 and el.isalnum()) for el in name.split(".")
-        ):
-            raise DownloaderError("Invalid module requested: " + self.data["module"])
+    name = str(name)
+    if len(name) < 2 or not all((len(el) > 0 and el.isalnum()) for el in name.split(".")):
+        raise DownloaderError("Invalid module requested: " + name)
+    try:
+        module = import_module(DOWNLOADERS_PACKAGE + name)
+    except ImportError as ex:
+        # If the requested name is a package namespace, try its DEFAULT submodule
         try:
-            module = import_module(DOWNLOADERS_PACKAGE + name)
-        except ImportError as ex:
+            module = import_module(DOWNLOADERS_PACKAGE + name + ".DEFAULT")
+        except ImportError:
             raise DownloaderError("Can't find module: " + name, ex)
-        if not hasattr(
-            module, "__file__"
-        ):  # no filesystem path so must be a namespace path
-            name = name + ".DEFAULT"
-            continue
-        try:
-            name = module.ALIAS_TARGET
-        except AttributeError:
-            return module
+    # Return the resolved module directly; do not follow ALIAS_TARGET legacy indirection.
+    return module
 
 
 def generatepath():

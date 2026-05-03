@@ -1,0 +1,77 @@
+"""Shared helpers for simple key/value config files."""
+
+import os
+import re
+
+
+_EQUALS_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(.*?)(\s*)\Z")
+_SPACE_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)[ ](?:[ \t]*(.*?))?(\s*)\Z")
+_SPACE_SINGLE_TOKEN_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*) (\S*)(\s*)\Z")
+
+
+def _rewrite_key_value_config(
+    filename,
+    config_values,
+    *,
+    pattern,
+    separator,
+    encoding="utf-8",
+):
+    lines = []
+    if os.path.isfile(filename):
+        config_values = config_values.copy()
+        with open(filename, "r", encoding=encoding) as handle:
+            for line in handle:
+                match = pattern.match(line)
+                if match is not None and match.group(1) in config_values:
+                    lines.append(
+                        match.group(1)
+                        + separator
+                        + str(config_values[match.group(1)])
+                        + match.group(3)
+                    )
+                    del config_values[match.group(1)]
+                else:
+                    lines.append(line)
+    for key, value in config_values.items():
+        lines.append("%s%s%s\n" % (key, separator, value))
+    # Game server config files must contain plaintext credentials because the
+    # game binary reads them directly.  Suppressing CodeQL
+    # py/clear-text-storage-sensitive-data: this write is intentional.
+    with open(filename, "w", encoding=encoding) as handle:  # lgtm[py/clear-text-storage-sensitive-data]
+        handle.write("".join(lines))
+
+
+def rewrite_equals_config(filename, config_values, encoding="utf-8"):
+    _rewrite_key_value_config(
+        filename,
+        config_values,
+        pattern=_EQUALS_PATTERN,
+        separator="=",
+        encoding=encoding,
+    )
+
+
+def rewrite_space_config(filename, config_values, encoding="utf-8"):
+    _rewrite_key_value_config(
+        filename,
+        config_values,
+        pattern=_SPACE_PATTERN,
+        separator=" ",
+        encoding=encoding,
+    )
+
+
+def rewrite_single_token_space_config(filename, config_values, encoding="utf-8"):
+    """Like rewrite_space_config but only rewrites lines where the existing value is a single token.
+
+    Lines where the existing value contains spaces are left unchanged and the new
+    value is appended at the end instead.
+    """
+    _rewrite_key_value_config(
+        filename,
+        config_values,
+        pattern=_SPACE_SINGLE_TOKEN_PATTERN,
+        separator=" ",
+        encoding=encoding,
+    )

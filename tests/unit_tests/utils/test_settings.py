@@ -107,6 +107,26 @@ def test_settings_honors_explicit_user_config_override(tmp_path, monkeypatch, re
     assert settings.user.getsection("feature")["flag"] == "enabled"
 
 
+def test_settings_frozen_binary_uses_config_next_to_executable(tmp_path, monkeypatch, reset_settings_singleton):
+    config_path = tmp_path / "alphagsm.conf"
+    config_path.write_text("[core]\nuserconf=/unused\n")
+    observed = {}
+
+    def _fake_loadsettings(filename, parent=None):
+        observed["filename"] = filename
+        return settings_module.SettingsSection({}, {})
+
+    monkeypatch.delenv("ALPHAGSM_CONFIG_LOCATION", raising=False)
+    monkeypatch.setattr(settings_module, "_loadsettings", _fake_loadsettings)
+    monkeypatch.setattr(settings_module.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(settings_module.sys, "executable", str(tmp_path / "alphagsm"), raising=False)
+
+    settings = settings_module.Settings()
+
+    assert settings.system is not None
+    assert observed["filename"] == str(config_path)
+
+
 def test_utils_settings_reexports_the_singleton():
     public_module = importlib.import_module("utils.settings")
 

@@ -12,6 +12,7 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-180}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-ittf2}"
 SERVER_STARTED=0
+TF2_CURATED_REGISTRY_PATH="${TF2_CURATED_REGISTRY_PATH:-}"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -123,6 +124,13 @@ if [[ ! -f "$INSTALL_DIR/srcds_run_64" ]] && [[ ! -f "$INSTALL_DIR/srcds_run" ]]
   exit 1
 fi
 test -f "$INSTALL_DIR/tf/cfg/server.cfg"
+
+if [[ -n "$TF2_CURATED_REGISTRY_PATH" ]]; then
+  echo "Applying curated TF2 mods from override registry: $TF2_CURATED_REGISTRY_PATH"
+  ALPHAGSM_TF2_CURATED_REGISTRY_PATH="$TF2_CURATED_REGISTRY_PATH" run_alphagsm "$SERVER_NAME" mod add curated sourcemod
+  ALPHAGSM_TF2_CURATED_REGISTRY_PATH="$TF2_CURATED_REGISTRY_PATH" run_alphagsm "$SERVER_NAME" mod apply
+  test -f "$INSTALL_DIR/tf/addons/sourcemod/plugins/base.smx"
+fi
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

@@ -61,7 +61,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 
 def test_configure_resolves_download(tmp_path):
     server = DummyServer()
-    with patch.object(mod, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')):
+    with patch.object(mod._main, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')):
         mod.configure(server, ask=False, port=27910, dir=str(tmp_path))
     assert server.data['url'] == 'https://example.com/q2.tar.gz'
     assert server.data['version'] == '0.21.4'
@@ -80,8 +80,8 @@ def test_install_resolves_download(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "q2ded"
-    with patch.object(mod, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')), \
-         patch.object(mod, '_install_from_source'):
+    with patch.object(mod._main, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')), \
+         patch.object(mod._main, '_install_from_source'):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/q2.tar.gz'
     assert server.data['version'] == '0.21.4'
@@ -96,7 +96,56 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./q2ded",
+        "+set",
+        "game",
+        "test",
+        "+set",
+        "hostname",
+        "test",
+        "+set",
+        "port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_q2_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "gamedir"
+    assert mod.setting_schema["fs_game"].aliases == ("game",)
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "game")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "port")
+
+
+def test_sync_server_config_updates_q2_server_cfg(tmp_path):
+    server = DummyServer("q2")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "gamedir": "baseq2",
+            "hostname": "AlphaGSM q2",
+            "startmap": "q2dm8",
+        }
+    )
+    cfg_dir = tmp_path / "baseq2"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nstartmap=q2dm1\nset dmflags 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM q2"\n'
+        'startmap=q2dm8\n'
+        'set dmflags 0\n'
+    )
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

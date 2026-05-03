@@ -39,6 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8303, dir=str(tmp_path))
     assert server.data['port'] == 8303
+    assert server.data['servername'] == 'AlphaGSM testserver'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -134,6 +135,29 @@ def test_status():
     mod.status(server, verbose=True)
 
 
+def test_sync_server_config_rewrites_autoexec_cfg_in_place(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["configfile"] = "autoexec.cfg"
+    server.data["port"] = 8304
+    server.data["servername"] = "AlphaGSM TW Test"
+    config_path = tmp_path / "autoexec.cfg"
+    config_path.write_text(
+        'sv_name "Old Name"\n'
+        'sv_port 8303\n'
+        'sv_register 1\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'sv_name "AlphaGSM TW Test"',
+        'sv_port 8304',
+        'sv_register 1',
+    ]
+
+
 def test_message():
     server = DummyServer()
     mod.message(server, "hello")
@@ -186,6 +210,12 @@ def test_checkvalue_dir():
     server = DummyServer()
     result = mod.checkvalue(server, ("dir",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM TW")
+    assert result == "AlphaGSM TW"
 
 
 def test_checkvalue_backup():

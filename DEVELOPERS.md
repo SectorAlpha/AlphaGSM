@@ -2,6 +2,8 @@
 
 This document is the technical reference for contributors, maintainers, and automation working inside the repository.
 
+Release-facing changes should also update [changelog.txt](changelog.txt).
+
 ## Top-Level Architecture
 
 AlphaGSM is a Python CLI that normalises game-server lifecycle management across multiple backends. The core design is:
@@ -54,6 +56,19 @@ At runtime, the user-facing call path is:
 - [docs](docs)
   User-facing documentation.
 
+## Server Template Naming
+
+Store per-server config examples under `docs/server-templates/<module_name>/`.
+
+- Make the template mimic the real game-owned config file as closely as possible: filename, relative path, key spelling, syntax, comments, and section layout.
+- Use the real runtime filename when the module or docs identify one stable on-disk config path, such as `server.cfg`, `server.properties`, `mumble-server.ini`, or `dedicated_cfg.txt`.
+- Keep `alphagsm-example.cfg` only when the module exposes AlphaGSM-managed values but does not manage one stable game-owned config filename.
+- Match the real relative path when it is part of the contract, for example `ROGame/Config/PCServer-ROGame.ini` or `System/UT2004.ini`.
+- Include concrete default values from `configure(...)`, `sync_server_config(...)`, smoke tests, or the matching `docs/servers/<module>.md` guide.
+- Do not include AlphaGSM-only datastore keys such as `download_name`, `dir`, `backup`, `image`, or other manager metadata unless the game itself reads them.
+- Start from `docs/server-templates/_template/` when adding new template directories.
+- Run `python scripts/audit_server_templates.py` after template changes to catch filename mismatches against module- and guide-backed config paths.
+
 ## Command And Server Model
 
 The shared command contract is defined in [src/server/server.py](src/server/server.py).
@@ -71,6 +86,7 @@ Default commands:
 - `dump`
 - `set`
 - `backup`
+- `doctor`
 
 Game modules extend this model by exporting module-level data:
 
@@ -83,11 +99,34 @@ The server object merges these module-level definitions with the defaults at run
 
 ## Game Module Contract
 
-A game module is a Python file under `src/gamemodules/`.  The `Server` class
-dispatches user commands by calling named attributes on the module.  The full
-specification lives in [src/server/gamemodules.py](src/server/gamemodules.py).
-The skill-level checklist lives in
-[skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
+A canonical top-level game module is a package directory under
+`src/gamemodules/<name>/` with an `__init__.py` import surface. The `Server`
+class dispatches user commands by calling named attributes on the canonical
+module import surface. The full specification lives in
+[src/server/gamemodules.py](src/server/gamemodules.py). The skill-level
+checklist lives in [skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
+
+For top-level game modules, keep the implementation in `main.py` and reserve
+`__init__.py` for the canonical re-export surface.
+
+### Module identity and aliases
+
+Canonical module ids are real top-level package names under `src/gamemodules/`.
+
+- Define user-facing aliases and namespace defaults in [src/server/module_aliases.json](src/server/module_aliases.json).
+- Resolve module names through [src/server/module_catalog.py](src/server/module_catalog.py) before importing a game module.
+- Persist the canonical module id in the server datastore even when the user created the server through an alias such as `tf2` or `cs2server`.
+- Do not add wrapper alias files such as `tf2.py` or namespace `DEFAULT.py` shims under `src/gamemodules/`; that routing now lives in the shared catalog.
+- Alias keys share the same namespace as canonical ids, and alias values must point directly at a real canonical module id.
+- For package-backed canonical modules, the directory name is the canonical id and `__init__.py` is the only public import surface that `Server(...)`, parity tooling, and static contract tests should treat as canonical.
+- Keep package internals such as `main.py`, `mods.py`, `layout.py`, or `workshop.py` as private implementation files. They do not get separate alias entries, parity rows, or standalone module identities.
+- When converting a file-backed module into a package-backed canonical module, preserve the exported lifecycle hooks from `__init__.py` so `import gamemodules.<module_id>` keeps working for existing callers and tests.
+
+Generated parity reporting also works at the canonical-module level:
+
+- [scripts/generate_module_parity_report.py](scripts/generate_module_parity_report.py)
+- [docs/module_parity_report.md](docs/module_parity_report.md)
+- [docs/module_parity_report.json](docs/module_parity_report.json)
 
 ### Required module attributes
 
@@ -120,6 +159,10 @@ The skill-level checklist lives in
 | `prestart` | `(server, *args, **kwargs)` | Run before the screen session starts (e.g. symlink Steam libraries) |
 | `poststart` | `(server, *args, **kwargs)` | Run after the screen session starts (e.g. send init commands) |
 | `postset` | `(server, key, **kwargs)` | React after a `set` data-store change |
+| `setting_schema` | module-level `dict[str, SettingSpec]` | Declare schema-backed `set` keys, aliases, examples, and secrecy for discovery; entries with `secret=True` are automatically routed to the mode-0o600 secrets file (see [Secrets File](#secrets-file)) |
+| `config_sync_keys` | module-level `tuple[str, ...]` | List datastore keys that should auto-sync into native game config files |
+| `sync_server_config` | `(server)` | Rewrite the native config file from datastore-backed values |
+| `list_setting_values` | `(server, canonical_key)` | Return enumerable values for schema-backed keys such as maps |
 | `get_query_address` | `(server)` | Return `(host, port, protocol)` for `query`; protocols: `"a2s"`, `"quake"`, `"ts3"`, `"tcp"` |
 | `get_info_address` | `(server)` | Return `(host, port, protocol)` for `info`; protocols: `"a2s"`, `"slp"`, `"tcp"`.  Always add this unless the module uses `define_valve_server_module()`. |
 | `update` | `(server, validate=False, restart=False, ...)` | In-place server update; wire into `commands` / `command_functions` |
@@ -127,11 +170,62 @@ The skill-level checklist lives in
 | `wipe` | `(server)` | Delete world/save data; alternatively set `wipe_paths` attribute |
 | `max_stop_wait` | attribute `int` | Max minutes to wait for graceful stop (default 5, capped at 5) |
 
+### Shared mod-support foundation
+
+Curated server-side mod support now has a shared core under
+[src/server/modsupport](src/server/modsupport).
+
+- `registry.py` resolves module-local curated registries from family plus optional channel/version into a concrete release id, URL, allowed hosts, archive type, and approved destination roots.
+- `downloads.py` owns trusted-host validation, optional checksum enforcement, safe archive extraction, and destination allowlisting so AlphaGSM only installs files into explicitly approved server paths.
+- `ownership.py` records the AlphaGSM-owned relative file manifest for each installed curated entry.
+- `providers.py` owns shared external-provider helpers such as GameBanana item resolution, Mod DB page resolution, Workshop id validation, and direct URL normalization for plugin-style modules. These providers are not TF2-specific; individual game modules decide whether and how to install their payloads safely.
+- `plugin_jars.py` packages the repeated desired-state, checked-in manifest resolution, dependency expansion, direct URL handling for plugin payloads, Mod DB archive installs, and owned-file cleanup flow for plugin-style modules such as Paper, the proxy family, and TShock.
+- `source_addons.py` packages the repeated desired-state, manifest registry loading, archive staging, GameBanana/Mod DB/workshop intake, direct single-file URL handling, and owned-file cleanup flow for Source-engine games that install addons under a known game directory.
+- Thin Source wrappers that share the same `addons/` layout can reuse one checked-in registry under [src/gamemodules/source_curated_mods.json](src/gamemodules/source_curated_mods.json) via `load_shared_source_curated_registry()` instead of carrying identical MetaMod/SourceMod manifests per module.
+- `reconcile.py` compares desired vs installed state so modules can add missing curated entries and remove only files that AlphaGSM previously recorded as owned.
+
+Modules that opt into curated mod support still own the game-specific layer:
+
+- keep the canonical module import surface stable, even when the implementation is package-backed
+- seed and persist the module-specific `mods` datastore shape
+- expose module commands such as `mod add ...`, `mod list`, and `mod apply`
+- ship the curated registry file beside the module package and keep its destination rules aligned with the real game layout
+- validate provider-specific desired entries such as curated families or workshop ids before saving them
+- fail clearly and non-destructively when a provider is still experimental or not yet verified for apply-time installation
+
+When a module supports more than one source class, keep the distinction explicit:
+
+- `manifest` or `curated` means AlphaGSM owns the catalog entry through a checked-in registry file and resolves a known family plus optional channel/version into a concrete release.
+- provider-backed sources such as `gamebanana`, `workshop`, or `moddb` mean the user supplied either an external item id or a canonical provider page URL and AlphaGSM resolves live metadata from that provider at apply time.
+- direct `url` sources mean the user supplied a concrete download URL and AlphaGSM still validates scheme, filename shape, destination roots, and owned-file cleanup through the shared mod-support layer.
+- Treat provider-id sources as shared integrations that can be reused across modules; do not bury provider-resolution code under one game package unless the upstream service is genuinely game-specific.
+- Prefer documenting `manifest` as the public user-facing term when the command surface needs to distinguish AlphaGSM-owned entries from external provider ids, but keep `curated` accepted when older commands or datastore state already use that name.
+- Keep these source classes separate in the datastore so support expectations, reproducibility, and future update semantics stay clear.
+
 ### Operational expectations
 
 - `configure(...)` stores at minimum `port` and `dir` in `server.data`, initialises the backup data structure, and returns `(args, kwargs)` to forward to `install`
 - `install(...)` ensures the server filesystem is in a runnable state and calls `server.data.save()`
 - `get_start_command(...)` returns `(argv_list, working_dir)`
+
+Validating `get_start_command` implementations
+---------------------------------------------
+
+Use the provided script to statically validate gamemodules' `get_start_command` shape:
+
+```bash
+python3 scripts/validate_start_commands.py
+```
+
+This script performs a conservative check that `get_start_command` returns a tuple
+containing an argv-style list and a working-directory path (commonly `server.data["dir"]`).
+If you need a simple inventory of modules missing `get_start_command`, run:
+
+```bash
+python3 scripts/list_missing_start_commands.py
+```
+
+- schema-backed `set` keys should use `setting_schema` plus `resolve_requested_key(...)` in the shared `Server.set` flow, with `sync_server_config(server)` handling the on-disk native config update for datastore keys in `config_sync_keys`
 - every maintained game module must define `import server.runtime as runtime_module` when it uses shared Docker builders, plus explicit module-scope `get_runtime_requirements(...)` and `get_container_spec(...)` wrappers
 - choose the runtime family first, then call `server.runtime` builders or `utils.proton` helpers inside those wrappers; do not rely on runtime inference to add the hooks for you
 - Windows-binary modules that already use `utils.proton.wrap_command(...)` should normally build Docker metadata through `utils.proton.get_runtime_requirements(...)` and `utils.proton.get_container_spec(...)` so process and container modes stay aligned
@@ -148,7 +242,7 @@ Static enforcement lives in `tests/unit_tests/test_runtime_contract_static.py`, 
 ### Representative implementations
 
 - [src/gamemodules/minecraft/vanilla.py](src/gamemodules/minecraft/vanilla.py)
-- [src/gamemodules/teamfortress2.py](src/gamemodules/teamfortress2.py)
+- [src/gamemodules/teamfortress2/__init__.py](src/gamemodules/teamfortress2/__init__.py)
 - [src/gamemodules/projectzomboid.py](src/gamemodules/projectzomboid.py)
 - [src/gamemodules/counterstrikeglobaloffensive.py](src/gamemodules/counterstrikeglobaloffensive.py)
 - [src/gamemodules/readyornotserver.py](src/gamemodules/readyornotserver.py) — example with `get_query_address` and `get_info_address`
@@ -191,6 +285,42 @@ Port ownership is derived from:
 - hosted-IP keys such as `bindaddress`, `publicip`, `externalip`, and `hostip`
 - runtime/container `ports` metadata
 - local query/info hooks when they imply an additional claimed local port
+
+### Secrets File
+
+Keys declared as `secret=True` in a module's `setting_schema` are stored in a separate
+`<name>.secrets.json` file rather than the main `<name>.json` data file.
+
+- `Server.__init__` calls `_configure_secret_split()` immediately after the module is loaded.
+  That method collects every storage key whose `SettingSpec` carries `secret=True` and passes
+  them to `JSONDataStore.set_secret_keys(keys, secrets_path)`.
+- At save time the data store writes secret keys exclusively to `<name>.secrets.json` using
+  `os.open(…, O_WRONLY | O_CREAT | O_TRUNC, 0o600)` so the file is never readable by other
+  system users. It then `os.chmod`s the file to enforce `0o600` after write.
+- At load time the data store merges the secrets file back into the in-memory dict, so the
+  rest of the code operates on a single unified namespace.
+- `alphagsm data` (which calls `prettydump()`) redacts any non-empty secret value as
+  `<redacted>` rather than printing the plaintext.
+- If a module has no `setting_schema`, or none of its schema entries carry `secret=True`,
+  no secrets file is created and the data store behaves exactly as before.
+
+To mark a password or token field as secret in a new or existing module:
+
+```python
+from server.settable_keys import SettingSpec
+
+setting_schema = {
+    "adminpassword": SettingSpec(
+        canonical_key="adminpassword",
+        description="Server admin password.",
+        secret=True,
+    ),
+}
+```
+
+Modules that only need secrecy and have no other schema requirements can provide a minimal
+`setting_schema` containing only the password entries. Non-password `set` operations on
+non-schema keys still fall through to `checkvalue` / `str_keys` unchanged.
 
 ## Download And Install Pipeline
 
@@ -245,6 +375,7 @@ Lifecycle model:
 3. for `process`, write `screenrc` if needed and start a detached session
 4. for `docker`, assemble `docker run` args from the container spec
 5. inject console commands through the selected runtime
+6. use `doctor` to print the effective runtime decision and local runtime-health checks for a server
 
  [tests/smoke_tests](tests/smoke_tests)
  bash ./tests/smoke_tests/run_minecraft_vanilla.sh
