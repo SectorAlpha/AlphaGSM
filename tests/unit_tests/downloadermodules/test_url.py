@@ -24,7 +24,7 @@ def test_download_rejects_too_many_arguments(url_module, tmp_path):
     with pytest.raises(url_module.DownloaderError, match="Too many arguments"):
         url_module.download(
             str(tmp_path),
-            ("http://example.com/file", "server.jar", "zip", "120", "extra"),
+            ("http://example.com/file", "server.jar", "zip", "120", "curl", "extra"),
         )
 
 
@@ -213,6 +213,67 @@ def test_download_accepts_custom_timeout(url_module, tmp_path, monkeypatch):
 def test_download_rejects_invalid_timeout(url_module, tmp_path):
     with pytest.raises(url_module.DownloaderError, match="Invalid download timeout"):
         url_module.download(str(tmp_path), ("http://example.com/file", "server.zip", "zip", "0"))
+
+
+def test_download_rejects_invalid_transport(url_module, tmp_path):
+    with pytest.raises(url_module.DownloaderError, match="Invalid download transport"):
+        url_module.download(str(tmp_path), ("http://example.com/file", "server.zip", "zip", "300", "wget"))
+
+
+def test_download_uses_curl_transport_with_resume(url_module, tmp_path, monkeypatch):
+    calls = []
+    sleeps = []
+    part_target = tmp_path / "server.zip.part"
+
+    def fake_download_url_with_curl(url, targetname, timeout, resume=False):
+        calls.append((url, targetname, timeout, resume))
+        with open(targetname, "ab") as handle:
+            handle.write(b"data")
+        if len(calls) < 2:
+            raise OSError("Remote end closed connection without response")
+
+    monkeypatch.setattr(url_module, "_download_url_with_curl", fake_download_url_with_curl)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: sleeps.append(seconds))
+    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 0)
+
+    url_module.download(
+        str(tmp_path),
+        ("http://example.com/file", "server.zip", "zip", "300", "curl"),
+    )
+
+    assert calls == [
+        ("http://example.com/file", str(part_target), 300, False),
+        ("http://example.com/file", str(part_target), 300, True),
+    ]
+    assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
+
+
+def test_download_with_curl_transport_keeps_partial_between_retries(url_module, tmp_path, monkeypatch):
+    removed = []
+    part_target = tmp_path / "server.zip.part"
+
+    def fake_download_url_with_curl(url, targetname, timeout, resume=False):
+        with open(targetname, "ab") as handle:
+            handle.write(b"data")
+        raise OSError("Remote end closed connection without response")
+
+    real_remove = os.remove
+
+    def fake_remove(path):
+        removed.append(path)
+        real_remove(path)
+
+    monkeypatch.setattr(url_module, "_download_url_with_curl", fake_download_url_with_curl)
+    monkeypatch.setattr(url_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(url_module.os, "remove", fake_remove)
+
+    with pytest.raises(url_module.DownloaderError, match="Can't download file"):
+        url_module.download(
+            str(tmp_path),
+            ("http://example.com/file", "server.zip", "zip", "300", "curl"),
+        )
+
+    assert str(part_target) not in removed
 
 
 @pytest.mark.parametrize(

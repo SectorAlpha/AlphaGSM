@@ -19,6 +19,7 @@ high-level milestones.
 - Server support: let `minecraft.bedrock` request a longer timeout for the official Linux zip download so CI does not abort large Mojang archive fetches after the shared 60-second URL timeout.
 - Server support: make shared direct URL downloads retry transient `OSError` disconnects such as `Remote end closed connection without response`, which Bedrock now hits while fetching Mojang's official server archive in CI.
 - Server support: fall back to `curl` for shared direct URL downloads when Python's `urllib` stalls or drops large transfers, keeping Bedrock's official Mojang archive fetch on a more resilient transfer path in CI.
+- Server support: let direct URL downloads opt into resumable `curl` retries, and use that resumable transport for `minecraft.bedrock` so partial Mojang archive downloads survive mid-transfer disconnects instead of restarting from byte zero.
 
 2026-04-30
 - Server support: add Call of Duty 4 pk3 content management so `cod4server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir`, keep that directory in the managed backup targets, and clean up only AlphaGSM-managed files.

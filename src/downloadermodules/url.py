@@ -32,36 +32,41 @@ def reporthook(blocknum, blocksize, totalsize):
         print()
 
 
-def _download_url_with_curl(url, targetname, timeout):
+def _download_url_with_curl(url, targetname, timeout, resume=False):
     """Download *url* to *targetname* with curl when urllib stalls."""
 
     curl_path = shutil.which("curl")
     if curl_path is None:
         raise FileNotFoundError("curl is not available")
+    command = [
+        curl_path,
+        "--fail",
+        "--location",
+        "--silent",
+        "--show-error",
+        "--retry",
+        str(URL_RETRIES),
+        "--retry-delay",
+        str(URL_RETRY_DELAY_SECONDS),
+        "--retry-all-errors",
+        "--user-agent",
+        USER_AGENT,
+        "--connect-timeout",
+        str(min(30, timeout)),
+        "--speed-time",
+        str(timeout),
+        "--speed-limit",
+        "1",
+    ]
+    if resume and os.path.exists(targetname) and os.path.getsize(targetname) > 0:
+        command.extend(["--continue-at", "-"])
+    command.extend([
+        "--output",
+        targetname,
+        url,
+    ])
     ret = sp.run(
-        [
-            curl_path,
-            "--fail",
-            "--location",
-            "--silent",
-            "--show-error",
-            "--retry",
-            str(URL_RETRIES),
-            "--retry-delay",
-            str(URL_RETRY_DELAY_SECONDS),
-            "--retry-all-errors",
-            "--user-agent",
-            USER_AGENT,
-            "--connect-timeout",
-            str(min(30, timeout)),
-            "--speed-time",
-            str(timeout),
-            "--speed-limit",
-            "1",
-            "--output",
-            targetname,
-            url,
-        ],
+        command,
         check=False,
         stdout=sp.DEVNULL,
         stderr=sp.PIPE,
@@ -108,13 +113,23 @@ def _parse_timeout_seconds(value):
         raise DownloaderError("Invalid download timeout")
     return timeout
 
+
+def _parse_transport(value):
+    """Parse an optional transport hint for direct URL downloads."""
+
+    transport = str(value).strip().lower()
+    if transport not in ("auto", "curl"):
+        raise DownloaderError("Invalid download transport")
+    return transport
+
 def download(path,args):
     """Download a file to a target path and optionally decompress it in place."""
     url,targetname,*args=args
     targetname=os.path.join(path,targetname)
     decompress=None
     timeout = URL_TIMEOUT_SECONDS
-    if len(args)>2:
+    transport = "auto"
+    if len(args)>3:
         raise DownloaderError("Too many arguments")
     elif len(args)>=1:
         decompress=args[0]
@@ -122,25 +137,37 @@ def download(path,args):
             raise DownloaderError("Unknown decompression type")
         if decompress in ["gz"]: # compression without filenames
             targetname+="."+decompress
-        if len(args)==2:
+        if len(args)>=2:
             timeout = _parse_timeout_seconds(args[1])
+        if len(args)==3:
+            transport = _parse_transport(args[2])
     part_targetname = targetname + ".part"
     for attempt in range(URL_RETRIES):
         try:
-            try:
-                os.remove(part_targetname)
-            except FileNotFoundError:
-                pass
-            _download_url(url, part_targetname, timeout=timeout)
+            resume = (
+                transport == "curl"
+                and os.path.exists(part_targetname)
+                and os.path.getsize(part_targetname) > 0
+            )
+            if not resume:
+                try:
+                    os.remove(part_targetname)
+                except FileNotFoundError:
+                    pass
+            if transport == "curl":
+                _download_url_with_curl(url, part_targetname, timeout=timeout, resume=resume)
+            else:
+                _download_url(url, part_targetname, timeout=timeout)
             os.replace(part_targetname, targetname)
             break
         except (OSError, urllib.error.URLError) as ex:
             reason = ex.reason if hasattr(ex, 'reason') else str(ex)
             print("Error downloading " + str(targetname) + ": " + str(reason))
-            try:
-                os.remove(part_targetname)
-            except FileNotFoundError:
-                pass
+            if transport != "curl":
+                try:
+                    os.remove(part_targetname)
+                except FileNotFoundError:
+                    pass
             if attempt + 1 < URL_RETRIES:
                 print("Retrying in %d seconds..." % (URL_RETRY_DELAY_SECONDS,))
                 time.sleep(URL_RETRY_DELAY_SECONDS)

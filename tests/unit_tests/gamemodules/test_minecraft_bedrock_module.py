@@ -144,6 +144,7 @@ def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monk
                 "bedrock-server.zip",
                 "zip",
                 str(bedrock.BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS),
+                "curl",
             ),
         )
     ]
