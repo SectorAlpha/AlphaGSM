@@ -27,6 +27,7 @@ high-level milestones.
 - CI: raise the Bedrock `setup` subprocess timeout to one hour as well, so the longer Bedrock test cap measures whether the Mojang archive fetch eventually completes instead of still aborting `alphagsm ... setup` at 1800 seconds.
 - CI: raise the Bedrock archive download timeout again after the resumable `curl` path still failed in GitHub Actions with `curl: (56) Recv failure: Connection timed out` before the download completed.
 - Server support: if a resumed explicit `curl` download still fails, drop the partial file before the final outer retry so Bedrock's Mojang archive fetch can fall back to a clean retry instead of timing out three times against the same stale partial.
+- Server support: stop reusing partial files across explicit `curl` retries for direct URL downloads, so Bedrock's Mojang archive fetch now retries from a clean file each time instead of repeatedly timing out against the same partial transfer.
 
 2026-04-30
 - Server support: add Call of Duty 4 pk3 content management so `cod4server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir`, keep that directory in the managed backup targets, and clean up only AlphaGSM-managed files.

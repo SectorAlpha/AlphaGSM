@@ -145,12 +145,12 @@ def download(path,args):
     part_targetname = targetname + ".part"
     for attempt in range(URL_RETRIES):
         try:
-            resume = (
-                transport == "curl"
-                and os.path.exists(part_targetname)
-                and os.path.getsize(part_targetname) > 0
-            )
-            if not resume:
+            if transport == "curl":
+                resume = False
+                if os.path.exists(part_targetname):
+                    os.remove(part_targetname)
+            else:
+                resume = False
                 try:
                     os.remove(part_targetname)
                 except FileNotFoundError:
@@ -170,7 +170,12 @@ def download(path,args):
         except (OSError, urllib.error.URLError) as ex:
             reason = ex.reason if hasattr(ex, 'reason') else str(ex)
             print("Error downloading " + str(targetname) + ": " + str(reason))
-            if transport != "curl":
+            if transport == "curl":
+                try:
+                    os.remove(part_targetname)
+                except FileNotFoundError:
+                    pass
+            else:
                 try:
                     os.remove(part_targetname)
                 except FileNotFoundError:
@@ -180,11 +185,6 @@ def download(path,args):
                 time.sleep(URL_RETRY_DELAY_SECONDS)
             else:
                 raise DownloaderError("Can't download file") from ex
-            if transport == "curl" and resume:
-                try:
-                    os.remove(part_targetname)
-                except FileNotFoundError:
-                    pass
     if decompress == "zip":
         ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
         if ret!=0:

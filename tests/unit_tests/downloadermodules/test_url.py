@@ -239,7 +239,7 @@ def test_download_rejects_invalid_transport(url_module, tmp_path):
         url_module.download(str(tmp_path), ("http://example.com/file", "server.zip", "zip", "300", "wget"))
 
 
-def test_download_uses_curl_transport_with_resume(url_module, tmp_path, monkeypatch):
+def test_download_uses_curl_transport_with_clean_retries(url_module, tmp_path, monkeypatch):
     calls = []
     sleeps = []
     part_target = tmp_path / "server.zip.part"
@@ -262,12 +262,12 @@ def test_download_uses_curl_transport_with_resume(url_module, tmp_path, monkeypa
 
     assert calls == [
         ("http://example.com/file", str(part_target), 300, False, 0),
-        ("http://example.com/file", str(part_target), 300, True, 0),
+        ("http://example.com/file", str(part_target), 300, False, 0),
     ]
     assert sleeps == [url_module.URL_RETRY_DELAY_SECONDS]
 
 
-def test_download_with_curl_transport_restarts_clean_after_failed_resume(url_module, tmp_path, monkeypatch):
+def test_download_with_curl_transport_removes_partial_after_each_failure(url_module, tmp_path, monkeypatch):
     calls = []
     removed = []
     part_target = tmp_path / "server.zip.part"
@@ -296,7 +296,7 @@ def test_download_with_curl_transport_restarts_clean_after_failed_resume(url_mod
 
     assert calls == [
         ("http://example.com/file", str(part_target), 300, False, 0),
-        ("http://example.com/file", str(part_target), 300, True, 0),
+        ("http://example.com/file", str(part_target), 300, False, 0),
         ("http://example.com/file", str(part_target), 300, False, 0),
     ]
     assert removed == [str(part_target), str(part_target), str(part_target)]
