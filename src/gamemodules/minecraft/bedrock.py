@@ -257,7 +257,6 @@ def install(server):
                 server.data["download_name"],
                 "zip",
                 str(BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS),
-                "curl",
             ),
         )
         _sync_tree(_resolve_archive_root(downloadpath), server.data["dir"])
