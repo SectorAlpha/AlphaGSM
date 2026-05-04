@@ -194,7 +194,7 @@
 | smallandserver | - | active | no | yes | status |
 | sniperelite4server | - | disabled | no | no | status |
 | solserver | - | active | no | yes | status |
-| sonsoftheforestserver | - | disabled | no | no | status |
+| sonsoftheforestserver | - | active | no | yes | status |
 | soulmask | - | active | no | yes | status |
 | squad44server | - | active | no | yes | status |
 | squadserver | - | disabled | no | no | status |
@@ -206,7 +206,7 @@
 | stnserver | - | active | no | yes | status |
 | stormworksserver | - | disabled | no | no | status |
 | subnauticaserver | - | active | no | yes | status |
-| subsistenceserver | - | disabled | no | no | status |
+| subsistenceserver | - | active | no | yes | status |
 | sunkenlandserver | - | disabled | no | no | status |
 | svenserver | - | active | yes | yes | - |
 | teamfortress2 | tf2, tf2server | active | yes | yes | - |
