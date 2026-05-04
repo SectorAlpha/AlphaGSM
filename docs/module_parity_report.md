@@ -212,7 +212,7 @@
 | teamfortress2 | tf2, tf2server | active | yes | yes | - |
 | terraria.tshock | - | active | yes | yes | - |
 | terraria.vanilla | - | active | yes | yes | - |
-| terratechworldsserver | - | disabled | no | no | status |
+| terratechworldsserver | - | active | no | yes | status |
 | tfcserver | - | active | yes | yes | - |
 | theforestserver | - | disabled | no | no | status |
 | thefrontserver | - | active | no | yes | status |

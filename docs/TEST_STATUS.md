@@ -224,7 +224,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Re-enabled: UE3 server D3D crash is mitigated with `LIBGL_ALWAYS_SOFTWARE=1`, `-log` now writes readiness to `*/Logs/Launch.log`, and the smoke/integration paths use a 600s startup window; validate individually for app 1141370 |
-| terratechworldsserver | Wine: server runs but Saved/Logs/TT2.log not created within 300–460s; UE4 init is slow under Wine — START_TIMEOUT raised to 600s; needs retest |
+| terratechworldsserver | Re-enabled: server writes readiness to `Saved/Logs/TT2.log`, and smoke/integration paths now use a 600s startup window; validate individually under Wine/Proton |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |
