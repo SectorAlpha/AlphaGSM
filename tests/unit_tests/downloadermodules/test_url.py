@@ -63,7 +63,7 @@ def test__download_url_falls_back_to_curl_on_url_error(url_module, tmp_path, mon
     result = url_module._download_url("http://example.com/file", str(target), timeout=300)
 
     assert result == str(target)
-    assert calls == [("http://example.com/file", str(target), 300, False, url_module.URL_RETRIES)]
+    assert calls == [("http://example.com/file", str(target), 300, False, 0)]
 
 
 def test__download_url_preserves_original_error_when_curl_unavailable(url_module, tmp_path, monkeypatch):

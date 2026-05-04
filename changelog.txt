@@ -29,6 +29,7 @@ high-level milestones.
 - Server support: if a resumed explicit `curl` download still fails, drop the partial file before the final outer retry so Bedrock's Mojang archive fetch can fall back to a clean retry instead of timing out three times against the same stale partial.
 - Server support: stop reusing partial files across explicit `curl` retries for direct URL downloads, so Bedrock's Mojang archive fetch now retries from a clean file each time instead of repeatedly timing out against the same partial transfer.
 - Server support: stop forcing the Bedrock Mojang archive onto the explicit `curl` transport so `minecraft.bedrock` uses the shared auto URL path again and only falls back to `curl` if Python's downloader actually stalls.
+- Server support: stop stacking `curl`'s internal retry budget under the shared URL downloader's outer retry loop when `urllib` falls back to `curl`, so large auto-transport downloads such as Bedrock do not silently multiply their total retry window in CI.
 
 2026-04-30
 - Server support: add Call of Duty 4 pk3 content management so `cod4server` can track direct `.pk3` and archive `url` entries, install approved `.pk3` payloads into the active `moddir`, keep that directory in the managed backup targets, and clean up only AlphaGSM-managed files.

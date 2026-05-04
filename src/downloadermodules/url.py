@@ -98,7 +98,7 @@ def _download_url(url, targetname, timeout=URL_TIMEOUT_SECONDS):
         return targetname
     except (OSError, urllib.error.URLError) as exc:
         try:
-            return _download_url_with_curl(url, targetname, timeout)
+            return _download_url_with_curl(url, targetname, timeout, retries=0)
         except (FileNotFoundError, OSError):
             raise exc
 
