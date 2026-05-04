@@ -41,6 +41,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8766, dir=str(tmp_path))
     assert server.data['port'] == 8766
+    assert server.data['exe_name'] == 'SonsOfTheForestDS.exe'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -114,6 +115,19 @@ def test_get_start_command(tmp_path, monkeypatch):
     (tmp_path / "SonsOfTheForestDS.exe").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_get_start_command_legacy_batch_prefers_server_exe(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "StartSOTFDedicated.bat"
+    (tmp_path / "StartSOTFDedicated.bat").write_text("")
+    (tmp_path / "SonsOfTheForestDS.exe").write_text("")
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "SonsOfTheForestDS.exe"
 
 
 def test_get_start_command_missing_exe(tmp_path):

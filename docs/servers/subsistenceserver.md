@@ -5,6 +5,7 @@ This guide covers the `subsistenceserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,11 @@ alphagsm mysubsiste stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the A2S query port (default 27016)
+- the max players value (default 10)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,16 +61,21 @@ alphagsm mysubsiste backup
 ## Notes
 
 - Module name: `subsistenceserver`
-- Default port: 27016
+- Default game port: `27015`
+- Default query port: `27016`
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `Binaries/Win32/run_dedicated_server.bat`
-- **Location**: `<install_dir>/Binaries/Win32/run_dedicated_server.bat`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `Binaries/Win32/Subsistence.exe`
+- **Location**: `<install_dir>/Binaries/Win32/Subsistence.exe`
+- **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `1362640`
+
+AlphaGSM launches `Subsistence.exe` directly with `-log` and forces
+`LIBGL_ALWAYS_SOFTWARE=1` on Linux hosts to avoid the older headless Direct3D
+crash path.
 
 ### Server Configuration
 

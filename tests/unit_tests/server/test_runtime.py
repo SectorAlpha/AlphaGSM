@@ -58,7 +58,7 @@ def test_resolve_runtime_metadata_uses_family_defaults_and_java_alias(monkeypatc
     assert metadata["java_major"] == 17
     assert metadata["container_name"] == "alphagsm-alpha"
     assert metadata["network_mode"] == "bridge"
-    assert metadata["stop_mode"] == "exec-console"
+    assert metadata["stop_mode"] == "docker-stop"
     assert metadata["env"] == {}
     assert metadata["mounts"] == []
     assert metadata["ports"] == []
@@ -102,6 +102,22 @@ def test_resolve_runtime_metadata_raises_stale_java_major_for_new_minecraft_vers
     assert metadata["java_major"] == 25
     assert metadata["env"]["ALPHAGSM_JAVA_MAJOR"] == "25"
     assert metadata["env"]["ALPHAGSM_SERVER_JAR"] == "minecraft_server.jar"
+
+
+def test_resolve_runtime_metadata_migrates_stale_java_exec_console_stop_mode(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 21,
+        }
+    )
+    server = DummyServer(module=module, data={"stop_mode": "exec-console"})
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+
+    assert metadata["stop_mode"] == "docker-stop"
 
 
 def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults():
@@ -163,6 +179,34 @@ def test_build_container_spec_uses_get_start_command_and_shared_mounts(tmp_path)
     assert spec["ports"] == [
         {"host": 27015, "container": 27015, "protocol": "udp"}
     ]
+
+
+def test_build_container_spec_normalizes_java_runtime_command_and_disables_tty(tmp_path):
+    server_dir = tmp_path / "server"
+    server_dir.mkdir()
+    server = DummyServer(
+        data={
+            "dir": str(server_dir) + "/",
+            "exe_name": "minecraft_server.jar",
+            "port": 25565,
+        }
+    )
+
+    spec = runtime_module.build_container_spec(
+        server,
+        family="java",
+        get_start_command=lambda current_server: (
+            ["/host/java-wrapper.sh", "-jar", current_server.data["exe_name"], "nogui"],
+            current_server.data["dir"],
+        ),
+        port_definitions=(("port", "tcp"),),
+        stdin_open=True,
+        tty=True,
+        env={"ALPHAGSM_SERVER_JAR": "minecraft_server.jar"},
+    )
+
+    assert spec["command"] == ["java", "-jar", "minecraft_server.jar", "nogui"]
+    assert spec["tty"] is True
 
 
 def test_infer_port_definitions_normalizes_runtime_family_aliases():

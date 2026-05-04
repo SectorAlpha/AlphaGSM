@@ -633,6 +633,14 @@ class Server(object):
         runtime = runtime_module.get_runtime(self)
         if not runtime.is_running(self):
             raise ServerError("Error: Can't stop a server that isn't running")
+        if runtime_module.resolve_runtime_metadata(self).get("stop_mode") == "docker-stop":
+            try:
+                runtime.kill(self)
+            except runtime_module.RuntimeError as ex:
+                raise ServerError(str(ex))
+            if runtime.is_running(self):
+                raise ServerError("Error can't kill server")
+            return
         jmax = 5
         try:
             jmax = min(jmax, self.module.max_stop_wait)

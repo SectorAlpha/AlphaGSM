@@ -61,7 +61,7 @@ RUNTIME_FAMILY_DEFAULTS = {
         "runtime_family": "java",
         "image": default_runtime_image("java"),
         "network_mode": "bridge",
-        "stop_mode": "exec-console",
+        "stop_mode": "docker-stop",
         "java_major": 17,
         "env": {},
         "mounts": [],
@@ -449,6 +449,8 @@ def build_container_spec(
     )
     validate_mount_path_identity(requirements.get("mounts", []))
     command, cwd = get_start_command(server)
+    if family == "java" and command:
+        command = ["java", *list(command[1:])]
     if working_dir is None:
         if requirements.get("mounts"):
             working_dir = DEFAULT_CONTAINER_WORKDIR
@@ -700,6 +702,9 @@ def resolve_runtime_metadata(server):
     metadata.setdefault("env", {})
     metadata.setdefault("mounts", [])
     metadata.setdefault("ports", [])
+
+    if metadata.get("runtime_family") == "java" and metadata.get("stop_mode") == "exec-console":
+        metadata["stop_mode"] = "docker-stop"
 
     version = server.data.get("version")
     if metadata.get("runtime_family") == "java" and version not in (None, "", "latest"):

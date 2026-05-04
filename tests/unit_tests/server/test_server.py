@@ -417,6 +417,25 @@ def test_stop_kills_server_after_timeout(monkeypatch):
     assert sent == [("alpha", ["quit"])]
 
 
+def test_stop_uses_runtime_kill_immediately_for_docker_stop_mode(monkeypatch):
+    srv = make_server()
+    runtime = SimpleNamespace(
+        is_running=MagicMock(side_effect=[True, False]),
+        kill=MagicMock(),
+    )
+    monkeypatch.setattr(server_module.runtime_module, "get_runtime", lambda server: runtime)
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "resolve_runtime_metadata",
+        lambda server: {"stop_mode": "docker-stop"},
+    )
+
+    srv.stop()
+
+    runtime.kill.assert_called_once_with(srv)
+    assert srv.module.calls == []
+
+
 def test_status_connect_and_dump_use_screen_and_output(monkeypatch, capsys):
     srv = make_server()
     monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)

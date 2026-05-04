@@ -27,9 +27,11 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+_PREFERRED_EXE_NAME = "SonsOfTheForestDS.exe"
+_LEGACY_BATCH_LAUNCHER = "StartSOTFDedicated.bat"
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="StartSOTFDedicated.bat"):
+def configure(server, ask, port=None, dir=None, *, exe_name=_PREFERRED_EXE_NAME):
     """Collect and store configuration values for a Sons Of The Forest server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -82,13 +84,28 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Sons Of The Forest server."
 
 
+def _resolve_launch_executable(server):
+    """Prefer the dedicated server executable over the legacy batch launcher."""
+
+    configured_exe = server.data["exe_name"]
+    if configured_exe != _LEGACY_BATCH_LAUNCHER:
+        return configured_exe
+
+    preferred_exe_path = os.path.join(server.data["dir"], _PREFERRED_EXE_NAME)
+    if os.path.isfile(preferred_exe_path):
+        return _PREFERRED_EXE_NAME
+
+    return configured_exe
+
+
 def get_start_command(server):
     """Build the command used to launch a Sons Of The Forest dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    exe_name = _resolve_launch_executable(server)
+    exe_path = os.path.join(server.data["dir"], exe_name)
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], "-batchmode", "-nographics", "-log"]
+    cmd = [exe_name, "-batchmode", "-nographics", "-log"]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
     return cmd, server.data["dir"]

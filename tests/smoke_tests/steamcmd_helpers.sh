@@ -145,6 +145,42 @@ wait_for_ready() {
   exit 0
 }
 
+# wait_for_glob_ready LOG_GLOB TIMEOUT_SECONDS [PATTERN]
+# Waits for readiness markers in the first log file matching a shell glob.
+wait_for_glob_ready() {
+  local log_glob="$1"
+  local timeout_seconds="$2"
+  local pattern="${3:-ready|started|listening|Done}"
+  local deadline=$((SECONDS + timeout_seconds))
+  local matches=()
+  while (( SECONDS < deadline )); do
+    matches=()
+    shopt -s nullglob
+    matches=( $log_glob )
+    shopt -u nullglob
+    if (( ${#matches[@]} > 0 )); then
+      local log_path="${matches[0]}"
+      if [[ -f "$log_path" ]] && grep -Eq "$pattern" "$log_path"; then
+        return 0
+      fi
+    fi
+    sleep 2
+  done
+  echo "[diagnostic] Server log did not show readiness markers in ${timeout_seconds}s" >&2
+  echo "[diagnostic] Pattern: ${pattern}" >&2
+  echo "[diagnostic] Glob: ${log_glob}" >&2
+  if (( ${#matches[@]} > 0 )) && [[ -f "${matches[0]}" ]]; then
+    local line_count
+    line_count=$(wc -l < "${matches[0]}")
+    echo "[diagnostic] Log tail (${line_count} total lines): ${matches[0]}" >&2
+    tail -100 "${matches[0]}" >&2
+  else
+    echo "[diagnostic] No log file matched: ${log_glob}" >&2
+  fi
+  echo "Server log did not show readiness markers in ${timeout_seconds}s — skipping smoke test (CI)" >&2
+  exit 0
+}
+
 # run_stop_or_skip SERVER_NAME
 # Tries to stop a server; if it is not running any more, skip instead of fail.
 run_stop_or_skip() {

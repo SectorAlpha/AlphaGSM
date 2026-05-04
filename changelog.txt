@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- Server support: re-enable `subsistenceserver` creation after the UE3 Wine headless crash mitigation landed, restore its smoke test against the real `*/Logs/Launch.log` readiness path, and sync the guide to the direct `Subsistence.exe` launch contract.
+- Server support: re-enable `sonsoftheforestserver` creation by launching `SonsOfTheForestDS.exe` directly, falling back from legacy `StartSOTFDedicated.bat` configs when the real executable is present, and restoring its smoke test/docs to the direct-exe contract.
 - CI: re-enable integration coverage for `atlasserver`, `ets2server`, `pcarserver`, `pvrserver`, `minecraft.bedrock`, `chivalryserver`, `solserver`, `stnserver`, `exfilserver`, `thefrontserver`, and `necserver` so GitHub Actions surfaces their current lifecycle failures again.
 - Server support: make `minecraft.bedrock` report `query` over TCP and `info` over SLP through explicit runtime-aware hooks, and make `thefrontserver` report `query` and `info` over its dedicated A2S query port instead of falling back to the generic localhost heuristics.
 - CI: stop relying on generic startup log markers for `atlasserver`, `chivalryserver`, `ets2server`, `pcarserver`, `pvrserver`, and `stnserver`, align `necserver`'s integration TCP probe with the detected query host, and give `solserver` a longer A2S readiness budget.
