@@ -211,12 +211,12 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
 | notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
 | outpostzeroserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 762880 — run individually to verify |
-| primalcarnageextinctionserver | Wine: UE3 log path fixed (PrimalCarnageGame/Logs/Launch.log), -log flag added, START_TIMEOUT raised to 600s; awaiting retest — app 336400 |
+| primalcarnageextinctionserver | Re-enabled: UE3 log path is `PrimalCarnageGame/Logs/Launch.log`, the server launches with `-log`, and smoke/integration paths now use a 600s startup window; validate individually for app 336400 |
 
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
-| rs2server | Wine: server (VNGame.exe, app 418480) starts and stops cleanly under Wine but does not write expected log markers within 300s; likely writes logs to game-internal paths (Unreal Engine 3), not stdout; START_TIMEOUT raised to 600s — awaiting retest |
+| rs2server | Re-enabled: server (VNGame.exe, app 418480) writes readiness to `ROGame/Logs/Launch.log`, and smoke/integration paths now use a 600s startup window; validate individually under Wine/Proton |
 | saleblazersserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3099600 — run individually to verify |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 568880 (Sniper Elite 4) is very large — run individually with extended timeout |

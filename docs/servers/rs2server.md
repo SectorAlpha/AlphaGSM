@@ -5,6 +5,7 @@ This guide covers the `rs2server` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,10 @@ alphagsm myrs2serve stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the A2S query port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,7 +60,8 @@ alphagsm myrs2serve backup
 ## Notes
 
 - Module name: `rs2server`
-- Default port: 27015
+- Default game port: `7777`
+- Default query port: `27015`
 
 ## Developer Notes
 
@@ -66,8 +69,11 @@ alphagsm myrs2serve backup
 
 - **Executable**: `Binaries/Win64/VNGame.exe`
 - **Location**: `<install_dir>/Binaries/Win64/VNGame.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `418480`
+
+AlphaGSM launches the server with `-log`, and readiness is tracked through
+`ROGame/Logs/Launch.log` rather than the screen log.
 
 ### Server Configuration
 

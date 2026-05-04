@@ -158,7 +158,7 @@
 | pcarserver | - | active | no | yes | status |
 | pixarkserver | - | disabled | no | no | status |
 | police1013server | - | disabled | no | no | status |
-| primalcarnageextinctionserver | - | disabled | no | no | status |
+| primalcarnageextinctionserver | - | active | no | yes | status |
 | projectzomboid | - | active | no | yes | status |
 | pvkiiserver | - | active | yes | yes | - |
 | pvrserver | - | active | no | yes | status |
@@ -177,7 +177,7 @@
 | rimworldtogetherserver | - | active | no | yes | status |
 | ror2server | - | active | no | yes | status |
 | roserver | - | disabled | no | no | status |
-| rs2server | risingstorm2vietnam | disabled | no | no | status |
+| rs2server | risingstorm2vietnam | active | no | yes | status |
 | rtcwserver | - | active | no | yes | status |
 | rust | - | disabled | no | no | status |
 | rwserver | - | disabled | no | no | status |

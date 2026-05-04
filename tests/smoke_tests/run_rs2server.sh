@@ -1,9 +1,4 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for rs2server is disabled - see docs/TEST_STATUS.md for status"
-exit 0
-
+#!/usr/bin/env bash
 set -Eeuo pipefail
 set -x
 
@@ -12,7 +7,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$_SCRIPT_DIR/../.
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 
-START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
+START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itrs2server}"
 SERVER_STARTED=0
@@ -45,12 +40,13 @@ trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
 require_cmd screen
+require_proton
 
 WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/rs2server-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-rs2server.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-rs2server-IT#$SERVER_NAME.log"
+LOG_PATH="$INSTALL_DIR/ROGame/Logs/Launch.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -82,7 +78,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'listening on port|Engine is initialized|Success - server ready'
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
