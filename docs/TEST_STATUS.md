@@ -127,7 +127,7 @@ Last updated: 2026-04-10
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
-| atlasserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
+| atlasserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query path instead of waiting for absent log markers |
 | bannerlordserver | SteamCMD app 1863440 installs no Linux-compatible dedicated server binary (executable file not found) |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
@@ -146,7 +146,7 @@ Last updated: 2026-04-10
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
 | emserver | SteamCMD (Source) |
-| ets2server | SteamCMD downloads successfully but server never outputs expected readiness markers |
+| ets2server | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` instead of waiting for absent log markers |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
 | hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -163,8 +163,8 @@ Last updated: 2026-04-10
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
-| pcarserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| pvrserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
+| pcarserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` instead of waiting for absent log markers |
+| pvrserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query port instead of waiting for absent log markers |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q3server | ioquake3 has no GitHub releases; download 404 |
 | q4server | Quake 4 download URL returns 404 |

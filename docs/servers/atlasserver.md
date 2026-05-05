@@ -44,7 +44,8 @@ alphagsm myatlasser stop
 
 Setup configures:
 
-- the game port (default 57561)
+- the game port (default 57555)
+- the query port (default 57561)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +59,8 @@ alphagsm myatlasser backup
 ## Notes
 
 - Module name: `atlasserver`
-- Default port: 57561
+- Default game port: 57555
+- Default query port: 57561
 
 ## Developer Notes
 
@@ -68,6 +70,10 @@ alphagsm myatlasser backup
 - **Location**: `<install_dir>/ShooterGame/Binaries/Linux/ShooterGameServer`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `1006030`
+
+Smoke and integration validation track readiness through `alphagsm info --json`
+returning protocol `a2s` on the query path instead of waiting for screen-log
+markers.
 
 ### Server Configuration
 

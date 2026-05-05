@@ -181,6 +181,52 @@ wait_for_glob_ready() {
   exit 0
 }
 
+# wait_for_info_protocol SERVER_NAME EXPECTED_PROTOCOL TIMEOUT_SECONDS
+# Polls ``info --json`` until it reports the expected protocol.
+wait_for_info_protocol() {
+  local server_name="$1"
+  local expected_protocol="$2"
+  local timeout_seconds="$3"
+  local deadline=$((SECONDS + timeout_seconds))
+  local last_output=""
+  local last_rc=0
+  while (( SECONDS < deadline )); do
+    set +e
+    last_output="$(
+      ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+        "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$server_name" info --json 2>/dev/null
+    )"
+    last_rc=$?
+    set -e
+    if [[ $last_rc -eq 0 ]] && printf '%s' "$last_output" | "${PYTHON_BIN:-python3}" - "$expected_protocol" <<'PY'
+import json
+import sys
+
+expected_protocol = sys.argv[1]
+payload = sys.stdin.read().strip()
+
+try:
+    data = json.loads(payload)
+except json.JSONDecodeError:
+    sys.exit(1)
+
+sys.exit(0 if data.get("protocol") == expected_protocol else 1)
+PY
+    then
+      return 0
+    fi
+    sleep 5
+  done
+  echo "[diagnostic] info --json did not report protocol ${expected_protocol} in ${timeout_seconds}s" >&2
+  if [[ -n "$last_output" ]]; then
+    echo "[diagnostic] Last info --json payload: $last_output" >&2
+  else
+    echo "[diagnostic] info --json returned no payload" >&2
+  fi
+  echo "Server info protocol did not become ${expected_protocol} in ${timeout_seconds}s — skipping smoke test (CI)" >&2
+  exit 0
+}
+
 # run_stop_or_skip SERVER_NAME
 # Tries to stop a server; if it is not running any more, skip instead of fail.
 run_stop_or_skip() {

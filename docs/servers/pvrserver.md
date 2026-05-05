@@ -44,7 +44,8 @@ alphagsm mypvrserve stop
 
 Setup configures:
 
-- the game port (default 9100)
+- the game port (default 7777)
+- the query port (default 7778)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +59,8 @@ alphagsm mypvrserve backup
 ## Notes
 
 - Module name: `pvrserver`
-- Default port: 9100
+- Default game port: 7777
+- Default query port: 7778
 
 ## Developer Notes
 
@@ -68,6 +70,10 @@ alphagsm mypvrserve backup
 - **Location**: `<install_dir>/PavlovServer.sh`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `622970`
+
+Smoke and integration validation track readiness through `alphagsm info --json`
+returning protocol `a2s` on the query port instead of waiting for screen-log
+markers.
 
 ### Server Configuration
 

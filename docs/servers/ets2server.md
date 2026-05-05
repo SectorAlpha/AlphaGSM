@@ -44,7 +44,8 @@ alphagsm myets2serv stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the query port (default 27016)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +59,8 @@ alphagsm myets2serv backup
 ## Notes
 
 - Module name: `ets2server`
-- Default port: 27016
+- Default game port: 27015
+- Default query port: 27016
 
 ## Developer Notes
 
@@ -68,6 +70,9 @@ alphagsm myets2serv backup
 - **Location**: `<install_dir>/bin/linux_x64/eurotrucks2_server`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `1948160`
+
+Smoke and integration validation track readiness through `alphagsm info --json`
+returning protocol `a2s` instead of waiting for screen-log markers.
 
 ### Server Configuration
 
