@@ -103,7 +103,7 @@ Last updated: 2026-04-10
 | blackops3server | SteamCMD (Wine) |
 | pixarkserver | SteamCMD (Wine) |
 | remnantsserver | SteamCMD (Wine) — exe changed to RemSurvivalServer.exe; added -log -unattended; awaiting retest |
-| readyornotserver | SteamCMD (Wine) — PASSED 2026-03-28 |
+| readyornotserver | Re-enabled: PASSED 2026-03-28; smoke now follows `ReadyOrNot/Saved/Logs/ReadyOrNot.log` and A2S on `queryport` under Wine/Proton |
 | insserver | SteamCMD (Source) — PASSED 2026-03-28 |
 | inssserver | SteamCMD — PASSED 2026-03-28 |
 | ts3server | Direct download — PASSED 2026-03-28 |

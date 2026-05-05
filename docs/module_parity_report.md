@@ -167,7 +167,7 @@
 | q4server | - | disabled | no | no | status |
 | qlserver | - | active | no | yes | status |
 | qwserver | - | active | no | yes | status |
-| readyornotserver | - | disabled | no | no | status |
+| readyornotserver | - | active | no | yes | status |
 | redmserver | - | active | no | yes | status |
 | reignofdwarfserver | - | disabled | no | no | status |
 | reignofkingsserver | - | active | no | yes | status |

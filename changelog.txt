@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- Server support: re-enable `readyornotserver`, restore its smoke runner to the fixed `ReadyOrNot.log` plus `queryport` A2S contract, and remove the stale disabled gate after the passing Wine/Proton integration path.
 - CI: re-enable smoke coverage for `atlasserver`, `ets2server`, `pcarserver`, and `pvrserver` by polling `info --json` for `a2s` readiness instead of waiting for stale startup log markers.
 - Server support: re-enable `saleblazersserver` after aligning its startup contract with `server.log`, restoring the smoke test and guide to the fixed Wine/Proton readiness flow.
 - Server support: re-enable `terratechworldsserver` after aligning its startup contract with `Saved/Logs/TT2.log`, restoring the smoke test and guide to the fixed Wine/Proton readiness flow.
