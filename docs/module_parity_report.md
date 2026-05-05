@@ -70,7 +70,7 @@
 | csserver | - | active | yes | yes | - |
 | cssserver | - | active | yes | yes | - |
 | dabserver | - | disabled | yes | no | - |
-| darkandlightserver | - | disabled | no | no | status |
+| darkandlightserver | - | active | no | yes | status |
 | dayofdragonsserver | - | active | no | yes | status |
 | dayzarma2epochserver | - | disabled | no | no | status |
 | dayzserver | - | disabled | no | no | status |

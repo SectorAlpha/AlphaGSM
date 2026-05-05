@@ -5,6 +5,7 @@ This guide covers the `darkandlightserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,10 @@ alphagsm mydarkandl stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 7777)
+- the query port (default 27016)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,7 +60,8 @@ alphagsm mydarkandl backup
 ## Notes
 
 - Module name: `darkandlightserver`
-- Default port: 27016
+- Default game port: 7777
+- Default query port: 27016
 
 ## Developer Notes
 
@@ -66,8 +69,11 @@ alphagsm mydarkandl backup
 
 - **Executable**: `DNL/Binaries/Win64/DNLServer.exe`
 - **Location**: `<install_dir>/DNL/Binaries/Win64/DNLServer.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `630230`
+
+Smoke and integration validation track readiness through
+`DNL/Saved/Logs/DNL.log` with a 600 second startup budget.
 
 ### Server Configuration
 

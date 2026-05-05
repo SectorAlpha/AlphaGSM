@@ -197,7 +197,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
 | astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
 | blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
-| darkandlightserver | Wine: server starts (runs at 39% CPU) but DNL/Saved/Logs/DNL.log not created within 300s under Wine; UE4 init is slow — START_TIMEOUT raised to 600s; needs retest |
+| darkandlightserver | Re-enabled: smoke and integration now wait on `DNL/Saved/Logs/DNL.log` with a 600s startup budget; validate individually under Wine/Proton for app 630230 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | empyrionserver | Wine: exe path fixed (DedicatedServer/EmpyrionDedicated.exe); needs individual retest — app 530870 |
 | fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
