@@ -99,7 +99,7 @@
 | gravserver | - | active | no | yes | status |
 | groundbranchserver | - | disabled | no | no | status |
 | gtafivemserver | - | active | no | yes | status |
-| heatserver | - | disabled | no | no | status |
+| heatserver | - | active | no | yes | status |
 | hellletlooseserver | - | active | no | yes | status |
 | hl2dmserver | - | active | yes | yes | - |
 | hldmserver | - | active | yes | yes | - |

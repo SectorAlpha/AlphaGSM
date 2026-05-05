@@ -201,7 +201,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | empyrionserver | Wine: exe path fixed (DedicatedServer/EmpyrionDedicated.exe); needs individual retest — app 530870 |
 | fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
-| heatserver | Wine: exe path fixed (was wrong exe name); needs individual retest — app 996600 |
+| heatserver | Re-enabled: server now launches `Server.exe`, writes readiness to `server.log`, and uses a 600s startup window under Wine/Proton; validate individually for app 996600 |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
