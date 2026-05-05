@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- CI: re-enable smoke coverage for `ts3server` by restoring its runner and waiting for the TeamSpeak log plus `info --json` protocol `ts3`.
 - CI: re-enable smoke coverage for `insserver` and `inssserver` by restoring their runners and waiting for `info --json` to report `a2s` after startup.
 - Server support: re-enable `readyornotserver`, restore its smoke runner to the fixed `ReadyOrNot.log` plus `queryport` A2S contract, and remove the stale disabled gate after the passing Wine/Proton integration path.
 - CI: re-enable smoke coverage for `atlasserver`, `ets2server`, `pcarserver`, and `pvrserver` by polling `info --json` for `a2s` readiness instead of waiting for stale startup log markers.
