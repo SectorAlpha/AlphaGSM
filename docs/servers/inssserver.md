@@ -45,6 +45,7 @@ alphagsm myinssserv stop
 Setup configures:
 
 - the game port (default 27131)
+- the query port (default `port + 1`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +59,8 @@ alphagsm myinssserv backup
 ## Notes
 
 - Module name: `inssserver`
-- Default port: 27131
+- Default game port: 27131
+- Default query port: `port + 1`
 
 ## Developer Notes
 
@@ -68,6 +70,9 @@ alphagsm myinssserv backup
 - **Location**: `<install_dir>/InsurgencyServer-Linux-Shipping`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `581330`
+
+Smoke and integration validation wait for the startup log and then require
+`alphagsm info --json` to report `a2s` on the Sandstorm query path.
 
 ### Server Configuration
 

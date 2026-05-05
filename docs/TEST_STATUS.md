@@ -104,8 +104,8 @@ Last updated: 2026-04-10
 | pixarkserver | SteamCMD (Wine) |
 | remnantsserver | SteamCMD (Wine) — exe changed to RemSurvivalServer.exe; added -log -unattended; awaiting retest |
 | readyornotserver | Re-enabled: PASSED 2026-03-28; smoke now follows `ReadyOrNot/Saved/Logs/ReadyOrNot.log` and A2S on `queryport` under Wine/Proton |
-| insserver | SteamCMD (Source) — PASSED 2026-03-28 |
-| inssserver | SteamCMD — PASSED 2026-03-28 |
+| insserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for Source startup markers and `info --json` protocol `a2s` |
+| inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Direct download — PASSED 2026-03-28 |
 
 ## DISABLED (74)

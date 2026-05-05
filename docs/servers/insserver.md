@@ -71,6 +71,9 @@ alphagsm myinsserve backup
 - **Engine**: Source
 - **SteamCMD App ID**: `237410`
 
+Smoke and integration validation treat startup as complete once the server log
+reaches the normal Source markers and `alphagsm info --json` reports `a2s`.
+
 ### Server Configuration
 
 - **Config file**: `insurgency/cfg/server.cfg`
