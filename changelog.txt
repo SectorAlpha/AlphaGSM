@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- Server support: re-enable `saleblazersserver` after aligning its startup contract with `server.log`, restoring the smoke test and guide to the fixed Wine/Proton readiness flow.
 - Server support: re-enable `terratechworldsserver` after aligning its startup contract with `Saved/Logs/TT2.log`, restoring the smoke test and guide to the fixed Wine/Proton readiness flow.
 - Server support: re-enable `rs2server` after aligning its UE3 readiness path with `ROGame/Logs/Launch.log`, restoring the smoke test and guide to the fixed Wine/Proton launch contract.
 - Server support: re-enable `primalcarnageextinctionserver` after the UE3 `Launch.log` readiness path and `-log` launch contract landed, restoring its smoke test and guide to the real Wine/Proton startup flow.

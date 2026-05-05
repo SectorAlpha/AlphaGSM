@@ -181,7 +181,7 @@
 | rtcwserver | - | active | no | yes | status |
 | rust | - | disabled | no | no | status |
 | rwserver | - | disabled | no | no | status |
-| saleblazersserver | - | disabled | no | no | status |
+| saleblazersserver | - | active | no | yes | status |
 | sampserver | - | disabled | no | no | status |
 | satisfactory | - | active | no | yes | status |
 | scpslserver | - | active | no | yes | status |
