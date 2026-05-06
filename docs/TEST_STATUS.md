@@ -194,7 +194,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | Test | Skip reason |
 |------|-------------|
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
-| arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
+| arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
 | astroneerserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 728470 |
 | blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
 | darkandlightserver | Re-enabled: smoke and integration now wait on `DNL/Saved/Logs/DNL.log`, then require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton for app 630230 |
@@ -203,25 +203,25 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | fearthenightserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 764940 |
 | heatserver | Re-enabled: server now launches `Server.exe`, writes readiness to `server.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 996600 |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
-| icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
+| icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
-| miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
+| miscreatedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 302200 |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
-| noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
-| notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
-| outpostzeroserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 762880 — run individually to verify |
+| noonesurvivedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2329680 |
+| notdserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 1420710 |
+| outpostzeroserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 762880 |
 | primalcarnageextinctionserver | Re-enabled: UE3 log path is `PrimalCarnageGame/Logs/Launch.log`, the server launches with `-log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 336400 |
 
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
-| returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
+| returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
 | rs2server | Re-enabled: server (VNGame.exe, app 418480) writes readiness to `ROGame/Logs/Launch.log`, and smoke/integration now wait for `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton |
 | saleblazersserver | Re-enabled: server writes readiness to `server.log` via `-logFile`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton for app 3099600 |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
-| starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
+| starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Re-enabled: UE3 server D3D crash is mitigated with `LIBGL_ALWAYS_SOFTWARE=1`, `-log` now writes readiness to `*/Logs/Launch.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 1141370 |
 | terratechworldsserver | Re-enabled: server writes readiness to `Saved/Logs/TT2.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton |

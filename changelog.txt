@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- CI: raise `arksurvivalascended`, `icarusserver`, `miscreatedserver`, `noonesurvivedserver`, `notdserver`, `outpostzeroserver`, `returntomoriaserver`, and `starruptureserver` integration setup timeouts to 60 minutes because their large SteamCMD downloads were timing out under the default budget.
 - CI: raise `astroneerserver` and `fearthenightserver` integration setup timeouts to 60 minutes because their large SteamCMD downloads were timing out under the default budget.
 - CI: raise `sonsoftheforestserver` and `sniperelite4server` integration setup timeouts to 60 minutes because their large SteamCMD downloads were timing out under the default budget.
 - CI: make `primalcarnageextinctionserver`, `saleblazersserver`, `subsistenceserver`, and `terratechworldsserver` wait for `info --json` protocol `a2s` after their log readiness markers before smoke/integration run `query/info`.
