@@ -73,7 +73,8 @@ alphagsm mysaleblaz backup
 - **SteamCMD App ID**: `3099600`
 
 AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`,
-and readiness is tracked through `server.log` instead of the screen log.
+tracks readiness through `server.log`, and waits for `info --json` to report
+protocol `a2s` before treating the server as query-ready.
 
 ### Server Configuration
 

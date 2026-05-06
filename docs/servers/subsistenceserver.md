@@ -75,7 +75,8 @@ alphagsm mysubsiste backup
 
 AlphaGSM launches `Subsistence.exe` directly with `-log` and forces
 `LIBGL_ALWAYS_SOFTWARE=1` on Linux hosts to avoid the older headless Direct3D
-crash path.
+crash path. Readiness is taken from the UE3 `*/Logs/Launch.log` path and then
+confirmed through `info --json` protocol `a2s` before query/info run.
 
 ### Server Configuration
 

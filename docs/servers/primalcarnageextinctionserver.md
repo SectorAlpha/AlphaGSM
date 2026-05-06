@@ -72,8 +72,9 @@ alphagsm myprimalca backup
 - **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `336400`
 
-AlphaGSM launches the dedicated server with `server -log`, and readiness is
-tracked through `PrimalCarnageGame/Logs/Launch.log` instead of the screen log.
+AlphaGSM launches the dedicated server with `server -log`, tracks readiness
+through `PrimalCarnageGame/Logs/Launch.log`, and waits for `info --json` to
+report protocol `a2s` before treating the server as query-ready.
 
 ### Server Configuration
 

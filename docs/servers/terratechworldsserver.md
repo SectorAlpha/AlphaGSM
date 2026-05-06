@@ -70,8 +70,9 @@ alphagsm myterratec backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `2533070`
 
-AlphaGSM launches the server with `-log`, and readiness is tracked through
-`Saved/Logs/TT2.log` instead of the screen log.
+AlphaGSM launches the server with `-log`, tracks readiness through
+`Saved/Logs/TT2.log`, and waits for `info --json` to report protocol `a2s`
+before treating the server as query-ready.
 
 ### Server Configuration
 
