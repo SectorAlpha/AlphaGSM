@@ -8,7 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
-- CI: make long-download integration tests keep extra budget beyond `setup` itself by raising their overall pytest timeout above the 60 minute SteamCMD setup budget, and give `rs2server` a 20 minute startup window because it has historically stalled beyond the old 600 second limit under Wine.
+- CI: make long-download integration tests keep extra budget beyond `setup` itself by raising their overall pytest timeout above the 60 minute SteamCMD setup budget, and give `rs2server` a 20 minute startup window in both smoke and integration because it has historically stalled beyond the old 600 second limit under Wine.
 - CI: raise `arksurvivalascended`, `icarusserver`, `miscreatedserver`, `noonesurvivedserver`, `notdserver`, `outpostzeroserver`, `returntomoriaserver`, and `starruptureserver` integration setup timeouts to 60 minutes because their large SteamCMD downloads were timing out under the default budget.
 - CI: raise `astroneerserver` and `fearthenightserver` integration setup timeouts to 60 minutes because their large SteamCMD downloads were timing out under the default budget.
 - CI: raise `sonsoftheforestserver` and `sniperelite4server` integration setup timeouts to 60 minutes because their large SteamCMD downloads were timing out under the default budget.
