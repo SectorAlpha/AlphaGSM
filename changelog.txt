@@ -45,7 +45,7 @@ high-level milestones.
 - Server support: force shared `curl`-based URL downloads onto HTTP/1.1 so Bedrock's Mojang archive fetch avoids the HTTP/2 stream reset errors now showing up in CI.
 - Server support: stop stacking the shared outer retry loop on top of `curl`'s own retries for explicit `curl` transport downloads, so Bedrock's resumable archive fetch stays within the integration test timeout budget instead of multiplying retry windows.
 - CI: raise the Bedrock archive-download and integration setup budget so the resumable Mojang archive fetch can survive very slow transfer windows in GitHub Actions instead of failing at the previous 300-second curl low-speed cutoff or the tighter setup timeout.
-- CI: give `test_minecraft_bedrock_lifecycle` an explicit one-hour pytest timeout so the longer Bedrock setup budget is not still cut off by the shared 20-minute integration-test marker.
+- CI: give `test_minecraft_bedrock_lifecycle` an overall pytest timeout larger than its one-hour `setup` budget so the Bedrock download still leaves room for startup and shutdown in CI.
 - CI: raise the Bedrock `setup` subprocess timeout to one hour as well, so the longer Bedrock test cap measures whether the Mojang archive fetch eventually completes instead of still aborting `alphagsm ... setup` at 1800 seconds.
 - CI: raise the Bedrock archive download timeout again after the resumable `curl` path still failed in GitHub Actions with `curl: (56) Recv failure: Connection timed out` before the download completed.
 - Server support: if a resumed explicit `curl` download still fails, drop the partial file before the final outer retry so Bedrock's Mojang archive fetch can fall back to a clean retry instead of timing out three times against the same stale partial.

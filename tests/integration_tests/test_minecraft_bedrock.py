@@ -22,9 +22,10 @@ pytestmark = pytest.mark.integration
 SETUP_TIMEOUT = 3600
 START_TIMEOUT = 900
 STOP_TIMEOUT = 90
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
-@pytest.mark.timeout(3600)  # 60 min: slow Mojang archive fetch + setup/start on CI
+@pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full download budget plus Bedrock startup and shutdown
 def test_minecraft_bedrock_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")
