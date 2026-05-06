@@ -72,8 +72,9 @@ alphagsm myrs2serve backup
 - **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `418480`
 
-AlphaGSM launches the server with `-log`, and readiness is tracked through
-`ROGame/Logs/Launch.log` rather than the screen log.
+AlphaGSM launches the server with `-log`, tracks readiness through
+`ROGame/Logs/Launch.log`, and waits for `info --json` to report protocol
+`a2s` before smoke and integration treat the server as query-ready.
 
 ### Server Configuration
 
