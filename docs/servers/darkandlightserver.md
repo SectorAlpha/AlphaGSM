@@ -73,7 +73,8 @@ alphagsm mydarkandl backup
 - **SteamCMD App ID**: `630230`
 
 Smoke and integration validation track readiness through
-`DNL/Saved/Logs/DNL.log` with a 600 second startup budget.
+`DNL/Saved/Logs/DNL.log`, then wait for `info --json` to report protocol
+`a2s` before treating the server as query-ready.
 
 ### Server Configuration
 

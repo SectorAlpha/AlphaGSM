@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- CI: make `darkandlightserver`, `heatserver`, `empyrionserver`, and `remnantsserver` wait for `info --json` protocol `a2s` after their log readiness markers before smoke/integration run `query/info`.
 - CI: make `rs2server` smoke and integration wait for `info --json` protocol `a2s` after the UE3 launch-log readiness markers before running `query/info`.
 - Server support: re-enable `remnantsserver` after aligning its smoke/docs contract to the fixed `RemSurvivalServer.exe` Wine/Proton launch path, `RemSurvival.log` readiness, and `info --json` `a2s` check, then refresh parity reports.
 - Server support: re-enable `empyrionserver` after aligning its smoke/docs contract to the fixed `DedicatedServer/EmpyrionDedicated.exe` Wine/Proton launch path, 600 second startup window, and `info --json` `a2s` readiness check, then refresh parity reports.

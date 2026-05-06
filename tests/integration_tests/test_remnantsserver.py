@@ -14,6 +14,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
+    wait_for_info_protocol,
     wait_for_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
@@ -60,6 +61,7 @@ def test_remnantsserver_lifecycle(tmp_path):
             ["listening on port", "Engine is initialized"],
             START_TIMEOUT,
         )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")

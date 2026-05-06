@@ -72,8 +72,9 @@ alphagsm myheatserv backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `996600`
 
-AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`
-and tracks readiness through `server.log` instead of the screen log.
+AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`,
+tracks readiness through `server.log`, and waits for `info --json` to report
+protocol `a2s` before treating the server as query-ready.
 
 ### Server Configuration
 
