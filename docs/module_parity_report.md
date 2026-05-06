@@ -84,7 +84,7 @@
 | ducksideserver | - | active | no | yes | status |
 | dysserver | - | disabled | yes | no | - |
 | ecoserver | - | active | no | yes | status |
-| empyrionserver | - | disabled | no | no | status |
+| empyrionserver | - | active | no | yes | status |
 | emserver | - | active | yes | yes | - |
 | enshrouded | - | disabled | no | no | status |
 | etlegacyserver | - | active | no | yes | status |

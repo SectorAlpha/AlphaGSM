@@ -5,6 +5,7 @@ This guide covers the `empyrionserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,10 @@ alphagsm myempyrion stop
 
 Setup configures:
 
-- the game port (default 30004)
+- the game port (default 30000)
+- the query port (default 30004)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,16 +60,20 @@ alphagsm myempyrion backup
 ## Notes
 
 - Module name: `empyrionserver`
-- Default port: 30004
+- Default game port: 30000
+- Default query port: 30004
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `EmpyrionLauncher.exe`
-- **Location**: `<install_dir>/EmpyrionLauncher.exe`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `DedicatedServer/EmpyrionDedicated.exe`
+- **Location**: `<install_dir>/DedicatedServer/EmpyrionDedicated.exe`
+- **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `530870`
+
+Smoke and integration validation treat startup as complete once the AlphaGSM
+screen log shows readiness markers and `info --json` reports protocol `a2s`.
 
 ### Server Configuration
 

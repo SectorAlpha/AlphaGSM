@@ -199,7 +199,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
 | darkandlightserver | Re-enabled: smoke and integration now wait on `DNL/Saved/Logs/DNL.log` with a 600s startup budget; validate individually under Wine/Proton for app 630230 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
-| empyrionserver | Wine: exe path fixed (DedicatedServer/EmpyrionDedicated.exe); needs individual retest — app 530870 |
+| empyrionserver | Re-enabled: server now launches `DedicatedServer/EmpyrionDedicated.exe`, smoke waits 600s on the screen log plus `info --json` protocol `a2s`, and the stale launcher/docs mismatch is removed — app 530870 |
 | fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
 | heatserver | Re-enabled: server now launches `Server.exe`, writes readiness to `server.log`, and uses a 600s startup window under Wine/Proton; validate individually for app 996600 |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
