@@ -112,8 +112,14 @@ def test_get_start_command(tmp_path):
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
     server.data["startmap"] = "test"
+    server.data["port"] = 7777
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./Binaries/Linux/UDKGameServer-Linux",
+        "test?Port=7777?steamsockets",
+        "-SEEKFREELOADINGSERVER",
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):

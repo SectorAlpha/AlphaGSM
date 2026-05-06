@@ -136,7 +136,7 @@ Last updated: 2026-04-10
 | bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
-| chivalryserver | Server starts but crashes during initialization before log markers appear (crash pattern) |
+| chivalryserver | CI fix landed: launch URL now passes the configured `Port=` value to `UDKGameServer-Linux` instead of ignoring the selected game port; awaiting retest |
 | conanexiles | SteamCMD app 443030 installs no Linux-compatible dedicated server binary (ConanSandboxServer not present) |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | cryofallserver | SteamCMD app 1061710 installs no Linux-compatible dedicated server binary (CryoFall_Server not present) |

@@ -69,6 +69,10 @@ alphagsm mychivalry backup
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `220070`
 
+AlphaGSM now launches Chivalry with the configured game port embedded in the
+UDK URL, for example `AOCTO-Battlegrounds_V3_P?Port=7777?steamsockets`, so
+the runtime actually binds the port selected during `setup`.
+
 ### Server Configuration
 
 - **Config file**: See game module source

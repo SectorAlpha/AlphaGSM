@@ -83,10 +83,14 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_url = "%s?Port=%s?steamsockets" % (
+        server.data["startmap"],
+        server.data["port"],
+    )
     return (
         [
             "./" + server.data["exe_name"],
-            "%s?steamsockets" % (server.data["startmap"],),
+            launch_url,
             "-SEEKFREELOADINGSERVER",
         ],
         server.data["dir"],
