@@ -216,7 +216,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
-| rs2server | Re-enabled: server (VNGame.exe, app 418480) writes readiness to `ROGame/Logs/Launch.log`, and smoke/integration now wait for `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton |
+| rs2server | Re-enabled: server (VNGame.exe, app 418480) writes readiness to `ROGame/Logs/Launch.log`, smoke/integration now wait for `info --json` protocol `a2s`, and CI now gives RS2 a 20 minute start budget after its historical 600s Wine stall |
 | saleblazersserver | Re-enabled: server writes readiness to `server.log` via `-logFile`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton for app 3099600 |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |

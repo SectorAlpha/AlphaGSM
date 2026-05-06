@@ -25,9 +25,10 @@ pytestmark = [pytest.mark.integration]
 SETUP_TIMEOUT = 3600
 START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
-@pytest.mark.timeout(3600)
+@pytest.mark.timeout(TEST_TIMEOUT)
 def test_scumserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

@@ -24,9 +24,10 @@ pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: large SteamCMD payload under shared CI load
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
-@pytest.mark.timeout(3600)
+@pytest.mark.timeout(TEST_TIMEOUT)
 def test_astroneerserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

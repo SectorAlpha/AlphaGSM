@@ -22,12 +22,13 @@ from conftest import (
 from gamemodules.rs2server import steam_app_id
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 600
+START_TIMEOUT = 1200  # 20 min: RS2 has historically stalled beyond the old 10 min bring-up window under Wine
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: large download (~13+ GB)
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
-@pytest.mark.timeout(3600)  # 60 min: large download (~13+ GB)
+@pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full download budget plus extended UE3/A2S bring-up
 def test_rs2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
