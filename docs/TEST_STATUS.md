@@ -195,12 +195,12 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 |------|-------------|
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
 | arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
-| astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
+| astroneerserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 728470 |
 | blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
 | darkandlightserver | Re-enabled: smoke and integration now wait on `DNL/Saved/Logs/DNL.log`, then require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton for app 630230 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | empyrionserver | Re-enabled: server now launches `DedicatedServer/EmpyrionDedicated.exe`, smoke waits 600s on the screen log plus `info --json` protocol `a2s`, and the stale launcher/docs mismatch is removed — app 530870 |
-| fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
+| fearthenightserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 764940 |
 | heatserver | Re-enabled: server now launches `Server.exe`, writes readiness to `server.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 996600 |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
