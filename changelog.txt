@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- CI: raise `sonsoftheforestserver` and `sniperelite4server` integration setup timeouts to 60 minutes because their large SteamCMD downloads were timing out under the default budget.
 - CI: make `primalcarnageextinctionserver`, `saleblazersserver`, `subsistenceserver`, and `terratechworldsserver` wait for `info --json` protocol `a2s` after their log readiness markers before smoke/integration run `query/info`.
 - CI: make `readyornotserver` integration wait on the module-owned A2S query path via `info --json` instead of assuming the query port is always `port + 1` after setup.
 - CI: make `darkandlightserver`, `heatserver`, `empyrionserver`, and `remnantsserver` wait for `info --json` protocol `a2s` after their log readiness markers before smoke/integration run `query/info`.
