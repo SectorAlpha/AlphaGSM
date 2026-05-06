@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-02
+- Server support: re-enable `remnantsserver` after aligning its smoke/docs contract to the fixed `RemSurvivalServer.exe` Wine/Proton launch path, `RemSurvival.log` readiness, and `info --json` `a2s` check, then refresh parity reports.
 - Server support: re-enable `empyrionserver` after aligning its smoke/docs contract to the fixed `DedicatedServer/EmpyrionDedicated.exe` Wine/Proton launch path, 600 second startup window, and `info --json` `a2s` readiness check, then refresh parity reports.
 - Server support: re-enable `heatserver` after aligning its smoke/docs contract to the fixed `Server.exe` plus `server.log` Wine/Proton launch path, and refresh parity reports.
 - Server support: re-enable `darkandlightserver` after aligning its smoke/docs contract to the `DNL.log` readiness path and 600 second Wine/Proton startup window, and refresh parity reports.

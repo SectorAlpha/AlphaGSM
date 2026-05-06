@@ -5,6 +5,7 @@ This guide covers the `remnantsserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,10 @@ alphagsm myremnants stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,16 +60,21 @@ alphagsm myremnants backup
 ## Notes
 
 - Module name: `remnantsserver`
-- Default port: 27015
+- Default game port: 7777
+- Default query port: 27015
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `StartServer.bat`
-- **Location**: `<install_dir>/StartServer.bat`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `RemSurvivalServer.exe`
+- **Location**: `<install_dir>/RemSurvivalServer.exe`
+- **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `1141420`
+
+Smoke and integration validation track readiness through
+`RemSurvival/Saved/Logs/RemSurvival.log` and then confirm `info --json`
+reports protocol `a2s`.
 
 ### Server Configuration
 

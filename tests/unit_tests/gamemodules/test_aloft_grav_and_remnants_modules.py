@@ -79,12 +79,12 @@ def test_grav_get_start_command_builds_expected_args(tmp_path):
 def test_remnants_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     monkeypatch.setattr(remnantsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer("remnants")
-    exe = tmp_path / "StartServer.bat"
+    exe = tmp_path / "RemSurvivalServer.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "StartServer.bat",
+            "exe_name": "RemSurvivalServer.exe",
             "port": 7777,
             "queryport": 27015,
         }
@@ -92,7 +92,7 @@ def test_remnants_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
     cmd, cwd = remnantsserver.get_start_command(server)
 
-    assert cmd == ["StartServer.bat", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015", "-log", "-unattended"]
+    assert cmd == ["RemSurvivalServer.exe", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015", "-log", "-unattended"]
     assert cwd == server.data["dir"]
 
 

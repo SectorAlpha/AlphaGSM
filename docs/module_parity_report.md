@@ -171,7 +171,7 @@
 | redmserver | - | active | no | yes | status |
 | reignofdwarfserver | - | disabled | no | no | status |
 | reignofkingsserver | - | active | no | yes | status |
-| remnantsserver | - | disabled | no | no | status |
+| remnantsserver | - | active | no | yes | status |
 | returntomoriaserver | - | disabled | no | no | status |
 | ricochetserver | - | active | yes | yes | - |
 | rimworldtogetherserver | - | active | no | yes | status |

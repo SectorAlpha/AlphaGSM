@@ -65,7 +65,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "StartServer.bat"
+    server.data["exe_name"] = "RemSurvivalServer.exe"
     server.data["Steam_AppID"] = 1141420
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -111,13 +111,13 @@ def test_get_start_command(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "StartServer.bat"
-    (tmp_path / "StartServer.bat").write_text("")
+    server.data["exe_name"] = "RemSurvivalServer.exe"
+    (tmp_path / "RemSurvivalServer.exe").write_text("")
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "StartServer.bat",
+        "RemSurvivalServer.exe",
         "-MultiHome=0.0.0.0",
         "-Port=27015",
         "-QueryPort=27015",
