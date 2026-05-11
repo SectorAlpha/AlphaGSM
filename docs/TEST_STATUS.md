@@ -1,14 +1,14 @@
 # Integration Test Status
 
-Last updated: 2026-04-10
+Last updated: 2026-05-11
 
 ## Summary
 
 | Status   | Count |
 |----------|-------|
 | PASSED   | 83      |
-| DISABLED | 74      |
-| SKIPPED  | 78      |
+| DISABLED | 73      |
+| SKIPPED  | 79      |
 
 ## Status Key
 
@@ -175,7 +175,6 @@ Last updated: 2026-04-10
 | sevendaystodie | SteamCMD |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
-| ss14server | SS14 CDN returns 404 |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
 | stationeersserver | Stationeers dedicated server stalls under Unity NullGfxDevice in headless CI after SetConsoleOutputCP startup exception; game port never opens |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -221,6 +220,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
+| ss14server | Re-enabled: manifest-based SS14 downloads now install correctly, but lifecycle still requires a host-installed dotnet runtime; smoke/integration skip when `dotnet` is absent |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Re-enabled: UE3 server D3D crash is mitigated with `LIBGL_ALWAYS_SOFTWARE=1`, `-log` now writes readiness to `*/Logs/Launch.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 1141370 |

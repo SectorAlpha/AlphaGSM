@@ -1,13 +1,11 @@
-"""Integration test for ss14server.
-
-Disabled: SS14 CDN returns 404
-"""
+"""Integration test for ss14server."""
 
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_command,
+    require_command_or_skip,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -22,7 +20,6 @@ from conftest import (
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="SS14 CDN returns 404"),
 ]
 
 START_TIMEOUT = 600
@@ -32,6 +29,7 @@ STOP_TIMEOUT = 90
 def test_ss14server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")
+    require_command_or_skip("dotnet", "Space Station 14 requires the dotnet runtime")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

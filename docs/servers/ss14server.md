@@ -5,6 +5,7 @@ This guide covers the `ss14server` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- host-installed `.NET 10` runtime (`dotnet`)
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -46,6 +47,7 @@ Setup configures:
 - the game port (default 1212)
 - the install directory
 - downloads and extracts the server archive
+- launches `Robust.Server`, which requires the host `.NET` runtime
 
 ## Useful Commands
 

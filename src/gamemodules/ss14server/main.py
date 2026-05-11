@@ -1,23 +1,20 @@
 """Space Station 14 dedicated server lifecycle helpers."""
 
 import os
-import re
-import urllib.request
 
 import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
-from utils.github_releases import HTTP_USER_AGENT
+from utils.github_releases import read_json
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 
 SS14_BUILDS_PAGE = "https://wizards.cdn.spacestation14.com/fork/wizards"
-SS14_DOWNLOAD_URL = (
-    "https://wizards.cdn.spacestation14.com/fork/wizards/version/%s/file/SS14.Server_linux-x64.zip"
-)
+SS14_MANIFEST_URL = "https://wizards.cdn.spacestation14.com/fork/wizards/manifest"
+SS14_SERVER_PLATFORM = "linux-x64"
 
 commands = ()
 command_args = gamemodule_common.build_setup_version_download_command_args(
@@ -32,16 +29,29 @@ max_stop_wait = 1
 def resolve_download(version=None):
     """Resolve the latest or a specific Space Station 14 Linux x64 build."""
 
+    manifest = read_json(SS14_MANIFEST_URL)
+    builds = manifest.get("builds")
+    if not isinstance(builds, dict) or not builds:
+        raise ServerError("Unable to locate Space Station 14 server builds")
+
     if version not in (None, "", "latest"):
-        return str(version), SS14_DOWNLOAD_URL % (version,)
-    request = urllib.request.Request(SS14_BUILDS_PAGE, headers={"User-Agent": HTTP_USER_AGENT})
-    with urllib.request.urlopen(request) as response:
-        page = response.read().decode("utf-8")
-    version_match = re.search(r"## Latest build.*?Version:\s*([0-9a-f]{40})", page, re.DOTALL)
-    if version_match is None:
-        raise ServerError("Unable to locate the latest Space Station 14 server build")
-    version = version_match.group(1)
-    return version, SS14_DOWNLOAD_URL % (version,)
+        resolved_version = str(version)
+        build = builds.get(resolved_version)
+        if not isinstance(build, dict):
+            raise ServerError("Unable to locate the requested Space Station 14 server build")
+    else:
+        resolved_version, build = max(
+            builds.items(),
+            key=lambda item: item[1].get("time", "") if isinstance(item[1], dict) else "",
+        )
+
+    server_builds = build.get("server") if isinstance(build, dict) else None
+    if not isinstance(server_builds, dict):
+        raise ServerError("Unable to locate Space Station 14 server download metadata")
+    platform_build = server_builds.get(SS14_SERVER_PLATFORM)
+    if not isinstance(platform_build, dict) or not platform_build.get("url"):
+        raise ServerError("Unable to locate a Linux x64 Space Station 14 server build")
+    return resolved_version, platform_build["url"]
 
 
 def configure(
@@ -57,45 +67,36 @@ def configure(
 ):
     """Collect and store configuration values for a Space Station 14 server."""
 
-    server.data.setdefault("backupfiles", ["data", "config.toml"])
-    if "backup" not in server.data:
-        server.data["backup"] = {
-            "profiles": {"default": {"targets": ["data", "config.toml"]}},
-            "schedule": [("default", 0, "days")],
-        }
-
-    if port is None:
-        port = server.data.get("port", 1212)
-    if ask:
-        inp = input("Please specify the game port to use for this server: [%s] " % (port,)).strip()
-        if inp:
-            port = int(inp)
-    server.data["port"] = int(port)
-
-    if dir is None:
-        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
-        if ask:
-            inp = input("Where would you like to install the Space Station 14 server: [%s] " % (dir,)).strip()
-            if inp:
-                dir = inp
-    server.data["dir"] = os.path.join(dir, "")
-    if url is not None:
-        server.data["url"] = url
-    elif "url" not in server.data:
-        resolved_version, resolved_url = resolve_download(version=version or server.data.get("version"))
-        server.data["version"] = resolved_version
-        server.data["url"] = resolved_url
-    if ask and url is None:
-        inp = input("Direct archive URL for the Space Station 14 server: [%s] " % (server.data["url"],)).strip()
-        if inp:
-            server.data["url"] = inp
-    if download_name is not None:
-        server.data["download_name"] = download_name
-    elif "download_name" not in server.data:
-        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or "ss14-server.zip"
-    server.data["exe_name"] = server.data.get("exe_name", exe_name)
-    server.data.save()
-    return (), {}
+    gamemodule_common.ensure_backup_config(
+        server,
+        backupfiles=["data", "config.toml"],
+        targets=["data", "config.toml"],
+    )
+    gamemodule_common.configure_port(
+        server,
+        ask,
+        port,
+        default_port=1212,
+        prompt="Please specify the game port to use for this server:",
+    )
+    gamemodule_common.configure_install_dir(
+        server,
+        ask,
+        dir,
+        prompt="Where would you like to install the Space Station 14 server:",
+    )
+    gamemodule_common.configure_resolved_download_source(
+        server,
+        ask,
+        version=version,
+        url=url,
+        download_name=download_name,
+        resolve_download=resolve_download,
+        prompt="Direct archive URL for the Space Station 14 server:",
+        default_name="ss14-server.zip",
+    )
+    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    return gamemodule_common.finalize_configure(server)
 
 
 def install(server):

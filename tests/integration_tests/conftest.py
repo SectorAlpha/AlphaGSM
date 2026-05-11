@@ -56,6 +56,13 @@ def require_command(name):
         pytest.fail(f"Required command not available: {name}")
 
 
+def require_command_or_skip(name, reason=None):
+    """Skip if an optional host command is not available."""
+
+    if shutil.which(name) is None:
+        pytest.skip(reason or f"Required command not available: {name}")
+
+
 def require_proton():
     """Fail if neither Wine nor Proton-GE is available on the host system.
 

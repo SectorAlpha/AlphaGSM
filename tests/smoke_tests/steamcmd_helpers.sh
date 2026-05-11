@@ -44,6 +44,17 @@ require_proton() {
   fi
 }
 
+# require_command_or_skip COMMAND [MESSAGE]
+# Skip this smoke test gracefully if an optional host command is missing.
+require_command_or_skip() {
+  local command_name="$1"
+  local message="${2:-Required command not found: $command_name — skipping smoke test (CI)}"
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "$message" >&2
+    exit 0
+  fi
+}
+
 # run_create_or_skip_disabled SERVER_NAME create MODULE_NAME
 # Runs "alphagsm create" and exits 0 if the module is currently disabled.
 # Call this instead of plain run_alphagsm for the create step so that servers

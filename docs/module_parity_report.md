@@ -198,7 +198,7 @@
 | soulmask | - | active | no | yes | status |
 | squad44server | - | active | no | yes | status |
 | squadserver | - | disabled | no | no | status |
-| ss14server | - | disabled | no | no | status |
+| ss14server | - | active | no | yes | status |
 | starbound | - | disabled | no | no | status |
 | starruptureserver | - | disabled | no | no | status |
 | stationeersserver | - | disabled | no | no | status |
