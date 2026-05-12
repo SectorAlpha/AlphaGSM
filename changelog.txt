@@ -8,7 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-11
-- Server support: fix shared archive installs so direct-root archives keep their top-level files, normalize executable bits even on cached installs, and re-enable `ss14server`'s manifest-backed download path while documenting and guarding its host `dotnet` prerequisite in smoke/integration coverage.
+- Server support: fix shared archive installs so direct-root archives keep their top-level files, normalize executable bits even on cached installs, and re-enable `ss14server`'s manifest-backed download path while documenting its host `dotnet` prerequisite; CI now installs `.NET 10` for the SS14 smoke/integration paths so GitHub Actions runs the server instead of skipping it for a missing runtime.
 
 2026-05-02
 - CI: make `chivalryserver` pass the configured `Port=` value into the `UDKGameServer-Linux` launch URL instead of always using the engine default, so integration now probes the port the server was actually asked to bind.

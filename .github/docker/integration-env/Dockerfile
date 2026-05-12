@@ -76,6 +76,18 @@ RUN wget -q -O /usr/share/keyrings/adoptium.asc \
  && apt-get install -y --no-install-recommends temurin-25-jdk \
  && rm -rf /var/lib/apt/lists/*
 
+# Install the .NET 10 runtime — required by SS14's Linux apphost
+# (Robust.Server).  Baking it into the integration image keeps it available
+# under the non-root gsmuser account used by the integration-test job.
+RUN wget -q \
+       https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+       -O /tmp/packages-microsoft-prod.deb \
+ && dpkg -i /tmp/packages-microsoft-prod.deb \
+ && rm -f /tmp/packages-microsoft-prod.deb \
+ && apt-get update -qq \
+ && apt-get install -y --no-install-recommends dotnet-runtime-10.0 \
+ && rm -rf /var/lib/apt/lists/*
+
 # Put the Wine prefix at a fixed, HOME-agnostic path.  GitHub Actions sets HOME
 # to /github/home or /root depending on the container user; using /opt/wine
 # avoids any ambiguity.  Integration-test jobs inherit WINEPREFIX from this ENV

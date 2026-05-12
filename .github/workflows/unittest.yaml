@@ -217,6 +217,15 @@ jobs:
           # lib32*   — 32-bit Steam runtime (Source engine servers: TF2, CS:GO, …)
           # p7zip    — server archives distributed as .7z
           sudo apt-get install -y screen lib32gcc-s1 lib32stdc++6 p7zip-full
+      - name: Install .NET 10 runtime for SS14 smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_ss14server.sh')
+        run: |
+          wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+            -O /tmp/packages-microsoft-prod.deb
+          sudo dpkg -i /tmp/packages-microsoft-prod.deb
+          rm -f /tmp/packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dotnet-runtime-10.0
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
