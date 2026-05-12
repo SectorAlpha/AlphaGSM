@@ -57,7 +57,7 @@ def test_ss14server_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )
 
