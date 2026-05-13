@@ -14,6 +14,8 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_info_protocol,
+    wait_for_a2s_ready,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -63,6 +65,12 @@ def test_ss14server_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        a2s_info = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        assert a2s_info.get("players") == 0, (
+            f"Expected 0 players once SS14 A2S is ready: {a2s_info!r}"
+        )
+        wait_for_a2s_ready("127.0.0.1", port, START_TIMEOUT, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
