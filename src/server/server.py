@@ -96,7 +96,12 @@ def _iter_http_query_hosts(preferred_host):
     candidates = [preferred_host]
     if preferred_host == "127.0.0.1":
         candidates.append("localhost")
+        candidates.append("::1")
     elif preferred_host == "localhost":
+        candidates.append("127.0.0.1")
+        candidates.append("::1")
+    elif preferred_host == "::1":
+        candidates.append("localhost")
         candidates.append("127.0.0.1")
 
     if preferred_host in ("127.0.0.1", "localhost"):
@@ -123,7 +128,7 @@ def _query_http_json_candidates(query_utils, host, port, path, timeout=10.0):
         try:
             payload = query_utils.http_json(candidate_host, port, path, timeout=timeout)
         except query_utils.QueryError as exc:
-            errors.append(str(exc))
+            errors.append("{}: {}".format(candidate_host, exc))
             continue
         if not isinstance(payload, MappingABC):
             raise query_utils.QueryError(
@@ -134,7 +139,7 @@ def _query_http_json_candidates(query_utils, host, port, path, timeout=10.0):
         return candidate_host, dict(payload)
 
     if errors:
-        raise query_utils.QueryError(errors[-1])
+        raise query_utils.QueryError("; ".join(errors))
     raise query_utils.QueryError(
         "HTTP JSON query failed for {}:{}{}".format(host, port, path)
     )
