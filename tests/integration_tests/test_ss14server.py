@@ -1,5 +1,7 @@
 """Integration test for ss14server."""
 
+from utils.valve_server import detect_query_host
+
 import pytest
 
 from conftest import (
@@ -15,9 +17,7 @@ from conftest import (
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
     wait_for_info_protocol,
-    wait_for_a2s_ready,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 
 pytestmark = [
@@ -66,11 +66,10 @@ def test_ss14server_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        a2s_info = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
-        assert a2s_info.get("players") == 0, (
-            f"Expected 0 players once SS14 A2S is ready: {a2s_info!r}"
+        robust_info = wait_for_info_protocol(env, server_name, "robust_status", START_TIMEOUT)
+        assert robust_info.get("players") == 0, (
+            f"Expected 0 players once SS14 status API is ready: {robust_info!r}"
         )
-        wait_for_a2s_ready("127.0.0.1", port, START_TIMEOUT, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -81,15 +80,15 @@ def test_ss14server_lifecycle(tmp_path):
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "Players     : 0" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "robust_status", (
+            f"Expected robust_status protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"
@@ -99,4 +98,4 @@ def test_ss14server_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_tcp_closed(detect_query_host(), port, STOP_TIMEOUT)

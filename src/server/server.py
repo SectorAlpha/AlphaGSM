@@ -88,6 +88,81 @@ def _get_hibernating_console_info_hook(module):
     return _get_module_hook(module, "get_hibernating_console_info")
 
 
+def _iter_http_query_hosts(preferred_host):
+    """Yield HTTP query host candidates, preferring the module-specified host."""
+
+    seen = set()
+    preferred_host = str(preferred_host)
+    candidates = [preferred_host]
+    if preferred_host == "127.0.0.1":
+        candidates.append("localhost")
+    elif preferred_host == "localhost":
+        candidates.append("127.0.0.1")
+
+    if preferred_host in ("127.0.0.1", "localhost"):
+        try:
+            from utils.valve_server import detect_query_host
+
+            candidates.append(detect_query_host(default=preferred_host))
+        except Exception:
+            pass
+
+    for candidate in candidates:
+        candidate = str(candidate)
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        yield candidate
+
+
+def _query_http_json_candidates(query_utils, host, port, path, timeout=10.0):
+    """Query an HTTP JSON endpoint across local host candidates."""
+
+    errors = []
+    for candidate_host in _iter_http_query_hosts(host):
+        try:
+            payload = query_utils.http_json(candidate_host, port, path, timeout=timeout)
+        except query_utils.QueryError as exc:
+            errors.append(str(exc))
+            continue
+        if not isinstance(payload, MappingABC):
+            raise query_utils.QueryError(
+                "HTTP JSON query failed for {}:{}{}: endpoint returned a non-object JSON payload".format(
+                    candidate_host, port, path
+                )
+            )
+        return candidate_host, dict(payload)
+
+    if errors:
+        raise query_utils.QueryError(errors[-1])
+    raise query_utils.QueryError(
+        "HTTP JSON query failed for {}:{}{}".format(host, port, path)
+    )
+
+
+def _query_robust_status_payload(query_utils, host, port):
+    """Return merged RobustToolbox status and info payloads."""
+
+    used_host, status_payload = _query_http_json_candidates(
+        query_utils, host, port, "/status"
+    )
+    merged = dict(status_payload)
+    try:
+        _, info_payload = _query_http_json_candidates(
+            query_utils, used_host, port, "/info"
+        )
+    except query_utils.QueryError:
+        info_payload = {}
+
+    description = info_payload.get("desc")
+    if description not in (None, ""):
+        merged["description"] = description
+    for key in ("connect_address", "auth", "build", "privacy_policy"):
+        if key in info_payload:
+            merged[key] = info_payload[key]
+    return used_host, merged
+
+
 def _get_module_hook(module, hook_name):
     """Return a callable hook from a module or its shared MODULE namespace."""
 
@@ -891,6 +966,25 @@ class Server(object):
                 port = self.data["port"]
                 protocol = "tcp"
 
+        if protocol == "robust_status":
+            try:
+                _, status_payload = _query_http_json_candidates(
+                    query_utils, host, port, "/status"
+                )
+                print(
+                    "Server is responding (Robust status API on port {port}): "
+                    "{name!r}  players={players}".format(
+                        port=port,
+                        name=status_payload.get("name", ""),
+                        players=status_payload.get("players", "?"),
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
         if protocol == "quake":
             try:
                 qinfo = query_utils.quake_status(host, port, timeout=10.0)
@@ -1111,6 +1205,41 @@ class Server(object):
                 # Default heuristic: fall through to TCP
                 host = "127.0.0.1"
                 port = self.data["port"]
+
+        if protocol == "robust_status":
+            try:
+                _, result = _query_robust_status_payload(query_utils, host, port)
+                if as_json:
+                    print(json.dumps({"protocol": "robust_status", "port": port, **result}))
+                    return
+
+                lines = [
+                    "Server info (Robust status API on port {}):".format(port),
+                    "  Name        : {}".format(result.get("name", "")),
+                    "  Players     : {}".format(result.get("players", "?")),
+                ]
+                description = result.get("description")
+                if description not in (None, ""):
+                    lines.append("  Description : {}".format(description))
+                connect_address = result.get("connect_address")
+                if connect_address not in (None, ""):
+                    lines.append("  Connect     : {}".format(connect_address))
+                auth_mode = result.get("auth", {}).get("mode")
+                if auth_mode not in (None, ""):
+                    lines.append("  Auth        : {}".format(auth_mode))
+                build = result.get("build", {})
+                version = ""
+                if isinstance(build, MappingABC):
+                    version = build.get("version") or build.get("engine_version") or ""
+                if version:
+                    lines.append("  Version     : {}".format(version))
+                tags = result.get("tags")
+                if detailed and isinstance(tags, list) and tags:
+                    lines.append("  Tags        : {}".format(", ".join(str(tag) for tag in tags)))
+                print("\n".join(lines))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "quake":
             try:

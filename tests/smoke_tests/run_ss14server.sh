@@ -80,7 +80,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
-wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" robust_status "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

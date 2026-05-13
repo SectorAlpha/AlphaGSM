@@ -124,6 +124,18 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """Return the SS14 Robust status API address."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "robust_status")
+
+
+def get_info_address(server):
+    """Return the SS14 Robust status info address."""
+
+    return get_query_address(server)
+
+
 def do_stop(server, j):
     """Stop Space Station 14 using the standard shell interrupt."""
 
