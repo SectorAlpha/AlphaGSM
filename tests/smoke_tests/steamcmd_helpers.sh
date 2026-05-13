@@ -137,7 +137,7 @@ wait_for_ready() {
   local pattern="${3:-ready|started|listening|Done}"
   local deadline=$((SECONDS + timeout_seconds))
   while (( SECONDS < deadline )); do
-    if [[ -f "$log_path" ]] && grep -Eq "$pattern" "$log_path"; then
+    if [[ -f "$log_path" ]] && grep -Eiq "$pattern" "$log_path"; then
       return 0
     fi
     sleep 2
@@ -171,7 +171,7 @@ wait_for_glob_ready() {
     shopt -u nullglob
     if (( ${#matches[@]} > 0 )); then
       local log_path="${matches[0]}"
-      if [[ -f "$log_path" ]] && grep -Eq "$pattern" "$log_path"; then
+      if [[ -f "$log_path" ]] && grep -Eiq "$pattern" "$log_path"; then
         return 0
       fi
     fi
