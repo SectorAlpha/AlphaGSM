@@ -10,6 +10,7 @@ high-level milestones.
 2026-05-13
 - Server support: make `ss14server` sync `server_config.toml` and query/info through the server's `robust_status` HTTP endpoint so smoke and integration now pass when the host `dotnet` runtime is available.
 - CI: make the shared smoke readiness grep case-insensitive and fix `wait_for_info_protocol()` so `info --json` protocol checks stop false-skipping servers that already report the expected protocol.
+- CI: install Proton-GE in smoke batches that include `sonsoftheforestserver` so the Linux smoke runner can launch the Windows dedicated server instead of failing before startup.
 
 2026-05-11
 - Server support: fix shared archive installs so direct-root archives keep their top-level files, normalize executable bits even on cached installs, and re-enable `ss14server`'s manifest-backed download path while documenting its host `dotnet` prerequisite; CI now installs `.NET 10` for the SS14 smoke/integration paths so GitHub Actions runs the server instead of skipping it for a missing runtime.

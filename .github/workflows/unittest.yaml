@@ -226,6 +226,10 @@ jobs:
           rm -f /tmp/packages-microsoft-prod.deb
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends dotnet-runtime-10.0
+      - name: Install Proton-GE for Sons Of The Forest smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_sonsoftheforestserver.sh')
+        run: |
+          bash scripts/install_proton.sh proton
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
