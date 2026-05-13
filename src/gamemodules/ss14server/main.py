@@ -1,5 +1,6 @@
 """Space Station 14 dedicated server lifecycle helpers."""
 
+import json
 import os
 
 import screen
@@ -24,6 +25,7 @@ command_args = gamemodule_common.build_setup_version_download_command_args(
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port",)
 
 
 def resolve_download(version=None):
@@ -67,10 +69,11 @@ def configure(
 ):
     """Collect and store configuration values for a Space Station 14 server."""
 
+    gamemodule_common.set_server_defaults(server, {"configfile": "server_config.toml"})
     gamemodule_common.ensure_backup_config(
         server,
-        backupfiles=["data", "config.toml"],
-        targets=["data", "config.toml"],
+        backupfiles=["data", "server_config.toml"],
+        targets=["data", "server_config.toml"],
     )
     gamemodule_common.configure_port(
         server,
@@ -99,6 +102,72 @@ def configure(
     return gamemodule_common.finalize_configure(server)
 
 
+def sync_server_config(server):
+    """Write a managed SS14 server_config.toml from datastore values."""
+
+    port = int(server.data.get("port", 1212))
+    config_path = os.path.join(
+        server.data["dir"],
+        server.data.get("configfile", "server_config.toml"),
+    )
+    config_dir = os.path.dirname(config_path)
+    if config_dir:
+        os.makedirs(config_dir, exist_ok=True)
+
+    lines = [
+        "[log]",
+        'path = "logs"',
+        'format = "log_%(date)s-%(time)s.txt"',
+        "level = 1",
+        "enabled = false",
+        "",
+        "[net]",
+        "tickrate = 30",
+        "port = {}".format(port),
+        'bindto = "::,0.0.0.0"',
+        "max_connections = 256",
+        "",
+        "[status]",
+        "enabled = true",
+        "bind = {}".format(json.dumps("*:{}".format(port))),
+    ]
+
+    explicit_host = str(
+        server.data.get("publicip")
+        or server.data.get("externalip")
+        or server.data.get("hostip")
+        or server.data.get("bindaddress")
+        or ""
+    ).strip()
+    if explicit_host and explicit_host not in {"0.0.0.0", "::"}:
+        lines.append(
+            "connectaddress = {}".format(
+                json.dumps("udp://{}:{}".format(explicit_host, port))
+            )
+        )
+
+    lines.extend(
+        [
+            "",
+            "[game]",
+            "hostname = {}".format(json.dumps("AlphaGSM {}".format(server.name))),
+            "",
+            "[console]",
+            "loginlocal = true",
+            "",
+            "[hub]",
+            "advertise = false",
+            'tags = ""',
+            'server_url = ""',
+            'hub_urls = "https://hub.spacestation14.com/"',
+            "",
+        ]
+    )
+
+    with open(config_path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(lines))
+
+
 def install(server):
     """Download and install the Space Station 14 server archive."""
 
@@ -108,6 +177,7 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
     install_archive(server, detect_compression(server.data["download_name"]))
+    sync_server_config(server)
 
 
 def get_start_command(server):
