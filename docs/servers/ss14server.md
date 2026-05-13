@@ -47,6 +47,8 @@ Setup configures:
 - the game port (default 1212)
 - the install directory
 - downloads and extracts the server archive
+- writes the managed `server_config.toml`
+- enables the built-in HTTP status endpoint AlphaGSM uses for `query` and `info`
 - launches `Robust.Server`, which requires the host `.NET` runtime
 
 ## Useful Commands
@@ -71,7 +73,7 @@ alphagsm myss14serv backup
 
 ### Server Configuration
 
-- **Config files**: `config.toml`
+- **Config files**: `server_config.toml`
 - **Template**: See [server-templates/ss14server/](../server-templates/ss14server/) if available
 
 ### Maps and Mods

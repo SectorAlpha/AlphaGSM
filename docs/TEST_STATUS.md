@@ -220,7 +220,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
-| ss14server | Re-enabled: manifest-based SS14 downloads now install correctly, but lifecycle still requires a host-installed dotnet runtime; smoke/integration skip when `dotnet` is absent |
+| ss14server | Re-enabled: manifest-based SS14 downloads install correctly, AlphaGSM now syncs `server_config.toml`, and smoke/integration pass through `info --json` protocol `robust_status`; still requires a host-installed `dotnet` runtime |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Re-enabled: UE3 server D3D crash is mitigated with `LIBGL_ALWAYS_SOFTWARE=1`, `-log` now writes readiness to `*/Logs/Launch.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 1141370 |
