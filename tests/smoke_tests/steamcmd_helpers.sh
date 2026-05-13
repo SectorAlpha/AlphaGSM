@@ -211,11 +211,11 @@ wait_for_info_protocol() {
     set -e
     if [[ $last_rc -eq 0 ]] && EXPECTED_PROTOCOL="$expected_protocol" INFO_JSON_PAYLOAD="$last_output" "${PYTHON_BIN:-python3}" - <<'PY'
 import json
-  import os
+import os
 import sys
 
-  expected_protocol = os.environ["EXPECTED_PROTOCOL"]
-  payload = os.environ.get("INFO_JSON_PAYLOAD", "").strip()
+expected_protocol = os.environ["EXPECTED_PROTOCOL"]
+payload = os.environ.get("INFO_JSON_PAYLOAD", "").strip()
 
 try:
     data = json.loads(payload)
