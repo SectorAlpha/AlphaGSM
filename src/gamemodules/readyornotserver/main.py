@@ -153,7 +153,6 @@ def get_start_command(server):
     ]
     if IS_LINUX:
         cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
-        cmd = proton.prepend_env_assignments(cmd, LIBGL_ALWAYS_SOFTWARE="1")
     return cmd, server.data["dir"]
 
 

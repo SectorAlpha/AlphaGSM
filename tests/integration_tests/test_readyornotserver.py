@@ -61,6 +61,8 @@ def test_readyornotserver_lifecycle(tmp_path):
             log_path,
             ["listening on port", "Engine is initialized"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
 
         # status

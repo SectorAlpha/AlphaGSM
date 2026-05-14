@@ -138,7 +138,6 @@ high-level milestones.
 - Server support: make TF2 curated mod apply persist mod-state errors and expose broken apply state through `status` so failed reconciliations are operationally visible.
 - Module loading: treat package-backed canonical modules such as `teamfortress2` as first-class catalog and parity entries so one canonical module id still maps to one import surface.
 - Server support: sync readyornotserver queryport and maxplayers into ReadyOrNot/Config/ServerConfig.ini during setup, update, and set.
-- Server support: harden `readyornotserver` and `rs2server` headless Wine/Proton startup by forcing Mesa software rendering before launch, and refactor the reusable env-prefix helper into `utils.proton` so modules can share the same launch hardening pattern.
 
 2026-04-26
 - CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.

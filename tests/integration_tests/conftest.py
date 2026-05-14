@@ -430,11 +430,28 @@ def _dump_log(log_path, context="", max_lines=150):
         print(f"[diagnostic] Could not read log ({context}): {exc}")
 
 
+def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
+    """Print AlphaGSM-managed console diagnostics for *server_name*."""
+
+    for command_args in (
+        (server_name, "logs", "-n", str(lines)),
+        (server_name, "doctor"),
+    ):
+        try:
+            result = run_alphagsm(env, *command_args, timeout=120)
+        except subprocess.TimeoutExpired as exc:
+            print(
+                f"[diagnostic] alphagsm {' '.join(command_args)} timed out after {exc.timeout}s"
+            )
+            continue
+        log_command_result("alphagsm " + " ".join(command_args), result)
+
+
 # ---------------------------------------------------------------------------
 # Wait helpers
 # ---------------------------------------------------------------------------
 
-def wait_for_log_marker(log_path, markers, timeout_seconds):
+def wait_for_log_marker(log_path, markers, timeout_seconds, env=None, server_name=None):
     """Poll a log file until one of *markers* appears; return the log text.
 
     On timeout dumps the full log tail to captured stdout and raises a test
@@ -448,6 +465,8 @@ def wait_for_log_marker(log_path, markers, timeout_seconds):
                 return log_text
         time.sleep(2)
     _dump_log(log_path, context=f"looking for {markers!r}")
+    if env is not None and server_name is not None:
+        _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
         f"Log never showed readiness markers {markers!r} within {timeout_seconds}s: {log_path}"
     )
