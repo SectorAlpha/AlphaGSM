@@ -66,7 +66,9 @@ def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch
 
     cmd, cwd = readyornotserver.get_start_command(server)
 
-    assert cmd[0] == "ReadyOrNotServer.exe"
+    assert cmd[0] == "env"
+    assert "LIBGL_ALWAYS_SOFTWARE=1" in cmd
+    assert "ReadyOrNotServer.exe" in cmd
     assert "-Port=7777" in cmd
     assert "-QueryPort=27015" in cmd
     assert cwd == server.data["dir"]

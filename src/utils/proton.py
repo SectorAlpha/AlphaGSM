@@ -156,6 +156,22 @@ def wrap_command(command, wineprefix=None, prefer_proton=False):
     )
 
 
+def prepend_env_assignments(command, **env_vars):
+    """Return *command* with extra ``env`` assignments prepended."""
+
+    assignments = [
+        "%s=%s" % (key, value)
+        for key, value in env_vars.items()
+        if value is not None
+    ]
+    command = list(command)
+    if not assignments:
+        return command
+    if command and command[0] == "env":
+        return ["env"] + assignments + command[1:]
+    return ["env"] + assignments + command
+
+
 def _is_env_assignment(token):
     """Return whether *token* looks like an ``env`` variable assignment."""
 

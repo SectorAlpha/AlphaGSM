@@ -113,15 +113,8 @@ def get_start_command(server):
     # issues that crash UE3 combined client/server binaries under Wine.
     cmd = ["Subsistence.exe", map_url, "-log"]
     if IS_LINUX:
-        wine_cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
-        # Inject software-renderer env var after any existing env prefix so that
-        # Wine uses Mesa/llvmpipe instead of the GPU, preventing D3D SM3 shader
-        # compilation failures.
-        if wine_cmd and wine_cmd[0] == "env":
-            wine_cmd.insert(1, "LIBGL_ALWAYS_SOFTWARE=1")
-        else:
-            wine_cmd = ["env", "LIBGL_ALWAYS_SOFTWARE=1"] + wine_cmd
-        cmd = wine_cmd
+        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        cmd = proton.prepend_env_assignments(cmd, LIBGL_ALWAYS_SOFTWARE="1")
     return cmd, binaries_dir
 
 

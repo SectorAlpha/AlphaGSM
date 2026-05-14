@@ -133,6 +133,26 @@ def test_wrap_command_preserves_trailing_args(monkeypatch):
     assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe", "--port", "7000"]
 
 
+def test_prepend_env_assignments_wraps_plain_command():
+    result = proton_module.prepend_env_assignments(["server.exe"], LIBGL_ALWAYS_SOFTWARE="1")
+    assert result == ["env", "LIBGL_ALWAYS_SOFTWARE=1", "server.exe"]
+
+
+def test_prepend_env_assignments_inserts_before_existing_env_tokens():
+    result = proton_module.prepend_env_assignments(
+        ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"],
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    assert result == [
+        "env",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
+
+
 # ---------------------------------------------------------------------------
 # wrap_command – Proton paths (wine absent)
 # ---------------------------------------------------------------------------
