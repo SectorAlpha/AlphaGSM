@@ -145,7 +145,7 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == server.data["dir"]
 
 
-def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
+def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     observed = {}
 
@@ -176,7 +176,7 @@ def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
             "-unattended",
         ],
         "wineprefix": None,
-        "prefer_proton": True,
+        "prefer_proton": False,
     }
     assert cmd[:2] == ["proton", "run"]
     assert cwd == server.data["dir"]

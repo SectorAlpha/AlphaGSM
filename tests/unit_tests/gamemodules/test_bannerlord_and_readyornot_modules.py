@@ -78,7 +78,7 @@ def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch
     assert "-Port=7777" in cmd
     assert "-QueryPort=27015" in cmd
     assert cwd == server.data["dir"]
-    assert observed == {"wineprefix": None, "prefer_proton": True}
+    assert observed == {"wineprefix": None, "prefer_proton": False}
 
 
 def test_bannerlord_and_readyornot_update_downloads_and_optionally_restart(monkeypatch):

@@ -179,6 +179,18 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Rising Storm 2 server."
 
 
+def get_query_address(server):
+    """Rising Storm 2 uses Steam A2S on the dedicated query port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
 def get_start_command(server):
     """Build the command used to launch a Rising Storm 2 dedicated server."""
 
@@ -202,7 +214,6 @@ def get_start_command(server):
         cmd = proton.wrap_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
         )
     return cmd, server.data["dir"]
 

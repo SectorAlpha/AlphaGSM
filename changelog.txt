@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-13
+- Server support: restore `readyornotserver` and `rs2server` to the default Wine-first Linux wrapper path after CI showed Proton/Xalia headless crashes again, and make `rs2server` probe A2S on its dedicated `queryport` instead of falling back to the gameplay-port TCP check.
 - Server support: make `ets2server` expose its dedicated `queryport` as the module-owned A2S query/info endpoint so `info --json`, `query`, and integration readiness stop falling back to the default TCP probe on the gameplay port.
 - CI: treat bare SteamCMD `state is 0x202 after update job` installs for `bmdmserver` and `squad44server` as the same known transient flake already handled for other app IDs, so integration retries and skip classification stop failing those batches on repeated depot reconfiguration noise.
 - Server support: make `ss14server` sync `server_config.toml` and query/info through the server's `robust_status` HTTP endpoint so smoke and integration now pass when the host `dotnet` runtime is available.

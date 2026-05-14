@@ -129,7 +129,7 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == server.data["dir"]
 
 
-def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
+def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     observed = {}
 
@@ -161,10 +161,19 @@ def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
             "-log",
         ],
         "wineprefix": None,
-        "prefer_proton": True,
+        "prefer_proton": False,
     }
     assert cmd[:2] == ["proton", "run"]
     assert cwd == server.data["dir"]
+
+
+def test_query_and_info_address_use_queryport(monkeypatch):
+    server = DummyServer("rs2")
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.6")
+
+    assert mod.get_query_address(server) == ("10.0.0.6", 27016, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.6", 27016, "a2s")
 
 
 def test_setting_schema_exposes_rs2_launch_formats():

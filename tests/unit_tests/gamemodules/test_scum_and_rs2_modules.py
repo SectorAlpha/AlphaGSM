@@ -78,7 +78,7 @@ def test_rs2server_get_start_command_builds_expected_args(tmp_path, monkeypatch)
     assert cmd[0] == "Binaries/Win64/VNGame.exe"
     assert "-Port=7777" in cmd
     assert cwd == server.data["dir"]
-    assert observed == {"wineprefix": None, "prefer_proton": True}
+    assert observed == {"wineprefix": None, "prefer_proton": False}
 
 
 def test_scum_and_rs2_updates_download_and_optionally_restart(monkeypatch):
