@@ -33,6 +33,14 @@ RUN wget -q \
  && dpkg -i /tmp/libssl1.0.0.deb \
  && rm -f /tmp/libssl1.0.0.deb
 
+# ATLAS still links against libprotobuf.so.10, so keep the legacy protobuf
+# runtime available in the shared native SteamCMD Linux family image too.
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb" \
+       -O /tmp/libprotobuf10.deb \
+ && dpkg -i /tmp/libprotobuf10.deb \
+ && rm -f /tmp/libprotobuf10.deb
+
 WORKDIR /srv/server
 
 CMD ["/bin/bash"]

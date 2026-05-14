@@ -5,7 +5,7 @@ This guide covers the `atlasserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libprotobuf10` compatibility package)
 - Python packages from `requirements.txt`
 
 ## Quick Start

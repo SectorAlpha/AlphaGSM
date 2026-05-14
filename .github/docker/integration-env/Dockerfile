@@ -65,6 +65,15 @@ RUN wget -q \
  && dpkg -i /tmp/libssl1.0.0.deb \
  && rm -f /tmp/libssl1.0.0.deb
 
+# libprotobuf10 — ATLAS still links against libprotobuf.so.10, which Ubuntu
+# 24.04 no longer ships.  Pull the Bionic compatibility package directly so the
+# process-backed CI image can still launch the native Linux server binary.
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb" \
+       -O /tmp/libprotobuf10.deb \
+ && dpkg -i /tmp/libprotobuf10.deb \
+ && rm -f /tmp/libprotobuf10.deb
+
 # Install Temurin 25 (Java 25) — required by the current Minecraft server
 # bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 24.04's
 # openjdk-21-jdk-headless only handles class files up to version 65 (Java 21).
