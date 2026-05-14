@@ -354,6 +354,7 @@ def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds)
         "alphagsm " + " ".join((server_name, "info", "--json")),
         last_result,
     )
+    _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
         f"info --json never returned protocol {expected_protocol!r} within {timeout_seconds}s: "
         f"last payload={last_data!r}"
