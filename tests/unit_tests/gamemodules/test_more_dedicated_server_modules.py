@@ -27,7 +27,13 @@ class DummyServer:
 
 
 def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(askaserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(askaserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("aska")
     exe = tmp_path / "AskaServer.exe"
     exe.write_text("")
@@ -64,6 +70,7 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
         "4",
     ]
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_askaserver_runtime_requirements_use_wine_proton_family(tmp_path, monkeypatch):

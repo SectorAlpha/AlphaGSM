@@ -72,7 +72,13 @@ def test_mythofempires_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 
 def test_sunkenland_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(sunkenlandserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(sunkenlandserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("sunken")
     exe = tmp_path / "Sunkenland-DedicatedServer.exe"
     exe.write_text("")
@@ -91,6 +97,7 @@ def test_sunkenland_get_start_command_builds_expected_args(tmp_path, monkeypatch
     assert cmd[0] == "Sunkenland-DedicatedServer.exe"
     assert "-servername" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_craftopia_mythofempires_and_sunkenland_update_downloads_and_optionally_restart(monkeypatch):

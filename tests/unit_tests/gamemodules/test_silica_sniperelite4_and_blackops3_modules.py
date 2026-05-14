@@ -48,7 +48,13 @@ def test_silica_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(sniperelite4server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(sniperelite4server.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("se4")
     exe = tmp_path / "SniperElite4_DedicatedServer.exe"
     exe.write_text("")
@@ -67,6 +73,7 @@ def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert cmd[0] == "SniperElite4_DedicatedServer.exe"
     assert "-queryport" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_blackops3_get_start_command_builds_expected_args(tmp_path, monkeypatch):

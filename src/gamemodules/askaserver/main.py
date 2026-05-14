@@ -122,7 +122,9 @@ def get_start_command(server):
         command.extend(["-Password", server.data["password"]])
     if IS_LINUX:
         command = proton.wrap_command(
-            command, wineprefix=server.data.get("wineprefix")
+            command,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
         )
     return (command, server.data["dir"])
 
