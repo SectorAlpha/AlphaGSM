@@ -15,6 +15,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   p7zip-full                          — .7z archive support
 #   unzip bzip2                         — archive formats used by some servers
 #   libatomic1                          — GCC atomics used by UE4 / Unity servers
+#   libc++1                             — LLVM C++ runtime used by newer native
+#                                         Linux dedicated servers such as Pavlov VR
 #   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
 #   libpulse0                           — PulseAudio client; Unity loads it dynamically
 #                                         even in -batchmode, crashes if not present
@@ -34,7 +36,7 @@ RUN dpkg --add-architecture i386 \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
         unzip bzip2 \
-        libatomic1 libsdl2-2.0-0 \
+         libatomic1 libc++1 libsdl2-2.0-0 \
         libpulse0 \
         libcurl3t64-gnutls \
        curl jq python3 python3-pip python3-venv wget ca-certificates \

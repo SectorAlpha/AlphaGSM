@@ -12,6 +12,7 @@ RUN dpkg --add-architecture i386 \
         lib32stdc++6 \
         libcurl3t64-gnutls \
         libatomic1 \
+      libc++1 \
         libsdl2-2.0-0 \
         libpulse0 \
        python3 \
