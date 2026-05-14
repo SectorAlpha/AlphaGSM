@@ -26,7 +26,7 @@ class DummyServer:
 
 
 def test_icarusserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(icarusserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(icarusserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("icarus")
     exe = tmp_path / "IcarusServer.exe"
     exe.write_text("")
@@ -49,7 +49,7 @@ def test_icarusserver_get_start_command_builds_expected_args(tmp_path, monkeypat
 
 
 def test_ror2server_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(ror2server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(ror2server.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("ror2")
     exe = tmp_path / "Risk of Rain 2.exe"
     exe.write_text("")

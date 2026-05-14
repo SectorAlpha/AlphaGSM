@@ -123,7 +123,11 @@ def get_start_command(server):
         *dynamic_args,
     ]
     if IS_LINUX:
-        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        cmd = proton.wrap_command(
+            cmd,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
     unranked_dir = os.path.join(server.data["dir"], "UnrankedServer")
     return cmd, unranked_dir
 

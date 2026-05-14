@@ -29,7 +29,7 @@ class DummyServer:
 
 
 def test_battlecryoffreedom_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(battlecryoffreedomserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(battlecryoffreedomserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("bcof")
     exe = tmp_path / "BCoF.exe"
     exe.write_text("")
@@ -55,7 +55,7 @@ def test_deadmatter_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_lifeisfeudal_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(lifeisfeudalserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(lifeisfeudalserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("lif")
     exe = tmp_path / "ddctd_cm_yo_server.exe"
     exe.write_text("")

@@ -77,7 +77,7 @@ def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypat
 
 
 def test_blackops3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(blackops3server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(blackops3server.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("bo3")
     exe = tmp_path / "BlackOps3Server.exe"
     exe.write_text("")

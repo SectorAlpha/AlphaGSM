@@ -46,7 +46,7 @@ def test_primalcarnage_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 
 def test_returntomoria_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(returntomoriaserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(returntomoriaserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("moria")
     exe = tmp_path / "MoriaServer.exe"
     exe.write_text("")
@@ -98,7 +98,7 @@ def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkey
 
 
 def test_theforest_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(theforestserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(theforestserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("forest")
     exe = tmp_path / "TheForestDedicatedServer.exe"
     exe.write_text("")

@@ -27,7 +27,7 @@ class DummyServer:
 
 
 def test_motortown_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(motortownserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(motortownserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("mt")
     exe_dir = tmp_path / "MotorTown" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -51,7 +51,7 @@ def test_motortown_get_start_command_builds_expected_args(tmp_path, monkeypatch)
 
 
 def test_noonesurvived_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(noonesurvivedserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(noonesurvivedserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("nos")
     exe = tmp_path / "WRSHServer.exe"
     exe.write_text("")

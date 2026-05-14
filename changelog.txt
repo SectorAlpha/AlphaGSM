@@ -143,6 +143,7 @@ high-level milestones.
 - Server support: make the current Windows-on-Linux Proton-required integration modules (`darkandlightserver`, `empyrionserver`, `heatserver`, `primalcarnageextinctionserver`, `remnantsserver`, `sonsoftheforestserver`, `subsistenceserver`, and `terratechworldsserver`) explicitly prefer Proton on Linux instead of silently falling back to plain Wine.
 - Server support: make `astroneerserver`, `ducksideserver`, `groundbranchserver`, and `reignofkingsserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
 - Server support: make `askaserver`, `fearthenightserver`, `saleblazersserver`, `sniperelite4server`, and `sunkenlandserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
+- Server support: make the remaining Proton-required Windows-on-Linux integration modules explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
 
 2026-04-26
 - CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.

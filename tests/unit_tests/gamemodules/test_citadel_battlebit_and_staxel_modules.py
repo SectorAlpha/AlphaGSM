@@ -71,7 +71,7 @@ def test_battlebit_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_staxel_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(staxelserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(staxelserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("staxel")
     exe_dir = tmp_path / "bin"
     exe_dir.mkdir()

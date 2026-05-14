@@ -47,7 +47,7 @@ def test_craftopia_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_mythofempires_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(mythofempiresserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(mythofempiresserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("moe")
     exe_dir = tmp_path / "MOE" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)

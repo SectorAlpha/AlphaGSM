@@ -70,7 +70,7 @@ def test_stnserver_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_notdserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(notdserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(notdserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("notd")
     exe_dir = tmp_path / "LF" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)

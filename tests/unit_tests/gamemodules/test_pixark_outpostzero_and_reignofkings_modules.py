@@ -27,7 +27,7 @@ class DummyServer:
 
 
 def test_pixark_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(pixarkserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(pixarkserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("pixark")
     exe = tmp_path / "PixARKServer.exe"
     exe.write_text("")
@@ -50,7 +50,7 @@ def test_pixark_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
 
 def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(outpostzeroserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(outpostzeroserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("opz")
     exe = tmp_path / "OutpostZeroServer.exe"
     exe.write_text("")

@@ -48,7 +48,7 @@ def test_exfil_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_hellletloose_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(hellletlooseserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(hellletlooseserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("hll")
     exe = tmp_path / "HLLServer.exe"
     exe.write_text("")
