@@ -53,6 +53,8 @@ def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypat
 
     assert cmd[0] == "DNL/Binaries/Win64/DNLServer.exe"
     assert "DNL_ALL?listen?SessionName=AlphaGSM dnl" in cmd[1]
+    assert "-log" in cmd
+    assert "-unattended" in cmd
     assert cwd == server.data["dir"]
 
 

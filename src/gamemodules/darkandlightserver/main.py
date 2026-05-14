@@ -122,7 +122,12 @@ def get_start_command(server):
             server.data["maxplayers"],
         )
     )
-    cmd = [server.data["exe_name"], map_arg]
+    cmd = [
+        server.data["exe_name"],
+        map_arg,
+        "-log",
+        "-unattended",
+    ]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,

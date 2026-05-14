@@ -127,7 +127,13 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["serverpassword"] = "test"
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "DNL/Binaries/Win64/DNLServer.exe",
+        "test?listen?SessionName=test?ServerPassword=test?ServerAdminPassword=test?Port=27015?QueryPort=27015?MaxPlayers=27015",
+        "-log",
+        "-unattended",
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
