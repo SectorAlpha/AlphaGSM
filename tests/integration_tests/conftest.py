@@ -473,7 +473,14 @@ def wait_for_log_marker(log_path, markers, timeout_seconds, env=None, server_nam
     )
 
 
-def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
+def wait_for_glob_log_marker(
+    log_dir,
+    glob_pattern,
+    markers,
+    timeout_seconds,
+    env=None,
+    server_name=None,
+):
     """Poll files matching glob_pattern in log_dir until a marker appears.
 
     On timeout dumps the tail of every matching log file found.
@@ -500,6 +507,8 @@ def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
             print(f"[diagnostic] No files matching {glob_pattern!r} in {log_dir}")
     else:
         print(f"[diagnostic] Log dir not found: {log_dir}")
+    if env is not None and server_name is not None:
+        _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
         f"Log never showed readiness markers {markers!r} within {timeout_seconds}s in {log_dir}"
     )

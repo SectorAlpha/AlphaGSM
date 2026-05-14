@@ -60,6 +60,8 @@ def test_saleblazersserver_lifecycle(tmp_path):
             log_path,
             ["Server started", "Listening", "listening on", "port", "online"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 

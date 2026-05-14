@@ -9,6 +9,7 @@ high-level milestones.
 
 2026-05-13
 - CI/runtime: add `libc++1` to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so native Linux servers such as `pvrserver` stop failing at launch on missing `libc++.so.1`.
+- CI: make the current log-waiting integration tests pass `env` and `server_name` into the shared log-marker helpers, and extend glob-based log waits with the same `alphagsm logs` plus `alphagsm doctor` timeout dumps already used by the info-protocol helper.
 - Server support: make `pcarserver` and `stnserver` advertise A2S on their gameplay port so `query`, `info`, and `info --json` stop falling back to the default TCP reachability probe while the server process is already running.
 - Server support: restore `readyornotserver` and `rs2server` to the default Wine-first Linux wrapper path after CI showed Proton/Xalia headless crashes again, and make `rs2server` probe A2S on its dedicated `queryport` instead of falling back to the gameplay-port TCP check.
 - Server support: make `ets2server` expose its dedicated `queryport` as the module-owned A2S query/info endpoint so `info --json`, `query`, and integration readiness stop falling back to the default TCP probe on the gameplay port.

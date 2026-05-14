@@ -104,6 +104,75 @@ def test_wait_for_udp_open_retries_until_success(monkeypatch):
     assert len(attempts) == 2
 
 
+def test_wait_for_log_marker_dumps_runtime_logs_when_context_provided(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    timestamps = [0.0, 0.0, 10.0]
+
+    def _fake_time():
+        if timestamps:
+            return timestamps.pop(0)
+        return 10.0
+
+    monkeypatch.setattr(helpers.time, "time", _fake_time)
+    monkeypatch.setattr(helpers.time, "sleep", lambda seconds: None)
+
+    dumped_runtime = []
+    monkeypatch.setattr(
+        helpers,
+        "_dump_alphagsm_runtime_logs",
+        lambda env, server_name, lines=200: dumped_runtime.append((env, server_name, lines)),
+    )
+    monkeypatch.setattr(helpers, "_dump_log", lambda path, context=None: None)
+
+    missing_log = tmp_path / "missing.log"
+
+    with pytest.raises(pytest.fail.Exception, match="Log never showed readiness markers"):
+        helpers.wait_for_log_marker(
+            missing_log,
+            ["ready"],
+            5,
+            env={"ALPHAGSM_CONFIG_LOCATION": "dummy"},
+            server_name="ittestserver",
+        )
+
+    assert dumped_runtime == [({"ALPHAGSM_CONFIG_LOCATION": "dummy"}, "ittestserver", 200)]
+
+
+def test_wait_for_glob_log_marker_dumps_runtime_logs_when_context_provided(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    timestamps = [0.0, 0.0, 10.0]
+
+    def _fake_time():
+        if timestamps:
+            return timestamps.pop(0)
+        return 10.0
+
+    monkeypatch.setattr(helpers.time, "time", _fake_time)
+    monkeypatch.setattr(helpers.time, "sleep", lambda seconds: None)
+
+    dumped_runtime = []
+    monkeypatch.setattr(
+        helpers,
+        "_dump_alphagsm_runtime_logs",
+        lambda env, server_name, lines=200: dumped_runtime.append((env, server_name, lines)),
+    )
+    monkeypatch.setattr(helpers, "_dump_log", lambda path, context=None: None)
+
+    with pytest.raises(pytest.fail.Exception, match="Log never showed readiness markers"):
+        helpers.wait_for_glob_log_marker(
+            tmp_path,
+            "*.log",
+            ["ready"],
+            5,
+            env={"ALPHAGSM_CONFIG_LOCATION": "dummy"},
+            server_name="itglobserver",
+        )
+
+    assert dumped_runtime == [({"ALPHAGSM_CONFIG_LOCATION": "dummy"}, "itglobserver", 200)]
+
+
 def test_build_integration_tmp_path_uses_work_dir(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(tmp_path))

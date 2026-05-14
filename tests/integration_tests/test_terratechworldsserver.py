@@ -60,6 +60,8 @@ def test_terratechworldsserver_lifecycle(tmp_path):
             log_path,
             ["listening on port", "Engine is initialized", "Server started", "Listening"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 

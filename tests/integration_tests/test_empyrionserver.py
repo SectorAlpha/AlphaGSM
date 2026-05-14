@@ -60,6 +60,8 @@ def test_empyrionserver_lifecycle(tmp_path):
             log_path,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
