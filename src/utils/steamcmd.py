@@ -30,6 +30,7 @@ STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 STEAMCMD_RETRIES = 3
 STEAMCMD_RETRY_DELAY_SECONDS = 2
 STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS = 5
+_KNOWN_BARE_STATE_202_FLAKE_APP_IDS = frozenset({"232130", "418480"})
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -62,10 +63,24 @@ def _steamcmd_missing_manifest_flake(output, app_id):
     return missing_config in output and state_202 in output
 
 
+def _steamcmd_state_202_flake(output, app_id):
+    """Return whether SteamCMD reported a known transient state 0x202 flake."""
+
+    if app_id in (None, ""):
+        return False
+
+    app_id = str(app_id)
+    state_202 = "Error! App '{}' state is 0x202 after update job.".format(app_id)
+    if state_202 not in output:
+        return False
+
+    return _steamcmd_missing_manifest_flake(output, app_id) or app_id in _KNOWN_BARE_STATE_202_FLAKE_APP_IDS
+
+
 def _steamcmd_retry_delay(output, app_id):
     """Return the retry delay for known transient SteamCMD states."""
 
-    if _steamcmd_missing_manifest_flake(output, app_id):
+    if _steamcmd_state_202_flake(output, app_id):
         return STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
     return STEAMCMD_RETRY_DELAY_SECONDS
 

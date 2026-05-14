@@ -221,10 +221,31 @@ def test_skip_for_known_steamcmd_issue_skips_only_for_missing_configuration_0x20
         helpers.skip_for_known_steamcmd_issue(result, app_id=317670)
 
 
+def test_skip_for_known_steamcmd_issue_skips_for_known_bare_state_202_flake_app():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout="Error! App '232130' state is 0x202 after update job.",
+        stderr="",
+    )
+
+    with pytest.raises(pytest.skip.Exception, match="SteamCMD flake skip"):
+        helpers.skip_for_known_steamcmd_issue(result, app_id=232130)
+
+
 def test_skip_for_known_steamcmd_issue_does_not_skip_other_steamcmd_failures():
     helpers = importlib.import_module("tests.integration_tests.conftest")
     result = types.SimpleNamespace(
         stdout="Error! Timed out waiting for download chunks.",
+        stderr="",
+    )
+
+    helpers.skip_for_known_steamcmd_issue(result, app_id=317670)
+
+
+def test_skip_for_known_steamcmd_issue_does_not_skip_unknown_bare_state_202_app():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout="Error! App '317670' state is 0x202 after update job.",
         stderr="",
     )
 

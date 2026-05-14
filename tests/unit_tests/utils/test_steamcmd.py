@@ -135,6 +135,30 @@ def test_download_raises_when_steamcmd_never_reports_success(monkeypatch):
         raise AssertionError("Expected steamcmd download failure to raise CalledProcessError")
 
 
+def test_steamcmd_state_202_flake_matches_known_bare_flake_app_ids():
+    assert steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '232130' state is 0x202 after update job.",
+        232130,
+    )
+
+
+def test_steamcmd_retry_delay_uses_reconfig_delay_for_known_bare_state_202_flakes():
+    assert (
+        steamcmd_module._steamcmd_retry_delay(
+            "Error! App '418480' state is 0x202 after update job.",
+            418480,
+        )
+        == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    )
+
+
+def test_steamcmd_state_202_flake_does_not_match_unknown_bare_state_202_app_ids():
+    assert not steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '317670' state is 0x202 after update job.",
+        317670,
+    )
+
+
 def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch):
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
     monkeypatch.setattr(steamcmd_module.sp, "run", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not run")))

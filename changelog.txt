@@ -144,6 +144,7 @@ high-level milestones.
 - Server support: make `astroneerserver`, `ducksideserver`, `groundbranchserver`, and `reignofkingsserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
 - Server support: make `askaserver`, `fearthenightserver`, `saleblazersserver`, `sniperelite4server`, and `sunkenlandserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
 - Server support: make the remaining Proton-required Windows-on-Linux integration modules explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
+- CI: treat the repeated bare SteamCMD `state is 0x202` setup failures seen for `kf2server` and `rs2server` as the same known transient flake class as the existing missing-configuration `0x202` state, including the longer retry delay and integration skip helper.
 
 2026-04-26
 - CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.

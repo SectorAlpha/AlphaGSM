@@ -12,7 +12,7 @@ import tempfile
 import time
 
 import pytest
-from utils.steamcmd import _steamcmd_missing_manifest_flake
+from utils.steamcmd import _steamcmd_state_202_flake
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
@@ -739,11 +739,11 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
     """
     combined = "\n".join(part for part in (result.stdout, result.stderr) if part)
 
-    if _steamcmd_missing_manifest_flake(combined, app_id):
+    if _steamcmd_state_202_flake(combined, app_id):
         extra = f" (app {app_id})" if app_id else ""
         snippet = combined[:300].replace("\n", " | ")
         pytest.skip(
-            f"SteamCMD flake skip — repeated Missing configuration/state 0x202 during setup{extra}: {snippet}"
+            f"SteamCMD flake skip — repeated known state 0x202 during setup{extra}: {snippet}"
         )
 
     # Only markers that make it impossible to run the test in CI at all
