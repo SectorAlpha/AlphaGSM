@@ -77,6 +77,18 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Project CARS server."
 
 
+def get_query_address(server):
+    """Project CARS exposes A2S on the configured gameplay port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S endpoint used by the info command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s")
+
+
 def get_start_command(server):
     """Build the command used to launch a Project CARS dedicated server."""
 
