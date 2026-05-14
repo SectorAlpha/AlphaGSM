@@ -11,7 +11,7 @@ high-level milestones.
 - Server support: make `ss14server` sync `server_config.toml` and query/info through the server's `robust_status` HTTP endpoint so smoke and integration now pass when the host `dotnet` runtime is available.
 - CI: make the shared smoke readiness grep case-insensitive and fix `wait_for_info_protocol()` so `info --json` protocol checks stop false-skipping servers that already report the expected protocol.
 - CI: install Proton-GE in smoke batches that include `sonsoftheforestserver` so the Linux smoke runner can launch the Windows dedicated server instead of failing before startup.
-- Server support: restore `empyrionserver`, `remnantsserver`, `saleblazersserver`, and `terratechworldsserver` to the default Wine-first Linux wrapper path after CI showed Proton-specific headless startup crashes in their current launch contracts.
+- Server support: restore `empyrionserver`, `heatserver`, `remnantsserver`, `saleblazersserver`, and `terratechworldsserver` to the default Wine-first Linux wrapper path after CI showed Proton-specific headless startup crashes in their current launch contracts.
 - Server support: wire `chivalryserver`'s dedicated `queryport` through setup, launch arguments, and runtime port claims so `info --json` and `query` probe the server's actual A2S endpoint instead of falling back to the game port.
 - Server support: launch `darkandlightserver` with `-log -unattended` so its expected `DNL/Saved/Logs/DNL.log` readiness path exists under Proton in CI instead of timing out on a missing log file.
 
