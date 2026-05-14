@@ -78,13 +78,14 @@ def test_chivalry_get_start_command_builds_expected_args(tmp_path):
             "exe_name": "Binaries/Linux/UDKGameServer-Linux",
             "startmap": "AOCTO-Battlegrounds_V3_P",
             "port": 7777,
+            "queryport": 27015,
         }
     )
 
     cmd, cwd = chivalryserver.get_start_command(server)
 
     assert cmd[0] == "./Binaries/Linux/UDKGameServer-Linux"
-    assert "AOCTO-Battlegrounds_V3_P?Port=7777?steamsockets" in cmd
+    assert "AOCTO-Battlegrounds_V3_P?Port=7777?QueryPort=27015?steamsockets" in cmd
     assert cwd == server.data["dir"]
 
 

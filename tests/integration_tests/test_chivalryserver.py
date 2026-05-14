@@ -7,6 +7,7 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -39,6 +40,7 @@ def test_chivalryserver_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    query_port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "chivalryserver")
@@ -47,6 +49,8 @@ def test_chivalryserver_lifecycle(tmp_path):
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+
+    run_and_assert_ok(env, server_name, "set", "queryport", str(query_port))
 
     # start
     run_and_assert_ok(env, server_name, "start")

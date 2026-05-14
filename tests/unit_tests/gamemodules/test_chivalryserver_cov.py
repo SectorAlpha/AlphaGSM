@@ -39,6 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['queryport'] == 27015
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -113,10 +114,11 @@ def test_get_start_command(tmp_path):
     exe_path.write_text("")
     server.data["startmap"] = "test"
     server.data["port"] = 7777
+    server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "./Binaries/Linux/UDKGameServer-Linux",
-        "test?Port=7777?steamsockets",
+        "test?Port=7777?QueryPort=27015?steamsockets",
         "-SEEKFREELOADINGSERVER",
     ]
     assert cwd == server.data["dir"]
@@ -176,6 +178,12 @@ def test_checkvalue_port():
     server = DummyServer()
     result = mod.checkvalue(server, ("port",), "12345")
     assert result == 12345
+
+
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "27015")
+    assert result == 27015
 
 
 def test_checkvalue_startmap():

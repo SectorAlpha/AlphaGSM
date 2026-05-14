@@ -34,7 +34,13 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Linux/UDKG
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-    gamemodule_common.set_server_defaults(server, {"startmap": "AOCTO-Battlegrounds_V3_P"})
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "startmap": "AOCTO-Battlegrounds_V3_P",
+            "queryport": 27015,
+        },
+    )
     gamemodule_common.ensure_backup_config(
         server,
         backupfiles=["UDKGame", "Binaries"],
@@ -83,9 +89,10 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    launch_url = "%s?Port=%s?steamsockets" % (
+    launch_url = "%s?Port=%s?QueryPort=%s?steamsockets" % (
         server.data["startmap"],
         server.data["port"],
+        server.data["queryport"],
     )
     return (
         [
@@ -126,18 +133,18 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
+        int_keys=("port", "queryport"),
         str_keys=("startmap", "exe_name", "dir"),
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}),
         stdin_open=True,
 )
