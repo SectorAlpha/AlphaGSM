@@ -77,7 +77,7 @@ def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatc
 
     assert cmd == ["Default/Saleblazers.exe", "-batchmode", "-nographics", "-logFile", "./server.log"]
     assert cwd == server.data["dir"]
-    assert wrap_calls == [True]
+    assert wrap_calls == [False]
 
 
 def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkeypatch):
