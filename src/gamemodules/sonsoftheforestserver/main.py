@@ -1,7 +1,6 @@
 """Sons Of The Forest dedicated server lifecycle helpers."""
 
 import os
-
 import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -107,7 +106,11 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     cmd = [exe_name, "-batchmode", "-nographics", "-log"]
     if IS_LINUX:
-        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        cmd = proton.wrap_command(
+            cmd,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
     return cmd, server.data["dir"]
 
 

@@ -25,7 +25,11 @@ class DummyServer:
 
 
 def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(darkandlightserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        darkandlightserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("dnl")
     exe_dir = tmp_path / "DNL" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)

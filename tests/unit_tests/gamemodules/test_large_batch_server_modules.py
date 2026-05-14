@@ -87,7 +87,11 @@ def test_medievalengineers_get_start_command_builds_expected_args(tmp_path, monk
 
 
 def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(sonsoftheforestserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        sonsoftheforestserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("sotf")
     exe = tmp_path / "SonsOfTheForestDS.exe"
     exe.write_text("")

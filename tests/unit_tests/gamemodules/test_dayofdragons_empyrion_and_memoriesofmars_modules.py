@@ -40,7 +40,11 @@ def test_dayofdragons_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_empyrion_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(empyrionserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        empyrionserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("emp")
     exe = tmp_path / "EmpyrionDedicated.exe"
     exe.write_text("")

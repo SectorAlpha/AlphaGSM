@@ -1,7 +1,6 @@
 """Subsistence dedicated server lifecycle helpers."""
 
 import os
-
 import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -113,7 +112,11 @@ def get_start_command(server):
     # issues that crash UE3 combined client/server binaries under Wine.
     cmd = ["Subsistence.exe", map_url, "-log"]
     if IS_LINUX:
-        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        cmd = proton.wrap_command(
+            cmd,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
         cmd = proton.prepend_env_assignments(cmd, LIBGL_ALWAYS_SOFTWARE="1")
     return cmd, binaries_dir
 

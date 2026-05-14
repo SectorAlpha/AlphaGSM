@@ -1,7 +1,6 @@
 """Dark and Light dedicated server lifecycle helpers."""
 
 import os
-
 import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -125,8 +124,14 @@ def get_start_command(server):
     )
     cmd = [server.data["exe_name"], map_arg]
     if IS_LINUX:
-        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        cmd = proton.wrap_command(
+            cmd,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
     return cmd, server.data["dir"]
+
+
 def do_stop(server, j):
     """Stop Dark and Light using an interrupt signal."""
 

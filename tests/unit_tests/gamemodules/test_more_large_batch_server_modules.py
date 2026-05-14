@@ -29,7 +29,11 @@ class DummyServer:
 
 
 def test_primalcarnage_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(primalcarnageextinctionserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        primalcarnageextinctionserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("pce")
     exe = tmp_path / "PCEdedicated.exe"
     exe.write_text("")
@@ -70,7 +74,11 @@ def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatc
 
 
 def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(terratechworldsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        terratechworldsserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("ttw")
     exe = tmp_path / "TT2Server.exe"
     exe.write_text("")

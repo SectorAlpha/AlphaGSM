@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.empyrionserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.empyrionserver as mod
     from server import ServerError

@@ -140,6 +140,7 @@ high-level milestones.
 - Server support: sync readyornotserver queryport and maxplayers into ReadyOrNot/Config/ServerConfig.ini during setup, update, and set.
 - Runtime: sanitize `TMPDIR`, `TMP`, and `TEMP` in the shared Wine/Proton wrapper so Windows-binary server launches do not inherit inaccessible temp paths, and remove the duplicated Medieval Engineers-only workaround in favor of the shared wrapper.
 - Server support: make `readyornotserver` and `rs2server` explicitly prefer Proton on Linux so their process-runtime launches use the runtime the integration tests already require instead of falling back to plain Wine.
+- Server support: make the current Windows-on-Linux Proton-required integration modules (`darkandlightserver`, `empyrionserver`, `heatserver`, `primalcarnageextinctionserver`, `remnantsserver`, `sonsoftheforestserver`, `subsistenceserver`, and `terratechworldsserver`) explicitly prefer Proton on Linux instead of silently falling back to plain Wine.
 
 2026-04-26
 - CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.

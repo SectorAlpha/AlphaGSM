@@ -90,7 +90,11 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     cmd = [server.data["exe_name"], "server", "-log"]
     if IS_LINUX:
-        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        cmd = proton.wrap_command(
+            cmd,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
     return cmd, server.data["dir"]
 def do_stop(server, j):
     """Stop Primal Carnage using an interrupt signal."""

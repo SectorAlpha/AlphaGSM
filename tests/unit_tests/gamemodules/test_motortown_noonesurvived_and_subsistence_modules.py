@@ -73,7 +73,11 @@ def test_noonesurvived_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 
 def test_subsistence_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(subsistenceserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        subsistenceserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     monkeypatch.setattr(subsistenceserver, "IS_LINUX", False)
     server = DummyServer("subs")
     exe_dir = tmp_path / "Binaries" / "Win32"
