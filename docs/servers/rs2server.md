@@ -73,9 +73,10 @@ alphagsm myrs2serve backup
 - **SteamCMD App ID**: `418480`
 
 AlphaGSM launches the server with `-log`, tracks readiness through
-`ROGame/Logs/Launch.log`, and waits for `info --json` to report protocol
-`a2s` before smoke and integration treat the server as query-ready. The
-current smoke and integration checks allow up to 20 minutes for this
+`ROGame/Logs/Launch.log` reaching the current map-bringup markers such as
+`Bringing up level for play took`, and waits for `info --json` to report
+protocol `a2s` before smoke and integration treat the server as query-ready.
+The current smoke and integration checks allow up to 20 minutes for this
 Wine/Proton bring-up because RS2 has historically stalled beyond the old
 600 second startup window in CI.
 

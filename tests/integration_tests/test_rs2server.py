@@ -61,7 +61,7 @@ def test_rs2server_lifecycle(tmp_path):
         log_path = install_dir / "ROGame" / "Logs" / "Launch.log"
         wait_for_log_marker(
             log_path,
-            ["listening on port", "Engine is initialized", "Success - server ready"],
+            ["Bringing up level for play took", "Bringing World ", "Success - server ready"],
             START_TIMEOUT,
             env=env,
             server_name=server_name,
