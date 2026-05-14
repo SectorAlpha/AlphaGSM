@@ -70,6 +70,13 @@ Some server types need one extra thing:
   ```bash
   sudo apt install p7zip-full
   ```
+- A few older native Linux servers still need legacy compatibility packages
+  that Ubuntu 24.04 no longer ships in its normal repos. `atlasserver`
+  currently needs `libprotobuf.so.10`, which you can install with:
+  ```bash
+  wget http://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb
+  sudo apt install ./libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb
+  ```
 
 ## Fast Start
 

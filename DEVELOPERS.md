@@ -367,6 +367,14 @@ Container image scaffolding currently lives under:
 - [docker/service-console/Dockerfile](docker/service-console/Dockerfile)
 - [docker/wine-proton/Dockerfile](docker/wine-proton/Dockerfile)
 - [docker/wine-proton/entrypoint.sh](docker/wine-proton/entrypoint.sh)
+
+The shared Ubuntu 24.04 runtime images intentionally carry a small set of
+legacy compatibility packages for older dedicated-server binaries that still
+link against removed distro libraries, currently including `libssl1.1`,
+`libssl1.0.0`, and `libprotobuf10`. When one of these packages becomes a real
+host requirement for process-backed users, document the matching install step
+in [README.md](README.md) and the affected server guide under `docs/servers/`.
+
 Lifecycle model:
  [tests/integration_tests](tests/integration_tests)
  ALPHAGSM_RUN_INTEGRATION=1 pytest tests/integration_tests
