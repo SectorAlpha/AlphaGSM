@@ -140,6 +140,14 @@ def test_steamcmd_state_202_flake_matches_known_bare_flake_app_ids():
         "Error! App '232130' state is 0x202 after update job.",
         232130,
     )
+    assert steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '346680' state is 0x202 after update job.",
+        346680,
+    )
+    assert steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '746200' state is 0x202 after update job.",
+        746200,
+    )
 
 
 def test_steamcmd_retry_delay_uses_reconfig_delay_for_known_bare_state_202_flakes():
@@ -147,6 +155,13 @@ def test_steamcmd_retry_delay_uses_reconfig_delay_for_known_bare_state_202_flake
         steamcmd_module._steamcmd_retry_delay(
             "Error! App '418480' state is 0x202 after update job.",
             418480,
+        )
+        == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    )
+    assert (
+        steamcmd_module._steamcmd_retry_delay(
+            "Error! App '746200' state is 0x202 after update job.",
+            746200,
         )
         == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
     )

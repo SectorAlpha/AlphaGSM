@@ -30,7 +30,7 @@ STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 STEAMCMD_RETRIES = 3
 STEAMCMD_RETRY_DELAY_SECONDS = 2
 STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS = 5
-_KNOWN_BARE_STATE_202_FLAKE_APP_IDS = frozenset({"232130", "418480"})
+_KNOWN_BARE_STATE_202_FLAKE_APP_IDS = frozenset({"232130", "346680", "418480", "746200"})
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
