@@ -124,6 +124,15 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_query_and_info_address_use_queryport(monkeypatch):
+    server = DummyServer("chiv")
+    server.data["queryport"] = "27015"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.9")
+
+    assert mod.get_query_address(server) == ("10.0.0.9", 27015, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.9", 27015, "a2s")
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

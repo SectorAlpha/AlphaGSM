@@ -83,6 +83,18 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Chivalry server."
 
 
+def get_query_address(server):
+    """Chivalry exposes Steam A2S on the dedicated query port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
 def get_start_command(server):
     """Build the command used to launch a Chivalry dedicated server."""
 
