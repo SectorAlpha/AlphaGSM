@@ -26,6 +26,7 @@ HEADLESS_ENV = {
     "DISPLAY": "",
     "WINEDLLOVERRIDES": "winex11.drv=",
 }
+SANITIZED_TEMP_VARS = ("TMPDIR", "TMP", "TEMP")
 
 # ---------------------------------------------------------------------------
 # Proton-GE search directories (checked in order; first match wins)
@@ -123,32 +124,32 @@ def wrap_command(command, wineprefix=None, prefer_proton=False):
     if prefer_proton and proton is not None:
         compat_dir = wineprefix or os.path.expanduser("~/.proton")
         os.makedirs(compat_dir, exist_ok=True)
-        return [
+        return prepend_env_unsets([
             "env",
             *_HEADLESS,
             f"STEAM_COMPAT_DATA_PATH={compat_dir}",
             "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
             proton,
             "run",
-        ] + list(command)
+        ] + list(command), *SANITIZED_TEMP_VARS)
 
     if wine is not None:
         env_vars = list(_HEADLESS)
         if wineprefix:
             env_vars.append(f"WINEPREFIX={wineprefix}")
-        return ["env"] + env_vars + [wine] + list(command)
+        return prepend_env_unsets(["env"] + env_vars + [wine] + list(command), *SANITIZED_TEMP_VARS)
 
     if proton is not None:
         compat_dir = wineprefix or os.path.expanduser("~/.proton")
         os.makedirs(compat_dir, exist_ok=True)
-        return [
+        return prepend_env_unsets([
             "env",
             *_HEADLESS,
             f"STEAM_COMPAT_DATA_PATH={compat_dir}",
             "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
             proton,
             "run",
-        ] + list(command)
+        ] + list(command), *SANITIZED_TEMP_VARS)
 
     raise RuntimeError(
         "Neither Wine nor Proton-GE is available on this system.  "
@@ -172,6 +173,21 @@ def prepend_env_assignments(command, **env_vars):
     return ["env"] + assignments + command
 
 
+def prepend_env_unsets(command, *env_names):
+    """Return *command* with leading ``env -u`` unsets inserted."""
+
+    command = list(command)
+    names = [name for name in env_names if name]
+    if not names:
+        return command
+    unset_tokens = []
+    for name in names:
+        unset_tokens.extend(["-u", name])
+    if command and command[0] == "env":
+        return ["env"] + unset_tokens + command[1:]
+    return ["env"] + unset_tokens + command
+
+
 def _is_env_assignment(token):
     """Return whether *token* looks like an ``env`` variable assignment."""
 
@@ -190,6 +206,8 @@ def unwrap_runtime_command(command):
     index = 0
     if command[index] == "env":
         index += 1
+        while index + 1 < len(command) and command[index] == "-u":
+            index += 2
         while index < len(command) and _is_env_assignment(command[index]):
             index += 1
     if index >= len(command):

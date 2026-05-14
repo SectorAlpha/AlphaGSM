@@ -93,19 +93,6 @@ def get_start_command(server):
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
-        # ME uses Wine Mono whose Path.GetTempPath() reads the Unix TMPDIR env
-        # var first.  If TMPDIR points to a path on an external mount, Wine's
-        # drive mapping turns it into an inaccessible Windows path (e.g.
-        # Q:\media\...\useme).  When TMPDIR is unset, Mono falls through to
-        # InternalGetTempPath() → Wine's GetTempPath() → reads C:\users\...\Temp
-        # which is always accessible.  Also unset TMP/TEMP so Wine can control
-        # them without conflicting overrides.
-        cmd = [
-            "env",
-            "-u", "TMPDIR",
-            "-u", "TMP",
-            "-u", "TEMP",
-        ] + cmd
     return cmd, server.data["dir"]
 def do_stop(server, j):
     """Stop Medieval Engineers using an interrupt signal."""
