@@ -27,7 +27,13 @@ class DummyServer:
 
 
 def test_duckside_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(ducksideserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(ducksideserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("duck")
     exe = tmp_path / "DucksideServer.exe"
     exe.write_text("")
@@ -44,6 +50,7 @@ def test_duckside_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
     assert cmd == ["DucksideServer.exe", "-log", "-port", "7777", "-queryport", "27015"]
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_vein_get_start_command_builds_expected_args(tmp_path):

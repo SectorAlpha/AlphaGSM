@@ -108,7 +108,11 @@ def get_start_command(server):
             "-log",
         ]
     if IS_LINUX:
-        cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        cmd = proton.wrap_command(
+            cmd,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
     return cmd, server.data["dir"]
 
 
