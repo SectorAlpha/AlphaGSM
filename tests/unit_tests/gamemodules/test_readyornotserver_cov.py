@@ -145,6 +145,43 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    observed = {}
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        observed["command"] = list(cmd)
+        observed["wineprefix"] = wineprefix
+        observed["prefer_proton"] = prefer_proton
+        return ["proton", "run", *cmd]
+
+    monkeypatch.setattr(mod.proton, "wrap_command", fake_wrap_command)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ReadyOrNotServer.exe"
+    (tmp_path / "ReadyOrNotServer.exe").write_text("")
+    server.data["maxplayers"] = 16
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert observed == {
+        "command": [
+            "ReadyOrNotServer.exe",
+            "-Port=27015",
+            "-QueryPort=27016",
+            "-MaxPlayers=16",
+            "-log",
+            "-unattended",
+        ],
+        "wineprefix": None,
+        "prefer_proton": True,
+    }
+    assert cmd[:2] == ["proton", "run"]
+    assert cwd == server.data["dir"]
+
+
 def test_setting_schema_exposes_readyornot_launch_formats():
     assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
