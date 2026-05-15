@@ -82,6 +82,18 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Primal Carnage server."
 
 
+def get_query_address(server):
+    """Primal Carnage uses Steam A2S on the dedicated query port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Primal Carnage server."""
 
@@ -95,6 +107,8 @@ def get_start_command(server):
             wineprefix=server.data.get("wineprefix"),
         )
     return cmd, server.data["dir"]
+
+
 def do_stop(server, j):
     """Stop Primal Carnage using an interrupt signal."""
 

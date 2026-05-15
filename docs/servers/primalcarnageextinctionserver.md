@@ -73,8 +73,9 @@ alphagsm myprimalca backup
 - **SteamCMD App ID**: `336400`
 
 AlphaGSM launches the dedicated server with `server -log`, tracks readiness
-through `PrimalCarnageGame/Logs/Launch.log`, and waits for `info --json` to
-report protocol `a2s` before treating the server as query-ready.
+through `PrimalCarnageGame/Logs/Launch.log`, and queries A2S on the dedicated
+`queryport` via the resolved local query host before treating the server as
+query-ready.
 
 ### Server Configuration
 
