@@ -128,6 +128,13 @@ Generated parity reporting also works at the canonical-module level:
 - [docs/module_parity_report.md](docs/module_parity_report.md)
 - [docs/module_parity_report.json](docs/module_parity_report.json)
 
+Generated server-support tracking is derived from the checked-in integration
+status report:
+
+- [scripts/generate_game_server_support_tracker.py](scripts/generate_game_server_support_tracker.py)
+- [docs/TEST_STATUS.md](docs/TEST_STATUS.md)
+- [docs/game-server-support.md](docs/game-server-support.md)
+
 ### Required module attributes
 
 | Attribute | Notes |

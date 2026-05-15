@@ -3,6 +3,9 @@
 This page is a quick checkbox view of the current AlphaGSM server-support
 snapshot.
 
+This file is auto-generated from [TEST_STATUS.md](TEST_STATUS.md).
+Do not edit it by hand; re-run `python3 scripts/generate_game_server_support_tracker.py`.
+
 Source of truth:
 
 - [Integration Test Status](TEST_STATUS.md)

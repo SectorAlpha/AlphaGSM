@@ -64,6 +64,9 @@ jobs:
       - name: Check canonical module parity report
         run: |
           python3 scripts/generate_module_parity_report.py --check
+      - name: Check canonical game server support tracker
+        run: |
+          python3 scripts/generate_game_server_support_tracker.py --check
       - name: AlphaGSM Unit Tests
         run: pytest tests/unit_tests -n auto
 
