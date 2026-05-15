@@ -9,6 +9,7 @@ high-level milestones.
 
 2026-05-13
 - CI/runtime: add `libc++1` to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so native Linux servers such as `pvrserver` stop failing at launch on missing `libc++.so.1`.
+- CI/runtime: add `libc++-dev` to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `pvrserver` can load the unversioned `libc++.so` name it still requests at startup.
 - CI/runtime: add Ubuntu Bionic's `libprotobuf10` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `libprotobuf.so.10` again.
 - CI/runtime: add Ubuntu Bionic's `libidn11` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `libidn.so.11` again.
 - Server support: restore `darkandlightserver`, `sonsoftheforestserver`, and `primalcarnageextinctionserver` to the default Wine-first Linux wrapper path after CI showed Proton/Xalia headless startup failures on those modules.

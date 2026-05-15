@@ -5,7 +5,7 @@ This guide covers the `pvrserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libc++1`)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libc++1`, `libc++-dev`)
 - Python packages from `requirements.txt`
 
 ## Quick Start

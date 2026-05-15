@@ -80,6 +80,12 @@ Some server types need one extra thing:
   sudo apt install ./libidn11_1.33-2.2ubuntu2_amd64.deb
   sudo apt install ./libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb
   ```
+- Some native Linux servers also expect the unversioned LLVM C++ loader name
+  `libc++.so`. `pvrserver` currently needs Ubuntu's `libc++-dev` package in
+  addition to `libc++1`:
+  ```bash
+  sudo apt install libc++1 libc++-dev
+  ```
 
 ## Fast Start
 
