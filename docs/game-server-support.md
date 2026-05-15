@@ -1,464 +1,261 @@
-# Game Server Support
+# Game Server Support Tracker
 
-This file tracks AlphaGSM game server support across the current module set and a broader
-self-hosted dedicated-server landscape.
+This page is a quick checkbox view of the current AlphaGSM server-support
+snapshot.
 
-Snapshot date:
+Source of truth:
 
-- 2026-03-21
+- [Integration Test Status](TEST_STATUS.md)
 
-## Coverage Summary
+Notes:
 
-AlphaGSM currently has the strongest coverage in these areas:
+- This page is meant for quick scanning.
+- Detailed reasons, caveats, and per-server notes stay in [TEST_STATUS.md](TEST_STATUS.md).
+- Non-server test-harness entries such as `archive_backed_installs` are intentionally omitted here.
 
-- Valve GoldSrc / Source family
-- Minecraft Java and Bedrock family
-- Terraria variants
-- Arma family and several Arma scenario/mod variants
-- A growing standalone dedicated-server set
-- Several additional servers beyond the original baseline support set
+## Legend
 
-Representative implemented modules include:
+- `[x]` currently supported in the latest published test-status snapshot
+- `[ ]` not currently supported yet, or still waiting on prerequisites / validation
 
-- `minecraft.vanilla`
-- `minecraft.custom`
-- `minecraft.bungeecord`
-- `minecraft.paper`
-- `minecraft.velocity`
-- `minecraft.waterfall`
-- `minecraft.bedrock`
-- `terraria.vanilla`
-- `terraria.tshock`
-- `factorio`
-- `projectzomboid`
-- `satisfactory`
-- `rust`
-- `sevendaystodie`
-- `ark`
-- `unturned`
-- `palworld`
-- `valheim`
-- `starbound`
-- `stationeersserver`
-- `staxelserver`
-- `soulmask`
-- `stnserver`
-- `notdserver`
-- `seserver`
-- `vrserver`
-- `abfserver`
-- `accserver`
-- `acserver`
-- `askaserver`
-- `astroneerserver`
-- `atlasserver`
-- `bannerlordserver`
-- `battlebitserver`
-- `citadelserver`
-- `groundbranchserver`
-- `pathoftitansserver`
-- `pcarserver`
-- `pcars2server`
-- `readyornotserver`
-- `ts3server`
-- `mumbleserver`
-- `qlserver`
-- `ut99server`
-- `ut2k4server`
-- `q2server`
-- `q3server`
-- `q4server`
-- `qwserver`
-- `rtcwserver`
-- `jk2server`
-- `etlegacyserver`
-- `arma2coserver`
-- `arma3server`
-- `arma3altislifeserver`
-- `arma3desolationreduxserver`
-- `arma3epochserver`
-- `arma3exileserver`
-- `arma3headlessserver`
-- `arma3wastelandserver`
-- `armarserver`
-- `conanexiles`
-- `enshrouded`
-- `icarusserver`
-- `nightingale`
-- `smallandserver`
-- `subsistenceserver`
-- `outpostzeroserver`
-- `pixarkserver`
-- `motortownserver`
-- `stormworksserver`
-- `ets2server`
-- `atsserver`
-- `craftopiaserver`
-- `mythofempiresserver`
-- `sunkenlandserver`
-- `counterstrike2`
-- `cs2server`
-- `risingstorm2vietnam`
-- `rs2server`
-- `scumserver`
-- `chivalryserver`
-- `ror2server`
-- `dayzserver`
-- `squadserver`
-- `squad44server`
-- `inssserver`
-- `necserver`
-- `scpslserver`
-- `solserver`
-- `wurmserver`
-- `xntserver`
-- `wreckfestserver`
-- `teamfortress2`
-- `counterstrikeglobaloffensive`
-- `cssserver`
-- `csserver`
-- `csczserver`
-- `hl2dmserver`
-- `hldmserver`
-- `hldmsserver`
-- `l4dserver`
-- `l4d2server`
-- `dodserver`
-- `dodsserver`
-- `gmodserver`
-- `nmrihserver`
-- `zpsserver`
-- `svenserver`
-- `tfcserver`
+## Supported Now
 
-## In Progress By Family
+- [x] acserver
+- [x] ahl2server
+- [x] armarserver
+- [x] avserver
+- [x] bb2server
+- [x] btlserver
+- [x] btserver
+- [x] bdserver
+- [x] bmdmserver
+- [x] ccserver
+- [x] colserver
+- [x] counterstrike2
+- [x] csczserver
+- [x] csserver
+- [x] cssserver
+- [x] craftopiaserver
+- [x] dayofdragonsserver
+- [x] dmcserver
+- [x] dodserver
+- [x] dodsserver
+- [x] doiserver
+- [x] exfilserver
+- [x] fofserver
+- [x] frozenflameserver
+- [x] gmodserver
+- [x] goldeneyesourceserver
+- [x] hl2dmserver
+- [x] hldmserver
+- [x] hldmsserver
+- [x] kf2server
+- [x] l4dserver
+- [x] minecraft_paper
+- [x] minecraft_vanilla
+- [x] minecraft_velocity
+- [x] minecraft_waterfall
+- [x] memoriesofmarsserver
+- [x] mordserver
+- [x] necserver
+- [x] nmrihserver
+- [x] opforserver
+- [x] palworld
+- [x] projectzomboid
+- [x] pvkiiserver
+- [x] ricochetserver
+- [x] rimworldtogetherserver
+- [x] rust
+- [x] satisfactory
+- [x] silicaserver
+- [x] scpslserver
+- [x] smallandserver
+- [x] solserver
+- [x] squad44server
+- [x] squadserver
+- [x] stnserver
+- [x] svenserver
+- [x] terraria_vanilla
+- [x] tf2
+- [x] tfcserver
+- [x] thefrontserver
+- [x] unturned
+- [x] ut99server
+- [x] valheim
+- [x] wfserver
+- [x] wurmserver
+- [x] xntserver
+- [x] battlecryoffreedomserver
+- [x] ckserver
+- [x] enshrouded
+- [x] groundbranchserver
+- [x] mythofempiresserver
+- [x] reignofdwarfserver
+- [x] sunkenlandserver
+- [x] theforestserver
+- [x] askaserver
+- [x] blackops3server
+- [x] pixarkserver
+- [x] remnantsserver
+- [x] readyornotserver
+- [x] insserver
+- [x] inssserver
+- [x] ts3server
 
-### Minecraft Family
+## Not Currently Supported
 
-Implemented:
+- [ ] bsserver
+- [ ] dysserver
+- [ ] accserver
+- [ ] alienarenaserver
+- [ ] argoserver
+- [ ] ark
+- [ ] arma2coserver
+- [ ] arma3altislifeserver
+- [ ] arma3desolationreduxserver
+- [ ] arma3epochserver
+- [ ] arma3exileserver
+- [ ] arma3headlessserver
+- [ ] arma3server
+- [ ] arma3wastelandserver
+- [ ] atsserver
+- [ ] atlasserver
+- [ ] bannerlordserver
+- [ ] battlebitserver
+- [ ] bf1942server
+- [ ] bfvserver
+- [ ] boserver
+- [ ] bobserver
+- [ ] brokeprotocolserver
+- [ ] citadelserver
+- [ ] chivalryserver
+- [ ] conanexiles
+- [ ] counterstrikeglobaloffensive
+- [ ] cryofallserver
+- [ ] dabserver
+- [ ] deadpolyserver
+- [ ] deadmatterserver
+- [ ] dayzarma2epochserver
+- [ ] dayzserver
+- [ ] emserver
+- [ ] ets2server
+- [ ] foundryserver
+- [ ] hurtworldserver
+- [ ] hzserver
+- [ ] iosserver
+- [ ] jc2server
+- [ ] jc3server
+- [ ] jk2server
+- [ ] kfserver
+- [ ] l4d2server
+- [ ] lastoasisserver
+- [ ] longvinterserver
+- [ ] mw3server
+- [ ] ndserver
+- [ ] nightingale
+- [ ] ohdserver
+- [ ] police1013server
+- [ ] pcarserver
+- [ ] pvrserver
+- [ ] pcars2server
+- [ ] q3server
+- [ ] q4server
+- [ ] roserver
+- [ ] rwserver
+- [ ] sampserver
+- [ ] seserver
+- [ ] sevendaystodie
+- [ ] sfcserver
+- [ ] skyrimtogetherrebornserver
+- [ ] starbound
+- [ ] stationeersserver
+- [ ] tiserver
+- [ ] trackmaniaserver
+- [ ] warbandserver
+- [ ] veinserver
+- [ ] vrserver
+- [ ] wreckfestserver
+- [ ] zmrserver
+- [ ] zpsserver
 
-- `minecraft.vanilla`
-- `minecraft.custom`
-- `minecraft.bungeecord`
-- `minecraft.paper`
-- `minecraft.velocity`
-- `minecraft.waterfall`
+## Waiting On Prerequisites Or Validation
 
-Still missing from the currently targeted Minecraft family:
-
-- none in the currently targeted Minecraft batch
-
-### Terraria Family
-
-Implemented:
-
-- `terraria.vanilla`
-- `terraria.tshock`
-
-### Arma Family
-
-Implemented:
-
-- `arma2coserver`
-- `arma3server`
-- `arma3altislifeserver`
-- `arma3desolationreduxserver`
-- `arma3epochserver`
-- `arma3exileserver`
-- `arma3headlessserver`
-- `arma3wastelandserver`
-- `armarserver`
-
-### Survival And Sandbox Family
-
-Implemented:
-
-- `ark`
-- `arksurvivalascended`
-- `conanexiles`
-- `craftopiaserver`
-- `dayzserver`
-- `enshrouded`
-- `icarusserver`
-- `mythofempiresserver`
-- `nightingale`
-- `outpostzeroserver`
-- `palworld`
-- `pixarkserver`
-- `projectzomboid`
-- `ror2server`
-- `rust`
-- `scumserver`
-- `sevendaystodie`
-- `smallandserver`
-- `soulmask`
-- `stationeersserver`
-- `starbound`
-- `subsistenceserver`
-- `sunkenlandserver`
-- `unturned`
-- `valheim`
-- `wurmserver`
-
-### Tactical, Military, And Coop Shooters
-
-Implemented:
-
-- `bf1942server`
-- `bfvserver`
-- `chivalryserver`
-- `cod2server`
-- `cod4server`
-- `codserver`
-- `coduoserver`
-- `codwawserver`
-- `exfilserver`
-- `groundbranchserver`
-- `hellletlooseserver`
-- `inssserver`
-- `ohdserver`
-- `readyornotserver`
-- `risingstorm2vietnam`
-- `rs2server`
-- `scpslserver`
-- `sniperelite4server`
-- `squadserver`
-- `squad44server`
-
-### Classic FPS, Arena, And Legacy Engine Family
-
-Implemented:
-
-- `ahl2server`
-- `ahlserver`
-- `alienarenaserver`
-- `bb2server`
-- `bbserver`
-- `bdserver`
-- `bmdmserver`
-- `boserver`
-- `btserver`
-- `ccserver`
-- `csserver`
-- `cssserver`
-- `csczserver`
-- `dmcserver`
-- `dodserver`
-- `dodsserver`
-- `etlegacyserver`
-- `fofserver`
-- `gmodserver`
-- `goldeneyesourceserver`
-- `hl2dmserver`
-- `hldmserver`
-- `hldmsserver`
-- `insserver`
-- `iosserver`
-- `jk2server`
-- `l4dserver`
-- `l4d2server`
-- `ndserver`
-- `nmrihserver`
-- `nsserver`
-- `opforserver`
-- `q2server`
-- `q3server`
-- `q4server`
-- `qlserver`
-- `qwserver`
-- `ricochetserver`
-- `rtcwserver`
-- `sfcserver`
-- `svenserver`
-- `teamfortress2`
-- `tfcserver`
-- `tsserver`
-- `ut99server`
-- `ut2k4server`
-- `vsserver`
-- `zmrserver`
-- `zpsserver`
-
-### Standalone Dedicated And Provider-Style Extras
-
-Implemented:
-
-- `abfserver`
-- `accserver`
-- `acserver`
-- `astroneerserver`
-- `atlasserver`
-- `bannerlordserver`
-- `battlebitserver`
-- `brickadiaserver`
-- `brokeprotocolserver`
-- `counterstrike2`
-- `dayzarma2epochserver`
-- `factorio`
-- `foundryserver`
-- `gtafivemserver`
-- `hogwarpserver`
-- `interstellarriftserver`
-- `motortownserver`
-- `mumbleserver`
-- `mxbikesserver`
-- `pathoftitansserver`
-- `pcars2server`
-- `pcarserver`
-- `police1013server`
-- `redmserver`
-- `reignofdwarfserver`
-- `rimworldtogetherserver`
-- `seserver`
-- `silicaserver`
-- `skyrimtogetherrebornserver`
-- `ss14server`
-- `starruptureserver`
-- `staxelserver`
-- `stormworksserver`
-- `ts3server`
-- `vintagestoryserver`
-- `wreckfestserver`
-
-### Valve Family
-
-Implemented in AlphaGSM style:
-
-- Action Half-Life
-- Base Defense
-- BrainBread
-- BrainBread 2
-- Black Mesa: Deathmatch
-- Blade Symphony
-- Codename CURE
-- Counter-Strike
-- Counter-Strike: Condition Zero
-- Counter-Strike: Global Offensive
-- Counter-Strike: Source
-- Day of Defeat
-- Day of Defeat: Source
-- Day of Infamy
-- Deathmatch Classic
-- Double Action: Boogaloo
-- Dystopia
-- Empires Mod
-- Fistful of Frags
-- Garry's Mod
-- Half-Life 2: Deathmatch
-- Half-Life: Deathmatch
-- Half-Life Deathmatch: Source
-- Insurgency
-- IOSoccer
-- Left 4 Dead
-- Left 4 Dead 2
-- Natural Selection
-- No More Room in Hell
-- Nuclear Dawn
-- Opposing Force
-- Pirates, Vikings, & Knights II
-- Ricochet
-- SourceForts Classic
-- Sven Co-op
-- Team Fortress 2
-- Team Fortress Classic
-- The Specialists
-- Vampire Slayer
-- Zombie Master: Reborn
-- Zombie Panic! Source
-
-## Missing Servers
-
-This section is intentionally blunt. These are notable gaps still not implemented as first-class AlphaGSM modules.
-
-### Missing Survival And Sandbox Servers
-
-- `Aloft`
-- `Bellwright`
-- `Once Human`
-- `Rooted`
-- `RuneScape Dragonwilds`
-- `Scrap Mechanic`
-
-### Missing Driving, Racing, And Vehicle Servers
-
-- `Assetto Corsa Evo`
-
-### Missing RPG, Action, And Misc Standalone Servers
-
-- `Hytale`
-- `Terraria Mobile`
-
-### Blocked Or Unclear Self-Hosted Cases
-
-These are not just "missing code". At the time of review they were blocked by one of:
-
-- no released first-party dedicated server binary
-- only managed or rented custom-server offerings
-- only community workarounds with no stable standalone server package
-- unclear or insufficient upstream documentation for honest AlphaGSM support
-
-Current examples:
-
-- `Bellwright`
-- `Once Human`
-- `RuneScape Dragonwilds`
-- `Scrap Mechanic`
-- `Hytale`
-- `Terraria Mobile`
-- `Dune Awakening`
-- `Light No Fire`
-- `Palworld Palfarm`
-
-Current review notes:
-
-- `Bellwright`: still no clear public first-party dedicated server package or stable self-hosting
-  documentation in the current parity review, so it remains blocked for honest implementation.
-- `Once Human`: as of 2025-06-19, the current server offering is still framed around rented custom
-  servers rather than a normal self-hosted dedicated server binary.
-- `RuneScape Dragonwilds`: official roadmap statements indicated Steam server binaries were planned
-  for a 0.11 release targeted around late March 2026, so this stayed blocked on 2026-03-22 because
-  the self-hosted package was not yet actually available to verify.
-- `Scrap Mechanic`: no clear first-party standalone dedicated server package was confirmed in the
-  current parity review; community tooling exists, but not a solid AlphaGSM-quality dedicated server
-  target.
-- `Hytale`: no trustworthy current official dedicated server distribution was confirmed in the
-  current parity review.
-- `Terraria Mobile`: cross-platform/mobile hosting remains unclear and is not treated as a separate
-  honest self-hosted target from the normal Terraria dedicated server flow.
-
-
-### Missing Utility Or Special Cases
-
-- `Project CARS 2` follow-up runtime validation is still thin
-- `Teeworlds` exists as a first pass but likely needs a non-Steam install path review
-
-## Implemented But Still Worth Deeper Runtime Validation
-
-These are already represented as AlphaGSM modules, but they still stand out as good candidates for stronger smoke or integration coverage:
-
-- `ror2server`
-- `pcars2server`
-- `risingstorm2vietnam`
-- `scumserver`
-- `craftopiaserver`
-- `mythofempiresserver`
-- `sunkenlandserver`
-- `nightingale`
-- `enshrouded`
-- `twserver` for Teeworlds-style parity review
-
-## Notes
-
-- This file is a practical support tracker, not a promise that every implemented module already has smoke and integration coverage.
-- Some implemented servers are still first-pass lifecycle wrappers and should be deepened later with real runtime validation.
-- Some titles from hosting-provider lists are not part of the baseline support list. They are still
-  useful AlphaGSM targets and worth tracking here.
-
-## Strategy
-
-AlphaGSM should continue to add missing servers in Python-native families:
-
-- keep per-game modules in `src/gamemodules/`
-- use subdirectories for games with multiple variants, like `minecraft/` and `terraria/`
-- move shared logic into reusable helpers instead of copying it into every module
-- add unit tests, smoke tests, and integration tests for every new family
+- [ ] stormworksserver
+- [ ] arksurvivalascended
+- [ ] astroneerserver
+- [ ] blackwakeserver
+- [ ] darkandlightserver
+- [ ] ducksideserver
+- [ ] empyrionserver
+- [ ] fearthenightserver
+- [ ] heatserver
+- [ ] hellletlooseserver
+- [ ] icarusserver
+- [ ] lifeisfeudalserver
+- [ ] medievalengineersserver
+- [ ] miscreatedserver
+- [ ] motortownserver
+- [ ] noonesurvivedserver
+- [ ] notdserver
+- [ ] outpostzeroserver
+- [ ] primalcarnageextinctionserver
+- [ ] reignofkingsserver
+- [ ] returntomoriaserver
+- [ ] ror2server
+- [ ] rs2server
+- [ ] saleblazersserver
+- [ ] scumserver
+- [ ] sniperelite4server
+- [ ] sonsoftheforestserver
+- [ ] ss14server
+- [ ] starruptureserver
+- [ ] staxelserver
+- [ ] subsistenceserver
+- [ ] terratechworldsserver
+- [ ] ahlserver
+- [ ] aloftserver
+- [ ] arma3_altislife
+- [ ] arma3_desolationredux
+- [ ] arma3_epoch
+- [ ] arma3_exile
+- [ ] arma3_headless
+- [ ] arma3_vanilla
+- [ ] arma3_wasteland
+- [ ] bbserver
+- [ ] brickadiaserver
+- [ ] cod2server
+- [ ] cod4server
+- [ ] codserver
+- [ ] coduoserver
+- [ ] codwawserver
+- [ ] dstserver
+- [ ] ecoserver
+- [ ] etlegacyserver
+- [ ] gravserver
+- [ ] gtafivemserver
+- [ ] hogwarpserver
+- [ ] identityserver
+- [ ] interstellarriftserver
+- [ ] kerbalspaceprogramserver
+- [ ] minecraft_bedrock
+- [ ] minecraft_bungeecord
+- [ ] minecraft_custom
+- [ ] minecraft_tekkit
+- [ ] mtaserver
+- [ ] mumbleserver
+- [ ] mxbikesserver
+- [ ] nsserver
+- [ ] pathoftitansserver
+- [ ] q2server
+- [ ] qlserver
+- [ ] qwserver
+- [ ] redmserver
+- [ ] rtcwserver
+- [ ] soulmask
+- [ ] subnauticaserver
+- [ ] terraria_tshock
+- [ ] tsserver
+- [ ] twserver
+- [ ] ut2k4server
+- [ ] vintagestoryserver
+- [ ] vsserver

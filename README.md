@@ -44,6 +44,9 @@ normal forwarded `connect` command.
 
 See [Run AlphaGSM In Docker](docs/docker-manager.md).
 
+If you want a quick server-by-server support checklist, see
+[Game Server Support Tracker](docs/game-server-support.md).
+
 ## What You Need
 
 You need:
