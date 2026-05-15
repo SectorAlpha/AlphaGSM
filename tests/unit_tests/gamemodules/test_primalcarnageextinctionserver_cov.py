@@ -116,6 +116,23 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_linux_uses_default_wine_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    wrap_command = MagicMock(side_effect=lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setattr(mod.proton, "wrap_command", wrap_command)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PCEdedicated.exe"
+    (tmp_path / "PCEdedicated.exe").write_text("")
+
+    mod.get_start_command(server)
+
+    wrap_command.assert_called_once()
+    args, kwargs = wrap_command.call_args
+    assert args == (["PCEdedicated.exe", "server", "-log"],)
+    assert kwargs == {"wineprefix": None}
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

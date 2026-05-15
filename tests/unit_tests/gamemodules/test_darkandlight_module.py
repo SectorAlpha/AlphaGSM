@@ -25,10 +25,14 @@ class DummyServer:
 
 
 def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    wrap_calls = []
+
     monkeypatch.setattr(
         darkandlightserver.proton,
         "wrap_command",
-        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+        lambda cmd, wineprefix=None, prefer_proton=False: wrap_calls.append(
+            {"wineprefix": wineprefix, "prefer_proton": prefer_proton}
+        ) or list(cmd),
     )
     server = DummyServer("dnl")
     exe_dir = tmp_path / "DNL" / "Binaries" / "Win64"
@@ -56,6 +60,7 @@ def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert "-log" in cmd
     assert "-unattended" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [{"wineprefix": None, "prefer_proton": False}]
 
 
 def test_darkandlight_update_downloads_and_optionally_restart(monkeypatch):
