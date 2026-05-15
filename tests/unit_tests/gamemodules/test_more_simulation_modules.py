@@ -34,7 +34,7 @@ def test_pcarserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = pcarserver.get_start_command(server)
 
-    assert cmd == ["./DedicatedServerCmd", "server.cfg"]
+    assert cmd == ["./DedicatedServerCmd"]
     assert cwd == server.data["dir"]
 
 
@@ -46,7 +46,7 @@ def test_pcars2server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = pcars2server.get_start_command(server)
 
-    assert cmd == ["./DedicatedServerCmd", "server.cfg"]
+    assert cmd == ["./DedicatedServerCmd"]
     assert cwd == server.data["dir"]
 
 

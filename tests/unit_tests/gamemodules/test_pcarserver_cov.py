@@ -77,6 +77,7 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 332670
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     mod.update(server, validate=True, restart=True)
     assert server._stopped
     assert server._started
@@ -87,6 +88,7 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 332670
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     mod.update(server, validate=False, restart=False)
     assert server._stopped
     assert not server._started
@@ -97,6 +99,7 @@ def test_update_stop_exception(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 332670
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     server.stop = MagicMock(side_effect=Exception('already stopped'))
     mod.update(server, validate=False, restart=False)
 
