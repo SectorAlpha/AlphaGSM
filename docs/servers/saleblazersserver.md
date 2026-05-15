@@ -72,9 +72,10 @@ alphagsm mysaleblaz backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `3099600`
 
-AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`,
-tracks readiness through `server.log`, and waits for `info --json` to report
-protocol `a2s` before treating the server as query-ready.
+AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`
+and treats `info --json` returning protocol `a2s` as the readiness gate. The
+plain Unity startup text in `server.log` is not stable enough to use as the
+only readiness marker.
 
 ### Server Configuration
 

@@ -16,6 +16,7 @@ high-level milestones.
 - CI/runtime: add Ubuntu Focal's `libldap-2.4-2` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `liblber-2.4.so.2` again.
 - CI/runtime: install `libgssapi3-heimdal`, `libldap-common`, and `libsasl2-2` before configuring the `libldap-2.4-2` compatibility package so the shared Ubuntu 24.04 images build successfully again.
 - CI/runtime: remove stale `/tmp/wine-*` directories after build-time Wine prefix initialization in the shared Ubuntu 24.04 images so later non-root Wine launches do not die on root-owned temporary paths.
+- Saleblazers: make the module own its A2S query endpoint explicitly and switch smoke/integration readiness to `info --json` protocol `a2s` instead of stale `server.log` marker text.
 - Project CARS family: generate a managed `server.cfg`, launch `DedicatedServerCmd` without the stray config filename argv token, and query A2S on `queryPort` (default `port + 1`) so `pcarserver` uses the server's real listen/query layout.
 - Server support: restore `darkandlightserver`, `sonsoftheforestserver`, and `primalcarnageextinctionserver` to the default Wine-first Linux wrapper path after CI showed Proton/Xalia headless startup failures on those modules.
 - CI: make the current log-waiting integration tests pass `env` and `server_name` into the shared log-marker helpers, and extend glob-based log waits with the same `alphagsm logs` plus `alphagsm doctor` timeout dumps already used by the info-protocol helper.
