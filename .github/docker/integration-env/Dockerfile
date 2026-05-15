@@ -15,8 +15,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   p7zip-full                          — .7z archive support
 #   unzip bzip2                         — archive formats used by some servers
 #   libatomic1                          — GCC atomics used by UE4 / Unity servers
-#   libc++1 libc++-dev                  — LLVM C++ runtime and the unversioned
-#                                         libc++.so loader name used by native
+#   libc++1                             — LLVM C++ runtime used by newer native
 #                                         Linux dedicated servers such as Pavlov VR
 #   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
 #   libpulse0                           — PulseAudio client; Unity loads it dynamically
@@ -37,7 +36,7 @@ RUN dpkg --add-architecture i386 \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
         unzip bzip2 \
-         libatomic1 libc++1 libc++-dev libsdl2-2.0-0 \
+                             libatomic1 libc++1 libsdl2-2.0-0 \
         libpulse0 \
         libcurl3t64-gnutls \
        curl jq python3 python3-pip python3-venv wget ca-certificates \
@@ -82,6 +81,11 @@ RUN wget -q \
        -O /tmp/libidn11.deb \
  && dpkg -i /tmp/libidn11.deb \
  && rm -f /tmp/libidn11.deb
+
+# Pavlov VR still requests the unversioned libc++.so name at runtime. Ubuntu's
+# libc++-dev package provides only a linker script there, which the dynamic
+# loader rejects, so point the loader name at the real libc++.so.1 ELF instead.
+RUN ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
 
 # Install Temurin 25 (Java 25) — required by the current Minecraft server
 # bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 24.04's

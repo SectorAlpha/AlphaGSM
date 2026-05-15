@@ -13,7 +13,6 @@ RUN dpkg --add-architecture i386 \
         libcurl3t64-gnutls \
         libatomic1 \
                   libc++1 \
-                  libc++-dev \
         libsdl2-2.0-0 \
         libpulse0 \
        python3 \
@@ -47,6 +46,8 @@ RUN wget -q \
        -O /tmp/libidn11.deb \
  && dpkg -i /tmp/libidn11.deb \
  && rm -f /tmp/libidn11.deb
+
+RUN ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
 
 WORKDIR /srv/server
 

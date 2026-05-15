@@ -5,8 +5,17 @@ This guide covers the `pvrserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libc++1`, `libc++-dev`)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libc++1`)
 - Python packages from `requirements.txt`
+
+On Ubuntu 24.04, Pavlov VR still requests the unversioned `libc++.so` runtime
+name. The shared AlphaGSM images create a compatibility symlink to
+`libc++.so.1`; on a host install, do the same after installing `libc++1`:
+
+```bash
+sudo apt install libc++1
+sudo ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
+```
 
 ## Quick Start
 
