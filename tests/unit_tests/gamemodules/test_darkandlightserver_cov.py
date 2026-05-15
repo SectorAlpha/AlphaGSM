@@ -151,6 +151,15 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_query_and_info_address_use_queryport(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)

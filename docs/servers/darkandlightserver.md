@@ -72,9 +72,9 @@ alphagsm mydarkandl backup
 - **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `630230`
 
-Smoke and integration validation track readiness through
-`DNL/Saved/Logs/DNL.log`, then wait for `info --json` to report protocol
-`a2s` before treating the server as query-ready.
+Smoke and integration validation rely on `info --json` reporting protocol
+`a2s` on the dedicated query port. In current CI images the UE4 process can stay
+up without producing the historical `DNL/Saved/Logs/DNL.log` path reliably.
 
 ### Server Configuration
 

@@ -104,6 +104,18 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Dark and Light server."
 
 
+def get_query_address(server):
+    """Dark and Light uses Steam A2S on the dedicated query port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Dark and Light dedicated server."""
 
