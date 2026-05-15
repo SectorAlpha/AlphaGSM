@@ -144,7 +144,8 @@ RUN wineboot --init \
  && winetricks -q win10 \
  && (winetricks -q --force vcrun2019 || true) \
  && (winetricks -q --force vcrun2022 || true) \
- && (wineserver --kill || true)
+ && (wineserver --kill || true) \
+ && rm -rf /tmp/wine-*
 
 # Wine Mono (.NET/CLR runtime required by .NET-based game servers such as
 # Medieval Engineers and Space Engineers).
@@ -153,7 +154,8 @@ RUN wget -q \
         -O /tmp/wine-mono.msi \
  && wine msiexec /i /tmp/wine-mono.msi /qn \
  && (wineserver --kill || true) \
- && rm -f /tmp/wine-mono.msi
+ && rm -f /tmp/wine-mono.msi \
+ && rm -rf /tmp/wine-*
 
 # Install Proton-GE into /opt/proton-ge, which is already listed in the
 # _PROTON_SEARCH_DIRS tuple in src/utils/proton.py so all game modules find it
