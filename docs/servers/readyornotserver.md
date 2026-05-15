@@ -75,7 +75,7 @@ alphagsm myreadyorn backup
 
 AlphaGSM launches the server with `-log -unattended`, waits for
 `ReadyOrNot/Saved/Logs/ReadyOrNot.log`, and then queries A2S on `queryport`
-instead of the game port.
+through the resolved local query host instead of the game port.
 
 ### Server Configuration
 

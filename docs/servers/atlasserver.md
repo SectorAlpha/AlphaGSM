@@ -72,8 +72,8 @@ alphagsm myatlasser backup
 - **SteamCMD App ID**: `1006030`
 
 Smoke and integration validation track readiness through `alphagsm info --json`
-returning protocol `a2s` on the query path instead of waiting for screen-log
-markers.
+returning protocol `a2s` on the dedicated query port via AlphaGSM's resolved
+local query host instead of relying on implicit fallback routing.
 
 ### Server Configuration
 

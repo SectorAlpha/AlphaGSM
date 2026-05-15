@@ -18,6 +18,7 @@ high-level milestones.
 - CI/runtime: remove stale `/tmp/wine-*` directories after build-time Wine prefix initialization in the shared Ubuntu 24.04 images so later non-root Wine launches do not die on root-owned temporary paths.
 - Saleblazers: make the module own its A2S query endpoint explicitly and switch smoke/integration readiness to `info --json` protocol `a2s` instead of stale `server.log` marker text.
 - Primal Carnage: Extinction: make the module own its A2S query/info endpoint explicitly on `queryport` so Proton/Wine process runs query the same resolved host path as other UE3 servers.
+- ATLAS and Ready or Not: route A2S query/info through explicit module hooks using the resolved local query host so CI does not depend on implicit `127.0.0.1` or default query-address fallbacks.
 - Project CARS family: generate a managed `server.cfg`, launch `DedicatedServerCmd` without the stray config filename argv token, and query A2S on `queryPort` (default `port + 1`) so `pcarserver` uses the server's real listen/query layout.
 - Server support: restore `darkandlightserver`, `sonsoftheforestserver`, and `primalcarnageextinctionserver` to the default Wine-first Linux wrapper path after CI showed Proton/Xalia headless startup failures on those modules.
 - CI: make the current log-waiting integration tests pass `env` and `server_name` into the shared log-marker helpers, and extend glob-based log waits with the same `alphagsm logs` plus `alphagsm doctor` timeout dumps already used by the info-protocol helper.
