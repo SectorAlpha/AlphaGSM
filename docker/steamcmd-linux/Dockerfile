@@ -47,6 +47,12 @@ RUN wget -q \
  && dpkg -i /tmp/libidn11.deb \
  && rm -f /tmp/libidn11.deb
 
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb" \
+       -O /tmp/libldap-2.4-2.deb \
+ && dpkg -i /tmp/libldap-2.4-2.deb \
+ && rm -f /tmp/libldap-2.4-2.deb
+
 RUN ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
 
 WORKDIR /srv/server

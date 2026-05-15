@@ -72,12 +72,14 @@ Some server types need one extra thing:
   ```
 - A few older native Linux servers still need legacy compatibility packages
   that Ubuntu 24.04 no longer ships in its normal repos. `atlasserver`
-  currently needs `libprotobuf.so.10` and `libidn.so.11`, which you can install
-  with:
+  currently needs `libprotobuf.so.10`, `libidn.so.11`, and `liblber-2.4.so.2`,
+  which you can install with:
   ```bash
   wget http://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb
   wget http://archive.ubuntu.com/ubuntu/pool/main/libi/libidn/libidn11_1.33-2.2ubuntu2_amd64.deb
+  wget http://archive.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb
   sudo apt install ./libidn11_1.33-2.2ubuntu2_amd64.deb
+  sudo apt install ./libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb
   sudo apt install ./libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb
   ```
 - Some native Linux servers also expect the unversioned LLVM C++ loader name
