@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-13
+- Server support: remove stale disabled gates for `askaserver`, `battlecryoffreedomserver`, `blackops3server`, `enshrouded`, `groundbranchserver`, `mythofempiresserver`, `pixarkserver`, `reignofdwarfserver`, `sunkenlandserver`, and `theforestserver` after the tracker and current support surface had already moved them back into active coverage.
 - Docs: add a README-linked checkbox tracker page for current game-server support status, generated from `docs/TEST_STATUS.md`, so users can quickly scan supported and unsupported server names without reading the full integration-status report.
 - CI/runtime: add `libc++1` to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so native Linux servers such as `pvrserver` stop failing at launch on missing `libc++.so.1`.
 - CI/runtime: point the unversioned `libc++.so` loader name at the real `libc++.so.1` shared object in the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family after Ubuntu's `libc++-dev` package proved to be a linker script rather than a runtime ELF library.

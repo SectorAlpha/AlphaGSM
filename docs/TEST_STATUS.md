@@ -1,8 +1,13 @@
 # Integration Test Status
 
-Last updated: 2026-05-11
+Last updated: 2026-05-15
 
 ## Summary
+
+Tracker note: on 2026-05-15 the live `disabled_servers.conf` gate was reconciled
+with already-supported Wine/Proton modules that were still blocked from `create`.
+The status rows below already reflected those modules as active support surfaces;
+this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
