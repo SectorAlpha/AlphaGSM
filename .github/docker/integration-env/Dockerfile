@@ -74,6 +74,14 @@ RUN wget -q \
  && dpkg -i /tmp/libprotobuf10.deb \
  && rm -f /tmp/libprotobuf10.deb
 
+# libidn11 — the same ATLAS Linux binary still depends on the legacy
+# libidn.so.11 SONAME that Ubuntu 24.04 removed from the main archive.
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/libi/libidn/libidn11_1.33-2.2ubuntu2_amd64.deb" \
+       -O /tmp/libidn11.deb \
+ && dpkg -i /tmp/libidn11.deb \
+ && rm -f /tmp/libidn11.deb
+
 # Install Temurin 25 (Java 25) — required by the current Minecraft server
 # bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 24.04's
 # openjdk-21-jdk-headless only handles class files up to version 65 (Java 21).

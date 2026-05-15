@@ -41,6 +41,12 @@ RUN wget -q \
  && dpkg -i /tmp/libprotobuf10.deb \
  && rm -f /tmp/libprotobuf10.deb
 
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/libi/libidn/libidn11_1.33-2.2ubuntu2_amd64.deb" \
+       -O /tmp/libidn11.deb \
+ && dpkg -i /tmp/libidn11.deb \
+ && rm -f /tmp/libidn11.deb
+
 WORKDIR /srv/server
 
 CMD ["/bin/bash"]
