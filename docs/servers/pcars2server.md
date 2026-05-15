@@ -73,6 +73,7 @@ alphagsm mypcars2se backup
 
 - **Config file**: `server.cfg`
 - **Template**: See [server-templates/pcars2server/](../server-templates/pcars2server/) if available
+- AlphaGSM writes a managed `server.cfg` during install/update using `hostPort = <port>` and `queryPort = <port + 1>`.
 
 ### Maps and Mods
 

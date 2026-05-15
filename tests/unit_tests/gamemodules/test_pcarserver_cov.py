@@ -65,7 +65,11 @@ def test_install(tmp_path):
     server.data["exe_name"] = "DedicatedServerCmd"
     server.data["Steam_AppID"] = 332670
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     mod.install(server)
+    assert (tmp_path / "server.cfg").exists()
+    assert "hostPort : 27015" in (tmp_path / "server.cfg").read_text()
+    assert "queryPort : 27016" in (tmp_path / "server.cfg").read_text()
 
 
 def test_update_with_restart(tmp_path):
@@ -111,7 +115,8 @@ def test_get_start_command(tmp_path):
     (tmp_path / "DedicatedServerCmd").write_text("")
     server.data["configfile"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == ["./DedicatedServerCmd"]
+    assert cwd == server.data["dir"]
 
 
 def test_query_and_info_address_use_game_port(monkeypatch):
@@ -119,8 +124,31 @@ def test_query_and_info_address_use_game_port(monkeypatch):
     server.data["port"] = "27015"
     monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
 
-    assert mod.get_query_address(server) == ("10.0.0.10", 27015, "a2s")
-    assert mod.get_info_address(server) == ("10.0.0.10", 27015, "a2s")
+    assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
+
+
+def test_query_and_info_address_use_explicit_query_port(monkeypatch):
+    server = DummyServer("pcar")
+    server.data["port"] = "27015"
+    server.data["queryport"] = "28000"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 28000, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 28000, "a2s")
+
+
+def test_sync_server_config_writes_canonical_server_cfg(tmp_path):
+    server = DummyServer("pcar")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 27015
+    server.data["configfile"] = "custom.cfg"
+
+    mod.sync_server_config(server)
+
+    assert 'name : "AlphaGSM pcar"' in (tmp_path / "custom.cfg").read_text()
+    assert "hostPort : 27015" in (tmp_path / "server.cfg").read_text()
+    assert "queryPort : 27016" in (tmp_path / "server.cfg").read_text()
 
 
 def test_get_start_command_missing_exe(tmp_path):

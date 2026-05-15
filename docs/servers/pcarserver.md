@@ -76,6 +76,7 @@ returning protocol `a2s` instead of waiting for screen-log markers.
 
 - **Config file**: `server.cfg`
 - **Template**: See [server-templates/pcarserver/](../server-templates/pcarserver/) if available
+- AlphaGSM writes a managed `server.cfg` during install/update using `hostPort = <port>` and `queryPort = <port + 1>`.
 
 ### Maps and Mods
 

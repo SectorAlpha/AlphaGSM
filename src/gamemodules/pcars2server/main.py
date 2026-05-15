@@ -1,5 +1,6 @@
 """Project CARS 2 dedicated server lifecycle helpers."""
 
+import json
 import os
 
 import screen
@@ -24,6 +25,54 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port",)
+
+
+def _resolve_query_port(server):
+    return int(server.data.get("queryport") or (int(server.data["port"]) + 1))
+
+
+def _write_server_config(path, *, server_name, host_port, query_port):
+    lines = [
+        'logLevel : "info"',
+        "name : {}".format(json.dumps("AlphaGSM {}".format(server_name))),
+        "secure : true",
+        'password : ""',
+        "maxPlayerCount : 16",
+        'bindIP : ""',
+        "steamPort : 8766",
+        "hostPort : {}".format(host_port),
+        "queryPort : {}".format(query_port),
+        "allowEmptyJoin : true",
+    ]
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(lines) + "\n")
+
+
+def sync_server_config(server):
+    """Write the managed Project CARS 2 server.cfg from datastore values."""
+
+    configfile = server.data.get("configfile", "server.cfg")
+    config_path = os.path.join(server.data["dir"], configfile)
+    os.makedirs(os.path.dirname(config_path) or server.data["dir"], exist_ok=True)
+
+    host_port = int(server.data["port"])
+    query_port = _resolve_query_port(server)
+    _write_server_config(
+        config_path,
+        server_name=server.name,
+        host_port=host_port,
+        query_port=query_port,
+    )
+
+    canonical_config_path = os.path.join(server.data["dir"], "server.cfg")
+    if os.path.normpath(canonical_config_path) != os.path.normpath(config_path):
+        _write_server_config(
+            canonical_config_path,
+            server_name=server.name,
+            host_port=host_port,
+            query_port=query_port,
+        )
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServerCmd"):
@@ -61,6 +110,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Project CARS 2 server files via SteamCMD."
 
@@ -69,8 +119,21 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Project CARS 2 server files and optionally restart the server."
+
+
+def get_query_address(server):
+    """Return the Project CARS 2 A2S query endpoint."""
+
+    return (runtime_module.resolve_query_host(server), _resolve_query_port(server), "a2s")
+
+
+def get_info_address(server):
+    """Return the Project CARS 2 A2S info endpoint."""
+
+    return get_query_address(server)
 
 
 restart = gamemodule_common.make_restart_hook()
@@ -86,7 +149,6 @@ def get_start_command(server):
     return (
         [
             "./" + server.data["exe_name"],
-            server.data["configfile"],
         ],
         server.data["dir"],
     )
