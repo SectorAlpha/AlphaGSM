@@ -83,11 +83,14 @@ RUN wget -q \
  && rm -f /tmp/libidn11.deb
 
 # ATLAS also still links against the OpenLDAP 2.4 runtime for liblber-2.4.so.2.
-RUN wget -q \
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends libgssapi3-heimdal libldap-common libsasl2-2 \
+ && wget -q \
         "http://archive.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb" \
         -O /tmp/libldap-2.4-2.deb \
  && dpkg -i /tmp/libldap-2.4-2.deb \
- && rm -f /tmp/libldap-2.4-2.deb
+ && rm -f /tmp/libldap-2.4-2.deb \
+ && rm -rf /var/lib/apt/lists/*
 
 # Pavlov VR still requests the unversioned libc++.so name at runtime. Ubuntu's
 # libc++-dev package provides only a linker script there, which the dynamic

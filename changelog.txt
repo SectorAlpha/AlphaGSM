@@ -14,6 +14,7 @@ high-level milestones.
 - CI/runtime: add Ubuntu Bionic's `libprotobuf10` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `libprotobuf.so.10` again.
 - CI/runtime: add Ubuntu Bionic's `libidn11` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `libidn.so.11` again.
 - CI/runtime: add Ubuntu Focal's `libldap-2.4-2` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `liblber-2.4.so.2` again.
+- CI/runtime: install `libgssapi3-heimdal`, `libldap-common`, and `libsasl2-2` before configuring the `libldap-2.4-2` compatibility package so the shared Ubuntu 24.04 images build successfully again.
 - Server support: restore `darkandlightserver`, `sonsoftheforestserver`, and `primalcarnageextinctionserver` to the default Wine-first Linux wrapper path after CI showed Proton/Xalia headless startup failures on those modules.
 - CI: make the current log-waiting integration tests pass `env` and `server_name` into the shared log-marker helpers, and extend glob-based log waits with the same `alphagsm logs` plus `alphagsm doctor` timeout dumps already used by the info-protocol helper.
 - Server support: make `pcarserver` and `stnserver` advertise A2S on their gameplay port so `query`, `info`, and `info --json` stop falling back to the default TCP reachability probe while the server process is already running.
