@@ -149,8 +149,10 @@
 | noonesurvivedserver | - | disabled | no | no | status |
 | notdserver | - | disabled | no | no | status |
 | ns2cserver | - | active | no | yes | status |
+| ns2server | - | active | no | yes | status |
 | nsserver | - | disabled | yes | no | - |
 | ohdserver | - | disabled | no | no | status |
+| onsetserver | - | active | no | yes | status |
 | opforserver | - | active | yes | yes | - |
 | outpostzeroserver | - | disabled | no | no | status |
 | palworld | pwserver | disabled | no | no | status |

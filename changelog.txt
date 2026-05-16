@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-16
+- Server support: add `onsetserver` for Onset with the upstream `server_config.json` contract, Linux `start_linux.sh --config` launch path, documented derived query/http ports, and smoke/integration coverage.
+- Server support: add `ns2server` for Natural Selection 2 with the Linux Spark dedicated-server launch contract, per-instance config/workshop directories, A2S query/info wiring on the main port, and smoke/integration coverage.
 - Server support: add `ns2cserver` for NS2: Combat with the Linux Spark dedicated-server launch contract, per-instance config/workshop directories, A2S query/info wiring on the main port, and smoke/integration coverage.
 - Server support: add `tuserver` for Tower Unite with a native Linux dedicated-server launch contract, per-instance `TowerServerINI` config creation, A2S query/info wiring on `queryport`, and smoke/integration coverage.
 - Server support: add `tf2cserver` for Team Fortress 2 Classified with a managed base-TF2 support install (`appid 232250`), Source A2S/query wiring, smoke/integration coverage, and a server guide.
