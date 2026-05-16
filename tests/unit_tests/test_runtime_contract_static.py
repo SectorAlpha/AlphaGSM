@@ -36,6 +36,8 @@ def test_game_module_inventory_excludes_catalog_alias_keys():
 
     assert "tf2" not in module_names
     assert "tf2server" not in module_names
+    assert "tf2c" not in module_names
+    assert "tf2classifiedserver" not in module_names
     assert "cs2server" not in module_names
     assert "minecraft.DEFAULT" not in module_names
 

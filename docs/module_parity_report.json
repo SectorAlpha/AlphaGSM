@@ -248,8 +248,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -318,8 +318,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -372,8 +372,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -470,7 +470,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "cmwserver"
+    ],
     "canonical_id": "chivalryserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -592,7 +594,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "ctserver"
+    ],
     "canonical_id": "craftopiaserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -654,7 +658,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "dodrserver"
+    ],
     "canonical_id": "dayofdragonsserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -798,11 +804,13 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "etlserver"
+    ],
     "canonical_id": "etlegacyserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -904,8 +912,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1174,7 +1182,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "mcbserver"
+    ],
     "canonical_id": "minecraft.bedrock",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1202,7 +1212,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "pmcserver"
+    ],
     "canonical_id": "minecraft.paper",
     "contract_complete": true,
     "missing_surfaces": [],
@@ -1218,7 +1230,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "mcserver"
+    ],
     "canonical_id": "minecraft.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
@@ -1226,7 +1240,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "vpmcserver"
+    ],
     "canonical_id": "minecraft.velocity",
     "contract_complete": true,
     "missing_surfaces": [],
@@ -1234,7 +1250,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "wmcserver"
+    ],
     "canonical_id": "minecraft.waterfall",
     "contract_complete": true,
     "missing_surfaces": [],
@@ -1252,7 +1270,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "mhserver"
+    ],
     "canonical_id": "mordserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1318,8 +1338,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1414,7 +1434,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "pwserver"
+    ],
     "canonical_id": "palworld",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1434,7 +1456,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "pc2server"
+    ],
     "canonical_id": "pcars2server",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1444,7 +1468,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "pcserver"
+    ],
     "canonical_id": "pcarserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1460,8 +1486,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1484,7 +1510,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "pzserver"
+    ],
     "canonical_id": "projectzomboid",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1588,8 +1616,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1722,7 +1750,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "sfserver"
+    ],
     "canonical_id": "satisfactory",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1762,7 +1792,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "sdtdserver"
+    ],
     "canonical_id": "sevendaystodie",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1840,7 +1872,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "smserver"
+    ],
     "canonical_id": "soulmask",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1880,7 +1914,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "sbserver"
+    ],
     "canonical_id": "starbound",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1900,7 +1936,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "stserver"
+    ],
     "canonical_id": "stationeersserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -1966,8 +2004,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1997,7 +2035,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "terrariaserver"
+    ],
     "canonical_id": "terraria.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
@@ -2011,6 +2051,18 @@
     "missing_surfaces": [
       "status"
     ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "tf2c",
+      "tf2classified",
+      "tf2classifiedserver"
+    ],
+    "canonical_id": "tf2cserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
     "runtime_verified": true,
     "support_state": "active"
   },
@@ -2029,11 +2081,13 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "tfserver"
+    ],
     "canonical_id": "thefrontserver",
     "contract_complete": false,
     "missing_surfaces": [
@@ -2091,7 +2145,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "untserver"
+    ],
     "canonical_id": "unturned",
     "contract_complete": false,
     "missing_surfaces": [
@@ -2111,7 +2167,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "utserver"
+    ],
     "canonical_id": "ut99server",
     "contract_complete": false,
     "missing_surfaces": [
@@ -2121,7 +2179,9 @@
     "support_state": "active"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "vhserver"
+    ],
     "canonical_id": "valheim",
     "contract_complete": false,
     "missing_surfaces": [
@@ -2141,7 +2201,9 @@
     "support_state": "disabled"
   },
   {
-    "aliases": [],
+    "aliases": [
+      "vintsserver"
+    ],
     "canonical_id": "vintagestoryserver",
     "contract_complete": false,
     "missing_surfaces": [

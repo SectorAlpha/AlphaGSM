@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-16
+- Server support: add `tf2cserver` for Team Fortress 2 Classified with a managed base-TF2 support install (`appid 232250`), Source A2S/query wiring, smoke/integration coverage, and a server guide.
+- Compatibility: add LinuxGSM-style aliases for equivalent existing AlphaGSM servers such as `ctserver`, `mcserver`, `pmcserver`, `pwserver`, `pzserver`, `sdtdserver`, `sfserver`, `terrariaserver`, `vhserver`, `vpmcserver`, and `wmcserver` so LinuxGSM naming maps cleanly onto AlphaGSM's canonical modules.
 - Pavlov VR: fix `pvrserver` to use Pavlov's real status-helper port (`port + 400`) for A2S/info, stop passing the ineffective `-QueryPort` launch flag, and keep runtime port claims aligned with the live server contract.
 
 2026-05-13
