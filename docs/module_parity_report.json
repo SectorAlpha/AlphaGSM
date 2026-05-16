@@ -1399,6 +1399,16 @@
   },
   {
     "aliases": [],
+    "canonical_id": "ns2cserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
     "canonical_id": "nsserver",
     "contract_complete": true,
     "missing_surfaces": [],

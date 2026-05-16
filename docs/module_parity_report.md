@@ -148,6 +148,7 @@
 | nmrihserver | - | active | yes | yes | - |
 | noonesurvivedserver | - | disabled | no | no | status |
 | notdserver | - | disabled | no | no | status |
+| ns2cserver | - | active | no | yes | status |
 | nsserver | - | disabled | yes | no | - |
 | ohdserver | - | disabled | no | no | status |
 | opforserver | - | active | yes | yes | - |
