@@ -71,7 +71,7 @@ def test_lastoasis_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_miscreated_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(miscreatedserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(miscreatedserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("mis")
     exe_dir = tmp_path / "Bin64_dedicated"
     exe_dir.mkdir(parents=True)

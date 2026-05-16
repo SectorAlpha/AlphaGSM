@@ -23,9 +23,11 @@ from gamemodules.arksurvivalascended import steam_app_id
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 3600  # 60 min: very large SteamCMD payload under shared CI load
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
-@pytest.mark.timeout(3600)  # 60 min: UE4/Proton download + very slow first-launch init
+@pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full download budget plus slow first-launch init
 def test_arksurvivalascended_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -46,7 +48,15 @@ def test_arksurvivalascended_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "arksurvivalascended")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_and_assert_ok(
+        env,
+        server_name,
+        "setup",
+        "-n",
+        str(port),
+        str(install_dir),
+        timeout=SETUP_TIMEOUT,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 

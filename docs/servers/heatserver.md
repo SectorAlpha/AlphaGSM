@@ -5,6 +5,7 @@ This guide covers the `heatserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,10 @@ alphagsm myheatserv stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the query port (default 27016)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,16 +60,21 @@ alphagsm myheatserv backup
 ## Notes
 
 - Module name: `heatserver`
-- Default port: 27016
+- Default game port: 27015
+- Default query port: 27016
 
 ## Developer Notes
 
 ### Run File
 
 - **Executable**: `HeatServer.exe`
-- **Location**: `<install_dir>/HeatServer.exe`
-- **Engine**: Custom (SteamCMD)
+- **Location**: `<install_dir>/Server.exe`
+- **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `996600`
+
+AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`,
+tracks readiness through `server.log`, and waits for `info --json` to report
+protocol `a2s` before treating the server as query-ready.
 
 ### Server Configuration
 

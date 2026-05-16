@@ -47,7 +47,7 @@ def test_smallandserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_stormworksserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     # Monkeypatch proton.wrap_command so the test is independent of Wine/Proton installation.
-    monkeypatch.setattr(stormworksserver.proton, "wrap_command", lambda cmd, wineprefix=None: ["wine"] + list(cmd))
+    monkeypatch.setattr(stormworksserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: ["wine"] + list(cmd))
 
     server = DummyServer("storm")
     exe = tmp_path / "server64.exe"

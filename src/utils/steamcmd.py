@@ -30,6 +30,7 @@ STEAMCMD_GAMEUPDATE_TEMPLATE = "steamcmd_gamescript_template.txt"
 STEAMCMD_RETRIES = 3
 STEAMCMD_RETRY_DELAY_SECONDS = 2
 STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS = 5
+_KNOWN_BARE_STATE_202_FLAKE_APP_IDS = frozenset({"232130", "346680", "418480", "746200"})
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -62,10 +63,24 @@ def _steamcmd_missing_manifest_flake(output, app_id):
     return missing_config in output and state_202 in output
 
 
+def _steamcmd_state_202_flake(output, app_id):
+    """Return whether SteamCMD reported a known transient state 0x202 flake."""
+
+    if app_id in (None, ""):
+        return False
+
+    app_id = str(app_id)
+    state_202 = "Error! App '{}' state is 0x202 after update job.".format(app_id)
+    if state_202 not in output:
+        return False
+
+    return _steamcmd_missing_manifest_flake(output, app_id) or app_id in _KNOWN_BARE_STATE_202_FLAKE_APP_IDS
+
+
 def _steamcmd_retry_delay(output, app_id):
     """Return the retry delay for known transient SteamCMD states."""
 
-    if _steamcmd_missing_manifest_flake(output, app_id):
+    if _steamcmd_state_202_flake(output, app_id):
         return STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
     return STEAMCMD_RETRY_DELAY_SECONDS
 
@@ -102,10 +117,13 @@ def _ensure_steamclient_symlinks():
             continue
         dst_dir = os.path.join(home, ".steam", f"sdk{bits}")
         dst = os.path.join(dst_dir, "steamclient.so")
-        if os.path.isfile(dst) or os.path.islink(dst):
+        if os.path.lexists(dst):
             continue
         os.makedirs(dst_dir, exist_ok=True)
-        os.symlink(src, dst)
+        try:
+            os.symlink(src, dst)
+        except FileExistsError:
+            continue
 
 
 def install_steamcmd():
@@ -169,6 +187,47 @@ def download(
             retry_delay = _steamcmd_retry_delay(proc.stdout, Steam_AppID)
             print(
                 "SteamCMD did not complete install cleanly, retrying in %ss..."
+                % (retry_delay,)
+            )
+            time.sleep(retry_delay)
+    raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
+
+
+def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonymous_login_possible):
+    """Download a Steam workshop item and return its extracted content directory."""
+
+    install_steamcmd()
+    path = _normalise_install_path(path)
+    content_dir = os.path.join(
+        path,
+        "steamapps",
+        "workshop",
+        "content",
+        str(workshop_app_id),
+        str(workshop_item_id),
+    )
+
+    print("Running SteamCMD workshop download")
+    proc_list = [STEAMCMD_EXE]
+    proc_list.extend(["+force_install_dir", path])
+    proc_list.extend(_get_login_args(steam_anonymous_login_possible))
+    proc_list.extend(
+        ["+workshop_download_item", str(workshop_app_id), str(workshop_item_id), "+quit"]
+    )
+    last_output = ""
+    for attempt in range(STEAMCMD_RETRIES):
+        proc = sp.run(
+            proc_list, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False
+        )
+        print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+        last_output = proc.stdout
+        if proc.returncode == 0 and os.path.isdir(content_dir):
+            _ensure_steamclient_symlinks()
+            return content_dir
+        if attempt + 1 < STEAMCMD_RETRIES:
+            retry_delay = _steamcmd_retry_delay(proc.stdout, workshop_app_id)
+            print(
+                "SteamCMD did not complete workshop download cleanly, retrying in %ss..."
                 % (retry_delay,)
             )
             time.sleep(retry_delay)

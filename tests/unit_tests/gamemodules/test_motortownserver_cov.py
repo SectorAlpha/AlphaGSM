@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.motortownserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.motortownserver as mod
     from server import ServerError
@@ -119,7 +119,22 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["queryport"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe",
+        "test?listen?",
+        "-server",
+        "-log",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-useperfthreads",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_motortown_launch_formats():
+    assert mod.setting_schema["startmap"].launch_arg_format == "{value}?listen?"
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

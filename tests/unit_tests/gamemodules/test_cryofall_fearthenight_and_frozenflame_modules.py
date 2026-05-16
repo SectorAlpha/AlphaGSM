@@ -39,7 +39,13 @@ def test_cryofall_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_fearthenight_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(fearthenightserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(fearthenightserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("ftn")
     exe_dir = tmp_path / "Moonlight" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -58,6 +64,7 @@ def test_fearthenight_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert cmd[0] == "Moonlight/Binaries/Win64/MoonlightServer.exe"
     assert "Pittsburgh_Overworld" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_frozenflame_get_start_command_builds_expected_args(tmp_path):

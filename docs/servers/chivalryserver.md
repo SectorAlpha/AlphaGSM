@@ -59,6 +59,7 @@ alphagsm mychivalry backup
 
 - Module name: `chivalryserver`
 - Default port: 7777
+- Default query port: 27015
 
 ## Developer Notes
 
@@ -68,6 +69,11 @@ alphagsm mychivalry backup
 - **Location**: `<install_dir>/Binaries/Linux/UDKGameServer-Linux`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `220070`
+
+AlphaGSM now launches Chivalry with the configured game port embedded in the
+UDK URL, for example `AOCTO-Battlegrounds_V3_P?Port=7777?QueryPort=27015?steamsockets`, so
+the runtime actually binds the game port selected during `setup` and exposes A2S
+on the configured query port.
 
 ### Server Configuration
 

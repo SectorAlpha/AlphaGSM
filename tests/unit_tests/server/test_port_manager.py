@@ -187,6 +187,29 @@ def test_resolve_module_name_propagates_unexpected_resolution_errors(monkeypatch
         raise AssertionError("ValueError should not be swallowed")
 
 
+def test_resolve_module_name_fallback_uses_catalog(monkeypatch):
+    fake_module = SimpleNamespace(__file__="/tmp/teamfortress2.py")
+
+    class FakeCatalog:
+        def resolve(self, name):
+            assert name == "tf2server"
+            return "teamfortress2"
+
+    def fake_import(name):
+        if name != "gamemodules.teamfortress2":
+            raise ImportError(name)
+        return fake_module
+
+    monkeypatch.setattr(port_manager, "MODULE_CATALOG", FakeCatalog(), raising=False)
+    monkeypatch.setattr(port_manager, "import_module", fake_import)
+    monkeypatch.setattr(port_manager, "SERVERMODULEPACKAGE", "gamemodules.")
+    monkeypatch.setattr(port_manager.runtime_module, "ensure_runtime_hooks", lambda module: None)
+
+    resolved = port_manager._resolve_module_name_fallback("tf2server")
+
+    assert resolved is fake_module
+
+
 def test_detect_conflicts_requires_matching_scope(monkeypatch):
     current = make_server(
         "alpha",

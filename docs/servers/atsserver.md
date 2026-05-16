@@ -71,7 +71,7 @@ alphagsm myatsserve backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `server_config.sii`
 - **Template**: See [server-templates/atsserver/](../server-templates/atsserver/) if available
 
 ### Maps and Mods

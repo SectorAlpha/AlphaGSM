@@ -75,7 +75,56 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./cod4_lnxded",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_cod4_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "moddir"
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+
+
+def test_sync_server_config_updates_mod_server_cfg(tmp_path):
+    server = DummyServer("cod4")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "moddir": "main",
+            "hostname": "AlphaGSM cod4",
+            "startmap": "mp_backlot",
+        }
+    )
+    cfg_dir = tmp_path / "main"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nmoddir=mods\nstartmap=mp_crash\nset sv_punkbuster 1\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM cod4"\n'
+        'moddir=main\n'
+        'startmap=mp_backlot\n'
+        'set sv_punkbuster 1\n'
+    )
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

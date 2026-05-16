@@ -53,7 +53,11 @@ Setup configures:
 ```bash
 alphagsm mytwserver update
 alphagsm mytwserver backup
+alphagsm mytwserver set port 8304
+alphagsm mytwserver set servername "AlphaGSM Teeworlds Server"
 ```
+
+`set port` and `set servername` rewrite `autoexec.cfg` immediately. The shared alias layer also accepts `hostname` and maps it to the Teeworlds `servername` setting.
 
 ## Notes
 
@@ -73,6 +77,7 @@ alphagsm mytwserver backup
 
 - **Config file**: `autoexec.cfg`
 - **Template**: See [server-templates/twserver/](../server-templates/twserver/) if available
+- **Schema-backed sync**: AlphaGSM keeps `sv_port` and `sv_name` in sync with `set port` / `set servername`
 
 ### Maps and Mods
 

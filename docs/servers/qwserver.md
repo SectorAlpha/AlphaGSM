@@ -74,6 +74,27 @@ alphagsm myqwserver backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/qw/maps/`
+- **Mod directory**: `<install_dir>/qw/`
 - **Workshop support**: No
+
+## Mod Sources
+
+QuakeWorld supports AlphaGSM-managed direct `url` mod sources for content-only `.pak` payloads.
+
+Supported payload shapes:
+
+- a direct `.pak` URL
+- an archive containing bare `.pak` files at the archive root
+- an archive containing `qw/<name>.pak`
+
+AlphaGSM installs approved `.pak` content into `qw/`, tracks only the files it owns, and keeps that content directory in the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm myqwserver mod add url https://example.com/pak1.pak
+alphagsm myqwserver mod add url https://example.com/custom-content.zip
+alphagsm myqwserver mod apply
+alphagsm myqwserver mod cleanup
+```

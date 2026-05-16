@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.darkandlightserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.darkandlightserver as mod
     from server import ServerError
@@ -127,7 +127,13 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["serverpassword"] = "test"
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "DNL/Binaries/Win64/DNLServer.exe",
+        "test?listen?SessionName=test?ServerPassword=test?ServerAdminPassword=test?Port=27015?QueryPort=27015?MaxPlayers=27015",
+        "-log",
+        "-unattended",
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -143,6 +149,15 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["startmap"] = "test"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_query_and_info_address_use_queryport(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
 
 
 def test_do_stop():

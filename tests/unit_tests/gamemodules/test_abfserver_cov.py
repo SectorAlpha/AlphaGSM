@@ -114,7 +114,19 @@ def test_get_start_command(tmp_path):
     server.data["queryport"] = 27015
     server.data["world"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./AbioticFactorServer.sh",
+        "test",
+        "-Port=27015",
+        "-QueryPort=27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_abioticfactor_launch_formats():
+    assert mod.setting_schema["world"].launch_arg_format == "{value}"
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

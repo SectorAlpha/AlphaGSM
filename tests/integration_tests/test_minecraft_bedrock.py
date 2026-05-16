@@ -19,11 +19,13 @@ from conftest import (
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 600
+SETUP_TIMEOUT = 3600
+START_TIMEOUT = 900
 STOP_TIMEOUT = 90
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
-@pytest.mark.skip(reason="Minecraft.net Bedrock download page is JavaScript-rendered; URL scraper returns no results (module disabled)")
+@pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full download budget plus Bedrock startup and shutdown
 def test_minecraft_bedrock_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")
@@ -42,7 +44,15 @@ def test_minecraft_bedrock_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "minecraft.bedrock")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_and_assert_ok(
+        env,
+        server_name,
+        "setup",
+        "-n",
+        str(port),
+        str(install_dir),
+        timeout=SETUP_TIMEOUT,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
 

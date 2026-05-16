@@ -62,6 +62,55 @@ def test_configure_resolves_download(tmp_path):
     assert server.data['url'] == 'https://example.com/ss14.zip'
     assert server.data['version'] == '42'
 
+def test_resolve_download_uses_latest_manifest_entry():
+    manifest = {
+        "builds": {
+            "old": {
+                "time": "2025-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/old.zip"}},
+            },
+            "new": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/new.zip"}},
+            },
+        }
+    }
+
+    mod.read_json.return_value = manifest
+
+    version, url = mod.resolve_download()
+
+    assert version == "new"
+    assert url == "https://example.com/new.zip"
+
+def test_resolve_download_uses_requested_manifest_version():
+    mod.read_json.return_value = {
+        "builds": {
+            "wanted": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/wanted.zip"}},
+            }
+        }
+    }
+
+    version, url = mod.resolve_download(version="wanted")
+
+    assert version == "wanted"
+    assert url == "https://example.com/wanted.zip"
+
+def test_resolve_download_rejects_missing_linux_x64_build():
+    mod.read_json.return_value = {
+        "builds": {
+            "wanted": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"win-x64": {"url": "https://example.com/wanted.zip"}},
+            }
+        }
+    }
+
+    with pytest.raises(ServerError):
+        mod.resolve_download(version="wanted")
+
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

@@ -36,14 +36,16 @@ RUN wineboot --init \
     && winetricks -q win10 \
     && (winetricks -q --force vcrun2019 || true) \
     && (winetricks -q --force vcrun2022 || true) \
-    && (wineserver --kill || true)
+    && (wineserver --kill || true) \
+    && rm -rf /tmp/wine-*
 
 RUN wget -q \
         "https://dl.winehq.org/wine/wine-mono/8.1.0/wine-mono-8.1.0-x86.msi" \
         -O /tmp/wine-mono.msi \
     && wine msiexec /i /tmp/wine-mono.msi /qn \
     && (wineserver --kill || true) \
-    && rm -f /tmp/wine-mono.msi
+    && rm -f /tmp/wine-mono.msi \
+    && rm -rf /tmp/wine-*
 
 COPY scripts/install_proton.sh /tmp/install_proton.sh
 RUN GITHUB_TOKEN=${GITHUB_TOKEN:-} \

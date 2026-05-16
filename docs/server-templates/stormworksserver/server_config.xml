@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<!-- Use the game's generated Stormworks XML as the authoritative base. -->
+	<!-- AlphaGSM module-known defaults: port=25565, queryport=25566. -->
+</config>

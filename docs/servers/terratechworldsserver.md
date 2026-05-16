@@ -5,6 +5,7 @@ This guide covers the `terratechworldsserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -46,7 +47,7 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -66,8 +67,12 @@ alphagsm myterratec backup
 
 - **Executable**: `TT2Server.exe`
 - **Location**: `<install_dir>/TT2Server.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `2533070`
+
+AlphaGSM launches the server with `-log`, tracks readiness through
+`Saved/Logs/TT2.log`, and waits for `info --json` to report protocol `a2s`
+before treating the server as query-ready.
 
 ### Server Configuration
 

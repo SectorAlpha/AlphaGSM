@@ -5,6 +5,7 @@ This guide covers the `readyornotserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +45,9 @@ alphagsm myreadyorn stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port written to `ReadyOrNot/Config/ServerConfig.ini` (default `port + 1`)
+- the max player count written to `ReadyOrNot/Config/ServerConfig.ini` (default `16`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +61,8 @@ alphagsm myreadyorn backup
 ## Notes
 
 - Module name: `readyornotserver`
-- Default port: 27015
+- Default game port: 7777
+- Default query port: `port + 1`
 
 ## Developer Notes
 
@@ -66,14 +70,19 @@ alphagsm myreadyorn backup
 
 - **Executable**: `ReadyOrNotServer.exe`
 - **Location**: `<install_dir>/ReadyOrNotServer.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `950290`
+
+AlphaGSM launches the server with `-log -unattended`, waits for
+`ReadyOrNot/Saved/Logs/ReadyOrNot.log`, and then queries A2S on `queryport`
+through the resolved local query host instead of the game port.
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<install_dir>/ReadyOrNot/Config/ServerConfig.ini`
 - **Max players**: `16`
-- **Template**: See [server-templates/readyornotserver/](../server-templates/readyornotserver/) if available
+- **Managed keys**: `queryport`, `maxplayers`
+- **Template**: See [server-templates/readyornotserver/](../server-templates/readyornotserver/)
 
 ### Maps and Mods
 

@@ -5,6 +5,7 @@ This guide covers the `sonsoftheforestserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,10 @@ alphagsm mysonsofth stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 8766)
+- the A2S query port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,16 +60,20 @@ alphagsm mysonsofth backup
 ## Notes
 
 - Module name: `sonsoftheforestserver`
-- Default port: 27015
+- Default game port: `8766`
+- Default query port: `27015`
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `StartSOTFDedicated.bat`
-- **Location**: `<install_dir>/StartSOTFDedicated.bat`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `SonsOfTheForestDS.exe`
+- **Location**: `<install_dir>/SonsOfTheForestDS.exe`
+- **Engine**: Unity Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `2465200`
+
+AlphaGSM launches the dedicated server executable directly instead of the
+legacy `StartSOTFDedicated.bat` wrapper.
 
 ### Server Configuration
 

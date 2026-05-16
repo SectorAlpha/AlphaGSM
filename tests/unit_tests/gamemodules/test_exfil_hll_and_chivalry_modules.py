@@ -48,7 +48,7 @@ def test_exfil_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_hellletloose_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(hellletlooseserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(hellletlooseserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("hll")
     exe = tmp_path / "HLLServer.exe"
     exe.write_text("")
@@ -77,13 +77,15 @@ def test_chivalry_get_start_command_builds_expected_args(tmp_path):
             "dir": str(tmp_path) + "/",
             "exe_name": "Binaries/Linux/UDKGameServer-Linux",
             "startmap": "AOCTO-Battlegrounds_V3_P",
+            "port": 7777,
+            "queryport": 27015,
         }
     )
 
     cmd, cwd = chivalryserver.get_start_command(server)
 
     assert cmd[0] == "./Binaries/Linux/UDKGameServer-Linux"
-    assert "AOCTO-Battlegrounds_V3_P?steamsockets" in cmd
+    assert "AOCTO-Battlegrounds_V3_P?Port=7777?QueryPort=27015?steamsockets" in cmd
     assert cwd == server.data["dir"]
 
 

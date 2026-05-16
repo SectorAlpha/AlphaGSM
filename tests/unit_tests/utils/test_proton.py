@@ -102,13 +102,32 @@ def test_is_available_true_when_proton_found(tmp_path, monkeypatch):
 def test_wrap_command_with_wine_no_prefix(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe"])
-    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"]
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
 
 
 def test_wrap_command_with_wine_and_prefix(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe"], wineprefix="/srv/game/.wine")
-    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "WINEPREFIX=/srv/game/.wine", "/usr/bin/wine", "server.exe"]
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "WINEPREFIX=/srv/game/.wine",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
 
 
 def test_wrap_command_prefers_proton_when_requested(tmp_path, monkeypatch):
@@ -130,7 +149,62 @@ def test_wrap_command_prefers_proton_when_requested(tmp_path, monkeypatch):
 def test_wrap_command_preserves_trailing_args(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe", "--port", "7000"])
-    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe", "--port", "7000"]
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+        "--port",
+        "7000",
+    ]
+
+
+def test_prepend_env_assignments_wraps_plain_command():
+    result = proton_module.prepend_env_assignments(["server.exe"], LIBGL_ALWAYS_SOFTWARE="1")
+    assert result == ["env", "LIBGL_ALWAYS_SOFTWARE=1", "server.exe"]
+
+
+def test_prepend_env_assignments_inserts_before_existing_env_tokens():
+    result = proton_module.prepend_env_assignments(
+        ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"],
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    assert result == [
+        "env",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
+
+
+def test_prepend_env_unsets_wraps_plain_command():
+    result = proton_module.prepend_env_unsets(["server.exe"], "TMPDIR", "TMP")
+    assert result == ["env", "-u", "TMPDIR", "-u", "TMP", "server.exe"]
+
+
+def test_prepend_env_unsets_inserts_before_existing_env_tokens():
+    result = proton_module.prepend_env_unsets(
+        ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"],
+        "TMPDIR",
+        "TMP",
+        "TEMP",
+    )
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +258,26 @@ def test_unwrap_runtime_command_removes_wine_wrapper():
         "DISPLAY=",
         "WINEDLLOVERRIDES=winex11.drv=",
         "WINEPREFIX=/srv/game/.wine",
+        "/usr/bin/wine",
+        "Server.exe",
+        "-port",
+        "27015",
+    ]
+
+    result = proton_module.unwrap_runtime_command(command)
+
+    assert result == ["Server.exe", "-port", "27015"]
+
+
+def test_unwrap_runtime_command_skips_env_unset_options():
+    command = [
+        "env",
+        "-u",
+        "TMPDIR",
+        "-u",
+        "TMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
         "/usr/bin/wine",
         "Server.exe",
         "-port",

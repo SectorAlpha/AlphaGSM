@@ -69,10 +69,14 @@ alphagsm mypcarserv backup
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `332670`
 
+Smoke and integration validation track readiness through `alphagsm info --json`
+returning protocol `a2s` instead of waiting for screen-log markers.
+
 ### Server Configuration
 
 - **Config file**: `server.cfg`
 - **Template**: See [server-templates/pcarserver/](../server-templates/pcarserver/) if available
+- AlphaGSM writes a managed `server.cfg` during install/update using `hostPort = <port>` and `queryPort = <port + 1>`.
 
 ### Maps and Mods
 

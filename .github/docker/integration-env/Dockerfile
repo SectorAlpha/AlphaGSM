@@ -15,6 +15,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   p7zip-full                          — .7z archive support
 #   unzip bzip2                         — archive formats used by some servers
 #   libatomic1                          — GCC atomics used by UE4 / Unity servers
+#   libc++1                             — LLVM C++ runtime used by newer native
+#                                         Linux dedicated servers such as Pavlov VR
 #   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
 #   libpulse0                           — PulseAudio client; Unity loads it dynamically
 #                                         even in -batchmode, crashes if not present
@@ -34,7 +36,7 @@ RUN dpkg --add-architecture i386 \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
         unzip bzip2 \
-        libatomic1 libsdl2-2.0-0 \
+                             libatomic1 libc++1 libsdl2-2.0-0 \
         libpulse0 \
         libcurl3t64-gnutls \
        curl jq python3 python3-pip python3-venv wget ca-certificates \
@@ -63,6 +65,38 @@ RUN wget -q \
  && dpkg -i /tmp/libssl1.0.0.deb \
  && rm -f /tmp/libssl1.0.0.deb
 
+# libprotobuf10 — ATLAS still links against libprotobuf.so.10, which Ubuntu
+# 24.04 no longer ships.  Pull the Bionic compatibility package directly so the
+# process-backed CI image can still launch the native Linux server binary.
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb" \
+       -O /tmp/libprotobuf10.deb \
+ && dpkg -i /tmp/libprotobuf10.deb \
+ && rm -f /tmp/libprotobuf10.deb
+
+# libidn11 — the same ATLAS Linux binary still depends on the legacy
+# libidn.so.11 SONAME that Ubuntu 24.04 removed from the main archive.
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/libi/libidn/libidn11_1.33-2.2ubuntu2_amd64.deb" \
+       -O /tmp/libidn11.deb \
+ && dpkg -i /tmp/libidn11.deb \
+ && rm -f /tmp/libidn11.deb
+
+# ATLAS also still links against the OpenLDAP 2.4 runtime for liblber-2.4.so.2.
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends libgssapi3-heimdal libldap-common libsasl2-2 \
+ && wget -q \
+        "http://archive.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb" \
+        -O /tmp/libldap-2.4-2.deb \
+ && dpkg -i /tmp/libldap-2.4-2.deb \
+ && rm -f /tmp/libldap-2.4-2.deb \
+ && rm -rf /var/lib/apt/lists/*
+
+# Pavlov VR still requests the unversioned libc++.so name at runtime. Ubuntu's
+# libc++-dev package provides only a linker script there, which the dynamic
+# loader rejects, so point the loader name at the real libc++.so.1 ELF instead.
+RUN ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
+
 # Install Temurin 25 (Java 25) — required by the current Minecraft server
 # bundler (net.minecraft.bundler.Main, class file version 69).  Ubuntu 24.04's
 # openjdk-21-jdk-headless only handles class files up to version 65 (Java 21).
@@ -74,6 +108,18 @@ RUN wget -q -O /usr/share/keyrings/adoptium.asc \
         > /etc/apt/sources.list.d/adoptium.list \
  && apt-get update -qq \
  && apt-get install -y --no-install-recommends temurin-25-jdk \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install the .NET 10 runtime — required by SS14's Linux apphost
+# (Robust.Server).  Baking it into the integration image keeps it available
+# under the non-root gsmuser account used by the integration-test job.
+RUN wget -q \
+       https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+       -O /tmp/packages-microsoft-prod.deb \
+ && dpkg -i /tmp/packages-microsoft-prod.deb \
+ && rm -f /tmp/packages-microsoft-prod.deb \
+ && apt-get update -qq \
+ && apt-get install -y --no-install-recommends dotnet-runtime-10.0 \
  && rm -rf /var/lib/apt/lists/*
 
 # Put the Wine prefix at a fixed, HOME-agnostic path.  GitHub Actions sets HOME
@@ -98,7 +144,8 @@ RUN wineboot --init \
  && winetricks -q win10 \
  && (winetricks -q --force vcrun2019 || true) \
  && (winetricks -q --force vcrun2022 || true) \
- && (wineserver --kill || true)
+ && (wineserver --kill || true) \
+ && rm -rf /tmp/wine-*
 
 # Wine Mono (.NET/CLR runtime required by .NET-based game servers such as
 # Medieval Engineers and Space Engineers).
@@ -107,7 +154,8 @@ RUN wget -q \
         -O /tmp/wine-mono.msi \
  && wine msiexec /i /tmp/wine-mono.msi /qn \
  && (wineserver --kill || true) \
- && rm -f /tmp/wine-mono.msi
+ && rm -f /tmp/wine-mono.msi \
+ && rm -rf /tmp/wine-*
 
 # Install Proton-GE into /opt/proton-ge, which is already listed in the
 # _PROTON_SEARCH_DIRS tuple in src/utils/proton.py so all game modules find it

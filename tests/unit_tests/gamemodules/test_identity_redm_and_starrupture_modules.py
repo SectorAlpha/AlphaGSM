@@ -31,7 +31,7 @@ def test_redm_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_starrupture_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(starruptureserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(starruptureserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("star")
     exe = tmp_path / "StarRuptureServer.x86_64"
     exe.write_text("")

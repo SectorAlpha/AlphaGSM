@@ -28,7 +28,7 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires SteamCMD (app_id 233780)")
+@pytest.mark.skip(reason="SteamCMD app 233780 requires authentication (No subscription)")
 def test_arma3_wasteland_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

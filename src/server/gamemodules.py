@@ -133,11 +133,32 @@ Set:
             created as needed. values being empty signifies a request to create nodes
             but not add new values. A special value of 'DELETE' can be returned to
             signify the user is requesting the key be deleted.
+    Attributes:
+        config_sync_keys [OPTIONAL]: iterable of top-level datastore keys that
+            map to real game-server config values and should therefore trigger
+            sync_server_config(server) after set updates the in-memory datastore.
+            AlphaGSM-only keys should be excluded.
+        set_sync_keys [OPTIONAL]: legacy alias for config_sync_keys.
+        setting_schema [OPTIONAL]: mapping of canonical setting names to
+            schema metadata describing aliases, value types, secrecy, where the
+            setting applies, and how it is stored. This drives set --list,
+            set <key> --describe, and schema-backed alias resolution.
+    Functions:
+        sync_server_config(server) [OPTIONAL]: rewrite any on-disk server config
+            files that mirror datastore-backed settings. This hook is intended to
+            make `set` update real server config immediately rather than waiting
+            for a later setup or start. Automatic sync runs only for keys listed
+            in config_sync_keys (or the legacy set_sync_keys alias).
+        list_setting_values(server, canonical_key) [OPTIONAL]: return an iterable
+            of known values for a schema-backed key when the module can enumerate
+            them safely, such as installed maps. Return None when the module
+            cannot enumerate the values for that key.
         postset(server,key,**kwargs) [OPTIONAL]: do any post processing needed when
             the the specified key is set. When this function is called the new value
-            will already have been set and saved. This function could for example
-            trigger the update logic if the level to use is changed or update other
-            values to maintain consistency.
+            will already have been applied to the in-memory datastore and will be
+            saved after the hook returns. This function could for example trigger
+            update logic if the level to use is changed, refresh on-disk server
+            config files, or update other values to maintain consistency.
 
 Backup:
     This section documents the backup built in command. This is defined as a

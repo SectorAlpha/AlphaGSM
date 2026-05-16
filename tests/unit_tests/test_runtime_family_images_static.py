@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 JAVA_DOCKERFILE = Path("docker/java/Dockerfile")
+SIMPLE_TCP_DOCKERFILE = Path("docker/simple-tcp/Dockerfile")
 STEAMCMD_LINUX_DOCKERFILE = Path("docker/steamcmd-linux/Dockerfile")
 WINE_PROTON_DOCKERFILE = Path("docker/wine-proton/Dockerfile")
 WINE_PROTON_ENTRYPOINT = Path("docker/wine-proton/entrypoint.sh")
@@ -39,6 +40,20 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
         "libpulse0",
         "libssl1.1_1.1.1f-1ubuntu2_amd64.deb",
         "libssl1.0.0_1.0.2n-1ubuntu5_amd64.deb",
+    )
+
+    missing = [snippet for snippet in required_snippets if snippet not in text]
+
+    assert missing == []
+
+
+def test_simple_tcp_runtime_image_keeps_mumble_service_binary_available():
+    text = SIMPLE_TCP_DOCKERFILE.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "bash",
+        "python3",
+        "mumble-server",
     )
 
     missing = [snippet for snippet in required_snippets if snippet not in text]

@@ -49,6 +49,14 @@ Setup configures:
 - a generated `ServerSetting.ini` with the selected world name, max player count, and save path
 - SteamCMD downloads the server files
 
+Common `set` values:
+
+```bash
+alphagsm mycraftopi set map AlphaGSM World
+alphagsm mycraftopi set serverpassword craft-secret
+alphagsm mycraftopi set bindaddress 0.0.0.0
+```
+
 ## Useful Commands
 
 ```bash

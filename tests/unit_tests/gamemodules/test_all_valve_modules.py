@@ -92,6 +92,13 @@ def test_gmodserver_install_downloads_mountable_source_content(monkeypatch, tmp_
     assert '"ep2"' in mountdepots
 
 
+def test_gmodserver_exports_private_mount_constants():
+    mod = importlib.import_module("gamemodules.gmodserver")
+
+    assert mod._GMOD_CONTENT_INSTALLS[0] == ("cstrike", 232330, "cstrike")
+    assert "hl2mp" in mod._GMOD_MOUNTDEPOTS_DEFAULTS
+
+
 # ── Counter-Strike: Source ───────────────────────────────────────────────────
 
 def test_cssserver_configure(tmp_path):
@@ -104,6 +111,37 @@ def test_cssserver_start_command(tmp_path):
     )
     cmd = _start_command_check(mod, server, tmp_path, "srcds_run")
     assert "cstrike" in cmd
+
+
+@pytest.mark.parametrize(
+    "module_name,game_dir,valid_map,invalid_map",
+    [
+        ("cssserver", "cstrike", "de_dust2", "de_train"),
+        ("l4d2server", "left4dead2", "c5m1_waterfront", "c9m9_nowhere"),
+        ("l4dserver", "left4dead", "l4d_hospital01_apartment", "l4d_missing_map"),
+        ("hl2dmserver", "hl2mp", "dm_lockdown", "dm_missing_map"),
+        ("hldmsserver", "hl1mp", "crossfire", "boot_camp"),
+        ("insserver", "insurgency", "embassy_coop checkpoint", "unknown_coop checkpoint"),
+        ("doiserver", "doi", "bastogne stronghold", "missing stronghold"),
+        ("fofserver", "fof", "fof_depot", "fof_missing"),
+        ("bb2server", "brainbread2", "bba_barracks", "bba_missing"),
+        ("pvkiiserver", "pvkii", "bt_island", "bt_missing"),
+    ],
+)
+def test_source_module_checkvalue_startmap_accepts_installed_maps(
+    module_name, game_dir, valid_map, invalid_map, tmp_path
+):
+    module = importlib.import_module(f"gamemodules.{module_name}")
+    server = _make_server()
+    module.configure(server, False, 27015, str(tmp_path))
+    maps_dir = tmp_path / game_dir / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / f"{valid_map}.bsp").write_text("")
+
+    assert module.checkvalue(server, ("startmap",), valid_map) == valid_map
+
+    with pytest.raises(Exception, match=f"Unsupported map {invalid_map}"):
+        module.checkvalue(server, ("startmap",), invalid_map)
 
 
 # ── Left 4 Dead 2 ───────────────────────────────────────────────────────────

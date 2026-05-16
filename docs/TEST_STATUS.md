@@ -1,14 +1,19 @@
 # Integration Test Status
 
-Last updated: 2026-04-10
+Last updated: 2026-05-15
 
 ## Summary
+
+Tracker note: on 2026-05-15 the live `disabled_servers.conf` gate was reconciled
+with already-supported Wine/Proton modules that were still blocked from `create`.
+The status rows below already reflected those modules as active support surfaces;
+this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
 | PASSED   | 83      |
-| DISABLED | 74      |
-| SKIPPED  | 78      |
+| DISABLED | 73      |
+| SKIPPED  | 79      |
 
 ## Status Key
 
@@ -102,11 +107,11 @@ Last updated: 2026-04-10
 | askaserver | SteamCMD (Wine) |
 | blackops3server | SteamCMD (Wine) |
 | pixarkserver | SteamCMD (Wine) |
-| remnantsserver | SteamCMD (Wine) — exe changed to RemSurvivalServer.exe; added -log -unattended; awaiting retest |
-| readyornotserver | SteamCMD (Wine) — PASSED 2026-03-28 |
-| insserver | SteamCMD (Source) — PASSED 2026-03-28 |
-| inssserver | SteamCMD — PASSED 2026-03-28 |
-| ts3server | Direct download — PASSED 2026-03-28 |
+| remnantsserver | Re-enabled: server now launches `RemSurvivalServer.exe`, smoke and integration wait on `RemSurvival/Saved/Logs/RemSurvival.log` with a 600s startup budget, and `info --json` confirms protocol `a2s` |
+| readyornotserver | Re-enabled: PASSED 2026-03-28; smoke now follows `ReadyOrNot/Saved/Logs/ReadyOrNot.log`, and integration now waits on the module-owned A2S `queryport` path instead of assuming `port + 1` |
+| insserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for Source startup markers and `info --json` protocol `a2s` |
+| inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
+| ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
 ## DISABLED (74)
 
@@ -127,7 +132,7 @@ Last updated: 2026-04-10
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
-| atlasserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
+| atlasserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query path instead of waiting for absent log markers |
 | bannerlordserver | SteamCMD app 1863440 installs no Linux-compatible dedicated server binary (executable file not found) |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
@@ -136,7 +141,7 @@ Last updated: 2026-04-10
 | bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
-| chivalryserver | Server starts but crashes during initialization before log markers appear (crash pattern) |
+| chivalryserver | CI fix landed: launch URL now passes the configured `Port=` value to `UDKGameServer-Linux` instead of ignoring the selected game port; awaiting retest |
 | conanexiles | SteamCMD app 443030 installs no Linux-compatible dedicated server binary (ConanSandboxServer not present) |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | cryofallserver | SteamCMD app 1061710 installs no Linux-compatible dedicated server binary (CryoFall_Server not present) |
@@ -146,7 +151,7 @@ Last updated: 2026-04-10
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
 | emserver | SteamCMD (Source) |
-| ets2server | SteamCMD downloads successfully but server never outputs expected readiness markers |
+| ets2server | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` instead of waiting for absent log markers |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
 | hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -163,8 +168,8 @@ Last updated: 2026-04-10
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
-| pcarserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
-| pvrserver | SteamCMD downloads successfully but server never outputs expected readiness markers |
+| pcarserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` instead of waiting for absent log markers |
+| pvrserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query port instead of waiting for absent log markers |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q3server | ioquake3 has no GitHub releases; download 404 |
 | q4server | Quake 4 download URL returns 404 |
@@ -175,7 +180,6 @@ Last updated: 2026-04-10
 | sevendaystodie | SteamCMD |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
-| ss14server | SS14 CDN returns 404 |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
 | stationeersserver | Stationeers dedicated server stalls under Unity NullGfxDevice in headless CI after SetConsoleOutputCP startup exception; game port never opens |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
@@ -194,37 +198,38 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | Test | Skip reason |
 |------|-------------|
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
-| arksurvivalascended | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2430930 (ARK Survival Ascended) is extremely large — run individually with extended timeout |
-| astroneerserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 728470 — run individually to verify |
+| arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
+| astroneerserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 728470 |
 | blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
-| darkandlightserver | Wine: server starts (runs at 39% CPU) but DNL/Saved/Logs/DNL.log not created within 300s under Wine; UE4 init is slow — START_TIMEOUT raised to 600s; needs retest |
+| darkandlightserver | Re-enabled: smoke and integration now wait on `DNL/Saved/Logs/DNL.log`, then require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton for app 630230 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
-| empyrionserver | Wine: exe path fixed (DedicatedServer/EmpyrionDedicated.exe); needs individual retest — app 530870 |
-| fearthenightserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 764940 — run individually to verify |
-| heatserver | Wine: exe path fixed (was wrong exe name); needs individual retest — app 996600 |
+| empyrionserver | Re-enabled: server now launches `DedicatedServer/EmpyrionDedicated.exe`, smoke waits 600s on the screen log plus `info --json` protocol `a2s`, and the stale launcher/docs mismatch is removed — app 530870 |
+| fearthenightserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 764940 |
+| heatserver | Re-enabled: server now launches `Server.exe`, writes readiness to `server.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 996600 |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
-| icarusserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2089300 (Icarus) is very large — run individually with extended timeout |
+| icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
-| miscreatedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 302200 — run individually to verify |
+| miscreatedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 302200 |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
-| noonesurvivedserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2329680 — run individually to verify |
-| notdserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 1420710 — run individually to verify |
-| outpostzeroserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 762880 — run individually to verify |
-| primalcarnageextinctionserver | Wine: UE3 log path fixed (PrimalCarnageGame/Logs/Launch.log), -log flag added, START_TIMEOUT raised to 600s; awaiting retest — app 336400 |
+| noonesurvivedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2329680 |
+| notdserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 1420710 |
+| outpostzeroserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 762880 |
+| primalcarnageextinctionserver | Re-enabled: UE3 log path is `PrimalCarnageGame/Logs/Launch.log`, the server launches with `-log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 336400 |
 
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
-| returntomoriaserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3349480 — run individually to verify |
+| returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
-| rs2server | Wine: server (VNGame.exe, app 418480) starts and stops cleanly under Wine but does not write expected log markers within 300s; likely writes logs to game-internal paths (Unreal Engine 3), not stdout; START_TIMEOUT raised to 600s — awaiting retest |
-| saleblazersserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3099600 — run individually to verify |
+| rs2server | Re-enabled: server (VNGame.exe, app 418480) writes readiness to `ROGame/Logs/Launch.log`, smoke/integration now wait for `info --json` protocol `a2s`, and CI now gives RS2 a 20 minute start budget after its historical 600s Wine stall |
+| saleblazersserver | Re-enabled: server writes readiness to `server.log` via `-logFile`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton for app 3099600 |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
-| sniperelite4server | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 568880 (Sniper Elite 4) is very large — run individually with extended timeout |
-| sonsoftheforestserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 2465200 (Sons of the Forest) is large — run individually with extended timeout |
-| starruptureserver | Wine: SteamCMD download timed out (>20 min) during parallel testing; app 3809400 — run individually to verify |
+| sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
+| sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
+| ss14server | Re-enabled: manifest-based SS14 downloads install correctly, AlphaGSM now syncs `server_config.toml`, and smoke/integration pass through `info --json` protocol `robust_status`; still requires a host-installed `dotnet` runtime |
+| starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
-| subsistenceserver | Wine: UE3 server D3D crash fixed with LIBGL_ALWAYS_SOFTWARE=1 (Mesa software renderer); -log flag added; test now checks */Logs/Launch.log via glob; START_TIMEOUT raised to 600s; awaiting retest — app 1141370 |
-| terratechworldsserver | Wine: server runs but Saved/Logs/TT2.log not created within 300–460s; UE4 init is slow under Wine — START_TIMEOUT raised to 600s; needs retest |
+| subsistenceserver | Re-enabled: UE3 server D3D crash is mitigated with `LIBGL_ALWAYS_SOFTWARE=1`, `-log` now writes readiness to `*/Logs/Launch.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 1141370 |
+| terratechworldsserver | Re-enabled: server writes readiness to `Saved/Logs/TT2.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |

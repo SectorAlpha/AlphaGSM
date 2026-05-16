@@ -23,8 +23,11 @@ from gamemodules.sonsoftheforestserver import steam_app_id
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 3600  # 60 min: large SteamCMD payload under shared CI load
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
+@pytest.mark.timeout(TEST_TIMEOUT)
 def test_sonsoftheforestserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -45,7 +48,15 @@ def test_sonsoftheforestserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "sonsoftheforestserver")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_and_assert_ok(
+        env,
+        server_name,
+        "setup",
+        "-n",
+        str(port),
+        str(install_dir),
+        timeout=SETUP_TIMEOUT,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
@@ -59,6 +70,8 @@ def test_sonsoftheforestserver_lifecycle(tmp_path):
             log_path,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
 
         # status

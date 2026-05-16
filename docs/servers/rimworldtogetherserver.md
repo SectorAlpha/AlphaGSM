@@ -47,6 +47,16 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
+## Structured Settings
+
+Only the game port is schema-backed for this module:
+
+```bash
+alphagsm myrimworld set port 25555
+```
+
+The module also accepts `gameport` as an alias for `port`.
+
 ## Useful Commands
 
 ```bash

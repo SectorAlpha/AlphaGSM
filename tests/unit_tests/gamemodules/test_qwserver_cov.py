@@ -75,7 +75,22 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./mvdsv",
+        "-port",
+        "27015",
+        "+hostname",
+        "test",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_quakeworld_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+hostname",)
+    assert mod.setting_schema["startmap"].aliases == ("map",)
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

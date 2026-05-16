@@ -39,6 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['queryport'] == 27015
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -112,8 +113,24 @@ def test_get_start_command(tmp_path):
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
     server.data["startmap"] = "test"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./Binaries/Linux/UDKGameServer-Linux",
+        "test?Port=7777?QueryPort=27015?steamsockets",
+        "-SEEKFREELOADINGSERVER",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_query_and_info_address_use_queryport(monkeypatch):
+    server = DummyServer("chiv")
+    server.data["queryport"] = "27015"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.9")
+
+    assert mod.get_query_address(server) == ("10.0.0.9", 27015, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.9", 27015, "a2s")
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -170,6 +187,12 @@ def test_checkvalue_port():
     server = DummyServer()
     result = mod.checkvalue(server, ("port",), "12345")
     assert result == 12345
+
+
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "27015")
+    assert result == 27015
 
 
 def test_checkvalue_startmap():

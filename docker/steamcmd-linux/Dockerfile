@@ -12,6 +12,7 @@ RUN dpkg --add-architecture i386 \
         lib32stdc++6 \
         libcurl3t64-gnutls \
         libatomic1 \
+                  libc++1 \
         libsdl2-2.0-0 \
         libpulse0 \
        python3 \
@@ -31,6 +32,31 @@ RUN wget -q \
        -O /tmp/libssl1.0.0.deb \
  && dpkg -i /tmp/libssl1.0.0.deb \
  && rm -f /tmp/libssl1.0.0.deb
+
+# ATLAS still links against libprotobuf.so.10, so keep the legacy protobuf
+# runtime available in the shared native SteamCMD Linux family image too.
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/p/protobuf/libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb" \
+       -O /tmp/libprotobuf10.deb \
+ && dpkg -i /tmp/libprotobuf10.deb \
+ && rm -f /tmp/libprotobuf10.deb
+
+RUN wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/libi/libidn/libidn11_1.33-2.2ubuntu2_amd64.deb" \
+       -O /tmp/libidn11.deb \
+ && dpkg -i /tmp/libidn11.deb \
+ && rm -f /tmp/libidn11.deb
+
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends libgssapi3-heimdal libldap-common libsasl2-2 \
+ && wget -q \
+       "http://archive.ubuntu.com/ubuntu/pool/main/o/openldap/libldap-2.4-2_2.4.49+dfsg-2ubuntu1.10_amd64.deb" \
+       -O /tmp/libldap-2.4-2.deb \
+ && dpkg -i /tmp/libldap-2.4-2.deb \
+ && rm -f /tmp/libldap-2.4-2.deb \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
 
 WORKDIR /srv/server
 

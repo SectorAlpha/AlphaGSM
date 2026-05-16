@@ -27,7 +27,7 @@ class DummyServer:
 
 def test_enshrouded_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     # Monkeypatch proton.wrap_command so the test is independent of Wine/Proton installation.
-    monkeypatch.setattr(enshrouded.proton, "wrap_command", lambda cmd, wineprefix=None: ["wine"] + list(cmd))
+    monkeypatch.setattr(enshrouded.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: ["wine"] + list(cmd))
 
     server = DummyServer("ensh")
     exe = tmp_path / "enshrouded_server.exe"

@@ -50,7 +50,15 @@ def test_bannerlord_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(readyornotserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    observed = {}
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        observed["wineprefix"] = wineprefix
+        observed["prefer_proton"] = prefer_proton
+        return list(cmd)
+
+    monkeypatch.setattr(readyornotserver.proton, "wrap_command", fake_wrap_command)
+    monkeypatch.setattr(readyornotserver, "IS_LINUX", True)
     server = DummyServer("ron")
     exe = tmp_path / "ReadyOrNotServer.exe"
     exe.write_text("")
@@ -70,6 +78,7 @@ def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch
     assert "-Port=7777" in cmd
     assert "-QueryPort=27015" in cmd
     assert cwd == server.data["dir"]
+    assert observed == {"wineprefix": None, "prefer_proton": False}
 
 
 def test_bannerlord_and_readyornot_update_downloads_and_optionally_restart(monkeypatch):

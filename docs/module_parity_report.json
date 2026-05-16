@@ -1,0 +1,2339 @@
+[
+  {
+    "aliases": [],
+    "canonical_id": "abfserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "accserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "acserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ahl2server",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ahlserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "alienarenaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "aloftserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "argoserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ark",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arksurvivalascended",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma2coserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3.altislife",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3.desolationredux",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3.epoch",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3.exile",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3.headless",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3.vanilla",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3.wasteland",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3altislifeserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3desolationreduxserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3epochserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3exileserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3headlessserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "arma3wastelandserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "armarserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "askaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "astroneerserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "atlasserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "atsserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "avserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bannerlordserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "battlebitserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "battlecryoffreedomserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bb2server",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bbserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bdserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bf1942server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bfvserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "blackops3server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "blackwakeserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bmdmserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bobserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "boserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "brickadiaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "brokeprotocolserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "bsserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "btlserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "btserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ccserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "cmwserver"
+    ],
+    "canonical_id": "chivalryserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "citadelserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ckserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "cod2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "cod4server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "codserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "coduoserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "codwawserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "colserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "conanexiles",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "cs2",
+      "cs2server"
+    ],
+    "canonical_id": "counterstrike2",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "csgo",
+      "csgoserver"
+    ],
+    "canonical_id": "counterstrikeglobaloffensive",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "ctserver"
+    ],
+    "canonical_id": "craftopiaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "cryofallserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "csczserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "csserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "cssserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dabserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "darkandlightserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "dodrserver"
+    ],
+    "canonical_id": "dayofdragonsserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dayzarma2epochserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dayzserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "deadmatterserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "deadpolyserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dmcserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dodserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dodsserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "doiserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dstserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ducksideserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "dysserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ecoserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "empyrionserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "emserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "enshrouded",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "etlserver"
+    ],
+    "canonical_id": "etlegacyserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ets2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "exfilserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "fearthenightserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "fofserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "foundryserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "frozenflameserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "gmodserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "goldeneyesourceserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "gravserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "groundbranchserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "gtafivemserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "heatserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "hellletlooseserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "hl2dmserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "hldmserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "hldmsserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "hogwarpserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "hurtworldserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "hzserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "icarusserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "identityserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "insserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "inssserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "interstellarriftserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "iosserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "jc2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "jc3server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "jk2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "kerbalspaceprogramserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "kf2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "kfserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "l4d2server",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "l4dserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "lastoasisserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "lifeisfeudalserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "longvinterserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "medievalengineersserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "memoriesofmarsserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "mcbserver"
+    ],
+    "canonical_id": "minecraft.bedrock",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "minecraft.bungeecord",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "minecraft.custom",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "pmcserver"
+    ],
+    "canonical_id": "minecraft.paper",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "minecraft.tekkit",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "mcserver"
+    ],
+    "canonical_id": "minecraft.vanilla",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "vpmcserver"
+    ],
+    "canonical_id": "minecraft.velocity",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "wmcserver"
+    ],
+    "canonical_id": "minecraft.waterfall",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "miscreatedserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "mhserver"
+    ],
+    "canonical_id": "mordserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "motortownserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "mtaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "mumbleserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "mw3server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "mxbikesserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "mythofempiresserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ndserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "necserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "nightingale",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "nmrihserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "noonesurvivedserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "notdserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ns2cserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ns2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "nsserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ohdserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "onsetserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "opforserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "outpostzeroserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "pwserver"
+    ],
+    "canonical_id": "palworld",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "pathoftitansserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "pc2server"
+    ],
+    "canonical_id": "pcars2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "pcserver"
+    ],
+    "canonical_id": "pcarserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "pixarkserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "police1013server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "primalcarnageextinctionserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "pzserver"
+    ],
+    "canonical_id": "projectzomboid",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "pvkiiserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "pvrserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "q2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "q3server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "q4server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "qlserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "qwserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "readyornotserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "redmserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "reignofdwarfserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "reignofkingsserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "remnantsserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "returntomoriaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ricochetserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "rimworldtogetherserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ror2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "roserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "risingstorm2vietnam"
+    ],
+    "canonical_id": "rs2server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "rtcwserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "rust",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "rwserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "saleblazersserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "sampserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "sfserver"
+    ],
+    "canonical_id": "satisfactory",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "scpslserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "scumserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "seserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "sdtdserver"
+    ],
+    "canonical_id": "sevendaystodie",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "sfcserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "silicaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "skyrimtogetherrebornserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "smallandserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "sniperelite4server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "solserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "sonsoftheforestserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "smserver"
+    ],
+    "canonical_id": "soulmask",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "squad44server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "squadserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ss14server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "sbserver"
+    ],
+    "canonical_id": "starbound",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "starruptureserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "stserver"
+    ],
+    "canonical_id": "stationeersserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "staxelserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "stnserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "stormworksserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "subnauticaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "subsistenceserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "sunkenlandserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "svenserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "tf2",
+      "tf2server"
+    ],
+    "canonical_id": "teamfortress2",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "terraria.tshock",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "terrariaserver"
+    ],
+    "canonical_id": "terraria.vanilla",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "terratechworldsserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "tf2c",
+      "tf2classified",
+      "tf2classifiedserver"
+    ],
+    "canonical_id": "tf2cserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "tfcserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "theforestserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "tfserver"
+    ],
+    "canonical_id": "thefrontserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "tiserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "trackmaniaserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ts3server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "tsserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "tuserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "twserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "untserver"
+    ],
+    "canonical_id": "unturned",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "ut2k4server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "utserver"
+    ],
+    "canonical_id": "ut99server",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [
+      "vhserver"
+    ],
+    "canonical_id": "valheim",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "veinserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [
+      "vintsserver"
+    ],
+    "canonical_id": "vintagestoryserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "vrserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "vsserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "warbandserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "wfserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "wreckfestserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "wurmserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "xntserver",
+    "contract_complete": false,
+    "missing_surfaces": [
+      "status"
+    ],
+    "runtime_verified": true,
+    "support_state": "active"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "zmrserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  },
+  {
+    "aliases": [],
+    "canonical_id": "zpsserver",
+    "contract_complete": true,
+    "missing_surfaces": [],
+    "runtime_verified": false,
+    "support_state": "disabled"
+  }
+]

@@ -1,27 +1,32 @@
 """Bungeecord-specific setup and runtime helpers."""
 
 import os
+from pathlib import Path
 import urllib.request
 import json
 import time
 import datetime
 import subprocess as sp
-from server import ServerError
 import re
 import screen
 import server.runtime as runtime_module
 import downloader
+from server.modsupport.downloads import download_to_cache
+from server import ServerError
+from server.modsupport.plugin_jars import build_plugin_jar_mod_support
+from server.modsupport.providers import resolve_direct_url_entry, resolve_moddb_entry
+from server.modsupport.registry import CuratedRegistryLoader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
+from utils.gamemodules import common as gamemodule_common
 
-commands = ()
 command_args = {
     "setup": CmdSpec(
         optionalarguments=(
             ArgSpec("PORT", "The port for the server to listen on", int),
             ArgSpec("DIR", "The Directory to install minecraft in", str),
         )
-    )
+    ),
 }
 command_descriptions = {}
 command_functions = {}
@@ -30,9 +35,60 @@ command_functions = {}
 # Regex to locate the first listener's host line in config.yml
 _BUNGEE_HOST_RE = re.compile(r'^(\s*host:\s*)(\S+):(\d+)', re.MULTILINE)
 _CONFIG_GENERATION_TIMEOUT = 120
+ALLOWED_PROXY_PLUGIN_DESTINATIONS = ("plugins",)
+DEFAULT_PROXY_MOD_CACHE_DIRNAME = "minecraft-bungeecord"
+VELOCITY_PROXY_MOD_CACHE_DIRNAME = "minecraft-velocity"
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
+def _default_proxy_curated_registry_path(server=None):
+    if server is not None and server.data.get("mod_cache_dirname") == VELOCITY_PROXY_MOD_CACHE_DIRNAME:
+        return Path(__file__).with_name("curated_velocity_plugins.json")
+    return Path(__file__).with_name("curated_proxy_plugins.json")
+
+
+def load_proxy_curated_registry(server=None):
+    """Load the checked-in proxy plugin registry or an override file."""
+
+    override = os.environ.get("ALPHAGSM_PROXY_CURATED_MODS_PATH")
+    path = Path(override) if override else _default_proxy_curated_registry_path(server)
+    return CuratedRegistryLoader.load(path)
+
+
+def _mod_label(server):
+    return server.data.get("mod_label", "BungeeCord")
+
+
+MOD_SUPPORT = build_plugin_jar_mod_support(
+    game_label="proxy",
+    curated_registry_loader=load_proxy_curated_registry,
+    cache_namespace_getter=lambda server: server.data.get(
+        "mod_cache_dirname", DEFAULT_PROXY_MOD_CACHE_DIRNAME
+    ),
+    runtime_label_getter=_mod_label,
+    download_to_cache_getter=lambda: download_to_cache,
+    resolve_direct_url_entry_getter=lambda: resolve_direct_url_entry,
+    resolve_moddb_entry_getter=lambda: resolve_moddb_entry,
+)
+commands = MOD_SUPPORT.commands
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions.update(MOD_SUPPORT.command_functions)
+ensure_mod_state = MOD_SUPPORT.ensure_mod_state
+apply_configured_mods = MOD_SUPPORT.apply_configured_mods
+cleanup_configured_mods = MOD_SUPPORT.cleanup_configured_mods
+bungeecord_mod_command = MOD_SUPPORT.command_functions["mod"]
+
+
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    exe_name="BungeeCord.jar",
+    mod_cache_dirname=DEFAULT_PROXY_MOD_CACHE_DIRNAME,
+    mod_label="BungeeCord"
+):
     """Collect and store configuration values for a Bungeecord server."""
     if port is None:
         port = server.data.get("port", 25565)
@@ -50,6 +106,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BungeeCord.jar"):
 
     if not "exe_name" in server.data:
         server.data["exe_name"] = exe_name
+    server.data.setdefault("mod_cache_dirname", mod_cache_dirname)
+    server.data.setdefault("mod_label", mod_label)
+    ensure_mod_state(server)
     server.data.save()
 
     return (), {}
@@ -92,7 +151,11 @@ def install(server, *, eula=False):
                     proc.wait()
     if os.path.isfile(config_file):
         _update_bungee_host_port(config_file, server.data.get("port", 25565))
-    server.data.save()
+    ensure_mod_state(server)
+    if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
+        apply_configured_mods(server)
+    else:
+        server.data.save()
 
 
 def _update_bungee_host_port(config_path, port):
@@ -171,7 +234,8 @@ def status(server, verbose):
 
 def message(server, msg):
     """Explain that Bungeecord has no direct user-message support here."""
-    print("This server doesn't have users directly")
+
+    gamemodule_common.print_unsupported_message("This server doesn't have users directly")
 
 
 def checkvalue(server, key, value):

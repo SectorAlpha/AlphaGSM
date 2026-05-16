@@ -46,6 +46,14 @@ Setup configures:
 - the game port (default 64738)
 - the install directory
 
+Common `set` values:
+
+```bash
+alphagsm mymumblese set maxplayers 100
+alphagsm mymumblese set serverpassword voice-secret
+alphagsm mymumblese set welcometext "Welcome to AlphaGSM Mumble"
+```
+
 ## Useful Commands
 
 ```bash

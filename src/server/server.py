@@ -13,8 +13,11 @@ import os
 import subprocess as sp
 import copy
 from . import data
+from .module_catalog import load_default_module_catalog
 from . import port_manager
 from . import runtime as runtime_module
+from .settable_keys import KeyResolutionError, resolve_requested_key
+from .settable_keys import get_effective_aliases
 from .errors import ServerError
 from importlib import import_module
 import screen
@@ -42,6 +45,7 @@ _DISABLED_SERVERS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "disabled_servers.conf",
 )
+MODULE_CATALOG = load_default_module_catalog()
 
 
 def _load_disabled_servers():
@@ -84,6 +88,86 @@ def _get_hibernating_console_info_hook(module):
     return _get_module_hook(module, "get_hibernating_console_info")
 
 
+def _iter_http_query_hosts(preferred_host):
+    """Yield HTTP query host candidates, preferring the module-specified host."""
+
+    seen = set()
+    preferred_host = str(preferred_host)
+    candidates = [preferred_host]
+    if preferred_host == "127.0.0.1":
+        candidates.append("localhost")
+        candidates.append("::1")
+    elif preferred_host == "localhost":
+        candidates.append("127.0.0.1")
+        candidates.append("::1")
+    elif preferred_host == "::1":
+        candidates.append("localhost")
+        candidates.append("127.0.0.1")
+
+    if preferred_host in ("127.0.0.1", "localhost"):
+        try:
+            from utils.valve_server import detect_query_host
+
+            candidates.append(detect_query_host(default=preferred_host))
+        except Exception:
+            pass
+
+    for candidate in candidates:
+        candidate = str(candidate)
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        yield candidate
+
+
+def _query_http_json_candidates(query_utils, host, port, path, timeout=10.0):
+    """Query an HTTP JSON endpoint across local host candidates."""
+
+    errors = []
+    for candidate_host in _iter_http_query_hosts(host):
+        try:
+            payload = query_utils.http_json(candidate_host, port, path, timeout=timeout)
+        except query_utils.QueryError as exc:
+            errors.append("{}: {}".format(candidate_host, exc))
+            continue
+        if not isinstance(payload, MappingABC):
+            raise query_utils.QueryError(
+                "HTTP JSON query failed for {}:{}{}: endpoint returned a non-object JSON payload".format(
+                    candidate_host, port, path
+                )
+            )
+        return candidate_host, dict(payload)
+
+    if errors:
+        raise query_utils.QueryError("; ".join(errors))
+    raise query_utils.QueryError(
+        "HTTP JSON query failed for {}:{}{}".format(host, port, path)
+    )
+
+
+def _query_robust_status_payload(query_utils, host, port):
+    """Return merged RobustToolbox status and info payloads."""
+
+    used_host, status_payload = _query_http_json_candidates(
+        query_utils, host, port, "/status"
+    )
+    merged = dict(status_payload)
+    try:
+        _, info_payload = _query_http_json_candidates(
+            query_utils, used_host, port, "/info"
+        )
+    except query_utils.QueryError:
+        info_payload = {}
+
+    description = info_payload.get("desc")
+    if description not in (None, ""):
+        merged["description"] = description
+    for key in ("connect_address", "auth", "build", "privacy_policy"):
+        if key in info_payload:
+            merged[key] = info_payload[key]
+    return used_host, merged
+
+
 def _get_module_hook(module, hook_name):
     """Return a callable hook from a module or its shared MODULE namespace."""
 
@@ -95,35 +179,26 @@ def _get_module_hook(module, hook_name):
 
 
 def _findmodule(name):
-    """Resolve a game module name, following namespace and alias indirection."""
+    """Resolve a game module name through the canonical catalog."""
+
+    requested_name = str(name)
+    name = MODULE_CATALOG.resolve(requested_name)
     disabled = _load_disabled_servers()
-    while True:
-        name = str(name)
-        if name in disabled:
-            raise ServerError(
-                "Server module '" + name + "' is currently disabled: "
-                + disabled[name]
-                + "\nIf you'd like to help fix this, please open an issue or "
-                "submit a pull request."
-            )
-        if len(name) < 2 and all(
-            (len(el) > 0 and el.isalnum()) for el in name.split(".")
-        ):
-            raise ServerError("Invalid module requested: " + self.data["module"])
-        try:
-            module = import_module(SERVERMODULEPACKAGE + name)
-        except ImportError as ex:
-            raise ServerError("Can't find module: " + name, ex)
-        if not hasattr(
-            module, "__file__"
-        ):  # no filesystem path so must be a namespace path
-            name = name + ".DEFAULT"
-            continue
-        try:
-            name = module.ALIAS_TARGET
-        except AttributeError:
-            runtime_module.ensure_runtime_hooks(module)
-            return name, module
+    if name in disabled:
+        raise ServerError(
+            "Server module '" + name + "' is currently disabled: "
+            + disabled[name]
+            + "\nIf you'd like to help fix this, please open an issue or "
+            "submit a pull request."
+        )
+    if len(name) < 2 and all((len(el) > 0 and el.isalnum()) for el in name.split(".")):
+        raise ServerError("Invalid module requested: " + name)
+    try:
+        module = import_module(SERVERMODULEPACKAGE + name)
+    except ImportError as ex:
+        raise ServerError("Can't find module: " + name, ex)
+    runtime_module.ensure_runtime_hooks(module)
+    return name, module
 
 
 def find_module(name):
@@ -171,6 +246,7 @@ class Server(object):
         "wipe",
         "query",
         "info",
+        "doctor",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -248,12 +324,10 @@ class Server(object):
         ),
         "dump": CmdSpec(),
         "set": CmdSpec(
-            requiredarguments=(
-                ArgSpec(
-                    "KEY", "The key to set in the form of dot seperated elements", str
-                ),
-            ),
             optionalarguments=(
+                ArgSpec(
+                    "KEY", "The key to set or inspect in the form of dot seperated elements", str
+                ),
                 ArgSpec(
                     "VALUE",
                     "The value to set. New nodes in the structure will be created as needed. "
@@ -262,6 +336,40 @@ class Server(object):
                 ),
             ),
             repeatable=True,
+            options=(
+                OptSpec(
+                    "l",
+                    ["list"],
+                    "List schema-backed keys for this server",
+                    "list_settings",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "d",
+                    ["describe"],
+                    "Describe the requested key instead of setting it",
+                    "describe",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "V",
+                    ["values"],
+                    "List allowed values for the requested key",
+                    "values",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "v",
+                    ["verbose"],
+                    "Show verbose metadata in discovery output",
+                    "verbose",
+                    None,
+                    True,
+                ),
+            ),
         ),
         "backup": CmdSpec(),
         "restore": CmdSpec(
@@ -296,6 +404,7 @@ class Server(object):
                 ),
             )
         ),
+        "doctor": CmdSpec(),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -316,7 +425,7 @@ class Server(object):
         "dump": "Dump the servers data store.",
         "set": "Set a parameter in data store to a new value.\nFor keys that index into lists the special entry 'APPEND' my be used to create a new "
         "entry at the end of the list. Also for some keys value 'DELETE' is a value that causes the entry to be deleted.\n\n"
-        "Which values are changable is game module dependent",
+        "Which values are changable is game module dependent.\nUse -l / --list to inspect schema-backed keys, -d / --describe to inspect a key, and -V / --values to list allowed values when a module exposes them.",
         "backup": "Backup the game server",
         "restore": "Restore the game server from a backup.\n"
         "With no argument, lists available backups with their index numbers.\n"
@@ -333,6 +442,7 @@ class Server(object):
         "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.\n"
         "Use -j / --json to emit the result as a JSON object.\n"
         "Use -d / --detailed to include extended data (e.g. TeamSpeak 3 channel list).",
+        "doctor": "Print runtime diagnostics for this server, including the effective backend, Docker image/container details, and local runtime health checks.",
     }
 
     def __init__(self, name, module=None):
@@ -345,6 +455,7 @@ class Server(object):
         """
         self.name = name
         if module is not None:
+            truename, self.module = _findmodule(module)
             if not os.path.isdir(DATAPATH):
                 try:
                     os.makedirs(DATAPATH)
@@ -353,7 +464,7 @@ class Server(object):
                         "Data Path doesn't exist and can't create it", DATAPATH
                     )
             self.data = data.JSONDataStore(
-                os.path.join(DATAPATH, name + ".json"), {"module": module}
+                os.path.join(DATAPATH, name + ".json"), {"module": truename}
             )
             try:
                 self.data.save()
@@ -366,7 +477,9 @@ class Server(object):
                 raise ServerError("Error reading data", ex)
         if "module" not in self.data:
             raise ServerError("Invalid data store: No module specified")
-        truename, self.module = _findmodule(self.data["module"])
+        if module is None:
+            truename, self.module = _findmodule(self.data["module"])
+        self._configure_secret_split()
         metadata_changed = runtime_module.sync_runtime_metadata(self, save=False)
         if truename != self.data["module"]:
             print(
@@ -401,6 +514,104 @@ class Server(object):
             else:
                 desc = desc + "\n\n" + extra_desc
         return desc
+
+    def _configure_secret_split(self):
+        """Wire up the secret-key split on the data store once the module is known."""
+        schema = self.get_setting_schema()
+        secret_storage_keys = {
+            spec.storage_key or spec.canonical_key
+            for spec in schema.values()
+            if spec.secret
+        }
+        self.data.set_secret_keys(
+            secret_storage_keys,
+            os.path.join(DATAPATH, self.name + ".secrets.json"),
+        )
+
+    def get_setting_schema(self):
+        """Return the schema-backed settings exposed by the module."""
+        if not hasattr(self.module, "setting_schema"):
+            return {}
+        schema = getattr(self.module, "setting_schema")
+        if isinstance(schema, MappingABC):
+            return schema
+        raise ServerError(
+            "Module setting_schema must be a mapping, got " + type(schema).__name__
+        )
+
+    def _iter_setting_schema_items(self):
+        """Yield schema items in a stable order for discovery output."""
+        schema = self.get_setting_schema()
+        for canonical_key, spec in sorted(
+            schema.items(), key=lambda item: str(item[1].canonical_key)
+        ):
+            yield canonical_key, spec
+
+    def _print_setting_schema_list(self, verbose=False):
+        """Print the schema-backed setting keys exposed by the module."""
+        schema = self.get_setting_schema()
+        if not schema:
+            print("No schema-backed settings are exposed by this server.")
+            return
+        for _, spec in self._iter_setting_schema_items():
+            aliases = ", ".join(get_effective_aliases(spec, schema))
+            line = spec.canonical_key
+            if aliases:
+                line += " (aliases: " + aliases + ")"
+            if spec.description:
+                line += ": " + spec.description
+            if verbose:
+                details = []
+                if spec.storage_key and spec.storage_key != spec.canonical_key:
+                    details.append("storage key=" + spec.storage_key)
+                if spec.value_type:
+                    details.append("type=" + spec.value_type)
+                if spec.apply_to:
+                    details.append("applies to=" + ", ".join(spec.apply_to))
+                if spec.secret:
+                    details.append("secret")
+                if spec.examples:
+                    details.append("examples=" + ", ".join(spec.examples))
+                if details:
+                    line += " [" + "; ".join(details) + "]"
+            print(line)
+
+    def _print_setting_schema_description(self, requested_key):
+        """Print the description for a schema-backed setting key."""
+        resolved = resolve_requested_key(requested_key, self.get_setting_schema())
+        spec = resolved.spec
+        aliases = get_effective_aliases(spec, self.get_setting_schema())
+        print("Requested key: " + resolved.input_key)
+        print("Canonical key: " + resolved.canonical_key)
+        if resolved.storage_key != resolved.canonical_key:
+            print("Storage key: " + resolved.storage_key)
+        if aliases:
+            print("Aliases: " + ", ".join(aliases))
+        if spec.value_type:
+            print("Type: " + spec.value_type)
+        if spec.apply_to:
+            print("Applies to: " + ", ".join(spec.apply_to))
+        print("Secret: " + ("yes" if spec.secret else "no"))
+        if spec.description:
+            print("Description: " + spec.description)
+        if spec.examples:
+            print("Examples: " + ", ".join(spec.examples))
+
+    def _print_setting_schema_values(self, requested_key):
+        """Print allowed values for a schema-backed key if the module exposes them."""
+        resolved = resolve_requested_key(requested_key, self.get_setting_schema())
+        list_values_fn = getattr(self.module, "list_setting_values", None)
+        if not callable(list_values_fn):
+            raise ServerError(
+                "Module does not expose allowed values for '" + resolved.canonical_key + "'"
+            )
+        values = list_values_fn(self, resolved.canonical_key)
+        if values is None:
+            raise ServerError(
+                "Module does not expose allowed values for '" + resolved.canonical_key + "'"
+            )
+        for value in values:
+            print(value)
 
     def run_command(self, command, *args, **kwargs):
         """Run the specified command with the specified arguments on this server
@@ -451,6 +662,8 @@ class Server(object):
                 self.query(*args, **kwargs)
             elif command == "info":
                 self.info(*args, **kwargs)
+            elif command == "doctor":
+                self.doctor(*args, **kwargs)
         elif command in self.module.commands:
             self.module.command_functions[command](self, *args, **kwargs)
         else:
@@ -500,6 +713,14 @@ class Server(object):
         runtime = runtime_module.get_runtime(self)
         if not runtime.is_running(self):
             raise ServerError("Error: Can't stop a server that isn't running")
+        if runtime_module.resolve_runtime_metadata(self).get("stop_mode") == "docker-stop":
+            try:
+                runtime.kill(self)
+            except runtime_module.RuntimeError as ex:
+                raise ServerError(str(ex))
+            if runtime.is_running(self):
+                raise ServerError("Error can't kill server")
+            return
         jmax = 5
         try:
             jmax = min(jmax, self.module.max_stop_wait)
@@ -579,6 +800,11 @@ class Server(object):
             runtime_module.show_server_logs(self, lines=lines)
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
+
+    def doctor(self, **kwargs):
+        """Print runtime diagnostics for this server."""
+
+        runtime_module.print_runtime_doctor_report(self)
 
     def restore(self, backup=None, **kwargs):
         """Restore the server from a backup archive.
@@ -744,6 +970,25 @@ class Server(object):
                 host = "127.0.0.1"
                 port = self.data["port"]
                 protocol = "tcp"
+
+        if protocol == "robust_status":
+            try:
+                _, status_payload = _query_http_json_candidates(
+                    query_utils, host, port, "/status"
+                )
+                print(
+                    "Server is responding (Robust status API on port {port}): "
+                    "{name!r}  players={players}".format(
+                        port=port,
+                        name=status_payload.get("name", ""),
+                        players=status_payload.get("players", "?"),
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
 
         if protocol == "quake":
             try:
@@ -965,6 +1210,41 @@ class Server(object):
                 # Default heuristic: fall through to TCP
                 host = "127.0.0.1"
                 port = self.data["port"]
+
+        if protocol == "robust_status":
+            try:
+                _, result = _query_robust_status_payload(query_utils, host, port)
+                if as_json:
+                    print(json.dumps({"protocol": "robust_status", "port": port, **result}))
+                    return
+
+                lines = [
+                    "Server info (Robust status API on port {}):".format(port),
+                    "  Name        : {}".format(result.get("name", "")),
+                    "  Players     : {}".format(result.get("players", "?")),
+                ]
+                description = result.get("description")
+                if description not in (None, ""):
+                    lines.append("  Description : {}".format(description))
+                connect_address = result.get("connect_address")
+                if connect_address not in (None, ""):
+                    lines.append("  Connect     : {}".format(connect_address))
+                auth_mode = result.get("auth", {}).get("mode")
+                if auth_mode not in (None, ""):
+                    lines.append("  Auth        : {}".format(auth_mode))
+                build = result.get("build", {})
+                version = ""
+                if isinstance(build, MappingABC):
+                    version = build.get("version") or build.get("engine_version") or ""
+                if version:
+                    lines.append("  Version     : {}".format(version))
+                tags = result.get("tags")
+                if detailed and isinstance(tags, list) and tags:
+                    lines.append("  Tags        : {}".format(", ".join(str(tag) for tag in tags)))
+                print("\n".join(lines))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "quake":
             try:
@@ -1228,9 +1508,71 @@ class Server(object):
         else:
             data[key[-1]] = value
 
-    def doset(self, key, *args, **kwargs):
-        """Set a value in the data store. The value will be check and post set actions may be run"""
-        types, key = _parsekey(key)
+    def _run_set_sync_hooks(self, key, *args, **kwargs):
+        """Run any module hooks that keep real server config aligned after ``set``."""
+
+        top_level_key = str(key[0]).lower() if key else None
+        sync_fn = getattr(self.module, "sync_server_config", None)
+        if sync_fn is not None:
+            configured_keys = getattr(self.module, "config_sync_keys", None)
+            if configured_keys is None:
+                configured_keys = getattr(self.module, "set_sync_keys", None)
+            if configured_keys is not None:
+                normalized_keys = {str(config_key).lower() for config_key in configured_keys}
+                should_sync = top_level_key in normalized_keys
+            else:
+                should_sync = False
+            if should_sync:
+                sync_fn(self)
+
+        postset_fn = getattr(self.module, "postset", None)
+        if postset_fn is not None:
+            postset_fn(self, key, *args, **kwargs)
+
+    def doset(  # pylint: disable=keyword-arg-before-vararg
+        self,
+        key=None,
+        *args,
+        list_settings=False,
+        describe=False,
+        values=False,
+        verbose=False,
+        **kwargs,
+    ):
+        """Set a value in the data store or inspect schema-backed setting metadata."""
+        if list_settings:
+            self._print_setting_schema_list(verbose=verbose)
+            return
+        if describe:
+            if key is None:
+                raise ServerError("Error: set --describe requires a key")
+            try:
+                self._print_setting_schema_description(key)
+            except KeyResolutionError as ex:
+                raise ServerError(str(ex))
+            return
+        if values:
+            if key is None:
+                raise ServerError("Error: set --values requires a key")
+            try:
+                self._print_setting_schema_values(key)
+            except KeyResolutionError as ex:
+                raise ServerError(str(ex))
+            return
+        if key is None:
+            raise ServerError("Error: set requires a key")
+
+        resolved = None
+        schema = self.get_setting_schema()
+        if schema:
+            try:
+                resolved = resolve_requested_key(key, schema)
+            except KeyResolutionError as ex:
+                if "Ambiguous setting key" in str(ex):
+                    raise ServerError(str(ex))
+                resolved = None
+        effective_key = resolved.storage_key if resolved is not None else key
+        types, key = _parsekey(effective_key)
         runtime_managed_key = runtime_module.handles_set_key(key)
         if runtime_managed_key:
             try:
@@ -1260,12 +1602,7 @@ class Server(object):
                     )
                 )
         self._apply_set_value(self.data, types, key, value)
-        try:
-            fn = self.module.postset
-        except AttributeError:
-            pass
-        else:
-            fn(server, key, *args, **kwargs)
+        self._run_set_sync_hooks(key, *args, **kwargs)
         if (
             len(key) == 1
             and value != "DELETE"

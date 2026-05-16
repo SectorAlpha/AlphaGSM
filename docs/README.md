@@ -4,8 +4,13 @@ This folder is for people who want help running a specific server.
 
 If you are not sure where to start, pick your server below and follow that guide.
 
+## Project Reports
+
+- [Module Parity Report](module_parity_report.md)
+
 ## Deployment Guides
 
+- [Run Docker-Backed Servers From Host AlphaGSM](docker-runtime-host.md)
 - [Run AlphaGSM In Docker](docker-manager.md)
 
 ## Server Guides

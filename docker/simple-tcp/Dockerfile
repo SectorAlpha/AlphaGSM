@@ -6,6 +6,7 @@ RUN apt-get update -qq \
  && apt-get install -y --no-install-recommends \
         bash \
         ca-certificates \
+      mumble-server \
        python3 \
  && rm -rf /var/lib/apt/lists/*
 

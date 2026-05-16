@@ -92,5 +92,6 @@ alphagsm myemserver backup
 - **Map directory**: `empires/maps/`
 - **Mod directory**: `empires/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/empires/`.
 - **Map install**: Copy `.bsp` files into `empires/maps/` and add to `empires/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `empires/addons/`.

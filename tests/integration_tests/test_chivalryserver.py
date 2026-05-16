@@ -7,13 +7,14 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -25,7 +26,6 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Server starts but crashes during initialization before log markers appear (crash pattern)")
 def test_chivalryserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -40,6 +40,7 @@ def test_chivalryserver_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    query_port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "chivalryserver")
@@ -49,17 +50,13 @@ def test_chivalryserver_lifecycle(tmp_path):
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
+    run_and_assert_ok(env, server_name, "set", "queryport", str(query_port))
+
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")

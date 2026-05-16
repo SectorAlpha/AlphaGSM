@@ -104,6 +104,75 @@ def test_wait_for_udp_open_retries_until_success(monkeypatch):
     assert len(attempts) == 2
 
 
+def test_wait_for_log_marker_dumps_runtime_logs_when_context_provided(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    timestamps = [0.0, 0.0, 10.0]
+
+    def _fake_time():
+        if timestamps:
+            return timestamps.pop(0)
+        return 10.0
+
+    monkeypatch.setattr(helpers.time, "time", _fake_time)
+    monkeypatch.setattr(helpers.time, "sleep", lambda seconds: None)
+
+    dumped_runtime = []
+    monkeypatch.setattr(
+        helpers,
+        "_dump_alphagsm_runtime_logs",
+        lambda env, server_name, lines=200: dumped_runtime.append((env, server_name, lines)),
+    )
+    monkeypatch.setattr(helpers, "_dump_log", lambda path, context=None: None)
+
+    missing_log = tmp_path / "missing.log"
+
+    with pytest.raises(pytest.fail.Exception, match="Log never showed readiness markers"):
+        helpers.wait_for_log_marker(
+            missing_log,
+            ["ready"],
+            5,
+            env={"ALPHAGSM_CONFIG_LOCATION": "dummy"},
+            server_name="ittestserver",
+        )
+
+    assert dumped_runtime == [({"ALPHAGSM_CONFIG_LOCATION": "dummy"}, "ittestserver", 200)]
+
+
+def test_wait_for_glob_log_marker_dumps_runtime_logs_when_context_provided(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    timestamps = [0.0, 0.0, 10.0]
+
+    def _fake_time():
+        if timestamps:
+            return timestamps.pop(0)
+        return 10.0
+
+    monkeypatch.setattr(helpers.time, "time", _fake_time)
+    monkeypatch.setattr(helpers.time, "sleep", lambda seconds: None)
+
+    dumped_runtime = []
+    monkeypatch.setattr(
+        helpers,
+        "_dump_alphagsm_runtime_logs",
+        lambda env, server_name, lines=200: dumped_runtime.append((env, server_name, lines)),
+    )
+    monkeypatch.setattr(helpers, "_dump_log", lambda path, context=None: None)
+
+    with pytest.raises(pytest.fail.Exception, match="Log never showed readiness markers"):
+        helpers.wait_for_glob_log_marker(
+            tmp_path,
+            "*.log",
+            ["ready"],
+            5,
+            env={"ALPHAGSM_CONFIG_LOCATION": "dummy"},
+            server_name="itglobserver",
+        )
+
+    assert dumped_runtime == [({"ALPHAGSM_CONFIG_LOCATION": "dummy"}, "itglobserver", 200)]
+
+
 def test_build_integration_tmp_path_uses_work_dir(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(tmp_path))
@@ -122,6 +191,7 @@ def test_build_integration_tmp_path_uses_work_dir(monkeypatch, tmp_path):
 def test_build_integration_tmp_path_falls_back_to_pytest_factory(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     monkeypatch.delenv("ALPHAGSM_WORK_DIR", raising=False)
+    monkeypatch.setattr(helpers, "DEFAULT_INTEGRATION_WORK_DIR", tmp_path / "missing-default")
 
     expected = tmp_path / "fallback"
 
@@ -220,10 +290,44 @@ def test_skip_for_known_steamcmd_issue_skips_only_for_missing_configuration_0x20
         helpers.skip_for_known_steamcmd_issue(result, app_id=317670)
 
 
+def test_skip_for_known_steamcmd_issue_skips_for_known_bare_state_202_flake_app():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout="Error! App '232130' state is 0x202 after update job.",
+        stderr="",
+    )
+
+    with pytest.raises(pytest.skip.Exception, match="SteamCMD flake skip"):
+        helpers.skip_for_known_steamcmd_issue(result, app_id=232130)
+
+
+def test_skip_for_known_steamcmd_issue_skips_for_new_known_bare_state_202_flake_apps():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    for app_id in (346680, 746200):
+        result = types.SimpleNamespace(
+            stdout=f"Error! App '{app_id}' state is 0x202 after update job.",
+            stderr="",
+        )
+
+        with pytest.raises(pytest.skip.Exception, match="SteamCMD flake skip"):
+            helpers.skip_for_known_steamcmd_issue(result, app_id=app_id)
+
+
 def test_skip_for_known_steamcmd_issue_does_not_skip_other_steamcmd_failures():
     helpers = importlib.import_module("tests.integration_tests.conftest")
     result = types.SimpleNamespace(
         stdout="Error! Timed out waiting for download chunks.",
+        stderr="",
+    )
+
+    helpers.skip_for_known_steamcmd_issue(result, app_id=317670)
+
+
+def test_skip_for_known_steamcmd_issue_does_not_skip_unknown_bare_state_202_app():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout="Error! App '317670' state is 0x202 after update job.",
         stderr="",
     )
 

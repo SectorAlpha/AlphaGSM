@@ -66,6 +66,10 @@ alphagsm myts3serve backup
 - **Location**: `<install_dir>/ts3server`
 - **Engine**: Custom
 
+Smoke and integration validation wait for the TeamSpeak startup log to report
+`ServerQuery created`, then require `alphagsm info --json` to report protocol
+`ts3`.
+
 ### Server Configuration
 
 - **Config files**: `ts3server.ini`

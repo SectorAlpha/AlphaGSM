@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.blackops3server', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.blackops3server as mod
     from server import ServerError
@@ -113,10 +113,23 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "BlackOps3Server.exe"
     (tmp_path / "BlackOps3Server.exe").write_text("")
-    server.data["maxplayers"] = 27015
+    server.data["maxplayers"] = 18
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "BlackOps3_UnrankedDedicatedServer.exe",
+        "+set", "sv_playlist", "1",
+        "+set", "fs_game", "usermaps",
+        "+set", "logfile", "2",
+        "-port", "27015",
+        "+set", "sv_maxclients", "18",
+    ]
+    assert cwd == os.path.join(server.data["dir"], "UnrankedServer")
+
+
+def test_setting_schema_exposes_blackops3_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert mod.setting_schema["maxplayers"].launch_arg_tokens == ("+set", "sv_maxclients")
 
 
 def test_get_start_command_missing_exe(tmp_path):

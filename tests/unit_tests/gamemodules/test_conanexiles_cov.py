@@ -119,7 +119,23 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./ConanSandbox/Binaries/Linux/ConanSandboxServer",
+        "test",
+        "-server",
+        "-log",
+        "-MaxPlayers=27015",
+        "-Port=27015",
+        "-QueryPort=27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_launch_formats():
+    assert mod.setting_schema["map"].launch_arg_format == "{value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):

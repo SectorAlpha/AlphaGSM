@@ -27,7 +27,7 @@ class DummyServer:
 
 
 def test_pixark_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(pixarkserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(pixarkserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("pixark")
     exe = tmp_path / "PixARKServer.exe"
     exe.write_text("")
@@ -50,7 +50,7 @@ def test_pixark_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
 
 def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(outpostzeroserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(outpostzeroserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("opz")
     exe = tmp_path / "OutpostZeroServer.exe"
     exe.write_text("")
@@ -114,7 +114,13 @@ def test_outpostzero_runtime_requirements_use_wine_proton_family(tmp_path, monke
 
 
 def test_reignofkings_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(reignofkingsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(reignofkingsserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("rok")
     exe = tmp_path / "Server.exe"
     exe.write_text("")
@@ -135,6 +141,7 @@ def test_reignofkings_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert "-worldname" in cmd
     assert "rokworld" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_pixark_outpostzero_and_reignofkings_update_downloads_and_optionally_restart(monkeypatch):

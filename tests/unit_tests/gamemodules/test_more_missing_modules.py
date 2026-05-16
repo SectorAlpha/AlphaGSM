@@ -51,7 +51,7 @@ def test_conanexiles_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_arksurvivalascended_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(arksurvivalascended.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(arksurvivalascended.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("asa")
     exe_dir = tmp_path / "ShooterGame" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)

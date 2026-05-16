@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.sniperelite4server', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.sniperelite4server as mod
     from server import ServerError
@@ -117,7 +117,22 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "SniperElite4_DedicatedServer.exe",
+        "-port",
+        "27015",
+        "-queryport",
+        "27015",
+        "-maxplayers",
+        "27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_sniperelite4_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert mod.setting_schema["queryport"].launch_arg_tokens == ("-queryport",)
+    assert mod.setting_schema["maxplayers"].launch_arg_tokens == ("-maxplayers",)
 
 
 def test_get_start_command_missing_exe(tmp_path):

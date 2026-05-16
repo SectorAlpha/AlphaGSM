@@ -5,8 +5,17 @@ This guide covers the `pvrserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libc++1`)
 - Python packages from `requirements.txt`
+
+On Ubuntu 24.04, Pavlov VR still requests the unversioned `libc++.so` runtime
+name. The shared AlphaGSM images create a compatibility symlink to
+`libc++.so.1`; on a host install, do the same after installing `libc++1`:
+
+```bash
+sudo apt install libc++1
+sudo ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
+```
 
 ## Quick Start
 
@@ -44,7 +53,8 @@ alphagsm mypvrserve stop
 
 Setup configures:
 
-- the game port (default 9100)
+- the game port (default 7777)
+- the status/query port (fixed at game port + 400, so 8177 by default)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +68,8 @@ alphagsm mypvrserve backup
 ## Notes
 
 - Module name: `pvrserver`
-- Default port: 9100
+- Default game port: 7777
+- Default status/query port: 8177
 
 ## Developer Notes
 
@@ -68,6 +79,10 @@ alphagsm mypvrserve backup
 - **Location**: `<install_dir>/PavlovServer.sh`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `622970`
+
+Smoke and integration validation track readiness through `alphagsm info --json`
+returning protocol `a2s` on Pavlov's status-helper port (`port + 400`) instead
+of waiting for screen-log markers.
 
 ### Server Configuration
 

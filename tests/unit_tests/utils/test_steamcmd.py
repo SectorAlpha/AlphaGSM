@@ -135,6 +135,45 @@ def test_download_raises_when_steamcmd_never_reports_success(monkeypatch):
         raise AssertionError("Expected steamcmd download failure to raise CalledProcessError")
 
 
+def test_steamcmd_state_202_flake_matches_known_bare_flake_app_ids():
+    assert steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '232130' state is 0x202 after update job.",
+        232130,
+    )
+    assert steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '346680' state is 0x202 after update job.",
+        346680,
+    )
+    assert steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '746200' state is 0x202 after update job.",
+        746200,
+    )
+
+
+def test_steamcmd_retry_delay_uses_reconfig_delay_for_known_bare_state_202_flakes():
+    assert (
+        steamcmd_module._steamcmd_retry_delay(
+            "Error! App '418480' state is 0x202 after update job.",
+            418480,
+        )
+        == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    )
+    assert (
+        steamcmd_module._steamcmd_retry_delay(
+            "Error! App '746200' state is 0x202 after update job.",
+            746200,
+        )
+        == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    )
+
+
+def test_steamcmd_state_202_flake_does_not_match_unknown_bare_state_202_app_ids():
+    assert not steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '317670' state is 0x202 after update job.",
+        317670,
+    )
+
+
 def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch):
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
     monkeypatch.setattr(steamcmd_module.sp, "run", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not run")))
@@ -188,6 +227,59 @@ def test_download_does_not_add_platform_flag_by_default(monkeypatch):
 
     cmd = calls[1]
     assert "+@sSteamCmdForcePlatformType" not in cmd
+
+
+def test_download_workshop_item_runs_steamcmd_and_returns_content_dir(tmp_path, monkeypatch):
+    calls = []
+    content_dir = tmp_path / "workshop" / "steamapps" / "workshop" / "content" / "440" / "12345"
+
+    def fake_run(cmd, stdout, stderr, text, check):
+        calls.append(cmd)
+        content_dir.mkdir(parents=True)
+        return sp.CompletedProcess(cmd, 0, "Workshop item downloaded\n")
+
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
+    monkeypatch.setattr(steamcmd_module.sp, "run", fake_run)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: str(tmp_path / "workshop"))
+
+    result = steamcmd_module.download_workshop_item("ignored", 440, 12345, True)
+
+    assert result == str(content_dir)
+    assert calls[0] == "install"
+    assert calls[1] == [
+        "/steam/steamcmd.sh",
+        "+force_install_dir",
+        str(tmp_path / "workshop"),
+        "+login",
+        "anonymous",
+        "+workshop_download_item",
+        "440",
+        "12345",
+        "+quit",
+    ]
+
+
+def test_download_workshop_item_raises_when_content_dir_never_appears(monkeypatch):
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: sp.CompletedProcess(
+            cmd,
+            0,
+            "ERROR! Failed to download workshop item\n",
+        ),
+    )
+
+    import pytest
+    with pytest.raises(sp.CalledProcessError):
+        steamcmd_module.download_workshop_item("/srv/workshop", 440, 12345, True)
 
 
 def test_get_autoupdate_script_writes_template(tmp_path, monkeypatch):

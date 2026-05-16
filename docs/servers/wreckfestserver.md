@@ -53,7 +53,10 @@ Setup configures:
 ```bash
 alphagsm mywreckfes update
 alphagsm mywreckfes backup
+alphagsm mywreckfes set port 33541
 ```
+
+`set port` rewrites `server_config.cfg` immediately through the schema-backed config-sync path. The shared alias layer also accepts `gameport` for this module.
 
 ## Notes
 
@@ -73,6 +76,7 @@ alphagsm mywreckfes backup
 
 - **Config file**: `server_config.cfg`
 - **Template**: See [server-templates/wreckfestserver/](../server-templates/wreckfestserver/) if available
+- **Schema-backed sync**: AlphaGSM keeps `server_port=` aligned with `set port`
 
 ### Maps and Mods
 

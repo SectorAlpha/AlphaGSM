@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.primalcarnageextinctionserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.primalcarnageextinctionserver as mod
     from server import ServerError
@@ -116,12 +116,38 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_linux_uses_default_wine_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    wrap_command = MagicMock(side_effect=lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setattr(mod.proton, "wrap_command", wrap_command)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PCEdedicated.exe"
+    (tmp_path / "PCEdedicated.exe").write_text("")
+
+    mod.get_start_command(server)
+
+    wrap_command.assert_called_once()
+    args, kwargs = wrap_command.call_args
+    assert args == (["PCEdedicated.exe", "server", "-log"],)
+    assert kwargs == {"wineprefix": None}
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_query_and_info_address_use_queryport(monkeypatch):
+    server = DummyServer("primal")
+    server.data["queryport"] = "27015"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 27015, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27015, "a2s")
 
 
 def test_do_stop():

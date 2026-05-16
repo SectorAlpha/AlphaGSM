@@ -48,7 +48,11 @@ def test_deadpoly_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_heat_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(heatserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        heatserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("heat")
     exe = tmp_path / "HeatServer.exe"
     exe.write_text("")

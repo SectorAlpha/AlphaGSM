@@ -1,4 +1,5 @@
-from pathlib import Path
+import importlib
+import sys
 
 import gamemodules.counterstrikeglobaloffensive as csgo
 import gamemodules.counterstrike2 as cs2
@@ -26,6 +27,10 @@ class DummyServer:
 
     def start(self):
         self.start_calls += 1
+
+
+def _tf2_package_root():
+    return importlib.import_module("gamemodules.teamfortress2")
 
 
 def test_tf2_configure_populates_defaults_and_backup_schedule(tmp_path):
@@ -63,7 +68,11 @@ def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
     launcher = tmp_path / "srcds_run_64"
     launcher.write_text("")
     doinstall_calls = []
-    monkeypatch.setattr(tf2, "doinstall", lambda server_obj: doinstall_calls.append(server_obj))
+    monkeypatch.setattr(
+        _tf2_package_root(),
+        "doinstall",
+        lambda server_obj: doinstall_calls.append(server_obj),
+    )
 
     tf2.install(server)
 
@@ -71,6 +80,45 @@ def test_tf2_install_creates_config_file_when_missing(tmp_path, monkeypatch):
     assert cfg_path.exists()
     assert 'hostname "AlphaGSM TF2 Server"' in cfg_path.read_text()
     assert server.data["exe_name"] == "srcds_run_64"
+
+
+def test_tf2_install_applies_mods_when_autoapply_enabled(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "Steam_AppID": 1,
+            "Steam_anonymous_login_possible": True,
+            "exe_name": "srcds_run",
+            "mods": {
+                "enabled": True,
+                "autoapply": True,
+                "desired": {
+                    "curated": [
+                        {
+                            "requested_id": "sourcemod",
+                            "resolved_id": "sourcemod.stable",
+                        }
+                    ],
+                    "workshop": [],
+                },
+                "installed": [],
+                "errors": [],
+            },
+        }
+    )
+    calls = []
+
+    monkeypatch.setattr(_tf2_package_root(), "doinstall", lambda server_obj: calls.append("base"))
+    monkeypatch.setattr(
+        _tf2_package_root(),
+        "apply_configured_mods",
+        lambda server_obj: calls.append("mods"),
+    )
+
+    tf2.install(server)
+
+    assert calls == ["base", "mods"]
 
 
 def test_csgo_install_creates_config_file_when_missing(tmp_path, monkeypatch):
@@ -235,7 +283,48 @@ def test_steam_game_update_downloads_and_optionally_restarts(monkeypatch):
     assert csgo_server.start_calls == 0
 
 
+def test_tf2_update_applies_mods_when_autoapply_enabled(monkeypatch):
+    tf2_server = DummyServer()
+    tf2_server.data.update(
+        {
+            "dir": "/srv/tf2/",
+            "mods": {
+                "enabled": True,
+                "autoapply": True,
+                "desired": {
+                    "curated": [
+                        {
+                            "requested_id": "sourcemod",
+                            "resolved_id": "sourcemod.stable",
+                        }
+                    ],
+                    "workshop": [],
+                },
+                "installed": [],
+                "errors": [],
+            },
+        }
+    )
+    calls = []
+
+    monkeypatch.setattr(
+        tf2.steamcmd,
+        "download",
+        lambda path, app_id, anon, validate=True: calls.append(("base", path, validate)),
+    )
+    monkeypatch.setattr(
+        _tf2_package_root(),
+        "apply_configured_mods",
+        lambda server_obj: calls.append(("mods", server_obj.data["dir"])),
+    )
+
+    tf2.update(tf2_server, validate=True, restart=False)
+
+    assert calls == [("base", "/srv/tf2/", True), ("mods", "/srv/tf2/")]
+
+
 def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):
+    package_tf2 = importlib.import_module("gamemodules.teamfortress2")
     server = DummyServer()
     steam_root = tmp_path / "steam"
     sdk_dir = tmp_path / ".steam" / "sdk64"
@@ -243,10 +332,10 @@ def test_tf2_prestart_links_64_bit_steamclient(tmp_path, monkeypatch):
     steamclient_src.parent.mkdir(parents=True)
     steamclient_src.write_text("")
 
-    monkeypatch.setattr(tf2.steamcmd, "STEAMCMD_DIR", str(steam_root) + "/")
-    monkeypatch.setattr(tf2, "STEAMCLIENT_DST", str(sdk_dir / "steamclient.so"))
+    monkeypatch.setattr(package_tf2.steamcmd, "STEAMCMD_DIR", str(steam_root) + "/")
+    monkeypatch.setattr(package_tf2, "STEAMCLIENT_DST", str(sdk_dir / "steamclient.so"))
 
-    tf2.prestart(server)
+    package_tf2.prestart(server)
 
     assert (sdk_dir / "steamclient.so").is_symlink()
     assert (sdk_dir / "steamclient.so").resolve() == steamclient_src

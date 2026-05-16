@@ -92,5 +92,6 @@ alphagsm mynmrihser backup
 - **Map directory**: `nmrih/maps/`
 - **Mod directory**: `nmrih/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/nmrih/`.
 - **Map install**: Copy `.bsp` files into `nmrih/maps/` and add to `nmrih/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `nmrih/addons/`.

@@ -5,6 +5,7 @@ This guide covers the `saleblazersserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +45,10 @@ alphagsm mysaleblaz stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the query port (default 27016)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server files
 
 ## Useful Commands
 
@@ -58,7 +60,8 @@ alphagsm mysaleblaz backup
 ## Notes
 
 - Module name: `saleblazersserver`
-- Default port: 27016
+- Default game port: 27015
+- Default query port: 27016
 
 ## Developer Notes
 
@@ -66,8 +69,13 @@ alphagsm mysaleblaz backup
 
 - **Executable**: `Default/Saleblazers.exe`
 - **Location**: `<install_dir>/Default/Saleblazers.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `3099600`
+
+AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`
+and treats `info --json` returning protocol `a2s` as the readiness gate. The
+plain Unity startup text in `server.log` is not stable enough to use as the
+only readiness marker.
 
 ### Server Configuration
 

@@ -12,10 +12,13 @@ import tempfile
 import time
 
 import pytest
-from utils.steamcmd import _steamcmd_missing_manifest_flake
+from utils.steamcmd import _steamcmd_state_202_flake
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
+DEFAULT_INTEGRATION_WORK_DIR = Path(
+    "/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+)
 
 # ---------------------------------------------------------------------------
 # Override pytest-timeout for integration tests (default pytest.ini is 10s)
@@ -51,6 +54,13 @@ def require_command(name):
     """Fail if a required system command is not available."""
     if shutil.which(name) is None:
         pytest.fail(f"Required command not available: {name}")
+
+
+def require_command_or_skip(name, reason=None):
+    """Skip if an optional host command is not available."""
+
+    if shutil.which(name) is None:
+        pytest.skip(reason or f"Required command not available: {name}")
 
 
 def require_proton():
@@ -255,6 +265,8 @@ def alphagsm_env(config_path):
 def build_integration_tmp_path(test_name, tmp_path_factory):
     """Return the temp directory root for an integration test."""
     work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
+    if not work_dir and DEFAULT_INTEGRATION_WORK_DIR.exists():
+        work_dir = str(DEFAULT_INTEGRATION_WORK_DIR)
     if not work_dir:
         return tmp_path_factory.mktemp(test_name)
 
@@ -342,6 +354,7 @@ def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds)
         "alphagsm " + " ".join((server_name, "info", "--json")),
         last_result,
     )
+    _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
         f"info --json never returned protocol {expected_protocol!r} within {timeout_seconds}s: "
         f"last payload={last_data!r}"
@@ -418,11 +431,28 @@ def _dump_log(log_path, context="", max_lines=150):
         print(f"[diagnostic] Could not read log ({context}): {exc}")
 
 
+def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
+    """Print AlphaGSM-managed console diagnostics for *server_name*."""
+
+    for command_args in (
+        (server_name, "logs", "-n", str(lines)),
+        (server_name, "doctor"),
+    ):
+        try:
+            result = run_alphagsm(env, *command_args, timeout=120)
+        except subprocess.TimeoutExpired as exc:
+            print(
+                f"[diagnostic] alphagsm {' '.join(command_args)} timed out after {exc.timeout}s"
+            )
+            continue
+        log_command_result("alphagsm " + " ".join(command_args), result)
+
+
 # ---------------------------------------------------------------------------
 # Wait helpers
 # ---------------------------------------------------------------------------
 
-def wait_for_log_marker(log_path, markers, timeout_seconds):
+def wait_for_log_marker(log_path, markers, timeout_seconds, env=None, server_name=None):
     """Poll a log file until one of *markers* appears; return the log text.
 
     On timeout dumps the full log tail to captured stdout and raises a test
@@ -436,12 +466,21 @@ def wait_for_log_marker(log_path, markers, timeout_seconds):
                 return log_text
         time.sleep(2)
     _dump_log(log_path, context=f"looking for {markers!r}")
+    if env is not None and server_name is not None:
+        _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
         f"Log never showed readiness markers {markers!r} within {timeout_seconds}s: {log_path}"
     )
 
 
-def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
+def wait_for_glob_log_marker(
+    log_dir,
+    glob_pattern,
+    markers,
+    timeout_seconds,
+    env=None,
+    server_name=None,
+):
     """Poll files matching glob_pattern in log_dir until a marker appears.
 
     On timeout dumps the tail of every matching log file found.
@@ -468,6 +507,8 @@ def wait_for_glob_log_marker(log_dir, glob_pattern, markers, timeout_seconds):
             print(f"[diagnostic] No files matching {glob_pattern!r} in {log_dir}")
     else:
         print(f"[diagnostic] Log dir not found: {log_dir}")
+    if env is not None and server_name is not None:
+        _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
         f"Log never showed readiness markers {markers!r} within {timeout_seconds}s in {log_dir}"
     )
@@ -499,6 +540,28 @@ def wait_for_udp_closed(host, port, timeout_seconds):
                 return
         time.sleep(2)
     raise AssertionError(f"UDP port {host}:{port} still responds after {timeout_seconds}s")
+
+
+def wait_for_generic_udp_closed(host, port, timeout_seconds, payload=b"\x00"):
+    """Wait until a generic UDP listener on *host:port* stops accepting traffic."""
+
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(2)
+                sock.connect((host, int(port)))
+                sock.send(payload)
+                try:
+                    sock.recv(1)
+                except socket.timeout:
+                    pass
+        except OSError:
+            return
+        time.sleep(2)
+    raise AssertionError(
+        f"UDP port {host}:{port} still accepts traffic after {timeout_seconds}s"
+    )
 
 def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None):
     """Poll A2S_INFO on *host*:*port* until the server responds.
@@ -686,11 +749,11 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
     """
     combined = "\n".join(part for part in (result.stdout, result.stderr) if part)
 
-    if _steamcmd_missing_manifest_flake(combined, app_id):
+    if _steamcmd_state_202_flake(combined, app_id):
         extra = f" (app {app_id})" if app_id else ""
         snippet = combined[:300].replace("\n", " | ")
         pytest.skip(
-            f"SteamCMD flake skip — repeated Missing configuration/state 0x202 during setup{extra}: {snippet}"
+            f"SteamCMD flake skip — repeated known state 0x202 during setup{extra}: {snippet}"
         )
 
     # Only markers that make it impossible to run the test in CI at all

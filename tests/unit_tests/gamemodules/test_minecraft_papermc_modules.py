@@ -2,6 +2,7 @@ import gamemodules.minecraft.paper as paper
 import gamemodules.minecraft.papermc as papermc
 import gamemodules.minecraft.velocity as velocity
 import gamemodules.minecraft.waterfall as waterfall
+import utils.gamemodules.papermc as papermc_impl
 
 
 class DummyData(dict):
@@ -35,7 +36,7 @@ def test_papermc_resolve_download_chooses_latest_stable_build(monkeypatch):
             },
         ],
     }
-    monkeypatch.setattr(papermc, "_read_json", lambda url: responses[url])
+    monkeypatch.setattr(papermc_impl, "_read_json", lambda url: responses[url])
 
     version, url = papermc.resolve_download("paper")
 
@@ -68,6 +69,7 @@ def test_paper_configure_resolves_download_and_delegates_to_custom(tmp_path, mon
     assert server.data["version"] == "1.21.10"
     assert server.data["url"] == "http://example.com/paper.jar"
     assert server.data["download_name"] == "paper.jar"
+    assert server.data["mods"]["desired"]["url"] == []
     assert calls["exe_name"] == "paper.jar"
 
 
@@ -104,6 +106,8 @@ def test_proxy_family_modules_resolve_download_and_delegate_to_bungeecord(
     assert ("waterfall", str(tmp_path / "waterfall"), "waterfall.jar") in calls
     assert velocity_server.data["download_name"] == "velocity.jar"
     assert waterfall_server.data["download_name"] == "waterfall.jar"
+    assert velocity_server.data["mod_cache_dirname"] == "minecraft-velocity"
+    assert waterfall_server.data["mod_cache_dirname"] == "minecraft-waterfall"
 
 
 def test_paper_and_proxy_installs_delegate_to_shared_download_helper(monkeypatch):

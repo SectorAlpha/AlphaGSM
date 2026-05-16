@@ -26,7 +26,7 @@ class DummyServer:
 
 
 def test_scumserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(scumserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(scumserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("scum")
     exe_dir = tmp_path / "SCUM" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -50,7 +50,15 @@ def test_scumserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
 
 
 def test_rs2server_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(rs2server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    observed = {}
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        observed["wineprefix"] = wineprefix
+        observed["prefer_proton"] = prefer_proton
+        return list(cmd)
+
+    monkeypatch.setattr(rs2server.proton, "wrap_command", fake_wrap_command)
+    monkeypatch.setattr(rs2server, "IS_LINUX", True)
     server = DummyServer("rs2")
     exe_dir = tmp_path / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -70,6 +78,7 @@ def test_rs2server_get_start_command_builds_expected_args(tmp_path, monkeypatch)
     assert cmd[0] == "Binaries/Win64/VNGame.exe"
     assert "-Port=7777" in cmd
     assert cwd == server.data["dir"]
+    assert observed == {"wineprefix": None, "prefer_proton": False}
 
 
 def test_scum_and_rs2_updates_download_and_optionally_restart(monkeypatch):

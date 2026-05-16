@@ -67,8 +67,21 @@ def test_install(tmp_path):
     server.data["exe_name"] = "wf_server.x86_64"
     server.data["Steam_AppID"] = 1136510
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["hostname"] = "AlphaGSM Warfork"
     server.data["port"] = 44400
     mod.install(server)
+    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set net_port 44400\nset sv_hostname "AlphaGSM Warfork"\n'
+
+
+def test_sync_server_config_rewrites_autoexec(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["hostname"] = "AlphaGSM Warfork"
+    server.data["port"] = 44401
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set net_port 44401\nset sv_hostname "AlphaGSM Warfork"\n'
 
 
 def test_update_with_restart(tmp_path):
@@ -117,7 +130,31 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./wf_server.x86_64",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_ip",
+        "0.0.0.0",
+        "+set",
+        "net_port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_warfork_launch_and_native_config_keys():
+    assert mod.setting_schema["hostname"].native_config_key == "sv_hostname"
+    assert mod.setting_schema["port"].native_config_key == "net_port"
+    assert mod.setting_schema["bindaddress"].launch_arg_tokens == ("+set", "net_ip")
+    assert mod.setting_schema["startmap"].aliases == ("map",)
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -196,6 +233,31 @@ def test_checkvalue_startmap():
     server = DummyServer()
     result = mod.checkvalue(server, ("startmap",), "/test/value")
     assert result == "/test/value"
+
+
+def test_checkvalue_startmap_validates_installed_maps(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["fs_game"] = "basewf"
+    maps_dir = tmp_path / "basewf" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "wfa1.bsp").write_text("")
+
+    result = mod.checkvalue(server, ("startmap",), "wfa1")
+
+    assert result == "wfa1"
+
+
+def test_checkvalue_startmap_rejects_unknown_installed_map(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["fs_game"] = "basewf"
+    maps_dir = tmp_path / "basewf" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "wfa1.bsp").write_text("")
+
+    with pytest.raises(ServerError, match="Unsupported map"):
+        mod.checkvalue(server, ("startmap",), "missing_map")
 
 
 def test_checkvalue_exe_name():

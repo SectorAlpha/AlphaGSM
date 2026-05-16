@@ -48,6 +48,18 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+## Structured Settings
+
+AlphaGSM exposes the JSON-backed settings through `set`:
+
+```bash
+alphagsm myarmarser set map "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
+alphagsm myarmarser set adminpassword "super-secret"
+alphagsm myarmarser set bindaddress 0.0.0.0
+```
+
+The `map` setting writes the `scenarioid` field in `configs/server.json`.
+
 ## Useful Commands
 
 ```bash

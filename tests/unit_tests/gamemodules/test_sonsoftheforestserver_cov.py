@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.sonsoftheforestserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.sonsoftheforestserver as mod
     from server import ServerError
@@ -41,6 +41,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8766, dir=str(tmp_path))
     assert server.data['port'] == 8766
+    assert server.data['exe_name'] == 'SonsOfTheForestDS.exe'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -114,6 +115,36 @@ def test_get_start_command(tmp_path, monkeypatch):
     (tmp_path / "SonsOfTheForestDS.exe").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_get_start_command_linux_uses_default_wine_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    wrap_command = MagicMock(side_effect=lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setattr(mod.proton, "wrap_command", wrap_command)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "SonsOfTheForestDS.exe"
+    (tmp_path / "SonsOfTheForestDS.exe").write_text("")
+
+    mod.get_start_command(server)
+
+    wrap_command.assert_called_once()
+    args, kwargs = wrap_command.call_args
+    assert args == (["SonsOfTheForestDS.exe", "-batchmode", "-nographics", "-log"],)
+    assert kwargs == {"wineprefix": None}
+
+
+def test_get_start_command_legacy_batch_prefers_server_exe(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "StartSOTFDedicated.bat"
+    (tmp_path / "StartSOTFDedicated.bat").write_text("")
+    (tmp_path / "SonsOfTheForestDS.exe").write_text("")
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "SonsOfTheForestDS.exe"
 
 
 def test_get_start_command_missing_exe(tmp_path):

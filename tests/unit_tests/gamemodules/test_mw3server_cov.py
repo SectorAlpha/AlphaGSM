@@ -8,7 +8,7 @@ import pytest
 
 sys.modules.pop('gamemodules.mw3server', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.mw3server as mod
     from server import ServerError
@@ -115,11 +115,32 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["exe_name"] = "iw5mp_server.exe"
     (tmp_path / "iw5mp_server.exe").write_text("")
     server.data["hostname"] = "test"
-    server.data["maxplayers"] = 27015
+    server.data["maxplayers"] = 18
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "iw5mp_server.exe",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_maxclients",
+        "18",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_mw3_launch_tokens():
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["maxplayers"].launch_arg_tokens == ("+set", "sv_maxclients")
+    assert mod.setting_schema["startmap"].launch_arg_tokens == ("+map",)
 
 
 def test_get_start_command_missing_exe(tmp_path):

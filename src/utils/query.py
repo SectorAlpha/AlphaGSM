@@ -6,6 +6,7 @@ Provides query strategies:
 * :func:`quake_status` — Quake3/QFusion UDP getstatus query.
 * :func:`slp_info` — Minecraft Server List Ping.
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
+* :func:`http_json` — HTTP JSON endpoint query.
 * :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
 
@@ -16,12 +17,15 @@ TCP ping on the main port.
 """
 
 import bz2
+import json
 import socket
 import struct
 import time
+import urllib.error
+import urllib.request
 
 __all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "udp_ping", "tcp_ping",
-           "ts3_serverinfo"]
+           "ts3_serverinfo", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
 _A2S_PAYLOAD = b"\x54Source Engine Query\x00"
@@ -258,6 +262,35 @@ def slp_info(host, port, timeout=5.0):
         return result
     except (KeyError, TypeError, ValueError) as exc:
         raise QueryError("Unexpected SLP response structure: " + str(exc)) from exc
+
+
+def _format_http_host(host):
+    """Return *host* formatted for use in an HTTP URL."""
+
+    host = str(host)
+    if ":" in host and not host.startswith("["):
+        return "[{}]".format(host)
+    return host
+
+
+def http_json(host, port, path, timeout=5.0):
+    """Fetch JSON from an HTTP endpoint and return the decoded object."""
+
+    path = str(path)
+    if not path.startswith("/"):
+        path = "/" + path
+    url = "http://{}:{}{}".format(_format_http_host(host), int(port), path)
+    request = urllib.request.Request(url, headers={"User-Agent": "AlphaGSM"})
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            charset = response.headers.get_content_charset() or "utf-8"
+            payload = response.read().decode(charset, errors="replace")
+    except (OSError, ValueError, urllib.error.URLError) as exc:
+        raise QueryError("HTTP JSON query failed for {}: {}".format(url, exc)) from exc
+    try:
+        return json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise QueryError("HTTP JSON query failed for {}: invalid JSON response".format(url)) from exc
 
 
 def udp_ping(host, port, timeout=2.0, payload=b"\x00"):

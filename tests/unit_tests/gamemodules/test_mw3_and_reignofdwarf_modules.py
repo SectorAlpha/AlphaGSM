@@ -26,7 +26,7 @@ class DummyServer:
 
 
 def test_mw3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(mw3server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(mw3server.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("mw3")
     exe = tmp_path / "iw5mp_server.exe"
     exe.write_text("")
@@ -49,7 +49,7 @@ def test_mw3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
 
 def test_reignofdwarf_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(reignofdwarfserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(reignofdwarfserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("rod")
     exe = tmp_path / "ReignOfDwarfServer.exe"
     exe.write_text("")

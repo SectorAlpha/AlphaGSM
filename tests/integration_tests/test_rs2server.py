@@ -14,6 +14,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
+    wait_for_info_protocol,
     wait_for_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
@@ -21,12 +22,13 @@ from conftest import (
 from gamemodules.rs2server import steam_app_id
 
 pytestmark = [pytest.mark.integration]
-START_TIMEOUT = 600
+START_TIMEOUT = 1200  # 20 min: RS2 has historically stalled beyond the old 10 min bring-up window under Wine
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: large download (~13+ GB)
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
-@pytest.mark.timeout(3600)  # 60 min: large download (~13+ GB)
+@pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full download budget plus extended UE3/A2S bring-up
 def test_rs2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -59,9 +61,12 @@ def test_rs2server_lifecycle(tmp_path):
         log_path = install_dir / "ROGame" / "Logs" / "Launch.log"
         wait_for_log_marker(
             log_path,
-            ["listening on port", "Engine is initialized", "Success - server ready"],
+            ["Bringing up level for play took", "Bringing World ", "Success - server ready"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")

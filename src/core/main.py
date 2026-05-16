@@ -3,11 +3,13 @@
 from utils.cmdparse import cmdparse
 from server import Server, ServerError, server as servermodule
 from . import multiplexer as mp
+from . import self_update
 import subprocess as sp
 import screen
 import os
 import traceback
 from . import program
+from .version import get_version
 from sys import stderr, stdout
 from textwrap import dedent
 
@@ -55,6 +57,13 @@ def main(name, args):
     The main role of this function is to sanitize the command input from the user.
     """
 
+    if len(args) == 1 and args[0].lower() in ("-v", "--version", "version"):
+        print("AlphaGSM %s" % (get_version(),))
+        return 0
+
+    if len(args) >= 1 and args[0].lower() == "self-update":
+        return self_update.run_self_update(name, args[1:], stderr=stderr)
+
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]
     #  if no arguments are called
@@ -90,6 +99,7 @@ def main(name, args):
             "logs",
             "compose",
             "ps",
+            "self-update",
         )
         + Server.default_commands
     )
@@ -583,6 +593,8 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            checking what servers a wildcard matched or in
                            scripts to list the servers in a script processable
                            way.
+          self-update [OPTION]... : Check for a newer AlphaGSM release and
+                           apply it when supported.
         """),
             file=file,
         )
@@ -590,6 +602,12 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         #  if there is no server, then return a default set of server commands
         #  that are typical of every game server
         if server is None:
+            cmdparse.shorthelp(
+                "self-update",
+                self_update.SELF_UPDATE_DESCRIPTION,
+                self_update.SELF_UPDATE_CMDSPEC,
+                file=file,
+            )
             for cmd in Server.default_commands:
                 cmdparse.shorthelp(
                     cmd,
@@ -608,6 +626,14 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         #  if we have a command, return help relating to the command to the
         #  specific command
         if server is None:
+            if cmd == "self-update":
+                cmdparse.longhelp(
+                    cmd,
+                    self_update.SELF_UPDATE_DESCRIPTION,
+                    self_update.SELF_UPDATE_CMDSPEC,
+                    file=file,
+                )
+                return
             if cmd not in Server.default_commands:
                 print("Unknown Command", file=file)
                 print(file=file)
@@ -632,14 +658,14 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         # print the copyright and information notice.
         print(
             dedent("""
-            AlphaGSM Copyright (C) 2016 by Sector Alpha.
+            AlphaGSM Copyright (C) 2016-2026 by Sector Alpha.
             Licensed under GPL v3.0. See the LISCENCE file for details.
             Developed by Cosmosquark and Staircase27. See the CREDITS file for a
             full list of contributors.
 
             A command line tool to download, manage and maintain game servers
             using simple and similar commands. See the README, future_plans and
-            the changelog files for more details. Hosted and maintained on our
+            changelog.txt for more details. Hosted and maintained on our
             github page https://github.com/SectorAlpha/AlphaGSM. Raise any issues
             or ask any questions on our github page, or contact
             cosmosquark@sector-alpha.net. Additionally check out the project

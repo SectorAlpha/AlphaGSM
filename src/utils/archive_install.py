@@ -26,7 +26,14 @@ def detect_compression(download_name):
     raise ServerError("Unable to determine archive type for '%s'" % download_name)
 
 
-def sync_tree(source, target):
+def ensure_executable(path):
+    """Mark *path* executable when it exists."""
+
+    if os.path.isfile(path):
+        os.chmod(path, os.stat(path).st_mode | 0o111)
+
+
+def sync_tree(source, target, *, skip_root_files=()):
     """Recursively copy an extracted tree into the install directory."""
 
     os.makedirs(target, exist_ok=True)
@@ -46,6 +53,8 @@ def sync_tree(source, target):
             else:
                 os.makedirs(tgt_dir, exist_ok=True)
         for filename in files:
+            if rel_root == "." and filename in skip_root_files:
+                continue
             src_file = os.path.join(root, filename)
             tgt_file = os.path.join(target_root, filename)
             if os.path.islink(src_file):
@@ -57,12 +66,18 @@ def sync_tree(source, target):
                 shutil.copy2(src_file, tgt_file)
 
 
-def resolve_archive_root(downloadpath):
+def resolve_archive_root(downloadpath, *, archive_name=None):
     """Return the most likely extracted root directory for an archive download."""
 
     entries = [os.path.join(downloadpath, entry) for entry in os.listdir(downloadpath)]
     directories = [entry for entry in entries if os.path.isdir(entry)]
-    if len(directories) == 1:
+    extracted_files = [
+        entry
+        for entry in entries
+        if os.path.isfile(entry)
+        and (archive_name is None or os.path.basename(entry) != archive_name)
+    ]
+    if len(directories) == 1 and not extracted_files:
         return directories[0]
     return downloadpath
 
@@ -80,10 +95,18 @@ def install_archive(server, compression):
         downloadpath = downloader.getpath(
             "url", (server.data["url"], server.data["download_name"], compression)
         )
-        sync_tree(resolve_archive_root(downloadpath), server.data["dir"])
+        source_root = resolve_archive_root(
+            downloadpath,
+            archive_name=server.data["download_name"],
+        )
+        skip_root_files = ()
+        if os.path.normpath(source_root) == os.path.normpath(downloadpath):
+            skip_root_files = (server.data["download_name"],)
+        sync_tree(source_root, server.data["dir"], skip_root_files=skip_root_files)
         server.data["current_url"] = server.data["url"]
     else:
         print("Skipping download")
+    ensure_executable(exe_path)
     server.data.save()
 
 
@@ -102,8 +125,8 @@ def install_binary(server):
         )
         src = os.path.join(downloadpath, server.data["download_name"])
         shutil.copy2(src, exe_path)
-        os.chmod(exe_path, os.stat(exe_path).st_mode | 0o111)
         server.data["current_url"] = server.data["url"]
     else:
         print("Skipping download")
+    ensure_executable(exe_path)
     server.data.save()

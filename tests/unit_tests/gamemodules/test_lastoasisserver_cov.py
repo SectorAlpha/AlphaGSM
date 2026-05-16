@@ -116,7 +116,22 @@ def test_get_start_command(tmp_path):
     server.data["queryport"] = 27015
     server.data["worldname"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./LastOasisServer.x86_64",
+        "-log",
+        "-port=27015",
+        "-queryport=27015",
+        "-maxplayers=27015",
+        "-worldname=test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_lastoasis_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-queryport={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-maxplayers={value}"
+    assert mod.setting_schema["worldname"].launch_arg_format == "-worldname={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):
