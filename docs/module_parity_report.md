@@ -221,6 +221,7 @@
 | trackmaniaserver | - | disabled | no | no | status |
 | ts3server | - | active | no | yes | status |
 | tsserver | - | disabled | yes | no | - |
+| tuserver | - | active | no | yes | status |
 | twserver | - | active | no | yes | status |
 | unturned | untserver | disabled | no | no | status |
 | ut2k4server | - | active | no | yes | status |

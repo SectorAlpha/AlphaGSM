@@ -63,11 +63,12 @@ def test_install_downloads_base_app_and_tf2c(tmp_path):
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
     (tmp_path / "srcds.sh").write_text("#!/bin/sh\n", encoding="utf-8")
 
-    mod.install(server)
+    with patch.object(mod.steamcmd, "download") as download:
+        mod.install(server)
 
-    assert mod.steamcmd.download.call_count == 2
-    first_call = mod.steamcmd.download.call_args_list[0]
-    second_call = mod.steamcmd.download.call_args_list[1]
+    assert download.call_count == 2
+    first_call = download.call_args_list[0]
+    second_call = download.call_args_list[1]
     assert first_call.args[:3] == (str(tmp_path / "tf"), mod.base_steam_app_id, True)
     assert second_call.args[:3] == (str(tmp_path) + "/", mod.steam_app_id, True)
 

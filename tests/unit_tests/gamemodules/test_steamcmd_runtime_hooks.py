@@ -38,3 +38,7 @@ def test_teamfortress2_runtime():
 
 def test_tf2cserver_runtime():
     assert_runtime_family("gamemodules.tf2cserver", "steamcmd-linux")
+
+
+def test_tuserver_runtime():
+    assert_runtime_family("gamemodules.tuserver", "steamcmd-linux")
