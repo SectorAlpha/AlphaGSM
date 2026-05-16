@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-05-16
+- Pavlov VR: fix `pvrserver` to use Pavlov's real status-helper port (`port + 400`) for A2S/info, stop passing the ineffective `-QueryPort` launch flag, and keep runtime port claims aligned with the live server contract.
+
 2026-05-13
 - Server support: remove stale disabled gates for `askaserver`, `battlecryoffreedomserver`, `blackops3server`, `enshrouded`, `groundbranchserver`, `mythofempiresserver`, `pixarkserver`, `reignofdwarfserver`, `sunkenlandserver`, and `theforestserver` after the tracker and current support surface had already moved them back into active coverage.
 - Docs: add a README-linked checkbox tracker page for current game-server support status, generated from `docs/TEST_STATUS.md`, so users can quickly scan supported and unsupported server names without reading the full integration-status report.

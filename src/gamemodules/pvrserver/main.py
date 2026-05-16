@@ -13,6 +13,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 622970
 steam_anonymous_login_possible = True
+STATUS_PORT_OFFSET = 400
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -71,7 +72,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PavlovServer.sh"):
         default_port=7777,
         prompt="Please specify the port to use for this server:",
     )
-    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
+    server.data["queryport"] = str(_status_port(server))
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -102,14 +103,18 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Pavlov VR server."
 
 
+def _status_port(server):
+    return int(server.data["port"]) + STATUS_PORT_OFFSET
+
+
 def get_query_address(server):
     """Pavlov VR uses Steam A2S on the dedicated query port."""
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), _status_port(server), "a2s")
 
 
 def get_info_address(server):
     """Return the A2S address used by the info command."""
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), _status_port(server), "a2s")
 
 
 def get_start_command(server):
@@ -122,7 +127,6 @@ def get_start_command(server):
         server.data,
         {
             "port": setting_schema["port"],
-            "queryport": setting_schema["queryport"],
             "map": setting_schema["map"],
         },
         require_explicit_tokens=True,
@@ -169,14 +173,34 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
-)
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
+def get_runtime_requirements(server):
+    """Expose the gameplay port plus Pavlov's fixed status-helper port."""
+
+    server.data["queryport"] = str(_status_port(server))
+    return gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=(
+            {'key': 'port', 'protocol': 'udp'},
+            {'key': 'port', 'protocol': 'tcp'},
+            {'key': 'queryport', 'protocol': 'udp'},
+            {'key': 'queryport', 'protocol': 'tcp'},
+        ),
+    )(server)
+
+
+def get_container_spec(server):
+    """Publish the gameplay port plus Pavlov's fixed status-helper port."""
+
+    server.data["queryport"] = str(_status_port(server))
+    return gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+        port_definitions=(
+            {'key': 'port', 'protocol': 'udp'},
+            {'key': 'port', 'protocol': 'tcp'},
+            {'key': 'queryport', 'protocol': 'udp'},
+            {'key': 'queryport', 'protocol': 'tcp'},
+        ),
         stdin_open=True,
-)
+    )(server)

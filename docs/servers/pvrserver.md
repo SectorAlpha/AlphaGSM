@@ -54,7 +54,7 @@ alphagsm mypvrserve stop
 Setup configures:
 
 - the game port (default 7777)
-- the query port (default 7778)
+- the status/query port (fixed at game port + 400, so 8177 by default)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -69,7 +69,7 @@ alphagsm mypvrserve backup
 
 - Module name: `pvrserver`
 - Default game port: 7777
-- Default query port: 7778
+- Default status/query port: 8177
 
 ## Developer Notes
 
@@ -81,8 +81,8 @@ alphagsm mypvrserve backup
 - **SteamCMD App ID**: `622970`
 
 Smoke and integration validation track readiness through `alphagsm info --json`
-returning protocol `a2s` on the query port instead of waiting for screen-log
-markers.
+returning protocol `a2s` on Pavlov's status-helper port (`port + 400`) instead
+of waiting for screen-log markers.
 
 ### Server Configuration
 
