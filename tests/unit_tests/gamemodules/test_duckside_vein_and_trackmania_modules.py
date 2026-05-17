@@ -84,6 +84,8 @@ def test_trackmania_get_start_command_builds_expected_args(tmp_path):
         "./TrackmaniaServer",
         "/dedicated_cfg=dedicated_cfg.txt",
         "/game_settings=MatchSettings/Nations/NationsGreen.txt",
+        "/nodaemon",
+        "/noautoquit",
     ]
     assert cwd == server.data["dir"]
 

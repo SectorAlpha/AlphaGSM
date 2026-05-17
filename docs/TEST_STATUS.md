@@ -11,8 +11,8 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 83      |
-| DISABLED | 73      |
+| PASSED   | 84      |
+| DISABLED | 72      |
 | SKIPPED  | 79      |
 
 ## Status Key
@@ -90,6 +90,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | tf2 | SteamCMD (Source) |
 | tfcserver | SteamCMD (GoldSrc) |
 | thefrontserver | SteamCMD |
+| trackmaniaserver | Direct download — PASSED 2026-05-17; setup now syncs the configured XML-RPC port into `GameData/Config/dedicated_cfg.txt`, launch stays attached with `/nodaemon`, and query/info use TCP reachability on the XML-RPC endpoint |
 | unturned | SteamCMD |
 | ut99server | Direct download |
 | valheim | SteamCMD |
@@ -182,7 +183,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
 | stationeersserver | Stationeers dedicated server stalls under Unity NullGfxDevice in headless CI after SetConsoleOutputCP startup exception; game port never opens |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
-| trackmaniaserver | TrackMania download URL returns 403 |
 | warbandserver | TaleWorlds download page blocks automated access (HTTP 403) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |

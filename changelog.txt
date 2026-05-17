@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-17
+- Server support: re-enable `trackmaniaserver` after confirming the upstream direct-download archive still works, sync the configured XML-RPC port into `GameData/Config/dedicated_cfg.txt`, keep the dedicated process attached with `/nodaemon`, and restore smoke/integration coverage on the XML-RPC TCP endpoint.
 - Server support: re-enable `q3server` creation by switching its engine download to the real public ioquake3 Linux build, restore the smoke/integration entrypoints, and classify CI as a prerequisite skip until licensed `baseq3/pak0.pk3` game data is provided.
 
 2026-05-16

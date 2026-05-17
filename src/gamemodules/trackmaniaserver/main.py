@@ -1,6 +1,7 @@
 """Trackmania dedicated server lifecycle helpers."""
 
 import os
+import re
 
 import screen
 from server import ServerError
@@ -21,6 +22,38 @@ command_args = gamemodule_common.build_setup_download_command_args(
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port",)
+
+
+def _dedicated_cfg_path(server):
+    """Return the on-disk dedicated config path for this server."""
+
+    dedicated_cfg = server.data.get("dedicated_cfg", "dedicated_cfg.txt")
+    if os.path.isabs(dedicated_cfg):
+        return dedicated_cfg
+    return os.path.join(server.data["dir"], "GameData", "Config", dedicated_cfg)
+
+
+def sync_server_config(server):
+    """Keep the Trackmania XML-RPC config aligned with the datastore."""
+
+    config_path = _dedicated_cfg_path(server)
+    if not os.path.isfile(config_path):
+        return
+    with open(config_path, encoding="utf-8") as fh:
+        config_text = fh.read()
+    updated_text, replacements = re.subn(
+        r"(<xmlrpc_port>)(.*?)(</xmlrpc_port>)",
+        r"\g<1>%s\g<3>" % (int(server.data.get("port", 5000)),),
+        config_text,
+        count=1,
+        flags=re.DOTALL,
+    )
+    if replacements == 0:
+        raise ServerError("Trackmania dedicated config is missing <xmlrpc_port>")
+    if updated_text != config_text:
+        with open(config_path, "w", encoding="utf-8") as fh:
+            fh.write(updated_text)
 
 
 def configure(
@@ -80,6 +113,13 @@ def install(server):
         server.data["url"] = TRACKMANIA_SERVER_URL
         server.data.setdefault("download_name", TRACKMANIA_SERVER_NAME)
     install_archive(server, detect_compression(server.data["download_name"]))
+    sync_server_config(server)
+
+
+def prestart(server):
+    """Rewrite the XML-RPC port before each launch."""
+
+    sync_server_config(server)
 
 
 def get_start_command(server):
@@ -93,9 +133,23 @@ def get_start_command(server):
             "./" + server.data["exe_name"],
             "/dedicated_cfg=%s" % (server.data["dedicated_cfg"],),
             "/game_settings=%s" % (server.data["game_settings"],),
+            "/nodaemon",
+            "/noautoquit",
         ],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the Trackmania XML-RPC TCP endpoint used for reachability."""
+
+    return runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp"
+
+
+def get_info_address(server):
+    """Return the XML-RPC TCP endpoint used by the info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -134,12 +188,12 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=({'key': 'port', 'protocol': 'tcp'},),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=({'key': 'port', 'protocol': 'tcp'},),
         stdin_open=True,
 )

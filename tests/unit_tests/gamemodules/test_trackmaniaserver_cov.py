@@ -64,6 +64,19 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
+def test_sync_server_config_updates_xmlrpc_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 5123
+    cfg_dir = tmp_path / "GameData" / "Config"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "dedicated_cfg.txt"
+    cfg_path.write_text("<dedicated><system_config><xmlrpc_port>5000</xmlrpc_port></system_config></dedicated>")
+
+    mod.sync_server_config(server)
+
+    assert "<xmlrpc_port>5123</xmlrpc_port>" in cfg_path.read_text()
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -72,7 +85,8 @@ def test_get_start_command(tmp_path):
     server.data["dedicated_cfg"] = "test"
     server.data["game_settings"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd[-2:] == ["/nodaemon", "/noautoquit"]
+    assert cwd == server.data["dir"]
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -91,6 +105,13 @@ def test_do_stop():
 def test_status():
     server = DummyServer()
     mod.status(server, verbose=True)
+
+def test_query_and_info_addresses():
+    server = DummyServer()
+    server.data["port"] = 5000
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
+        assert mod.get_query_address(server) == ("127.0.0.1", 5000, "tcp")
+        assert mod.get_info_address(server) == ("127.0.0.1", 5000, "tcp")
 
 def test_message():
     server = DummyServer()
