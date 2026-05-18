@@ -33,7 +33,7 @@
 | atlasserver | - | active | no | yes | status |
 | atsserver | - | disabled | no | no | status |
 | avserver | - | active | no | yes | status |
-| bannerlordserver | - | disabled | no | no | status |
+| bannerlordserver | - | active | no | yes | status |
 | battlebitserver | - | disabled | no | no | status |
 | battlecryoffreedomserver | - | active | no | yes | status |
 | bb2server | - | active | yes | yes | - |

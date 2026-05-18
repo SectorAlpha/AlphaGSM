@@ -82,9 +82,11 @@ Notes:
 - [x] tf2
 - [x] tfcserver
 - [x] thefrontserver
+- [x] trackmaniaserver
 - [x] unturned
 - [x] ut99server
 - [x] valheim
+- [x] warbandserver
 - [x] wfserver
 - [x] wurmserver
 - [x] xntserver
@@ -123,7 +125,6 @@ Notes:
 - [ ] arma3wastelandserver
 - [ ] atsserver
 - [ ] atlasserver
-- [ ] bannerlordserver
 - [ ] battlebitserver
 - [ ] bf1942server
 - [ ] bfvserver
@@ -161,7 +162,6 @@ Notes:
 - [ ] pcarserver
 - [ ] pvrserver
 - [ ] pcars2server
-- [ ] q3server
 - [ ] q4server
 - [ ] roserver
 - [ ] rwserver
@@ -173,8 +173,6 @@ Notes:
 - [ ] starbound
 - [ ] stationeersserver
 - [ ] tiserver
-- [ ] trackmaniaserver
-- [ ] warbandserver
 - [ ] veinserver
 - [ ] vrserver
 - [ ] wreckfestserver
@@ -202,6 +200,7 @@ Notes:
 - [ ] notdserver
 - [ ] outpostzeroserver
 - [ ] primalcarnageextinctionserver
+- [ ] q3server
 - [ ] reignofkingsserver
 - [ ] returntomoriaserver
 - [ ] ror2server
@@ -210,6 +209,7 @@ Notes:
 - [ ] scumserver
 - [ ] sniperelite4server
 - [ ] sonsoftheforestserver
+- [ ] bannerlordserver
 - [ ] ss14server
 - [ ] starruptureserver
 - [ ] staxelserver

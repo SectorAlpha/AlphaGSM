@@ -12,8 +12,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 85      |
-| DISABLED | 71      |
-| SKIPPED  | 79      |
+| DISABLED | 70      |
+| SKIPPED  | 80      |
 
 ## Status Key
 
@@ -135,7 +135,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
 | atlasserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query path instead of waiting for absent log markers |
-| bannerlordserver | SteamCMD app 1863440 installs no Linux-compatible dedicated server binary (executable file not found) |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
@@ -225,6 +224,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
+| bannerlordserver | Re-enabled from disabled: anonymous SteamCMD installs app 1863440 successfully and the module now targets `bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`, but smoke/integration currently skip until a host `dotnet` runtime is available to validate the real start/query contract |
 | ss14server | Re-enabled: manifest-based SS14 downloads install correctly, AlphaGSM now syncs `server_config.toml`, and smoke/integration pass through `info --json` protocol `robust_status`; still requires a host-installed `dotnet` runtime |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |

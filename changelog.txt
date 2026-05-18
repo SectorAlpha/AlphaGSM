@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-18
+- Server support: re-enable `bannerlordserver` creation after confirming anonymous SteamCMD installs app `1863440`, point the module at `bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`, and make smoke/integration skip cleanly until a host `dotnet` runtime is available.
 - Server support: re-enable `warbandserver` by switching setup to the live official `mb_warband_dedicated_1174.zip` archive instead of scraping the Cloudflare-blocked TaleWorlds page, sync `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, run the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and make smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers.
 
 2026-05-17
