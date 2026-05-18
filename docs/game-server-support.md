@@ -65,6 +65,7 @@ Notes:
 - [x] opforserver
 - [x] palworld
 - [x] projectzomboid
+- [x] q2server
 - [x] pvkiiserver
 - [x] ricochetserver
 - [x] rimworldtogetherserver
@@ -249,7 +250,6 @@ Notes:
 - [ ] mxbikesserver
 - [ ] nsserver
 - [ ] pathoftitansserver
-- [x] q2server
 - [ ] qlserver
 - [ ] qwserver
 - [ ] redmserver
