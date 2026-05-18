@@ -36,6 +36,8 @@ from utils.simple_kv_config import rewrite_equals_config
 
 YAMAGI_Q2_PAGE = "https://www.yamagi.org/quake2/"
 YAMAGI_Q2_TAGS_API = "https://api.github.com/repos/yquake2/yquake2/tags?per_page=100"
+Q2_DEMO_DATA_URL = "https://deponie.yamagi.org/quake2/idstuff/q2-314-demo-x86.exe"
+Q2_DEMO_DATA_NAME = "q2-314-demo-x86.exe"
 Q2_MOD_CACHE_DIRNAME = "q2server"
 Q2_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -400,28 +402,47 @@ command_functions["mod"] = q2_mod_command
 def resolve_download(version=None):
     """Resolve the official Yamagi Quake II source archive."""
 
-    if version not in (None, "", "latest"):
-        tags = read_json(YAMAGI_Q2_TAGS_API)
-        for tag in tags:
-            tag_name = tag.get("name", "")
-            if str(version) in tag_name:
-                archive_url = (
-                    "https://github.com/yquake2/yquake2/archive/refs/tags/%s.tar.gz"
-                    % (urllib.parse.quote(tag_name, safe=""),)
-                )
-                return str(version), archive_url
+    def _normalize_version(value):
+        parts = str(value).strip().replace("_", ".").split(".")
+        return tuple(int(part) for part in parts if part != "")
+
+    def _tag_version_and_url(tag_name):
+        match = re.search(r"QUAKE2_(\d+)_(\d+)$", tag_name.upper())
+        if match is None:
+            return None
+        resolved_version = f"{int(match.group(1))}.{match.group(2)}"
+        archive_url = (
+            "https://github.com/yquake2/yquake2/archive/refs/tags/%s.tar.gz"
+            % (urllib.parse.quote(tag_name, safe=""),)
+        )
+        return resolved_version, archive_url
+
+    requested_version = None if version in (None, "", "latest") else _normalize_version(version)
+    tags = read_json(YAMAGI_Q2_TAGS_API)
+    for tag in tags:
+        resolved = _tag_version_and_url(tag.get("name", ""))
+        if resolved is None:
+            continue
+        resolved_version, archive_url = resolved
+        if requested_version is None or _normalize_version(resolved_version) == requested_version:
+            return resolved_version, archive_url
+
+    if requested_version is not None:
         raise ServerError("Unable to locate the requested Yamagi Quake II version")
+
     request = urllib.request.Request(YAMAGI_Q2_PAGE, headers={"User-Agent": HTTP_USER_AGENT})
     with urllib.request.urlopen(request) as response:
         page = response.read().decode("utf-8")
     match = re.search(
-        r'href="([^"]+)">Yamagi Quake II, Version ([0-9.]+)',
+        r'Yamagi Quake II, Version ([0-9.]+)</a>',
         page,
         re.IGNORECASE,
     )
     if match is None:
         raise ServerError("Unable to locate the latest Yamagi Quake II source archive")
-    return match.group(2), urllib.parse.urljoin(YAMAGI_Q2_PAGE, match.group(1))
+    resolved_version = match.group(1)
+    archive_url = urllib.parse.urljoin(YAMAGI_Q2_PAGE, f"https://deponie.yamagi.org/quake2/quake2-{resolved_version}.tar.xz")
+    return resolved_version, archive_url
 
 
 def _install_from_source(server):
@@ -430,17 +451,46 @@ def _install_from_source(server):
     downloadpath = downloader.getpath(
         "url", (server.data["url"], server.data["download_name"], "tar.gz")
     )
-    source_root = resolve_archive_root(downloadpath)
+    source_root = resolve_archive_root(downloadpath, archive_name=server.data["download_name"])
     if (
         server.data.get("current_url") != server.data["url"]
         or not os.path.isfile(os.path.join(server.data["dir"], server.data["exe_name"]))
     ):
-        sp.run(["make"], cwd=source_root, check=True)
+        sp.run(["make", "server", "game"], cwd=source_root, check=True)
         sync_tree(source_root, server.data["dir"])
         server.data["current_url"] = server.data["url"]
         server.data.save()
     else:
         print("Skipping download")
+
+
+def _install_demo_content(server):
+    """Install the official Quake II demo base data when no baseq2 content exists."""
+
+    baseq2_root = Path(server.data["dir"]) / "baseq2"
+    if (baseq2_root / "pak0.pak").is_file():
+        return False
+
+    cache_root = _cache_root(server) / "bootstrap"
+    cache_root.mkdir(parents=True, exist_ok=True)
+    archive_path = cache_root / Q2_DEMO_DATA_NAME
+    stage_root = cache_root / "demo_stage"
+    download_to_cache(
+        Q2_DEMO_DATA_URL,
+        allowed_hosts=("deponie.yamagi.org",),
+        target_path=archive_path,
+    )
+    if stage_root.exists():
+        shutil.rmtree(stage_root)
+    extract_zip_safe(archive_path, stage_root)
+    demo_baseq2_root = stage_root / "Install" / "Data" / "baseq2"
+    if not (demo_baseq2_root / "pak0.pak").is_file():
+        raise ServerError(
+            "Official Quake II demo archive did not contain Install/Data/baseq2/pak0.pak"
+        )
+    sync_tree(str(demo_baseq2_root), str(baseq2_root))
+    shutil.rmtree(stage_root, ignore_errors=True)
+    return True
 
 
 def configure(
@@ -452,7 +502,7 @@ def configure(
     version=None,
     url=None,
     download_name=None,
-    exe_name="q2ded",
+    exe_name=os.path.join("release", "q2ded"),
 ):
     """Collect and store configuration values for a Quake 2 server."""
 
@@ -508,6 +558,7 @@ def configure(
 def install(server):
     """Download and install the Quake 2 server archive."""
 
+    installed_demo_content = False
     if "url" not in server.data or not server.data["url"]:
         resolved_version, resolved_url = resolve_download(version=server.data.get("version"))
         server.data["version"] = resolved_version
@@ -516,12 +567,18 @@ def install(server):
         server.data["download_mode"] = "source-build"
     if server.data.get("download_mode") == "source-build":
         _install_from_source(server)
+        installed_demo_content = _install_demo_content(server)
+        if installed_demo_content and server.data.get("startmap", "q2dm1") == "q2dm1":
+            server.data["startmap"] = "demo1"
         sync_server_config(server)
         ensure_mod_state(server)
         if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
             apply_configured_mods(server)
         return
     install_archive(server, detect_compression(server.data["download_name"]))
+    installed_demo_content = _install_demo_content(server)
+    if installed_demo_content and server.data.get("startmap", "q2dm1") == "q2dm1":
+        server.data["startmap"] = "demo1"
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
@@ -610,13 +667,13 @@ def get_container_spec(server):
 def get_query_address(server):
     """Return the Quake UDP query address used by the q2server module."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake2")
 
 
 def get_info_address(server):
     """Return the Quake UDP info address used by the q2server module."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake2")
 
 
 def do_stop(server, j):

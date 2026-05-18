@@ -4,6 +4,8 @@ This guide covers the `q2server` module in AlphaGSM.
 
 ## Requirements
 
+- `gcc`
+- `make`
 - `screen`
 - Python packages from `requirements.txt`
 
@@ -45,7 +47,10 @@ Setup configures:
 
 - the game port (default 27910)
 - the install directory
-- downloads and extracts the server archive
+- downloads the official Yamagi Quake II source archive and builds `release/q2ded`
+- builds `release/baseq2/game.so`
+- bootstraps the official Quake II demo `baseq2` data so a fresh install can start anonymously
+- uses `demo1` as the default start map on fresh demo-backed installs
 
 ## Useful Commands
 
@@ -54,22 +59,25 @@ alphagsm myq2server update
 alphagsm myq2server backup
 alphagsm myq2server set servername "AlphaGSM Q2"
 alphagsm myq2server set gamedir custom
-alphagsm myq2server set map q2dm8
+alphagsm myq2server set map demo2
 ```
 
 `set servername`, `set gamedir`, and `set map` rewrite `<gamedir>/server.cfg` immediately through the schema-backed config-sync path.
+
+If you later add the full retail `baseq2/pak0.pak` content, you can switch to retail multiplayer maps such as `q2dm1` with `set map q2dm1`.
 
 ## Notes
 
 - Module name: `q2server`
 - Default port: 27910
+- Fresh-install default map: `demo1`
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `q2ded`
-- **Location**: `<install_dir>/q2ded`
+- **Executable**: `release/q2ded`
+- **Location**: `<install_dir>/release/q2ded`
 - **Engine**: Custom
 
 ### Server Configuration
@@ -83,6 +91,7 @@ alphagsm myq2server set map q2dm8
 - **Map directory**: `<install_dir>/<gamedir>/`
 - **Mod directory**: `<install_dir>/<gamedir>/`
 - **Workshop support**: No
+- **Fresh install content**: AlphaGSM stages the official Quake II demo `baseq2` data so anonymous installs can start and answer query/info without retail files
 
 ## Mod Sources
 

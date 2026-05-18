@@ -380,3 +380,37 @@ def test_quake_status_parses_q4_style_cvar_aliases(monkeypatch):
         "players": 0,
         "max_players": 8,
     }
+
+
+def test_quake2_status_parses_q2_print_response(monkeypatch):
+    payload = (
+        b"\xff\xff\xff\xffprint\n"
+        b"\\hostname\\AlphaGSM Q2\\mapname\\demo1\\maxclients\\8\n"
+        b"0 50 \"Player1\"\n"
+    )
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    result = query_module.quake2_status("127.0.0.1", 27910)
+
+    assert result == {
+        "name": "AlphaGSM Q2",
+        "map": "demo1",
+        "players": 1,
+        "max_players": 8,
+    }
+
+
+def test_quake2_status_raises_on_unexpected_payload(monkeypatch):
+    payload = b"\xff\xff\xff\xffstatusResponse\n\\hostname\\Wrong\n"
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected Quake II status response payload"):
+        query_module.quake2_status("127.0.0.1", 27910)

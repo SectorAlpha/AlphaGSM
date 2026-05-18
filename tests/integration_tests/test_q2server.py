@@ -1,8 +1,4 @@
-"""Integration test for q2server.
-
-Disabled: Quake 2 builds from source and requires a full build toolchain
-(make, gcc, etc.).  Awaiting further support.
-"""
+"""Integration test for q2server."""
 
 import pytest
 
@@ -15,9 +11,7 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_quake_ready,
+    wait_for_quake2_ready,
     wait_for_tcp_closed,
 )
 
@@ -27,9 +21,10 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires build toolchain (make, gcc) to compile from source")
 def test_q2server_lifecycle(tmp_path):
     require_integration_opt_in()
+    require_command("gcc")
+    require_command("make")
     require_command("screen")
 
     home_dir = tmp_path / "home"
@@ -46,27 +41,15 @@ def test_q2server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "q2server")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+    run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
-
-        # status
         run_and_assert_ok(env, server_name, "status")
-
-        # Quake 2 uses the Quake UDP status protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_quake2_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -84,8 +67,8 @@ def test_q2server_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "quake", (
-            f"Expected quake protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "quake2", (
+            f"Expected quake2 protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"

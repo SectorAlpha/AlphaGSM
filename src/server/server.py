@@ -884,7 +884,7 @@ class Server(object):
         ``(host, port, protocol)`` that is used; otherwise the method falls
         back to a TCP ping on ``server.data["port"]``.  Protocol may be
         ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP),
-        ``"ut3"`` (Unreal3/GameSpy4 UDP),
+        ``"quake2"`` (Quake II UDP), ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"udp"`` (generic UDP reachability),
         or ``"tcp"``.
         """
@@ -1005,6 +1005,20 @@ class Server(object):
                     "Server does not appear to be responding: " + str(exc)
                 )
 
+        if protocol == "quake2":
+            try:
+                qinfo = query_utils.quake2_status(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Quake II status on port {port}): "
+                    "{name!r}  map={map!r}  "
+                    "players={players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
         if protocol == "ut3":
             try:
                 query_utils.ut3_status(host, port, timeout=10.0)
@@ -1074,7 +1088,8 @@ class Server(object):
         The game module may define ``get_info_address(server)`` returning
         ``(host, port, protocol)`` where *protocol* is ``"slp"`` (Minecraft
         Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
-        (Quake3/QFusion UDP getstatus), ``"ut3"`` (Unreal3/GameSpy4 UDP),
+        (Quake3/QFusion UDP getstatus), ``"quake2"`` (Quake II UDP status),
+        ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"udp"`` (generic UDP reachability), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
@@ -1222,6 +1237,22 @@ class Server(object):
                 # Default heuristic: fall through to TCP
                 host = "127.0.0.1"
                 port = self.data["port"]
+
+        if protocol == "quake2":
+            try:
+                parsed = query_utils.quake2_status(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "quake2", "port": port, **parsed}))
+                    return
+                print(
+                    "Server info (Quake II status on port {port}):\n"
+                    "  Name        : {name}\n"
+                    "  Map         : {map}\n"
+                    "  Players     : {players}/{max_players}".format(port=port, **parsed)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "robust_status":
             try:

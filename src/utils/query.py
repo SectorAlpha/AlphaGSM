@@ -4,6 +4,7 @@ Provides query strategies:
 
 * :func:`a2s_info` — Source/Steam A2S_INFO UDP query.
 * :func:`quake_status` — Quake3/QFusion UDP getstatus query.
+* :func:`quake2_status` — Quake II UDP status query.
 * :func:`ut3_status` — Unreal Tournament 3 / Unreal3 GameSpy4 UDP probe.
 * :func:`slp_info` — Minecraft Server List Ping.
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
@@ -13,8 +14,8 @@ Provides query strategies:
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-``"ut3"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook is absent the
-caller falls back to a TCP ping on the main port.
+``"quake2"``, ``"ut3"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook
+is absent the caller falls back to a TCP ping on the main port.
 """
 
 import bz2
@@ -25,7 +26,7 @@ import time
 import urllib.error
 import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "ut3_status", "slp_info", "udp_ping", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quake2_status", "ut3_status", "slp_info", "udp_ping", "tcp_ping",
            "ts3_serverinfo", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -337,8 +338,58 @@ def quake_status(host, port, timeout=2.0):
         raise QueryError("Quake status query failed: " + str(exc)) from exc
     if not data.startswith(b"\xff\xff\xff\xff"):
         raise QueryError("Unexpected Quake status response header")
-    # Response format: \xff\xff\xff\xffstatusResponse\n\cvars\n<player lines>
     text = data[4:].decode("utf-8", errors="replace")
+    if not text.startswith("statusResponse\n"):
+        raise QueryError("Unexpected Quake status response payload")
+    # Response format: \xff\xff\xff\xffstatusResponse\n\cvars\n<player lines>
+    lines = text.split("\n")
+    info = {"name": "", "map": "", "players": 0, "max_players": 0}
+    if len(lines) >= 2:
+        parts = lines[1].strip("\\").split("\\")
+        cvars = dict(zip(parts[::2], parts[1::2]))
+
+        for key in ("sv_hostname", "hostname", "si_name"):
+            value = cvars.get(key, "")
+            if value:
+                info["name"] = value
+                break
+
+        for key in ("mapname", "map"):
+            value = cvars.get(key, "")
+            if value:
+                info["map"] = value
+                break
+
+        for key in ("sv_maxclients", "maxclients", "si_maxPlayers"):
+            value = cvars.get(key)
+            if value in (None, ""):
+                continue
+            try:
+                parsed = int(value)
+            except ValueError:
+                continue
+            if parsed > 0:
+                info["max_players"] = parsed
+                break
+        info["players"] = sum(1 for line in lines[2:] if line.strip())
+    return info
+
+
+def quake2_status(host, port, timeout=2.0):
+    """Send a Quake II ``status`` UDP packet and parse the response."""
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(b"\xff\xff\xff\xffstatus\n", (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("Quake II status query failed: " + str(exc)) from exc
+    if not data.startswith(b"\xff\xff\xff\xff"):
+        raise QueryError("Unexpected Quake II status response header")
+    text = data[4:].decode("utf-8", errors="replace")
+    if not text.startswith("print\n"):
+        raise QueryError("Unexpected Quake II status response payload")
     lines = text.split("\n")
     info = {"name": "", "map": "", "players": 0, "max_players": 0}
     if len(lines) >= 2:

@@ -1,6 +1,7 @@
 """Full coverage tests for q2server."""
 
 import os
+from pathlib import Path
 import sys
 from unittest.mock import patch, MagicMock
 
@@ -66,38 +67,145 @@ def test_configure_resolves_download(tmp_path):
     assert server.data['url'] == 'https://example.com/q2.tar.gz'
     assert server.data['version'] == '0.21.4'
 
+
+def test_resolve_download_uses_latest_github_tag_first():
+    with patch.object(mod, 'read_json', return_value=[{'name': 'QUAKE2_8_70'}]):
+        version, url = mod.resolve_download()
+
+    assert version == '8.70'
+    assert url.endswith('/QUAKE2_8_70.tar.gz')
+
+
+def test_resolve_download_matches_explicit_version_against_tag_format():
+    with patch.object(mod, 'read_json', return_value=[{'name': 'QUAKE2_8_70'}, {'name': 'QUAKE2_8_60'}]):
+        version, url = mod.resolve_download('8.60')
+
+    assert version == '8.60'
+    assert url.endswith('/QUAKE2_8_60.tar.gz')
+
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "q2ded"
+    server.data["exe_name"] = "release/q2ded"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["download_mode"] = "test"
     server.data["version"] = "test"
-    mod.install(server)
+    with patch.object(mod, '_install_demo_content'):
+        mod.install(server)
 
 def test_install_resolves_download(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "q2ded"
+    server.data["exe_name"] = "release/q2ded"
     with patch.object(mod._main, 'resolve_download', return_value=('0.21.4', 'https://example.com/q2.tar.gz')), \
-         patch.object(mod._main, '_install_from_source'):
+         patch.object(mod._main, '_install_from_source'), \
+         patch.object(mod._main, '_install_demo_content'):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/q2.tar.gz'
     assert server.data['version'] == '0.21.4'
 
+
+def test_install_from_source_resolves_archive_root_with_download_name(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "release/q2ded"
+    server.data["url"] = "https://example.com/QUAKE2_8_70.tar.gz"
+    server.data["download_name"] = "QUAKE2_8_70.tar.gz"
+
+    mod.downloader.getpath.return_value = "/tmp/q2-download"
+    mod.resolve_archive_root.return_value = "/tmp/q2-download/yquake2-QUAKE2_8_70"
+
+    with patch.object(mod.sp, "run") as run, patch.object(mod, "sync_tree"):
+        mod._install_from_source(server)
+
+    mod.resolve_archive_root.assert_called_with(
+        "/tmp/q2-download",
+        archive_name="QUAKE2_8_70.tar.gz",
+    )
+    run.assert_called_once_with(
+        ["make", "server", "game"],
+        cwd="/tmp/q2-download/yquake2-QUAKE2_8_70",
+        check=True,
+    )
+
+
+def test_install_demo_content_downloads_demo_payload_when_pak0_missing(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+
+    def fake_extract(_archive_path, stage_root):
+        demo_baseq2 = Path(stage_root) / "Install" / "Data" / "baseq2"
+        (demo_baseq2 / "players").mkdir(parents=True)
+        (demo_baseq2 / "pak0.pak").write_text("demo", encoding="utf-8")
+
+    with patch.object(mod, 'download_to_cache') as download_to_cache, \
+         patch.object(mod, 'extract_zip_safe', side_effect=fake_extract), \
+         patch.object(mod, 'sync_tree') as sync_tree:
+        installed_demo_content = mod._install_demo_content(server)
+
+    assert installed_demo_content is True
+
+    download_to_cache.assert_called_once_with(
+        mod.Q2_DEMO_DATA_URL,
+        allowed_hosts=("deponie.yamagi.org",),
+        target_path=Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.Q2_MOD_CACHE_DIRNAME / "bootstrap" / mod.Q2_DEMO_DATA_NAME,
+    )
+    sync_tree.assert_called_once_with(
+        str(Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.Q2_MOD_CACHE_DIRNAME / "bootstrap" / "demo_stage" / "Install" / "Data" / "baseq2"),
+        str(Path(server.data["dir"]) / "baseq2"),
+    )
+
+
+def test_install_demo_content_skips_when_pak0_exists(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    baseq2_dir = tmp_path / "baseq2"
+    baseq2_dir.mkdir(parents=True)
+    (baseq2_dir / "pak0.pak").write_text("existing", encoding="utf-8")
+
+    with patch.object(mod, 'download_to_cache') as download_to_cache:
+        installed_demo_content = mod._install_demo_content(server)
+
+    assert installed_demo_content is False
+    download_to_cache.assert_not_called()
+
+
+def test_install_switches_default_startmap_to_demo1_when_demo_content_installed(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "release/q2ded",
+            "url": "https://example.com/test.zip",
+            "download_name": "test.zip",
+            "download_mode": "test",
+            "version": "test",
+            "startmap": "q2dm1",
+        }
+    )
+
+    with patch.object(mod, '_install_demo_content', return_value=True), \
+         patch.object(mod, 'install_archive'), \
+         patch.object(mod, 'sync_server_config') as sync_server_config:
+        mod.install(server)
+
+    assert server.data['startmap'] == 'demo1'
+    sync_server_config.assert_called_once_with(server)
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "q2ded"
-    (tmp_path / "q2ded").write_text("")
+    server.data["exe_name"] = "release/q2ded"
+    (tmp_path / "release").mkdir()
+    (tmp_path / "release" / "q2ded").write_text("")
     server.data["gamedir"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "./q2ded",
+        "./release/q2ded",
         "+set",
         "game",
         "test",
@@ -150,7 +258,7 @@ def test_sync_server_config_updates_q2_server_cfg(tmp_path):
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "nonexistent"
+    server.data["exe_name"] = "release/q2ded"
     server.data["gamedir"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015

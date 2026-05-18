@@ -31,12 +31,13 @@ def test_q2server_configure_sets_expected_defaults(tmp_path):
 
 def test_q2server_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("q2")
-    exe = tmp_path / "q2ded"
+    (tmp_path / "release").mkdir()
+    exe = tmp_path / "release" / "q2ded"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "q2ded",
+            "exe_name": "release/q2ded",
             "gamedir": "baseq2",
             "hostname": "AlphaGSM q2",
             "port": 27910,
@@ -46,18 +47,19 @@ def test_q2server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = q2server.get_start_command(server)
 
-    assert cmd[0] == "./q2ded"
+    assert cmd[0] == "./release/q2ded"
     assert "+map" in cmd
     assert cwd == server.data["dir"]
 
 
 def test_q2server_runtime_requirements_use_quake_linux_family(tmp_path):
-    (tmp_path / "q2ded").write_text("")
+    (tmp_path / "release").mkdir()
+    (tmp_path / "release" / "q2ded").write_text("")
     server = DummyServer("q2")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "q2ded",
+            "exe_name": "release/q2ded",
             "gamedir": "baseq2",
             "hostname": "AlphaGSM q2",
             "port": 27910,
@@ -74,7 +76,7 @@ def test_q2server_runtime_requirements_use_quake_linux_family(tmp_path):
         {"host": 27910, "container": 27910, "protocol": "udp"}
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "./q2ded"
+    assert spec["command"][0] == "./release/q2ded"
 
 
 def test_qwserver_configure_sets_expected_defaults(tmp_path):

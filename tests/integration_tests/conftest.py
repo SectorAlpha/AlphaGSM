@@ -735,6 +735,34 @@ def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
         f"Quake status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
     )
 
+
+def wait_for_quake2_ready(host, port, timeout_seconds, log_path=None):
+    """Poll Quake II UDP ``status`` until the server responds."""
+
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    from utils import query as query_utils  # pylint: disable=import-outside-toplevel
+    deadline = time.time() + timeout_seconds
+    last_exc = None
+    _QUAKE_SOCKET_TIMEOUT = 10.0
+    while time.time() < deadline:
+        try:
+            query_utils.quake2_status(host, port, timeout=_QUAKE_SOCKET_TIMEOUT)
+            return
+        except query_utils.QueryError as exc:
+            last_exc = exc
+        time.sleep(2)
+    print(
+        f"[diagnostic] Quake II status on {host}:{port} never responded within {timeout_seconds}s"
+        f" — last error: {last_exc}"
+    )
+    if log_path is not None:
+        _dump_log(log_path, context=f"Quake II timeout on port {port}")
+    pytest.fail(
+        f"Quake II status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+    )
+
 # ---------------------------------------------------------------------------
 # SteamCMD skip helper
 # ---------------------------------------------------------------------------

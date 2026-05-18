@@ -249,7 +249,7 @@ Notes:
 - [ ] mxbikesserver
 - [ ] nsserver
 - [ ] pathoftitansserver
-- [ ] q2server
+- [x] q2server
 - [ ] qlserver
 - [ ] qwserver
 - [ ] redmserver

@@ -16,8 +16,8 @@ class _DummyServer:
 
 def test_q2server_uses_explicit_quake_protocol():
     server = _DummyServer(27910)
-    assert q2server.get_query_address(server) == ("127.0.0.1", 27910, "quake")
-    assert q2server.get_info_address(server) == ("127.0.0.1", 27910, "quake")
+    assert q2server.get_query_address(server) == ("127.0.0.1", 27910, "quake2")
+    assert q2server.get_info_address(server) == ("127.0.0.1", 27910, "quake2")
 
 
 def test_q3server_uses_explicit_quake_protocol():

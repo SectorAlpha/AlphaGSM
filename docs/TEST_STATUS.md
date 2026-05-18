@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 85      |
-| DISABLED | 70      |
-| SKIPPED  | 80      |
+| PASSED   | 86      |
+| DISABLED | 73      |
+| SKIPPED  | 78      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (85)
+## PASSED (86)
 
 | Test | Type |
 |------|------|
@@ -73,6 +73,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | opforserver | SteamCMD (GoldSrc) |
 | palworld | SteamCMD |
 | projectzomboid | SteamCMD |
+| q2server | Direct download — PASSED 2026-05-18; setup now builds Yamagi Quake II from source, stages the official demo `baseq2` data for anonymous installs, defaults fresh servers to `demo1`, and query/info use the dedicated Quake II `status` protocol |
 | pvkiiserver | SteamCMD (Source) |
 | ricochetserver | SteamCMD (GoldSrc) |
 | rimworldtogetherserver | Direct download |
@@ -189,7 +190,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (79)
+## SKIPPED (78)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -264,7 +265,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | mxbikesserver | Download prerequisite |
 | nsserver | HLDS mod maps not available via SteamCMD |
 | pathoftitansserver | SteamCMD app requires authentication |
-| q2server | Download prerequisite |
 | qlserver | Quake Live dedicated server (qzeroded.x64) exits immediately on startup; requires Steam authentication or specific server configuration |
 | qwserver | Download prerequisite |
 | redmserver | Requires txAdmin/authentication |
