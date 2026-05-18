@@ -106,7 +106,7 @@
 | hldmserver | - | active | yes | yes | - |
 | hldmsserver | - | active | yes | yes | - |
 | hogwarpserver | - | active | no | yes | status |
-| hurtworldserver | - | disabled | no | no | status |
+| hurtworldserver | hw | disabled | no | no | status |
 | hzserver | - | disabled | no | no | status |
 | icarusserver | - | disabled | no | no | status |
 | identityserver | - | active | no | yes | status |
@@ -168,7 +168,7 @@
 | pvkiiserver | - | active | yes | yes | - |
 | pvrserver | - | active | no | yes | status |
 | q2server | - | active | no | yes | status |
-| q3server | - | disabled | no | no | status |
+| q3server | - | active | no | yes | status |
 | q4server | - | disabled | no | no | status |
 | qlserver | - | active | no | yes | status |
 | qwserver | - | active | no | yes | status |
@@ -225,7 +225,7 @@
 | theforestserver | - | active | no | yes | status |
 | thefrontserver | tfserver | active | no | yes | status |
 | tiserver | - | disabled | no | no | status |
-| trackmaniaserver | - | disabled | no | no | status |
+| trackmaniaserver | - | active | no | yes | status |
 | ts3server | - | active | no | yes | status |
 | tsserver | - | disabled | yes | no | - |
 | tuserver | - | active | no | yes | status |
