@@ -119,6 +119,17 @@ def _get_module_hook(module, hook_name):
     return None
 
 
+def _get_module_attr(module, attr_name, default=None):
+    """Return a module-scope attribute from the module or shared MODULE namespace."""
+
+    for owner in (module, getattr(module, "MODULE", None)):
+        if owner is None:
+            continue
+        if hasattr(owner, attr_name):
+            return getattr(owner, attr_name)
+    return default
+
+
 def _resolve_module_name(module_name):
     """Resolve *module_name* via AlphaGSM's own module lookup path."""
 
@@ -316,9 +327,14 @@ def collect_claim_set(server, overrides=None):
 
     endpoints = []
     shift_group_keys = []
+    ignored_port_keys = {
+        str(key) for key in (_get_module_attr(module, "ignored_port_keys", ()) or ())
+    }
 
     for key, value in payload.items():
         if key in ("internal_ip", "external_ip"):
+            continue
+        if str(key) in ignored_port_keys:
             continue
         if not is_port_key(key):
             continue

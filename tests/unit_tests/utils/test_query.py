@@ -134,6 +134,40 @@ def test_udp_ping_raises_on_socket_error(monkeypatch):
         query_module.udp_ping("127.0.0.1", 27015)
 
 
+def test_ut3_status_returns_response_on_valid_reply(monkeypatch):
+    valid = b"\x00\x01\x02\x03\x04response"
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=valid),
+    )
+
+    result = query_module.ut3_status("127.0.0.1", 6500)
+    assert result == valid
+
+
+def test_ut3_status_raises_on_short_reply(monkeypatch):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=b"bad"),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected UT3 response"):
+        query_module.ut3_status("127.0.0.1", 6500)
+
+
+def test_ut3_status_raises_on_socket_error(monkeypatch):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(raise_on_send=OSError("refused")),
+    )
+
+    with pytest.raises(query_module.QueryError, match="UT3 query failed"):
+        query_module.ut3_status("127.0.0.1", 6500)
+
+
 # ---------------------------------------------------------------------------
 # parse_a2s_info
 # ---------------------------------------------------------------------------

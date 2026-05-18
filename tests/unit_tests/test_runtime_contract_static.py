@@ -67,8 +67,6 @@ def _module_source(module_name):
 
 def _runtime_contract_root(module_name):
     work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
-    if not work_dir and DEFAULT_TEST_WORK_DIR.exists():
-        work_dir = str(DEFAULT_TEST_WORK_DIR)
     if work_dir:
         root = Path(work_dir).expanduser() / "pytest-runtime-contract" / module_name.replace(".", "-")
     else:

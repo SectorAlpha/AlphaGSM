@@ -13,6 +13,8 @@
     "ctserver": "craftopiaserver",
     "dodrserver": "dayofdragonsserver",
     "etlserver": "etlegacyserver",
+    "hcu": "hcuserver",
+    "hw": "hurtworldserver",
     "mcbserver": "minecraft.bedrock",
     "mcserver": "minecraft.vanilla",
     "mhserver": "mordserver",
@@ -22,7 +24,9 @@
     "pwserver": "palworld",
     "pzserver": "projectzomboid",
     "risingstorm2vietnam": "rs2server",
+    "sbots": "sbotsserver",
     "sbserver": "starbound",
+    "scpslsmserver": "scpslserver",
     "sdtdserver": "sevendaystodie",
     "sfserver": "satisfactory",
     "smserver": "soulmask",
@@ -34,6 +38,7 @@
     "vhserver": "valheim",
     "vintsserver": "vintagestoryserver",
     "vpmcserver": "minecraft.velocity",
+    "wet": "wetserver",
     "wmcserver": "minecraft.waterfall"
   },
   "namespace_defaults": {

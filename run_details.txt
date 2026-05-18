@@ -1,0 +1,1582 @@
+
+* release_v1 AlphaGSM PR #36 · 25942167600
+Triggered via pull_request about 55 minutes ago
+
+JOBS
+✓ classify-changes in 6s (ID 76262141945)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Fetch PR base commit
+  ✓ Classify Linux game smoke and integration scope
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ build in 11s (ID 76262141950)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ coverage in 1m48s (ID 76262172611)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ AlphaGSM Coverage Report
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ unit-test in 1m3s (ID 76262172614)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Check canonical module parity report
+  ✓ Check canonical game server support tracker
+  ✓ AlphaGSM Unit Tests
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ lint in 39s (ID 76262172648)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ AlphaGSM Lint
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ binary-build-smoke (ubuntu-latest) in 32s (ID 76262172669)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Build standalone AlphaGSM binary
+  ✓ Run binary smoke check
+  ✓ Upload binary artifact
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ binary-build-smoke (macos-latest) in 55s (ID 76262172684)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Build standalone AlphaGSM binary
+  ✓ Run binary smoke check
+  ✓ Upload binary artifact
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ binary-build-smoke (windows-latest) in 50s (ID 76262172692)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Build standalone AlphaGSM binary
+  ✓ Run binary smoke check
+  ✓ Upload binary artifact
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ macos-minecraft-integration in 1m8s (ID 76262420853)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install Java
+  ✓ Install dependencies
+  ✓ macOS Minecraft Integration Test
+  ✓ Post Install Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ windows-minecraft-integration in 34s (ID 76262420875)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install Java
+  ✓ Install dependencies
+  ✓ Windows Minecraft Integration Test
+  ✓ Post Install Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ discover-smoke-tests in 2s (ID 76262420882)
+  ✓ Set up job
+  ✓ Forward Linux game smoke matrix
+  ✓ Complete job
+✓ build-integration-image in 3m33s (ID 76262420885)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Compute image tags from content hash
+  ✓ Log in to GitHub Container Registry
+  ✓ Set up Docker Buildx
+  ✓ Build and push integration test image
+  ✓ Post Build and push integration test image
+  ✓ Post Set up Docker Buildx
+  ✓ Post Log in to GitHub Container Registry
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ discover-integration-tests in 4s (ID 76262420909)
+  ✓ Set up job
+  ✓ Forward Linux game integration matrix
+  ✓ Complete job
+✓ smoke-test (batch-1-of-40) in 2m7s (ID 76262432466)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-9-of-40) in 3m12s (ID 76262432477)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-4-of-40) in 25s (ID 76262432478)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-3-of-40) in 23s (ID 76262432489)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-6-of-40) in 1m38s (ID 76262432492)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-15-of-40) in 13m16s (ID 76262432494)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-5-of-40) in 17m15s (ID 76262432495)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-7-of-40) in 15m56s (ID 76262432506)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-2-of-40) in 19s (ID 76262432508)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-17-of-40) in 8m54s (ID 76262432514)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-12-of-40) in 1m53s (ID 76262432530)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-8-of-40) in 1m53s (ID 76262432532)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-16-of-40) in 13m50s (ID 76262432533)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-20-of-40) in 9m2s (ID 76262432534)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-23-of-40) in 3m5s (ID 76262432535)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-10-of-40) in 20s (ID 76262432538)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-14-of-40) in 2m20s (ID 76262432545)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-11-of-40) in 35m44s (ID 76262432550)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-13-of-40) in 19m32s (ID 76262432557)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-21-of-40) in 30s (ID 76262432558)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-19-of-40) in 2m48s (ID 76262432559)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-27-of-40) in 16m27s (ID 76262432563)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-24-of-40) in 3m40s (ID 76262432588)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-18-of-40) in 3m56s (ID 76262432602)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-34-of-40) in 6m3s (ID 76262432607)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-25-of-40) in 2m35s (ID 76262432609)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-26-of-40) in 46s (ID 76262432611)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-33-of-40) in 15m45s (ID 76262432626)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  ✓ Install .NET 10 runtime for SS14 smoke coverage
+  ✓ Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-32-of-40) in 1m6s (ID 76262432631)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-28-of-40) in 27s (ID 76262432632)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-36-of-40) in 16m19s (ID 76262432633)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-29-of-40) in 7m33s (ID 76262432643)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-35-of-40) in 7m46s (ID 76262432645)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-38-of-40) in 3m14s (ID 76262432654)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-30-of-40) in 22s (ID 76262432661)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-37-of-40) in 1m37s (ID 76262432664)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-40-of-40) in 20s (ID 76262432675)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-39-of-40) in 54s (ID 76262432679)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-31-of-40) in 14m21s (ID 76262432708)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ smoke-test (batch-22-of-40) in 4m37s (ID 76262432713)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install system dependencies
+  - Install .NET 10 runtime for SS14 smoke coverage
+  - Install Proton-GE for Sons Of The Forest smoke coverage
+  ✓ Set up Java
+  ✓ AlphaGSM Smoke Tests
+  ✓ Upload smoke test results
+  ✓ Post Set up Java
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ backend-integration-test in 12m20s (ID 76262888173)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install tmux
+  ✓ Log in to GitHub Container Registry
+  ✓ Set up Java
+  ✓ Backend Integration Tests (screen, tmux, subprocess)
+  ✓ Backend Docker Integration Tests (active matrix cases)
+  ✓ Upload backend integration test results
+  ✓ Post Set up Java
+  ✓ Post Log in to GitHub Container Registry
+  ✓ Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+X backend-smoke-test in 3m50s (ID 76262888190)
+  ✓ Set up job
+  ✓ Checkout AlphaGSM code
+  ✓ Set up Python 3.10
+  ✓ Install dependencies
+  ✓ Install tmux
+  ✓ Log in to GitHub Container Registry
+  ✓ Set up Java
+  X Backend Smoke Tests
+  ✓ Post Set up Java
+  ✓ Post Log in to GitHub Container Registry
+  - Post Set up Python 3.10
+  ✓ Post Checkout AlphaGSM code
+  ✓ Complete job
+✓ integration-test (slow-btserver) in 1m3s (ID 76262888927)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+X integration-test (slow-readyornotserver) in 33m24s (ID 76262888929)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  X AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-1-of-38) in 3m33s (ID 76262888934)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (slow-enshrouded) in 1m7s (ID 76262888936)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (slow-scumserver) in 1m9s (ID 76262888937)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (slow-valheim) in 1m10s (ID 76262888939)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (slow-rust) in 59s (ID 76262888944)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (slow-sevendaystodie) in 1m9s (ID 76262888949)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (slow-palworld) in 59s (ID 76262888950)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+* integration-test (slow-rs2server) (ID 76262888952)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+✓ integration-test (batch-6-of-38) in 4m37s (ID 76262888954)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-3-of-38) in 59s (ID 76262888957)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+X integration-test (batch-5-of-38) in 36m57s (ID 76262888965)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  X AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-2-of-38) in 1m17s (ID 76262889009)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-17-of-38) in 5m26s (ID 76262889026)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-25-of-38) in 3m0s (ID 76262889027)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+X integration-test (batch-9-of-38) in 23m34s (ID 76262889032)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  X AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (slow-arksurvivalascended) in 1m2s (ID 76262889033)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+X integration-test (batch-27-of-38) in 27m52s (ID 76262889034)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  X AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-8-of-38) in 2m39s (ID 76262889036)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+X integration-test (batch-12-of-38) in 27m31s (ID 76262889037)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  X AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-19-of-38) in 8m37s (ID 76262889039)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+* integration-test (batch-21-of-38) (ID 76262889042)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+✓ integration-test (batch-29-of-38) in 3m53s (ID 76262889051)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+X integration-test (batch-28-of-38) in 22m45s (ID 76262889056)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  X AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-23-of-38) in 1m7s (ID 76262889059)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-7-of-38) in 12m23s (ID 76262889060)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+X integration-test (batch-30-of-38) in 27m15s (ID 76262889063)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  X AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-22-of-38) in 6m44s (ID 76262889064)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-18-of-38) in 6m47s (ID 76262889065)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+* integration-test (batch-34-of-38) (ID 76262889068)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+✓ integration-test (batch-10-of-38) in 20m7s (ID 76262889069)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-11-of-38) in 6m29s (ID 76262889071)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-4-of-38) in 1m4s (ID 76262889073)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-20-of-38) in 3m59s (ID 76262889075)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-13-of-38) in 12m26s (ID 76262889079)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-32-of-38) in 9m27s (ID 76262889083)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+* integration-test (batch-16-of-38) (ID 76262889088)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+* integration-test (batch-31-of-38) (ID 76262889089)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+* integration-test (batch-14-of-38) (ID 76262889096)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+✓ integration-test (batch-24-of-38) in 4m18s (ID 76262889102)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-37-of-38) in 1m4s (ID 76262889104)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+✓ integration-test (batch-35-of-38) in 9m52s (ID 76262889105)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+* integration-test (batch-33-of-38) (ID 76262889111)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+✓ integration-test (batch-38-of-38) in 3m43s (ID 76262889112)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+* integration-test (batch-26-of-38) (ID 76262889121)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+* integration-test (batch-15-of-38) (ID 76262889128)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  * AlphaGSM Pytest Integration Tests
+  * Upload integration test results
+  * Post Checkout AlphaGSM code
+  * Stop containers
+✓ integration-test (batch-36-of-38) in 4m57s (ID 76262889149)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Checkout AlphaGSM code
+  ✓ AlphaGSM Pytest Integration Tests
+  ✓ Upload integration test results
+  ✓ Post Checkout AlphaGSM code
+  ✓ Stop containers
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+classify-changes: .github#8
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-python@v5. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build: .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-python@v5. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+coverage: .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-python@v5. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+unit-test: .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-python@v5. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+lint: .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+binary-build-smoke (ubuntu-latest): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+binary-build-smoke (macos-latest): .github#2
+
+X WARNING: Cache entry deserialization failed, entry ignored
+binary-build-smoke (macos-latest): .github#41
+
+X WARNING: Cache entry deserialization failed, entry ignored
+binary-build-smoke (macos-latest): .github#40
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+binary-build-smoke (windows-latest): .github#2
+
+- NOTICE: windows-latest requests are being redirected to windows-2025-vs2026 by June 15, 2026
+binary-build-smoke (windows-latest): .github#1
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+macos-minecraft-integration: .github#2
+
+X WARNING: Cache entry deserialization failed, entry ignored
+macos-minecraft-integration: .github#42
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+windows-minecraft-integration: .github#2
+
+- NOTICE: windows-latest requests are being redirected to windows-2025-vs2026 by June 15, 2026
+windows-minecraft-integration: .github#1
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, docker/build-push-action@v5, docker/login-action@v3, docker/setup-buildx-action@v3. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build-integration-image: .github#4
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-1-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-9-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-4-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-3-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-6-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-15-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-5-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-7-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-2-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-17-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-12-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-8-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-16-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-20-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-23-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-10-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-14-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-11-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-13-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-21-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-19-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-27-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-24-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-18-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-34-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-25-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-26-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-33-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-32-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-28-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-36-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-29-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-35-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-38-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-30-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-37-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-40-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-39-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-31-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+smoke-test (batch-22-of-40): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, actions/upload-artifact@v4, docker/login-action@v3. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+backend-integration-test: .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v4, actions/setup-python@v5, docker/login-action@v3. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+backend-smoke-test: .github#2
+
+X Process completed with exit code 1.
+backend-smoke-test: .github#30910
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-btserver): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-readyornotserver): .github#2
+
+X Process completed with exit code 1.
+integration-test (slow-readyornotserver): .github#954
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-1-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-enshrouded): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-scumserver): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-valheim): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-rust): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-sevendaystodie): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-palworld): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-6-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-3-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-5-of-38): .github#2
+
+X Process completed with exit code 1.
+integration-test (batch-5-of-38): .github#1319
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-2-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-17-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-25-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-9-of-38): .github#2
+
+X Process completed with exit code 1.
+integration-test (batch-9-of-38): .github#943
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (slow-arksurvivalascended): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-27-of-38): .github#2
+
+X Process completed with exit code 1.
+integration-test (batch-27-of-38): .github#984
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-8-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-12-of-38): .github#2
+
+X Process completed with exit code 1.
+integration-test (batch-12-of-38): .github#992
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-19-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-29-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-28-of-38): .github#2
+
+X Process completed with exit code 1.
+integration-test (batch-28-of-38): .github#581
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-23-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-7-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-30-of-38): .github#2
+
+X Process completed with exit code 1.
+integration-test (batch-30-of-38): .github#1080
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-22-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-18-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-10-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-11-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-4-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-20-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-13-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-32-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-24-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-37-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-35-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-38-of-38): .github#2
+
+! Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+integration-test (batch-36-of-38): .github#2
+
+
+ARTIFACTS
+integration-results-batch-27-of-38
+integration-results-batch-5-of-38
+integration-results-batch-12-of-38
+integration-results-slow-readyornotserver
+integration-results-batch-30-of-38
+integration-results-batch-28-of-38
+integration-results-batch-36-of-38
+integration-results-batch-24-of-38
+integration-results-batch-9-of-38
+smoke-results-batch-11-of-40
+integration-results-batch-13-of-38
+integration-results-batch-22-of-38
+integration-results-slow-arksurvivalascended
+integration-results-batch-11-of-38
+integration-results-batch-10-of-38
+integration-results-batch-35-of-38
+integration-results-slow-enshrouded
+integration-results-batch-32-of-38
+integration-results-batch-8-of-38
+integration-results-batch-38-of-38
+integration-results-batch-37-of-38
+smoke-results-batch-13-of-40
+integration-results-batch-7-of-38
+integration-results-batch-18-of-38
+integration-results-batch-4-of-38
+integration-results-batch-20-of-38
+smoke-results-batch-36-of-40
+smoke-results-batch-5-of-40
+integration-results-batch-25-of-38
+integration-results-batch-19-of-38
+backend-integration-results-linux
+smoke-results-batch-16-of-40
+integration-results-batch-17-of-38
+smoke-results-batch-7-of-40
+smoke-results-batch-27-of-40
+smoke-results-batch-33-of-40
+integration-results-batch-23-of-38
+integration-results-batch-29-of-38
+smoke-results-batch-31-of-40
+smoke-results-batch-15-of-40
+integration-results-batch-6-of-38
+smoke-results-batch-17-of-40
+integration-results-slow-palworld
+integration-results-batch-3-of-38
+integration-results-batch-2-of-38
+integration-results-slow-scumserver
+integration-results-slow-sevendaystodie
+integration-results-batch-1-of-38
+smoke-results-batch-20-of-40
+integration-results-slow-rust
+integration-results-slow-btserver
+smoke-results-batch-9-of-40
+smoke-results-batch-29-of-40
+smoke-results-batch-35-of-40
+integration-results-slow-valheim
+smoke-results-batch-38-of-40
+smoke-results-batch-37-of-40
+smoke-results-batch-34-of-40
+smoke-results-batch-39-of-40
+smoke-results-batch-6-of-40
+smoke-results-batch-26-of-40
+smoke-results-batch-22-of-40
+smoke-results-batch-30-of-40
+smoke-results-batch-21-of-40
+smoke-results-batch-32-of-40
+smoke-results-batch-18-of-40
+smoke-results-batch-19-of-40
+smoke-results-batch-12-of-40
+smoke-results-batch-24-of-40
+smoke-results-batch-23-of-40
+smoke-results-batch-25-of-40
+smoke-results-batch-14-of-40
+smoke-results-batch-1-of-40
+smoke-results-batch-8-of-40
+smoke-results-batch-40-of-40
+smoke-results-batch-28-of-40
+smoke-results-batch-3-of-40
+smoke-results-batch-4-of-40
+smoke-results-batch-10-of-40
+smoke-results-batch-2-of-40
+alphagsm-macos-ARM64
+alphagsm-windows-X64
+alphagsm-linux-X64
+
+For more information about a job, try: gh run view --job=<job-id>
+View this run on GitHub: https://github.com/SectorAlpha/AlphaGSM/actions/runs/25942167600

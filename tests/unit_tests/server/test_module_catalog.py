@@ -152,3 +152,13 @@ def test_catalog_counts_package_backed_canonical_module_once(tmp_path):
     )
 
     assert catalog.canonical_modules == ("counterstrike2", "teamfortress2")
+
+
+def test_default_alias_file_covers_live_linuxgsm_short_names():
+  root = Path(__file__).resolve().parents[3]
+  catalog = ModuleCatalog.from_paths(
+    gamemodule_dir=root / "src" / "gamemodules",
+    alias_path=root / "src" / "server" / "module_aliases.json",
+  )
+
+  assert catalog.resolve("hw") == "hurtworldserver"

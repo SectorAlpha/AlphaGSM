@@ -84,6 +84,28 @@ def test_collect_claim_set_uses_overrides_when_calling_hooks():
     )
 
 
+def test_collect_claim_set_ignores_module_declared_port_keys():
+    module = SimpleNamespace(
+        ignored_port_keys=("queryport",),
+        get_query_address=lambda server: ("127.0.0.1", server.data["port"], "udp"),
+    )
+    server = make_server(
+        "alpha",
+        {"port": 27015, "queryport": 27016},
+        module=module,
+    )
+
+    claim_set = port_manager.collect_claim_set(server)
+
+    ports_by_source = {
+        (endpoint.source_key, endpoint.port)
+        for endpoint in claim_set.endpoints
+        if endpoint.scope == "internal"
+    }
+    assert ("port", 27015) in ports_by_source
+    assert ("queryport", 27016) not in ports_by_source
+
+
 def test_collect_claim_set_rebuilds_runtime_ports_from_overrides():
     module = SimpleNamespace(
         get_container_spec=lambda server: {

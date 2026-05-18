@@ -4,6 +4,7 @@ Provides query strategies:
 
 * :func:`a2s_info` — Source/Steam A2S_INFO UDP query.
 * :func:`quake_status` — Quake3/QFusion UDP getstatus query.
+* :func:`ut3_status` — Unreal Tournament 3 / Unreal3 GameSpy4 UDP probe.
 * :func:`slp_info` — Minecraft Server List Ping.
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
 * :func:`http_json` — HTTP JSON endpoint query.
@@ -12,8 +13,8 @@ Provides query strategies:
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook is absent the caller falls back to a
-TCP ping on the main port.
+``"ut3"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook is absent the
+caller falls back to a TCP ping on the main port.
 """
 
 import bz2
@@ -24,7 +25,7 @@ import time
 import urllib.error
 import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "udp_ping", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "ut3_status", "slp_info", "udp_ping", "tcp_ping",
            "ts3_serverinfo", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -40,6 +41,7 @@ _A2S_RESPONSE_TYPE = 0x49
 # before the actual info, requiring the request to be re-sent with the
 # 4-byte challenge appended.
 _A2S_CHALLENGE_TYPE = 0x41
+_UT3_QUERY_REQUEST = b"\xfe\xfd\x09\x00\x00\x00\x00"
 
 
 class QueryError(OSError):
@@ -368,6 +370,27 @@ def quake_status(host, port, timeout=2.0):
                 break
         info["players"] = sum(1 for line in lines[2:] if line.strip())
     return info
+
+
+def ut3_status(host, port, timeout=2.0):
+    """Send the Unreal3/GameSpy4 status probe used by UT3-style servers.
+
+    The UT3/GameSpy4 query surface is enough for AlphaGSM to prove the query
+    port is responding, but this helper intentionally does not attempt a full
+    parser yet. It returns the raw response bytes when the server answers with
+    a non-trivial packet.
+    """
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(_UT3_QUERY_REQUEST, (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("UT3 query failed: " + str(exc)) from exc
+    if not data or len(data) < 5:
+        raise QueryError("Unexpected UT3 response")
+    return data
 
 
 def tcp_ping(host, port, timeout=2.0):

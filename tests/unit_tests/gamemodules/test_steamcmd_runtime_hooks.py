@@ -54,3 +54,11 @@ def test_ns2server_runtime():
 
 def test_onsetserver_runtime():
     assert_runtime_family("gamemodules.onsetserver", "steamcmd-linux")
+
+
+def test_hcuserver_runtime():
+    assert_runtime_family("gamemodules.hcuserver", "steamcmd-linux")
+
+
+def test_sbotsserver_runtime():
+    assert_runtime_family("gamemodules.sbotsserver", "steamcmd-linux")

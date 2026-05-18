@@ -1,12 +1,45 @@
 import json
+import re
 import socket
 import struct
+import subprocess
 import sys
 import time
 import urllib.request
 
 
 MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+
+
+def _installed_java_major():
+    try:
+        result = subprocess.run(
+            ["java", "-version"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    output = "\n".join(filter(None, [result.stdout, result.stderr]))
+    match = re.search(r'version\s+"(\d+)(?:\.(\d+))?', output)
+    if not match:
+        return None
+
+    major = int(match.group(1))
+    if major == 1 and match.group(2):
+        return int(match.group(2))
+    return major
+
+
+def _required_java_major(version_data):
+    raw_major = version_data.get("javaVersion", {}).get("majorVersion")
+    try:
+        return int(raw_major)
+    except (TypeError, ValueError):
+        return None
 
 
 def _encode_varint(value):
@@ -94,15 +127,45 @@ def _wait_for_closed(host, port, timeout_seconds):
 def _latest_release():
     with urllib.request.urlopen(MANIFEST_URL, timeout=30) as response:
         manifest = json.loads(response.read().decode("utf-8"))
-    release_id = manifest["latest"]["release"]
-    version_url = next(
-        version["url"]
-        for version in manifest["versions"]
-        if version["id"] == release_id
-    )
-    with urllib.request.urlopen(version_url, timeout=30) as response:
-        version_data = json.loads(response.read().decode("utf-8"))
-    print(f"{release_id}\t{version_data['downloads']['server']['url']}")
+
+    installed_java_major = _installed_java_major()
+    release_versions = [
+        version for version in manifest["versions"] if version.get("type") == "release"
+    ]
+
+    selected_release = None
+    for version in release_versions:
+        with urllib.request.urlopen(version["url"], timeout=30) as response:
+            version_data = json.loads(response.read().decode("utf-8"))
+
+        server_download = version_data.get("downloads", {}).get("server")
+        if not server_download:
+            continue
+
+        required_java_major = _required_java_major(version_data)
+        if (
+            installed_java_major is not None
+            and required_java_major is not None
+            and required_java_major > installed_java_major
+        ):
+            continue
+
+        selected_release = (version["id"], server_download["url"])
+        break
+
+    if selected_release is None:
+        latest_release_id = manifest["latest"]["release"]
+        version_url = next(
+            version["url"]
+            for version in manifest["versions"]
+            if version["id"] == latest_release_id
+        )
+        with urllib.request.urlopen(version_url, timeout=30) as response:
+            version_data = json.loads(response.read().decode("utf-8"))
+        selected_release = (latest_release_id, version_data["downloads"]["server"]["url"])
+
+    release_id, server_url = selected_release
+    print(f"{release_id}\t{server_url}")
     return 0
 
 

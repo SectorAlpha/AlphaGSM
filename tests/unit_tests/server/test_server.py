@@ -1692,6 +1692,27 @@ def test_query_uses_explicit_udp_protocol(monkeypatch, capsys):
     assert "UDP ping" in capsys.readouterr().out
 
 
+def test_query_uses_explicit_ut3_protocol(monkeypatch, capsys):
+    module = DummyModule()
+    module.get_query_address = lambda server: ("10.0.0.3", 6500, "ut3")
+
+    srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "7777"}))
+
+    import utils.query as _ensure_imported
+    import utils
+    import sys, types
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.ut3_status = lambda host, port, timeout=10.0: b"reply"
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert "UT3/GameSpy4" in capsys.readouterr().out
+
+
 def test_query_retries_a2s_after_wake_hook(monkeypatch, capsys):
     import utils.query as _ensure_imported  # noqa: F401
     import utils
@@ -1912,6 +1933,29 @@ def test_info_uses_explicit_udp_protocol(monkeypatch, capsys):
     data = _json.loads(capsys.readouterr().out.strip())
     assert data["protocol"] == "udp"
     assert data["port"] == 7777
+
+
+def test_info_uses_explicit_ut3_protocol(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.get_info_address = lambda server: ("127.0.0.1", 6500, "ut3")
+    srv = make_server(module=module, data=DummyData({"port": 7777, "queryport": 6500}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.ut3_status = lambda host, port, timeout=10.0: b"reply"
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert data["protocol"] == "ut3"
+    assert data["port"] == 6500
 
 
 def test_info_uses_module_namespace_wake_hook(monkeypatch, capsys):
