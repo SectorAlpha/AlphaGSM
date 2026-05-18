@@ -221,7 +221,14 @@ def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
 # Config / env helpers
 # ---------------------------------------------------------------------------
 
-def write_config(config_path, home_dir, session_tag="AlphaGSM-IT#"):
+def write_config(
+    config_path,
+    home_dir,
+    session_tag="AlphaGSM-IT#",
+    *,
+    backend="screen",
+    runtime_backend="process",
+):
     """Write a minimal AlphaGSM config file pointing at *home_dir*."""
     download_root = home_dir / "downloads"
     work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
@@ -243,7 +250,10 @@ def write_config(config_path, home_dir, session_tag="AlphaGSM-IT#"):
             f"datapath = {home_dir / 'conf'}",
             "",
             "[runtime]",
-            "backend = process",
+            f"backend = {runtime_backend}",
+            "",
+            f"[{runtime_backend}]",
+            f"backend = {backend}",
             "",
             "[screen]",
             f"screenlog_path = {home_dir / 'logs'}",

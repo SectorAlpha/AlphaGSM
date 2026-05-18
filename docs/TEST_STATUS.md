@@ -67,6 +67,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | minecraft_velocity | Direct download |
 | minecraft_waterfall | Direct download |
 | memoriesofmarsserver | SteamCMD |
+| mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke now drive the module through the shared `simple-tcp` Docker runtime image because upstream does not publish an anonymous Linux server binary, while process mode still works when a host `mumble-server`/`murmurd` package is installed |
 | mordserver | SteamCMD |
 | necserver | SteamCMD |
 | nmrihserver | SteamCMD (Source) |
@@ -262,7 +263,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | minecraft_custom | Custom jar (needs user-supplied URL) |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | mtaserver | Download/platform prerequisite |
-| mumbleserver | Direct download prerequisite |
 | mxbikesserver | Download prerequisite |
 | nsserver | HLDS mod maps not available via SteamCMD |
 | pathoftitansserver | SteamCMD app requires authentication |

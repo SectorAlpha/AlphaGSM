@@ -4,8 +4,10 @@ This guide covers the `mumbleserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- `docker` for the tested anonymous support path
 - Python packages from `requirements.txt`
+
+If you already have a host `mumble-server` or `murmurd` package installed, the process runtime can still launch it directly. The validated anonymous AlphaGSM path uses the shared Docker runtime image instead.
 
 ## Quick Start
 
@@ -45,6 +47,7 @@ Setup configures:
 
 - the game port (default 64738)
 - the install directory
+- the managed `mumble-server.ini` config file used by either the host package or the Docker runtime image
 
 Common `set` values:
 
@@ -70,13 +73,19 @@ alphagsm mymumblese backup
 
 ### Run File
 
-- **Executable**: See game module source
-- **Engine**: Custom
+- **Executable**: `mumble-server` / `murmurd`
+- **Engine**: Mumble / Murmur
+- **Validated runtime**: Docker backend with `ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:latest`
 
 ### Server Configuration
 
 - **Config files**: `mumble-server.ini`
 - **Template**: See [server-templates/mumbleserver/](../server-templates/mumbleserver/) if available
+
+### Query And Info
+
+- `alphagsm mymumblese query` uses TCP reachability on the configured voice port
+- `alphagsm mymumblese info --json` reports protocol `tcp`
 
 ### Maps and Mods
 

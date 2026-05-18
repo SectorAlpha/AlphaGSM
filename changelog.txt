@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-18
+- Server support: re-enable `mumbleserver` through the shared Docker `simple-tcp` runtime image, restore standard smoke/integration coverage on that path, and document that upstream Linux support does not ship an anonymous standalone server binary.
 - Server support: re-enable `qwserver` for anonymous installs by staging the public nQuake shareware, KTX runtime/configs, and core map assets, launching MVDSV with `-game ktx`, and routing `query` / `info --json` through the real QuakeWorld `status` protocol.
 - Server support: re-enable `q2server` by resolving Yamagi release tags from GitHub, building both `release/q2ded` and `release/baseq2/game.so`, staging the official Quake II demo `baseq2` data for anonymous installs, defaulting fresh installs to `demo1`, and routing `query` / `info --json` through the real Quake II `status` protocol.
 - Server support: re-enable `bannerlordserver` creation after confirming anonymous SteamCMD installs app `1863440`, point the module at `bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`, and make smoke/integration skip cleanly until a host `dotnet` runtime is available.

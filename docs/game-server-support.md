@@ -59,6 +59,7 @@ Notes:
 - [x] minecraft_velocity
 - [x] minecraft_waterfall
 - [x] memoriesofmarsserver
+- [x] mumbleserver
 - [x] mordserver
 - [x] necserver
 - [x] nmrihserver
@@ -247,7 +248,6 @@ Notes:
 - [ ] minecraft_custom
 - [ ] minecraft_tekkit
 - [ ] mtaserver
-- [ ] mumbleserver
 - [ ] mxbikesserver
 - [ ] nsserver
 - [ ] pathoftitansserver
