@@ -34,8 +34,8 @@ def test_q4server_uses_explicit_quake_protocol():
 
 def test_qwserver_uses_explicit_quake_protocol():
     server = _DummyServer(27500)
-    assert qwserver.get_query_address(server) == ("127.0.0.1", 27500, "quake")
-    assert qwserver.get_info_address(server) == ("127.0.0.1", 27500, "quake")
+    assert qwserver.get_query_address(server) == ("127.0.0.1", 27500, "quakeworld")
+    assert qwserver.get_info_address(server) == ("127.0.0.1", 27500, "quakeworld")
 
 
 def test_qlserver_uses_explicit_quake_protocol():

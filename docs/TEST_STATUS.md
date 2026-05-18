@@ -74,6 +74,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | palworld | SteamCMD |
 | projectzomboid | SteamCMD |
 | q2server | Direct download — PASSED 2026-05-18; setup now builds Yamagi Quake II from source, stages the official demo `baseq2` data for anonymous installs, defaults fresh servers to `demo1`, and query/info use the dedicated Quake II `status` protocol |
+| qwserver | Direct download — PASSED 2026-05-18; setup now stages the public nQuake shareware, KTX runtime, configs, and core maps needed for anonymous MVDSV installs, launches with `-game ktx`, and query/info use the dedicated QuakeWorld `status` protocol |
 | pvkiiserver | SteamCMD (Source) |
 | ricochetserver | SteamCMD (GoldSrc) |
 | rimworldtogetherserver | Direct download |
@@ -266,7 +267,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | nsserver | HLDS mod maps not available via SteamCMD |
 | pathoftitansserver | SteamCMD app requires authentication |
 | qlserver | Quake Live dedicated server (qzeroded.x64) exits immediately on startup; requires Steam authentication or specific server configuration |
-| qwserver | Download prerequisite |
 | redmserver | Requires txAdmin/authentication |
 | rtcwserver | Download prerequisite |
 | soulmask | Soulmask server exits unexpectedly on startup; requires investigation of runtime configuration or library requirements |

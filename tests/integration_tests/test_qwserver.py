@@ -12,15 +12,11 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_quake_ready,
+    wait_for_quakeworld_ready,
     wait_for_tcp_closed,
 )
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(reason="Requires Quake game data files (maps/dm2.bsp etc.) not available in CI"),
-]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
@@ -52,19 +48,11 @@ def test_qwserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
-
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # QuakeWorld uses the Quake UDP status protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_quakeworld_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -82,8 +70,8 @@ def test_qwserver_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "quake", (
-            f"Expected quake protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "quakeworld", (
+            f"Expected quakeworld protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"

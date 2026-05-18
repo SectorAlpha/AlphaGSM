@@ -103,7 +103,19 @@ def test_qwserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = qwserver.get_start_command(server)
 
-    assert cmd == ["./mvdsv", "-port", "27500", "+hostname", "AlphaGSM qw", "+map", "dm2"]
+    assert cmd == [
+        "./mvdsv",
+        "-mem",
+        "64",
+        "-game",
+        "ktx",
+        "-port",
+        "27500",
+        "+hostname",
+        "AlphaGSM qw",
+        "+map",
+        "dm2",
+    ]
     assert cwd == server.data["dir"]
 
 

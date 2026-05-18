@@ -6,6 +6,7 @@ This guide covers the `qwserver` module in AlphaGSM.
 
 - `screen`
 - Python packages from `requirements.txt`
+- no Steam login is required; AlphaGSM bootstraps the public nQuake shareware and KTX runtime assets during setup
 
 ## Quick Start
 
@@ -45,7 +46,8 @@ Setup configures:
 
 - the game port (default 27500)
 - the install directory
-- downloads and extracts the server archive
+- downloads the MVDSV server archive
+- stages the public nQuake shareware data, KTX runtime/configs, and the core public QuakeWorld maps required for anonymous startup
 
 ## Useful Commands
 
@@ -65,18 +67,25 @@ alphagsm myqwserver backup
 
 - **Executable**: `mvdsv`
 - **Location**: `<install_dir>/mvdsv`
-- **Engine**: Custom
+- **Engine**: QuakeWorld / MVDSV
+- **Launch mode**: `-mem 64 -game ktx`
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<install_dir>/ktx/server.cfg`
 - **Template**: See [server-templates/qwserver/](../server-templates/qwserver/) if available
 
 ### Maps and Mods
 
 - **Map directory**: `<install_dir>/qw/maps/`
+- **KTX runtime**: `<install_dir>/ktx/`
 - **Mod directory**: `<install_dir>/qw/`
 - **Workshop support**: No
+
+### Query And Info
+
+- `alphagsm myqwserver query` uses the real QuakeWorld `status` UDP probe on the main game port
+- `alphagsm myqwserver info --json` reports protocol `quakeworld`
 
 ## Mod Sources
 

@@ -382,6 +382,39 @@ def test_quake_status_parses_q4_style_cvar_aliases(monkeypatch):
     }
 
 
+def test_quakeworld_status_parses_qw_cvars(monkeypatch):
+    payload = (
+        b"\xff\xff\xff\xffn\\maxfps\\77\\*version\\MVDSV 1.11\\maxclients\\32"
+        b"\\hostname\\AlphaGSM QW\\map\\dm2\\status\\Standby\n\x00"
+    )
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    result = query_module.quakeworld_status("127.0.0.1", 27500)
+
+    assert result == {
+        "name": "AlphaGSM QW",
+        "map": "dm2",
+        "players": 0,
+        "max_players": 32,
+    }
+
+
+def test_quakeworld_status_raises_on_unexpected_payload(monkeypatch):
+    payload = b"\xff\xff\xff\xffstatusResponse\n\\hostname\\Wrong\n"
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected QuakeWorld status response payload"):
+        query_module.quakeworld_status("127.0.0.1", 27500)
+
+
 def test_quake2_status_parses_q2_print_response(monkeypatch):
     payload = (
         b"\xff\xff\xff\xffprint\n"

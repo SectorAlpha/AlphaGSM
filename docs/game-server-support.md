@@ -66,6 +66,7 @@ Notes:
 - [x] palworld
 - [x] projectzomboid
 - [x] q2server
+- [x] qwserver
 - [x] pvkiiserver
 - [x] ricochetserver
 - [x] rimworldtogetherserver
@@ -251,7 +252,6 @@ Notes:
 - [ ] nsserver
 - [ ] pathoftitansserver
 - [ ] qlserver
-- [ ] qwserver
 - [ ] redmserver
 - [ ] rtcwserver
 - [ ] soulmask

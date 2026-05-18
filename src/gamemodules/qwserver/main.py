@@ -28,6 +28,19 @@ from utils.github_releases import resolve_release_asset
 from utils.gamemodules import common as gamemodule_common
 
 MVDSV_LATEST_RELEASE_API = "https://api.github.com/repos/QW-Group/mvdsv/releases/latest"
+NQUAKE_DISTFILES_BASE = "https://github.com/nQuake/distfiles/releases/download/snapshot"
+QW_SERVER_BIN_URL = f"{NQUAKE_DISTFILES_BASE}/sv-bin-x64.zip"
+QW_SERVER_BIN_NAME = "sv-bin-x64.zip"
+QW_SERVER_GPL_URL = f"{NQUAKE_DISTFILES_BASE}/sv-gpl.zip"
+QW_SERVER_GPL_NAME = "sv-gpl.zip"
+QW_SERVER_NON_GPL_URL = f"{NQUAKE_DISTFILES_BASE}/sv-non-gpl.zip"
+QW_SERVER_NON_GPL_NAME = "sv-non-gpl.zip"
+QW_SERVER_CONFIGS_URL = f"{NQUAKE_DISTFILES_BASE}/sv-configs.zip"
+QW_SERVER_CONFIGS_NAME = "sv-configs.zip"
+QW_SHAREWARE_URL = f"{NQUAKE_DISTFILES_BASE}/qsw106.zip"
+QW_SHAREWARE_NAME = "qsw106.zip"
+QW_SERVER_MAPS_URL = f"{NQUAKE_DISTFILES_BASE}/sv-maps.zip"
+QW_SERVER_MAPS_NAME = "sv-maps.zip"
 QW_MOD_CACHE_DIRNAME = "qwserver"
 QW_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -373,6 +386,136 @@ def resolve_download(version=None):
     return resolve_release_asset(MVDSV_LATEST_RELEASE_API, _matches, version=version)
 
 
+def _install_base_content(server):
+    """Install the public nQuake server content required by MVDSV."""
+
+    install_root = Path(server.data["dir"])
+    required_files = (
+        install_root / "id1" / "pak0.pak",
+        install_root / "qw" / "maps" / "dm2.bsp",
+        install_root / "qw" / "maps" / "mvdsv-kg.bsp",
+        install_root / "ktx" / "server.cfg",
+        install_root / "ktx" / "qwprogs.so",
+    )
+    if all(path.is_file() for path in required_files):
+        return False
+
+    cache_root = _cache_root(server) / "bootstrap"
+    cache_root.mkdir(parents=True, exist_ok=True)
+    bin_archive = cache_root / QW_SERVER_BIN_NAME
+    gpl_archive = cache_root / QW_SERVER_GPL_NAME
+    non_gpl_archive = cache_root / QW_SERVER_NON_GPL_NAME
+    configs_archive = cache_root / QW_SERVER_CONFIGS_NAME
+    shareware_archive = cache_root / QW_SHAREWARE_NAME
+    maps_archive = cache_root / QW_SERVER_MAPS_NAME
+    bin_stage = cache_root / "bin_stage"
+    gpl_stage = cache_root / "gpl_stage"
+    non_gpl_stage = cache_root / "non_gpl_stage"
+    configs_stage = cache_root / "configs_stage"
+    shareware_stage = cache_root / "shareware_stage"
+    maps_stage = cache_root / "maps_stage"
+
+    download_to_cache(
+        QW_SERVER_BIN_URL,
+        allowed_hosts=("github.com",),
+        target_path=bin_archive,
+    )
+    download_to_cache(
+        QW_SERVER_GPL_URL,
+        allowed_hosts=("github.com",),
+        target_path=gpl_archive,
+    )
+    download_to_cache(
+        QW_SERVER_NON_GPL_URL,
+        allowed_hosts=("github.com",),
+        target_path=non_gpl_archive,
+    )
+    download_to_cache(
+        QW_SERVER_CONFIGS_URL,
+        allowed_hosts=("github.com",),
+        target_path=configs_archive,
+    )
+    download_to_cache(
+        QW_SHAREWARE_URL,
+        allowed_hosts=("github.com",),
+        target_path=shareware_archive,
+    )
+    download_to_cache(
+        QW_SERVER_MAPS_URL,
+        allowed_hosts=("github.com",),
+        target_path=maps_archive,
+    )
+
+    if bin_stage.exists():
+        shutil.rmtree(bin_stage)
+    if gpl_stage.exists():
+        shutil.rmtree(gpl_stage)
+    if non_gpl_stage.exists():
+        shutil.rmtree(non_gpl_stage)
+    if configs_stage.exists():
+        shutil.rmtree(configs_stage)
+    if shareware_stage.exists():
+        shutil.rmtree(shareware_stage)
+    if maps_stage.exists():
+        shutil.rmtree(maps_stage)
+
+    extract_zip_safe(bin_archive, bin_stage)
+    extract_zip_safe(gpl_archive, gpl_stage)
+    extract_zip_safe(non_gpl_archive, non_gpl_stage)
+    extract_zip_safe(configs_archive, configs_stage)
+    extract_zip_safe(shareware_archive, shareware_stage)
+    extract_zip_safe(maps_archive, maps_stage)
+
+    staged_pak = shareware_stage / "ID1" / "PAK0.PAK"
+    if not staged_pak.is_file():
+        raise ServerError("nQuake shareware archive did not contain ID1/PAK0.PAK")
+
+    staged_dm2 = gpl_stage / "qw" / "maps" / "dm2.bsp"
+    if not staged_dm2.is_file():
+        raise ServerError("nQuake GPL archive did not contain qw/maps/dm2.bsp")
+
+    staged_maps_root = maps_stage / "qw" / "maps"
+    if not (staged_maps_root / "mvdsv-kg.bsp").is_file():
+        raise ServerError("nQuake server map archive did not contain qw/maps/mvdsv-kg.bsp")
+
+    staged_server_cfg = configs_stage / "ktx" / "server.cfg"
+    if not staged_server_cfg.is_file():
+        raise ServerError("nQuake config archive did not contain ktx/server.cfg")
+
+    staged_qwprogs = bin_stage / "ktx" / "qwprogs.so"
+    if not staged_qwprogs.is_file():
+        raise ServerError("nQuake binary archive did not contain ktx/qwprogs.so")
+
+    staged_ktx_root = non_gpl_stage / "ktx"
+    if not staged_ktx_root.is_dir():
+        raise ServerError("nQuake non-GPL archive did not contain ktx/")
+
+    pak0_destination = install_root / "id1"
+    pak0_destination.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(staged_pak, pak0_destination / "pak0.pak")
+
+    staged_id1_root = gpl_stage / "id1"
+    if staged_id1_root.is_dir():
+        shutil.copytree(staged_id1_root, install_root / "id1", dirs_exist_ok=True)
+
+    staged_qw_root = gpl_stage / "qw"
+    if staged_qw_root.is_dir():
+        shutil.copytree(staged_qw_root, install_root / "qw", dirs_exist_ok=True)
+    (install_root / "qw" / "maps").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(staged_maps_root / "mvdsv-kg.bsp", install_root / "qw" / "maps" / "mvdsv-kg.bsp")
+    shutil.copytree(staged_ktx_root, install_root / "ktx", dirs_exist_ok=True)
+    shutil.copytree(configs_stage / "ktx", install_root / "ktx", dirs_exist_ok=True)
+    shutil.copy2(staged_qwprogs, install_root / "ktx" / "qwprogs.so")
+
+    shutil.rmtree(bin_stage, ignore_errors=True)
+    shutil.rmtree(gpl_stage, ignore_errors=True)
+    shutil.rmtree(non_gpl_stage, ignore_errors=True)
+    shutil.rmtree(configs_stage, ignore_errors=True)
+    shutil.rmtree(shareware_stage, ignore_errors=True)
+    shutil.rmtree(maps_stage, ignore_errors=True)
+    return True
+
+
 def configure(
     server,
     ask,
@@ -440,6 +583,7 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
     install_binary(server)
+    _install_base_content(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
@@ -458,7 +602,7 @@ def get_start_command(server):
         value_transform=lambda _spec, current_value: str(current_value),
     )
     return (
-        ["./" + server.data["exe_name"], *launch_args],
+        ["./" + server.data["exe_name"], "-mem", "64", "-game", "ktx", *launch_args],
         server.data["dir"],
     )
 
@@ -502,13 +646,13 @@ def get_container_spec(server):
 def get_query_address(server):
     """Return the Quake UDP query address used by the qwserver module."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quakeworld")
 
 
 def get_info_address(server):
     """Return the Quake UDP info address used by the qwserver module."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quakeworld")
 
 
 def do_stop(server, j):

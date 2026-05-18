@@ -4,6 +4,7 @@ Provides query strategies:
 
 * :func:`a2s_info` — Source/Steam A2S_INFO UDP query.
 * :func:`quake_status` — Quake3/QFusion UDP getstatus query.
+* :func:`quakeworld_status` — QuakeWorld UDP status query.
 * :func:`quake2_status` — Quake II UDP status query.
 * :func:`ut3_status` — Unreal Tournament 3 / Unreal3 GameSpy4 UDP probe.
 * :func:`slp_info` — Minecraft Server List Ping.
@@ -14,7 +15,7 @@ Provides query strategies:
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-``"quake2"``, ``"ut3"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook
+``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook
 is absent the caller falls back to a TCP ping on the main port.
 """
 
@@ -26,7 +27,7 @@ import time
 import urllib.error
 import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quake2_status", "ut3_status", "slp_info", "udp_ping", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "slp_info", "udp_ping", "tcp_ping",
            "ts3_serverinfo", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -372,6 +373,41 @@ def quake_status(host, port, timeout=2.0):
                 info["max_players"] = parsed
                 break
         info["players"] = sum(1 for line in lines[2:] if line.strip())
+    return info
+
+
+def quakeworld_status(host, port, timeout=2.0):
+    """Send a QuakeWorld ``status`` UDP packet and parse the response."""
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(b"\xff\xff\xff\xffstatus\n", (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("QuakeWorld status query failed: " + str(exc)) from exc
+    if not data.startswith(b"\xff\xff\xff\xff"):
+        raise QueryError("Unexpected QuakeWorld status response header")
+    text = data[4:].decode("utf-8", errors="replace").rstrip("\x00")
+    lines = [line for line in text.split("\n") if line.strip()]
+    if not lines or not lines[0].startswith("n\\"):
+        raise QueryError("Unexpected QuakeWorld status response payload")
+
+    parts = lines[0][2:].split("\\")
+    cvars = dict(zip(parts[::2], parts[1::2]))
+    info = {
+        "name": cvars.get("hostname", ""),
+        "map": cvars.get("map", ""),
+        "players": sum(1 for line in lines[1:] if line.strip()),
+        "max_players": 0,
+    }
+
+    max_players = cvars.get("maxclients") or cvars.get("sv_maxclients")
+    if max_players not in (None, ""):
+        try:
+            info["max_players"] = int(max_players)
+        except ValueError:
+            pass
     return info
 
 

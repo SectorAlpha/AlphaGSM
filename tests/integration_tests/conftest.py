@@ -736,6 +736,34 @@ def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
     )
 
 
+def wait_for_quakeworld_ready(host, port, timeout_seconds, log_path=None):
+    """Poll QuakeWorld UDP ``status`` on *host*:*port* until the server responds."""
+
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+    from utils import query as query_utils  # pylint: disable=import-outside-toplevel
+    deadline = time.time() + timeout_seconds
+    last_exc = None
+    _QUAKEWORLD_SOCKET_TIMEOUT = 10.0
+    while time.time() < deadline:
+        try:
+            query_utils.quakeworld_status(host, port, timeout=_QUAKEWORLD_SOCKET_TIMEOUT)
+            return
+        except query_utils.QueryError as exc:
+            last_exc = exc
+        time.sleep(2)
+    print(
+        f"[diagnostic] QuakeWorld status on {host}:{port} never responded within {timeout_seconds}s"
+        f" — last error: {last_exc}"
+    )
+    if log_path is not None:
+        _dump_log(log_path, context=f"QuakeWorld timeout on port {port}")
+    pytest.fail(
+        f"QuakeWorld status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+    )
+
+
 def wait_for_quake2_ready(host, port, timeout_seconds, log_path=None):
     """Poll Quake II UDP ``status`` until the server responds."""
 
