@@ -1,7 +1,4 @@
-"""Integration test for q3server.
-
-Disabled: ioquake3 has no GitHub releases; download 404
-"""
+"""Integration test for q3server."""
 
 import pytest
 
@@ -20,10 +17,7 @@ from conftest import (
     wait_for_tcp_closed,
 )
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(reason="ioquake3 has no GitHub releases; download 404"),
-]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
@@ -50,6 +44,11 @@ def test_q3server_lifecycle(tmp_path):
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+
+    if not (install_dir / "baseq3" / "pak0.pk3").is_file():
+        pytest.skip(
+            "Quake 3 requires licensed baseq3/pak0.pk3 content; CI only downloads the public ioquake3 engine build"
+        )
 
     # start
     run_and_assert_ok(env, server_name, "start")

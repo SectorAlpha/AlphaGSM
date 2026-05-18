@@ -7,7 +7,16 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-05-17
+- Server support: re-enable `q3server` creation by switching its engine download to the real public ioquake3 Linux build, restore the smoke/integration entrypoints, and classify CI as a prerequisite skip until licensed `baseq3/pak0.pk3` game data is provided.
+
 2026-05-16
+- Server support: add `wetserver`, `hcuserver`, `sbotsserver`, `ut3server`, `mohaaserver`, and `sof2server`, with per-server guides plus bring-your-own smoke/integration scaffolding where the current contract still depends on external server files.
+- Compatibility: add LinuxGSM-style aliases `wet`, `hcu`, and `sbots`, and normalize `scpslsmserver` onto the existing `scpslserver` module instead of treating it as a separate server family.
+- Query/info: add an explicit `ut3` Unreal3/GameSpy4 reachability probe so `ut3server` reports its real query surface instead of falling back to generic TCP reachability.
+- HYPERCHARGE: Unboxed: stop treating `hcuserver` as an A2S-on-`queryport` server; the Linux dedicated build now uses generic UDP reachability on the gameplay port, ignores stale `queryport` claims, and has active smoke/integration coverage wired to the real `Unboxed.log` readiness marker.
+- StickyBots: confirm the headless Linux dedicated server still reaches a live A2S query state on `queryport` despite its startup `SteamAPI_Init()` warning, re-enable smoke/integration coverage on `info --json` protocol `a2s`, and document the real readiness contract.
+- Test infrastructure: make the static runtime-contract tests default to `/tmp` unless `ALPHAGSM_WORK_DIR` is explicitly set, so local validation no longer depends on the external `/media/.../useme` path existing on disk.
 - Server support: add `onsetserver` for Onset with the upstream `server_config.json` contract, Linux `start_linux.sh --config` launch path, documented derived query/http ports, and smoke/integration coverage.
 - Server support: add `ns2server` for Natural Selection 2 with the Linux Spark dedicated-server launch contract, per-instance config/workshop directories, A2S query/info wiring on the main port, and smoke/integration coverage.
 - Server support: add `ns2cserver` for NS2: Combat with the Linux Spark dedicated-server launch contract, per-instance config/workshop directories, A2S query/info wiring on the main port, and smoke/integration coverage.

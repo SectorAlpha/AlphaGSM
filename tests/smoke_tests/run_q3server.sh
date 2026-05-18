@@ -1,9 +1,4 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for q3server is disabled - see docs/TEST_STATUS.md for status"
-exit 0
-
+#!/usr/bin/env bash
 set -Eeuo pipefail
 set -x
 
@@ -79,6 +74,11 @@ echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create q3server
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+
+if [[ ! -f "$INSTALL_DIR/baseq3/pak0.pk3" ]]; then
+  echo "Quake 3 requires licensed baseq3/pak0.pk3 content; CI only downloads the public ioquake3 engine build — skipping smoke test" >&2
+  exit 0
+fi
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

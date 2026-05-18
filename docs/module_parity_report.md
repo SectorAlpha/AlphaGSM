@@ -99,6 +99,7 @@
 | gravserver | - | active | no | yes | status |
 | groundbranchserver | - | active | no | yes | status |
 | gtafivemserver | - | active | no | yes | status |
+| hcuserver | hcu | active | no | yes | status |
 | heatserver | - | active | no | yes | status |
 | hellletlooseserver | - | active | no | yes | status |
 | hl2dmserver | - | active | yes | yes | - |
@@ -135,6 +136,7 @@
 | minecraft.velocity | vpmcserver | active | yes | yes | - |
 | minecraft.waterfall | wmcserver | active | yes | yes | - |
 | miscreatedserver | - | disabled | no | no | status |
+| mohaaserver | - | active | no | yes | status |
 | mordserver | mhserver | active | no | yes | status |
 | motortownserver | - | active | no | yes | status |
 | mtaserver | - | active | no | yes | status |
@@ -187,7 +189,8 @@
 | saleblazersserver | - | active | no | yes | status |
 | sampserver | - | disabled | no | no | status |
 | satisfactory | sfserver | active | no | yes | status |
-| scpslserver | - | active | no | yes | status |
+| sbotsserver | sbots | active | no | yes | status |
+| scpslserver | scpslsmserver | active | no | yes | status |
 | scumserver | - | disabled | no | no | status |
 | seserver | - | disabled | no | no | status |
 | sevendaystodie | sdtdserver | active | no | yes | status |
@@ -196,6 +199,7 @@
 | skyrimtogetherrebornserver | - | disabled | no | no | status |
 | smallandserver | - | active | no | yes | status |
 | sniperelite4server | - | disabled | no | no | status |
+| sof2server | - | active | no | yes | status |
 | solserver | - | active | no | yes | status |
 | sonsoftheforestserver | - | active | no | yes | status |
 | soulmask | smserver | active | no | yes | status |
@@ -228,6 +232,7 @@
 | twserver | - | active | no | yes | status |
 | unturned | untserver | disabled | no | no | status |
 | ut2k4server | - | active | no | yes | status |
+| ut3server | - | active | no | yes | status |
 | ut99server | utserver | active | no | yes | status |
 | valheim | vhserver | disabled | no | no | status |
 | veinserver | - | disabled | no | no | status |
@@ -235,6 +240,7 @@
 | vrserver | - | disabled | no | no | status |
 | vsserver | - | disabled | yes | no | - |
 | warbandserver | - | disabled | no | no | status |
+| wetserver | wet | active | no | yes | status |
 | wfserver | - | disabled | no | no | status |
 | wreckfestserver | - | disabled | no | no | status |
 | wurmserver | - | active | no | yes | status |

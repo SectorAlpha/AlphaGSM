@@ -61,7 +61,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "q3ded.x86_64"
+    server.data["exe_name"] = "ioq3ded.x86_64"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
@@ -70,15 +70,15 @@ def test_install(tmp_path):
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "q3ded.x86_64"
-    (tmp_path / "q3ded.x86_64").write_text("")
+    server.data["exe_name"] = "ioq3ded.x86_64"
+    (tmp_path / "ioq3ded.x86_64").write_text("")
     server.data["fs_game"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "./q3ded.x86_64",
+        "./ioq3ded.x86_64",
         "+set",
         "fs_game",
         "test",

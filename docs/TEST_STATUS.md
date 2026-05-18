@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-05-15
+Last updated: 2026-05-17
 
 ## Summary
 
@@ -63,7 +63,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
 | minecraft_paper | Direct download |
-| minecraft_vanilla | Direct download |
+| minecraft_vanilla | Direct download — PASSED 2026-05-16; local integration helper now selects the newest release compatible with the installed Java runtime |
 | minecraft_velocity | Direct download |
 | minecraft_waterfall | Direct download |
 | memoriesofmarsserver | SteamCMD |
@@ -113,7 +113,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## DISABLED (74)
+## DISABLED (73)
 
 | Test | Reason |
 |------|--------|
@@ -171,7 +171,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | pcarserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` instead of waiting for absent log markers |
 | pvrserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query port instead of waiting for absent log markers |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
-| q3server | ioquake3 has no GitHub releases; download 404 |
 | q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
 | rwserver | SteamCMD app 339010 installs no Linux-compatible dedicated server binary (server.jar not present) |
@@ -191,7 +190,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (78)
+## SKIPPED (79)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -217,6 +216,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | outpostzeroserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 762880 |
 | primalcarnageextinctionserver | Re-enabled: UE3 log path is `PrimalCarnageGame/Logs/Launch.log`, the server launches with `-log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 336400 |
 
+| q3server | Direct download now installs the public ioquake3 Linux engine build, but CI lacks the licensed Quake III `baseq3/pak0.pk3` data required to start the dedicated server |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |

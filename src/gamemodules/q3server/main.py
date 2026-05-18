@@ -24,11 +24,11 @@ from server.settable_keys import SettingSpec, build_launch_arg_values, build_nat
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
-from utils.github_releases import resolve_release_asset
 from utils.gamemodules import common as gamemodule_common
 from utils.simple_kv_config import rewrite_equals_config
 
-IOQ3_LATEST_RELEASE_API = "https://api.github.com/repos/ioquake/ioq3/releases/latest"
+IOQ3_LINUX_DOWNLOAD_URL = "https://files.ioquake3.org/Linux.zip"
+IOQ3_LINUX_DOWNLOAD_VERSION = "linux"
 Q3_MOD_CACHE_DIRNAME = "q3server"
 Q3_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -394,11 +394,12 @@ command_functions["mod"] = q3_mod_command
 def resolve_download(version=None):
     """Resolve an ioquake3 Linux release asset suitable for a dedicated server."""
 
-    def _matches(asset):
-        name = asset.get("name", "").lower()
-        return "linux" in name and "x86_64" in name and name.endswith(".zip")
-
-    return resolve_release_asset(IOQ3_LATEST_RELEASE_API, _matches, version=version)
+    if version not in (None, "", "latest", IOQ3_LINUX_DOWNLOAD_VERSION):
+        raise ServerError(
+            "Quake 3 only supports the current ioquake3 Linux build from files.ioquake3.org; "
+            "explicit version selection is not available"
+        )
+    return IOQ3_LINUX_DOWNLOAD_VERSION, IOQ3_LINUX_DOWNLOAD_URL
 
 
 def configure(
@@ -410,7 +411,7 @@ def configure(
     version=None,
     url=None,
     download_name=None,
-    exe_name="q3ded.x86_64",
+    exe_name="ioq3ded.x86_64",
 ):
     """Collect and store configuration values for a Quake 3 server."""
 
