@@ -1,9 +1,3 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for bannerlordserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
-
 set -Eeuo pipefail
 set -x
 
@@ -45,6 +39,7 @@ trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
 require_cmd screen
+require_command_or_skip dotnet "Bannerlord requires the dotnet runtime — skipping smoke test (CI)"
 
 WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"

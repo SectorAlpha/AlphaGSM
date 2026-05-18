@@ -5,6 +5,7 @@ This guide covers the `bannerlordserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- `dotnet` runtime (Bannerlord launches the Linux dedicated server via `dotnet`)
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -47,6 +48,7 @@ Setup configures:
 - the game port (default 7210)
 - the install directory
 - SteamCMD downloads the server files
+- AlphaGSM launches the Linux starter from `bin/Linux64_Shipping_Server/`
 
 ## Useful Commands
 
@@ -59,13 +61,16 @@ alphagsm mybannerlo backup
 
 - Module name: `bannerlordserver`
 - Default port: 7210
+- Anonymous SteamCMD installs for app `1863440` do succeed; the stale disabled gate was caused by the module pointing at a nonexistent root executable instead of the installed Linux starter.
+- The current Linux launch path is `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll` from `bin/Linux64_Shipping_Server/`.
+- Smoke and integration currently require a host-installed `dotnet` runtime before Bannerlord can be validated.
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `Bannerlord.DedicatedServer`
-- **Location**: `<install_dir>/Bannerlord.DedicatedServer`
+- **Executable**: `TaleWorlds.Starter.DotNetCore.Linux.dll`
+- **Location**: `<install_dir>/bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `1863440`
 

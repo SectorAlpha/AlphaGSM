@@ -13,6 +13,12 @@ from utils.gamemodules import common as gamemodule_common
 steam_app_id = 1863440
 steam_anonymous_login_possible = True
 
+BANNERLORD_LINUX_LAUNCH_DIR = os.path.join("bin", "Linux64_Shipping_Server")
+BANNERLORD_LINUX_DLL = os.path.join(
+    BANNERLORD_LINUX_LAUNCH_DIR,
+    "TaleWorlds.Starter.DotNetCore.Linux.dll",
+)
+
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The game port to use for the Bannerlord server",
@@ -26,7 +32,7 @@ command_functions = {}
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="Bannerlord.DedicatedServer"):
+def configure(server, ask, port=None, dir=None, *, exe_name=BANNERLORD_LINUX_DLL):
     """Collect and store configuration values for a Bannerlord server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -91,9 +97,11 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    working_dir = os.path.dirname(exe_path) or server.data["dir"]
     return (
         [
-            "./" + server.data["exe_name"],
+            "dotnet",
+            os.path.basename(server.data["exe_name"]),
             "_MODULES_*Native*Multiplayer*SandBoxCore",
             "_MODULES_*Native*SandBoxCore*Sandbox*CustomBattle",
             "_PORT_%s" % (server.data["port"],),
@@ -102,7 +110,7 @@ def get_start_command(server):
             "_SCENE_%s" % (server.data["scene"],),
             "_MAXCLIENTS_%s" % (server.data["maxplayers"],),
         ],
-        server.data["dir"],
+        working_dir,
     )
 
 

@@ -6,6 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_command_or_skip,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -25,11 +26,11 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="SteamCMD app 1863440 installs no Linux-compatible dedicated server binary (executable file not found)")
 def test_bannerlordserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     require_command("screen")
+    require_command_or_skip("dotnet", "Bannerlord requires the dotnet runtime")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

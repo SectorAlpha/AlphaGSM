@@ -39,6 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7210, dir=str(tmp_path))
     assert server.data['port'] == 7210
+    assert server.data['exe_name'] == mod.BANNERLORD_LINUX_DLL
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -65,7 +66,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "Bannerlord.DedicatedServer"
+    server.data["exe_name"] = mod.BANNERLORD_LINUX_DLL
     server.data["Steam_AppID"] = 1863440
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -110,8 +111,10 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "Bannerlord.DedicatedServer"
-    (tmp_path / "Bannerlord.DedicatedServer").write_text("")
+    server.data["exe_name"] = mod.BANNERLORD_LINUX_DLL
+    exe_path = tmp_path / "bin" / "Linux64_Shipping_Server" / "TaleWorlds.Starter.DotNetCore.Linux.dll"
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_text("")
     server.data["game_type"] = "test"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
@@ -119,6 +122,8 @@ def test_get_start_command(tmp_path):
     server.data["scene"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[:2] == ["dotnet", "TaleWorlds.Starter.DotNetCore.Linux.dll"]
+    assert cwd == str(tmp_path / "bin" / "Linux64_Shipping_Server")
 
 
 def test_get_start_command_missing_exe(tmp_path):

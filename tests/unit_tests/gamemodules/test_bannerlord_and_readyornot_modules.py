@@ -27,12 +27,13 @@ class DummyServer:
 
 def test_bannerlord_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("banner")
-    exe = tmp_path / "Bannerlord.DedicatedServer"
+    exe = tmp_path / "bin" / "Linux64_Shipping_Server" / "TaleWorlds.Starter.DotNetCore.Linux.dll"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "Bannerlord.DedicatedServer",
+            "exe_name": "bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll",
             "port": 7210,
             "queryport": 7211,
             "game_type": "Captain",
@@ -43,10 +44,10 @@ def test_bannerlord_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = bannerlordserver.get_start_command(server)
 
-    assert cmd[0] == "./Bannerlord.DedicatedServer"
+    assert cmd[:2] == ["dotnet", "TaleWorlds.Starter.DotNetCore.Linux.dll"]
     assert "_PORT_7210" in cmd
     assert "_QUERYPORT_7211" in cmd
-    assert cwd == server.data["dir"]
+    assert cwd == str(tmp_path / "bin" / "Linux64_Shipping_Server")
 
 
 def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch):
