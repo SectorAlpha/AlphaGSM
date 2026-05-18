@@ -79,22 +79,27 @@ def test_groundbranch_get_start_command_builds_expected_args(tmp_path, monkeypat
 
 def test_warband_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("warband")
-    exe = tmp_path / "mb_warband_dedicated"
+    exe = tmp_path / "Mount&Blade Warband Dedicated" / "mb_warband_dedicated.exe"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "mb_warband_dedicated",
+            "exe_name": "Mount&Blade Warband Dedicated/mb_warband_dedicated.exe",
             "port": 7240,
             "maxplayers": 64,
         }
     )
 
-    cmd, cwd = warbandserver.get_start_command(server)
+    original_wrap_command = getattr(warbandserver, "_wrap_linux_command", None)
+    warbandserver._wrap_linux_command = lambda cmd, **_kwargs: list(cmd)
+    try:
+        cmd, cwd = warbandserver.get_start_command(server)
+    finally:
+        warbandserver._wrap_linux_command = original_wrap_command
 
-    assert cmd[0] == "./mb_warband_dedicated"
-    assert "-p" in cmd
-    assert cwd == server.data["dir"]
+    assert cmd == ["mb_warband_dedicated.exe", "-r", "Sample_Battle.txt", "-m", "Native"]
+    assert cwd == str(tmp_path / "Mount&Blade Warband Dedicated")
 
 
 def test_groundbranch_update_downloads_and_optionally_restart(monkeypatch):

@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-05-17
+Last updated: 2026-05-18
 
 ## Summary
 
@@ -11,8 +11,8 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 84      |
-| DISABLED | 72      |
+| PASSED   | 85      |
+| DISABLED | 71      |
 | SKIPPED  | 79      |
 
 ## Status Key
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (83)
+## PASSED (85)
 
 | Test | Type |
 |------|------|
@@ -94,6 +94,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | unturned | SteamCMD |
 | ut99server | Direct download |
 | valheim | SteamCMD |
+| warbandserver | Direct download (Wine) — PASSED 2026-05-18; the module now uses the official `mb_warband_dedicated_1174.zip` archive directly instead of scraping the Cloudflare-blocked TaleWorlds page, syncs `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, runs the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers |
 | wfserver | SteamCMD |
 | wurmserver | SteamCMD |
 | xntserver | Direct download |
@@ -183,7 +184,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
 | stationeersserver | Stationeers dedicated server stalls under Unity NullGfxDevice in headless CI after SetConsoleOutputCP startup exception; game port never opens |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
-| warbandserver | TaleWorlds download page blocks automated access (HTTP 403) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
 | wreckfestserver | SteamCMD app 361580 installs no Linux-compatible dedicated server binary (WreckfestServer not present) |

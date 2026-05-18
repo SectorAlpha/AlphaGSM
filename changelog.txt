@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-05-18
+- Server support: re-enable `warbandserver` by switching setup to the live official `mb_warband_dedicated_1174.zip` archive instead of scraping the Cloudflare-blocked TaleWorlds page, sync `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, run the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and make smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers.
+
 2026-05-17
 - Server support: re-enable `trackmaniaserver` after confirming the upstream direct-download archive still works, sync the configured XML-RPC port into `GameData/Config/dedicated_cfg.txt`, keep the dedicated process attached with `/nodaemon`, and restore smoke/integration coverage on the XML-RPC TCP endpoint.
 - Server support: re-enable `q3server` creation by switching its engine download to the real public ioquake3 Linux build, restore the smoke/integration entrypoints, and classify CI as a prerequisite skip until licensed `baseq3/pak0.pk3` game data is provided.

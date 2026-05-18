@@ -239,7 +239,7 @@
 | vintagestoryserver | vintsserver | active | no | yes | status |
 | vrserver | - | disabled | no | no | status |
 | vsserver | - | disabled | yes | no | - |
-| warbandserver | - | disabled | no | no | status |
+| warbandserver | - | active | no | yes | status |
 | wetserver | wet | active | no | yes | status |
 | wfserver | - | disabled | no | no | status |
 | wreckfestserver | - | disabled | no | no | status |
