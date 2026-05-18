@@ -9,6 +9,7 @@ RUN dpkg --add-architecture i386 \
         ca-certificates \
         curl \
         lib32gcc-s1 \
+      libstdc++5:i386 \
         lib32stdc++6 \
         libcurl3t64-gnutls \
         libatomic1 \

@@ -1,5 +1,7 @@
 """Integration test for cod2server."""
 
+import os
+
 import pytest
 
 from conftest import (
@@ -12,7 +14,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -23,23 +25,33 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Requires 32-bit compat libraries (libstdc++.so.5) not available in CI")
 def test_cod2server_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itcod2server"
+    image = os.environ.get(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX",
+        "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest",
+    )
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        backend="subprocess",
+        runtime_backend="docker",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "cod2server")
+    run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -50,13 +62,7 @@ def test_cod2server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
