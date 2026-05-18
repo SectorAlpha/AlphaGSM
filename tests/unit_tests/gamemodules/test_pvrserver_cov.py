@@ -141,6 +141,17 @@ def test_query_and_runtime_ports_follow_fixed_offset(tmp_path):
     assert server.data["queryport"] == "27415"
 
 
+def test_runtime_requirements_without_port_use_default_offset():
+    server = DummyServer()
+
+    requirements = mod.get_runtime_requirements(server)
+
+    ports = {(entry["host"], entry["protocol"]) for entry in requirements["ports"]}
+    assert (8177, "udp") in ports
+    assert (8177, "tcp") in ports
+    assert server.data["queryport"] == "8177"
+
+
 def test_setting_schema_launch_formats():
     assert mod.setting_schema["port"].launch_arg_format == "-PORT={value}"
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"

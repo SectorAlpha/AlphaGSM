@@ -13,6 +13,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 622970
 steam_anonymous_login_possible = True
+DEFAULT_PORT = 7777
 STATUS_PORT_OFFSET = 400
 
 commands = ("update", "restart")
@@ -69,7 +70,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PavlovServer.sh"):
         server,
         ask,
         port,
-        default_port=7777,
+        default_port=DEFAULT_PORT,
         prompt="Please specify the port to use for this server:",
     )
     server.data["queryport"] = str(_status_port(server))
@@ -104,7 +105,7 @@ restart.__doc__ = "Restart the Pavlov VR server."
 
 
 def _status_port(server):
-    return int(server.data["port"]) + STATUS_PORT_OFFSET
+    return int(server.data.get("port", DEFAULT_PORT)) + STATUS_PORT_OFFSET
 
 
 def get_query_address(server):
