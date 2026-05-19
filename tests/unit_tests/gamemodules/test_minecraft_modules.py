@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -413,8 +414,14 @@ def test_custom_runtime_requirements_include_java_mounts_and_ports():
     assert spec["command"][-1] == 'exec java -jar "$ALPHAGSM_SERVER_JAR" nogui'
 
 
-def test_bungeecord_configure_install_and_checkvalue(tmp_path):
+def test_bungeecord_configure_install_and_checkvalue(tmp_path, monkeypatch):
     server = DummyServer()
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
+    monkeypatch.setattr(bungeecord, "install_downloaded_jar", lambda current_server: None)
 
     args, kwargs = bungeecord.configure(server, ask=False, dir=str(tmp_path))
     (tmp_path / "BungeeCord.jar").write_text("")
@@ -431,6 +438,11 @@ def test_bungeecord_configure_install_and_checkvalue(tmp_path):
 
 def test_bungeecord_configure_uses_runtime_install_dir_helper(monkeypatch):
     server = DummyServer("proxy")
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
 
     observed = {}
 
@@ -453,6 +465,11 @@ def test_bungeecord_configure_uses_runtime_install_dir_helper(monkeypatch):
 def test_bungeecord_configure_replaces_stale_manager_only_install_dir(monkeypatch):
     server = DummyServer("proxy")
     server.data["dir"] = "/root/proxy"
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
 
     observed = {}
 
@@ -472,12 +489,62 @@ def test_bungeecord_configure_replaces_stale_manager_only_install_dir(monkeypatc
     assert server.data["dir"] == "/srv/alphagsm/servers/proxy"
 
 
+def test_bungeecord_resolve_download_uses_latest_successful_build(monkeypatch):
+    monkeypatch.setattr(
+        bungeecord,
+        "_read_json",
+        lambda url: {"lastSuccessfulBuild": {"number": 2069}},
+    )
+
+    version, url = bungeecord.resolve_download()
+
+    assert version == "2069"
+    assert url.endswith("/job/BungeeCord/2069/artifact/bootstrap/target/BungeeCord.jar")
+
+
+def test_bungeecord_configure_sets_download_defaults(tmp_path, monkeypatch):
+    server = DummyServer("proxy")
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
+
+    bungeecord.configure(server, ask=False, port=25577, dir=str(tmp_path))
+
+    assert server.data["version"] == "2069"
+    assert server.data["url"] == "https://example.invalid/BungeeCord.jar"
+    assert server.data["download_name"] == "BungeeCord.jar"
+    assert server.data["exe_name"] == "BungeeCord.jar"
+
+
 def test_bungeecord_install_requires_existing_jar(tmp_path):
     server = DummyServer()
     server.data.update({"dir": str(tmp_path), "exe_name": "BungeeCord.jar"})
 
     with pytest.raises(bungeecord.ServerError, match="Can't find server jar"):
         bungeecord.install(server)
+
+
+def test_bungeecord_install_downloads_configured_jar(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "BungeeCord.jar",
+            "url": "https://example.invalid/BungeeCord.jar",
+            "download_name": "BungeeCord.jar",
+        }
+    )
+
+    def fake_install_downloaded_jar(current_server):
+        (Path(current_server.data["dir"]) / current_server.data["exe_name"]).write_text("")
+
+    monkeypatch.setattr(bungeecord, "install_downloaded_jar", fake_install_downloaded_jar)
+
+    bungeecord.install(server)
+
+    assert (tmp_path / "BungeeCord.jar").exists()
 
 
 def test_bungeecord_updates_unindented_host_line(tmp_path):

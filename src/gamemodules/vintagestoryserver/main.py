@@ -1,6 +1,9 @@
 """Vintage Story dedicated server lifecycle helpers."""
 
+import json
 import os
+import re
+import urllib.request
 
 import screen
 from server import ServerError
@@ -14,6 +17,8 @@ from utils.gamemodules import common as gamemodule_common
 VINTAGE_STORY_DOWNLOAD_TEMPLATE = (
     "https://cdn.vintagestory.at/gamefiles/stable/vs_server_linux-x64_%s.tar.gz"
 )
+VINTAGE_STORY_STABLE_API = "https://api.vintagestory.at/stable.json"
+VINTAGE_STORY_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 
 commands = ()
 command_args = gamemodule_common.build_setup_version_download_command_args(
@@ -25,11 +30,41 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _read_json(url):
+    request = urllib.request.Request(url, headers={"User-Agent": VINTAGE_STORY_USER_AGENT})
+    with urllib.request.urlopen(request) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _version_sort_key(version):
+    return tuple(
+        (0, int(token)) if token.isdigit() else (1, token)
+        for token in re.split(r"([0-9]+)", version)
+        if token
+    )
+
+
 def resolve_download(version):
     """Construct the documented Vintage Story server tarball URL for a version."""
 
     if version in (None, "", "latest"):
-        raise ServerError("A specific Vintage Story version is required unless a direct URL is supplied")
+        stable_data = _read_json(VINTAGE_STORY_STABLE_API)
+        if not isinstance(stable_data, dict):
+            raise ServerError("Unable to locate Vintage Story stable release metadata")
+
+        for candidate_version, metadata in stable_data.items():
+            linux_server = metadata.get("linuxserver") or {}
+            cdn_url = (linux_server.get("urls") or {}).get("cdn")
+            if linux_server.get("latest") == 1 and cdn_url:
+                return candidate_version, cdn_url
+
+        for candidate_version in sorted(stable_data, key=_version_sort_key, reverse=True):
+            linux_server = (stable_data.get(candidate_version) or {}).get("linuxserver") or {}
+            cdn_url = (linux_server.get("urls") or {}).get("cdn")
+            if cdn_url:
+                return candidate_version, cdn_url
+
+        raise ServerError("Unable to locate a stable Vintage Story Linux server download")
     return version, VINTAGE_STORY_DOWNLOAD_TEMPLATE % (version,)
 
 
@@ -42,7 +77,7 @@ def configure(
     version=None,
     url=None,
     download_name=None,
-    exe_name="VintagestoryServer",
+    exe_name="VintagestoryServer.dll",
 ):
     """Collect and store configuration values for a Vintage Story server."""
 
@@ -72,11 +107,11 @@ def configure(
     server.data["dir"] = os.path.join(dir, "")
     if url is not None:
         server.data["url"] = url
-    elif version is not None or server.data.get("version") not in (None, ""):
-        resolved_version, resolved_url = resolve_download(version or server.data.get("version"))
+    else:
+        resolved_version, resolved_url = resolve_download(version or server.data.get("version") or "latest")
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
-    elif "url" not in server.data and ask:
+    if "url" not in server.data and ask:
         inp = input("Direct archive URL for the Vintage Story server: ").strip()
         if inp:
             server.data["url"] = inp
@@ -85,6 +120,7 @@ def configure(
     elif "download_name" not in server.data:
         server.data["download_name"] = os.path.basename(server.data.get("url", "")) or "vintagestory-server.tar.gz"
     server.data["exe_name"] = server.data.get("exe_name", exe_name)
+    server.data.setdefault("dotnetpath", "dotnet")
     server.data.save()
     return (), {}
 
@@ -93,13 +129,10 @@ def install(server):
     """Download and install the Vintage Story server archive."""
 
     if "url" not in server.data or not server.data["url"]:
-        if server.data.get("version") not in (None, ""):
-            resolved_version, resolved_url = resolve_download(server.data["version"])
-            server.data["version"] = resolved_version
-            server.data["url"] = resolved_url
-            server.data.setdefault("download_name", os.path.basename(resolved_url))
-        else:
-            raise ServerError("A direct download URL or version is required for this server")
+        resolved_version, resolved_url = resolve_download(server.data.get("version") or "latest")
+        server.data["version"] = resolved_version
+        server.data["url"] = resolved_url
+        server.data.setdefault("download_name", os.path.basename(resolved_url))
     install_archive(server, detect_compression(server.data["download_name"]))
 
 
@@ -109,12 +142,12 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    if server.data["exe_name"].endswith(".dll"):
+        command = [server.data.get("dotnetpath", "dotnet"), server.data["exe_name"]]
+    else:
+        command = ["./" + server.data["exe_name"]]
     return (
-        [
-            "./" + server.data["exe_name"],
-            "--dataPath",
-            server.data["dir"],
-        ],
+        command + ["--dataPath", server.data["dir"]],
         server.data["dir"],
     )
 
@@ -149,12 +182,13 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port",),
-        str_keys=("url", "download_name", "exe_name", "dir", "worldname", "servername", "version"),
+        str_keys=("url", "download_name", "exe_name", "dir", "worldname", "servername", "version", "dotnetpath"),
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra={'host_dependencies': ({'id': 'dotnet', 'display_name': '.NET', 'command_key': 'dotnetpath', 'command': 'dotnet'},)},
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(

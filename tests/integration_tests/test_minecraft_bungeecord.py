@@ -1,7 +1,4 @@
-"""Integration test for minecraft.bungeecord.
-
-Disabled: BungeeCord requires manually placing the jar file.
-"""
+"""Integration test for minecraft.bungeecord."""
 
 import pytest
 
@@ -14,16 +11,13 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    skip_for_known_steamcmd_issue,
     wait_for_log_marker,
+    wait_for_info_protocol,
+    wait_for_tcp_open,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(reason="BYO: BungeeCord requires manually placing the jar"),
-]
+pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
@@ -48,9 +42,7 @@ def test_minecraft_bungeecord_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "minecraft.bungeecord")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+    run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -60,18 +52,19 @@ def test_minecraft_bungeecord_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["Done (", "For help, type"],
+            ["Listening on", "Done (", "For help, type"],
             START_TIMEOUT,
         )
+        wait_for_tcp_open("127.0.0.1", port, START_TIMEOUT, log_path=log_path)
 
         # status
         run_and_assert_ok(env, server_name, "status")
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        assert "Server port is open" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
@@ -80,9 +73,7 @@ def test_minecraft_bungeecord_lifecycle(tmp_path):
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
-        import json as _info_json
-        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        _info_data = wait_for_info_protocol(env, server_name, "slp", START_TIMEOUT)
         assert _info_data["protocol"] == "slp", (
             f"Expected SLP protocol in info JSON: {_info_data!r}"
         )

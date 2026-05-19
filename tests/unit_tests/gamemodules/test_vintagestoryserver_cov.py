@@ -52,6 +52,11 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
 def test_configure_ask_custom(tmp_path, monkeypatch):
     inputs = iter(["42421", str(tmp_path / 'custom'), "https://example.com/new.tar.gz"])
     monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    monkeypatch.setattr(
+        mod,
+        "resolve_download",
+        lambda version=None: ("1.22.2", "https://cdn.vintagestory.at/gamefiles/stable/vs_server_linux-x64_1.22.2.tar.gz"),
+    )
     server = DummyServer()
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
@@ -60,7 +65,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "VintagestoryServer"
+    server.data["exe_name"] = "VintagestoryServer.dll"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
@@ -69,10 +74,12 @@ def test_install(tmp_path):
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "VintagestoryServer"
-    (tmp_path / "VintagestoryServer").write_text("")
+    server.data["exe_name"] = "VintagestoryServer.dll"
+    server.data["dotnetpath"] = "/usr/bin/dotnet"
+    (tmp_path / "VintagestoryServer.dll").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[0] == "/usr/bin/dotnet"
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

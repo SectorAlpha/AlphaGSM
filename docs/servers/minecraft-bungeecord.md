@@ -1,11 +1,11 @@
-# Collect and store configuration values for a Bungeecord
+# BungeeCord
 
 This guide covers the `minecraft.bungeecord` module in AlphaGSM.
 
 ## Requirements
 
 - `screen`
-- Java 21 or compatible runtime
+- Java 17 or compatible runtime
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -44,8 +44,9 @@ alphagsm mybungeeco stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 25565)
 - the install directory
+- downloads the BungeeCord proxy jar automatically
 
 ## Useful Commands
 
@@ -72,7 +73,7 @@ alphagsm mybungeeco mod cleanup
 ## Notes
 
 - Module name: `minecraft.bungeecord`
-- Default port: 27015
+- Default port: 25565
 
 ## Developer Notes
 
@@ -86,12 +87,17 @@ alphagsm mybungeeco mod cleanup
 
 - **Config file**: `config.yml`
 - **Key settings** (in `config.yml`):
-  - `server-port` — Game port (default 25565)
+  - `listeners[0].host` — Proxy bind host and port
+  - `listeners[0].motd` — Message of the day
+  - `listeners[0].max_players` — Maximum players shown in server ping
+  - `servers` — Downstream backend server definitions
   - `motd` — Message of the day
-  - `max-players` — Maximum players
-  - `level-seed` — World generation seed
   - `online-mode` — Mojang authentication
 - **Template**: See [server-templates/minecraft-bungeecord/](../server-templates/minecraft-bungeecord/) if available
+
+By default AlphaGSM resolves the latest successful upstream BungeeCord Jenkins
+build and downloads `BungeeCord.jar` automatically during `setup`. You can also
+override that with `--version <build-number>` or `--url <jar-url>`.
 
 ### Maps and Mods
 

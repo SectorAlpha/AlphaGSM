@@ -5,6 +5,7 @@ This guide covers the `vintagestoryserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- `.NET 10` runtime on process-backed hosts
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -45,6 +46,7 @@ Setup configures:
 
 - the game port (default 42420)
 - the install directory
+- resolves the latest stable Linux server archive by default
 - downloads and extracts the server archive
 
 ## Useful Commands
@@ -52,6 +54,13 @@ Setup configures:
 ```bash
 alphagsm myvintages update
 alphagsm myvintages backup
+```
+
+You can pin a specific server build or override the archive URL during setup:
+
+```bash
+alphagsm myvintages setup --version 1.22.2
+alphagsm myvintages setup --url https://cdn.vintagestory.at/gamefiles/stable/vs_server_linux-x64_1.22.2.tar.gz
 ```
 
 ## Notes
@@ -63,9 +72,12 @@ alphagsm myvintages backup
 
 ### Run File
 
-- **Executable**: `VintagestoryServer`
-- **Location**: `<install_dir>/VintagestoryServer`
-- **Engine**: Custom
+- **Executable**: `VintagestoryServer.dll`
+- **Location**: `<install_dir>/VintagestoryServer.dll`
+- **Engine**: .NET 10 / Vintage Story dedicated server
+
+AlphaGSM follows the upstream `server.sh` launcher contract on Linux and starts
+the server with `dotnet VintagestoryServer.dll --dataPath <install_dir>`.
 
 ### Server Configuration
 

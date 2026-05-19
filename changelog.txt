@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-19
+- Server support: update `vintagestoryserver` setup to auto-resolve the latest stable Linux server archive from the official Vintage Story metadata, align the launcher with the upstream `dotnet VintagestoryServer.dll` contract, and revive the Docker-backed smoke runner plus TCP info/query coverage.
+- Server support: re-enable `minecraft_bungeecord` by resolving the latest successful upstream BungeeCord Jenkins jar during setup, updating `config.yml` with the configured listener port, reviving smoke and focused integration coverage, and removing the stale BYO-jar support status.
 - Server support: re-enable `terraria_tshock` by selecting the correct Linux x64 TShock release asset, unwrapping the nested upstream tarball during setup, switching the module to the native `TShock.Server` entrypoint with TCP info/query handling, and adding `.NET 9` to the shared Linux runtime images used by smoke and integration coverage.
 - Lifecycle: extend Linux process-runtime dependency gating to cover alternative host runtime providers such as Wine or Proton-GE, and add unit coverage for those missing-runtime failures.
 - Server support: declare `.NET` as a real host runtime requirement for `ss14server` so process-runtime setup and start fail early when `dotnet` is unavailable.

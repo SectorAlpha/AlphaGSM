@@ -259,7 +259,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
 | minecraft_bedrock | Direct download — PASSED 2026-05-19; setup still falls back to the last verified official Bedrock Linux archive when Minecraft.net hides the live Linux link, and query/info/smoke now use the real Bedrock RakNet UDP ping |
-| minecraft_bungeecord | Java proxy (needs download URL) |
+| minecraft_bungeecord | Direct download — PASSED 2026-05-19; setup now resolves the latest successful Spigot Jenkins BungeeCord jar by default, writes the configured listener port into `config.yml`, and passes smoke plus focused integration coverage over the normal TCP/SLP proxy surface |
 | minecraft_custom | Custom jar (needs user-supplied URL) |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | mtaserver | Download/platform prerequisite |

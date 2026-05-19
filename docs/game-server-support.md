@@ -244,7 +244,7 @@ Notes:
 - [ ] identityserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
-- [ ] minecraft_bungeecord
+- [x] minecraft_bungeecord
 - [ ] minecraft_custom
 - [ ] minecraft_tekkit
 - [ ] mtaserver

@@ -19,6 +19,7 @@ from server.modsupport.registry import CuratedRegistryLoader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
 from utils.gamemodules import common as gamemodule_common
+from utils.gamemodules.minecraft.jardownload import install_downloaded_jar
 
 command_args = {
     "setup": CmdSpec(
@@ -30,6 +31,34 @@ command_args = {
 }
 command_descriptions = {}
 command_functions = {}
+BUNGEECORD_JENKINS_API = "https://hub.spigotmc.org/jenkins/job/BungeeCord/api/json"
+BUNGEECORD_DOWNLOAD_TEMPLATE = (
+    "https://hub.spigotmc.org/jenkins/job/BungeeCord/%s/artifact/bootstrap/target/BungeeCord.jar"
+)
+BUNGEECORD_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
+
+command_args["setup"] = command_args["setup"].combine(
+    CmdSpec(
+        options=(
+            OptSpec(
+                "v",
+                ["version"],
+                "BungeeCord Jenkins build number to download. Uses the latest successful build by default.",
+                "version",
+                "VERSION",
+                str,
+            ),
+            OptSpec(
+                "u",
+                ["url"],
+                "Download URL to use instead of the upstream Jenkins artifact.",
+                "url",
+                "URL",
+                str,
+            ),
+        )
+    )
+)
 
 
 # Regex to locate the first listener's host line in config.yml
@@ -38,6 +67,24 @@ _CONFIG_GENERATION_TIMEOUT = 120
 ALLOWED_PROXY_PLUGIN_DESTINATIONS = ("plugins",)
 DEFAULT_PROXY_MOD_CACHE_DIRNAME = "minecraft-bungeecord"
 VELOCITY_PROXY_MOD_CACHE_DIRNAME = "minecraft-velocity"
+
+
+def _read_json(url):
+    request = urllib.request.Request(url, headers={"User-Agent": BUNGEECORD_USER_AGENT})
+    with urllib.request.urlopen(request) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def resolve_download(version=None):
+    if version not in (None, "", "latest"):
+        build_number = str(version)
+    else:
+        job_data = _read_json(BUNGEECORD_JENKINS_API)
+        last_successful = job_data.get("lastSuccessfulBuild") or {}
+        build_number = str(last_successful.get("number", "")).strip()
+        if build_number == "":
+            raise ServerError("Unable to locate the latest successful BungeeCord build")
+    return build_number, BUNGEECORD_DOWNLOAD_TEMPLATE % (build_number,)
 
 
 def _default_proxy_curated_registry_path(server=None):
@@ -85,11 +132,21 @@ def configure(
     port=None,
     dir=None,
     *,
+    version=None,
+    url=None,
     exe_name="BungeeCord.jar",
+    download_name="BungeeCord.jar",
     mod_cache_dirname=DEFAULT_PROXY_MOD_CACHE_DIRNAME,
     mod_label="BungeeCord"
 ):
     """Collect and store configuration values for a Bungeecord server."""
+    if url is None:
+        resolved_version, url = resolve_download(version)
+        server.data["version"] = resolved_version
+    else:
+        server.data["version"] = version
+    server.data["url"] = url
+    server.data["download_name"] = download_name
     if port is None:
         port = server.data.get("port", 25565)
     server.data["port"] = int(port)
@@ -118,6 +175,8 @@ def install(server, *, eula=False):
     """Install or validate the Bungeecord server files for this server."""
     if not os.path.isdir(server.data["dir"]):
         os.makedirs(server.data["dir"])
+    if server.data.get("url"):
+        install_downloaded_jar(server)
     mcjar = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(mcjar):
         raise ServerError(
