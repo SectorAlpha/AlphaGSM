@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import tarfile
 import urllib.request
 
 import downloader
@@ -84,12 +85,26 @@ def resolve_terraria_download(version=None):
 def resolve_tshock_download():
     release_data = _read_json(TSHOCK_LATEST_RELEASE_API)
     assets = release_data.get("assets", [])
+    zip_assets = []
     for asset in assets:
         name = asset.get("name", "").lower()
         if not name.endswith(".zip"):
             continue
-        if "linux" in name or "release" in name or "terraria" in name:
+        zip_assets.append((name, asset))
+
+    for token in ("linux-x64", "linux-x86_64", "linux-amd64"):
+        for name, asset in zip_assets:
+            if token in name:
+                return release_data.get("tag_name"), asset["browser_download_url"]
+
+    for name, asset in zip_assets:
+        if "linux" in name and all(excluded not in name for excluded in ("arm", "osx", "win")):
             return release_data.get("tag_name"), asset["browser_download_url"]
+
+    for name, asset in zip_assets:
+        if "release" in name or "terraria" in name:
+            return release_data.get("tag_name"), asset["browser_download_url"]
+
     raise ServerError("Unable to locate a suitable TShock release asset")
 
 
@@ -105,12 +120,34 @@ def _sync_tree(source, target):
             shutil.copy2(os.path.join(root, filename), os.path.join(target_root, filename))
 
 
+def _is_archive_wrapper(path):
+    lower = path.lower()
+    return lower.endswith((".zip", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz"))
+
+
 def _resolve_archive_root(downloadpath):
     entries = [os.path.join(downloadpath, entry) for entry in os.listdir(downloadpath)]
     directories = [entry for entry in entries if os.path.isdir(entry)]
-    if len(directories) == 1:
+    files = [entry for entry in entries if os.path.isfile(entry)]
+    if len(directories) == 1 and all(_is_archive_wrapper(entry) for entry in files):
         return directories[0]
     return downloadpath
+
+
+def _resolve_install_source(downloadpath):
+    archive_root = _resolve_archive_root(downloadpath)
+    entries = [os.path.join(archive_root, entry) for entry in os.listdir(archive_root)]
+    files = [entry for entry in entries if os.path.isfile(entry)]
+    tar_files = [entry for entry in files if tarfile.is_tarfile(entry)]
+    if len(tar_files) != 1:
+        return archive_root
+
+    extracted_root = os.path.join(archive_root, ".alphagsm-nested-archive")
+    if not os.path.isdir(extracted_root):
+        os.makedirs(extracted_root, exist_ok=True)
+        with tarfile.open(tar_files[0]) as archive:
+            archive.extractall(extracted_root)
+    return _resolve_archive_root(extracted_root)
 
 
 def install_archive(server):
@@ -124,7 +161,7 @@ def install_archive(server):
         downloadpath = downloader.getpath(
             "url", (server.data["url"], server.data["download_name"], "zip")
         )
-        _sync_tree(_resolve_archive_root(downloadpath), server.data["dir"])
+        _sync_tree(_resolve_install_source(downloadpath), server.data["dir"])
         server.data["current_url"] = server.data["url"]
     else:
         print("Skipping download")
@@ -230,8 +267,11 @@ def get_tshock_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    dotnet = server.data.get("dotnetpath", "dotnet")
-    cmd = [dotnet, server.data["exe_name"], "-port", str(server.data["port"])]
+    if server.data["exe_name"].endswith(".dll"):
+        dotnet = server.data.get("dotnetpath", "dotnet")
+        cmd = [dotnet, server.data["exe_name"], "-port", str(server.data["port"])]
+    else:
+        cmd = ["./" + server.data["exe_name"], "-port", str(server.data["port"])]
     return cmd, server.data["dir"]
 
 

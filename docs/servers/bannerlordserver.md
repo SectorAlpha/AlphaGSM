@@ -63,7 +63,8 @@ alphagsm mybannerlo backup
 - Default port: 7210
 - Anonymous SteamCMD installs for app `1863440` do succeed; the stale disabled gate was caused by the module pointing at a nonexistent root executable instead of the installed Linux starter.
 - The current Linux launch path is `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll` from `bin/Linux64_Shipping_Server/`.
-- Smoke and integration currently require a host-installed `dotnet` runtime before Bannerlord can be validated.
+- Docker validation no longer depends on a host-installed `dotnet`; the shared `steamcmd-linux` runtime image now carries .NET 6 for Bannerlord alongside .NET 10 for SS14.
+- Bannerlord is still not green on the current Linux Docker runtime: after setup succeeds, the dedicated server exits with a native `SIGSEGV` before AlphaGSM can retrieve A2S info, and SteamCMD setup can also intermittently fail with state `0x202`.
 
 ## Developer Notes
 

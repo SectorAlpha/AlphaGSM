@@ -48,6 +48,22 @@ RUN wget -q \
  && dpkg -i /tmp/libidn11.deb \
  && rm -f /tmp/libidn11.deb
 
+# Keep multiple supported dotnet runtimes available in the shared SteamCMD
+# Linux family image for framework-dependent server entrypoints such as
+# Bannerlord (.NET 6), TShock (.NET 9), and SS14 (.NET 10).
+RUN wget -q \
+       https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+       -O /tmp/packages-microsoft-prod.deb \
+ && dpkg -i /tmp/packages-microsoft-prod.deb \
+ && rm -f /tmp/packages-microsoft-prod.deb \
+ && apt-get update -qq \
+ && apt-get install -y --no-install-recommends dotnet-runtime-10.0 \
+ && wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh \
+ && bash /tmp/dotnet-install.sh --runtime dotnet --channel 9.0 --install-dir /usr/lib/dotnet \
+ && bash /tmp/dotnet-install.sh --runtime dotnet --channel 6.0 --install-dir /usr/lib/dotnet \
+ && rm -f /tmp/dotnet-install.sh \
+ && rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update -qq \
  && apt-get install -y --no-install-recommends libgssapi3-heimdal libldap-common libsasl2-2 \
  && wget -q \

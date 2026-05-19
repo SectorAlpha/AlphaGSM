@@ -45,6 +45,19 @@ class ScreenBackend(ProcessBackend):
         """Return the full session tag for *name*."""
         return self._session_tag + name
 
+    def _wipe_dead_sessions(self):
+        """Ask GNU screen to remove stale dead sockets before session checks."""
+        try:
+            sp.run(
+                ["screen", "-wipe"],
+                stdout=sp.DEVNULL,
+                stderr=sp.DEVNULL,
+                check=False,
+                shell=False,
+            )
+        except OSError:
+            return
+
     # ── public API ──────────────────────────────────────────────────────────
 
     def start(self, name, command, cwd=None):
@@ -52,6 +65,7 @@ class ScreenBackend(ProcessBackend):
         self._write_screenrc()
         self._ensure_log_dir()
         self._rotatelogs(name)
+        self._wipe_dead_sessions()
         extra = {}
         if cwd is not None:
             extra["cwd"] = cwd
@@ -112,6 +126,7 @@ class ScreenBackend(ProcessBackend):
 
     def is_running(self, name):
         """Return whether the named screen session exists."""
+        self._wipe_dead_sessions()
         try:
             self.send_raw(name, ["select", "."])
             return True

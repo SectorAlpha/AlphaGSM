@@ -1,5 +1,6 @@
 import gamemodules.bannerlordserver as bannerlordserver
 import gamemodules.readyornotserver as readyornotserver
+import server.runtime as runtime_module
 
 
 class DummyData(dict):
@@ -48,6 +49,50 @@ def test_bannerlord_get_start_command_builds_expected_args(tmp_path):
     assert "_PORT_7210" in cmd
     assert "_QUERYPORT_7211" in cmd
     assert cwd == str(tmp_path / "bin" / "Linux64_Shipping_Server")
+
+
+def test_bannerlord_runtime_requirements_declare_dotnet_host_dependency(tmp_path):
+    server = DummyServer("banner")
+    server.module = bannerlordserver
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 7210,
+            "queryport": 7211,
+        }
+    )
+
+    requirements = runtime_module._get_module_runtime_requirements(server)
+
+    assert requirements["runtime"] == "docker"
+    assert requirements["runtime_family"] == "steamcmd-linux"
+    assert requirements["host_dependencies"] == [
+        {"id": "dotnet", "display_name": ".NET", "kind": "command", "command": "dotnet"}
+    ]
+
+
+def test_bannerlord_container_spec_uses_launch_subdirectory(tmp_path):
+    server = DummyServer("banner")
+    server.module = bannerlordserver
+    exe = tmp_path / "bin" / "Linux64_Shipping_Server" / "TaleWorlds.Starter.DotNetCore.Linux.dll"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll",
+            "port": 7210,
+            "queryport": 7211,
+            "game_type": "Captain",
+            "scene": "mp_sergeant_battle",
+            "maxplayers": 64,
+        }
+    )
+
+    spec = bannerlordserver.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server/bin/Linux64_Shipping_Server"
+    assert spec["command"][:2] == ["dotnet", "TaleWorlds.Starter.DotNetCore.Linux.dll"]
 
 
 def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch):

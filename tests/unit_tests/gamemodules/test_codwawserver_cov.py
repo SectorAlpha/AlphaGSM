@@ -37,6 +37,15 @@ def test_configure_basic(tmp_path):
     mod.configure(server, ask=False, port=28960, dir=str(tmp_path), url="https://example.com/test.zip", download_name="test.zip")
     assert server.data['port'] == 28960
 
+
+def test_configure_uses_linuxgsm_archive_defaults(tmp_path):
+    server = DummyServer()
+
+    mod.configure(server, ask=False, port=28960, dir=str(tmp_path))
+
+    assert server.data["url"] == mod.CODWAW_SERVER_URL
+    assert server.data["download_name"] == mod.CODWAW_SERVER_NAME
+
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
     server = DummyServer()
@@ -64,6 +73,23 @@ def test_install(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     mod.install(server)
+
+
+def test_install_normalizes_extensionless_download_name(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "codwaw_lnxded"
+    server.data["url"] = mod.CODWAW_SERVER_URL
+    server.data["download_name"] = "codwaw-lnxded-1.7-full"
+
+    mod.install(server)
+
+    assert server.data["download_name"] == mod.CODWAW_SERVER_NAME
+    mod.detect_compression.assert_called_with(mod.CODWAW_SERVER_NAME)
+
+
+def test_normalize_archive_download_name_keeps_tar_xz_name():
+    assert mod._normalize_archive_download_name(mod.CODWAW_SERVER_NAME, "fallback.tar.gz") == mod.CODWAW_SERVER_NAME
 
 def test_get_start_command(tmp_path):
     server = DummyServer()

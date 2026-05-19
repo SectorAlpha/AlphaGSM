@@ -490,10 +490,24 @@ def get_start_command(server):
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
+    if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
+        launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
     return (
         ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the Call of Duty query command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP endpoint used by the Call of Duty info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):

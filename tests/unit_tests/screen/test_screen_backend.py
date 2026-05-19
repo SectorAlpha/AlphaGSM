@@ -53,13 +53,19 @@ def test_write_screenrc_force_overwrites(tmp_path):
 
 def test_start_invokes_screen(tmp_path, monkeypatch):
     backend = _make_backend(tmp_path)
+    wipe_calls = []
     calls = []
+    monkeypatch.setattr(
+        sp, "run",
+        lambda *args, **kwargs: wipe_calls.append((args, kwargs)),
+    )
     monkeypatch.setattr(
         sp, "check_output",
         lambda cmd, stderr, shell, **kw: calls.append((cmd, kw)) or b"ok",
     )
     result = backend.start("srv1", ["./run.sh"], cwd="/srv")
     assert result == b"ok"
+    assert wipe_calls[0][0][0] == ["screen", "-wipe"]
     assert calls[0][0][:3] == ["screen", "-dmLS", "Alpha#srv1"]
     assert calls[0][1] == {"cwd": "/srv"}
 
@@ -107,17 +113,34 @@ def test_kill_delegates_to_send_raw(monkeypatch):
 
 def test_is_running_true_on_success(monkeypatch):
     backend = ScreenBackend("Alpha#", "/tmp", 5, "/tmp/rc", "/tmp")
+    wipe_calls = []
+    monkeypatch.setattr(
+        sp, "run",
+        lambda *args, **kwargs: wipe_calls.append((args, kwargs)),
+    )
     monkeypatch.setattr(backend, "send_raw", lambda n, c: b"ok")
     assert backend.is_running("srv1") is True
+    assert wipe_calls[0][0][0] == ["screen", "-wipe"]
 
 
 def test_is_running_false_on_error(monkeypatch):
     backend = ScreenBackend("Alpha#", "/tmp", 5, "/tmp/rc", "/tmp")
+    monkeypatch.setattr(sp, "run", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         backend, "send_raw",
         lambda n, c: (_ for _ in ()).throw(ProcessError("nope")),
     )
     assert backend.is_running("srv1") is False
+
+
+def test_wipe_dead_sessions_ignores_oserror(monkeypatch):
+    backend = ScreenBackend("Alpha#", "/tmp", 5, "/tmp/rc", "/tmp")
+    monkeypatch.setattr(
+        sp, "run",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OSError("missing")),
+    )
+
+    backend._wipe_dead_sessions()
 
 
 def test_connect_invokes_script(monkeypatch):

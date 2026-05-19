@@ -766,6 +766,33 @@ def build_quake_setting_schema(
     return schema
 
 
+def should_omit_base_game_launch_arg(value, *base_game_dirs):
+    """Return true when a Quake-style game/mod directory is the built-in base dir."""
+
+    normalized_value = str(value or "").strip().casefold()
+    if not normalized_value:
+        return True
+    normalized_base_dirs = {str(entry).strip().casefold() for entry in base_game_dirs}
+    return normalized_value in normalized_base_dirs
+
+
+def remove_launch_arg_value(tokens, arg_tokens):
+    """Remove one launch-argument token sequence and its value from *tokens*."""
+
+    resolved_tokens = list(tokens)
+    prefix = list(arg_tokens)
+    limit = len(resolved_tokens) - len(prefix) + 1
+    for index in range(max(limit, 0)):
+        if resolved_tokens[index : index + len(prefix)] != prefix:
+            continue
+        end_index = index + len(prefix)
+        if end_index < len(resolved_tokens):
+            end_index += 1
+        del resolved_tokens[index:end_index]
+        break
+    return resolved_tokens
+
+
 def build_unreal_setting_schema(
     *,
     positional_key=None,

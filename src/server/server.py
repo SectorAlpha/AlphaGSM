@@ -685,6 +685,10 @@ class Server(object):
         runtime_module.sync_runtime_metadata(self, save=True)
         self._resolve_setup_port_claims(explicit_keys)
         runtime_module.sync_runtime_metadata(self, save=True)
+        try:
+            runtime_module.assert_host_install_requirements(self, phase="setup")
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
         self.module.install(self, *args, **kwargs)
         runtime_module.sync_runtime_metadata(self, save=True)
 
@@ -694,6 +698,10 @@ class Server(object):
         if runtime.is_running(self):
             raise ServerError("Error: Can't start server that is already running")
         self._assert_start_ports_available()
+        try:
+            runtime_module.assert_host_install_requirements(self, phase="start")
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
         try:
             prestart = self.module.prestart
         except AttributeError:
@@ -885,6 +893,7 @@ class Server(object):
         back to a TCP ping on ``server.data["port"]``.  Protocol may be
         ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP),
         ``"quakeworld"`` (QuakeWorld UDP), ``"quake2"`` (Quake II UDP), ``"ut3"`` (Unreal3/GameSpy4 UDP),
+        ``"bedrock"`` (Minecraft Bedrock RakNet UDP ping),
         ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"udp"`` (generic UDP reachability),
         or ``"tcp"``.
         """
@@ -1043,6 +1052,21 @@ class Server(object):
                     "Server does not appear to be responding: " + str(exc)
                 )
 
+        if protocol == "bedrock":
+            try:
+                bedrock_info = query_utils.bedrock_info(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Bedrock ping on port {port}): "
+                    "{name!r}  map={map!r}  players={players_online}/{players_max}  version={version!r}".format(
+                        port=port, **bedrock_info
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
         if protocol == "ts3":
             get_creds = getattr(self.module, "get_query_credentials", None)
             login_creds = get_creds(self) if callable(get_creds) else None
@@ -1101,7 +1125,8 @@ class Server(object):
 
         The game module may define ``get_info_address(server)`` returning
         ``(host, port, protocol)`` where *protocol* is ``"slp"`` (Minecraft
-        Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
+        Server List Ping), ``"bedrock"`` (Minecraft Bedrock RakNet ping),
+        ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
         (Quake3/QFusion UDP getstatus), ``"quakeworld"`` (QuakeWorld UDP status), ``"quake2"`` (Quake II UDP status),
         ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
@@ -1123,6 +1148,30 @@ class Server(object):
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
             _explicit = False
+
+        if protocol == "bedrock":
+            try:
+                result = query_utils.bedrock_info(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "bedrock", "port": port, **result}))
+                    return
+                lines = [
+                    "Server info (Bedrock ping on port {}):".format(port),
+                    "  Name        : {}".format(result.get("name", "")),
+                    "  Map         : {}".format(result.get("map", "")),
+                    "  Players     : {}/{}".format(
+                        result.get("players_online", "?"),
+                        result.get("players_max", "?"),
+                    ),
+                    "  Version     : {}".format(result.get("version", "")),
+                ]
+                gamemode = result.get("gamemode")
+                if gamemode not in (None, ""):
+                    lines.append("  Game Mode   : {}".format(gamemode))
+                print("\n".join(lines))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "slp":
             try:

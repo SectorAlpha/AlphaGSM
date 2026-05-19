@@ -13,8 +13,11 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 import shlex
+import shutil
 import subprocess as sp
+import sys
 
 import screen
 from utils.settings import settings
@@ -24,6 +27,7 @@ from utils import proton
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_IMAGE_REGISTRY = "ghcr.io/sectoralpha"
 DEFAULT_IMAGE_TAG = "latest"
+JAVA_VERSION_RE = re.compile(r'version\s+"(\d+)(?:\.(\d+))?')
 
 
 def default_runtime_image(family):
@@ -139,6 +143,12 @@ def canonicalize_runtime_family(family):
         return None
     family = str(family).strip().lower()
     return RUNTIME_FAMILY_ALIASES.get(family, family)
+
+
+def _process_host_checks_supported():
+    """Return whether Linux host dependency checks should run."""
+
+    return os.name == "posix" and sys.platform.startswith("linux")
 
 
 def _get_module_hook(module, hook_name):
@@ -313,6 +323,328 @@ def build_runtime_requirements(
     if extra:
         requirements.update(copy.deepcopy(dict(extra)))
     return requirements
+
+
+def _normalize_host_dependency_spec(spec, server_name):
+    """Return a normalized host-dependency mapping."""
+
+    if isinstance(spec, str):
+        spec = {"id": spec, "command": spec}
+    elif not isinstance(spec, dict):
+        raise RuntimeError(
+            "Invalid host dependency declaration for server %s" % (server_name,)
+        )
+
+    normalized = dict(spec)
+    if "binary" in normalized and "command" not in normalized:
+        normalized["command"] = normalized.pop("binary")
+
+    dep_id = str(
+        normalized.get("id")
+        or normalized.get("name")
+        or normalized.get("command")
+        or ""
+    ).strip().lower()
+    if not dep_id:
+        raise RuntimeError(
+            "Host dependency declarations must include an id or command for server %s"
+            % (server_name,)
+        )
+
+    normalized["id"] = dep_id
+    if "display_name" not in normalized:
+        normalized["display_name"] = normalized.get("name") or dep_id
+    normalized["kind"] = str(
+        normalized.get("kind") or (dep_id if dep_id == "java" else "command")
+    ).strip().lower()
+
+    if "command_key" in normalized and normalized["command_key"] not in (None, ""):
+        normalized["command_key"] = str(normalized["command_key"]).strip()
+
+    command = normalized.get("command")
+    if command in (None, "") and "command_key" not in normalized:
+        command = dep_id
+    if command not in (None, ""):
+        if isinstance(command, (list, tuple)):
+            if command and isinstance(command[0], (list, tuple, dict)):
+                normalized["command"] = [
+                    [str(part) for part in variant]
+                    if isinstance(variant, (list, tuple))
+                    else dict(variant) if isinstance(variant, dict)
+                    else str(variant)
+                    for variant in command
+                ]
+            else:
+                normalized["command"] = [str(part) for part in command]
+        else:
+            normalized["command"] = str(command).strip()
+
+    minimum_major = normalized.get("minimum_major")
+    if minimum_major not in (None, ""):
+        normalized["minimum_major"] = int(minimum_major)
+
+    return normalized
+
+
+def _normalize_host_dependency_specs(specs, server_name):
+    """Return normalized host dependencies for *specs*."""
+
+    if specs in (None, ""):
+        return []
+    if isinstance(specs, (str, dict)):
+        specs = [specs]
+    return [
+        _normalize_host_dependency_spec(spec, server_name)
+        for spec in list(specs)
+    ]
+
+
+def _command_argv(command):
+    """Return an argv list for *command*."""
+
+    if isinstance(command, (list, tuple)):
+        return [str(part) for part in command if str(part).strip()]
+    command = str(command or "").strip()
+    if not command:
+        return []
+    return shlex.split(command)
+
+
+def _resolve_host_dependency_variants(spec, server):
+    """Return candidate command variants for a dependency spec."""
+
+    command = None
+    command_key = spec.get("command_key")
+    if command_key:
+        command = server.data.get(command_key)
+    if command in (None, ""):
+        command = spec.get("command")
+
+    if isinstance(command, (list, tuple)) and command and isinstance(command[0], (list, tuple, dict)):
+        raw_variants = list(command)
+    else:
+        raw_variants = [command]
+
+    variants = []
+    for raw_variant in raw_variants:
+        variant_spec = raw_variant
+        if isinstance(raw_variant, dict):
+            variant_spec = raw_variant.get("command")
+        argv = _command_argv(variant_spec)
+        if argv:
+            variants.append(
+                {
+                    "label": raw_variant.get("label") if isinstance(raw_variant, dict) else None,
+                    "argv": argv,
+                }
+            )
+    if not variants:
+        raise RuntimeError(
+            "Host dependency '%s' does not define a command to check"
+            % (spec.get("id", "dependency"),)
+        )
+    return variants
+
+
+def _format_command(argv):
+    """Return a shell-style string for *argv*."""
+
+    return " ".join(shlex.quote(str(part)) for part in argv)
+
+
+def _find_command_path(executable):
+    """Return the resolved path for *executable* when it exists."""
+
+    executable = str(executable or "").strip()
+    if not executable:
+        return None
+    if os.path.isabs(executable) or os.sep in executable:
+        if os.path.isfile(executable) and os.access(executable, os.X_OK):
+            return executable
+        return None
+    return shutil.which(executable)
+
+
+def _read_java_major(command_argv):
+    """Return the detected Java major version for *command_argv*."""
+
+    try:
+        result = sp.run(
+            list(command_argv) + ["-version"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, sp.SubprocessError):
+        return None
+
+    output = "\n".join(filter(None, [result.stdout, result.stderr]))
+    match = JAVA_VERSION_RE.search(output)
+    if not match:
+        return None
+    major = int(match.group(1))
+    if major == 1 and match.group(2):
+        return int(match.group(2))
+    return major
+
+
+def _infer_process_host_dependencies(server, requirements):
+    """Infer Linux process-runtime host dependencies for *server*."""
+
+    dependencies = []
+    family = canonicalize_runtime_family(requirements.get("runtime_family"))
+    java_major = requirements.get("java_major")
+    exe_name = os.path.basename(str(server.data.get("exe_name", ""))).lower()
+
+    if family == "java" or java_major is not None or exe_name.endswith(".jar"):
+        spec = {
+            "id": "java",
+            "display_name": "Java",
+            "kind": "java",
+            "command_key": "javapath",
+            "command": "java",
+        }
+        if java_major not in (None, ""):
+            try:
+                spec["minimum_major"] = int(java_major)
+            except (TypeError, ValueError):
+                pass
+        dependencies.append(spec)
+
+    return dependencies
+
+
+def get_process_host_dependency_report(server):
+    """Return Linux process-runtime dependency status for *server*."""
+
+    report = {
+        "applicable": False,
+        "ok": True,
+        "requirements": [],
+    }
+
+    if not _process_host_checks_supported():
+        report["skipped_reason"] = "host dependency checks only run on Linux"
+        return report
+
+    metadata = resolve_runtime_metadata(server)
+    runtime_name = metadata.get("runtime", "process")
+    if runtime_name == "docker":
+        report["skipped_reason"] = "docker runtime supplies its own dependencies"
+        return report
+
+    report["applicable"] = True
+    module = getattr(server, "module", None)
+    requirements = _get_module_runtime_requirements(server)
+    if not requirements:
+        requirements = normalize_runtime_requirements(
+            infer_runtime_requirements(server, module=module),
+            server.name,
+        )
+
+    explicit_dependencies = list(requirements.get("host_dependencies") or ())
+    dependency_specs = []
+    seen_ids = set()
+    for spec in explicit_dependencies + _infer_process_host_dependencies(server, requirements):
+        dep_id = spec.get("id")
+        if dep_id in seen_ids:
+            continue
+        seen_ids.add(dep_id)
+        dependency_specs.append(spec)
+
+    for spec in dependency_specs:
+        entry = {
+            "id": spec["id"],
+            "display_name": spec.get("display_name", spec["id"]),
+            "kind": spec.get("kind", "command"),
+            "ok": True,
+        }
+        try:
+            variants = _resolve_host_dependency_variants(spec, server)
+        except RuntimeError as ex:
+            entry["ok"] = False
+            entry["error"] = str(ex)
+            report["requirements"].append(entry)
+            continue
+
+        missing_commands = []
+        for variant in variants:
+            argv = variant["argv"]
+            resolved_path = _find_command_path(argv[0])
+            if resolved_path is None:
+                missing_commands.append(argv[0])
+                continue
+
+            entry["command"] = _format_command(argv)
+            entry["resolved_path"] = resolved_path
+            if variant.get("label"):
+                entry["matched_variant"] = variant["label"]
+
+            if entry["kind"] == "java":
+                installed_major = _read_java_major(argv)
+                if installed_major is None:
+                    entry["ok"] = False
+                    entry["error"] = (
+                        "Unable to determine the installed Java version from %s"
+                        % (_format_command(list(argv) + ["-version"]),)
+                    )
+                else:
+                    entry["installed_major"] = installed_major
+                    minimum_major = spec.get("minimum_major")
+                    if minimum_major not in (None, ""):
+                        entry["minimum_major"] = int(minimum_major)
+                        if installed_major < int(minimum_major):
+                            entry["ok"] = False
+                            entry["error"] = (
+                                "%s %s+ is required but %s is installed"
+                                % (
+                                    entry["display_name"],
+                                    int(minimum_major),
+                                    installed_major,
+                                )
+                            )
+            break
+        else:
+            entry["ok"] = False
+            unique_commands = []
+            for command_name in missing_commands:
+                if command_name not in unique_commands:
+                    unique_commands.append(command_name)
+            if len(unique_commands) == 1:
+                entry["error"] = (
+                    "%s is required but command '%s' was not found"
+                    % (entry["display_name"], unique_commands[0])
+                )
+            else:
+                entry["error"] = (
+                    "%s is required but none of these commands were found: %s"
+                    % (entry["display_name"], ", ".join("'" + item + "'" for item in unique_commands))
+                )
+
+        report["requirements"].append(entry)
+
+    report["ok"] = all(item.get("ok", False) for item in report["requirements"])
+    return report
+
+
+def assert_host_install_requirements(server, phase="run"):
+    """Raise when Linux process-runtime host dependencies are missing."""
+
+    report = get_process_host_dependency_report(server)
+    if not report.get("applicable") or report.get("ok", True):
+        return report
+
+    failures = [
+        item["error"]
+        for item in report.get("requirements", [])
+        if not item.get("ok", False)
+    ]
+    action = str(phase or "run")
+    raise RuntimeError(
+        "Can't %s server on this Linux host because required process-runtime dependencies are missing or incompatible: %s. Use the Docker runtime if you want AlphaGSM to provide these dependencies in a container."
+        % (action, "; ".join(failures))
+    )
 
 
 def _current_container_identity_mount_roots():
@@ -620,6 +952,8 @@ def normalize_runtime_requirements(requirements, server_name):
     """Normalise a runtime-requirements mapping."""
 
     req = dict(requirements or {})
+    if "install_requirements" in req and "host_dependencies" not in req:
+        req["host_dependencies"] = req.pop("install_requirements")
     if "engine" in req and "runtime" not in req:
         req["runtime"] = req.pop("engine")
     if "family" in req and "runtime_family" not in req:
@@ -628,6 +962,11 @@ def normalize_runtime_requirements(requirements, server_name):
         req["runtime_family"] = canonicalize_runtime_family(req["runtime_family"])
     if "java" in req and "java_major" not in req:
         req["java_major"] = req.pop("java")
+    if "host_dependencies" in req:
+        req["host_dependencies"] = _normalize_host_dependency_specs(
+            req["host_dependencies"],
+            server_name,
+        )
     return req
 
 
@@ -1003,6 +1342,18 @@ def get_runtime_doctor_report(server):
     report["resolved_runtime"] = runtime_name
     report["running"] = get_runtime(server).is_running(server)
 
+    try:
+        host_report = get_process_host_dependency_report(server)
+    except Exception as ex:  # pragma: no cover - defensive diagnostics path
+        report["host_requirements_error"] = str(ex)
+        return report
+
+    if host_report.get("applicable"):
+        report["host_requirements_ok"] = host_report.get("ok", True)
+        report["host_requirements"] = host_report.get("requirements", [])
+    elif host_report.get("skipped_reason"):
+        report["host_requirements_skipped"] = host_report["skipped_reason"]
+
     if runtime_name != "docker":
         return report
 
@@ -1076,6 +1427,27 @@ def print_runtime_doctor_report(server):
     resolved_runtime = report.get("resolved_runtime", "unknown")
     print("Resolved runtime: " + resolved_runtime)
     print("Currently running: " + ("yes" if report.get("running") else "no"))
+
+    host_requirements = report.get("host_requirements") or []
+    if host_requirements:
+        print("Host requirements:")
+        for requirement in host_requirements:
+            line = "  - {display_name}: ".format(**requirement)
+            if requirement.get("ok"):
+                if "installed_major" in requirement and "minimum_major" in requirement:
+                    line += "ok (found {installed_major}, need {minimum_major}+)".format(
+                        **requirement
+                    )
+                else:
+                    line += "ok"
+            else:
+                line += requirement.get("error", "failed")
+            print(line)
+    elif "host_requirements_skipped" in report:
+        print("Host requirements: " + report["host_requirements_skipped"])
+    if "host_requirements_error" in report:
+        print("Host requirements error: " + report["host_requirements_error"])
+        return report
 
     if "module_runtime_error" in report:
         print("Module runtime error: " + report["module_runtime_error"])

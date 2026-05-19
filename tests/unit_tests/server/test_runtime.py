@@ -366,6 +366,7 @@ def test_container_runtime_does_not_build_missing_custom_image(monkeypatch):
 
 def test_runtime_doctor_report_shows_process_runtime_when_backend_is_not_enabled(monkeypatch):
     _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: False)
     module = SimpleNamespace(
         get_runtime_requirements=lambda server: {
             "engine": "docker",
@@ -384,6 +385,146 @@ def test_runtime_doctor_report_shows_process_runtime_when_backend_is_not_enabled
     assert report["module_runtime_family"] == "java"
     assert report["resolved_runtime"] == "process"
     assert report["running"] is True
+
+
+def test_process_host_dependency_report_rejects_stale_java_for_process_runtime(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 21,
+        }
+    )
+    server = DummyServer(module=module, data={"javapath": "java"})
+
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: "/usr/bin/java")
+    monkeypatch.setattr(
+        runtime_module.sp,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            stdout="",
+            stderr='openjdk version "17.0.10"\n',
+            returncode=0,
+        ),
+    )
+
+    report = runtime_module.get_process_host_dependency_report(server)
+
+    assert report["applicable"] is True
+    assert report["ok"] is False
+    assert report["requirements"][0]["id"] == "java"
+    assert report["requirements"][0]["installed_major"] == 17
+    assert "Java 21+ is required" in report["requirements"][0]["error"]
+
+
+def test_assert_host_install_requirements_raises_for_missing_generic_dependency(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "host_dependencies": [
+                {"id": "dotnet", "display_name": ".NET", "command": "dotnet"}
+            ]
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: None)
+
+    with pytest.raises(runtime_module.RuntimeError, match="Can't setup server"):
+        runtime_module.assert_host_install_requirements(server, phase="setup")
+
+
+def test_process_host_dependency_report_accepts_first_available_alternative_command(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "host_dependencies": [
+                {
+                    "id": "wine-proton",
+                    "display_name": "Wine or Proton-GE",
+                    "command": [
+                        {"label": "wine", "command": "wine"},
+                        {"label": "proton", "command": "/opt/proton-ge/GE-Proton9-27/proton"},
+                    ],
+                }
+            ]
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(
+        runtime_module.shutil,
+        "which",
+        lambda executable: "/usr/bin/wine" if executable == "wine" else None,
+    )
+
+    report = runtime_module.get_process_host_dependency_report(server)
+
+    assert report["applicable"] is True
+    assert report["ok"] is True
+    assert report["requirements"][0]["id"] == "wine-proton"
+    assert report["requirements"][0]["matched_variant"] == "wine"
+    assert report["requirements"][0]["resolved_path"] == "/usr/bin/wine"
+
+
+def test_assert_host_install_requirements_raises_for_missing_alternative_commands(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "host_dependencies": [
+                {
+                    "id": "wine-proton",
+                    "display_name": "Wine or Proton-GE",
+                    "command": [
+                        {"label": "wine", "command": "wine"},
+                        {"label": "proton", "command": "proton"},
+                    ],
+                }
+            ]
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: None)
+
+    with pytest.raises(runtime_module.RuntimeError, match="none of these commands were found: 'wine', 'proton'"):
+        runtime_module.assert_host_install_requirements(server, phase="start")
+
+
+def test_runtime_doctor_report_includes_process_host_requirement_results(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 21,
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.screen, "check_screen_exists", lambda name: False)
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: "/usr/bin/java")
+    monkeypatch.setattr(
+        runtime_module.sp,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            stdout="",
+            stderr='openjdk version "17.0.10"\n',
+            returncode=0,
+        ),
+    )
+
+    report = runtime_module.get_runtime_doctor_report(server)
+
+    assert report["resolved_runtime"] == "process"
+    assert report["host_requirements_ok"] is False
+    assert report["host_requirements"][0]["id"] == "java"
 
 
 def test_runtime_doctor_report_includes_docker_runtime_health(monkeypatch):

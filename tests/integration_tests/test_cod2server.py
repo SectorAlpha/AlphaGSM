@@ -62,7 +62,7 @@ def test_cod2server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -70,24 +70,27 @@ def test_cod2server_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            "Server port is open" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "No further details available." in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+        assert _info_data.get("port") == port, (
+            f"Expected tcp info to report the bound port: {_info_data!r}"
+        )
+        assert "latency_ms" in _info_data, (
+            f"Expected tcp info to include latency: {_info_data!r}"
         )
     finally:
         # stop

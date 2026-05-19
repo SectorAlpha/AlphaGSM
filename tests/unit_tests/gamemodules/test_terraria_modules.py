@@ -1,3 +1,5 @@
+import tarfile
+
 import gamemodules.terraria.common as terraria_common
 import gamemodules.terraria.tshock as tshock
 import gamemodules.terraria.vanilla as vanilla
@@ -61,6 +63,31 @@ def test_resolve_tshock_download_picks_zip_asset(monkeypatch):
     assert url == "http://example.com/tshock.zip"
 
 
+def test_resolve_tshock_download_prefers_linux_x64_asset(monkeypatch):
+    monkeypatch.setattr(
+        terraria_common_impl,
+        "_read_json",
+        lambda url: {
+            "tag_name": "v6.1.0",
+            "assets": [
+                {
+                    "name": "TShock-6.1.0-for-Terraria-1.4.5.6-linux-arm-Release.zip",
+                    "browser_download_url": "http://example.com/tshock-linux-arm.zip",
+                },
+                {
+                    "name": "TShock-6.1.0-for-Terraria-1.4.5.6-linux-x64-Release.zip",
+                    "browser_download_url": "http://example.com/tshock-linux-x64.zip",
+                },
+            ],
+        },
+    )
+
+    version, url = terraria_common.resolve_tshock_download()
+
+    assert version == "v6.1.0"
+    assert url == "http://example.com/tshock-linux-x64.zip"
+
+
 def test_terraria_vanilla_configure_sets_defaults(tmp_path, monkeypatch):
     server = DummyServer("terra")
     monkeypatch.setattr(
@@ -78,7 +105,7 @@ def test_terraria_vanilla_configure_sets_defaults(tmp_path, monkeypatch):
     assert server.data["exe_name"] == "Linux/TerrariaServer.bin.x86_64"
 
 
-def test_tshock_configure_sets_dotnet_defaults(tmp_path, monkeypatch):
+def test_tshock_configure_sets_native_defaults(tmp_path, monkeypatch):
     server = DummyServer("shock")
     monkeypatch.setattr(
         tshock, "resolve_tshock_download", lambda: ("v5.2.3", "http://example.com/tshock.zip")
@@ -88,6 +115,7 @@ def test_tshock_configure_sets_dotnet_defaults(tmp_path, monkeypatch):
 
     assert server.data["port"] == 7778
     assert server.data["url"] == "http://example.com/tshock.zip"
+    assert server.data["exe_name"] == "TShock.Server"
     assert server.data["dotnetpath"] == "dotnet"
     assert server.data["backupfiles"] == ["Worlds", "serverconfig.txt", "tshock"]
     assert server.data["mods"]["desired"]["url"] == []
@@ -116,6 +144,40 @@ def test_terraria_install_archive_copies_downloaded_tree(tmp_path, monkeypatch):
     assert server.data["current_url"] == "http://example.com/terraria.zip"
 
 
+def test_tshock_install_archive_unpacks_nested_tarball(tmp_path, monkeypatch):
+    server = DummyServer("shock")
+    server.data.update(
+        {
+            "dir": str(tmp_path / "server"),
+            "exe_name": "TShock.Server",
+            "url": "http://example.com/tshock.zip",
+            "download_name": "tshock.zip",
+        }
+    )
+    download_root = tmp_path / "download"
+    extracted_root = download_root / "release"
+    extracted_root.mkdir(parents=True)
+    (extracted_root / "tshock.zip").write_text("")
+    payload_root = tmp_path / "payload"
+    payload_root.mkdir()
+    executable = payload_root / "TShock.Server"
+    executable.write_text("")
+    executable.chmod(0o755)
+    (payload_root / "ServerPlugins").mkdir()
+    (payload_root / "ServerPlugins" / "TShockAPI.dll").write_text("")
+    tar_path = extracted_root / "TShock-Beta-linux-x64-Release.tar"
+    with tarfile.open(tar_path, "w") as archive:
+        archive.add(payload_root / "TShock.Server", arcname="TShock.Server")
+        archive.add(payload_root / "ServerPlugins", arcname="ServerPlugins")
+    monkeypatch.setattr(terraria_common.downloader, "getpath", lambda module, args: str(download_root))
+
+    terraria_common.install_archive(server)
+
+    assert (tmp_path / "server" / "TShock.Server").exists()
+    assert (tmp_path / "server" / "ServerPlugins" / "TShockAPI.dll").exists()
+    assert server.data["current_url"] == "http://example.com/tshock.zip"
+
+
 def test_terraria_vanilla_start_command_autocreates_missing_world(tmp_path):
     server = DummyServer("terra")
     exe_path = tmp_path / "Linux" / "TerrariaServer.bin.x86_64"
@@ -141,7 +203,25 @@ def test_terraria_vanilla_start_command_autocreates_missing_world(tmp_path):
     assert cwd == str(tmp_path)
 
 
-def test_tshock_start_command_uses_dotnet(tmp_path):
+def test_tshock_start_command_uses_native_binary(tmp_path):
+    server = DummyServer("shock")
+    binary_path = tmp_path / "TShock.Server"
+    binary_path.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "TShock.Server",
+            "port": 7777,
+        }
+    )
+
+    cmd, cwd = tshock.get_start_command(server)
+
+    assert cmd == ["./TShock.Server", "-port", "7777"]
+    assert cwd == str(tmp_path)
+
+
+def test_tshock_start_command_uses_dotnet_for_legacy_dll(tmp_path):
     server = DummyServer("shock")
     dll_path = tmp_path / "TShock.Server.dll"
     dll_path.write_text("")
@@ -192,13 +272,12 @@ def test_terraria_vanilla_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
 
 def test_tshock_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
     server = DummyServer("shock")
-    dll_path = tmp_path / "TShock.Server.dll"
-    dll_path.write_text("")
+    binary_path = tmp_path / "TShock.Server"
+    binary_path.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path),
-            "exe_name": "TShock.Server.dll",
-            "dotnetpath": "/usr/bin/dotnet",
+            "exe_name": "TShock.Server",
             "port": 7778,
         }
     )
@@ -213,4 +292,42 @@ def test_tshock_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
         {"host": 7778, "container": 7778, "protocol": "tcp"},
     ]
     assert spec["working_dir"] == "/srv/server"
+    assert requirements["host_dependencies"] == (
+        {"id": "dotnet", "display_name": ".NET", "command_key": "dotnetpath", "command": "dotnet"},
+    )
+    assert spec["command"] == ["./TShock.Server", "-port", "7778"]
+
+
+def test_tshock_runtime_wrappers_keep_dotnet_dependency_for_legacy_dll(tmp_path):
+    server = DummyServer("shock")
+    dll_path = tmp_path / "TShock.Server.dll"
+    dll_path.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "TShock.Server.dll",
+            "dotnetpath": "/usr/bin/dotnet",
+            "port": 7778,
+        }
+    )
+
+    requirements = tshock.get_runtime_requirements(server)
+    spec = tshock.get_container_spec(server)
+
+    assert requirements["host_dependencies"] == (
+        {"id": "dotnet", "display_name": ".NET", "command_key": "dotnetpath", "command": "dotnet"},
+    )
     assert spec["command"] == ["/usr/bin/dotnet", "TShock.Server.dll", "-port", "7778"]
+
+
+def test_tshock_query_and_info_use_tcp(tmp_path):
+    server = DummyServer("shock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 7779,
+        }
+    )
+
+    assert tshock.get_query_address(server) == ("127.0.0.1", 7779, "tcp")
+    assert tshock.get_info_address(server) == ("127.0.0.1", 7779, "tcp")

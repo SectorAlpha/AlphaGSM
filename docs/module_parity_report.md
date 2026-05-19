@@ -50,7 +50,7 @@
 | brokeprotocolserver | - | disabled | no | no | status |
 | bsserver | - | disabled | yes | no | - |
 | btlserver | - | active | no | yes | status |
-| btserver | - | disabled | no | no | status |
+| btserver | - | active | no | yes | status |
 | ccserver | - | active | yes | yes | - |
 | chivalryserver | cmwserver | active | no | yes | status |
 | citadelserver | - | disabled | no | no | status |
@@ -60,7 +60,7 @@
 | codserver | - | active | no | yes | status |
 | coduoserver | - | active | no | yes | status |
 | codwawserver | - | active | no | yes | status |
-| colserver | - | disabled | no | no | status |
+| colserver | - | active | no | yes | status |
 | conanexiles | - | disabled | no | no | status |
 | counterstrike2 | cs2, cs2server | active | yes | yes | - |
 | counterstrikeglobaloffensive | csgo, csgoserver | disabled | yes | no | - |
@@ -126,7 +126,7 @@
 | lifeisfeudalserver | - | disabled | no | no | status |
 | longvinterserver | - | disabled | no | no | status |
 | medievalengineersserver | - | disabled | no | no | status |
-| memoriesofmarsserver | - | disabled | no | no | status |
+| memoriesofmarsserver | - | active | no | yes | status |
 | minecraft.bedrock | mcbserver | active | no | yes | status |
 | minecraft.bungeecord | - | active | no | yes | status |
 | minecraft.custom | - | active | yes | yes | - |
@@ -157,7 +157,7 @@
 | onsetserver | - | active | no | yes | status |
 | opforserver | - | active | yes | yes | - |
 | outpostzeroserver | - | disabled | no | no | status |
-| palworld | pwserver | disabled | no | no | status |
+| palworld | pwserver | active | no | yes | status |
 | pathoftitansserver | - | active | no | yes | status |
 | pcars2server | pc2server | disabled | no | no | status |
 | pcarserver | pcserver | active | no | yes | status |
@@ -184,7 +184,7 @@
 | roserver | - | disabled | no | no | status |
 | rs2server | risingstorm2vietnam | active | no | yes | status |
 | rtcwserver | - | active | no | yes | status |
-| rust | - | disabled | no | no | status |
+| rust | - | active | no | yes | status |
 | rwserver | - | disabled | no | no | status |
 | saleblazersserver | - | active | no | yes | status |
 | sampserver | - | disabled | no | no | status |
@@ -195,7 +195,7 @@
 | seserver | - | disabled | no | no | status |
 | sevendaystodie | sdtdserver | active | no | yes | status |
 | sfcserver | - | disabled | yes | no | - |
-| silicaserver | - | disabled | no | no | status |
+| silicaserver | - | active | no | yes | status |
 | skyrimtogetherrebornserver | - | disabled | no | no | status |
 | smallandserver | - | active | no | yes | status |
 | sniperelite4server | - | disabled | no | no | status |
@@ -204,7 +204,7 @@
 | sonsoftheforestserver | - | active | no | yes | status |
 | soulmask | smserver | active | no | yes | status |
 | squad44server | - | active | no | yes | status |
-| squadserver | - | disabled | no | no | status |
+| squadserver | - | active | no | yes | status |
 | ss14server | - | active | no | yes | status |
 | starbound | sbserver | disabled | no | no | status |
 | starruptureserver | - | disabled | no | no | status |
@@ -230,18 +230,18 @@
 | tsserver | - | disabled | yes | no | - |
 | tuserver | - | active | no | yes | status |
 | twserver | - | active | no | yes | status |
-| unturned | untserver | disabled | no | no | status |
+| unturned | untserver | active | no | yes | status |
 | ut2k4server | - | active | no | yes | status |
 | ut3server | - | active | no | yes | status |
 | ut99server | utserver | active | no | yes | status |
-| valheim | vhserver | disabled | no | no | status |
+| valheim | vhserver | active | no | yes | status |
 | veinserver | - | disabled | no | no | status |
 | vintagestoryserver | vintsserver | active | no | yes | status |
 | vrserver | - | disabled | no | no | status |
 | vsserver | - | disabled | yes | no | - |
 | warbandserver | - | active | no | yes | status |
 | wetserver | wet | active | no | yes | status |
-| wfserver | - | disabled | no | no | status |
+| wfserver | - | active | no | yes | status |
 | wreckfestserver | - | disabled | no | no | status |
 | wurmserver | - | active | no | yes | status |
 | xntserver | - | active | no | yes | status |

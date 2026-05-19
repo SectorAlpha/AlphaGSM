@@ -312,6 +312,16 @@ def get_runtime_requirements(
         "family": "wine-proton",
         "mounts": mounts,
         "env": env,
+        "host_dependencies": [
+            {
+                "id": "wine-proton",
+                "display_name": "Wine or Proton-GE",
+                "command": (
+                    {"label": "wine", "command": "wine"},
+                    {"label": "proton", "command": find_proton() or "proton"},
+                ),
+            }
+        ],
     }
     ports = _build_port_specs(server, port_definitions)
     if ports:

@@ -1,5 +1,6 @@
 """Call of Duty 2 dedicated server lifecycle helpers."""
 
+import glob
 import os
 from pathlib import Path
 import shutil
@@ -449,10 +450,24 @@ def install(server):
     if "url" not in server.data or not server.data["url"]:
         raise ServerError("A direct download URL is required for this server")
     install_archive(server, detect_compression(server.data["download_name"]))
+    _assert_required_base_assets(server.data["dir"])
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
+
+
+def _assert_required_base_assets(install_dir):
+    """Raise when the COD2 install lacks the localized assets the binary requires."""
+
+    localized_archives = glob.glob(os.path.join(install_dir, "main", "localized_*.iwd"))
+    localized_config = os.path.isfile(os.path.join(install_dir, "main", "default_localize_mp.cfg"))
+    if localized_archives or localized_config:
+        return
+    raise ServerError(
+        "Call of Duty 2 requires localized base-game assets that are not present in this install: "
+        "main/localized_*.iwd or main/default_localize_mp.cfg. Provide a package or copied base assets that include them."
+    )
 
 
 def sync_server_config(server):
@@ -492,10 +507,24 @@ def get_start_command(server):
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
+    if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
+        launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
     return (
         ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the Call of Duty 2 query command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP endpoint used by the Call of Duty 2 info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):

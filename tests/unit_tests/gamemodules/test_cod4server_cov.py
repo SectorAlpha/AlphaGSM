@@ -63,7 +63,34 @@ def test_install(tmp_path):
     server.data["exe_name"] = "cod4_lnxded"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
+
+    def fake_install_archive(_server, _compression):
+        (tmp_path / "fileSysCheck.cfg").write_text("", encoding="utf-8")
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "localized_english_iw00.iwd").write_text("", encoding="utf-8")
+
+    mod.install_archive.side_effect = fake_install_archive
     mod.install(server)
+    mod.install_archive.side_effect = None
+
+
+def test_install_rejects_missing_base_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "cod4_lnxded"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+
+    def fake_install_archive(_server, _compression):
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "iw_12.iwd").write_text("", encoding="utf-8")
+
+    mod.install_archive.side_effect = fake_install_archive
+    with pytest.raises(ServerError, match="fileSysCheck\.cfg, main/localized_\*\.iwd"):
+        mod.install(server)
+    mod.install_archive.side_effect = None
 
 def test_get_start_command(tmp_path):
     server = DummyServer()

@@ -28,6 +28,8 @@ from utils.simple_kv_config import rewrite_equals_config
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 
+CODWAW_SERVER_URL = "http://linuxgsm.download/CallOfDutyWorldAtWar/codwaw-lnxded-1.7-full.tar.xz"
+CODWAW_SERVER_NAME = "codwaw-lnxded-1.7-full.tar.xz"
 CODWAW_MOD_CACHE_DIRNAME = "codwawserver"
 CODWAW_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -423,14 +425,14 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
         dir,
         prompt="Where would you like to install the Call of Duty: World at War server:",
     )
-    default_url = "https://www.ausgamers.com/files/download/48744/call-of-duty-world-at-war-dedicated-linux-server-files-v17"
+    default_url = CODWAW_SERVER_URL
     gamemodule_common.configure_download_source(
         server,
         ask,
         url=url,
         download_name=download_name,
         default_url=default_url,
-        default_name="codwaw-lnxded-1.7-11182009.tar.bz2",
+        default_name=CODWAW_SERVER_NAME,
         prompt="Direct archive URL for the Call of Duty: World at War server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
@@ -443,12 +445,24 @@ def install(server):
     """Download and install the COD: World at War server archive."""
 
     if "url" not in server.data or not server.data["url"]:
-        raise ServerError("A direct download URL is required for this server")
-    install_archive(server, detect_compression(server.data["download_name"]))
+        server.data["url"] = CODWAW_SERVER_URL
+        server.data.setdefault("download_name", CODWAW_SERVER_NAME)
+    download_name = _normalize_archive_download_name(server.data.get("download_name"), CODWAW_SERVER_NAME)
+    server.data["download_name"] = download_name
+    install_archive(server, detect_compression(download_name))
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
+
+
+def _normalize_archive_download_name(download_name, default_name):
+    """Fall back to the known archive name when the stored name lacks an extension."""
+
+    normalized_name = str(download_name or "").strip()
+    if normalized_name.lower().endswith((".zip", ".tar.bz2", ".tbz2", ".tar.gz", ".tgz", ".tar.xz", ".txz", ".tar", ".7z")):
+        return normalized_name
+    return default_name
 
 
 def sync_server_config(server):
@@ -488,10 +502,24 @@ def get_start_command(server):
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
+    if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
+        launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
     return (
         ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the COD: World at War query command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP endpoint used by the COD: World at War info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):

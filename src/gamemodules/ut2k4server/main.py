@@ -87,6 +87,17 @@ UT2K4_IGNORED_TOP_LEVEL_SUFFIXES = {
     ".txt",
 }
 
+
+def _require_ut2k4_installer_prerequisites():
+    """Raise when the OldUnreal installer prerequisites are not present."""
+
+    if shutil.which("7zz") or shutil.which("7z"):
+        return
+    raise ServerError(
+        "UT2004 installer requires a 7z-compatible extractor. "
+        "Install p7zip-full or another package that provides 7z/7zz."
+    )
+
 commands = ("mod",)
 command_args = gamemodule_common.build_setup_download_command_args(
     "The port for the server to listen on",
@@ -489,6 +500,7 @@ def install(server):
         server.data.setdefault("download_name", UT2K4_INSTALLER_NAME)
         server.data["download_mode"] = "installer"
     if server.data.get("download_mode") == "installer":
+        _require_ut2k4_installer_prerequisites()
         download_path = downloader.getpath("url", (server.data["url"], server.data["download_name"]))
         installer_path = os.path.join(download_path, server.data["download_name"])
         mode = os.stat(installer_path).st_mode
@@ -509,6 +521,8 @@ def install(server):
                     "--desktop-shortcut",
                     "skip",
                 ],
+                input="y\n",
+                text=True,
                 check=True,
             )
             server.data["current_url"] = server.data["url"]

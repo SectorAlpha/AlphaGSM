@@ -363,10 +363,15 @@ def test_setup_syncs_runtime_metadata_after_port_resolution_and_before_install(m
         "_resolve_setup_port_claims",
         lambda explicit_keys: events.append("resolve"),
     )
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "assert_host_install_requirements",
+        lambda server, phase="run": events.append("deps"),
+    )
 
     srv.setup("arg", ask=False, extra=True)
 
-    assert events == ["configure", "sync", "resolve", "sync", "install", "sync"]
+    assert events == ["configure", "sync", "resolve", "sync", "deps", "install", "sync"]
 
 
 def test_start_runs_pre_and_post_hooks_and_starts_screen(monkeypatch):
@@ -1135,10 +1140,29 @@ def test_start_checks_port_manager_before_prestart(monkeypatch):
         "detect_conflicts",
         lambda server, overrides=None, include_live=True: events.append("port-check") or [],
     )
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "assert_host_install_requirements",
+        lambda server, phase="run": events.append("deps-check"),
+    )
 
     srv.start()
 
-    assert events == ["port-check", "prestart", "runtime.start"]
+    assert events == ["port-check", "deps-check", "prestart", "runtime.start"]
+
+
+def test_setup_surfaces_process_host_dependency_errors(monkeypatch):
+    srv = make_server()
+    monkeypatch.setattr(server_module.runtime_module, "sync_runtime_metadata", lambda server, save=False: None)
+    monkeypatch.setattr(srv, "_resolve_setup_port_claims", lambda explicit_keys: None)
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "assert_host_install_requirements",
+        lambda server, phase="run": (_ for _ in ()).throw(server_module.runtime_module.RuntimeError("missing java")),
+    )
+
+    with pytest.raises(server_module.ServerError, match="missing java"):
+        srv.setup(ask=False)
 
 
 def test_start_fails_when_claimed_ports_are_busy(monkeypatch):

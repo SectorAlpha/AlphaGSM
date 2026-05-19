@@ -9,6 +9,8 @@ import urllib.request
 
 
 MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+BEDROCK_MAGIC = bytes.fromhex("00ffff00fefefefefdfdfdfd12345678")
+BEDROCK_CLIENT_GUID = 0x1337C0DE12345678
 
 
 def _installed_java_major():
@@ -98,6 +100,64 @@ def _status_ping(host, port, timeout=5):
     return json.loads(payload.decode("utf-8"))
 
 
+def _bedrock_ping(host, port, timeout=5):
+    started = time.monotonic()
+    ping_time = int(time.time() * 1000) & 0xFFFFFFFFFFFFFFFF
+    payload = (
+        b"\x01"
+        + struct.pack(">Q", ping_time)
+        + BEDROCK_MAGIC
+        + struct.pack(">Q", BEDROCK_CLIENT_GUID)
+    )
+
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.settimeout(timeout)
+        sock.sendto(payload, (host, port))
+        data, _ = sock.recvfrom(4096)
+
+    if len(data) < 35:
+        raise ValueError("Unexpected Bedrock pong length")
+    if data[0] != 0x1C:
+        raise ValueError(f"Unexpected Bedrock packet id: {data[0]}")
+    if data[17:33] != BEDROCK_MAGIC:
+        raise ValueError("Unexpected Bedrock pong magic")
+
+    motd_length = struct.unpack_from(">H", data, 33)[0]
+    motd_start = 35
+    motd_end = motd_start + motd_length
+    if len(data) < motd_end:
+        raise ValueError("Truncated Bedrock pong payload")
+
+    fields = data[motd_start:motd_end].decode("utf-8", errors="replace").split(";")
+    if fields and fields[-1] == "":
+        fields.pop()
+    if len(fields) < 6:
+        raise ValueError("Unexpected Bedrock pong structure")
+
+    def _field(index, default=""):
+        return fields[index] if index < len(fields) else default
+
+    def _int_field(index):
+        value = _field(index, "")
+        return int(value) if value not in (None, "") else None
+
+    return {
+        "edition": _field(0),
+        "name": _field(1),
+        "protocol_version": _int_field(2),
+        "version": _field(3),
+        "players_online": _int_field(4),
+        "players_max": _int_field(5),
+        "server_id": _field(6),
+        "map": _field(7),
+        "gamemode": _field(8),
+        "gamemode_numeric": _int_field(9),
+        "port_v4": _int_field(10),
+        "port_v6": _int_field(11),
+        "latency_ms": round((time.monotonic() - started) * 1000.0, 1),
+    }
+
+
 def _wait_for_status(host, port, timeout_seconds):
     deadline = time.time() + timeout_seconds
     last_error = None
@@ -112,6 +172,20 @@ def _wait_for_status(host, port, timeout_seconds):
     return 1
 
 
+def _wait_for_bedrock_status(host, port, timeout_seconds):
+    deadline = time.time() + timeout_seconds
+    last_error = None
+    while time.time() < deadline:
+        try:
+            print(json.dumps(_bedrock_ping(host, port), indent=2))
+            return 0
+        except Exception as ex:  # noqa: BLE001
+            last_error = ex
+            time.sleep(2)
+    print(f"Bedrock server did not respond in time: {last_error}", file=sys.stderr)
+    return 1
+
+
 def _wait_for_closed(host, port, timeout_seconds):
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
@@ -121,6 +195,18 @@ def _wait_for_closed(host, port, timeout_seconds):
             return 0
         time.sleep(2)
     print("Minecraft server still responds after stop timeout", file=sys.stderr)
+    return 1
+
+
+def _wait_for_bedrock_closed(host, port, timeout_seconds):
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        try:
+            _bedrock_ping(host, port, timeout=2)
+        except Exception:  # noqa: BLE001
+            return 0
+        time.sleep(2)
+    print("Bedrock server still responds after stop timeout", file=sys.stderr)
     return 1
 
 
@@ -171,7 +257,10 @@ def _latest_release():
 
 def main(argv):
     if len(argv) < 2:
-        print("usage: minecraft_status.py <latest-release|wait-for-status|wait-for-closed> ...", file=sys.stderr)
+        print(
+            "usage: minecraft_status.py <latest-release|wait-for-status|wait-for-closed|wait-for-bedrock-status|wait-for-bedrock-closed> ...",
+            file=sys.stderr,
+        )
         return 2
     command = argv[1]
     if command == "latest-release":
@@ -180,6 +269,10 @@ def main(argv):
         return _wait_for_status(argv[2], int(argv[3]), int(argv[4]))
     if command == "wait-for-closed":
         return _wait_for_closed(argv[2], int(argv[3]), int(argv[4]))
+    if command == "wait-for-bedrock-status":
+        return _wait_for_bedrock_status(argv[2], int(argv[3]), int(argv[4]))
+    if command == "wait-for-bedrock-closed":
+        return _wait_for_bedrock_closed(argv[2], int(argv[3]), int(argv[4]))
     print(f"unknown command: {command}", file=sys.stderr)
     return 2
 

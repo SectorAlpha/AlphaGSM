@@ -242,6 +242,7 @@ def checkvalue(server, key, *value):
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    extra={'host_dependencies': ({'id': 'dotnet', 'display_name': '.NET', 'command': 'dotnet'},)},
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(

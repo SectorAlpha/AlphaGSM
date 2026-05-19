@@ -40,6 +40,11 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
         "libpulse0",
         "libssl1.1_1.1.1f-1ubuntu2_amd64.deb",
         "libssl1.0.0_1.0.2n-1ubuntu5_amd64.deb",
+        "packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb",
+        "dotnet-runtime-10.0",
+        "dotnet-install.sh",
+        "--channel 6.0",
+        "--install-dir /usr/lib/dotnet",
     )
 
     missing = [snippet for snippet in required_snippets if snippet not in text]

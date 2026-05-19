@@ -1,6 +1,8 @@
 import pytest
 
 import gamemodules.minecraft.bedrock as bedrock
+import gamemodules.ss14server.main as ss14server
+import server.runtime as runtime_module
 import utils.gamemodules.minecraft.properties_config as properties_config
 import server.server as server_module
 from utils.simple_kv_config import rewrite_equals_config
@@ -285,3 +287,72 @@ def test_bedrock_get_start_command_uses_local_library_path(tmp_path):
 
     assert cmd == ["env", "LD_LIBRARY_PATH=.", "./bedrock_server"]
     assert cwd == str(tmp_path)
+
+
+def test_bedrock_query_and_info_use_raknet_udp():
+    server = DummyServer("bedrock")
+    server.data.update({"port": 19132})
+
+    assert bedrock.get_query_address(server) == ("127.0.0.1", 19132, "bedrock")
+    assert bedrock.get_info_address(server) == ("127.0.0.1", 19132, "bedrock")
+
+
+def test_bedrock_runtime_requirements_use_service_console_family(tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "bedrock_server",
+        "port": 19132,
+    })
+
+    requirements = bedrock.get_runtime_requirements(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "service-console"
+    assert requirements["mounts"] == [
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
+    ]
+    assert requirements["ports"] == [
+        {"host": 19132, "container": 19132, "protocol": "udp"}
+    ]
+    assert "env" not in requirements
+    assert "java" not in requirements
+
+
+def test_bedrock_container_spec_preserves_native_command(tmp_path):
+    server = DummyServer("bedrock")
+    executable = tmp_path / "bedrock_server"
+    executable.write_text("")
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "bedrock_server",
+        "port": 19132,
+    })
+
+    spec = bedrock.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["stdin_open"] is True
+    assert spec["tty"] is True
+    assert spec["ports"] == [{"host": 19132, "container": 19132, "protocol": "udp"}]
+    assert spec["command"] == ["env", "LD_LIBRARY_PATH=.", "./bedrock_server"]
+    assert spec["env"] == {}
+
+
+def test_ss14_runtime_requirements_declare_dotnet_host_dependency(tmp_path):
+    server = DummyServer("ss14")
+    server.name = "ss14"
+    server.module = ss14server
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "Robust.Server",
+        "port": 1212,
+    })
+
+    requirements = runtime_module._get_module_runtime_requirements(server)
+
+    assert requirements["runtime"] == "docker"
+    assert requirements["runtime_family"] == "steamcmd-linux"
+    assert requirements["host_dependencies"] == [
+        {"id": "dotnet", "display_name": ".NET", "kind": "command", "command": "dotnet"}
+    ]

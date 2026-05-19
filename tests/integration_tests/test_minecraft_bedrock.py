@@ -5,7 +5,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_command,
-    pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -13,8 +13,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
+    wait_for_generic_udp_closed,
 )
 
 pytestmark = pytest.mark.integration
@@ -38,7 +37,7 @@ def test_minecraft_bedrock_lifecycle(tmp_path):
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "minecraft.bedrock")
@@ -82,13 +81,16 @@ def test_minecraft_bedrock_lifecycle(tmp_path):
         assert (
             "Players     : 0/" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
+        assert (
+            "Name        :" in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "slp", (
-            f"Expected SLP protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "bedrock", (
+            f"Expected Bedrock protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players_online") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"
@@ -98,4 +100,4 @@ def test_minecraft_bedrock_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_generic_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

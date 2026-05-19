@@ -20,7 +20,7 @@ from server.modsupport.ownership import build_owned_manifest
 from server.modsupport.providers import resolve_direct_url_entry
 from server.modsupport.reconcile import reconcile_mod_state
 from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
-from utils.archive_install import detect_compression, install_archive
+from utils.archive_install import detect_compression, ensure_executable, install_archive, sync_tree
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.simple_kv_config import rewrite_equals_config
@@ -396,7 +396,7 @@ def coduo_mod_command(server, action, source=None, identifier=None, extra=None, 
 command_functions["mod"] = coduo_mod_command
 
 
-def configure(server, ask, port=None, dir=None, *, url=None, download_name=None, exe_name="coduoded_lnxded"):
+def configure(server, ask, port=None, dir=None, *, url=None, download_name=None, exe_name="coduo_lnxded"):
     """Collect and store configuration values for a COD: United Offensive server."""
 
     gamemodule_common.set_server_defaults(
@@ -446,11 +446,77 @@ def install(server):
     if "url" not in server.data or not server.data["url"]:
         server.data["url"] = CODUO_SERVER_URL
         server.data.setdefault("download_name", CODUO_SERVER_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    download_name = _normalize_archive_download_name(server.data.get("download_name"), CODUO_SERVER_NAME)
+    server.data["download_name"] = download_name
+    install_archive(server, detect_compression(download_name))
+    _normalize_install_layout(server.data["dir"], server.data["exe_name"])
+    _assert_required_base_assets(server.data["dir"])
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
+
+
+def _normalize_archive_download_name(download_name, default_name):
+    """Fall back to the known archive name when the stored name lacks an extension."""
+
+    normalized_name = str(download_name or "").strip()
+    if normalized_name.lower().endswith((".zip", ".tar.bz2", ".tbz2", ".tar.gz", ".tgz", ".tar.xz", ".txz", ".tar", ".7z")):
+        return normalized_name
+    return default_name
+
+
+def _assert_required_base_assets(install_dir):
+    """Raise when the CODUO install lacks required base Call of Duty assets."""
+
+    if os.path.isfile(os.path.join(install_dir, "main", "pak0.pk3")):
+        return
+    if os.path.isfile(os.path.join(install_dir, "main", "default_mp.cfg")):
+        return
+    raise ServerError(
+        "Call of Duty: United Offensive requires base Call of Duty assets that are not present in this install: "
+        "main/pak0.pk3 or main/default_mp.cfg. Provide a package or copied base-game assets that include them."
+    )
+
+
+def _normalize_install_layout(install_dir, exe_name):
+    """Flatten one nested extracted payload tree into the install root when needed."""
+
+    root_exe_path = os.path.join(install_dir, exe_name)
+    if os.path.isfile(root_exe_path) and _has_required_base_assets(install_dir):
+        return
+
+    candidate_roots = []
+    for entry in sorted(os.scandir(install_dir), key=lambda current: current.name):
+        if not entry.is_dir():
+            continue
+        if _contains_expected_install_payload(entry.path, exe_name):
+            candidate_roots.append(entry.path)
+
+    if len(candidate_roots) != 1:
+        return
+
+    sync_tree(candidate_roots[0], install_dir)
+    ensure_executable(root_exe_path)
+
+
+def _contains_expected_install_payload(candidate_root, exe_name):
+    """Return whether a nested directory looks like the CODUO payload root."""
+
+    for root, _dirs, files in os.walk(candidate_root):
+        if exe_name in files:
+            return True
+        if os.path.basename(root) == "main" and {"pak0.pk3", "default_mp.cfg"}.intersection(files):
+            return True
+    return False
+
+
+def _has_required_base_assets(install_dir):
+    """Return whether the install root already contains required base assets."""
+
+    return os.path.isfile(os.path.join(install_dir, "main", "pak0.pk3")) or os.path.isfile(
+        os.path.join(install_dir, "main", "default_mp.cfg")
+    )
 
 
 def sync_server_config(server):
@@ -490,10 +556,24 @@ def get_start_command(server):
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
+    if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "uo"):
+        launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
     return (
         ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the COD: United Offensive query command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP endpoint used by the COD: United Offensive info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):

@@ -69,6 +69,47 @@ def test_install(tmp_path):
     server.data["download_mode"] = "test"
     mod.install(server)
 
+
+def test_install_installer_requires_7z(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = "https://example.com/install-ut2004.sh"
+    server.data["download_name"] = "install-ut2004.sh"
+    server.data["download_mode"] = "installer"
+
+    monkeypatch.setattr(mod.shutil, "which", lambda cmd: None)
+
+    with pytest.raises(ServerError, match="7z-compatible extractor"):
+        mod.install(server)
+
+
+def test_install_installer_runs_non_interactive(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = "https://example.com/install-ut2004.sh"
+    server.data["download_name"] = "install-ut2004.sh"
+    server.data["download_mode"] = "installer"
+
+    download_dir = tmp_path / "downloads"
+    download_dir.mkdir()
+    installer_path = download_dir / "install-ut2004.sh"
+    installer_path.write_text("#!/bin/sh\n", encoding="utf-8")
+    run_calls = []
+
+    monkeypatch.setattr(mod.shutil, "which", lambda cmd: "/usr/bin/7z")
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(download_dir))
+    monkeypatch.setattr(mod.sp, "run", lambda *args, **kwargs: run_calls.append((args, kwargs)))
+
+    mod.install(server)
+
+    assert len(run_calls) == 1
+    _args, kwargs = run_calls[0]
+    assert kwargs["input"] == "y\n"
+    assert kwargs["text"] is True
+    assert kwargs["check"] is True
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

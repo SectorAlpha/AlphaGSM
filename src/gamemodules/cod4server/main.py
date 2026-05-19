@@ -1,5 +1,6 @@
 """Call of Duty 4 dedicated server lifecycle helpers."""
 
+import glob
 import os
 from pathlib import Path
 import shutil
@@ -447,10 +448,29 @@ def install(server):
         server.data["url"] = COD4_SERVER_URL
         server.data.setdefault("download_name", COD4_SERVER_NAME)
     install_archive(server, detect_compression(server.data["download_name"]))
+    _assert_required_base_assets(server.data["dir"])
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
+
+
+def _assert_required_base_assets(install_dir):
+    """Raise when the COD4 install is missing base-game files the binary requires."""
+
+    missing_assets = []
+    if not os.path.isfile(os.path.join(install_dir, "fileSysCheck.cfg")):
+        missing_assets.append("fileSysCheck.cfg")
+    localized_archives = glob.glob(os.path.join(install_dir, "main", "localized_*.iwd"))
+    if not localized_archives:
+        missing_assets.append("main/localized_*.iwd")
+    if not missing_assets:
+        return
+    raise ServerError(
+        "Call of Duty 4 requires base-game assets that are not present in this install: %s. "
+        "The default dedicated-server archive does not include these files; provide a package or copied base assets that include them."
+        % (", ".join(missing_assets),)
+    )
 
 
 def sync_server_config(server):
@@ -491,10 +511,24 @@ def get_start_command(server):
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
+    if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
+        launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
     return (
         ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
     )
+
+
+def get_query_address(server):
+    """Return the TCP endpoint used by the Call of Duty 4 query command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP endpoint used by the Call of Duty 4 info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):

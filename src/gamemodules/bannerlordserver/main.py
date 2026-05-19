@@ -18,6 +18,10 @@ BANNERLORD_LINUX_DLL = os.path.join(
     BANNERLORD_LINUX_LAUNCH_DIR,
     "TaleWorlds.Starter.DotNetCore.Linux.dll",
 )
+BANNERLORD_CONTAINER_WORKDIR = os.path.join(
+    runtime_module.DEFAULT_CONTAINER_WORKDIR,
+    BANNERLORD_LINUX_LAUNCH_DIR,
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -150,6 +154,7 @@ def checkvalue(server, key, *value):
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    extra={'host_dependencies': ({'id': 'dotnet', 'display_name': '.NET', 'command': 'dotnet'},)},
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
@@ -157,4 +162,5 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
+    working_dir=BANNERLORD_CONTAINER_WORKDIR,
 )

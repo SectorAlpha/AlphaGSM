@@ -323,41 +323,29 @@ def checkvalue(server, key, *value):
 
 
 def get_query_address(server):
-    """Return the TCP endpoint used by the ``query`` command."""
+    """Return the RakNet UDP endpoint used by the ``query`` command."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "bedrock")
 
 
 def get_info_address(server):
-    """Return the SLP address used by the ``info`` command."""
+    """Return the RakNet UDP endpoint used by the ``info`` command."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "slp")
+    return get_query_address(server)
 
 def get_runtime_requirements(server):
-    java_major = server.data.get("java_major")
-    if java_major is None:
-        java_major = runtime_module.infer_minecraft_java_major(
-            server.data.get("version")
-        )
     return runtime_module.build_runtime_requirements(
         server,
-        family="java",
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
-        env={
-            "ALPHAGSM_JAVA_MAJOR": str(java_major),
-            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "server.jar"),
-        },
-        extra={"java": int(java_major)},
+        family="service-console",
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
     )
 
 def get_container_spec(server):
-    requirements = get_runtime_requirements(server)
     return runtime_module.build_container_spec(
         server,
-        family="java",
+        family="service-console",
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
-        env=requirements.get("env", {}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
         stdin_open=True,
         tty=True,
     )

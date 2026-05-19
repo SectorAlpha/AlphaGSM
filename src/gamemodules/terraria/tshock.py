@@ -77,7 +77,7 @@ def configure(
     *,
     version=None,
     url=None,
-    exe_name="TShock.Server.dll",
+    exe_name="TShock.Server",
     download_name="tshock.zip"
 ):
     """Collect and store configuration values for a TShock server."""
@@ -118,9 +118,22 @@ def get_start_command(server):
     return get_tshock_start_command(server)
 
 
+def get_query_address(server):
+    """TShock exposes a plain TCP listener on the configured game port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP endpoint used by the info command."""
+
+    return get_query_address(server)
+
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    extra={'host_dependencies': ({'id': 'dotnet', 'display_name': '.NET', 'command_key': 'dotnetpath', 'command': 'dotnet'},)},
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(

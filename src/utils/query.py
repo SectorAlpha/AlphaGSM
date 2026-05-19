@@ -7,6 +7,7 @@ Provides query strategies:
 * :func:`quakeworld_status` — QuakeWorld UDP status query.
 * :func:`quake2_status` — Quake II UDP status query.
 * :func:`ut3_status` — Unreal Tournament 3 / Unreal3 GameSpy4 UDP probe.
+* :func:`bedrock_info` — Minecraft Bedrock RakNet unconnected ping.
 * :func:`slp_info` — Minecraft Server List Ping.
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
 * :func:`http_json` — HTTP JSON endpoint query.
@@ -15,7 +16,7 @@ Provides query strategies:
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook
+``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook
 is absent the caller falls back to a TCP ping on the main port.
 """
 
@@ -27,7 +28,7 @@ import time
 import urllib.error
 import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "slp_info", "udp_ping", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping",
            "ts3_serverinfo", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -44,6 +45,10 @@ _A2S_RESPONSE_TYPE = 0x49
 # 4-byte challenge appended.
 _A2S_CHALLENGE_TYPE = 0x41
 _UT3_QUERY_REQUEST = b"\xfe\xfd\x09\x00\x00\x00\x00"
+_BEDROCK_UNCONNECTED_PING_ID = 0x01
+_BEDROCK_UNCONNECTED_PONG_ID = 0x1C
+_BEDROCK_MAGIC = bytes.fromhex("00ffff00fefefefefdfdfdfd12345678")
+_BEDROCK_CLIENT_GUID = 0x1337C0DE12345678
 
 
 class QueryError(OSError):
@@ -176,6 +181,101 @@ def parse_a2s_info(data):
         }
     except Exception:  # noqa: BLE001
         return None
+
+
+def bedrock_info(host, port, timeout=5.0):
+    """Send a Bedrock RakNet unconnected ping and return server metadata.
+
+    The returned dict contains at minimum: ``name`` (server MOTD line 1),
+    ``map`` (MOTD line 2 / level name), ``players_online`` (int),
+    ``players_max`` (int), ``version`` (str), and ``edition`` (str).
+
+    Raises :class:`QueryError` on socket failure or malformed pong payloads.
+    """
+
+    started = time.monotonic()
+    ping_time = int(time.time() * 1000) & 0xFFFFFFFFFFFFFFFF
+    request = (
+        bytes([_BEDROCK_UNCONNECTED_PING_ID])
+        + struct.pack(">Q", ping_time)
+        + _BEDROCK_MAGIC
+        + struct.pack(">Q", _BEDROCK_CLIENT_GUID)
+    )
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(request, (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("Bedrock query failed: " + str(exc)) from exc
+
+    if len(data) < 35:
+        raise QueryError("Unexpected Bedrock pong length")
+    if data[0] != _BEDROCK_UNCONNECTED_PONG_ID:
+        raise QueryError("Unexpected Bedrock pong packet id")
+    if data[17:33] != _BEDROCK_MAGIC:
+        raise QueryError("Unexpected Bedrock pong magic")
+
+    echoed_ping = struct.unpack_from(">Q", data, 1)[0]
+    server_guid = struct.unpack_from(">Q", data, 9)[0]
+    (payload_length,) = struct.unpack_from(">H", data, 33)
+    payload_start = 35
+    payload_end = payload_start + payload_length
+    if len(data) < payload_end:
+        raise QueryError("Truncated Bedrock pong payload")
+
+    try:
+        motd_fields = data[payload_start:payload_end].decode(
+            "utf-8", errors="replace"
+        ).split(";")
+    except Exception as exc:  # noqa: BLE001
+        raise QueryError("Failed to decode Bedrock pong payload: " + str(exc)) from exc
+
+    if motd_fields and motd_fields[-1] == "":
+        motd_fields.pop()
+    if len(motd_fields) < 6:
+        raise QueryError("Unexpected Bedrock pong structure")
+
+    def _field(index, default=""):
+        if index < len(motd_fields):
+            return motd_fields[index]
+        return default
+
+    def _int_field(index, label):
+        value = _field(index, "")
+        if value in (None, ""):
+            return None
+        try:
+            return int(value)
+        except ValueError as exc:
+            raise QueryError(
+                "Unexpected Bedrock pong {}: {!r}".format(label, value)
+            ) from exc
+
+    players_online = _int_field(4, "players_online")
+    players_max = _int_field(5, "players_max")
+    if players_online is None or players_max is None:
+        raise QueryError("Unexpected Bedrock pong player counts")
+
+    return {
+        "edition": _field(0),
+        "description": _field(1),
+        "name": _field(1),
+        "protocol_version": _int_field(2, "protocol_version"),
+        "version": _field(3),
+        "players_online": players_online,
+        "players_max": players_max,
+        "server_id": _field(6),
+        "server_guid": server_guid,
+        "map": _field(7),
+        "gamemode": _field(8),
+        "gamemode_numeric": _int_field(9, "gamemode_numeric"),
+        "port_v4": _int_field(10, "port_v4"),
+        "port_v6": _int_field(11, "port_v6"),
+        "echoed_ping_time": echoed_ping,
+        "latency_ms": round((time.monotonic() - started) * 1000.0, 1),
+    }
 
 
 def slp_info(host, port, timeout=5.0):

@@ -5,6 +5,7 @@ This guide covers the `terraria.tshock` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- `dotnet` on process-backed hosts
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -43,7 +44,7 @@ alphagsm mytshock stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
 - the install directory
 - downloads and extracts the server archive
 
@@ -57,20 +58,26 @@ alphagsm mytshock backup
 ## Notes
 
 - Module name: `terraria.tshock`
-- Default port: 27015
+- Default port: 7777
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `TShock.Server.dll`
-- **Location**: `<install_dir>/TShock.Server.dll`
+- **Executable**: `TShock.Server`
+- **Location**: `<install_dir>/TShock.Server`
 - **Engine**: Custom
+
+Current upstream Linux releases ship a native `TShock.Server` apphost inside a
+release zip that contains a nested tar archive. AlphaGSM unwraps that nested
+archive during setup. The shared `steamcmd-linux` Docker runtime image also
+includes the required `.NET 9` runtime for the current TShock build.
 
 ### Server Configuration
 
 - **Config file**: See game module source
 - **Template**: See [server-templates/terraria-tshock/](../server-templates/terraria-tshock/) if available
+- **Query/info protocol**: TCP on the configured game port
 
 ### Maps and Mods
 
