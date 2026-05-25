@@ -120,6 +120,29 @@ def test_resolve_runtime_metadata_migrates_stale_java_exec_console_stop_mode(mon
     assert metadata["stop_mode"] == "docker-stop"
 
 
+def test_resolve_runtime_metadata_keeps_java_default_stop_mode_for_interactive_specs(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 21,
+        },
+        get_container_spec=lambda server: {
+            "image": "eclipse-temurin:25-jre",
+            "command": ["java", "-jar", "minecraft_server.jar"],
+            "stop_mode": "exec-console",
+            "stdin_open": True,
+            "tty": True,
+        },
+    )
+    server = DummyServer(module=module, data={"stop_mode": "exec-console"})
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+
+    assert metadata["stop_mode"] == "docker-stop"
+
+
 def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults():
     server = DummyServer(data={"dir": "/srv/game/", "port": 27015})
 
@@ -992,6 +1015,31 @@ def test_get_container_spec_mounts_external_symlink_target(monkeypatch, tmp_path
         {"source": str(server_root) + "/", "target": "/srv/server", "mode": "rw"},
         {"source": str(cache_root), "target": str(cache_root), "mode": "ro"},
     ]
+
+
+def test_get_container_spec_promotes_interactive_java_to_exec_console(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "java",
+            "java": 25,
+        },
+        get_container_spec=lambda server: {
+            "working_dir": "/srv/server",
+            "stdin_open": True,
+            "tty": True,
+            "env": {},
+            "mounts": [],
+            "ports": [],
+            "command": ["java", "-jar", "minecraft_server.jar"],
+        },
+    )
+    server = DummyServer(module=module, data={"dir": "/srv/server/"})
+
+    spec = runtime_module.get_container_spec(server)
+
+    assert spec["stop_mode"] == "exec-console"
 
 
 def test_inferred_runtime_requirements_use_wine_proton_for_windows_binaries(monkeypatch):

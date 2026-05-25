@@ -1042,7 +1042,12 @@ def resolve_runtime_metadata(server):
     metadata.setdefault("mounts", [])
     metadata.setdefault("ports", [])
 
-    if metadata.get("runtime_family") == "java" and metadata.get("stop_mode") == "exec-console":
+    if (
+        metadata.get("runtime_family") == "java"
+        and metadata.get("stop_mode") == "exec-console"
+        and not metadata.get("stdin_open")
+        and not metadata.get("tty")
+    ):
         metadata["stop_mode"] = "docker-stop"
 
     version = server.data.get("version")
@@ -1291,6 +1296,12 @@ def get_container_spec(server, *args, **kwargs):
     merged.setdefault("env", {})
     merged.setdefault("mounts", [])
     merged.setdefault("ports", [])
+    if merged.get("runtime_family") == "java":
+        if merged.get("stop_mode") == "exec-console":
+            if not merged.get("stdin_open") and not merged.get("tty"):
+                merged["stop_mode"] = "docker-stop"
+        elif merged.get("stdin_open") or merged.get("tty"):
+            merged["stop_mode"] = "exec-console"
     merged["mounts"] = _add_external_executable_mounts(
         server, list(merged.get("mounts") or [])
     )
