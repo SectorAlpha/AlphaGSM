@@ -58,14 +58,21 @@ def configure(
 
     if url is None:
         resolved_version, url = resolve_download("velocity", version=version)
-        server.data["version"] = resolved_version
+        version = resolved_version
     else:
-        server.data["version"] = version
-    server.data["url"] = url
-    server.data["download_name"] = download_name
-    server.data["mod_cache_dirname"] = "minecraft-velocity"
-    server.data["mod_label"] = "Velocity"
-    return proxy_base.configure(server, ask, port=port, dir=dir, exe_name=exe_name)
+        version = version
+    return proxy_base.configure(
+        server,
+        ask,
+        port=port,
+        dir=dir,
+        version=version,
+        url=url,
+        exe_name=exe_name,
+        download_name=download_name,
+        mod_cache_dirname="minecraft-velocity",
+        mod_label="Velocity",
+    )
 
 
 def install(server, *, eula=False):

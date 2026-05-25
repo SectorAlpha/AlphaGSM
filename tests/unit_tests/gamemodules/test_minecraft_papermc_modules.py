@@ -93,8 +93,18 @@ def test_proxy_family_modules_resolve_download_and_delegate_to_bungeecord(
     monkeypatch.setattr(
         velocity.proxy_base,
         "configure",
-        lambda server_obj, ask, port=None, dir=None, exe_name=None: calls.append(
-            (server_obj.name, dir, exe_name)
+        lambda server_obj, ask, port=None, dir=None, **kwargs: calls.append(
+            (server_obj.name, dir, kwargs)
+        )
+        or server_obj.data.update(
+            {
+                "version": kwargs["version"],
+                "url": kwargs["url"],
+                "download_name": kwargs["download_name"],
+                "exe_name": kwargs["exe_name"],
+                "mod_cache_dirname": kwargs["mod_cache_dirname"],
+                "mod_label": kwargs["mod_label"],
+            }
         )
         or ((), {}),
     )
@@ -102,10 +112,34 @@ def test_proxy_family_modules_resolve_download_and_delegate_to_bungeecord(
     velocity.configure(velocity_server, ask=False, dir=str(tmp_path / "velocity"))
     waterfall.configure(waterfall_server, ask=False, dir=str(tmp_path / "waterfall"))
 
-    assert ("velocity", str(tmp_path / "velocity"), "velocity.jar") in calls
-    assert ("waterfall", str(tmp_path / "waterfall"), "waterfall.jar") in calls
+    assert (
+        "velocity",
+        str(tmp_path / "velocity"),
+        {
+            "version": "3.4.0",
+            "url": "http://example.com/velocity.jar",
+            "exe_name": "velocity.jar",
+            "download_name": "velocity.jar",
+            "mod_cache_dirname": "minecraft-velocity",
+            "mod_label": "Velocity",
+        },
+    ) in calls
+    assert (
+        "waterfall",
+        str(tmp_path / "waterfall"),
+        {
+            "version": "1.21.10",
+            "url": "http://example.com/waterfall.jar",
+            "exe_name": "waterfall.jar",
+            "download_name": "waterfall.jar",
+            "mod_cache_dirname": "minecraft-waterfall",
+            "mod_label": "Waterfall",
+        },
+    ) in calls
     assert velocity_server.data["download_name"] == "velocity.jar"
     assert waterfall_server.data["download_name"] == "waterfall.jar"
+    assert velocity_server.data["url"] == "http://example.com/velocity.jar"
+    assert waterfall_server.data["url"] == "http://example.com/waterfall.jar"
     assert velocity_server.data["mod_cache_dirname"] == "minecraft-velocity"
     assert waterfall_server.data["mod_cache_dirname"] == "minecraft-waterfall"
 
