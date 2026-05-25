@@ -61,6 +61,7 @@ alphagsm myemserver backup
 
 - Module name: `emserver`
 - Default port: 27015
+- Validated support: PASSED 2026-05-23 via the focused integration lifecycle, including Source hibernation-safe `info --json`, A2S query/info, and clean shutdown on the anonymous SteamCMD install path.
 
 ## Developer Notes
 

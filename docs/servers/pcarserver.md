@@ -59,6 +59,7 @@ alphagsm mypcarserv backup
 
 - Module name: `pcarserver`
 - Default port: 27015
+- Validated support: PASSED 2026-05-23 via the standard smoke runner and focused integration lifecycle, both using `info --json` protocol `a2s` on the derived query port (`port + 1`).
 
 ## Developer Notes
 

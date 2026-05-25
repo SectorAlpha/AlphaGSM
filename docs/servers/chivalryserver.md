@@ -60,6 +60,7 @@ alphagsm mychivalry backup
 - Module name: `chivalryserver`
 - Default port: 7777
 - Default query port: 27015
+- Current validation status: the Port/QueryPort launch URL is wired correctly, but the anonymous Linux dedicated-server install still exits before A2S is ready because `PhysXUpdateLoader.so` is missing from the shipped Linux payload.
 
 ## Developer Notes
 

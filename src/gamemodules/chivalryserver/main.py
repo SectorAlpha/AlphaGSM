@@ -106,8 +106,21 @@ def get_start_command(server):
         server.data["port"],
         server.data["queryport"],
     )
+    library_path = os.pathsep.join(
+        filter(
+            None,
+            (
+                os.path.join(steamcmd.STEAMCMD_DIR, "linux32"),
+                os.path.join(server.data["dir"], "Binaries", "Linux"),
+                os.path.join(server.data["dir"], "Binaries", "Linux", "lib"),
+                os.environ.get("LD_LIBRARY_PATH"),
+            ),
+        )
+    )
     return (
         [
+            "env",
+            "LD_LIBRARY_PATH=" + library_path,
             "./" + server.data["exe_name"],
             launch_url,
             "-SEEKFREELOADINGSERVER",

@@ -4,8 +4,10 @@ This guide covers the `codserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- `docker` for the validated anonymous support path
 - Python packages from `requirements.txt`
+
+Process mode can still work on a host install, but the tested path uses the shared `steamcmd-linux` Docker runtime image because the legacy Call of Duty dedicated binary still expects `libstdc++.so.5`.
 
 ## Quick Start
 
@@ -46,6 +48,7 @@ Setup configures:
 - the game port (default 28960)
 - the install directory
 - downloads and extracts the server archive
+- for the validated Docker runtime, the container image remains `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest`
 
 ## Useful Commands
 
@@ -66,12 +69,14 @@ alphagsm mycodserve backup
 - **Executable**: `cod_lnxded`
 - **Location**: `<install_dir>/cod_lnxded`
 - **Engine**: Custom
+- **Validated runtime**: Docker via `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest`
 
 ### Server Configuration
 
 - **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Template**: See [server-templates/codserver/](../server-templates/codserver/) if available
+- `query` and `info` currently validate TCP reachability on the configured game port; `info --json` reports protocol `tcp`.
 
 ### Maps and Mods
 

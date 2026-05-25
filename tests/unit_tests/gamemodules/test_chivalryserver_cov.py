@@ -105,7 +105,7 @@ def test_restart():
     assert server._started
 
 
-def test_get_start_command(tmp_path):
+def test_get_start_command(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "Binaries/Linux/UDKGameServer-Linux"
@@ -115,8 +115,18 @@ def test_get_start_command(tmp_path):
     server.data["startmap"] = "test"
     server.data["port"] = 7777
     server.data["queryport"] = 27015
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/existing/lib")
     cmd, cwd = mod.get_start_command(server)
-    assert cmd == [
+    assert cmd[0] == "env"
+    assert cmd[1] == (
+        "LD_LIBRARY_PATH=%s:%s:%s:/existing/lib"
+        % (
+            os.path.join(mod.steamcmd.STEAMCMD_DIR, "linux32"),
+            str(tmp_path / "Binaries" / "Linux"),
+            str(tmp_path / "Binaries" / "Linux" / "lib"),
+        )
+    )
+    assert cmd[2:] == [
         "./Binaries/Linux/UDKGameServer-Linux",
         "test?Port=7777?QueryPort=27015?steamsockets",
         "-SEEKFREELOADINGSERVER",

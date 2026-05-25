@@ -1,6 +1,7 @@
 import gamemodules.chivalryserver as chivalryserver
 import gamemodules.exfilserver as exfilserver
 import gamemodules.hellletlooseserver as hellletlooseserver
+import os
 
 
 class DummyData(dict):
@@ -66,7 +67,7 @@ def test_hellletloose_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert cwd == server.data["dir"]
 
 
-def test_chivalry_get_start_command_builds_expected_args(tmp_path):
+def test_chivalry_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     server = DummyServer("chiv")
     exe_dir = tmp_path / "Binaries" / "Linux"
     exe_dir.mkdir(parents=True)
@@ -81,10 +82,20 @@ def test_chivalry_get_start_command_builds_expected_args(tmp_path):
             "queryport": 27015,
         }
     )
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/existing/lib")
 
     cmd, cwd = chivalryserver.get_start_command(server)
 
-    assert cmd[0] == "./Binaries/Linux/UDKGameServer-Linux"
+    assert cmd[0] == "env"
+    assert cmd[1] == (
+        "LD_LIBRARY_PATH=%s:%s:%s:/existing/lib"
+        % (
+            os.path.join(chivalryserver.steamcmd.STEAMCMD_DIR, "linux32"),
+            str(tmp_path / "Binaries" / "Linux"),
+            str(tmp_path / "Binaries" / "Linux" / "lib"),
+        )
+    )
+    assert cmd[2] == "./Binaries/Linux/UDKGameServer-Linux"
     assert "AOCTO-Battlegrounds_V3_P?Port=7777?QueryPort=27015?steamsockets" in cmd
     assert cwd == server.data["dir"]
 

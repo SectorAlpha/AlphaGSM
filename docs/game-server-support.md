@@ -26,7 +26,6 @@ Notes:
 - [x] acserver
 - [x] ahl2server
 - [x] armarserver
-- [x] atlasserver
 - [x] avserver
 - [x] bb2server
 - [x] btlserver
@@ -34,40 +33,34 @@ Notes:
 - [x] bdserver
 - [x] bmdmserver
 - [x] ccserver
-- [x] chivalryserver
 - [x] colserver
-- [x] codserver
 - [x] counterstrike2
 - [x] csczserver
 - [x] csserver
 - [x] cssserver
 - [x] craftopiaserver
 - [x] dayofdragonsserver
-- [x] darkandlightserver
 - [x] dmcserver
 - [x] dodserver
 - [x] dodsserver
 - [x] doiserver
 - [x] emserver
-- [x] empyrionserver
-- [x] ets2server
 - [x] exfilserver
 - [x] fofserver
 - [x] frozenflameserver
 - [x] gmodserver
 - [x] goldeneyesourceserver
-- [x] heatserver
 - [x] hl2dmserver
 - [x] hldmserver
 - [x] hldmsserver
 - [x] kf2server
 - [x] l4dserver
-- [x] minecraft_bedrock
 - [x] minecraft_paper
 - [x] minecraft_vanilla
 - [x] minecraft_velocity
 - [x] minecraft_waterfall
 - [x] memoriesofmarsserver
+- [x] codserver
 - [x] mumbleserver
 - [x] mordserver
 - [x] necserver
@@ -75,31 +68,23 @@ Notes:
 - [x] opforserver
 - [x] palworld
 - [x] pcarserver
-- [x] primalcarnageextinctionserver
 - [x] projectzomboid
-- [x] pvrserver
 - [x] q2server
 - [x] qwserver
 - [x] pvkiiserver
 - [x] ricochetserver
 - [x] rimworldtogetherserver
-- [x] rs2server
 - [x] rust
-- [x] saleblazersserver
 - [x] satisfactory
 - [x] silicaserver
 - [x] scpslserver
 - [x] smallandserver
 - [x] solserver
-- [x] sonsoftheforestserver
 - [x] squad44server
 - [x] squadserver
-- [x] ss14server
 - [x] stnserver
-- [x] subsistenceserver
 - [x] svenserver
 - [x] terraria_vanilla
-- [x] terratechworldsserver
 - [x] tf2
 - [x] tfcserver
 - [x] thefrontserver
@@ -145,13 +130,14 @@ Notes:
 - [ ] arma3server
 - [ ] arma3wastelandserver
 - [ ] atsserver
+- [ ] atlasserver
 - [ ] battlebitserver
 - [ ] bf1942server
 - [ ] bfvserver
 - [ ] boserver
-- [ ] bobserver
 - [ ] brokeprotocolserver
 - [ ] citadelserver
+- [ ] chivalryserver
 - [ ] conanexiles
 - [ ] counterstrikeglobaloffensive
 - [ ] cryofallserver
@@ -160,6 +146,7 @@ Notes:
 - [ ] deadmatterserver
 - [ ] dayzarma2epochserver
 - [ ] dayzserver
+- [ ] ets2server
 - [ ] foundryserver
 - [ ] hurtworldserver
 - [ ] hzserver
@@ -176,6 +163,7 @@ Notes:
 - [ ] nightingale
 - [ ] ohdserver
 - [ ] police1013server
+- [ ] pvrserver
 - [ ] pcars2server
 - [ ] q4server
 - [ ] roserver
@@ -200,8 +188,11 @@ Notes:
 - [ ] arksurvivalascended
 - [ ] astroneerserver
 - [ ] blackwakeserver
+- [ ] darkandlightserver
 - [ ] ducksideserver
+- [ ] empyrionserver
 - [ ] fearthenightserver
+- [ ] heatserver
 - [ ] hellletlooseserver
 - [ ] icarusserver
 - [ ] lifeisfeudalserver
@@ -211,15 +202,22 @@ Notes:
 - [ ] noonesurvivedserver
 - [ ] notdserver
 - [ ] outpostzeroserver
+- [ ] primalcarnageextinctionserver
 - [ ] q3server
 - [ ] reignofkingsserver
 - [ ] returntomoriaserver
 - [ ] ror2server
+- [ ] rs2server
+- [ ] saleblazersserver
 - [ ] scumserver
 - [ ] sniperelite4server
+- [ ] sonsoftheforestserver
 - [ ] bannerlordserver
+- [ ] ss14server
 - [ ] starruptureserver
 - [ ] staxelserver
+- [ ] subsistenceserver
+- [ ] terratechworldsserver
 - [ ] ahlserver
 - [ ] aloftserver
 - [ ] arma3_altislife
@@ -244,7 +242,8 @@ Notes:
 - [ ] identityserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
-- [x] minecraft_bungeecord
+- [ ] minecraft_bedrock
+- [ ] minecraft_bungeecord
 - [ ] minecraft_custom
 - [ ] minecraft_tekkit
 - [ ] mtaserver
@@ -256,7 +255,7 @@ Notes:
 - [ ] rtcwserver
 - [ ] soulmask
 - [ ] subnauticaserver
-- [x] terraria_tshock
+- [ ] terraria_tshock
 - [ ] tsserver
 - [ ] twserver
 - [ ] ut2k4server
