@@ -50,8 +50,6 @@ def configure(
     if url is None:
         resolved_version, url = resolve_download("waterfall", version=version)
         version = resolved_version
-    else:
-        version = version
     return proxy_base.configure(
         server,
         ask,

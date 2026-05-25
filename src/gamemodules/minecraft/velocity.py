@@ -59,8 +59,6 @@ def configure(
     if url is None:
         resolved_version, url = resolve_download("velocity", version=version)
         version = resolved_version
-    else:
-        version = version
     return proxy_base.configure(
         server,
         ask,
