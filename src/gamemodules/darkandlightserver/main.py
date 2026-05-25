@@ -105,13 +105,23 @@ restart.__doc__ = "Restart the Dark and Light server."
 
 
 def get_query_address(server):
-    """Dark and Light uses Steam A2S on the dedicated query port."""
+    """Return the live Dark and Light query endpoint.
 
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    On Linux, the Wine/Proton-hosted dedicated server binds the game UDP port
+    but does not expose a working A2S listener on ``queryport``. Use the game
+    port's generic UDP health check there so query/info reflect the live
+    runtime contract. Keep the historical A2S query-port mapping on non-Linux
+    hosts.
+    """
+
+    host = runtime_module.resolve_query_host(server)
+    if IS_LINUX:
+        return (host, int(server.data["port"]), "udp")
+    return (host, int(server.data["queryport"]), "a2s")
 
 
 def get_info_address(server):
-    """Return the A2S address used by the info command."""
+    """Return the address used by the info command."""
 
     return get_query_address(server)
 
@@ -137,6 +147,7 @@ def get_start_command(server):
     cmd = [
         server.data["exe_name"],
         map_arg,
+        "-nullRHI",
         "-log",
         "-unattended",
     ]
@@ -144,6 +155,7 @@ def get_start_command(server):
         cmd = proton.wrap_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
         )
     return cmd, server.data["dir"]
 

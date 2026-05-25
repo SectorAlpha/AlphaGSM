@@ -72,9 +72,10 @@ alphagsm mydarkandl backup
 - **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `630230`
 
-Smoke and integration validation rely on `info --json` reporting protocol
-`a2s` on the dedicated query port. In current CI images the UE4 process can stay
-up without producing the historical `DNL/Saved/Logs/DNL.log` path reliably.
+On Linux under Wine/Proton, AlphaGSM health checks use a generic UDP probe on
+the main game port. The dedicated server currently binds the game port but does
+not expose a working A2S listener on `queryport` in CI, so `query` and `info`
+report protocol `udp` there instead of `a2s`.
 
 ### Server Configuration
 
