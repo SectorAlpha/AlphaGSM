@@ -56,7 +56,7 @@ class ScreenBackend(ProcessBackend):
                 shell=False,
             )
         except OSError:
-            return
+            pass
 
     # ── public API ──────────────────────────────────────────────────────────
 

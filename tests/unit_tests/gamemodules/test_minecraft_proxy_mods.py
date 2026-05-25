@@ -26,17 +26,26 @@ class DummyServer:
 
 def _configure_proxy(module, server, target_dir, monkeypatch):
     if module is bungeecord:
+        monkeypatch.setattr(
+            bungeecord,
+            "resolve_download",
+            lambda version=None: (
+                str(version or "test-build"),
+                "https://example.com/BungeeCord.jar",
+            ),
+        )
         module.configure(server, ask=False, dir=str(target_dir))
         return
 
     jar_name = "velocity.jar" if module is velocity else "waterfall.jar"
     version = "3.4.0" if module is velocity else "1.21.10"
+    url = f"https://example.com/{jar_name}"
     monkeypatch.setattr(
-        module,
+        bungeecord,
         "resolve_download",
-        lambda project, version=None: (version or "ignored", f"https://example.com/{jar_name}"),
+        lambda version=None: (str(version or "test-build"), url),
     )
-    module.configure(server, ask=False, dir=str(target_dir), version=version)
+    module.configure(server, ask=False, dir=str(target_dir), version=version, url=url)
 
 
 def _write_proxy_registry(tmp_path):

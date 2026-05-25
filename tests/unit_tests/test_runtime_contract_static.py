@@ -108,6 +108,8 @@ def _stub_download_resolution(module, module_name):
         main_module = None
     if main_module is not None and main_module is not module:
         targets.append(main_module)
+    if module_name in ("minecraft.velocity", "minecraft.waterfall"):
+        targets.append(import_module("gamemodules.minecraft.bungeecord"))
 
     for target in targets:
         for attribute_name in dir(target):
