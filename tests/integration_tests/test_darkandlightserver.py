@@ -15,7 +15,6 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
     wait_for_udp_closed,
 )
 from gamemodules.darkandlightserver import steam_app_id
