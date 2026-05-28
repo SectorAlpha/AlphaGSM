@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Server support: correct `empyrionserver`'s Linux Wine/Proton launch contract to run `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -dedicated dedicated.yaml` directly under Proton plus `xvfb-run`, and document that the old launcher path tears down its child display while the remaining blocker is now missing reachable game/query readiness after startup.
+- CI: make `scripts/generate_module_parity_report.py --check` self-bootstrap `src/` on `sys.path`, add the missing `servername` default to the Blackwake example template, and regenerate the module parity reports so PR `unit-test` / `coverage` stop failing on stale parity metadata.
 - Integration helpers: teach the shared setup retry paths to apply AlphaGSM's full recommended claimed-port set, not just the primary `port`, so multi-port SteamCMD servers stop rediscovering the same `queryport` conflict during focused validation and smoke runs.
 - Server support: harden `blackwakeserver` with managed `Server.cfg` sync (`serverName`, `port`, `sport`, default password, bots disabled by default for the current headless path), route readiness to `output_log.txt`, and record the sharper remaining blocker that the Unity dedicated process still dies after `[NetworkHandler] Server started` with repeated `BotHandler` exceptions before query-ready state.
 - Server support: wrap `saleblazersserver` in `xvfb-run` plus SDL `x11`/dummy audio on Linux so focused validation reaches the real dedicated startup flow, then record the narrower remaining blocker that the server still exits before A2S readiness with Null graphics / localization errors after connecting its console window.

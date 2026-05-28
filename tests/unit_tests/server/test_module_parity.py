@@ -1,4 +1,6 @@
 from pathlib import Path
+import runpy
+import sys
 
 from server.module_catalog import load_default_module_catalog
 from server.module_parity import (
@@ -103,3 +105,30 @@ def test_module_source_path_prefers_package_init_when_present(tmp_path):
 
     assert _module_source_path(repo_root, "teamfortress2") == package_dir / "__init__.py"
     assert _module_source_path(repo_root, "counterstrike2") == flat_module_path
+
+
+def test_generate_module_parity_script_bootstraps_src_path(monkeypatch):
+    repo_root = Path(".").resolve()
+    src_root = repo_root / "src"
+    script_path = repo_root / "scripts" / "generate_module_parity_report.py"
+    original_path = list(sys.path)
+    monkeypatch.setattr(
+        sys,
+        "path",
+        [entry for entry in original_path if Path(entry or ".").resolve() != src_root],
+    )
+
+    removed_modules = {
+        name: module
+        for name, module in list(sys.modules.items())
+        if name == "server" or name.startswith("server.")
+    }
+    for name in removed_modules:
+        sys.modules.pop(name, None)
+
+    try:
+        namespace = runpy.run_path(str(script_path), run_name="module_parity_bootstrap_test")
+    finally:
+        sys.modules.update(removed_modules)
+
+    assert namespace["REPO_ROOT"] == repo_root

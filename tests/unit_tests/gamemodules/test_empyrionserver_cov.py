@@ -116,6 +116,93 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_linux_uses_batchmode_dedicated_exe(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DedicatedServer/EmpyrionDedicated.exe"
+    dedicated_dir = tmp_path / "DedicatedServer"
+    dedicated_dir.mkdir()
+    (dedicated_dir / "EmpyrionDedicated.exe").write_text("")
+
+    captured = {}
+
+    def fake_wrap(command, wineprefix=None, prefer_proton=False):
+        captured["command"] = list(command)
+        captured["wineprefix"] = wineprefix
+        captured["prefer_proton"] = prefer_proton
+        return ["wrapped", *command]
+
+    monkeypatch.setattr(mod, "_wrap_linux_command", fake_wrap)
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "wrapped",
+        "DedicatedServer/EmpyrionDedicated.exe",
+        "-batchmode",
+        "-nographics",
+        "-dedicated",
+        "dedicated.yaml",
+    ]
+    assert cwd == server.data["dir"]
+    assert captured == {
+        "command": [
+            "DedicatedServer/EmpyrionDedicated.exe",
+            "-batchmode",
+            "-nographics",
+            "-dedicated",
+            "dedicated.yaml",
+        ],
+        "wineprefix": None,
+        "prefer_proton": True,
+    }
+
+
+def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    captured = {}
+
+    def fake_wrap(command, wineprefix=None, prefer_proton=False):
+        captured["prefer_proton"] = prefer_proton
+        return [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *command,
+        ]
+
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        fake_wrap,
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: (
+            [cmd[0], *(f"{key}={value}" for key, value in env.items()), *cmd[1:]]
+            if cmd and cmd[0] == "env"
+            else ["env", *(f"{key}={value}" for key, value in env.items()), *cmd]
+        ),
+    )
+
+    wrapped = mod._wrap_linux_command(["DedicatedServer/EmpyrionDedicated.exe"])
+
+    assert captured["prefer_proton"] is False
+    assert wrapped == [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        "env",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "wine",
+        "DedicatedServer/EmpyrionDedicated.exe",
+    ]
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

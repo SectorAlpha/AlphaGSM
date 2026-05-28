@@ -6,6 +6,11 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = str(REPO_ROOT / "src")
+if SRC_ROOT not in sys.path:
+    sys.path.insert(0, SRC_ROOT)
+
 from server.module_catalog import load_default_module_catalog
 from server.module_parity import (
     build_module_parity_rows,
@@ -16,12 +21,11 @@ from server.module_parity import (
 
 def main(argv: list[str]) -> int:
     check_mode = "--check" in argv
-    repo_root = Path(__file__).resolve().parents[1]
     catalog = load_default_module_catalog()
-    rows = build_module_parity_rows(catalog=catalog, repo_root=repo_root)
+    rows = build_module_parity_rows(catalog=catalog, repo_root=REPO_ROOT)
 
-    md_path = repo_root / "docs" / "module_parity_report.md"
-    json_path = repo_root / "docs" / "module_parity_report.json"
+    md_path = REPO_ROOT / "docs" / "module_parity_report.md"
+    json_path = REPO_ROOT / "docs" / "module_parity_report.json"
     md_text = render_markdown_report(rows)
     json_text = render_json_report(rows)
 

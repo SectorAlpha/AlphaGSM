@@ -42,7 +42,7 @@
 | bf1942server | - | disabled | no | no | status |
 | bfvserver | - | disabled | no | no | status |
 | blackops3server | - | active | no | yes | status |
-| blackwakeserver | - | disabled | no | no | status |
+| blackwakeserver | - | active | no | yes | status |
 | bmdmserver | - | active | yes | yes | - |
 | bobserver | - | disabled | no | no | status |
 | boserver | - | disabled | no | no | status |

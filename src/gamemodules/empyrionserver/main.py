@@ -1,6 +1,7 @@
 """Empyrion - Galactic Survival dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import server.runtime as runtime_module
 import utils.proton as proton
@@ -80,19 +81,56 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Empyrion server."
 
 
+def _wrap_linux_command(command, wineprefix=None, prefer_proton=False):
+    """Wrap the Windows server command for headless Linux hosts."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=prefer_proton,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        *wrapped,
+    ]
+
+
 def get_start_command(server):
     """Build the command used to launch an Empyrion server."""
+
+    if IS_LINUX:
+        exe_name = server.data["exe_name"]
+        exe_path = os.path.join(server.data["dir"], exe_name)
+        if not os.path.isfile(exe_path):
+            raise ServerError("Executable file not found")
+        cmd = _wrap_linux_command(
+            [exe_name, "-batchmode", "-nographics", "-dedicated", "dedicated.yaml"],
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
+        return cmd, server.data["dir"]
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"]]
-    if IS_LINUX:
-        cmd = proton.wrap_command(
-            cmd,
-            wineprefix=server.data.get("wineprefix"),
-        )
-    return cmd, server.data["dir"]
+    return [server.data["exe_name"]], server.data["dir"]
 
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(

@@ -36,7 +36,7 @@ def test_empyrionserver_lifecycle(tmp_path):
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itempyrionserv"
+    server_name = ("itempy" + tmp_path.name.replace("_", "")[-9:])[:15]
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)

@@ -46,7 +46,7 @@ alphagsm myempyrion stop
 Setup configures:
 
 - the game port (default 30000)
-- the query port (default 30004)
+- the historical `queryport` value (default 30004)
 - the install directory
 - SteamCMD downloads the Windows dedicated server files
 
@@ -61,7 +61,8 @@ alphagsm myempyrion backup
 
 - Module name: `empyrionserver`
 - Default game port: 30000
-- Default query port: 30004
+- Default stored `queryport`: 30004
+- Upstream `dedicated.yaml` documents `30004` as `Tel_Port`, not as a confirmed A2S query endpoint
 
 ## Developer Notes
 
@@ -69,11 +70,15 @@ alphagsm myempyrion backup
 
 - **Executable**: `DedicatedServer/EmpyrionDedicated.exe`
 - **Location**: `<install_dir>/DedicatedServer/EmpyrionDedicated.exe`
+- **Linux launch shape**: `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -dedicated dedicated.yaml`
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `530870`
 
-Smoke and integration validation treat startup as complete once the AlphaGSM
-screen log shows readiness markers and `info --json` reports protocol `a2s`.
+Current Linux host validation no longer uses `EmpyrionLauncher.exe`, because the
+launcher exits after spawning the real dedicated child and tears down the
+temporary `xvfb-run` display with it. AlphaGSM now keeps the direct dedicated
+process alive under Proton plus `xvfb-run`, but automated host validation still
+does not prove a reachable `query` / `info` endpoint after startup.
 
 ### Server Configuration
 
