@@ -202,6 +202,8 @@ def test_get_start_command_linux_uses_batchmode_dedicated_exe(tmp_path, monkeypa
         "DedicatedServer/EmpyrionDedicated.exe",
         "-batchmode",
         "-nographics",
+        "-logFile",
+        "Logs/alphagsm-dedicated.log",
         "-dedicated",
         "dedicated.yaml",
     ]
@@ -211,6 +213,8 @@ def test_get_start_command_linux_uses_batchmode_dedicated_exe(tmp_path, monkeypa
             "DedicatedServer/EmpyrionDedicated.exe",
             "-batchmode",
             "-nographics",
+            "-logFile",
+            "Logs/alphagsm-dedicated.log",
             "-dedicated",
             "dedicated.yaml",
         ],
@@ -261,6 +265,10 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         "wine",
         "DedicatedServer/EmpyrionDedicated.exe",
     ]
+
+
+def test_linux_dedicated_log_path_constant_is_root_logs_file():
+    assert mod._LINUX_DEDICATED_LOG == os.path.join("Logs", "alphagsm-dedicated.log")
 
 
 def test_get_start_command_missing_exe(tmp_path):

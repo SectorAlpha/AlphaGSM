@@ -10,7 +10,8 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itbannerlord}"
 SERVER_STARTED=0
-DOCKER_IMAGE="${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest}"
+LOCAL_DOCKER_IMAGE="alphagsm-steamcmd-linux-runtime:bannerlord-dotnet"
+PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -23,6 +24,20 @@ run_alphagsm() {
   echo
   echo "=== alphagsm $* ==="
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
+}
+
+resolve_docker_image() {
+  if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-}" ]]; then
+    printf '%s\n' "$ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX"
+    return 0
+  fi
+
+  if docker image inspect "$LOCAL_DOCKER_IMAGE" >/dev/null 2>&1; then
+    printf '%s\n' "$LOCAL_DOCKER_IMAGE"
+    return 0
+  fi
+
+  printf '%s\n' "$PUBLISHED_DOCKER_IMAGE"
 }
 
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
@@ -40,6 +55,8 @@ trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
 require_cmd docker
+
+DOCKER_IMAGE="$(resolve_docker_image)"
 
 WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"

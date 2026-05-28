@@ -141,7 +141,6 @@ def test_get_start_command_linux_drops_headless_flag(tmp_path, monkeypatch):
     assert cmd == [
         "Default/Saleblazers.exe",
         "-batchmode",
-        "-nographics",
         "-logFile",
         "./server.log",
     ]

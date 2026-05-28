@@ -4,8 +4,8 @@ This guide covers the `bannerlordserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- `dotnet` runtime (Bannerlord launches the Linux dedicated server via `dotnet`)
+- `docker` for the supported validation path on `release_v1`
+- host `dotnet` only if you intentionally run the legacy process-backed path outside Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -63,8 +63,9 @@ alphagsm mybannerlo backup
 - Default port: 7210
 - Anonymous SteamCMD installs for app `1863440` do succeed; the stale disabled gate was caused by the module pointing at a nonexistent root executable instead of the installed Linux starter.
 - The current Linux launch path is `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll` from `bin/Linux64_Shipping_Server/`.
-- Docker validation no longer depends on a host-installed `dotnet`; the shared `steamcmd-linux` runtime image now carries .NET 6 for Bannerlord alongside .NET 10 for SS14.
-- Bannerlord is still not green on the current Linux Docker runtime: after setup succeeds, the dedicated server exits with a native `SIGSEGV` before AlphaGSM can retrieve A2S info, and SteamCMD setup can also intermittently fail with state `0x202`.
+- The supported validation path on `release_v1` is the module's existing `steamcmd-linux` Docker runtime. The checked-in smoke and integration runners now prefer the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image when it is present, then fall back to `ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX`, then the published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image.
+- On this branch, the published `ghcr.io/...:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, so it does not prove the real Bannerlord lifecycle here.
+- The branch-local Docker image gets to the real server runtime, but Bannerlord is still not green there: after setup succeeds and `dotnet --info` confirms `.NET 6.0.36`, `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` segfaults immediately and the managed container exits `139` before AlphaGSM can reach A2S `query` or `info`.
 
 ## Developer Notes
 

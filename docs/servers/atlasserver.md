@@ -79,11 +79,23 @@ validation path now opts into the module's existing `steamcmd-linux` Docker
 runtime hooks, which carry the legacy ATLAS compatibility libraries that the
 native Linux binary is missing on current Ubuntu 24.04 hosts.
 
+For Docker-backed launches, AlphaGSM now seeds `steam_appid.txt` and an
+install-local `.steam/sdk64/steamclient.so` link inside the mounted server
+directory, then exports `HOME=/srv/server` plus an install-local
+`LD_LIBRARY_PATH` inside the container. That keeps the ATLAS binary from
+depending on host-only SteamCMD home-directory state when the validated runtime
+path runs in Docker.
+
 Host-process launches are still available for environments that provide
 `libssl.so.1.0.0`, but they are no longer the default validation path. If you
 intentionally run ATLAS outside Docker on a modern host and the binary exits
 immediately, check for `error while loading shared libraries: libssl.so.1.0.0`
 before debugging the AlphaGSM lifecycle itself.
+
+If a Docker-backed lifecycle still dies before `info --json` reports `a2s`,
+inspect the earliest server log lines for `SteamAPI_Init()` /
+`SteamAPI_IsSteamRunning()` before assuming the failure is in AlphaGSM query or
+stop handling.
 
 ### Server Configuration
 

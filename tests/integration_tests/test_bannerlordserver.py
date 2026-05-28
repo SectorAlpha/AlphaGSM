@@ -1,6 +1,7 @@
 """Integration test for bannerlordserver."""
 
 import os
+import subprocess
 
 import pytest
 
@@ -24,6 +25,27 @@ pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+LOCAL_BANNERLORD_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:bannerlord-dotnet"
+PUBLISHED_STEAMCMD_LINUX_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
+
+
+def resolve_bannerlord_runtime_image():
+    """Prefer the branch-local Bannerlord runtime image when available."""
+
+    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
+    if configured_image:
+        return configured_image
+
+    local_image = subprocess.run(
+        ["docker", "image", "inspect", LOCAL_BANNERLORD_DOCKER_IMAGE],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if local_image.returncode == 0:
+        return LOCAL_BANNERLORD_DOCKER_IMAGE
+
+    return PUBLISHED_STEAMCMD_LINUX_IMAGE
 
 
 def test_bannerlordserver_lifecycle(tmp_path):
@@ -36,10 +58,7 @@ def test_bannerlordserver_lifecycle(tmp_path):
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itbannerlordse"
-    image = os.environ.get(
-        "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX",
-        "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest",
-    )
+    image = resolve_bannerlord_runtime_image()
 
     write_config(
         config_path,

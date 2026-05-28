@@ -72,19 +72,23 @@ alphagsm mydarkandl backup
 - **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `630230`
 
-On Linux under Wine/Proton, AlphaGSM health checks currently fall back to a
-generic UDP probe on the main game port. A fresh focused validation on
-2026-05-28 reached `info --json` protocol `udp` on the managed game port, but
-direct probes still showed `queryport` `27016` refusing UDP and timing out for
-A2S, so the dedicated query listener is not yet usable there.
+On Linux under Wine/Proton, the current branch no longer reaches even the
+narrowed generic-UDP contract. A fresh focused rerun on 2026-05-28 showed
+`alphagsm start` returning success, but the managed `screen` session died
+before `info --json` ever reported UDP readiness, `DNL/Saved/Logs/DNL.log` was
+never created, and direct host probes saw both the managed game port and
+`queryport` `27016` refuse UDP traffic.
 
-That same validation also showed why the older stop path was unsafe there:
-`Ctrl-C` interrupted Proton's Python launcher and could drop the managed screen
-session while leaving `DNLServer.exe` bound to the game UDP port. AlphaGSM now
-targets the matched `DNLServer.exe` process directly on Linux during `stop`, so
-smoke and integration coverage can verify real game-port closure rather than
-just a missing screen session. Treat the module as not yet fully re-enabled on
-Linux until the query-port contract is proven end to end.
+Direct repro of AlphaGSM's current Proton launch command kept
+`DNLServer.exe DNL_ALL?...?Port=<game-port>?QueryPort=27016 -nullRHI -log -unattended`
+alive for at least 90 seconds with no console output beyond the ProtonFixes
+"Skipping fix execution. We are probably running a unit test." warnings, still
+without creating `DNL.log` or binding either managed UDP listener. Because the
+`screen` session is already gone in that state, `alphagsm stop` refuses with
+`Can't stop a server that isn't running`, so the Linux stop hook cannot clean
+up the orphaned `DNLServer.exe` automatically. Treat the module as blocked on
+Linux until startup proves a real listener and a live AlphaGSM-managed session
+again.
 
 ### Server Configuration
 

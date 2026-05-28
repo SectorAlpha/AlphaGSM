@@ -66,7 +66,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "HeatServer.exe"
+    server.data["exe_name"] = "Server.exe"
     server.data["Steam_AppID"] = 996600
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -112,14 +112,64 @@ def test_get_start_command(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "HeatServer.exe"
-    (tmp_path / "HeatServer.exe").write_text("")
+    server.data["exe_name"] = "Server.exe"
+    (tmp_path / "Server.exe").write_text("")
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[0] == "Server.exe"
+
+
+def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "STEAM_COMPAT_DATA_PATH=/tmp/proton",
+            "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
+            "/opt/proton/proton",
+            "run",
+            *cmd,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda command, **env_vars: [
+            "env",
+            *list(command[1:1]),
+            *[f"{key}={value}" for key, value in env_vars.items()],
+            *command[1:],
+        ] if command and command[0] == "env" else [
+            "env",
+            *[f"{key}={value}" for key, value in env_vars.items()],
+            *command,
+        ],
+    )
+
+    wrapped = mod._wrap_linux_command(["Server.exe", "-batchmode"], wineprefix="/tmp/proton")
+
+    assert wrapped[:4] == [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        "env",
+    ]
+    assert "TERM=dumb" in wrapped
+    assert "SDL_VIDEODRIVER=x11" in wrapped
+    assert "SDL_AUDIODRIVER=dummy" in wrapped
+    assert "STEAM_COMPAT_DATA_PATH=/tmp/proton" in wrapped
+    assert "STEAM_COMPAT_CLIENT_INSTALL_PATH=" in wrapped
+    assert "DISPLAY=" not in wrapped
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in wrapped
+    assert wrapped[-4:] == ["/opt/proton/proton", "run", "Server.exe", "-batchmode"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -134,10 +184,20 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_query_and_info_address_use_queryport(monkeypatch):
+    server = DummyServer("heat")
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
+
+
 def test_do_stop():
     server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 
 
 def test_status():
@@ -215,4 +275,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

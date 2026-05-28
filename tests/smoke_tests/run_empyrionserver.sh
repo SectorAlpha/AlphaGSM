@@ -47,7 +47,7 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/empyrionserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-empyrionserver.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-empyrionse-IT#$SERVER_NAME.log"
+LOG_PATH="$INSTALL_DIR/Logs/alphagsm-dedicated.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -79,7 +79,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'ready|started|listening|Done'
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Loading file|Started a new game|Started process'
 wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"

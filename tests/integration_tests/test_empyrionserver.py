@@ -60,10 +60,10 @@ def test_empyrionserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        log_path = install_dir / "Logs" / "alphagsm-dedicated.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Loading file", "Started a new game", "Started process"],
             START_TIMEOUT,
             env=env,
             server_name=server_name,

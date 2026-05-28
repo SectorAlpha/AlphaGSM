@@ -15,6 +15,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 530870
 steam_anonymous_login_possible = True
+_LINUX_DEDICATED_LOG = os.path.join("Logs", "alphagsm-dedicated.log")
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -155,7 +156,15 @@ def get_start_command(server):
         if not os.path.isfile(exe_path):
             raise ServerError("Executable file not found")
         cmd = _wrap_linux_command(
-            [exe_name, "-batchmode", "-nographics", "-dedicated", "dedicated.yaml"],
+            [
+                exe_name,
+                "-batchmode",
+                "-nographics",
+                "-logFile",
+                _LINUX_DEDICATED_LOG,
+                "-dedicated",
+                "dedicated.yaml",
+            ],
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )

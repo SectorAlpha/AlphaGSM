@@ -46,7 +46,7 @@ alphagsm myheatserv stop
 Setup configures:
 
 - the game port (default 27015)
-- the query port (default 27016)
+- the query port default (27016)
 - the install directory
 - SteamCMD downloads the Windows dedicated server files
 
@@ -67,7 +67,7 @@ alphagsm myheatserv backup
 
 ### Run File
 
-- **Executable**: `HeatServer.exe`
+- **Executable**: `Server.exe`
 - **Location**: `<install_dir>/Server.exe`
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `996600`

@@ -136,12 +136,12 @@ def get_start_command(server):
         "./server.log",
     ]
     if IS_LINUX:
-        # Unity's explicit headless mode stalls earlier than the xvfb-backed
-        # console-attached path on Linux/Wine, so keep the real displayless run.
+        # Unity's explicit headless flags push this build onto a NullGfx path
+        # that never reaches the dedicated console on Linux/Wine. Keep the
+        # Xvfb-backed windowed server path and only retain batch logging.
         cmd = [
             server.data["exe_name"],
             "-batchmode",
-            "-nographics",
             "-logFile",
             "./server.log",
         ]

@@ -7,6 +7,14 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-05-29
+- Runtime metadata: extend the active Wine/Proton audit into `heatserver` by declaring its `xvfb-run` host dependency through shared runtime metadata and routing `stop` through the runtime-aware console hook.
+- ATLAS: seed install-local Steam bootstrap state (`steam_appid.txt`, `.steam/sdk64/steamclient.so`, Docker-only `HOME`, and install-local `LD_LIBRARY_PATH`) before the `steamcmd-linux` runtime launches so Docker validation no longer depends on host Steam home-directory state.
+- Bannerlord: make the checked-in smoke/integration lane prefer the branch-local Docker runtime image that carries `.NET 6`, document the published-image `dotnet` gap, and record the remaining Linux blocker as a native dedicated-server segfault after `dotnet` startup rather than a missing host runtime.
+- Dark and Light: harden smoke/integration diagnostics so focused Linux/Proton reruns fail on the real regression surface when the managed `screen` session dies before `DNL.log` or any UDP listener appears, instead of rediscovering the same timeout blindly.
+- Empyrion: pin the Linux dedicated log to `Logs/alphagsm-dedicated.log`, update smoke/integration to read the real dedicated runtime log, and document that direct dedicated startup now reaches `Started a new game` before stalling without a proven query/info listener.
+- Pavlov VR: move the checked-in smoke/integration contract to the Docker runtime backend first and use the runtime-aware stop hook there, leaving only the final uninterrupted Docker lifecycle proof before promotion.
+
 2026-05-28
 - bannerlordserver: route `stop` through the shared runtime console path so Docker-backed `steamcmd-linux` launches send Ctrl-C to the live process instead of depending on a host `screen` session.
 - Server support: re-enable `terratechworldsserver` on the Linux Wine lane by bypassing the stalled `TT2Server.exe` bootstrap, launching `TT2/Binaries/Win64/TT2Server-Win64-Shipping.exe` directly under `xvfb-run` + Wine, syncing the managed AlphaGSM port into `dedicated_server_config.json`, and switching smoke/integration to the live generic-UDP contract in `TT2/Saved/Logs/TT2.log`.

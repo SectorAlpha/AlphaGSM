@@ -59,6 +59,8 @@ def test_empyrion_get_start_command_builds_expected_args(tmp_path, monkeypatch):
         "DedicatedServer/EmpyrionDedicated.exe",
         "-batchmode",
         "-nographics",
+        "-logFile",
+        "Logs/alphagsm-dedicated.log",
         "-dedicated",
         "dedicated.yaml",
     ]

@@ -125,6 +125,7 @@ def test_get_start_command(tmp_path):
     server.data["sessionname"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -156,6 +157,9 @@ def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_p
     exe_path = tmp_path / "ShooterGame" / "Binaries" / "Linux" / "ShooterGameServer"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
+    steamclient_path = tmp_path / "linux64" / "steamclient.so"
+    steamclient_path.parent.mkdir(parents=True, exist_ok=True)
+    steamclient_path.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -182,9 +186,17 @@ def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_p
         {"host": 57555, "container": 57555, "protocol": "tcp"},
     ]
     assert spec["working_dir"] == "/srv/server"
+    assert spec["env"] == {
+        "HOME": "/srv/server",
+        "LD_LIBRARY_PATH": "/srv/server:/srv/server/linux64:/srv/server/ShooterGame/Binaries/Linux",
+    }
     assert spec["command"][0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
     assert spec["command"][2:] == ["-server", "-log"]
     assert spec["stdin_open"] is True
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="utf-8") == "1006030\n"
+    steamclient_link = tmp_path / ".steam" / "sdk64" / "steamclient.so"
+    assert steamclient_link.is_symlink()
+    assert steamclient_link.resolve() == steamclient_path
 
 
 def test_do_stop_uses_runtime_send_to_server(monkeypatch):

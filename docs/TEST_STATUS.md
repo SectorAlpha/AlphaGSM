@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 ## Summary
 
@@ -145,7 +145,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
-| atlasserver | Docker-path validation 2026-05-28: the checked-in ATLAS smoke/integration path now targets the module's existing `steamcmd-linux` runtime instead of the broken Ubuntu 24.04 host-process launch, and `do_stop()` now uses the runtime console abstraction so Docker-backed stops can send `quit` correctly. Do not mark enabled yet: a full AlphaGSM lifecycle proof on that Docker path is still pending after a fresh run remained in long SteamCMD setup for app `1006030`. |
+| atlasserver | Docker-path validation 2026-05-29: the checked-in ATLAS smoke/integration lane now seeds `steam_appid.txt` plus an install-local `.steam/sdk64/steamclient.so` link inside the mounted server tree and exports Docker-only `HOME=/srv/server` / install-local `LD_LIBRARY_PATH`, so the `steamcmd-linux` runtime no longer depends on host Steam home state. Do not mark enabled yet: the latest focused run still remained in the long SteamCMD setup for app `1006030`, so the post-bootstrap `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` start/query/info result is still unverified. |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
@@ -178,7 +178,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
-| pvrserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query port instead of waiting for absent log markers. Focused host validation on 2026-05-28 proved the 60 minute setup budget is enough for Pavlov VR's 9.17 GB SteamCMD payload, and `pvrserver` now fails fast on host-process starts when `libc++.so.1` is missing instead of returning success and only crashing in the screen log. Host lifecycle/query is still blocked on providing the libc++ runtime on the host, or switching validation to the Docker runtime that already supplies it. |
+| pvrserver | Docker-primary validation lane 2026-05-29: `do_stop()` now uses the runtime-aware console hook, and the checked-in smoke/integration path now runs on the `steamcmd-linux` Docker backend first instead of the host process path. Do not mark enabled yet: a full uninterrupted Pavlov VR Docker lifecycle proof (`setup -> start -> query -> info -> stop`) is still pending after the latest long-running validation session remained in SteamCMD setup. |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
@@ -207,11 +207,11 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
 | astroneerserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 728470 |
 | blackwakeserver | Wine: bundled upstream `SERVER GUIDE.txt` documents Windows-only dedicated servers; managed `Server.cfg` / `gamemode=7` / `queryport` flow still stops before query-ready state with Steam game-server init failures and repeated `BotHandler` crashes, and manual Proton experiments with explicit `STEAM_COMPAT_CLIENT_INSTALL_PATH` / `-configFile` did not produce a lifecycle pass — app 423410 |
-| darkandlightserver | Wine/Proton validation 2026-05-28: Linux stop no longer relies on interrupting the Proton wrapper; AlphaGSM now targets the live `DNLServer.exe` process so `stop` can actually close the managed UDP game port instead of orphaning the server after the screen session disappears. Do not mark enabled yet: the proven health contract is still generic UDP on the managed game port, while `queryport` A2S on `27016` remains unproven end to end. |
+| darkandlightserver | Wine/Proton validation 2026-05-29: the current branch no longer reaches even the narrowed generic-UDP contract. `alphagsm start` can still return success, but the managed `screen` session dies before `DNL/Saved/Logs/DNL.log` is created or either the game port or `queryport 27016` binds, and direct Proton repros still leave orphaned `DNLServer.exe` children with no log or listener. |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
-| empyrionserver | Wine/Proton lane 2026-05-28: AlphaGSM now syncs the configured game port into `dedicated.yaml` as `ServerConfig.Srv_Port` during install, update, prestart, and `set port`. Query/info are still not proven on Linux host validation; `queryport` `30004` remains only the documented `Tel_Port`, and the last proven dedicated-runtime blocker remains `Failed to create batch mode window: Success.` — app 530870 |
+| empyrionserver | Wine/Proton lane 2026-05-29: AlphaGSM now keeps the direct dedicated contract on `DedicatedServer/EmpyrionDedicated.exe` and reads the real Linux runtime log at `Logs/alphagsm-dedicated.log`. Focused repros progressed past the old blind wrapper path into `Loading file '.../dedicated.yaml'` and `Started a new game`, but still produced no proven listener or AlphaGSM query/info readiness; `queryport` `30004` remains only the documented `Tel_Port`, and `EmpyrionLauncher.exe -startDedi` still falls back to the old `Failed to create batch mode window: Success.` dead end. |
 | fearthenightserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 764940 |
-| heatserver | Re-enabled: server now launches `Server.exe`, writes readiness to `server.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 996600 |
+| heatserver | Wine/Proton validation 2026-05-29: AlphaGSM now targets the real `Server.exe`, resolves query/info on the managed `queryport`, and uses the same `xvfb-run` + Proton headless wrapper contract as the bounded live smoke. Do not mark enabled yet: focused runtime evidence shows Heat can log `Game has started.` under `Logs/Console*.txt` / `Logs/Dedi*.txt`, but the checked-in readiness path still watches the stale root `server.log` contract and needs that log/query wiring corrected before promotion. |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
@@ -229,7 +229,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
-| bannerlordserver | Re-enabled from disabled: anonymous SteamCMD installs app 1863440 successfully and the module now targets `bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`, but smoke/integration currently skip until a host `dotnet` runtime is available to validate the real start/query contract |
+| bannerlordserver | Docker-primary validation 2026-05-29: the checked-in smoke/integration lane now prefers the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image, then an explicit `ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX`, then the published `ghcr.io/...:latest` image. Do not mark enabled yet: the published image still misses `dotnet`, while the branch-local image reaches `.NET 6.0.36` and then the dedicated launch segfaults with container exit `139` before query/info become reachable. |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |

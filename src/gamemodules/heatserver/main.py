@@ -1,6 +1,7 @@
 """Heat dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import screen
 import utils.proton as proton
@@ -89,6 +90,53 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Heat server."
 
 
+def get_query_address(server):
+    """Heat uses Steam A2S on the dedicated query port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return get_query_address(server)
+
+
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap the Windows server command for headless Linux hosts."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        TERM="dumb",
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        *wrapped,
+    ]
+
+
 def get_start_command(server):
     """Build the command used to launch a Heat dedicated server."""
 
@@ -111,17 +159,17 @@ def get_start_command(server):
             str(server.data["maxplayers"]),
         ]
     if IS_LINUX:
-            cmd = proton.wrap_command(
-                cmd,
-                wineprefix=server.data.get("wineprefix"),
-            )
+        cmd = _wrap_linux_command(
+            cmd,
+            wineprefix=server.data.get("wineprefix"),
+        )
     return cmd, server.data["dir"]
 
 
 def do_stop(server, j):
     """Stop Heat using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -153,6 +201,7 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(

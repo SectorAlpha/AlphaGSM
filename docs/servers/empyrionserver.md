@@ -72,35 +72,40 @@ alphagsm myempyrion backup
 
 - **Executable**: `DedicatedServer/EmpyrionDedicated.exe`
 - **Location**: `<install_dir>/DedicatedServer/EmpyrionDedicated.exe`
-- **Linux launch shape**: `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -dedicated dedicated.yaml`
+- **Linux launch shape**: `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -logFile Logs/alphagsm-dedicated.log -dedicated dedicated.yaml`
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `530870`
 
 Current Linux host validation no longer uses `EmpyrionLauncher.exe`, because the
 launcher exits after spawning the real dedicated child and tears down the
-temporary `xvfb-run` display with it. AlphaGSM now keeps the direct dedicated
-process alive under Proton plus `xvfb-run`, and the module now syncs
+temporary `xvfb-run` display with it. AlphaGSM keeps the direct dedicated
+binary as the intended host Wine/Proton contract, and the module now syncs
 `ServerConfig.Srv_Port` in `dedicated.yaml` from the AlphaGSM-owned `port`
-value. Focused Linux host validation on 2026-05-28 still stopped before any
-proven game/query readiness:
+value and pins the Linux dedicated log to `Logs/alphagsm-dedicated.log` so
+smoke/integration read the actual server-owned runtime log instead of only the
+wrapper screen log. Focused Linux host validation on 2026-05-29 still stopped
+before any proven game/query readiness:
 
 - `queryport` remains a stored AlphaGSM value with default `30004`, but
   upstream `dedicated.yaml` documents that number as `Tel_Port`, not as a
   confirmed A2S query endpoint. The module does not currently claim a proven
   native query-port mapping beyond syncing the main game port.
-- The server-owned dedicated log under `server/Logs/5046/Dedicated_*.log`
-  stopped at Unity bootstrap with `Failed to create batch mode window:
-  Success.` and never reached a later startup banner, bound-port message, or
-  query-ready marker.
-- A manual reproduction of
-  `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -dedicated dedicated.yaml`
-  under Proton plus `xvfb-run` on 2026-05-28 also produced no fresh
-  server-owned runtime log or bound-port evidence within 45 seconds.
+- A bounded direct repro of
+  `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -logFile Logs/alphagsm-dedicated.log -dedicated dedicated.yaml`
+  under Proton plus `xvfb-run` on 2026-05-29 progressed past the earlier Unity
+  bootstrap blind spot and into the dedicated log with `Loading file
+  '.../dedicated.yaml'` and `Started a new game`, but still produced no proven
+  UDP/TCP listener or AlphaGSM query/info readiness within the bounded probe
+  window.
+- A bounded launcher repro of `EmpyrionLauncher.exe -startDedi` under the same
+  wrapper still exits immediately, spawns a detached child that AlphaGSM cannot
+  supervise directly, and the child only logged the old `Failed to create batch
+  mode window: Success.` line before stalling.
 
 The next bounded runtime/query fix is to re-prove which live port/protocol
 AlphaGSM should use for `query` and `info` now that `Srv_Port` sync is in
-place. Until that happens, `30004` remains only the documented `Tel_Port`, not
-a confirmed A2S endpoint.
+place and the direct dedicated log is stable. Until that happens, `30004`
+remains only the documented `Tel_Port`, not a confirmed A2S endpoint.
 
 ### Server Configuration
 

@@ -48,18 +48,23 @@ def test_deadpoly_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_heat_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    wrap_calls = []
+
     monkeypatch.setattr(
         heatserver.proton,
         "wrap_command",
-        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+        lambda cmd, wineprefix=None, prefer_proton=False: wrap_calls.append(
+            {"wineprefix": wineprefix, "prefer_proton": prefer_proton}
+        ) or list(cmd),
     )
+    monkeypatch.setattr(heatserver.shutil, "which", lambda name: None)
     server = DummyServer("heat")
-    exe = tmp_path / "HeatServer.exe"
+    exe = tmp_path / "Server.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "HeatServer.exe",
+            "exe_name": "Server.exe",
             "port": 27015,
             "queryport": 27016,
             "startmap": "America",
@@ -69,9 +74,11 @@ def test_heat_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
     cmd, cwd = heatserver.get_start_command(server)
 
-    assert cmd[0] == "HeatServer.exe"
+    assert cmd[:2] == ["env", "TERM=dumb"]
+    assert cmd[2] == "Server.exe"
     assert "-map" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [{"wineprefix": None, "prefer_proton": True}]
 
 
 def test_longvinter_get_start_command_builds_expected_args(tmp_path):

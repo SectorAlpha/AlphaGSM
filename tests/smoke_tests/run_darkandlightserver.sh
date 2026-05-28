@@ -42,6 +42,66 @@ run_alphagsm_capture() {
   return "$status"
 }
 
+tail_if_exists() {
+  local path="$1"
+  local line_count="${2:-40}"
+  if [[ ! -f "$path" ]]; then
+    echo "<missing: $path>"
+    return 0
+  fi
+  if [[ ! -s "$path" ]]; then
+    echo "<empty: $path>"
+    return 0
+  fi
+  tail -n "$line_count" "$path"
+}
+
+wait_for_udp_or_fail_fast() {
+  local server_name="$1"
+  local timeout_seconds="$2"
+  local deadline=$((SECONDS + timeout_seconds))
+  local screen_log_path="$HOME_DIR/logs/AlphaGSM-darkandlig-IT#$server_name.log"
+
+  while (( SECONDS < deadline )); do
+    if run_alphagsm_capture "$server_name" info --json >/dev/null; then
+      if EXPECTED_PORT="$PORT" INFO_JSON_PAYLOAD="$RUN_CAPTURED_OUTPUT" "${PYTHON_BIN:-python3}" - <<'PY'
+import json
+import os
+
+expected_port = int(os.environ["EXPECTED_PORT"])
+data = json.loads(os.environ["INFO_JSON_PAYLOAD"])
+assert data["protocol"] == "udp", data
+assert data["port"] == expected_port, data
+PY
+      then
+        return 0
+      fi
+    fi
+
+    local status_output
+    status_output="$(run_alphagsm_capture "$server_name" status || true)"
+    if grep -F "Server isn't running as no screen session" <<<"$status_output" >/dev/null; then
+      echo "[diagnostic] Dark and Light screen session died before UDP readiness" >&2
+      echo "[diagnostic] status output:" >&2
+      printf '%s\n' "$status_output" >&2
+      echo "[diagnostic] screen log tail ($screen_log_path):" >&2
+      tail_if_exists "$screen_log_path" >&2
+      echo "[diagnostic] DNL log tail ($LOG_PATH):" >&2
+      tail_if_exists "$LOG_PATH" >&2
+      exit 1
+    fi
+
+    sleep 5
+  done
+
+  echo "[diagnostic] Dark and Light never reached UDP readiness in ${timeout_seconds}s" >&2
+  echo "[diagnostic] screen log tail ($screen_log_path):" >&2
+  tail_if_exists "$screen_log_path" >&2
+  echo "[diagnostic] DNL log tail ($LOG_PATH):" >&2
+  tail_if_exists "$LOG_PATH" >&2
+  exit 1
+}
+
 wait_for_generic_udp_closed() {
   local port="$1"
   local timeout_seconds="$2"
@@ -129,21 +189,9 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" udp "$START_TIMEOUT_SECONDS"
+wait_for_udp_or_fail_fast "$SERVER_NAME" "$START_TIMEOUT_SECONDS"
 query_output="$(run_alphagsm_capture "$SERVER_NAME" query)"
 grep -F "Server port is open (UDP ping on port $PORT" <<<"$query_output" >/dev/null
-
-info_json_output="$(run_alphagsm_capture "$SERVER_NAME" info --json)"
-EXPECTED_PORT="$PORT" INFO_JSON_PAYLOAD="$info_json_output" "${PYTHON_BIN:-python3}" - <<'PY'
-import json
-import os
-
-expected_port = int(os.environ["EXPECTED_PORT"])
-data = json.loads(os.environ["INFO_JSON_PAYLOAD"])
-
-assert data["protocol"] == "udp", data
-assert data["port"] == expected_port, data
-PY
 
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"

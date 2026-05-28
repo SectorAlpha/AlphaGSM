@@ -38,6 +38,55 @@ setting_schema = {
 max_stop_wait = 1
 
 
+def _ensure_local_steam_bootstrap(install_dir):
+    """Seed Steamworks files inside the install tree for Docker launches."""
+
+    steam_appid_path = os.path.join(install_dir, "steam_appid.txt")
+    with open(steam_appid_path, "w", encoding="utf-8") as handle:
+        handle.write(f"{steam_app_id}\n")
+
+    steamclient_src = os.path.join(install_dir, "linux64", "steamclient.so")
+    if not os.path.isfile(steamclient_src):
+        return
+
+    sdk_dir = os.path.join(install_dir, ".steam", "sdk64")
+    os.makedirs(sdk_dir, exist_ok=True)
+    steamclient_dst = os.path.join(sdk_dir, "steamclient.so")
+    steamclient_relpath = os.path.relpath(steamclient_src, sdk_dir)
+    if os.path.lexists(steamclient_dst):
+        if os.path.islink(steamclient_dst) and os.readlink(steamclient_dst) == steamclient_relpath:
+            return
+        os.remove(steamclient_dst)
+    os.symlink(steamclient_relpath, steamclient_dst)
+
+
+def _atlas_library_path(install_dir, exe_dir):
+    """Return the library search path needed for ATLAS' legacy runtime."""
+
+    return os.pathsep.join(
+        filter(
+            None,
+            (
+                install_dir,
+                os.path.join(install_dir, "linux64"),
+                exe_dir,
+                os.environ.get("LD_LIBRARY_PATH"),
+            ),
+        )
+    )
+
+
+def _container_env(server):
+    """Return the Docker-only environment needed for ATLAS startup."""
+
+    container_dir = runtime_module.DEFAULT_CONTAINER_WORKDIR
+    exe_dir = os.path.dirname(os.path.join(container_dir, server.data["exe_name"]))
+    return {
+        "HOME": container_dir,
+        "LD_LIBRARY_PATH": _atlas_library_path(container_dir, exe_dir),
+    }
+
+
 def configure(
     server,
     ask,
@@ -121,7 +170,8 @@ def get_info_address(server):
 def get_start_command(server):
     """Build the command used to launch an ATLAS dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    install_dir = os.path.normpath(server.data["dir"])
+    exe_path = os.path.join(install_dir, server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     map_args = (
@@ -181,9 +231,20 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
+def get_container_spec(server):
+    """Build the Docker launch spec and seed Steam bootstrap files locally."""
+
+    _ensure_local_steam_bootstrap(os.path.normpath(server.data["dir"]))
+    return runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
         get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=(
+            {"key": "queryport", "protocol": "udp"},
+            {"key": "queryport", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "tcp"},
+        ),
+        env=_container_env(server),
         stdin_open=True,
-)
+    )
