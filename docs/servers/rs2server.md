@@ -78,7 +78,9 @@ AlphaGSM launches the server with `-log`, tracks readiness through
 protocol `a2s` before smoke and integration treat the server as query-ready.
 The current smoke and integration checks allow up to 20 minutes for this
 Wine/Proton bring-up because RS2 has historically stalled beyond the old
-600 second startup window in CI.
+600 second startup window in CI. Focused host integration passed again on
+2026-05-28, including `query`, `info`, `info --json`, and shutdown
+verification on the managed `queryport`.
 
 ### Server Configuration
 

@@ -72,10 +72,12 @@ alphagsm myprimalca backup
 - **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `336400`
 
-AlphaGSM launches the dedicated server with `server -log`, tracks readiness
-through `PrimalCarnageGame/Logs/Launch.log`, and queries A2S on the dedicated
-`queryport` via the resolved local query host before treating the server as
-query-ready.
+Current validation status: the 2026-05-28 Wine/Proton investigation got this
+server past the old headless graphics-driver failure and into real dedicated
+startup plus `LoadMap: PC-Docks...`, but the process still exits before
+AlphaGSM can observe a stable screen session or A2S-ready state. Keep this
+server in the validation queue for launcher/runtime follow-up rather than
+marking it enabled yet.
 
 ### Server Configuration
 

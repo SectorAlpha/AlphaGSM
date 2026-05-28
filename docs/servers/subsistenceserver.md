@@ -73,10 +73,11 @@ alphagsm mysubsiste backup
 - **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `1362640`
 
-AlphaGSM launches `Subsistence.exe` directly with `-log` and forces
-`LIBGL_ALWAYS_SOFTWARE=1` on Linux hosts to avoid the older headless Direct3D
-crash path. Readiness is taken from the UE3 `*/Logs/Launch.log` path and then
-confirmed through `info --json` protocol `a2s` before query/info run.
+Current validation status: the 2026-05-28 Wine/Proton investigation confirmed
+that app `1362640` still is not enablement-ready. The original forced-Proton
+headless launch still dies in UE3 shader compilation, and alternate Wine /
+`xvfb-run` experiments changed the crash signature but still exited before
+AlphaGSM could reach a live A2S-ready state.
 
 ### Server Configuration
 

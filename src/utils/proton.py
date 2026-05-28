@@ -169,7 +169,12 @@ def prepend_env_assignments(command, **env_vars):
     if not assignments:
         return command
     if command and command[0] == "env":
-        return ["env"] + assignments + command[1:]
+        prefix = ["env"]
+        index = 1
+        while index + 1 < len(command) and command[index] == "-u":
+            prefix.extend(command[index:index + 2])
+            index += 2
+        return prefix + assignments + command[index:]
     return ["env"] + assignments + command
 
 

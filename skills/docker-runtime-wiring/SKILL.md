@@ -32,6 +32,8 @@ Keep those wrappers in module scope even when they call shared helpers.
 4. Keep the module-level wrappers explicit so reviewers can see the runtime contract without chasing inference.
 5. Update representative unit tests so they exercise the module wrapper surface, not just the shared helper.
 6. Keep Docker backend coverage honest: runtime families belong in `tests/backend_integration_tests/docker_family_matrix.py`, each family should declare three representative cases, and every **active** case must be exercised by `tests/backend_integration_tests/test_backend_docker.py` in CI.
+7. Prefer the repository's own Docker images and branch-local builds during validation instead of depending on stale published `:latest` images when the current branch can build and prove the runtime contract directly.
+8. When a server is being enabled, do not consider the task done until the Docker-backed path has been checked for container-capable modules and the server/tracker state is updated to reflect the result.
 
 ## Pattern
 
@@ -68,3 +70,4 @@ When a module uses `utils.proton`, keep the same explicit wrapper pattern and ca
 - Shared helpers are called through explicit wrappers instead of hidden fallback wiring.
 - Representative unit tests cover the wrapper functions or the shared helper surface used by the module.
 - Active Docker backend cases prove the AlphaGSM lifecycle in CI: `create`, `setup`, `start`, readiness, `status`, `query`, `info`, `info --json`, `stop`, and shutdown verification.
+- Container-capable enablement work verifies the repository's own runtime image/build path, not just an already-published image.

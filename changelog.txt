@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Server support: promote `rs2server` to supported after focused host integration again proved the full AlphaGSM lifecycle on the managed A2S `queryport`, including `query`, `info`, `info --json`, and shutdown verification.
+- Process discipline: document that current non-auth enablement work must close tracker state, mark completed campaign items, and validate Docker-backed paths for container-capable modules so future agents do not repeat already-finished or already-blocked server investigations.
+- Proton helpers: preserve leading `env -u ...` unsets when prepending extra launch environment assignments so Wine/Proton modules can safely add runtime flags without corrupting the wrapped command line.
 - Server support: treat anonymous SteamCMD app `294420` (`sevendaystodie`) bare state `0x202` as a known transient flake so the shared retry and integration-skip paths stay aligned.
 - Smoke tests: choose and apply an explicit free `queryport` in `run_rs2server.sh` so the canonical RS2 smoke path exercises the module-owned A2S listener instead of assuming the default port stays free.
 - Integration tests: harden `test_rs2server.py` with the shared setup port-retry helper and verify the effective query port closes on shutdown.

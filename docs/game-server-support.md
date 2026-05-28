@@ -111,6 +111,7 @@ Notes:
 - [x] pixarkserver
 - [x] remnantsserver
 - [x] readyornotserver
+- [x] rs2server
 - [x] insserver
 - [x] inssserver
 - [x] ts3server
@@ -209,7 +210,6 @@ Notes:
 - [ ] reignofkingsserver
 - [ ] returntomoriaserver
 - [ ] ror2server
-- [ ] rs2server
 - [ ] saleblazersserver
 - [ ] scumserver
 - [ ] sniperelite4server

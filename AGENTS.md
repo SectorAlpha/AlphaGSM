@@ -207,6 +207,14 @@ explicit module-scope wrappers.
 - Keep `tests/backend_integration_tests/docker_family_matrix.py` at three
   declared representative cases per runtime family, and keep active cases
   green in CI via `tests/backend_integration_tests/test_backend_docker.py`.
+- For server-enablement work, treat Docker validation as part of the normal
+  completion path: if the module is container-capable, verify that AlphaGSM
+  can launch it successfully through the Docker/runtime-image path as well as
+  the host/process path.
+- Prefer the repository's own Docker images and branch-local builds during
+  smoke, integration, and backend validation instead of relying on stale
+  published `:latest` images when a local image can prove the current branch
+  behaviour.
 - Prefer the shared runtime families now in use:
   - `java`
   - `quake-linux`
@@ -227,6 +235,12 @@ explicit module-scope wrappers.
 Aim to keep as many server modules **enabled** as possible.
 
 - A server is considered enabled only when its integration test passes.
+- A server enablement task is **not done** until the repo trackers are updated
+  in the same change: mark the server passed/enabled in `docs/TEST_STATUS.md`,
+  update the matching server guide status note when needed, and clear any stale
+  skip/disable wording that would cause future agents to repeat the same work.
+- Treat tracker updates as part of the technical completion criteria, not as
+  optional follow-up documentation.
 - A failing integration test is a debugging task, not a reason to leave the
   server broken indefinitely.
 - Before accepting a skip or disablement, search the web for the upstream
@@ -235,6 +249,20 @@ Aim to keep as many server modules **enabled** as possible.
   dedicated-server quirks.
 - Prefer official documentation, vendor docs, release notes, and upstream
   issue trackers over forum guesswork when researching fixes.
+
+## Task Closure Discipline
+
+When working through server-enablement backlog items, always close the loop in
+the repository state so the same task is not rediscovered later.
+
+- If a local plan doc, tracker row, or enablement checklist exists for the
+  current campaign, mark the completed server task as done in the same PR.
+- Do not leave a server in an ambiguous "investigated" state if the current
+  branch has already proven it passed smoke/integration. Promote it to an
+  explicit enabled/passed state immediately.
+- If a server remains blocked, leave an evidence-backed note describing the
+  current blocker so the next agent does not restart the investigation from
+  scratch.
 
 ## Integration Test Timeout Policy
 

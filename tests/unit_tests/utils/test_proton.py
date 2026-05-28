@@ -183,6 +183,31 @@ def test_prepend_env_assignments_inserts_before_existing_env_tokens():
     ]
 
 
+def test_prepend_env_assignments_preserves_existing_env_unsets():
+    result = proton_module.prepend_env_assignments(
+        [
+            "env",
+            "-u", "TMPDIR",
+            "-u", "TMP",
+            "-u", "TEMP",
+            "DISPLAY=",
+            "/usr/bin/wine",
+            "server.exe",
+        ],
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "DISPLAY=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
+
+
 def test_prepend_env_unsets_wraps_plain_command():
     result = proton_module.prepend_env_unsets(["server.exe"], "TMPDIR", "TMP")
     assert result == ["env", "-u", "TMPDIR", "-u", "TMP", "server.exe"]
