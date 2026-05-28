@@ -1,6 +1,7 @@
 """Full coverage tests for darkandlightserver."""
 
 import os
+import signal
 import sys
 from unittest.mock import patch, MagicMock
 
@@ -169,6 +170,46 @@ def test_do_stop():
     mod.screen.send_to_server.assert_called()
 
 
+def test_do_stop_targets_linux_server_processes(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["port"] = 33741
+    server.data["queryport"] = 27016
+    killed = []
+
+    mod.screen.send_to_server.reset_mock()
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(
+        mod,
+        "_find_linux_server_pids",
+        lambda current: [4321, 5432],
+    )
+    monkeypatch.setattr(mod.os, "kill", lambda pid, sig: killed.append((pid, sig)))
+
+    mod.do_stop(server, 0)
+
+    assert killed == [(4321, signal.SIGTERM), (5432, signal.SIGTERM)]
+    mod.screen.send_to_server.assert_not_called()
+
+
+def test_find_linux_server_pids_filters_for_matching_commandline(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["port"] = 33741
+    server.data["queryport"] = 27016
+    ps_output = "\n".join(
+        [
+            "1111 env proton run DNL/Binaries/Win64/DNLServer.exe DNL_ALL?Port=33741?QueryPort=27016",
+            "2222 env proton run DNL/Binaries/Win64/DNLServer.exe DNL_ALL?Port=33742?QueryPort=27016",
+            "3333 other.exe Port=33741 QueryPort=27016",
+        ]
+    )
+
+    monkeypatch.setattr(mod.subprocess, "check_output", lambda *args, **kwargs: ps_output)
+
+    assert mod._find_linux_server_pids(server) == [1111]
+
+
 def test_status():
     server = DummyServer()
     mod.status(server, verbose=True)
@@ -262,4 +303,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -78,10 +78,13 @@ generic UDP probe on the main game port. A fresh focused validation on
 direct probes still showed `queryport` `27016` refusing UDP and timing out for
 A2S, so the dedicated query listener is not yet usable there.
 
-That same fresh run also showed a remaining lifecycle blocker: `alphagsm stop`
-can drop the managed screen session while leaving `DNLServer.exe` bound to the
-game UDP port. Treat the module as not yet fully re-enabled on Linux until both
-the query-port contract and clean shutdown path are proven.
+That same validation also showed why the older stop path was unsafe there:
+`Ctrl-C` interrupted Proton's Python launcher and could drop the managed screen
+session while leaving `DNLServer.exe` bound to the game UDP port. AlphaGSM now
+targets the matched `DNLServer.exe` process directly on Linux during `stop`, so
+smoke and integration coverage can verify real game-port closure rather than
+just a missing screen session. Treat the module as not yet fully re-enabled on
+Linux until the query-port contract is proven end to end.
 
 ### Server Configuration
 

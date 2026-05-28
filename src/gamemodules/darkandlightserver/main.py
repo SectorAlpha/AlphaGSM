@@ -1,6 +1,8 @@
 """Dark and Light dedicated server lifecycle helpers."""
 
 import os
+import signal
+import subprocess
 import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -160,9 +162,49 @@ def get_start_command(server):
     return cmd, server.data["dir"]
 
 
-def do_stop(server, j):
-    """Stop Dark and Light using an interrupt signal."""
+def _find_linux_server_pids(server):
+    """Return live Linux-hosted DNLServer.exe pids for *server*."""
 
+    port = server.data.get("port")
+    queryport = server.data.get("queryport")
+    if port is None or queryport is None:
+        return []
+    markers = (
+        server.data.get("exe_name", "DNL/Binaries/Win64/DNLServer.exe"),
+        "Port=%s" % (port,),
+        "QueryPort=%s" % (queryport,),
+    )
+    try:
+        output = subprocess.check_output(
+            ["ps", "-eo", "pid=,args="],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return []
+
+    pids = []
+    for line in output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        pid_text, _sep, args = line.partition(" ")
+        if not pid_text.isdigit():
+            continue
+        if all(marker in args for marker in markers):
+            pids.append(int(pid_text))
+    return pids
+
+
+def do_stop(server, j):
+    """Stop Dark and Light, targeting the real server process on Linux."""
+
+    if IS_LINUX:
+        pids = _find_linux_server_pids(server)
+        for pid in pids:
+            os.kill(pid, signal.SIGTERM)
+        if pids:
+            return
     screen.send_to_server(server.name, "\003")
 
 
