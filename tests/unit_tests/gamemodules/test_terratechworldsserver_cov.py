@@ -1,5 +1,6 @@
 """Full coverage tests for terratechworldsserver."""
 
+import json
 import os
 import sys
 from unittest.mock import patch, MagicMock
@@ -66,7 +67,13 @@ def test_install(tmp_path):
     server.data["exe_name"] = "TT2Server.exe"
     server.data["Steam_AppID"] = 2533070
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 28015
+    (tmp_path / "dedicated_server_config.json").write_text(
+        json.dumps({"Port": 7777, "SlotCount": 6}),
+        encoding="utf-8",
+    )
     mod.install(server)
+    assert json.loads((tmp_path / "dedicated_server_config.json").read_text(encoding="utf-8"))["Port"] == 28015
 
 
 def test_update_with_restart(tmp_path):
@@ -113,6 +120,31 @@ def test_get_start_command(tmp_path, monkeypatch):
     (tmp_path / "TT2Server.exe").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_sync_server_config_updates_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 31337
+    config_path = tmp_path / "dedicated_server_config.json"
+    config_path.write_text(
+        json.dumps({"Port": 7777, "SlotCount": 6}),
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    updated = json.loads(config_path.read_text(encoding="utf-8"))
+    assert updated["Port"] == 31337
+    assert updated["SlotCount"] == 6
+
+
+def test_sync_server_config_missing_file_noops(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 31337
+
+    mod.sync_server_config(server)
 
 
 def test_wrap_linux_command_uses_proton_software_gl_and_xvfb(monkeypatch):

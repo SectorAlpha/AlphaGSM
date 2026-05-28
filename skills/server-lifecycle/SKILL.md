@@ -211,6 +211,16 @@ For maintained servers that are Docker-capable, lifecycle completion should
 also include a Docker-backed validation path through AlphaGSM's own runtime
 images, not just the host/process path.
 
+When running local integration or smoke verification, prefer the repository's
+shared scratch root under
+`/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme`.
+
+- Export `TMPDIR=/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme`
+  before helpers that call `mktemp` or pytest temp-path factories.
+- Do not quietly fall back to `/tmp` when the task or user explicitly asked for
+  the shared scratch root; either set `TMPDIR` correctly or call out the
+  blocker.
+
 If a game server module genuinely does not implement one of these commands,
 the module itself needs to be fixed to provide a meaningful result (e.g. TCP
 ping fallback for query), not the test skipped.

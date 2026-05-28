@@ -8,6 +8,7 @@ from conftest import (
     require_command,
     require_proton,
     pick_free_tcp_port,
+    run_setup_with_port_retry,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -46,7 +47,12 @@ def test_primalcarnageextinctionserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "primalcarnageextinctionserver")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 

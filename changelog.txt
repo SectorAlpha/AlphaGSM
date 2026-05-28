@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Server support: make `blackwakeserver` manage the documented `gamemode=7` dedicated startup config so Linux Wine/Proton validation stops falling into the implicit Siege path; the remaining blocker is still Steam game-server init plus repeated `BotHandler` failures before query readiness.
+- Integration tests: make `primalcarnageextinctionserver` use the shared setup retry helper so focused Linux validation can accept AlphaGSM's recommended `queryport` override instead of failing early when an unmanaged listener already holds the default `27015`.
+- Server support: sync `terratechworldsserver`'s managed `port` into `dedicated_server_config.json` during install/update/prestart after focused validation artifacts showed the Windows dedicated server still defaulting to `7777` under Wine/Proton.
 - Server support: correct `empyrionserver`'s Linux Wine/Proton launch contract to run `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -dedicated dedicated.yaml` directly under Proton plus `xvfb-run`, and document that the old launcher path tears down its child display while the remaining blocker is now missing reachable game/query readiness after startup.
 - CI: make `scripts/generate_module_parity_report.py --check` self-bootstrap `src/` on `sys.path`, add the missing `servername` default to the Blackwake example template, and regenerate the module parity reports so PR `unit-test` / `coverage` stop failing on stale parity metadata.
 - Integration helpers: teach the shared setup retry paths to apply AlphaGSM's full recommended claimed-port set, not just the primary `port`, so multi-port SteamCMD servers stop rediscovering the same `queryport` conflict during focused validation and smoke runs.

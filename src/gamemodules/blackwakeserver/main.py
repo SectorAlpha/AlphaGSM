@@ -18,6 +18,7 @@ from utils.gamemodules import common as gamemodule_common
 steam_app_id = 423410
 steam_anonymous_login_possible = True
 DEFAULT_SERVER_PASSWORD = "alphagsm123"
+DEFAULT_GAMEMODE = "7"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -30,7 +31,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
-config_sync_keys = ("port", "queryport", "servername", "serverpassword")
+config_sync_keys = ("port", "queryport", "servername", "serverpassword", "gamemode")
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="BlackwakeServer.exe"):
@@ -48,6 +49,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BlackwakeServer.exe
             "maxplayers": "54",
             "servername": server.name,
             "serverpassword": DEFAULT_SERVER_PASSWORD,
+            "gamemode": DEFAULT_GAMEMODE,
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -91,6 +93,9 @@ def sync_server_config(server):
             "port": int(server.data.get("port", 7777)),
             "sport": int(server.data.get("queryport", 27015)),
             "password": server.data.get("serverpassword", DEFAULT_SERVER_PASSWORD),
+            # Keep the dedicated server on the documented dedicated-mode default
+            # instead of letting headless Wine/Proton fall into Siege startup.
+            "gamemode": int(server.data.get("gamemode", DEFAULT_GAMEMODE)),
             # Headless Wine/Proton runs are stable when we avoid spawning bot crews.
             "useBots": 0 if server.data.get("serverpassword") else 1,
         },
@@ -232,6 +237,11 @@ def checkvalue(server, key, *value):
         if password and len(password) < 4:
             raise ServerError("serverpassword must be at least 4 characters or empty")
         return password
+    if key == ("gamemode",):
+        gamemode = int("".join(value))
+        if gamemode < 1 or gamemode > 8:
+            raise ServerError("gamemode must be between 1 and 8")
+        return gamemode
     return gamemodule_common.handle_basic_checkvalue(
         server,
         key,

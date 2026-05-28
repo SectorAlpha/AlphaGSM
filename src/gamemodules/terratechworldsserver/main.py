@@ -1,5 +1,6 @@
 """TerraTech Worlds dedicated server lifecycle helpers."""
 
+import json
 import os
 import shutil
 
@@ -28,6 +29,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port",)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="TT2Server.exe"):
@@ -60,10 +62,31 @@ def configure(server, ask, port=None, dir=None, *, exe_name="TT2Server.exe"):
     return gamemodule_common.finalize_configure(server)
 
 
+def _server_config_path(server):
+    """Return the dedicated server config path."""
+
+    return os.path.join(server.data["dir"], "dedicated_server_config.json")
+
+
+def sync_server_config(server):
+    """Keep the dedicated server config aligned with AlphaGSM datastore values."""
+
+    config_path = _server_config_path(server)
+    if not os.path.isfile(config_path):
+        return
+    with open(config_path, encoding="utf-8") as fh:
+        config = json.load(fh)
+    config["Port"] = int(server.data.get("port", 7777))
+    with open(config_path, "w", encoding="utf-8") as fh:
+        json.dump(config, fh, indent=2)
+        fh.write("\n")
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download the TerraTech Worlds server files via SteamCMD."
@@ -73,6 +96,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 update.__doc__ = "Update the TerraTech Worlds server files and optionally restart the server."
@@ -125,6 +149,12 @@ def get_start_command(server):
             wineprefix=server.data.get("wineprefix"),
         )
     return cmd, server.data["dir"]
+
+
+def prestart(server):
+    """Refresh the dedicated server config before each launch."""
+
+    sync_server_config(server)
 
 
 def do_stop(server, j):

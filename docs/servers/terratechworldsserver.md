@@ -76,9 +76,13 @@ before treating the server as query-ready.
 
 Current validation status: the 2026-05-28 follow-up switched the module to the
 official dedicated launch flags (`-log -nullrhi`) and a headless `xvfb-run`
-wrapper with SDL `x11` plus software GL, but focused integration still exits
-before `Saved/Logs/TT2.log` appears or AlphaGSM can reach A2S readiness. Keep
-this server in the validation queue rather than marking it enabled yet.
+wrapper with SDL `x11` plus software GL. The next bounded fix was wiring
+AlphaGSM's configured `port` into `dedicated_server_config.json`; existing
+validation artifacts showed the Windows dedicated server was still inheriting
+its default `Port` `7777` even when AlphaGSM had claimed a different test
+port. A full live rerun was still in SteamCMD setup at report time, so keep
+this server in the validation queue until the post-fix Wine/Unity startup path
+is rechecked against `Saved/Logs/TT2.log` and A2S readiness.
 
 ### Server Configuration
 

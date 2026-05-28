@@ -41,6 +41,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data["gamemode"] == mod.DEFAULT_GAMEMODE
     assert server.data["servername"] == server.name
     assert server.data["serverpassword"] == mod.DEFAULT_SERVER_PASSWORD
 
@@ -138,6 +139,7 @@ def test_sync_server_config_updates_server_cfg(tmp_path):
         "queryport": 27016,
         "servername": "AlphaGSM Blackwake",
         "serverpassword": "alphagsm123",
+        "gamemode": 7,
     })
     cfg_path = tmp_path / "Server.cfg"
     cfg_path.write_text(
@@ -157,6 +159,7 @@ def test_sync_server_config_updates_server_cfg(tmp_path):
         "sport=27016",
         "password=alphagsm123",
         "useBots=0",
+        "gamemode=7",
     ]
 
 
@@ -167,6 +170,15 @@ def test_checkvalue_serverpassword_requires_min_length():
         mod.checkvalue(server, ("serverpassword",), "abc")
 
     assert mod.checkvalue(server, ("serverpassword",), "alphagsm123") == "alphagsm123"
+
+
+def test_checkvalue_gamemode_range():
+    server = DummyServer()
+
+    with pytest.raises(ServerError, match="between 1 and 8"):
+        mod.checkvalue(server, ("gamemode",), "9")
+
+    assert mod.checkvalue(server, ("gamemode",), "7") == 7
 
 
 def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):

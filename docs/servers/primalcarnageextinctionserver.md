@@ -74,11 +74,14 @@ alphagsm myprimalca backup
 
 Current validation status: the 2026-05-28 follow-up now checks in the best
 known dedicated launcher (`SERVER PC-Docks?...?bIsDedicated=true
--seekfreeloadingserver -log`) and wraps it with `xvfb-run` on Linux. The older
-investigation log reached real dedicated startup plus `LoadMap: PC-Docks...`,
-but the latest clean focused integration still falls short of A2S readiness
-and drops back to a dead screen session with a zero-byte `Launch.log`. Keep
-this server in the validation queue rather than marking it enabled yet.
+-seekfreeloadingserver -log`) and wraps it with `xvfb-run` on Linux. Focused
+validation now also retries AlphaGSM's recommended claimed-port overrides so
+an unmanaged listener on the default `queryport` `27015` no longer blocks
+setup, but the remaining blocker is still after real dedicated startup: the
+fresh rerun with `queryport=27016` again collapsed back to a dead screen
+session and zero-byte `Launch.log` after Wine reported `Failed to read file
+'PCDataStore_GameResource'` and an X `BadWindow` teardown. Keep this server in
+the validation queue rather than marking it enabled yet.
 
 ### Server Configuration
 
