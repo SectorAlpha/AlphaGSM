@@ -143,7 +143,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
-| atlasserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query path instead of waiting for absent log markers. The module already exposes the shared `steamcmd-linux` Docker runtime hooks, but the checked-in ATLAS smoke/integration path still validates the host-process `screen` launch; on current Ubuntu 24.04 hosts `ldconfig -p` exposes `libssl.so.1.1` but not `libssl.so.1.0.0`, so `ShooterGameServer` still exits before A2S readiness with `error while loading shared libraries: libssl.so.1.0.0`. |
+| atlasserver | Docker-path validation 2026-05-28: the checked-in ATLAS smoke/integration path now targets the module's existing `steamcmd-linux` runtime instead of the broken Ubuntu 24.04 host-process launch, and `do_stop()` now uses the runtime console abstraction so Docker-backed stops can send `quit` correctly. Do not mark enabled yet: a full AlphaGSM lifecycle proof on that Docker path is still pending after a fresh run remained in long SteamCMD setup for app `1006030`. |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
