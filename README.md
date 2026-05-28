@@ -86,12 +86,18 @@ Some server types need one extra thing:
   sudo apt install ./libprotobuf10_3.0.0-9.1ubuntu1_amd64.deb
   ```
 - Some native Linux servers also expect the unversioned LLVM C++ loader name
-  `libc++.so`. `pvrserver` currently needs `libc++1` plus a compatibility
-  symlink to the real `libc++.so.1` shared object:
+  `libc++.so.1`. `pvrserver` currently needs:
   ```bash
   sudo apt install libc++1
-  sudo ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
   ```
+
+If you launch servers directly on the host through AlphaGSM's local process
+runtime (`screen`, `tmux`, or subprocess mode), AlphaGSM now checks required
+host dependencies before launch. When something is missing, it will stop before
+starting the game server, tell you what package or runtime to install for your
+Linux, macOS, or Windows host when that guidance is known, and recommend using
+the Docker runtime instead when you would rather avoid host-side dependency
+setup.
 
 ## Fast Start
 

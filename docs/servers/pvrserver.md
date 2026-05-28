@@ -90,9 +90,10 @@ of waiting for screen-log markers.
 
 Focused host validation on 2026-05-28 proved that the longer 60 minute setup
 budget is enough for Pavlov VR's 9.17 GB SteamCMD payload. The next proven
-host-process blocker is missing `libc++.so.1`: `alphagsm start` can now fail
-fast with a clear dependency error instead of returning success and only
-leaving the loader failure in the screen log.
+host-process blocker is missing `libc++.so.1`: AlphaGSM's shared local-runtime
+dependency gate now fails fast with a clear dependency error instead of
+returning success and only leaving the loader failure in the screen log, and it
+recommends installing `libc++1` or switching this server to Docker.
 
 ### Server Configuration
 

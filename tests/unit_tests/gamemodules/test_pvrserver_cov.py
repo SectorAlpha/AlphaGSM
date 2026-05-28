@@ -1,8 +1,6 @@
 """Full coverage tests for pvrserver."""
 
-import os
 import sys
-from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -170,31 +168,18 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_prestart_raises_when_process_runtime_missing_libcxx(monkeypatch):
+def test_runtime_requirements_include_host_libcxx_dependency_hint():
     server = DummyServer()
+    server.data["port"] = 27015
 
-    monkeypatch.setattr(mod.runtime_module, "resolve_runtime_metadata", lambda current_server: {"runtime": "process"})
-    monkeypatch.setattr(
-        mod,
-        "ctypes",
-        SimpleNamespace(CDLL=MagicMock(side_effect=OSError("libc++.so.1 missing"))),
-        raising=False,
-    )
+    requirements = mod.get_runtime_requirements(server)
 
-    with pytest.raises(ServerError, match="libc\\+\\+\\.so\\.1"):
-        mod.prestart(server)
-
-
-def test_prestart_skips_libcxx_probe_for_docker_runtime(monkeypatch):
-    server = DummyServer()
-
-    monkeypatch.setattr(mod.runtime_module, "resolve_runtime_metadata", lambda current_server: {"runtime": "docker"})
-    c_dll = MagicMock()
-    monkeypatch.setattr(mod, "ctypes", SimpleNamespace(CDLL=c_dll), raising=False)
-
-    mod.prestart(server)
-
-    c_dll.assert_not_called()
+    host_dependencies = requirements["host_dependencies"]
+    assert len(host_dependencies) == 1
+    assert host_dependencies[0]["id"] == "libcxx"
+    assert host_dependencies[0]["kind"] == "shared-library"
+    assert host_dependencies[0]["library_names"]["linux"] == "libc++.so.1"
+    assert "libc++1" in host_dependencies[0]["install_hints"]["linux"]
 
 
 def test_do_stop():

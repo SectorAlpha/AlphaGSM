@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- darkandlightserver: on Linux, `stop` now targets the live `DNLServer.exe` process instead of interrupting Proton's wrapper, and Dark and Light smoke/integration shutdown checks now require real generic-UDP game-port closure; `queryport` A2S remains unproven.
+- Server support: fix `primalcarnageextinctionserver`'s dedicated launch argv by removing the literal `SERVER` token that made UE3 try to load a missing package, and update its smoke/integration readiness markers to the current `PC-Docks` bring-up lines before enforcing A2S.
+- Runtime UX: local process launches (`screen`, `tmux`, and subprocess mode) now fail before start when required host dependencies are missing, include platform-aware install guidance for Linux/macOS/Windows when available, and recommend the Docker runtime as the fallback path.
 - Pavlov VR: make `pvrserver` fail fast on host-process launches when `libc++.so.1` is missing, after focused validation proved the new 60 minute SteamCMD setup budget is enough and the next real blocker is the missing host libc++ runtime rather than setup timing.
 - saleblazersserver: refine the Linux/Wine launcher to use the non-headless `xvfb-run` / SDL / software-GL path that reaches the dedicated console window more reliably; readiness is still blocked because the process does not yet bind its managed game/query ports.
 - empyrionserver: sync `dedicated.yaml` `ServerConfig.Srv_Port` from the AlphaGSM-owned port during install, update, prestart, and `set port`; add focused coverage for the native config-sync path while the remaining Linux blocker stays at `Failed to create batch mode window: Success.`

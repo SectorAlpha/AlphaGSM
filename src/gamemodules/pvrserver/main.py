@@ -1,6 +1,5 @@
 """Pavlov VR dedicated server lifecycle helpers."""
 
-import ctypes
 import os
 
 import screen
@@ -140,23 +139,6 @@ def get_start_command(server):
     )
 
 
-def prestart(server, *args, **kwargs):
-    """Fail fast on host-process launches when Pavlov's LLVM runtime is missing."""
-
-    del args, kwargs  # Unused hook signature is part of the module contract.
-    metadata = runtime_module.resolve_runtime_metadata(server)
-    if metadata.get("runtime") == "docker":
-        return
-    try:
-        ctypes.CDLL("libc++.so.1")
-    except OSError as ex:
-        raise ServerError(
-            "Pavlov VR requires the host shared library 'libc++.so.1' for process-runtime launches. "
-            "Install the host libc++ runtime (Ubuntu/Debian package: libc++1) or switch this server to the Docker runtime. "
-            "Original loader error: " + str(ex)
-        ) from ex
-
-
 def do_stop(server, j):
     """Stop Pavlov VR by interrupting the foreground process."""
 
@@ -205,6 +187,23 @@ def get_runtime_requirements(server):
             {'key': 'queryport', 'protocol': 'udp'},
             {'key': 'queryport', 'protocol': 'tcp'},
         ),
+        extra={
+            "host_dependencies": [
+                {
+                    "id": "libcxx",
+                    "display_name": "LLVM libc++ runtime",
+                    "kind": "shared-library",
+                    "library_names": {
+                        "linux": "libc++.so.1",
+                    },
+                    "install_hints": {
+                        "linux": "Install the host package 'libc++1' before launching Pavlov VR locally.",
+                        "macos": "Install the Apple or Homebrew LLVM libc++ runtime before launching Pavlov VR locally.",
+                        "windows": "Install the required C++ runtime before launching Pavlov VR locally on Windows.",
+                    },
+                }
+            ]
+        },
     )(server)
 
 

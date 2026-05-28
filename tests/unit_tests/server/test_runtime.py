@@ -460,6 +460,96 @@ def test_assert_host_install_requirements_raises_for_missing_generic_dependency(
         runtime_module.assert_host_install_requirements(server, phase="setup")
 
 
+def test_assert_host_install_requirements_includes_linux_install_hint_and_docker_fallback(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    monkeypatch.setattr(runtime_module, "_current_host_platform", lambda: "linux")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "host_dependencies": [
+                {
+                    "id": "xvfb-run",
+                    "display_name": "xvfb-run",
+                    "command": "xvfb-run",
+                    "install_hints": {
+                        "linux": "Install the host package 'xvfb' before launching this server locally.",
+                    },
+                }
+            ]
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: None)
+
+    with pytest.raises(runtime_module.RuntimeError) as exc_info:
+        runtime_module.assert_host_install_requirements(server, phase="start")
+
+    message = str(exc_info.value)
+    assert "Install the host package 'xvfb'" in message
+    assert "Use the Docker runtime instead" in message
+
+
+def test_assert_host_install_requirements_includes_windows_install_hint(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    monkeypatch.setattr(runtime_module, "_current_host_platform", lambda: "windows")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "host_dependencies": [
+                {
+                    "id": "java",
+                    "display_name": "Java",
+                    "command": "java",
+                    "install_hints": {
+                        "windows": "Install Java 21+ on this Windows host before starting the server locally.",
+                    },
+                }
+            ]
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: None)
+
+    with pytest.raises(runtime_module.RuntimeError) as exc_info:
+        runtime_module.assert_host_install_requirements(server, phase="start")
+
+    message = str(exc_info.value)
+    assert "Install Java 21+ on this Windows host" in message
+    assert "apt install" not in message
+
+
+def test_assert_host_install_requirements_includes_macos_install_hint(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    monkeypatch.setattr(runtime_module, "_current_host_platform", lambda: "macos")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "host_dependencies": [
+                {
+                    "id": "java",
+                    "display_name": "Java",
+                    "command": "java",
+                    "install_hints": {
+                        "macos": "Install Java 21+ on this Mac host, for example with Homebrew.",
+                    },
+                }
+            ]
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: None)
+
+    with pytest.raises(runtime_module.RuntimeError) as exc_info:
+        runtime_module.assert_host_install_requirements(server, phase="start")
+
+    message = str(exc_info.value)
+    assert "Install Java 21+ on this Mac host" in message
+    assert "Use the Docker runtime instead" in message
+
+
 def test_process_host_dependency_report_accepts_first_available_alternative_command(monkeypatch):
     _set_runtime_backend(monkeypatch, "process")
     monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
@@ -517,6 +607,34 @@ def test_assert_host_install_requirements_raises_for_missing_alternative_command
 
     with pytest.raises(runtime_module.RuntimeError, match="none of these commands were found: 'wine', 'proton'"):
         runtime_module.assert_host_install_requirements(server, phase="start")
+
+
+def test_process_runtime_start_checks_host_dependencies_before_launch(monkeypatch):
+    runtime = runtime_module.ProcessRuntime()
+    server = DummyServer(
+        module=SimpleNamespace(
+            get_start_command=lambda current, *args, **kwargs: (["./run-server"], "/srv/server")
+        ),
+    )
+    events = []
+
+    monkeypatch.setattr(
+        runtime_module,
+        "assert_host_install_requirements",
+        lambda current, phase="run": events.append(("deps", phase)),
+    )
+    monkeypatch.setattr(
+        runtime_module.screen,
+        "start_screen",
+        lambda name, command, cwd=None: events.append(("start_screen", name, command, cwd)),
+    )
+
+    runtime.start(server)
+
+    assert events == [
+        ("deps", "start"),
+        ("start_screen", "alpha", ["./run-server"], "/srv/server"),
+    ]
 
 
 def test_runtime_doctor_report_includes_process_host_requirement_results(monkeypatch):

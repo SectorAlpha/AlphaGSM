@@ -11,6 +11,7 @@ but Docker is only selected when configuration opts into it.
 from __future__ import annotations
 
 import copy
+import ctypes
 import json
 import os
 import re
@@ -22,12 +23,18 @@ import sys
 import screen
 from utils.settings import settings
 from utils import proton
+from utils.platform_info import PLATFORM
 
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_IMAGE_REGISTRY = "ghcr.io/sectoralpha"
 DEFAULT_IMAGE_TAG = "latest"
 JAVA_VERSION_RE = re.compile(r'version\s+"(\d+)(?:\.(\d+))?')
+PLATFORM_DISPLAY_NAMES = {
+    "linux": "Linux",
+    "windows": "Windows",
+    "macos": "macOS",
+}
 
 
 def default_runtime_image(family):
@@ -146,9 +153,21 @@ def canonicalize_runtime_family(family):
 
 
 def _process_host_checks_supported():
-    """Return whether Linux host dependency checks should run."""
+    """Return whether local process-runtime dependency checks should run."""
 
-    return os.name == "posix" and sys.platform.startswith("linux")
+    return _current_host_platform() in {"linux", "windows", "macos"}
+
+
+def _current_host_platform():
+    """Return the normalized host platform name."""
+
+    return PLATFORM
+
+
+def _current_host_platform_display_name():
+    """Return the display name for the current host platform."""
+
+    return PLATFORM_DISPLAY_NAMES.get(_current_host_platform(), _current_host_platform())
 
 
 def _get_module_hook(module, hook_name):
@@ -354,9 +373,16 @@ def _normalize_host_dependency_spec(spec, server_name):
     normalized["id"] = dep_id
     if "display_name" not in normalized:
         normalized["display_name"] = normalized.get("name") or dep_id
+    if "library" in normalized and "library_names" not in normalized:
+        normalized["library_names"] = normalized.pop("library")
+
+    if "install_hint" in normalized and "install_hints" not in normalized:
+        normalized["install_hints"] = normalized.pop("install_hint")
+
+    default_kind = "shared-library" if "library_names" in normalized else dep_id if dep_id == "java" else "command"
     normalized["kind"] = str(
-        normalized.get("kind") or (dep_id if dep_id == "java" else "command")
-    ).strip().lower()
+        normalized.get("kind") or default_kind
+    ).strip().lower().replace("_", "-")
 
     if "command_key" in normalized and normalized["command_key"] not in (None, ""):
         normalized["command_key"] = str(normalized["command_key"]).strip()
@@ -382,6 +408,36 @@ def _normalize_host_dependency_spec(spec, server_name):
     minimum_major = normalized.get("minimum_major")
     if minimum_major not in (None, ""):
         normalized["minimum_major"] = int(minimum_major)
+
+    library_names = normalized.get("library_names")
+    if library_names not in (None, ""):
+        if isinstance(library_names, str):
+            library_names = {"default": library_names}
+        elif not isinstance(library_names, dict):
+            raise RuntimeError(
+                "Host dependency '%s' has invalid library_names for server %s"
+                % (dep_id, server_name)
+            )
+        normalized["library_names"] = {
+            str(key).strip().lower(): str(value).strip()
+            for key, value in dict(library_names).items()
+            if str(key).strip() and str(value).strip()
+        }
+
+    install_hints = normalized.get("install_hints")
+    if install_hints not in (None, ""):
+        if isinstance(install_hints, str):
+            install_hints = {"default": install_hints}
+        elif not isinstance(install_hints, dict):
+            raise RuntimeError(
+                "Host dependency '%s' has invalid install_hints for server %s"
+                % (dep_id, server_name)
+            )
+        normalized["install_hints"] = {
+            str(key).strip().lower(): str(value).strip()
+            for key, value in dict(install_hints).items()
+            if str(key).strip() and str(value).strip()
+        }
 
     return normalized
 
@@ -444,6 +500,51 @@ def _resolve_host_dependency_variants(spec, server):
             % (spec.get("id", "dependency"),)
         )
     return variants
+
+
+def _resolve_host_dependency_library_name(spec):
+    """Return the platform-appropriate shared-library name for *spec*."""
+
+    library_names = dict(spec.get("library_names") or {})
+    platform_name = _current_host_platform()
+    library_name = library_names.get(platform_name) or library_names.get("default")
+    if library_name:
+        return library_name
+    raise RuntimeError(
+        "Host dependency '%s' does not define a shared library for %s"
+        % (spec.get("id", "dependency"), platform_name)
+    )
+
+
+def _resolve_host_dependency_install_hint(spec, entry):
+    """Return a platform-aware install hint for a failed dependency."""
+
+    platform_name = _current_host_platform()
+    display_platform = _current_host_platform_display_name()
+    install_hints = dict(spec.get("install_hints") or {})
+    if install_hints:
+        hint = install_hints.get(platform_name) or install_hints.get("default")
+        if hint:
+            return hint
+
+    if entry.get("kind") == "java":
+        minimum_major = entry.get("minimum_major")
+        if minimum_major not in (None, ""):
+            return f"Install Java {minimum_major}+ on this {display_platform} host before launching the server locally."
+        return f"Install Java on this {display_platform} host before launching the server locally."
+
+    if entry.get("kind") == "shared-library":
+        library_name = entry.get("library_name")
+        if library_name:
+            return (
+                f"Install the host runtime that provides '{library_name}' on this "
+                f"{display_platform} host before launching the server locally."
+            )
+
+    return (
+        f"Install {entry.get('display_name', 'the required dependency')} on this "
+        f"{display_platform} host before launching the server locally."
+    )
 
 
 def _format_command(argv):
@@ -560,67 +661,89 @@ def get_process_host_dependency_report(server):
             "kind": spec.get("kind", "command"),
             "ok": True,
         }
-        try:
-            variants = _resolve_host_dependency_variants(spec, server)
-        except RuntimeError as ex:
-            entry["ok"] = False
-            entry["error"] = str(ex)
-            report["requirements"].append(entry)
-            continue
-
-        missing_commands = []
-        for variant in variants:
-            argv = variant["argv"]
-            resolved_path = _find_command_path(argv[0])
-            if resolved_path is None:
-                missing_commands.append(argv[0])
+        if entry["kind"] == "shared-library":
+            try:
+                library_name = _resolve_host_dependency_library_name(spec)
+            except RuntimeError as ex:
+                entry["ok"] = False
+                entry["error"] = str(ex)
+                report["requirements"].append(entry)
                 continue
 
-            entry["command"] = _format_command(argv)
-            entry["resolved_path"] = resolved_path
-            if variant.get("label"):
-                entry["matched_variant"] = variant["label"]
+            entry["library_name"] = library_name
+            try:
+                ctypes.CDLL(library_name)
+            except OSError as ex:
+                entry["ok"] = False
+                entry["error"] = (
+                    "%s is required but shared library '%s' could not be loaded: %s"
+                    % (entry["display_name"], library_name, str(ex))
+                )
+        else:
+            try:
+                variants = _resolve_host_dependency_variants(spec, server)
+            except RuntimeError as ex:
+                entry["ok"] = False
+                entry["error"] = str(ex)
+                report["requirements"].append(entry)
+                continue
 
-            if entry["kind"] == "java":
-                installed_major = _read_java_major(argv)
-                if installed_major is None:
-                    entry["ok"] = False
+            missing_commands = []
+            for variant in variants:
+                argv = variant["argv"]
+                resolved_path = _find_command_path(argv[0])
+                if resolved_path is None:
+                    missing_commands.append(argv[0])
+                    continue
+
+                entry["command"] = _format_command(argv)
+                entry["resolved_path"] = resolved_path
+                if variant.get("label"):
+                    entry["matched_variant"] = variant["label"]
+
+                if entry["kind"] == "java":
+                    installed_major = _read_java_major(argv)
+                    if installed_major is None:
+                        entry["ok"] = False
+                        entry["error"] = (
+                            "Unable to determine the installed Java version from %s"
+                            % (_format_command(list(argv) + ["-version"]),)
+                        )
+                    else:
+                        entry["installed_major"] = installed_major
+                        minimum_major = spec.get("minimum_major")
+                        if minimum_major not in (None, ""):
+                            entry["minimum_major"] = int(minimum_major)
+                            if installed_major < int(minimum_major):
+                                entry["ok"] = False
+                                entry["error"] = (
+                                    "%s %s+ is required but %s is installed"
+                                    % (
+                                        entry["display_name"],
+                                        int(minimum_major),
+                                        installed_major,
+                                    )
+                                )
+                break
+            else:
+                entry["ok"] = False
+                unique_commands = []
+                for command_name in missing_commands:
+                    if command_name not in unique_commands:
+                        unique_commands.append(command_name)
+                if len(unique_commands) == 1:
                     entry["error"] = (
-                        "Unable to determine the installed Java version from %s"
-                        % (_format_command(list(argv) + ["-version"]),)
+                        "%s is required but command '%s' was not found"
+                        % (entry["display_name"], unique_commands[0])
                     )
                 else:
-                    entry["installed_major"] = installed_major
-                    minimum_major = spec.get("minimum_major")
-                    if minimum_major not in (None, ""):
-                        entry["minimum_major"] = int(minimum_major)
-                        if installed_major < int(minimum_major):
-                            entry["ok"] = False
-                            entry["error"] = (
-                                "%s %s+ is required but %s is installed"
-                                % (
-                                    entry["display_name"],
-                                    int(minimum_major),
-                                    installed_major,
-                                )
-                            )
-            break
-        else:
-            entry["ok"] = False
-            unique_commands = []
-            for command_name in missing_commands:
-                if command_name not in unique_commands:
-                    unique_commands.append(command_name)
-            if len(unique_commands) == 1:
-                entry["error"] = (
-                    "%s is required but command '%s' was not found"
-                    % (entry["display_name"], unique_commands[0])
-                )
-            else:
-                entry["error"] = (
-                    "%s is required but none of these commands were found: %s"
-                    % (entry["display_name"], ", ".join("'" + item + "'" for item in unique_commands))
-                )
+                    entry["error"] = (
+                        "%s is required but none of these commands were found: %s"
+                        % (entry["display_name"], ", ".join("'" + item + "'" for item in unique_commands))
+                    )
+
+        if not entry.get("ok", False):
+            entry["install_hint"] = _resolve_host_dependency_install_hint(spec, entry)
 
         report["requirements"].append(entry)
 
@@ -635,15 +758,19 @@ def assert_host_install_requirements(server, phase="run"):
     if not report.get("applicable") or report.get("ok", True):
         return report
 
-    failures = [
-        item["error"]
-        for item in report.get("requirements", [])
-        if not item.get("ok", False)
-    ]
+    failures = []
+    for item in report.get("requirements", []):
+        if item.get("ok", False):
+            continue
+        failure = item["error"]
+        install_hint = item.get("install_hint")
+        if install_hint:
+            failure += " " + install_hint
+        failures.append(failure)
     action = str(phase or "run")
     raise RuntimeError(
-        "Can't %s server on this Linux host because required process-runtime dependencies are missing or incompatible: %s. Use the Docker runtime if you want AlphaGSM to provide these dependencies in a container."
-        % (action, "; ".join(failures))
+        "Can't %s server with the local process runtime on this %s host because required host dependencies are missing or incompatible: %s. Use the Docker runtime instead if you'd like AlphaGSM to provide these dependencies in a container."
+        % (action, _current_host_platform_display_name(), "; ".join(failures))
     )
 
 
@@ -1541,6 +1668,7 @@ class ProcessRuntime(BaseRuntime):
     missing_description = "no screen session"
 
     def start(self, server, *args, **kwargs):
+        assert_host_install_requirements(server, phase="start")
         command, cwd = server.module.get_start_command(server, *args, **kwargs)
         screen.start_screen(server.name, command, cwd=cwd)
 
