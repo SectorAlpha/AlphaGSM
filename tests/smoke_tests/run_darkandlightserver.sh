@@ -26,6 +26,22 @@ run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
+run_alphagsm_capture() {
+  local output_file
+  output_file="$(mktemp)"
+  echo
+  echo "=== alphagsm $* ==="
+  set +e
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+    "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@" >"$output_file" 2>&1
+  local status=$?
+  set -e
+  RUN_CAPTURED_OUTPUT="$(cat "$output_file")"
+  printf '%s\n' "$RUN_CAPTURED_OUTPUT"
+  rm -f "$output_file"
+  return "$status"
+}
+
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
@@ -80,10 +96,10 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" udp "$START_TIMEOUT_SECONDS"
-query_output="$(run_alphagsm "$SERVER_NAME" query)"
+query_output="$(run_alphagsm_capture "$SERVER_NAME" query)"
 grep -F "Server port is open (UDP ping on port $PORT)" <<<"$query_output" >/dev/null
 
-info_json_output="$(run_alphagsm "$SERVER_NAME" info --json)"
+info_json_output="$(run_alphagsm_capture "$SERVER_NAME" info --json)"
 EXPECTED_PORT="$PORT" INFO_JSON_PAYLOAD="$info_json_output" "${PYTHON_BIN:-python3}" - <<'PY'
 import json
 import os

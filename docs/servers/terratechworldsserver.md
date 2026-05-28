@@ -76,13 +76,16 @@ before treating the server as query-ready.
 
 Current validation status: the 2026-05-28 follow-up switched the module to the
 official dedicated launch flags (`-log -nullrhi`) and a headless `xvfb-run`
-wrapper with SDL `x11` plus software GL. The next bounded fix was wiring
-AlphaGSM's configured `port` into `dedicated_server_config.json`; existing
-validation artifacts showed the Windows dedicated server was still inheriting
-its default `Port` `7777` even when AlphaGSM had claimed a different test
-port. A full live rerun was still in SteamCMD setup at report time, so keep
-this server in the validation queue until the post-fix Wine/Unity startup path
-is rechecked against `Saved/Logs/TT2.log` and A2S readiness.
+wrapper with SDL `x11` plus software GL. A fresh focused rerun then confirmed
+the config-sync fix: AlphaGSM's managed test port now lands in
+`dedicated_server_config.json` before startup. The remaining blocker is still
+runtime readiness under the current Wine/Proton path: in the fresh host run,
+`start` returned success and left `TT2Server.exe` running, but the server never
+created `Saved/Logs/TT2.log`, never opened the configured listener on the
+managed port, and the only captured screen-log output was ProtonFixes
+"Skipping fix execution. We are probably running a unit test." warnings before
+the 600 second readiness timeout. Keep this server in the validation queue
+until the launch path produces the expected `TT2.log` and real A2S readiness.
 
 ### Server Configuration
 

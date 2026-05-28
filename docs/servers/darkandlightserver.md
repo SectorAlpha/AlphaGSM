@@ -72,10 +72,16 @@ alphagsm mydarkandl backup
 - **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `630230`
 
-On Linux under Wine/Proton, AlphaGSM health checks use a generic UDP probe on
-the main game port. The dedicated server currently binds the game port but does
-not expose a working A2S listener on `queryport` in CI, so `query` and `info`
-report protocol `udp` there instead of `a2s`.
+On Linux under Wine/Proton, AlphaGSM health checks currently fall back to a
+generic UDP probe on the main game port. A fresh focused validation on
+2026-05-28 reached `info --json` protocol `udp` on the managed game port, but
+direct probes still showed `queryport` `27016` refusing UDP and timing out for
+A2S, so the dedicated query listener is not yet usable there.
+
+That same fresh run also showed a remaining lifecycle blocker: `alphagsm stop`
+can drop the managed screen session while leaving `DNLServer.exe` bound to the
+game UDP port. Treat the module as not yet fully re-enabled on Linux until both
+the query-port contract and clean shutdown path are proven.
 
 ### Server Configuration
 
