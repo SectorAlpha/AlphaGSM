@@ -115,7 +115,15 @@ def test_get_start_command(tmp_path, monkeypatch):
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "Default/Saleblazers.exe",
+        "-headless",
+        "-batchmode",
+        "-nographics",
+        "-logFile",
+        "./server.log",
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):

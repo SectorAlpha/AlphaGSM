@@ -266,6 +266,8 @@ high-level milestones.
 - Documentation: add a canonical `docs/server-templates/_template/` scaffold and document that real runtime filenames should only be used when the module or server guide identifies a stable config path, leaving `alphagsm-example.cfg` for AlphaGSM-only reference templates.
 - Documentation: replace the remaining README-only server-template directories with concrete config/example files across the full server catalog, using module-backed filenames where available and AlphaGSM example-value files otherwise.
 - Documentation: add docs/server-templates entries across the game-server catalog and expand the practical templates with fuller default config samples, while marking generated or runtime-owned schemas explicitly instead of leaving thin placeholders.
+- Server support: tighten the Dark and Light smoke contract so Linux Wine/Proton coverage must prove UDP query/info on the claimed game port instead of only reaching a generic started state.
+- Server support: launch Saleblazers with the upstream headless dedicated flags on Linux Wine/Proton while keeping the SDL/Xvfb wrapper path documented as the current non-A2S blocker surface.
 - Server support: re-enable rimworldtogetherserver after updating the live Configs/ServerConfig.json port and aligning its TCP integration checks with the shared query/info contract.
 - CLI: make `set` trigger module config-sync hooks only for explicitly declared game-config keys, so valid server config values sync immediately while AlphaGSM-only keys do not.
 - Server support: extend the explicit config-sync contract to mumbleserver, craftopiaserver, and scpslserver so `set` updates their managed INI/text server config values immediately.

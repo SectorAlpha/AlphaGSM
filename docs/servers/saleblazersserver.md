@@ -73,12 +73,14 @@ alphagsm mysaleblaz backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `3099600`
 
-AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`
-and treats `info --json` returning protocol `a2s` as the readiness gate. The
-plain Unity startup text in `server.log` is not stable enough to use as the
-only readiness marker. On Linux hosts AlphaGSM now prefers `xvfb-run` with SDL
-`x11` video and dummy audio so the dedicated process gets past the earlier
-headless window-creation failure.
+AlphaGSM launches the server with
+`-headless -batchmode -nographics -logFile ./server.log` and treats
+`info --json` returning protocol `a2s` as the readiness gate. The plain Unity
+startup text in `server.log` is not stable enough to use as the only readiness
+marker. On Linux hosts AlphaGSM now prefers `xvfb-run` with SDL `x11` video
+and dummy audio so the dedicated process gets past the earlier headless
+window-creation failure while also matching the upstream Saleblazers headless
+server mode more closely.
 
 ### Server Configuration
 

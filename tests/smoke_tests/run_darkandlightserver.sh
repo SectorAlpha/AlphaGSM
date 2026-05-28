@@ -80,6 +80,21 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" udp "$START_TIMEOUT_SECONDS"
+query_output="$(run_alphagsm "$SERVER_NAME" query)"
+grep -F "Server port is open (UDP ping on port $PORT)" <<<"$query_output" >/dev/null
+
+info_json_output="$(run_alphagsm "$SERVER_NAME" info --json)"
+EXPECTED_PORT="$PORT" INFO_JSON_PAYLOAD="$info_json_output" "${PYTHON_BIN:-python3}" - <<'PY'
+import json
+import os
+
+expected_port = int(os.environ["EXPECTED_PORT"])
+data = json.loads(os.environ["INFO_JSON_PAYLOAD"])
+
+assert data["protocol"] == "udp", data
+assert data["port"] == expected_port, data
+PY
+
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
