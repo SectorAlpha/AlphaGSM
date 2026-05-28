@@ -151,10 +151,51 @@ def test_query_and_info_address_use_queryport(monkeypatch):
     assert mod.get_info_address(server) == ("10.0.0.10", 57561, "a2s")
 
 
-def test_do_stop():
+def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_path):
+    server = DummyServer("atlas")
+    exe_path = tmp_path / "ShooterGame" / "Binaries" / "Linux" / "ShooterGameServer"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "ShooterGame/Binaries/Linux/ShooterGameServer",
+            "adminpassword": "test",
+            "map": "Ocean",
+            "maxplayers": 100,
+            "port": 57555,
+            "queryport": 57561,
+            "serverpassword": "",
+            "sessionname": "AlphaGSM atlas",
+        }
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["ports"] == [
+        {"host": 57561, "container": 57561, "protocol": "udp"},
+        {"host": 57561, "container": 57561, "protocol": "tcp"},
+        {"host": 57555, "container": 57555, "protocol": "udp"},
+        {"host": 57555, "container": 57555, "protocol": "tcp"},
+    ]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
+    assert spec["command"][2:] == ["-server", "-log"]
+    assert spec["stdin_open"] is True
+
+
+def test_do_stop_uses_runtime_send_to_server(monkeypatch):
     server = DummyServer()
+    calls = []
+
+    monkeypatch.setattr(mod.runtime_module, "send_to_server", lambda current, text: calls.append((current, text)))
+
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+
+    assert calls == [(server, "\nquit\n")]
 
 
 def test_status():
@@ -250,4 +291,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

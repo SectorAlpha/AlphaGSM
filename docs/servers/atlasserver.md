@@ -4,9 +4,9 @@ This guide covers the `atlasserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen` for the current host-process smoke/integration path
+- `docker` for the checked-in smoke/integration validation path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libprotobuf10`, `libidn11`, and `libldap-2.4-2` compatibility packages)
-- A legacy OpenSSL 1.0.x compatible runtime for `libssl.so.1.0.0` on current Linux hosts when launching the native Linux binary outside the shared Docker runtime
+- The shared `steamcmd-linux` runtime image for the default validated path, or a legacy OpenSSL 1.0.x compatible host runtime for `libssl.so.1.0.0` if you intentionally launch the native Linux binary outside Docker
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -74,16 +74,16 @@ alphagsm myatlasser backup
 
 Smoke and integration validation track readiness through `alphagsm info --json`
 returning protocol `a2s` on the dedicated query port via AlphaGSM's resolved
-local query host instead of relying on implicit fallback routing.
+local query host instead of relying on implicit fallback routing. The checked-in
+validation path now opts into the module's existing `steamcmd-linux` Docker
+runtime hooks, which carry the legacy ATLAS compatibility libraries that the
+native Linux binary is missing on current Ubuntu 24.04 hosts.
 
-`atlasserver` already exposes the shared `steamcmd-linux` runtime hooks, and
-that shared Docker runtime family carries the legacy ATLAS compatibility
-libraries. The remaining blocker on this host class is narrower: the checked-in
-ATLAS smoke/integration path still validates the host-process `screen` launch,
-and on current Ubuntu 24.04 hosts `ldconfig -p` exposes `libssl.so.1.1` but
-not `libssl.so.1.0.0`. As a result, `ShooterGameServer` exits immediately with
-`error while loading shared libraries: libssl.so.1.0.0` before AlphaGSM can
-reach the A2S readiness/query contract.
+Host-process launches are still available for environments that provide
+`libssl.so.1.0.0`, but they are no longer the default validation path. If you
+intentionally run ATLAS outside Docker on a modern host and the binary exits
+immediately, check for `error while loading shared libraries: libssl.so.1.0.0`
+before debugging the AlphaGSM lifecycle itself.
 
 ### Server Configuration
 
