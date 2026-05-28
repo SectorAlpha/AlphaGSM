@@ -1,6 +1,7 @@
 """Saleblazers dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import screen
 import utils.proton as proton
@@ -79,6 +80,31 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap the Windows server command for headless Linux hosts."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return ["xvfb-run", "-a", *wrapped]
+
+
 def get_query_address(server):
     """Return the Saleblazers A2S query endpoint."""
 
@@ -99,7 +125,7 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     cmd = [server.data["exe_name"], "-batchmode", "-nographics", "-logFile", "./server.log"]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )

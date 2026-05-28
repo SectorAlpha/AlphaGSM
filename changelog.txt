@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Integration helpers: teach the shared setup retry paths to apply AlphaGSM's full recommended claimed-port set, not just the primary `port`, so multi-port SteamCMD servers stop rediscovering the same `queryport` conflict during focused validation and smoke runs.
+- Server support: harden `blackwakeserver` with managed `Server.cfg` sync (`serverName`, `port`, `sport`, default password, bots disabled by default for the current headless path), route readiness to `output_log.txt`, and record the sharper remaining blocker that the Unity dedicated process still dies after `[NetworkHandler] Server started` with repeated `BotHandler` exceptions before query-ready state.
+- Server support: wrap `saleblazersserver` in `xvfb-run` plus SDL `x11`/dummy audio on Linux so focused validation reaches the real dedicated startup flow, then record the narrower remaining blocker that the server still exits before A2S readiness with Null graphics / localization errors after connecting its console window.
 - Screen backend: treat lingering GNU screen `Dead ???` sockets as not running so repeated local validation reruns stop tripping false "already running" preflight failures on reused integration server names.
 - Server support: switch `terratechworldsserver` to the official dedicated launch flags (`-log -nullrhi`) and a stronger headless Linux wrapper (`xvfb-run`, SDL `x11`, software GL), then document the current blocker that it still exits before `TT2.log` / A2S readiness.
 - Server support: check in the best-known `primalcarnageextinctionserver` dedicated launcher (`SERVER PC-Docks?...?bIsDedicated=true -seekfreeloadingserver -log`) plus the Linux `xvfb-run` wrapper, and record that clean focused integration still falls short of A2S readiness.

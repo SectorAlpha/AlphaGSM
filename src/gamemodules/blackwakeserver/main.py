@@ -1,11 +1,13 @@
 """Blackwake dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
+from utils.simple_kv_config import rewrite_equals_config
 
 from utils.platform_info import IS_LINUX
 
@@ -15,6 +17,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 423410
 steam_anonymous_login_possible = True
+DEFAULT_SERVER_PASSWORD = "alphagsm123"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -27,6 +30,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "queryport", "servername", "serverpassword")
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="BlackwakeServer.exe"):
@@ -42,6 +46,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BlackwakeServer.exe
         {
             "queryport": "27015",
             "maxplayers": "54",
+            "servername": server.name,
+            "serverpassword": DEFAULT_SERVER_PASSWORD,
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -66,13 +72,45 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BlackwakeServer.exe
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+def _server_cfg_path(server):
+    """Return the dedicated server config path."""
+
+    return os.path.join(server.data["dir"], "Server.cfg")
+
+
+def sync_server_config(server):
+    """Keep the managed Blackwake server config aligned with AlphaGSM data."""
+
+    config_path = _server_cfg_path(server)
+    if not os.path.isfile(config_path):
+        return
+    rewrite_equals_config(
+        config_path,
+        {
+            "serverName": server.data.get("servername", server.name),
+            "port": int(server.data.get("port", 7777)),
+            "sport": int(server.data.get("queryport", 27015)),
+            "password": server.data.get("serverpassword", DEFAULT_SERVER_PASSWORD),
+            # Headless Wine/Proton runs are stable when we avoid spawning bot crews.
+            "useBots": 0 if server.data.get("serverpassword") else 1,
+        },
+    )
+
+
+_base_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
 )
-install.__doc__ = "Download the Blackwake server files via SteamCMD."
+_base_install.__doc__ = "Download the Blackwake server files via SteamCMD."
+
+
+def install(server):
+    """Download the Blackwake server files via SteamCMD."""
+
+    _base_install(server)
+    sync_server_config(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -80,12 +118,39 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Blackwake server files and optionally restart the server."
 
 
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Blackwake server."
+
+
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap the Windows server command for headless Linux hosts."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return ["xvfb-run", "-a", *wrapped]
 
 
 def get_start_command(server):
@@ -108,12 +173,33 @@ def get_start_command(server):
         str(server.data["maxplayers"]),
     ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
         )
     return cmd, server.data["dir"]
+
+
+def prestart(server):
+    """Refresh the dedicated server config before each launch."""
+
+    sync_server_config(server)
+
+
+def get_query_address(server):
+    """Return the Steam query endpoint for Blackwake."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
+
+
+def get_info_address(server):
+    """Return the info endpoint for Blackwake."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -141,12 +227,17 @@ def backup(server, profile=None):
 def checkvalue(server, key, *value):
     """Validate supported Blackwake datastore edits."""
 
+    if key == ("serverpassword",):
+        password = "".join(value)
+        if password and len(password) < 4:
+            raise ServerError("serverpassword must be at least 4 characters or empty")
+        return password
     return gamemodule_common.handle_basic_checkvalue(
         server,
         key,
         *value,
         int_keys=("port", "queryport", "maxplayers"),
-        str_keys=("exe_name", "dir"),
+        str_keys=("exe_name", "dir", "servername"),
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(

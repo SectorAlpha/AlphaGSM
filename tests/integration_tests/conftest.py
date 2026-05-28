@@ -162,19 +162,21 @@ _PORT_CONFLICT_MARKERS = (
 )
 
 
-def _parse_recommended_port(output):
-    """Return the port number from AlphaGSM's 'Recommended free port set' line.
+def _parse_recommended_port_overrides(output):
+    """Return recommended claim overrides from AlphaGSM's conflict hint.
 
-    Parses the bare ``port=N`` key (not ``clientport`` or ``sourcetvport``) from
-    the recommendation line and returns the integer port number N.
-    Returns *None* if the line is absent or does not contain a bare ``port=`` key.
+    Parses the ``Recommended free port set:`` line and returns a mapping of
+    bare ``key=value`` pairs as integers. Returns an empty dict if the line is
+    absent or contains no parseable values.
     """
     idx = output.find("Recommended free port set:")
     if idx == -1:
-        return None
-    tail = output[idx:]
-    match = re.search(r"(?<![a-z])port=(\d+)", tail)
-    return int(match.group(1)) if match else None
+        return {}
+    line = output[idx:].splitlines()[0]
+    return {
+        key: int(value)
+        for key, value in re.findall(r"\b([a-z][a-z0-9_]*)=(\d+)\b", line)
+    }
 
 
 def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
@@ -210,8 +212,24 @@ def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
         combined = (result.stdout or "") + "\n" + (result.stderr or "")
         if not any(m in combined for m in _PORT_CONFLICT_MARKERS):
             break
-        recommended = _parse_recommended_port(combined)
-        current_port = recommended if recommended is not None else pick_free_tcp_port()
+        recommended = _parse_recommended_port_overrides(combined)
+        current_port = recommended.get("port", pick_free_tcp_port())
+        for key, value in recommended.items():
+            if key == "port":
+                continue
+            set_result = run_alphagsm(
+                env, server_name, "set", key, str(value), timeout=timeout,
+            )
+            log_command_result(
+                f"alphagsm {server_name} set {key} {value} [timeout={timeout}]",
+                set_result,
+            )
+            if set_result.returncode != 0:
+                last_result = set_result
+                break
+        else:
+            continue
+        break
     skip_for_known_steamcmd_issue(last_result)
     assert last_result.returncode == 0, last_result.stderr or last_result.stdout
     return last_result, current_port  # unreachable after assert

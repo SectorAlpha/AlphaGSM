@@ -204,7 +204,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
 | arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
 | astroneerserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 728470 |
-| blackwakeserver | Wine: exe BlackwakeServer.exe confirmed; -batchmode -nographics added; fails with 'already running' — investigating process detection false positive — app 423410 |
+| blackwakeserver | Wine: focused validation now gets through setup/start with the managed `Server.cfg` and module-owned `queryport`, but the Unity dedicated process still dies under NullGfx after `[NetworkHandler] Server started` with repeated `BotHandler` `IndexOutOfRangeException` / `NullReferenceException` crashes before query-ready state — app 423410 |
 | darkandlightserver | Re-enabled: Linux Wine/Proton smoke and integration now require `info --json` protocol `udp` on the game port before query/info; the dedicated query port is not exposing A2S in CI; validate individually under Wine/Proton for app 630230 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | empyrionserver | Re-enabled: server now launches `DedicatedServer/EmpyrionDedicated.exe`, smoke waits 600s on the screen log plus `info --json` protocol `a2s`, and the stale launcher/docs mismatch is removed — app 530870 |
@@ -225,7 +225,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
-| saleblazersserver | Re-enabled: server writes readiness to `server.log` via `-logFile`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton for app 3099600 |
+| saleblazersserver | Re-enabled: server writes readiness to `server.log` via `-logFile`, and the Linux Wine/Proton path now wraps the Unity dedicated server in `xvfb-run` plus SDL `x11`/dummy audio so it reaches `Launching server...`, `Waiting for Hosting Selections...`, and `Connected to Console Window!`; current host validation still dies before A2S readiness with Null graphics / localization exceptions in `server.log` — app 3099600 |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |

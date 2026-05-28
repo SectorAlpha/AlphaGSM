@@ -27,7 +27,7 @@ class DummyServer:
 
 
 def test_blackwake_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(blackwakeserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setattr(blackwakeserver, "IS_LINUX", False)
     server = DummyServer("bw")
     exe = tmp_path / "Blackwake Dedicated Server.exe"
     exe.write_text("")

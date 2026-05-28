@@ -41,6 +41,8 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data["servername"] == server.name
+    assert server.data["serverpassword"] == mod.DEFAULT_SERVER_PASSWORD
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -118,6 +120,90 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_query_and_info_address_use_queryport():
+    server = DummyServer(name="blackwake-it")
+    server.data.update({"queryport": 27016})
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 27016, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27016, "a2s")
+
+
+def test_sync_server_config_updates_server_cfg(tmp_path):
+    server = DummyServer(name="blackwake-it")
+    server.data.update({
+        "dir": str(tmp_path),
+        "port": 34238,
+        "queryport": 27016,
+        "servername": "AlphaGSM Blackwake",
+        "serverpassword": "alphagsm123",
+    })
+    cfg_path = tmp_path / "Server.cfg"
+    cfg_path.write_text(
+        "serverName=my server\n"
+        "port=25001\n"
+        "sport=27015\n"
+        "password=\n"
+        "useBots=1\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        "serverName=AlphaGSM Blackwake",
+        "port=34238",
+        "sport=27016",
+        "password=alphagsm123",
+        "useBots=0",
+    ]
+
+
+def test_checkvalue_serverpassword_requires_min_length():
+    server = DummyServer()
+
+    with pytest.raises(ServerError, match="at least 4 characters"):
+        mod.checkvalue(server, ("serverpassword",), "abc")
+
+    assert mod.checkvalue(server, ("serverpassword",), "alphagsm123") == "alphagsm123"
+
+
+def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *cmd,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: (
+            [cmd[0], *(f"{key}={value}" for key, value in env.items()), *cmd[1:]]
+            if cmd and cmd[0] == "env"
+            else ["env", *(f"{key}={value}" for key, value in env.items()), *cmd]
+        ),
+    )
+
+    wrapped = mod._wrap_linux_command(["BlackwakeServer.exe", "-batchmode"])
+
+    assert wrapped == [
+        "xvfb-run",
+        "-a",
+        "env",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "wine",
+        "BlackwakeServer.exe",
+        "-batchmode",
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -206,4 +292,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

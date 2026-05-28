@@ -170,6 +170,13 @@ Do not treat a lifecycle task as complete just because the server now starts.
 
 - If smoke/integration prove the server is working, update the repo trackers in
   the same change so the server is clearly marked enabled/passed.
+- Treat `docs/TEST_STATUS.md` as the source of truth for enablement state, then
+  regenerate `docs/game-server-support.md` from it in the same slice instead of
+  hand-editing the generated tracker.
+- Only sync `disabled_servers.conf` when the server is genuinely hard-disabled;
+  if the server is merely waiting on validation or still under investigation,
+  keep it in `SKIPPED` with an evidence-backed note instead of bouncing it
+  between active and disabled states.
 - Mark any local plan, checklist, or campaign tracker entry done in the same
   PR once the server has crossed the finish line.
 - If the server is still blocked, leave an evidence-backed note describing the

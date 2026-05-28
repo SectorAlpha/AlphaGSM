@@ -62,6 +62,7 @@ alphagsm mysaleblaz backup
 - Module name: `saleblazersserver`
 - Default game port: 27015
 - Default query port: 27016
+- Current validation status: still not enabled on Linux/Wine as of 2026-05-28. The headless wrapper now gets the dedicated server through `Launching server...`, `Waiting for Hosting Selections...`, and `Connected to Console Window!`, but the process still exits before A2S readiness with Null graphics / localization errors in `server.log`.
 
 ## Developer Notes
 
@@ -75,7 +76,9 @@ alphagsm mysaleblaz backup
 AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`
 and treats `info --json` returning protocol `a2s` as the readiness gate. The
 plain Unity startup text in `server.log` is not stable enough to use as the
-only readiness marker.
+only readiness marker. On Linux hosts AlphaGSM now prefers `xvfb-run` with SDL
+`x11` video and dummy audio so the dedicated process gets past the earlier
+headless window-creation failure.
 
 ### Server Configuration
 

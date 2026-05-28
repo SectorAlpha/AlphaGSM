@@ -88,8 +88,20 @@ run_setup_or_skip_steamcmd() {
   set -e
   if [[ $rc -ne 0 ]]; then
     if grep -q 'Recommended free port set:' "$output_file"; then
-      local recommended_port
-      recommended_port=$(sed -n 's/.*Recommended free port set:.*port=\([0-9][0-9]*\).*/\1/p' "$output_file" | tail -n 1)
+      local recommendation_line recommended_port
+      recommendation_line=$(grep 'Recommended free port set:' "$output_file" | tail -n 1)
+      recommended_port=$(sed -n 's/.*Recommended free port set:.*\<port=\([0-9][0-9]*\)\>.*/\1/p' <<<"$recommendation_line" | tail -n 1)
+      for token in ${recommendation_line#*Recommended free port set: }; do
+        case "$token" in
+          port=*) ;;
+          *=*)
+            local key="${token%%=*}"
+            local value="${token#*=}"
+            echo "Applying recommended claimed port override: $key=$value"
+            run_alphagsm "${1}" set "$key" "$value"
+            ;;
+        esac
+      done
       if [[ -n "$recommended_port" ]]; then
         local retry_args=()
         local replaced=0

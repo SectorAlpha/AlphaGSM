@@ -2,6 +2,7 @@
 
 import importlib
 from pathlib import Path
+import subprocess
 import sys
 import types
 
@@ -241,6 +242,74 @@ def test_write_config_can_use_shared_download_cache_when_opted_in(monkeypatch, t
     assert f"target_path = {shared_root / 'downloads' / 'downloads'}" in text
     assert "[runtime]" in text
     assert "backend = process" in text
+
+
+def test_parse_recommended_port_overrides_reads_full_claim_set():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    parsed = helpers._parse_recommended_port_overrides(
+        "Port conflicts detected\n"
+        "Recommended free port set: port=42270 queryport=27016 peerport=27017\n"
+    )
+
+    assert parsed == {
+        "port": 42270,
+        "queryport": 27016,
+        "peerport": 27017,
+    }
+
+
+def test_run_setup_with_port_retry_applies_recommended_nonprimary_claims(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    calls = []
+    setup_failure = subprocess.CompletedProcess(
+        args=["alphagsm"],
+        returncode=1,
+        stdout="",
+        stderr=(
+            "Port conflicts detected:\n"
+            "- unmanaged: Live listener already holds 0.0.0.0:27015\n"
+            "Recommended free port set: port=42270 queryport=27016\n"
+        ),
+    )
+    set_success = subprocess.CompletedProcess(
+        args=["alphagsm"],
+        returncode=0,
+        stdout="Value set\n",
+        stderr="",
+    )
+    setup_success = subprocess.CompletedProcess(
+        args=["alphagsm"],
+        returncode=0,
+        stdout="Setup complete\n",
+        stderr="",
+    )
+    responses = iter([setup_failure, set_success, setup_success])
+
+    def _fake_run_alphagsm(env, *command_parts, timeout=None):
+        calls.append(command_parts)
+        return next(responses)
+
+    monkeypatch.setattr(helpers, "run_alphagsm", _fake_run_alphagsm)
+    monkeypatch.setattr(helpers, "log_command_result", lambda *args, **kwargs: None)
+    monkeypatch.setattr(helpers, "skip_for_known_steamcmd_issue", lambda result: None)
+    monkeypatch.setattr(helpers, "pick_free_tcp_port", lambda: 49999)
+
+    result, port = helpers.run_setup_with_port_retry(
+        {"ALPHAGSM_CONFIG_LOCATION": str(tmp_path / "alphagsm.conf")},
+        "itblackwake",
+        42267,
+        tmp_path / "server",
+    )
+
+    assert result.returncode == 0
+    assert port == 42270
+    assert calls == [
+        ("itblackwake", "setup", "-n", "42267", str(tmp_path / "server")),
+        ("itblackwake", "set", "queryport", "27016"),
+        ("itblackwake", "setup", "-n", "42270", str(tmp_path / "server")),
+    ]
 
 
 def test_backend_write_java_wrapper_prefers_java_home(monkeypatch, tmp_path):

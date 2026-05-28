@@ -69,13 +69,7 @@ def test_returntomoria_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 
 def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    wrap_calls = []
-
-    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
-        wrap_calls.append(prefer_proton)
-        return list(cmd)
-
-    monkeypatch.setattr(saleblazersserver.proton, "wrap_command", fake_wrap_command)
+    monkeypatch.setattr(saleblazersserver, "IS_LINUX", False)
     server = DummyServer("sale")
     exe_dir = tmp_path / "Default"
     exe_dir.mkdir(parents=True)
@@ -87,7 +81,6 @@ def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatc
 
     assert cmd == ["Default/Saleblazers.exe", "-batchmode", "-nographics", "-logFile", "./server.log"]
     assert cwd == server.data["dir"]
-    assert wrap_calls == [False]
 
 
 def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkeypatch):

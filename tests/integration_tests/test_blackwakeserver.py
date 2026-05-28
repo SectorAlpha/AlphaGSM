@@ -35,7 +35,7 @@ def test_blackwakeserver_lifecycle(tmp_path):
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itblackwakeser"
+    server_name = ("itbw" + tmp_path.name.replace("_", "")[-11:])[:15]
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
@@ -58,18 +58,20 @@ def test_blackwakeserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
+        log_path = install_dir / "BlackwakeServer_Data" / "output_log.txt"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["[NetworkHandler] Server started", "Server socket creation successful!"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
-
-        # status
-        run_and_assert_ok(env, server_name, "status")
 
         # Use the module-owned query path instead of assuming the default query port.
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+
+        # status
+        run_and_assert_ok(env, server_name, "status")
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
