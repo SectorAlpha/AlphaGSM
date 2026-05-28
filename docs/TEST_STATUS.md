@@ -150,7 +150,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | citadelserver | SteamCMD app 489650 installs no Linux-compatible dedicated server binary (executable file not found) |
-| chivalryserver | SteamCMD app 220070 now reaches a live Linux dedicated-server process after AlphaGSM repairs the missing `PhysXUpdateLoader.so` alias and syncs the managed engine ports, but the anonymous Linux payload still does not expose a working A2S query path for AlphaGSM `query`/`info` |
+| chivalryserver | SteamCMD app 220070 now repairs the missing `PhysXUpdateLoader.so` alias, syncs the managed engine ports, and exposes the install-root Steam library paths so the Linux binary can locate `steamclient.so`, but anonymous startup still aborts in `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` before A2S `query` / `info` ever become reachable |
 | conanexiles | SteamCMD app 443030 installs no Linux-compatible dedicated server binary (ConanSandboxServer not present) |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | cryofallserver | SteamCMD app 1061710 installs no Linux-compatible dedicated server binary (CryoFall_Server not present) |

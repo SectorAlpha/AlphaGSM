@@ -150,6 +150,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    install_dir = os.path.normpath(server.data["dir"])
     exe_dir = os.path.dirname(exe_path)
     lib_dir = os.path.join(exe_dir, "lib")
     loader_alias = os.path.join(lib_dir, "PhysXUpdateLoader.so")
@@ -172,6 +173,8 @@ def get_start_command(server):
             None,
             (
                 os.path.join(steamcmd.STEAMCMD_DIR, "linux32"),
+                install_dir,
+                os.path.join(install_dir, "linux64"),
                 exe_dir,
                 lib_dir,
                 os.environ.get("LD_LIBRARY_PATH"),

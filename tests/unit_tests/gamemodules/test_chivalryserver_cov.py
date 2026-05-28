@@ -160,9 +160,11 @@ def test_get_start_command(tmp_path, monkeypatch):
     cmd, cwd = mod.get_start_command(server)
     assert cmd[0] == "env"
     assert cmd[1] == (
-        "LD_LIBRARY_PATH=%s:%s:%s:/existing/lib"
+        "LD_LIBRARY_PATH=%s:%s:%s:%s:%s:/existing/lib"
         % (
             os.path.join(mod.steamcmd.STEAMCMD_DIR, "linux32"),
+            str(tmp_path),
+            str(tmp_path / "linux64"),
             str(tmp_path / "Binaries" / "Linux"),
             str(tmp_path / "Binaries" / "Linux" / "lib"),
         )

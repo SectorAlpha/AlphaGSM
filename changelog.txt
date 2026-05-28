@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Server support: extend `chivalryserver`'s Linux launch `LD_LIBRARY_PATH` with the install root and `linux64/` so the dedicated binary can locate the shipped `steamclient.so`; the remaining blocker is now the upstream `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` failure before query readiness.
 - Integration tests: give `pvrserver` the shared 60 minute SteamCMD setup budget after focused host validation got past the old setup path but still timed out at 600 seconds before any real start/query result.
 - Documentation/runtime: sharpen the `atlasserver` blocker to the real remaining surface: the module already advertises the shared `steamcmd-linux` Docker runtime, but the checked-in ATLAS smoke/integration path still validates the host-process launch, and on current Ubuntu 24.04 hosts the native `ShooterGameServer` dies before A2S readiness because `libssl.so.1.0.0` is missing while `libssl.so.1.1` is present.
 - Server support: sharpen `empyrionserver`'s remaining Linux Wine/Proton blocker with exact focused-validation evidence: the direct dedicated executable still stops at `Failed to create batch mode window: Success.` before any proven bound-port/query-ready state, and the module still leaves `dedicated.yaml` at the upstream `Srv_Port: 30000` default instead of syncing AlphaGSM's configured runtime port.

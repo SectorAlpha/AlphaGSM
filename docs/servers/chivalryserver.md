@@ -60,7 +60,7 @@ alphagsm mychivalry backup
 - Module name: `chivalryserver`
 - Default port: 7777
 - Default query port: 27015
-- Current validation status: AlphaGSM now repairs the missing `PhysXUpdateLoader.so` alias, launches from the correct Linux working directory, and syncs the managed `Port`/`PeerPort`/`QueryPort` values into `PCServer-UDKEngine.ini`, but the anonymous Linux dedicated-server payload still does not expose a working A2S query path for AlphaGSM `query`/`info`.
+- Current validation status: AlphaGSM now repairs the missing `PhysXUpdateLoader.so` alias, launches from the correct Linux working directory, syncs the managed `Port`/`PeerPort`/`QueryPort` values into `PCServer-UDKEngine.ini`, and exposes the install-root Steam library paths so the Linux binary can locate the shipped `steamclient.so`, but anonymous Linux startup still aborts in `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` before any working A2S `query`/`info` path appears.
 
 ## Developer Notes
 
