@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-05-23
+Last updated: 2026-05-28
 
 ## Summary
 
@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 89      |
+| PASSED   | 92      |
 | DISABLED | 66      |
-| SKIPPED  | 77      |
+| SKIPPED  | 75      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (89)
+## PASSED (92)
 
 | Test | Type |
 |------|------|
@@ -84,6 +84,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | rimworldtogetherserver | Direct download |
 | rust | SteamCMD |
 | satisfactory | SteamCMD |
+| ss14server | Direct download — PASSED 2026-05-25; smoke and integration both reach the managed `server_config.toml` status surface, and `query` / `info --json` now pass through the live `robust_status` endpoint on the supported host-`dotnet` path |
 | silicaserver | SteamCMD |
 | scpslserver | SteamCMD |
 | smallandserver | SteamCMD |
@@ -92,6 +93,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | squadserver | SteamCMD |
 | stnserver | SteamCMD |
 | svenserver | SteamCMD (GoldSrc) |
+| terraria_tshock | Direct download — PASSED 2026-05-28; smoke and focused integration both pass on the Docker-backed lifecycle once the shared `steamcmd-linux` runtime image includes the required `.NET` runtimes, and CI now builds that image from the branch before validation |
 | terraria_vanilla | Direct download |
 | tf2 | SteamCMD (Source) |
 | tfcserver | SteamCMD (GoldSrc) |
@@ -140,7 +142,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
-| atlasserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query path instead of waiting for absent log markers |
+| atlasserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query path instead of waiting for absent log markers, but current Linux validation still fails before startup because `ShooterGameServer` cannot load `libssl.so.1.0.0` without a legacy compat runtime |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
@@ -192,7 +194,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (78)
+## SKIPPED (75)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -228,7 +230,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
 | bannerlordserver | Re-enabled from disabled: anonymous SteamCMD installs app 1863440 successfully and the module now targets `bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`, but smoke/integration currently skip until a host `dotnet` runtime is available to validate the real start/query contract |
-| ss14server | Re-enabled: manifest-based SS14 downloads install correctly, AlphaGSM now syncs `server_config.toml`, and smoke/integration pass through `info --json` protocol `robust_status`; still requires a host-installed `dotnet` runtime |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Re-enabled: UE3 server D3D crash is mitigated with `LIBGL_ALWAYS_SOFTWARE=1`, `-log` now writes readiness to `*/Logs/Launch.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually for app 1141370 |
@@ -270,7 +271,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | rtcwserver | Download prerequisite |
 | soulmask | Soulmask server exits unexpectedly on startup; requires investigation of runtime configuration or library requirements |
 | subnauticaserver | SteamCMD/platform issue |
-| terraria_tshock | Download prerequisite |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |
 | ut2k4server | Download prerequisite |

@@ -187,11 +187,12 @@ jobs:
   smoke-test:
     runs-on: ubuntu-latest
     if: needs.discover-smoke-tests.outputs.has_tests == 'true'
-    needs: discover-smoke-tests
+    needs: [discover-smoke-tests, build-steamcmd-linux-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-smoke-tests.outputs.matrix) }}
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       PYTHONPATH: .:src
     name: smoke-test (${{ matrix.label }})
     steps:
@@ -325,10 +326,51 @@ jobs:
           secrets: |
             gh_token=${{ secrets.GITHUB_TOKEN }}
 
+  build-steamcmd-linux-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute steamcmd-linux runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(sha256sum docker/steamcmd-linux/Dockerfile | cut -c1-12)
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-steamcmd-linux-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push steamcmd-linux runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/steamcmd-linux/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
   integration-test:
     runs-on: ubuntu-latest
     if: needs.discover-integration-tests.outputs.has_tests == 'true'
-    needs: [discover-integration-tests, build-integration-image]
+    needs: [discover-integration-tests, build-integration-image, build-steamcmd-linux-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.matrix) }}
@@ -338,6 +380,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       PYTHONPATH: .:src
       WINEPREFIX: /opt/wine
     name: integration-test (${{ matrix.label }})
@@ -437,8 +480,9 @@ jobs:
 
   backend-integration-test:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage, build-integration-image]
+    needs: [unit-test, lint, coverage, build-integration-image, build-steamcmd-linux-runtime]
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       PYTHONPATH: .:src
     name: backend-integration-test
     steps:
@@ -489,6 +533,7 @@ jobs:
         env:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
           ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
           ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
@@ -496,7 +541,7 @@ jobs:
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="ghcr.io/${owner}/alphagsm-quake-linux-runtime:latest"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE="ghcr.io/${owner}/alphagsm-service-console-runtime:latest"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="ghcr.io/${owner}/alphagsm-simple-tcp-runtime:latest"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX="ghcr.io/${owner}/alphagsm-steamcmd-linux-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX="${{ needs.build-steamcmd-linux-runtime.outputs.image }}"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_WINE_PROTON="ghcr.io/${owner}/alphagsm-wine-proton-runtime:latest"
           pytest \
             tests/backend_integration_tests/test_backend_docker.py \

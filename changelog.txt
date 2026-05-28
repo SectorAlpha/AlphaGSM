@@ -7,6 +7,14 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-05-28
+- CI: build and inject the shared `steamcmd-linux` runtime image into smoke, integration, and backend Docker-wrapper jobs so PR validation exercises the branch Dockerfile instead of a stale published `:latest`.
+- Server support: re-enable `terraria_tshock` after confirming both smoke and focused integration pass on the Docker-backed lifecycle once the shared SteamCMD runtime image carries the required `.NET` runtimes.
+
+2026-05-27
+- Server support: promote `ss14server` to supported after CI smoke and integration both passed on the managed `server_config.toml` plus `robust_status` lifecycle with the host `.NET` runtime installed.
+- Integration tests: align `terraria_tshock` with the module's Docker-backed runtime path so lifecycle coverage matches the passing smoke contract instead of the older host-screen path.
+
 2026-05-18
 - Server support: re-enable `emserver` after confirming the anonymous SteamCMD install path reaches real Source readiness, survives the expected initial hibernation state, and passes `query`, `info`, `info --json`, and clean shutdown.
 - Server support: re-enable `pcarserver` after confirming the standard smoke runner and focused integration lifecycle both pass against the real A2S query surface on the derived `queryPort` (`port + 1`).

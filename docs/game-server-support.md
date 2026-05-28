@@ -76,6 +76,7 @@ Notes:
 - [x] rimworldtogetherserver
 - [x] rust
 - [x] satisfactory
+- [x] ss14server
 - [x] silicaserver
 - [x] scpslserver
 - [x] smallandserver
@@ -84,6 +85,7 @@ Notes:
 - [x] squadserver
 - [x] stnserver
 - [x] svenserver
+- [x] terraria_tshock
 - [x] terraria_vanilla
 - [x] tf2
 - [x] tfcserver
@@ -213,7 +215,6 @@ Notes:
 - [ ] sniperelite4server
 - [ ] sonsoftheforestserver
 - [ ] bannerlordserver
-- [ ] ss14server
 - [ ] starruptureserver
 - [ ] staxelserver
 - [ ] subsistenceserver
@@ -255,7 +256,6 @@ Notes:
 - [ ] rtcwserver
 - [ ] soulmask
 - [ ] subnauticaserver
-- [ ] terraria_tshock
 - [ ] tsserver
 - [ ] twserver
 - [ ] ut2k4server
