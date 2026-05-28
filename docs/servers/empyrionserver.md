@@ -90,13 +90,14 @@ before any proven game/query readiness:
   upstream `dedicated.yaml` documents that number as `Tel_Port`, not as a
   confirmed A2S query endpoint. The module does not currently claim a proven
   native query-port mapping beyond syncing the main game port.
-- A bounded direct repro of
-  `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -logFile Logs/alphagsm-dedicated.log -dedicated dedicated.yaml`
-  under Proton plus `xvfb-run` on 2026-05-29 progressed past the earlier Unity
-  bootstrap blind spot and into the dedicated log with `Loading file
-  '.../dedicated.yaml'` and `Started a new game`, but still produced no proven
-  UDP/TCP listener or AlphaGSM query/info readiness within the bounded probe
-  window.
+- A bounded AlphaGSM-managed host repro on 2026-05-29 kept the direct dedicated
+  process alive for 240 seconds, synced `ServerConfig.Srv_Port` to `46319`,
+  created `Saves/Games/DediGame`, and advanced the stable dedicated log
+  (`Logs/alphagsm-dedicated.log`) through `Loading file '.../dedicated.yaml'`
+  to `Started a new game`. Even at that later state, repeated `ss -lpun` checks
+  still showed no listener on either the synced main port (`46319`) or the
+  documented telnet port (`30004`), and AlphaGSM `query` / `info --json`
+  continued to fail with `TCP ping failed: [Errno 111] Connection refused`.
 - A bounded launcher repro of `EmpyrionLauncher.exe -startDedi` under the same
   wrapper still exits immediately, spawns a detached child that AlphaGSM cannot
   supervise directly, and the child only logged the old `Failed to create batch
@@ -104,8 +105,11 @@ before any proven game/query readiness:
 
 The next bounded runtime/query fix is to re-prove which live port/protocol
 AlphaGSM should use for `query` and `info` now that `Srv_Port` sync is in
-place and the direct dedicated log is stable. Until that happens, `30004`
-remains only the documented `Tel_Port`, not a confirmed A2S endpoint.
+place, the direct dedicated log is stable, and the dedicated process can reach
+`Started a new game` without ever exposing a reachable listener. Until that
+happens, `30004` remains only the documented `Tel_Port`, not a confirmed A2S
+endpoint, and the synced game port still has no proven listener contract under
+the current host Wine/Proton path.
 
 ### Server Configuration
 
