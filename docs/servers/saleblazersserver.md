@@ -62,7 +62,7 @@ alphagsm mysaleblaz backup
 - Module name: `saleblazersserver`
 - Default game port: 27015
 - Default query port: 27016
-- Current validation status: still not enabled on Linux/Wine as of 2026-05-28. The module now promotes the best-known Linux launcher shape into code: `xvfb-run` plus SDL `x11`, dummy audio, software GL (`LIBGL_ALWAYS_SOFTWARE=1`), and no explicit `-headless` flag. A bounded direct repro against an already-installed tree under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme/saleblazers-runtime-debug/` reached `Launching server...`, `Starting server console window process...`, `Waiting for Hosting Selections...`, and `Connected to Console Window!`, which is better than the older `Failed to create batch mode window` / immediate NullGfx stall. The blocker is now narrower but still real: during that live repro, `ss -lpun` showed no listener on either the stored game port (`55000`) or the default query port (`27016`), so AlphaGSM still cannot prove `query` / `info` / `info --json` readiness.
+- Current validation status: still not enabled on Linux/Wine as of 2026-05-29. The module now promotes the best-known Linux launcher shape into code: `xvfb-run` plus SDL `x11`, dummy audio, software GL (`LIBGL_ALWAYS_SOFTWARE=1`), and no explicit `-headless` flag. A fresh bounded repro against an already-installed tree under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme/saleblazers-runtime-debug/` confirmed the newer upstream `-config` flow is real: the main game log reaches `Launching server...`, `Config file found! Loading config from PATH ./DedicatedServerConfig.json`, and `Starting server console window process...`, while the generated Proton `LocalLow/.../ServerConsoleLogs/ServerConsole_*.log` reaches the dedicated-server banner and `Waiting for Main Game Connection...`. The remaining blocker is now precise: even with a valid config file and the current Xvfb wrapper, the Linux/Wine run still advertises `Port 55000` in the early multicast line instead of the configured hosting port, the main game never progresses to `Server hosted on port ...` or `Connected to Console Window!`, and AlphaGSM still cannot prove `query` / `info` / `info --json` readiness on A2S.
 
 ## Developer Notes
 
@@ -78,10 +78,14 @@ The plain Unity startup text in `server.log` is not stable enough to use as
 the only readiness marker. On Linux hosts AlphaGSM now launches Saleblazers
 through `xvfb-run` with SDL `x11` video, dummy audio, software GL
 (`LIBGL_ALWAYS_SOFTWARE=1`), and without the explicit `-headless` flag because
-that is the first launcher shape that consistently reaches `Connected to
-Console Window!` in local reproductions. Even with that improvement, fresh
-validation still has not shown a live listener on the managed game/query ports,
-so the remaining work is deeper than the wrapper flags alone.
+that is the first launcher shape that consistently reaches the dedicated-server
+bring-up path under Wine/Proton. The upstream docs also document
+`-config <DedicatedServerConfig.json>` as the supported non-interactive launch
+surface, and fresh repros confirm the game does load that file on Linux/Wine.
+The blocker is deeper: after `Config file found! ...` the main game stops at
+`Starting server console window process...`, while the generated
+`ServerConsoleLogs/ServerConsole_*.log` waits for the main game connection and
+never reaches the later `Server hosted on port ...` / Steam-init path.
 
 ### Server Configuration
 
