@@ -176,7 +176,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
-| pvrserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query port instead of waiting for absent log markers. Focused host integration on 2026-05-28 got past the old one-shot setup path, but Pavlov VR setup still timed out after the default 600 second SteamCMD budget with no lifecycle result, so the integration test now needs the same 60 minute setup class used by the repo's other large Steam payloads before the next real start/query blocker can be proven. |
+| pvrserver | Smoke re-enabled: readiness now polls `info --json` until protocol `a2s` on the query port instead of waiting for absent log markers. Focused host validation on 2026-05-28 proved the 60 minute setup budget is enough for Pavlov VR's 9.17 GB SteamCMD payload, and `pvrserver` now fails fast on host-process starts when `libc++.so.1` is missing instead of returning success and only crashing in the screen log. Host lifecycle/query is still blocked on providing the libc++ runtime on the host, or switching validation to the Docker runtime that already supplies it. |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |

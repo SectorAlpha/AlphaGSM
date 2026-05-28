@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Pavlov VR: make `pvrserver` fail fast on host-process launches when `libc++.so.1` is missing, after focused validation proved the new 60 minute SteamCMD setup budget is enough and the next real blocker is the missing host libc++ runtime rather than setup timing.
 - saleblazersserver: refine the Linux/Wine launcher to use the non-headless `xvfb-run` / SDL / software-GL path that reaches the dedicated console window more reliably; readiness is still blocked because the process does not yet bind its managed game/query ports.
 - empyrionserver: sync `dedicated.yaml` `ServerConfig.Srv_Port` from the AlphaGSM-owned port during install, update, prestart, and `set port`; add focused coverage for the native config-sync path while the remaining Linux blocker stays at `Failed to create batch mode window: Success.`
 - Smoke tests/runtime: make `run_darkandlightserver.sh` capture `info --json` without the runner banner so focused Linux/Proton validation reaches the real app `630230` blocker, and document the fresh evidence that Dark and Light still answers only on the game-port UDP health check while `queryport` `27016` refuses UDP/A2S and `stop` can orphan `DNLServer.exe` after the screen session exits.
