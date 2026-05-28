@@ -4,8 +4,9 @@ This guide covers the `atlasserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- `screen` for the current host-process smoke/integration path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libprotobuf10`, `libidn11`, and `libldap-2.4-2` compatibility packages)
+- A legacy OpenSSL 1.0.x compatible runtime for `libssl.so.1.0.0` on current Linux hosts when launching the native Linux binary outside the shared Docker runtime
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -74,6 +75,15 @@ alphagsm myatlasser backup
 Smoke and integration validation track readiness through `alphagsm info --json`
 returning protocol `a2s` on the dedicated query port via AlphaGSM's resolved
 local query host instead of relying on implicit fallback routing.
+
+`atlasserver` already exposes the shared `steamcmd-linux` runtime hooks, and
+that shared Docker runtime family carries the legacy ATLAS compatibility
+libraries. The remaining blocker on this host class is narrower: the checked-in
+ATLAS smoke/integration path still validates the host-process `screen` launch,
+and on current Ubuntu 24.04 hosts `ldconfig -p` exposes `libssl.so.1.1` but
+not `libssl.so.1.0.0`. As a result, `ShooterGameServer` exits immediately with
+`error while loading shared libraries: libssl.so.1.0.0` before AlphaGSM can
+reach the A2S readiness/query contract.
 
 ### Server Configuration
 

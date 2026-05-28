@@ -77,8 +77,27 @@ alphagsm myempyrion backup
 Current Linux host validation no longer uses `EmpyrionLauncher.exe`, because the
 launcher exits after spawning the real dedicated child and tears down the
 temporary `xvfb-run` display with it. AlphaGSM now keeps the direct dedicated
-process alive under Proton plus `xvfb-run`, but automated host validation still
-does not prove a reachable `query` / `info` endpoint after startup.
+process alive under Proton plus `xvfb-run`, but focused Linux host validation on
+2026-05-28 still stopped before any proven game/query readiness:
+
+- AlphaGSM stored explicit host ports like `46319` and `42657` in the server
+  data during focused integration runs, but the installed `dedicated.yaml`
+  remained at the upstream default `Srv_Port: 30000`, so the current module
+  still does not sync its configured runtime port into Empyrion's real server
+  config.
+- The server-owned dedicated log under `server/Logs/5046/Dedicated_*.log`
+  stopped at Unity bootstrap with `Failed to create batch mode window:
+  Success.` and never reached a later startup banner, bound-port message, or
+  query-ready marker.
+- A manual reproduction of
+  `DedicatedServer/EmpyrionDedicated.exe -batchmode -nographics -dedicated dedicated.yaml`
+  under Proton plus `xvfb-run` on 2026-05-28 also produced no fresh
+  server-owned runtime log or bound-port evidence within 45 seconds.
+
+The next bounded runtime/query fix is therefore to wire real Empyrion config
+sync first, then re-prove which live port/protocol AlphaGSM should use for
+`query` and `info`. Until that happens, `30004` remains only the documented
+`Tel_Port`, not a confirmed A2S endpoint.
 
 ### Server Configuration
 

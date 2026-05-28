@@ -84,6 +84,13 @@ Smoke and integration validation track readiness through `alphagsm info --json`
 returning protocol `a2s` on Pavlov's status-helper port (`port + 400`) instead
 of waiting for screen-log markers.
 
+Focused host integration on 2026-05-28 got past the older one-shot setup path,
+but still did not reach a real runtime/query result because `setup` timed out
+after the default 600 second SteamCMD budget. The next bounded validation step
+is therefore a longer 60 minute setup budget, matching the repository's other
+large Steam payloads, before the remaining start/query blocker can be recorded
+honestly.
+
 ### Server Configuration
 
 - **Config file**: See game module source

@@ -7,6 +7,7 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     pick_free_tcp_port,
+    run_setup_with_port_retry,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -22,8 +23,11 @@ from gamemodules.pvrserver import steam_app_id
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 3600  # 60 min: Pavlov VR setup can exceed the old 10 min SteamCMD budget under shared CI load
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 
 
+@pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full SteamCMD setup budget plus server bring-up and shutdown
 def test_pvrserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -43,7 +47,13 @@ def test_pvrserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "pvrserver")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+        timeout=SETUP_TIMEOUT,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
