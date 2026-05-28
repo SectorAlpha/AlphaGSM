@@ -140,7 +140,8 @@ def get_start_command(server):
     binaries_dir = os.path.dirname(exe_path)
     cmd = [
         os.path.basename(server.data["exe_name"]),
-        "SERVER",
+        # This dedicated executable already enters server mode; passing a
+        # literal "SERVER" token makes UE3 try to load a missing package.
         _build_server_map_url(server),
         "-seekfreeloadingserver",
         "-log",

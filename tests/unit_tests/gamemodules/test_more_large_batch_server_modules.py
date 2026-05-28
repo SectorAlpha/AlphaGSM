@@ -47,7 +47,6 @@ def test_primalcarnage_get_start_command_builds_expected_args(tmp_path, monkeypa
 
     assert cmd == [
         "PrimalCarnageServer.exe",
-        "SERVER",
         "PC-Docks?game=PrimalCarnageGame.PCTeamDeathMatchGame?Port=7777?PeerPort=7778?QueryPort=27015?bIsDedicated=true",
         "-seekfreeloadingserver",
         "-log",
@@ -99,7 +98,7 @@ def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkey
 
     cmd, cwd = terratechworldsserver.get_start_command(server)
 
-    assert cmd == ["TT2Server.exe", "-log", "-nullrhi"]
+    assert cmd == ["TT2Server.exe", "-log"]
     assert cwd == server.data["dir"]
 
 

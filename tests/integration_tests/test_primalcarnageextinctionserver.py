@@ -61,11 +61,18 @@ def test_primalcarnageextinctionserver_lifecycle(tmp_path):
 
     try:
         # UE3 dedicated server logs go to PrimalCarnageGame/Logs/Launch.log,
-        # not to stdout.  The -log flag in get_start_command writes there.
+        # not to stdout. The current Primal Carnage build no longer prints the
+        # older generic UE3 "Engine is initialized"/"listening on port"
+        # markers before A2S is ready, so we wait for its current map bring-up
+        # lines and then require a successful info/query round-trip.
         log_path = install_dir / "PrimalCarnageGame" / "Logs" / "Launch.log"
         wait_for_log_marker(
             log_path,
-            ["Engine is initialized", "listening on port", "Listening for client"],
+            [
+                "LoadMap: PC-Docks",
+                "Game class is 'PCTeamDeathMatchGame'",
+                "NetMode is now 1",
+            ],
             START_TIMEOUT,
             env=env,
             server_name=server_name,

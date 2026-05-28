@@ -137,7 +137,6 @@ def test_get_start_command_linux_uses_default_wine_path(tmp_path, monkeypatch):
     assert args == (
         [
             "PrimalCarnageServer.exe",
-            "SERVER",
             "PC-Docks?game=PrimalCarnageGame.PCTeamDeathMatchGame?Port=7777?PeerPort=7778?QueryPort=27015?bIsDedicated=true",
             "-seekfreeloadingserver",
             "-log",
@@ -162,7 +161,7 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         ],
     )
 
-    wrapped = mod._wrap_linux_command(["PrimalCarnageServer.exe", "SERVER"])
+    wrapped = mod._wrap_linux_command(["PrimalCarnageServer.exe"])
 
     assert wrapped == [
         "xvfb-run",
@@ -170,7 +169,6 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         "env",
         "wine",
         "PrimalCarnageServer.exe",
-        "SERVER",
     ]
 
 

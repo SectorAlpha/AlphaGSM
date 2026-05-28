@@ -72,16 +72,26 @@ alphagsm myprimalca backup
 - **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `336400`
 
-Current validation status: the 2026-05-28 follow-up now checks in the best
-known dedicated launcher (`SERVER PC-Docks?...?bIsDedicated=true
--seekfreeloadingserver -log`) and wraps it with `xvfb-run` on Linux. Focused
-validation now also retries AlphaGSM's recommended claimed-port overrides so
-an unmanaged listener on the default `queryport` `27015` no longer blocks
-setup, but the remaining blocker is still after real dedicated startup: the
-fresh rerun with `queryport=27016` again collapsed back to a dead screen
-session and zero-byte `Launch.log` after Wine reported `Failed to read file
-'PCDataStore_GameResource'` and an X `BadWindow` teardown. Keep this server in
-the validation queue rather than marking it enabled yet.
+Current validation status: the 2026-05-28 follow-up confirmed that
+`PrimalCarnageServer.exe` must receive the map URL directly. Passing a literal
+`SERVER` token makes UE3 try to load a missing package named `SERVER`, so
+AlphaGSM now launches the dedicated binary as `PrimalCarnageServer.exe
+PC-Docks?...?bIsDedicated=true -seekfreeloadingserver -log` and still wraps it
+with `xvfb-run` on Linux. Focused validation also kept the claimed-port retry
+path for the default `queryport` conflict on `27015`.
+
+With the corrected argv, the server now writes `PrimalCarnageGame/Logs/Launch.log`,
+loads `PC-Docks`, binds the UDP game/query ports, answers A2S on `queryport`,
+and returns `info --json` with protocol `a2s`. The current bring-up markers to
+watch before enforcing A2S are:
+
+- `LoadMap: PC-Docks`
+- `Game class is 'PCTeamDeathMatchGame'`
+- `NetMode is now 1`
+
+Focused validation also confirmed that `alphagsm stop` closes the live A2S
+ports again. Update shared enablement trackers separately in the parent
+integration change once the lane is cherry-picked.
 
 ### Server Configuration
 
