@@ -379,6 +379,21 @@ def _normalize_host_dependency_spec(spec, server_name):
     if "install_hint" in normalized and "install_hints" not in normalized:
         normalized["install_hints"] = normalized.pop("install_hint")
 
+    platforms = normalized.get("platforms")
+    if platforms not in (None, ""):
+        if isinstance(platforms, str):
+            platforms = [platforms]
+        elif not isinstance(platforms, (list, tuple, set)):
+            raise RuntimeError(
+                "Host dependency '%s' has invalid platforms for server %s"
+                % (dep_id, server_name)
+            )
+        normalized["platforms"] = [
+            str(platform).strip().lower()
+            for platform in list(platforms)
+            if str(platform).strip()
+        ]
+
     default_kind = "shared-library" if "library_names" in normalized else dep_id if dep_id == "java" else "command"
     normalized["kind"] = str(
         normalized.get("kind") or default_kind
@@ -516,6 +531,15 @@ def _resolve_host_dependency_library_name(spec):
     )
 
 
+def _host_dependency_applies_to_current_platform(spec):
+    """Return whether *spec* applies to the current host platform."""
+
+    platforms = list(spec.get("platforms") or ())
+    if not platforms:
+        return True
+    return _current_host_platform() in platforms
+
+
 def _resolve_host_dependency_install_hint(spec, entry):
     """Return a platform-aware install hint for a failed dependency."""
 
@@ -617,7 +641,7 @@ def _infer_process_host_dependencies(server, requirements):
 
 
 def get_process_host_dependency_report(server):
-    """Return Linux process-runtime dependency status for *server*."""
+    """Return process-runtime dependency status for *server*."""
 
     report = {
         "applicable": False,
@@ -655,6 +679,8 @@ def get_process_host_dependency_report(server):
         dependency_specs.append(spec)
 
     for spec in dependency_specs:
+        if not _host_dependency_applies_to_current_platform(spec):
+            continue
         entry = {
             "id": spec["id"],
             "display_name": spec.get("display_name", spec["id"]),
@@ -752,7 +778,7 @@ def get_process_host_dependency_report(server):
 
 
 def assert_host_install_requirements(server, phase="run"):
-    """Raise when Linux process-runtime host dependencies are missing."""
+    """Raise when process-runtime host dependencies are missing."""
 
     report = get_process_host_dependency_report(server)
     if not report.get("applicable") or report.get("ok", True):

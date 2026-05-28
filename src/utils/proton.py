@@ -39,6 +39,16 @@ _PROTON_SEARCH_DIRS = [
     "/opt/proton-ge",
 ]
 
+XVFB_RUN_HOST_DEPENDENCY = {
+    "id": "xvfb-run",
+    "display_name": "xvfb-run",
+    "command": "xvfb-run",
+    "platforms": ("linux",),
+    "install_hints": {
+        "linux": "Install the host package 'xvfb' before launching this server locally.",
+    },
+}
+
 
 # ---------------------------------------------------------------------------
 # Detection helpers
@@ -78,6 +88,12 @@ def find_proton():
 def is_available():
     """Return ``True`` if Wine or Proton-GE is available on this system."""
     return find_wine() is not None or find_proton() is not None
+
+
+def xvfb_host_dependency():
+    """Return the shared Linux xvfb-run host dependency metadata."""
+
+    return dict(XVFB_RUN_HOST_DEPENDENCY)
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +318,7 @@ def get_runtime_requirements(
     port_definitions=(),
     prefer_proton=False,
     extra_env=None,
+    extra_host_dependencies=None,
 ):
     """Return Docker metadata for Windows servers run through Wine/Proton."""
 
@@ -321,6 +338,7 @@ def get_runtime_requirements(
             {
                 "id": "wine-proton",
                 "display_name": "Wine or Proton-GE",
+                "platforms": ("linux",),
                 "command": (
                     {"label": "wine", "command": "wine"},
                     {"label": "proton", "command": find_proton() or "proton"},
@@ -328,6 +346,8 @@ def get_runtime_requirements(
             }
         ],
     }
+    if extra_host_dependencies:
+        requirements["host_dependencies"].extend(list(extra_host_dependencies))
     ports = _build_port_specs(server, port_definitions)
     if ports:
         requirements["ports"] = ports

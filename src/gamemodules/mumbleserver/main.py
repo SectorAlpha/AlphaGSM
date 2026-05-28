@@ -171,12 +171,31 @@ def get_info_address(server):
     return get_query_address(server)
 
 
+def _mumble_host_dependency():
+    """Return the process-runtime dependency metadata for Mumble binaries."""
+
+    return {
+        "id": "mumble-server",
+        "display_name": "Mumble dedicated server binary",
+        "command_key": "exe_name",
+        "command": (
+            {"label": "mumble-server", "command": "mumble-server"},
+            {"label": "murmurd", "command": "murmurd"},
+        ),
+        "platforms": ("linux",),
+        "install_hints": {
+            "linux": "Install the host package that provides the `mumble-server` / `murmurd` binary before launching this server locally.",
+        },
+    }
+
+
 def get_runtime_requirements(server):
     """Return Docker runtime metadata for simple TCP/UDP services."""
 
     requirements = {
         "engine": "docker",
         "family": "simple-tcp",
+        "host_dependencies": (_mumble_host_dependency(),),
     }
     if "dir" in server.data:
         requirements["mounts"] = [

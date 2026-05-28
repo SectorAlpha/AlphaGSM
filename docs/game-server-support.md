@@ -67,6 +67,7 @@ Notes:
 - [x] nmrihserver
 - [x] opforserver
 - [x] palworld
+- [x] primalcarnageextinctionserver
 - [x] pcarserver
 - [x] projectzomboid
 - [x] q2server
@@ -87,6 +88,7 @@ Notes:
 - [x] svenserver
 - [x] terraria_tshock
 - [x] terraria_vanilla
+- [x] terratechworldsserver
 - [x] tf2
 - [x] tfcserver
 - [x] thefrontserver
@@ -205,7 +207,6 @@ Notes:
 - [ ] noonesurvivedserver
 - [ ] notdserver
 - [ ] outpostzeroserver
-- [ ] primalcarnageextinctionserver
 - [ ] q3server
 - [ ] reignofkingsserver
 - [ ] returntomoriaserver
@@ -218,7 +219,6 @@ Notes:
 - [ ] starruptureserver
 - [ ] staxelserver
 - [ ] subsistenceserver
-- [ ] terratechworldsserver
 - [ ] ahlserver
 - [ ] aloftserver
 - [ ] arma3_altislife

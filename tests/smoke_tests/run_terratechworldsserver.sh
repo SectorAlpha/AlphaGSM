@@ -46,7 +46,7 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/terratechworldsserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-terratechworldsserver.conf"
-LOG_PATH="$INSTALL_DIR/Saved/Logs/TT2.log"
+LOG_PATH="$INSTALL_DIR/TT2/Saved/Logs/TT2.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -78,8 +78,8 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'listening on port|Engine is initialized|Server started|Listening'
-wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Created socket for bind address|IpNetDriver listening on port|Bringing World'
+wait_for_info_protocol "$SERVER_NAME" udp "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

@@ -230,6 +230,76 @@ def test_all_game_modules_resolve_valid_docker_manifests():
     assert offenders == []
 
 
+def test_modules_using_xvfb_run_declare_the_host_dependency():
+    offenders = []
+    for module_name in _game_module_names():
+        source = _module_source(module_name)
+        if "xvfb-run" not in source:
+            continue
+
+        module = import_module("gamemodules." + module_name)
+        original_resolvers = _stub_download_resolution(module, module_name)
+        server_root = _runtime_contract_root(module_name)
+        server = _FakeServer("it-" + module_name.replace(".", "-"), server_root)
+        server.module = module
+        try:
+            configure = getattr(module, "configure", None)
+            if callable(configure):
+                try:
+                    configure(server, False)
+                except ValueError as exc:
+                    if str(exc) != "No Port":
+                        raise
+                    configure(server, False, port=_default_test_port(module_name))
+            _seed_install_state(server)
+            runtime_module.ensure_runtime_hooks(module)
+            requirements = runtime_module._get_module_hook(module, "get_runtime_requirements")(server)
+            dependency_ids = {item["id"] for item in requirements.get("host_dependencies", [])}
+            if "xvfb-run" not in dependency_ids:
+                offenders.append(module_name + ": missing xvfb-run host dependency metadata")
+        finally:
+            for (target, attribute_name), original in original_resolvers.items():
+                setattr(target, attribute_name, original)
+            shutil.rmtree(server_root, ignore_errors=True)
+
+    assert offenders == []
+
+
+def test_modules_with_explicit_7z_prereq_declare_the_host_dependency():
+    offenders = []
+    for module_name in _game_module_names():
+        source = _module_source(module_name)
+        if "7z-compatible extractor" not in source:
+            continue
+
+        module = import_module("gamemodules." + module_name)
+        original_resolvers = _stub_download_resolution(module, module_name)
+        server_root = _runtime_contract_root(module_name)
+        server = _FakeServer("it-" + module_name.replace(".", "-"), server_root)
+        server.module = module
+        try:
+            configure = getattr(module, "configure", None)
+            if callable(configure):
+                try:
+                    configure(server, False)
+                except ValueError as exc:
+                    if str(exc) != "No Port":
+                        raise
+                    configure(server, False, port=_default_test_port(module_name))
+            _seed_install_state(server)
+            runtime_module.ensure_runtime_hooks(module)
+            requirements = runtime_module._get_module_hook(module, "get_runtime_requirements")(server)
+            dependency_ids = {item["id"] for item in requirements.get("host_dependencies", [])}
+            if "7z" not in dependency_ids:
+                offenders.append(module_name + ": missing 7z host dependency metadata")
+        finally:
+            for (target, attribute_name), original in original_resolvers.items():
+                setattr(target, attribute_name, original)
+            shutil.rmtree(server_root, ignore_errors=True)
+
+    assert offenders == []
+
+
 def test_managed_config_modules_declare_config_sync_contract():
     offenders = []
     for module_name in _game_module_names():

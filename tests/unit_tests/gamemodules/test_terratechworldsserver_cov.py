@@ -122,6 +122,31 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_on_linux_uses_shipping_binary(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod, "_wrap_linux_command", lambda cmd, wineprefix=None: list(cmd))
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "TT2Server.exe"
+    shipping_exe = tmp_path / "TT2" / "Binaries" / "Win64" / "TT2Server-Win64-Shipping.exe"
+    shipping_exe.parent.mkdir(parents=True)
+    shipping_exe.write_text("")
+    (tmp_path / "TT2Server.exe").write_text("")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["TT2/Binaries/Win64/TT2Server-Win64-Shipping.exe", "-log"]
+    assert cwd == server.data["dir"]
+
+
+def test_get_query_and_info_address_use_udp_on_game_port():
+    server = DummyServer()
+    server.data["port"] = 17777
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 17777, "udp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 17777, "udp")
+
+
 def test_sync_server_config_updates_port(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -147,7 +172,7 @@ def test_sync_server_config_missing_file_noops(tmp_path):
     mod.sync_server_config(server)
 
 
-def test_wrap_linux_command_uses_proton_software_gl_and_xvfb(monkeypatch):
+def test_wrap_linux_command_uses_wine_style_wrapper_software_gl_and_xvfb(monkeypatch):
     monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
     monkeypatch.setattr(
         mod.proton,
@@ -161,7 +186,7 @@ def test_wrap_linux_command_uses_proton_software_gl_and_xvfb(monkeypatch):
             "WINEDLLOVERRIDES=winex11.drv=",
             "wine",
             *cmd,
-        ] if prefer_proton else list(cmd),
+        ],
     )
     monkeypatch.setattr(
         mod.proton,

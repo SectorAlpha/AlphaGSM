@@ -119,6 +119,30 @@ def test_query_and_info_address_use_runtime_query_host():
         assert resolver.call_count == 2
 
 
+def test_get_runtime_requirements_declare_mumble_host_dependency(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 64738,
+            "exe_name": "murmurd",
+        }
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    dependency = requirements["host_dependencies"][0]
+
+    assert dependency["id"] == "mumble-server"
+    assert dependency["display_name"] == "Mumble dedicated server binary"
+    assert dependency["command_key"] == "exe_name"
+    assert dependency["command"] == (
+        {"label": "mumble-server", "command": "mumble-server"},
+        {"label": "murmurd", "command": "murmurd"},
+    )
+    assert dependency["platforms"] == ("linux",)
+    assert "murmurd" in dependency["install_hints"]["linux"]
+
+
 def test_do_stop():
     server = DummyServer()
     mod.runtime_module.send_to_server = MagicMock()

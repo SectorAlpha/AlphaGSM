@@ -340,6 +340,9 @@ def test_make_proton_builders_forward_arguments(monkeypatch):
         port_definitions=(("port", "udp"),),
         prefer_proton=True,
         extra_env=lambda current_server: {"SERVER_NAME": current_server.name},
+        extra_host_dependencies=lambda current_server: (
+            {"id": "xvfb-run", "command": "xvfb-run", "platforms": ("linux",)},
+        ),
     )
     container_builder = gamemodule_common.make_proton_container_spec_builder(
         get_start_command=get_start_command,
@@ -357,6 +360,9 @@ def test_make_proton_builders_forward_arguments(monkeypatch):
                 "port_definitions": (("port", "udp"),),
                 "prefer_proton": True,
                 "extra_env": {"SERVER_NAME": "demo"},
+                "extra_host_dependencies": (
+                    {"id": "xvfb-run", "command": "xvfb-run", "platforms": ("linux",)},
+                ),
             },
         )
     ]

@@ -139,10 +139,19 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_do_stop():
+def test_do_stop_uses_runtime_send_to_server(monkeypatch):
     server = DummyServer()
+    calls = []
+
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "send_to_server",
+        lambda current, text: calls.append((current, text)),
+    )
+
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+
+    assert calls == [(server, "\003")]
 
 
 def test_status():
@@ -226,4 +235,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -889,6 +889,12 @@ def _resolve_optional_mapping(value, server):
     return dict(value)
 
 
+def _resolve_optional_value(value, server):
+    if callable(value):
+        value = value(server)
+    return value
+
+
 def make_runtime_requirements_builder(
     *,
     family,
@@ -950,6 +956,7 @@ def make_proton_runtime_requirements_builder(
     port_definitions=(),
     prefer_proton=False,
     extra_env=None,
+    extra_host_dependencies=None,
 ):
     """Return a Proton-backed ``get_runtime_requirements`` hook."""
 
@@ -959,6 +966,7 @@ def make_proton_runtime_requirements_builder(
             port_definitions=port_definitions,
             prefer_proton=prefer_proton,
             extra_env=_resolve_optional_mapping(extra_env, server),
+            extra_host_dependencies=_resolve_optional_value(extra_host_dependencies, server),
         )
 
     get_runtime_requirements.__name__ = "get_runtime_requirements"

@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 93      |
+| PASSED   | 95      |
 | DISABLED | 66      |
-| SKIPPED  | 74      |
+| SKIPPED  | 72      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (93)
+## PASSED (95)
 
 | Test | Type |
 |------|------|
@@ -75,6 +75,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | nmrihserver | SteamCMD (Source) |
 | opforserver | SteamCMD (GoldSrc) |
 | palworld | SteamCMD |
+| primalcarnageextinctionserver | Wine/Proton — PASSED 2026-05-28; the corrected dedicated launch argv now feeds the `PC-Docks?...?bIsDedicated=true` map URL directly to `PrimalCarnageServer.exe`, focused smoke/integration reach `LoadMap: PC-Docks`, `Game class is 'PCTeamDeathMatchGame'`, and `NetMode is now 1`, A2S/info succeed on the managed `queryport`, and `stop` closes the live UE3 ports cleanly |
 | pcarserver | PASSED 2026-05-23; standard smoke and focused integration now both pass, with readiness driven by `info --json` protocol `a2s` on the derived query port (`port + 1`) |
 | projectzomboid | SteamCMD |
 | q2server | Direct download — PASSED 2026-05-18; setup now builds Yamagi Quake II from source, stages the official demo `baseq2` data for anonymous installs, defaults fresh servers to `demo1`, and query/info use the dedicated Quake II `status` protocol |
@@ -95,6 +96,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | svenserver | SteamCMD (GoldSrc) |
 | terraria_tshock | Direct download — PASSED 2026-05-28; smoke and focused integration both pass on the Docker-backed lifecycle once the shared `steamcmd-linux` runtime image includes the required `.NET` runtimes, and CI now builds that image from the branch before validation |
 | terraria_vanilla | Direct download |
+| terratechworldsserver | Wine/Proton — PASSED 2026-05-28; the Linux lane now launches `TT2/Binaries/Win64/TT2Server-Win64-Shipping.exe` directly under `xvfb-run` + Wine, syncs AlphaGSM's managed port into `dedicated_server_config.json`, reaches `Created socket for bind address`, `IpNetDriver listening on port`, and `Bringing World` in `TT2/Saved/Logs/TT2.log`, and passes the full AlphaGSM lifecycle on the generic `udp` contract instead of A2S |
 | tf2 | SteamCMD (Source) |
 | tfcserver | SteamCMD (GoldSrc) |
 | thefrontserver | SteamCMD |
@@ -195,7 +197,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (74)
+## SKIPPED (72)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -219,8 +221,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | noonesurvivedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2329680 |
 | notdserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 1420710 |
 | outpostzeroserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 762880 |
-| primalcarnageextinctionserver | 2026-05-28: fixed the dedicated launch argv by removing the bogus literal `SERVER` token that made UE3 try to load a missing package; focused validation now reaches `LoadMap: PC-Docks`, `Game class is 'PCTeamDeathMatchGame'`, and `NetMode is now 1`, answers A2S/info on `queryport 27016`, and stops cleanly after the claimed-port retry path shifts off a conflicting default `27015`. Parent should rerun the refreshed smoke/integration markers before marking enabled. |
-
 | q3server | Direct download now installs the public ioquake3 Linux engine build, but CI lacks the licensed Quake III `baseq3/pak0.pk3` data required to start the dedicated server |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |
@@ -233,7 +233,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
-| terratechworldsserver | Wine/Proton validation 2026-05-28: a fresh focused host rerun got fully through anonymous SteamCMD setup for app `2533070` and proved the config-sync fix by writing AlphaGSM's managed port (`54543` in the live run) into `dedicated_server_config.json` before startup. The remaining blocker is earlier runtime readiness on the current `xvfb-run` + SDL + software-GL + Proton `TT2Server.exe -log -nullrhi` path: `start` returned success and left the process alive, but it never created `Saved/Logs/TT2.log`, never bound the managed port on TCP or UDP, and the only captured runtime output before the 600 second readiness timeout was ProtonFixes "Skipping fix execution. We are probably running a unit test." warnings. |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |

@@ -211,6 +211,18 @@ For maintained servers that are Docker-capable, lifecycle completion should
 also include a Docker-backed validation path through AlphaGSM's own runtime
 images, not just the host/process path.
 
+When a local process launch depends on host tooling, treat the dependency
+metadata as part of the lifecycle contract too:
+
+- declare required host commands, Java runtimes, and shared libraries in
+  `host_dependencies` via `get_runtime_requirements(...)` instead of bespoke
+  `prestart(...)` failures where practical
+- use `platforms` for OS-specific dependencies so Linux-only wrappers do not
+  block Windows or macOS process launches with false requirements
+- if the module or its launch script invokes `xvfb-run`, declare the shared
+  Linux `xvfb-run` dependency so AlphaGSM can recommend Docker instead of
+  attempting a broken local launch
+
 When running local integration or smoke verification, prefer the repository's
 shared scratch root under
 `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme`.

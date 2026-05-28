@@ -17,6 +17,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 2533070
 steam_anonymous_login_possible = True
+_SHIPPING_EXE = os.path.join("TT2", "Binaries", "Win64", "TT2Server-Win64-Shipping.exe")
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -112,7 +113,6 @@ def _wrap_linux_command(command, wineprefix=None):
     wrapped = proton.wrap_command(
         command,
         wineprefix=wineprefix,
-        prefer_proton=True,
     )
     wrapped = proton.prepend_env_assignments(
         wrapped,
@@ -136,13 +136,37 @@ def _wrap_linux_command(command, wineprefix=None):
     return ["xvfb-run", "-a", *wrapped]
 
 
+def _resolve_start_executable(server):
+    """Return the executable path to launch for the current host."""
+
+    exe_name = server.data["exe_name"]
+    if IS_LINUX and os.path.normpath(exe_name) == "TT2Server.exe":
+        shipping_path = os.path.join(server.data["dir"], _SHIPPING_EXE)
+        if os.path.isfile(shipping_path):
+            return _SHIPPING_EXE
+    return exe_name
+
+
+def get_query_address(server):
+    """TerraTech Worlds exposes its dedicated listener as a generic UDP port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the same UDP endpoint used by query()."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a TerraTech Worlds server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    exe_name = _resolve_start_executable(server)
+    exe_path = os.path.join(server.data["dir"], exe_name)
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], "-log", "-nullrhi"]
+    cmd = [exe_name, "-log"]
     if IS_LINUX:
         cmd = _wrap_linux_command(
             cmd,
@@ -196,6 +220,7 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
         {"key": "port", "protocol": "udp"},
         {"key": "port", "protocol": "tcp"},
     ),
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(

@@ -550,6 +550,33 @@ def test_assert_host_install_requirements_includes_macos_install_hint(monkeypatc
     assert "Use the Docker runtime instead" in message
 
 
+def test_host_dependency_report_skips_dependencies_for_other_platforms(monkeypatch):
+    _set_runtime_backend(monkeypatch, "process")
+    monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)
+    monkeypatch.setattr(runtime_module, "_current_host_platform", lambda: "windows")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "host_dependencies": [
+                {
+                    "id": "xvfb-run",
+                    "display_name": "xvfb-run",
+                    "command": "xvfb-run",
+                    "platforms": ("linux",),
+                }
+            ]
+        }
+    )
+    server = DummyServer(module=module)
+
+    monkeypatch.setattr(runtime_module.shutil, "which", lambda executable: None)
+
+    report = runtime_module.get_process_host_dependency_report(server)
+
+    assert report["applicable"] is True
+    assert report["ok"] is True
+    assert report["requirements"] == []
+
+
 def test_process_host_dependency_report_accepts_first_available_alternative_command(monkeypatch):
     _set_runtime_backend(monkeypatch, "process")
     monkeypatch.setattr(runtime_module, "_process_host_checks_supported", lambda: True)

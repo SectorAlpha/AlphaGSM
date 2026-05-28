@@ -635,9 +635,43 @@ def checkvalue(server, key, *value):
         ),
     )
 
+
+def _needs_7z_host_dependency(server):
+    """Return whether the current install path needs a 7z-compatible extractor."""
+
+    download_mode = str(server.data.get("download_mode", "")).strip().lower()
+    download_name = str(server.data.get("download_name", "")).strip().lower()
+    return download_mode == "installer" or download_name.endswith(".7z")
+
+
+def _seven_zip_host_dependency():
+    """Return shared host dependency metadata for 7z-capable extractors."""
+
+    return {
+        "id": "7z",
+        "display_name": "7z-compatible extractor",
+        "command": (
+            {"label": "7zz", "command": "7zz"},
+            {"label": "7z", "command": "7z"},
+        ),
+        "install_hints": {
+            "linux": "Install p7zip-full or another package that provides 7z/7zz before running this setup locally.",
+        },
+    }
+
+
+def _runtime_requirement_extras(server):
+    """Return conditional host dependency metadata for UT99 setup/install paths."""
+
+    if not _needs_7z_host_dependency(server):
+        return {}
+    return {"host_dependencies": (_seven_zip_host_dependency(),)}
+
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra=_runtime_requirement_extras,
 )
 
 def get_container_spec(server):

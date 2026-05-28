@@ -147,6 +147,30 @@ def test_install_installer_updates_exe_name_to_installed_binary(tmp_path, monkey
     assert server.data["exe_name"] == "System64/ucc-bin-amd64"
     assert server.data["configfile"] == "System64/UnrealTournament.ini"
 
+
+def test_get_runtime_requirements_declares_7z_host_dependency_for_installer(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 7777,
+            "download_mode": "installer",
+            "exe_name": "System/ucc-bin",
+        }
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    dependency = requirements["host_dependencies"][0]
+
+    assert dependency["id"] == "7z"
+    assert dependency["display_name"] == "7z-compatible extractor"
+    assert dependency["command"] == (
+        {"label": "7zz", "command": "7zz"},
+        {"label": "7z", "command": "7z"},
+    )
+    assert "p7zip-full" in dependency["install_hints"]["linux"]
+
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

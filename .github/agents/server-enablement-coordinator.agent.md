@@ -21,6 +21,11 @@ You are a coordinator for AlphaGSM server-enablement and discovery work.
   `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` for local
   smoke/integration work by setting `TMPDIR` when helpers use `mktemp` or
   pytest temp directories.
+- Treat host-runtime dependency metadata as part of the enablement contract:
+  if a module or launch script needs `xvfb-run`, Java, a shared library, or
+  another host prerequisite for local process runtime, make sure
+  `host_dependencies` is updated with the right platform scope and Docker
+  fallback path instead of leaving the requirement implicit.
 
 ## Approach
 1. Identify whether the task is primarily enablement research, support-state reconciliation, CI build monitoring, host-runtime auditing, smoke-contract auditing, curated content discovery, new server discovery, or a narrow implementation slice.

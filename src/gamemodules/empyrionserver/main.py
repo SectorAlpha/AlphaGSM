@@ -169,6 +169,7 @@ def get_start_command(server):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
     port_definitions=(("port", "udp"), ("queryport", "udp")),
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 get_runtime_requirements.__doc__ = "Return Docker runtime metadata for Wine/Proton-backed servers."
 

@@ -346,6 +346,28 @@ def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
     ]
     assert requirements["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/wineprefix"
     assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["host_dependencies"][0]["id"] == "wine-proton"
+    assert requirements["host_dependencies"][0]["platforms"] == ("linux",)
+
+
+def test_get_runtime_requirements_appends_extra_host_dependencies():
+    server = DummyServer(
+        data={
+            "dir": "/srv/aska/",
+            "port": 27015,
+        }
+    )
+
+    requirements = proton_module.get_runtime_requirements(
+        server,
+        port_definitions=(("port", "udp"),),
+        extra_host_dependencies=(proton_module.xvfb_host_dependency(),),
+    )
+
+    dependency_ids = [item["id"] for item in requirements["host_dependencies"]]
+
+    assert dependency_ids == ["wine-proton", "xvfb-run"]
+    assert requirements["host_dependencies"][1]["platforms"] == ("linux",)
 
 
 def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
