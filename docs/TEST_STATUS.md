@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 92      |
+| PASSED   | 93      |
 | DISABLED | 66      |
-| SKIPPED  | 75      |
+| SKIPPED  | 74      |
 
 ## Status Key
 
@@ -219,7 +219,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | noonesurvivedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2329680 |
 | notdserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 1420710 |
 | outpostzeroserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 762880 |
-| primalcarnageextinctionserver | Wine/Proton validation 2026-05-28: `xvfb-run` removes the old headless graphics-driver failure and the server now reaches `Engine.ServerCommandlet` plus `LoadMap: PC-Docks...`, but the process still exits before AlphaGSM can observe a live screen session or A2S-ready state for app `336400` |
+| primalcarnageextinctionserver | Wine validation 2026-05-28: the checked-in launcher now matches the best-known dedicated command (`SERVER PC-Docks?...?bIsDedicated=true -seekfreeloadingserver -log`) and wraps it with `xvfb-run`, but clean focused integration still stalls before A2S readiness; the old investigation log reached `Engine.ServerCommandlet` plus `LoadMap: PC-Docks...`, while the current rerun still dies back to a dead screen session and zero-byte `Launch.log` for app `336400` |
 
 | q3server | Direct download now installs the public ioquake3 Linux engine build, but CI lacks the licensed Quake III `baseq3/pak0.pk3` data required to start the dedicated server |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
@@ -233,7 +233,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
-| terratechworldsserver | Re-enabled: server writes readiness to `Saved/Logs/TT2.log`, and smoke/integration now require `info --json` protocol `a2s` before query/info; validate individually under Wine/Proton |
+| terratechworldsserver | Wine/Proton validation 2026-05-28: launcher now uses the official Steam launch shape `-log -nullrhi`, plus headless `xvfb-run` / SDL / software-GL wiring, but focused integration still exits before `Saved/Logs/TT2.log` or A2S readiness; Proton only prints early `ProtonFixes` warnings, and direct Wine plus `xvfb-run` also produced no query-ready state for app `2533070` |
 | ahlserver | HLDS mod maps not available via SteamCMD |
 | aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |

@@ -1,6 +1,7 @@
 """Primal Carnage: Extinction dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import screen
 import utils.proton as proton
@@ -82,6 +83,42 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Primal Carnage server."
 
 
+def _build_server_map_url(server):
+    """Return the dedicated-server startup URL used by the UE3 server."""
+
+    port = int(server.data.get("port", 7777))
+    queryport = int(server.data.get("queryport", 27015))
+    peerport = port + 1
+    return (
+        "PC-Docks"
+        "?game=PrimalCarnageGame.PCTeamDeathMatchGame"
+        f"?Port={port}"
+        f"?PeerPort={peerport}"
+        f"?QueryPort={queryport}"
+        "?bIsDedicated=true"
+    )
+
+
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap the Windows server command for headless Linux hosts."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return ["xvfb-run", "-a", *wrapped]
+
+
 def get_query_address(server):
     """Primal Carnage uses Steam A2S on the dedicated query port."""
 
@@ -100,13 +137,20 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], "server", "-log"]
+    binaries_dir = os.path.dirname(exe_path)
+    cmd = [
+        os.path.basename(server.data["exe_name"]),
+        "SERVER",
+        _build_server_map_url(server),
+        "-seekfreeloadingserver",
+        "-log",
+    ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )
-    return cmd, server.data["dir"]
+    return cmd, binaries_dir
 
 
 def do_stop(server, j):

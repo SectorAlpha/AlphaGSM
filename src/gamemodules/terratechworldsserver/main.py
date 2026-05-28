@@ -1,6 +1,7 @@
 """TerraTech Worlds dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import screen
 import utils.proton as proton
@@ -81,19 +82,51 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the TerraTech Worlds server."
 
 
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap the Windows server command for headless Linux hosts."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return ["xvfb-run", "-a", *wrapped]
+
+
 def get_start_command(server):
     """Build the command used to launch a TerraTech Worlds server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], "-batchmode", "-nographics", "-log"]
+    cmd = [server.data["exe_name"], "-log", "-nullrhi"]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )
     return cmd, server.data["dir"]
+
+
 def do_stop(server, j):
     """Stop TerraTech Worlds using an interrupt signal."""
 
@@ -127,11 +160,18 @@ def checkvalue(server, key, *value):
         str_keys=("exe_name", "dir"),
     )
 
+
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=(
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "protocol": "tcp"},
+    ),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=(
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "protocol": "tcp"},
+    ),
 )

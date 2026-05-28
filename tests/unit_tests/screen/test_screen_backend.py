@@ -118,6 +118,11 @@ def test_is_running_true_on_success(monkeypatch):
         sp, "run",
         lambda *args, **kwargs: wipe_calls.append((args, kwargs)),
     )
+    monkeypatch.setattr(
+        sp,
+        "check_output",
+        lambda cmd, stderr, shell: b"There is a screen on:\n\t123.Alpha#srv1\t(Detached)\n",
+    )
     monkeypatch.setattr(backend, "send_raw", lambda n, c: b"ok")
     assert backend.is_running("srv1") is True
     assert wipe_calls[0][0][0] == ["screen", "-wipe"]
@@ -127,10 +132,30 @@ def test_is_running_false_on_error(monkeypatch):
     backend = ScreenBackend("Alpha#", "/tmp", 5, "/tmp/rc", "/tmp")
     monkeypatch.setattr(sp, "run", lambda *args, **kwargs: None)
     monkeypatch.setattr(
+        sp,
+        "check_output",
+        lambda cmd, stderr, shell: b"No Sockets found.\n",
+    )
+    monkeypatch.setattr(
         backend, "send_raw",
         lambda n, c: (_ for _ in ()).throw(ProcessError("nope")),
     )
     assert backend.is_running("srv1") is False
+
+
+def test_is_running_false_for_dead_session_listing(monkeypatch):
+    backend = ScreenBackend("Alpha#", "/tmp", 5, "/tmp/rc", "/tmp")
+    monkeypatch.setattr(sp, "run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        sp,
+        "check_output",
+        lambda cmd, stderr, shell: b"There is a screen on:\n\t123.Alpha#srv1\t(Dead ???)\n",
+    )
+    send_calls = []
+    monkeypatch.setattr(backend, "send_raw", lambda n, c: send_calls.append((n, c)) or b"ok")
+
+    assert backend.is_running("srv1") is False
+    assert send_calls == []
 
 
 def test_wipe_dead_sessions_ignores_oserror(monkeypatch):

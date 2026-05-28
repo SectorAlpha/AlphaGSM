@@ -36,7 +36,7 @@ def test_primalcarnageextinctionserver_lifecycle(tmp_path):
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itprimalcarnag"
+    server_name = ("itpce" + tmp_path.name.replace("_", "")[-10:])[:15]
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)

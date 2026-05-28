@@ -120,17 +120,58 @@ def test_get_start_command_linux_uses_default_wine_path(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     wrap_command = MagicMock(side_effect=lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     monkeypatch.setattr(mod.proton, "wrap_command", wrap_command)
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "PCEdedicated.exe"
-    (tmp_path / "PCEdedicated.exe").write_text("")
+    server.data["exe_name"] = "Binaries/Win64/PrimalCarnageServer.exe"
+    exe_dir = tmp_path / "Binaries" / "Win64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "PrimalCarnageServer.exe").write_text("")
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
 
-    mod.get_start_command(server)
+    cmd, cwd = mod.get_start_command(server)
 
     wrap_command.assert_called_once()
     args, kwargs = wrap_command.call_args
-    assert args == (["PCEdedicated.exe", "server", "-log"],)
+    assert args == (
+        [
+            "PrimalCarnageServer.exe",
+            "SERVER",
+            "PC-Docks?game=PrimalCarnageGame.PCTeamDeathMatchGame?Port=7777?PeerPort=7778?QueryPort=27015?bIsDedicated=true",
+            "-seekfreeloadingserver",
+            "-log",
+        ],
+    )
     assert kwargs == {"wineprefix": None}
+    assert cmd == list(args[0])
+    assert cwd == str(exe_dir)
+
+
+def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *cmd,
+        ],
+    )
+
+    wrapped = mod._wrap_linux_command(["PrimalCarnageServer.exe", "SERVER"])
+
+    assert wrapped == [
+        "xvfb-run",
+        "-a",
+        "env",
+        "wine",
+        "PrimalCarnageServer.exe",
+        "SERVER",
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -219,4 +260,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

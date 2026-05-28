@@ -58,6 +58,19 @@ class ScreenBackend(ProcessBackend):
         except OSError:
             pass
 
+    def _session_listing(self, name):
+        """Return ``screen -ls`` output for the tagged session name."""
+
+        try:
+            output = sp.check_output(
+                ["screen", "-ls", self._tag(name)],
+                stderr=sp.STDOUT,
+                shell=False,
+            )
+        except sp.CalledProcessError as ex:
+            output = ex.output
+        return output.decode(errors="ignore")
+
     # ── public API ──────────────────────────────────────────────────────────
 
     def start(self, name, command, cwd=None):
@@ -127,6 +140,9 @@ class ScreenBackend(ProcessBackend):
     def is_running(self, name):
         """Return whether the named screen session exists."""
         self._wipe_dead_sessions()
+        listing = self._session_listing(name)
+        if "(Dead ???)" in listing:
+            return False
         try:
             self.send_raw(name, ["select", "."])
             return True

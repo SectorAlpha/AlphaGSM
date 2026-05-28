@@ -29,20 +29,30 @@ class DummyServer:
 
 
 def test_primalcarnage_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        primalcarnageextinctionserver.proton,
-        "wrap_command",
-        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
-    )
+    monkeypatch.setattr(primalcarnageextinctionserver, "IS_LINUX", False)
     server = DummyServer("pce")
-    exe = tmp_path / "PCEdedicated.exe"
+    exe = tmp_path / "Binaries" / "Win64" / "PrimalCarnageServer.exe"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "PCEdedicated.exe"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Binaries/Win64/PrimalCarnageServer.exe",
+            "port": 7777,
+            "queryport": 27015,
+        }
+    )
 
     cmd, cwd = primalcarnageextinctionserver.get_start_command(server)
 
-    assert cmd == ["PCEdedicated.exe", "server", "-log"]
-    assert cwd == server.data["dir"]
+    assert cmd == [
+        "PrimalCarnageServer.exe",
+        "SERVER",
+        "PC-Docks?game=PrimalCarnageGame.PCTeamDeathMatchGame?Port=7777?PeerPort=7778?QueryPort=27015?bIsDedicated=true",
+        "-seekfreeloadingserver",
+        "-log",
+    ]
+    assert cwd == str(tmp_path / "Binaries" / "Win64")
 
 
 def test_returntomoria_get_start_command_builds_expected_args(tmp_path, monkeypatch):
@@ -81,11 +91,7 @@ def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatc
 
 
 def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        terratechworldsserver.proton,
-        "wrap_command",
-        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
-    )
+    monkeypatch.setattr(terratechworldsserver, "IS_LINUX", False)
     server = DummyServer("ttw")
     exe = tmp_path / "TT2Server.exe"
     exe.write_text("")
@@ -93,7 +99,7 @@ def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkey
 
     cmd, cwd = terratechworldsserver.get_start_command(server)
 
-    assert cmd == ["TT2Server.exe", "-batchmode", "-nographics", "-log"]
+    assert cmd == ["TT2Server.exe", "-log", "-nullrhi"]
     assert cwd == server.data["dir"]
 
 

@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Screen backend: treat lingering GNU screen `Dead ???` sockets as not running so repeated local validation reruns stop tripping false "already running" preflight failures on reused integration server names.
+- Server support: switch `terratechworldsserver` to the official dedicated launch flags (`-log -nullrhi`) and a stronger headless Linux wrapper (`xvfb-run`, SDL `x11`, software GL), then document the current blocker that it still exits before `TT2.log` / A2S readiness.
+- Server support: check in the best-known `primalcarnageextinctionserver` dedicated launcher (`SERVER PC-Docks?...?bIsDedicated=true -seekfreeloadingserver -log`) plus the Linux `xvfb-run` wrapper, and record that clean focused integration still falls short of A2S readiness.
 - Server support: promote `rs2server` to supported after focused host integration again proved the full AlphaGSM lifecycle on the managed A2S `queryport`, including `query`, `info`, `info --json`, and shutdown verification.
 - Process discipline: document that current non-auth enablement work must close tracker state, mark completed campaign items, and validate Docker-backed paths for container-capable modules so future agents do not repeat already-finished or already-blocked server investigations.
 - Proton helpers: preserve leading `env -u ...` unsets when prepending extra launch environment assignments so Wine/Proton modules can safely add runtime flags without corrupting the wrapped command line.

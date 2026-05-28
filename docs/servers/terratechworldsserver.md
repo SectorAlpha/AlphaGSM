@@ -70,9 +70,15 @@ alphagsm myterratec backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `2533070`
 
-AlphaGSM launches the server with `-log`, tracks readiness through
+AlphaGSM launches the server with `-log -nullrhi`, tracks readiness through
 `Saved/Logs/TT2.log`, and waits for `info --json` to report protocol `a2s`
 before treating the server as query-ready.
+
+Current validation status: the 2026-05-28 follow-up switched the module to the
+official dedicated launch flags (`-log -nullrhi`) and a headless `xvfb-run`
+wrapper with SDL `x11` plus software GL, but focused integration still exits
+before `Saved/Logs/TT2.log` appears or AlphaGSM can reach A2S readiness. Keep
+this server in the validation queue rather than marking it enabled yet.
 
 ### Server Configuration
 

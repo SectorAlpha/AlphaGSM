@@ -72,12 +72,13 @@ alphagsm myprimalca backup
 - **Engine**: UE3 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `336400`
 
-Current validation status: the 2026-05-28 Wine/Proton investigation got this
-server past the old headless graphics-driver failure and into real dedicated
-startup plus `LoadMap: PC-Docks...`, but the process still exits before
-AlphaGSM can observe a stable screen session or A2S-ready state. Keep this
-server in the validation queue for launcher/runtime follow-up rather than
-marking it enabled yet.
+Current validation status: the 2026-05-28 follow-up now checks in the best
+known dedicated launcher (`SERVER PC-Docks?...?bIsDedicated=true
+-seekfreeloadingserver -log`) and wraps it with `xvfb-run` on Linux. The older
+investigation log reached real dedicated startup plus `LoadMap: PC-Docks...`,
+but the latest clean focused integration still falls short of A2S readiness
+and drops back to a dead screen session with a zero-byte `Launch.log`. Keep
+this server in the validation queue rather than marking it enabled yet.
 
 ### Server Configuration
 

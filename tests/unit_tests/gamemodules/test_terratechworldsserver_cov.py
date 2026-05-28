@@ -115,6 +115,55 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_wrap_linux_command_uses_proton_software_gl_and_xvfb(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "-u", "TMPDIR",
+            "-u", "TMP",
+            "-u", "TEMP",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *cmd,
+        ] if prefer_proton else list(cmd),
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: (
+            [
+                cmd[0],
+                *cmd[1:7],
+                *(f"{key}={value}" for key, value in env.items()),
+                *cmd[7:],
+            ]
+            if cmd and cmd[0] == "env"
+            else ["env", *(f"{key}={value}" for key, value in env.items()), *cmd]
+        ),
+    )
+
+    wrapped = mod._wrap_linux_command(["TT2Server.exe", "-log"])
+
+    assert wrapped == [
+        "xvfb-run",
+        "-a",
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "wine",
+        "TT2Server.exe",
+        "-log",
+    ]
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -186,4 +235,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
