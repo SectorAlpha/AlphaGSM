@@ -2,6 +2,7 @@
 
 import os
 import sys
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -169,6 +170,33 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_prestart_raises_when_process_runtime_missing_libcxx(monkeypatch):
+    server = DummyServer()
+
+    monkeypatch.setattr(mod.runtime_module, "resolve_runtime_metadata", lambda current_server: {"runtime": "process"})
+    monkeypatch.setattr(
+        mod,
+        "ctypes",
+        SimpleNamespace(CDLL=MagicMock(side_effect=OSError("libc++.so.1 missing"))),
+        raising=False,
+    )
+
+    with pytest.raises(ServerError, match="libc\\+\\+\\.so\\.1"):
+        mod.prestart(server)
+
+
+def test_prestart_skips_libcxx_probe_for_docker_runtime(monkeypatch):
+    server = DummyServer()
+
+    monkeypatch.setattr(mod.runtime_module, "resolve_runtime_metadata", lambda current_server: {"runtime": "docker"})
+    c_dll = MagicMock()
+    monkeypatch.setattr(mod, "ctypes", SimpleNamespace(CDLL=c_dll), raising=False)
+
+    mod.prestart(server)
+
+    c_dll.assert_not_called()
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
@@ -244,4 +272,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

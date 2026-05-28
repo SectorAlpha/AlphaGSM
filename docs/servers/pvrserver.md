@@ -8,9 +8,13 @@ This guide covers the `pvrserver` module in AlphaGSM.
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`, `libc++1`)
 - Python packages from `requirements.txt`
 
-On Ubuntu 24.04, Pavlov VR still requests the unversioned `libc++.so` runtime
-name. The shared AlphaGSM images create a compatibility symlink to
-`libc++.so.1`; on a host install, do the same after installing `libc++1`:
+On current Ubuntu 24.04 hosts, Pavlov VR's Linux dedicated binary needs the
+LLVM C++ runtime on the host process path and will fail before readiness if
+`libc++.so.1` is missing. The shared AlphaGSM `steamcmd-linux` Docker image
+already provides this runtime. For host-process runs, install `libc++1` first.
+
+Some host installs may also still need the unversioned `libc++.so` loader
+name, so keep the compatibility symlink in place after installing `libc++1`:
 
 ```bash
 sudo apt install libc++1
@@ -84,12 +88,11 @@ Smoke and integration validation track readiness through `alphagsm info --json`
 returning protocol `a2s` on Pavlov's status-helper port (`port + 400`) instead
 of waiting for screen-log markers.
 
-Focused host integration on 2026-05-28 got past the older one-shot setup path,
-but still did not reach a real runtime/query result because `setup` timed out
-after the default 600 second SteamCMD budget. The next bounded validation step
-is therefore a longer 60 minute setup budget, matching the repository's other
-large Steam payloads, before the remaining start/query blocker can be recorded
-honestly.
+Focused host validation on 2026-05-28 proved that the longer 60 minute setup
+budget is enough for Pavlov VR's 9.17 GB SteamCMD payload. The next proven
+host-process blocker is missing `libc++.so.1`: `alphagsm start` can now fail
+fast with a clear dependency error instead of returning success and only
+leaving the loader failure in the screen log.
 
 ### Server Configuration
 

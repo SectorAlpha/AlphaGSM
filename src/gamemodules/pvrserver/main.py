@@ -1,5 +1,6 @@
 """Pavlov VR dedicated server lifecycle helpers."""
 
+import ctypes
 import os
 
 import screen
@@ -137,6 +138,23 @@ def get_start_command(server):
         ["./" + server.data["exe_name"], *dynamic_args],
         server.data["dir"],
     )
+
+
+def prestart(server, *args, **kwargs):
+    """Fail fast on host-process launches when Pavlov's LLVM runtime is missing."""
+
+    del args, kwargs  # Unused hook signature is part of the module contract.
+    metadata = runtime_module.resolve_runtime_metadata(server)
+    if metadata.get("runtime") == "docker":
+        return
+    try:
+        ctypes.CDLL("libc++.so.1")
+    except OSError as ex:
+        raise ServerError(
+            "Pavlov VR requires the host shared library 'libc++.so.1' for process-runtime launches. "
+            "Install the host libc++ runtime (Ubuntu/Debian package: libc++1) or switch this server to the Docker runtime. "
+            "Original loader error: " + str(ex)
+        ) from ex
 
 
 def do_stop(server, j):
