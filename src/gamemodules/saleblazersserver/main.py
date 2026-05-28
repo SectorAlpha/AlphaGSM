@@ -87,6 +87,10 @@ def _wrap_linux_command(command, wineprefix=None):
         command,
         wineprefix=wineprefix,
     )
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
     if shutil.which("xvfb-run") is None:
         return wrapped
     wrapped = proton.prepend_env_assignments(
@@ -132,6 +136,15 @@ def get_start_command(server):
         "./server.log",
     ]
     if IS_LINUX:
+        # Unity's explicit headless mode stalls earlier than the xvfb-backed
+        # console-attached path on Linux/Wine, so keep the real displayless run.
+        cmd = [
+            server.data["exe_name"],
+            "-batchmode",
+            "-nographics",
+            "-logFile",
+            "./server.log",
+        ]
         cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),

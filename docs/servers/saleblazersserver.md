@@ -62,7 +62,7 @@ alphagsm mysaleblaz backup
 - Module name: `saleblazersserver`
 - Default game port: 27015
 - Default query port: 27016
-- Current validation status: still not enabled on Linux/Wine as of 2026-05-28. A fresh host smoke under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` completed SteamCMD setup, but AlphaGSM never reached A2S readiness on the configured `port=35093` / `queryport=27016`: `info --json` returned no payload for 180 seconds, direct probes failed with `A2S query failed: timed out`, and no listener appeared on either port. The checked-in `-headless -batchmode -nographics -logFile` launcher still stalls after the Unity localization `OperationException` on a `Null` graphics device. A manual `xvfb-run` + SDL `x11` + dummy audio + software-GL launch without `-headless` advanced one step further to `Starting server console window process...` and `Connected to Console Window!`, which makes that non-headless Linux launcher shape the next bounded fix to validate in-module before re-enabling.
+- Current validation status: still not enabled on Linux/Wine as of 2026-05-28. The module now promotes the best-known Linux launcher shape into code: `xvfb-run` plus SDL `x11`, dummy audio, software GL (`LIBGL_ALWAYS_SOFTWARE=1`), and no explicit `-headless` flag. A bounded direct repro against an already-installed tree under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme/saleblazers-runtime-debug/` reached `Launching server...`, `Starting server console window process...`, `Waiting for Hosting Selections...`, and `Connected to Console Window!`, which is better than the older `Failed to create batch mode window` / immediate NullGfx stall. The blocker is now narrower but still real: during that live repro, `ss -lpun` showed no listener on either the stored game port (`55000`) or the default query port (`27016`), so AlphaGSM still cannot prove `query` / `info` / `info --json` readiness.
 
 ## Developer Notes
 
@@ -73,19 +73,15 @@ alphagsm mysaleblaz backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `3099600`
 
-AlphaGSM currently launches the server with
-`-headless -batchmode -nographics -logFile ./server.log` and treats
-`info --json` returning protocol `a2s` as the readiness gate. The plain Unity
-startup text in `server.log` is not stable enough to use as the only readiness
-marker. On Linux hosts AlphaGSM now prefers `xvfb-run` with SDL `x11` video
-and dummy audio so the dedicated process gets past the earlier headless
-window-creation failure while also matching the upstream Saleblazers headless
-server mode more closely, but fresh validation shows that this launcher shape
-still never binds the configured game/query ports before A2S times out. The
-best current fallback experiment is the same `xvfb-run` wrapper plus software
-GL (`LIBGL_ALWAYS_SOFTWARE=1`) without `-headless`, because that was the only
-observed variant that reached `Connected to Console Window!` in a fresh
-scratch-run reproduction.
+AlphaGSM treats `info --json` returning protocol `a2s` as the readiness gate.
+The plain Unity startup text in `server.log` is not stable enough to use as
+the only readiness marker. On Linux hosts AlphaGSM now launches Saleblazers
+through `xvfb-run` with SDL `x11` video, dummy audio, software GL
+(`LIBGL_ALWAYS_SOFTWARE=1`), and without the explicit `-headless` flag because
+that is the first launcher shape that consistently reaches `Connected to
+Console Window!` in local reproductions. Even with that improvement, fresh
+validation still has not shown a live listener on the managed game/query ports,
+so the remaining work is deeper than the wrapper flags alone.
 
 ### Server Configuration
 

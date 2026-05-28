@@ -126,6 +126,28 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_linux_drops_headless_flag(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod, "_wrap_linux_command", lambda cmd, wineprefix=None: list(cmd))
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "Default/Saleblazers.exe"
+    exe_path = tmp_path / "Default/Saleblazers.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "Default/Saleblazers.exe",
+        "-batchmode",
+        "-nographics",
+        "-logFile",
+        "./server.log",
+    ]
+    assert cwd == server.data["dir"]
+
+
 def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
     monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
     monkeypatch.setattr(
@@ -157,6 +179,7 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         "env",
         "SDL_VIDEODRIVER=x11",
         "SDL_AUDIODRIVER=dummy",
+        "LIBGL_ALWAYS_SOFTWARE=1",
         "wine",
         "Default/Saleblazers.exe",
         "-batchmode",
