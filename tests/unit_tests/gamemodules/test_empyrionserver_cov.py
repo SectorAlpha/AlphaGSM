@@ -67,7 +67,17 @@ def test_install(tmp_path):
     server.data["exe_name"] = "EmpyrionDedicated.exe"
     server.data["Steam_AppID"] = 530870
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 31337
+    (tmp_path / "dedicated.yaml").write_text(
+        "ServerConfig:\n"
+        "    Srv_Port: 30000\n",
+        encoding="utf-8",
+    )
     mod.install(server)
+    assert (tmp_path / "dedicated.yaml").read_text(encoding="utf-8") == (
+        "ServerConfig:\n"
+        "    Srv_Port: 31337\n"
+    )
 
 
 def test_update_with_restart(tmp_path):
@@ -104,6 +114,56 @@ def test_restart():
     mod.restart(server)
     assert server._stopped
     assert server._started
+
+
+def test_sync_server_config_updates_dedicated_yaml_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 46319
+    config_path = tmp_path / "dedicated.yaml"
+    config_path.write_text(
+        "ServerConfig:\r\n"
+        "    Srv_Port: 30000\r\n"
+        "    Srv_Name: My Server\r\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8") == (
+        "ServerConfig:\n"
+        "    Srv_Port: 46319\n"
+        "    Srv_Name: My Server\n"
+    )
+
+
+def test_sync_server_config_missing_file_noops(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 46319
+
+    mod.sync_server_config(server)
+
+    assert not (tmp_path / "dedicated.yaml").exists()
+
+
+def test_prestart_syncs_dedicated_yaml(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 42657
+    config_path = tmp_path / "dedicated.yaml"
+    config_path.write_text(
+        "ServerConfig:\n"
+        "    Srv_Port: 30000\n",
+        encoding="utf-8",
+    )
+
+    mod.prestart(server)
+
+    assert config_path.read_text(encoding="utf-8") == (
+        "ServerConfig:\n"
+        "    Srv_Port: 42657\n"
+    )
 
 
 def test_get_start_command(tmp_path, monkeypatch):

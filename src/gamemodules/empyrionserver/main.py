@@ -1,6 +1,7 @@
 """Empyrion - Galactic Survival dedicated server lifecycle helpers."""
 
 import os
+import re
 import shutil
 
 import server.runtime as runtime_module
@@ -25,7 +26,10 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Empyrion dedicated server.",
 )
 command_functions = {}
+config_sync_keys = ("port",)
 max_stop_wait = 1
+
+_DEDICATED_PORT_RE = re.compile(r"^(\s*Srv_Port:\s*)\S+(\s*(?:#.*)?)?$")
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServer/EmpyrionDedicated.exe"):
@@ -59,10 +63,33 @@ def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServer/Emp
     return gamemodule_common.finalize_configure(server)
 
 
+def sync_server_config(server):
+    """Keep Empyrion's dedicated.yaml aligned with AlphaGSM's configured port."""
+
+    config_path = os.path.join(server.data["dir"], "dedicated.yaml")
+    if not os.path.isfile(config_path):
+        return
+
+    with open(config_path, "r", encoding="utf-8", newline="") as handle:
+        lines = handle.read().splitlines(keepends=True)
+
+    port_value = str(server.data["port"])
+    for index, line in enumerate(lines):
+        match = _DEDICATED_PORT_RE.match(line.rstrip("\r\n"))
+        if match is None:
+            continue
+        newline = "\r\n" if line.endswith("\r\n") else "\n" if line.endswith("\n") else ""
+        lines[index] = f"{match.group(1)}{port_value}{match.group(2) or ''}{newline}"
+        with open(config_path, "w", encoding="utf-8", newline="") as handle:
+            handle.write("".join(lines))
+        return
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download the Empyrion server files via SteamCMD."
@@ -72,6 +99,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 update.__doc__ = "Update the Empyrion server files and optionally restart the server."
@@ -79,6 +107,12 @@ update.__doc__ = "Update the Empyrion server files and optionally restart the se
 
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Empyrion server."
+
+
+def prestart(server):
+    """Refresh dedicated.yaml before launching the dedicated server."""
+
+    sync_server_config(server)
 
 
 def _wrap_linux_command(command, wineprefix=None, prefer_proton=False):

@@ -49,6 +49,11 @@ def test_empyrionserver_lifecycle(tmp_path):
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    dedicated_config = install_dir / "dedicated.yaml"
+    assert dedicated_config.is_file(), f"Expected setup to create {dedicated_config}"
+    assert (
+        f"Srv_Port: {port}" in dedicated_config.read_text(encoding="utf-8")
+    ), dedicated_config.read_text(encoding="utf-8")
 
     # start
     run_and_assert_ok(env, server_name, "start")
