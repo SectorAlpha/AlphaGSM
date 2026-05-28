@@ -141,6 +141,10 @@ def test_steamcmd_state_202_flake_matches_known_bare_flake_app_ids():
         232130,
     )
     assert steamcmd_module._steamcmd_state_202_flake(
+        "Error! App '294420' state is 0x202 after update job.",
+        294420,
+    )
+    assert steamcmd_module._steamcmd_state_202_flake(
         "Error! App '346680' state is 0x202 after update job.",
         346680,
     )
@@ -151,6 +155,13 @@ def test_steamcmd_state_202_flake_matches_known_bare_flake_app_ids():
 
 
 def test_steamcmd_retry_delay_uses_reconfig_delay_for_known_bare_state_202_flakes():
+    assert (
+        steamcmd_module._steamcmd_retry_delay(
+            "Error! App '294420' state is 0x202 after update job.",
+            294420,
+        )
+        == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    )
     assert (
         steamcmd_module._steamcmd_retry_delay(
             "Error! App '418480' state is 0x202 after update job.",
@@ -172,6 +183,37 @@ def test_steamcmd_state_202_flake_does_not_match_unknown_bare_state_202_app_ids(
         "Error! App '317670' state is 0x202 after update job.",
         317670,
     )
+
+
+def test_download_retries_bare_state_202_for_sevendaystodie(monkeypatch):
+    outputs = [
+        sp.CompletedProcess(
+            ["cmd"],
+            0,
+            "Error! App '294420' state is 0x202 after update job.\n",
+        ),
+        sp.CompletedProcess(
+            ["cmd"],
+            0,
+            "Success! App '294420' fully installed.\n",
+        ),
+    ]
+    calls = []
+
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda seconds: calls.append(("sleep", seconds)))
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: calls.append(cmd) or outputs.pop(0),
+    )
+
+    steamcmd_module.download("/srv/game", 294420, True, validate=False)
+
+    assert calls[1] == ("sleep", steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS)
 
 
 def test_download_skips_subprocess_for_non_anonymous_login(monkeypatch):

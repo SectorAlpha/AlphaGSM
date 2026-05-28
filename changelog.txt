@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-28
+- Server support: treat anonymous SteamCMD app `294420` (`sevendaystodie`) bare state `0x202` as a known transient flake so the shared retry and integration-skip paths stay aligned.
+- Smoke tests: choose and apply an explicit free `queryport` in `run_rs2server.sh` so the canonical RS2 smoke path exercises the module-owned A2S listener instead of assuming the default port stays free.
+- Integration tests: harden `test_rs2server.py` with the shared setup port-retry helper and verify the effective query port closes on shutdown.
+- Server support: `chivalryserver` now repairs the missing PhysX loader alias, launches from the correct Linux working directory, and syncs managed ports into `PCServer-UDKEngine.ini`, narrowing the remaining blocker to the anonymous Linux payload's missing working A2S query path.
 - CI: build and inject the shared `steamcmd-linux` runtime image into smoke, integration, and backend Docker-wrapper jobs so PR validation exercises the branch Dockerfile instead of a stale published `:latest`.
 - Server support: re-enable `terraria_tshock` after confirming both smoke and focused integration pass on the Docker-backed lifecycle once the shared SteamCMD runtime image carries the required `.NET` runtimes.
 

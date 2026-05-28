@@ -301,6 +301,17 @@ def test_skip_for_known_steamcmd_issue_skips_for_known_bare_state_202_flake_app(
         helpers.skip_for_known_steamcmd_issue(result, app_id=232130)
 
 
+def test_skip_for_known_steamcmd_issue_skips_for_sevendaystodie_bare_state_202_flake():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = types.SimpleNamespace(
+        stdout="Error! App '294420' state is 0x202 after update job.",
+        stderr="",
+    )
+
+    with pytest.raises(pytest.skip.Exception, match="SteamCMD flake skip"):
+        helpers.skip_for_known_steamcmd_issue(result, app_id=294420)
+
+
 def test_skip_for_known_steamcmd_issue_skips_for_new_known_bare_state_202_flake_apps():
     helpers = importlib.import_module("tests.integration_tests.conftest")
 

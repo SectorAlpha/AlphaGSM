@@ -51,6 +51,7 @@ LOG_PATH="$INSTALL_DIR/ROGame/Logs/Launch.log"
 mkdir -p "$HOME_DIR"
 
 PORT="$(pick_free_port)" 
+QUERY_PORT="$(pick_free_port)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -72,9 +73,11 @@ EOF
 
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
+echo "Using query port: $QUERY_PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create rs2server
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

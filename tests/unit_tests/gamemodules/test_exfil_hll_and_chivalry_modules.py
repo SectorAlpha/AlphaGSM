@@ -71,8 +71,11 @@ def test_chivalry_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     server = DummyServer("chiv")
     exe_dir = tmp_path / "Binaries" / "Linux"
     exe_dir.mkdir(parents=True)
+    (exe_dir / "lib").mkdir()
     exe = exe_dir / "UDKGameServer-Linux"
     exe.write_text("")
+    loader_target = exe_dir / "lib" / "libPhysXLoader.so.1"
+    loader_target.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -95,9 +98,14 @@ def test_chivalry_get_start_command_builds_expected_args(tmp_path, monkeypatch):
             str(tmp_path / "Binaries" / "Linux" / "lib"),
         )
     )
-    assert cmd[2] == "./Binaries/Linux/UDKGameServer-Linux"
+    assert cmd[2] == "./UDKGameServer-Linux"
     assert "AOCTO-Battlegrounds_V3_P?Port=7777?QueryPort=27015?steamsockets" in cmd
-    assert cwd == server.data["dir"]
+    assert "-Port=7777" in cmd
+    assert "-PeerPort=7778" in cmd
+    assert "-QueryPort=27015" in cmd
+    assert cwd == str(tmp_path / "Binaries" / "Linux")
+    assert os.path.islink(exe_dir / "lib" / "PhysXUpdateLoader.so")
+    assert os.readlink(exe_dir / "lib" / "PhysXUpdateLoader.so") == "libPhysXLoader.so.1"
 
 
 def test_exfil_and_hll_update_downloads_and_optionally_restart(monkeypatch):

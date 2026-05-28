@@ -1,6 +1,7 @@
 """Chivalry: Medieval Warfare dedicated server lifecycle helpers."""
 
 import os
+import errno
 
 import screen
 import utils.steamcmd as steamcmd
@@ -23,7 +24,47 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Chivalry dedicated server.",
 )
 command_functions = {}
+config_sync_keys = ("port", "queryport")
 max_stop_wait = 1
+
+
+def _engine_config_path(server):
+    """Return the managed Chivalry engine config path."""
+
+    return os.path.join(server.data["dir"], "UDKGame", "Config", "PCServer-UDKEngine.ini")
+
+
+def sync_server_config(server):
+    """Persist managed port values into Chivalry's native engine config."""
+
+    config_path = _engine_config_path(server)
+    if not os.path.isfile(config_path):
+        return
+    replacements = {
+        "Port": str(server.data["port"]),
+        "PeerPort": str(int(server.data["port"]) + 1),
+        "QueryPort": str(server.data["queryport"]),
+    }
+    with open(config_path, "r", encoding="utf-8") as handle:
+        lines = handle.readlines()
+    updated_lines = []
+    seen = set()
+    for line in lines:
+        stripped = line.strip()
+        replaced = False
+        for key_name, value in replacements.items():
+            if stripped.startswith(key_name + "="):
+                updated_lines.append(f"{key_name}={value}\n")
+                seen.add(key_name)
+                replaced = True
+                break
+        if not replaced:
+            updated_lines.append(line)
+    for key_name, value in replacements.items():
+        if key_name not in seen:
+            updated_lines.append(f"{key_name}={value}\n")
+    with open(config_path, "w", encoding="utf-8") as handle:
+        handle.writelines(updated_lines)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Linux/UDKGameServer-Linux"):
@@ -67,6 +108,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Chivalry server files via SteamCMD."
 
@@ -75,12 +117,19 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Chivalry server files and optionally restart the server."
 
 
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Chivalry server."
+
+
+def prestart(server):
+    """Sync Chivalry's managed engine config before launch."""
+
+    sync_server_config(server)
 
 
 def get_query_address(server):
@@ -101,6 +150,18 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    exe_dir = os.path.dirname(exe_path)
+    lib_dir = os.path.join(exe_dir, "lib")
+    loader_alias = os.path.join(lib_dir, "PhysXUpdateLoader.so")
+    loader_target = "libPhysXLoader.so.1"
+    if not os.path.exists(loader_alias):
+        target_path = os.path.join(lib_dir, loader_target)
+        if os.path.exists(target_path):
+            try:
+                os.symlink(loader_target, loader_alias)
+            except OSError as exc:
+                if exc.errno != errno.EEXIST:
+                    raise
     launch_url = "%s?Port=%s?QueryPort=%s?steamsockets" % (
         server.data["startmap"],
         server.data["port"],
@@ -111,8 +172,8 @@ def get_start_command(server):
             None,
             (
                 os.path.join(steamcmd.STEAMCMD_DIR, "linux32"),
-                os.path.join(server.data["dir"], "Binaries", "Linux"),
-                os.path.join(server.data["dir"], "Binaries", "Linux", "lib"),
+                exe_dir,
+                lib_dir,
                 os.environ.get("LD_LIBRARY_PATH"),
             ),
         )
@@ -121,11 +182,14 @@ def get_start_command(server):
         [
             "env",
             "LD_LIBRARY_PATH=" + library_path,
-            "./" + server.data["exe_name"],
+            "./" + os.path.basename(server.data["exe_name"]),
             launch_url,
+            "-Port=%s" % (server.data["port"],),
+            "-PeerPort=%s" % (int(server.data["port"]) + 1,),
+            "-QueryPort=%s" % (server.data["queryport"],),
             "-SEEKFREELOADINGSERVER",
         ],
-        server.data["dir"],
+        exe_dir,
     )
 
 

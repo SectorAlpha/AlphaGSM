@@ -105,6 +105,44 @@ def test_restart():
     assert server._started
 
 
+def test_sync_server_config_updates_engine_ports(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 7779
+    server.data["queryport"] = 27019
+    config_path = tmp_path / "UDKGame" / "Config" / "PCServer-UDKEngine.ini"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text("Port=7777\nPeerPort=7778\nQueryPort=27015\nOther=1\n")
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text() == (
+        "Port=7779\n"
+        "PeerPort=7780\n"
+        "QueryPort=27019\n"
+        "Other=1\n"
+    )
+
+
+def test_prestart_syncs_engine_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 8888
+    server.data["queryport"] = 28015
+    config_path = tmp_path / "UDKGame" / "Config" / "PCServer-UDKEngine.ini"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text("Other=1\n")
+
+    mod.prestart(server)
+
+    assert config_path.read_text() == (
+        "Other=1\n"
+        "Port=8888\n"
+        "PeerPort=8889\n"
+        "QueryPort=28015\n"
+    )
+
+
 def test_get_start_command(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -112,6 +150,9 @@ def test_get_start_command(tmp_path, monkeypatch):
     exe_path = tmp_path / "Binaries/Linux/UDKGameServer-Linux"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
+    loader_dir = tmp_path / "Binaries/Linux/lib"
+    loader_dir.mkdir(parents=True, exist_ok=True)
+    (loader_dir / "libPhysXLoader.so.1").write_text("")
     server.data["startmap"] = "test"
     server.data["port"] = 7777
     server.data["queryport"] = 27015
@@ -127,11 +168,16 @@ def test_get_start_command(tmp_path, monkeypatch):
         )
     )
     assert cmd[2:] == [
-        "./Binaries/Linux/UDKGameServer-Linux",
+        "./UDKGameServer-Linux",
         "test?Port=7777?QueryPort=27015?steamsockets",
+        "-Port=7777",
+        "-PeerPort=7778",
+        "-QueryPort=27015",
         "-SEEKFREELOADINGSERVER",
     ]
-    assert cwd == server.data["dir"]
+    assert cwd == str(tmp_path / "Binaries" / "Linux")
+    assert os.path.islink(loader_dir / "PhysXUpdateLoader.so")
+    assert os.readlink(loader_dir / "PhysXUpdateLoader.so") == "libPhysXLoader.so.1"
 
 
 def test_query_and_info_address_use_queryport(monkeypatch):
@@ -227,4 +273,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
