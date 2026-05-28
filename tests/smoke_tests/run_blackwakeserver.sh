@@ -1,7 +1,8 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for blackwakeserver is disabled - see docs/TEST_STATUS.md for status"
+# DISABLED: the bundled upstream SERVER GUIDE.txt documents Windows-only
+# dedicated servers, and current Linux/Wine validation still fails before
+# AlphaGSM can prove query/info readiness.
+echo "Smoke test for blackwakeserver is disabled: upstream Blackwake docs say dedicated servers are Windows-only, and current Linux/Wine runs still fail before query/info readiness with Steam init and BotHandler crashes."
 exit 0
 
 set -Eeuo pipefail
