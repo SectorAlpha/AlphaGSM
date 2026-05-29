@@ -45,8 +45,8 @@ alphagsm myheatserv stop
 
 Setup configures:
 
-- the game port (default 27015)
-- the query port default (27016)
+- the game port (stored in `Configuration/ServerSettings.cfg` as `portNumber`)
+- the query port (stored in `Configuration/ServerSettings.cfg` as `steamAuthPort`)
 - the install directory
 - SteamCMD downloads the Windows dedicated server files
 
@@ -72,13 +72,22 @@ alphagsm myheatserv backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `996600`
 
-AlphaGSM launches the server with `-batchmode -nographics -logFile ./server.log`,
-tracks readiness through `server.log`, and waits for `info --json` to report
-protocol `a2s` before treating the server as query-ready.
+AlphaGSM starts the upstream `Server.exe` console directly and the real server
+readiness signal lives under `Logs/Console*.txt` / `Logs/Dedi*.txt`, not a root
+`server.log`.
+
+Current `release_v1` behavior: AlphaGSM now bootstraps a missing
+`Configuration/ServerSettings.cfg` by running the upstream first-launch config
+generation pass before the real managed start, then rewrites `portNumber`,
+`steamAuthPort`, `maxPlayers`, and `levelName` from the datastore.
+
+Remaining blocker: this branch still needs a fresh end-to-end SteamCMD-managed
+rerun to prove that the first real server launch now binds the AlphaGSM-managed
+ports and reaches A2S `query` / `info` readiness on the managed `queryport`.
 
 ### Server Configuration
 
-- **Config files**: `ServerConfig.cfg`
+- **Config files**: `Configuration/ServerSettings.cfg`
 - **Max players**: `32`
 - **Template**: See [server-templates/heatserver/](../server-templates/heatserver/) if available
 
