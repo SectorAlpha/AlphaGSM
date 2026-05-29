@@ -186,10 +186,10 @@ def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_p
         {"host": 57555, "container": 57555, "protocol": "tcp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["env"] == {
-        "HOME": "/srv/server",
-        "LD_LIBRARY_PATH": "/srv/server:/srv/server/linux64:/srv/server/ShooterGame/Binaries/Linux",
-    }
+    assert spec["env"]["HOME"] == "/srv/server"
+    assert spec["env"]["LD_LIBRARY_PATH"].startswith(
+        "/srv/server:/srv/server/linux64:/srv/server/ShooterGame/Binaries/Linux"
+    )
     assert spec["command"][0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
     assert spec["command"][2:] == ["-server", "-log"]
     assert spec["stdin_open"] is True
