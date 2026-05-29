@@ -1,7 +1,10 @@
 """Heat dedicated server lifecycle helpers."""
 
 import os
+import re
 import shutil
+import subprocess
+import time
 
 import screen
 import utils.proton as proton
@@ -28,6 +31,8 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "queryport", "maxplayers", "startmap")
+_BOOTSTRAP_CONFIG_TIMEOUT_SECONDS = 120
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Server.exe"):
@@ -68,24 +73,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Server.exe"):
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-    download_kwargs={"force_windows": IS_LINUX},
-)
-install.__doc__ = "Download the Heat server files via SteamCMD."
-
-
-update = gamemodule_common.make_steamcmd_update_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-    download_kwargs={"force_windows": IS_LINUX},
-)
-update.__doc__ = "Update the Heat server files and optionally restart the server."
-
-
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Heat server."
 
@@ -100,6 +87,109 @@ def get_info_address(server):
     """Return the A2S address used by the info command."""
 
     return get_query_address(server)
+
+
+def _server_settings_path(server):
+    """Return the Heat server settings path."""
+
+    return os.path.join(server.data["dir"], "Configuration", "ServerSettings.cfg")
+
+
+def _replace_cfg_value(config_text, key, value):
+    """Replace one scalar setting in the Heat cfg text."""
+
+    updated_text, replacements = re.subn(
+        rf"(^\s*{re.escape(key)}\s*=\s*')(.*?)('.*$)",
+        rf"\g<1>{value}\g<3>",
+        config_text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if replacements == 0:
+        raise ServerError(f"Heat server config is missing {key}")
+    return updated_text
+
+
+def sync_server_config(server):
+    """Keep Heat's native server settings aligned with AlphaGSM values."""
+
+    if not server.data.get("dir"):
+        return
+    config_path = _server_settings_path(server)
+    if not os.path.isfile(config_path):
+        return
+    with open(config_path, encoding="utf-8") as fh:
+        config_text = fh.read()
+    updated_text = config_text
+    replacements = (
+        ("portNumber", int(server.data.get("port", 27015))),
+        ("steamAuthPort", int(server.data.get("queryport", 27016))),
+        ("maxPlayers", int(server.data.get("maxplayers", 32))),
+        ("levelName", str(server.data.get("startmap", "America"))),
+    )
+    for key, value in replacements:
+        updated_text = _replace_cfg_value(updated_text, key, value)
+    if updated_text != config_text:
+        with open(config_path, "w", encoding="utf-8") as fh:
+            fh.write(updated_text)
+
+
+def _bootstrap_server_settings_if_missing(server):
+    """Run the upstream first-launch config generation once when needed."""
+
+    config_path = _server_settings_path(server)
+    if os.path.isfile(config_path):
+        return
+
+    command, cwd = get_start_command(server)
+    process = subprocess.Popen(  # pylint: disable=consider-using-with
+        command,
+        cwd=cwd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    deadline = time.monotonic() + _BOOTSTRAP_CONFIG_TIMEOUT_SECONDS
+    try:
+        while time.monotonic() < deadline:
+            if os.path.isfile(config_path):
+                return
+            if process.poll() is not None:
+                break
+            time.sleep(1)
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+
+    if not os.path.isfile(config_path):
+        raise ServerError(
+            "Heat did not generate Configuration/ServerSettings.cfg during bootstrap"
+        )
+
+
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+install.__doc__ = "Download the Heat server files via SteamCMD."
+
+
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+update.__doc__ = "Update the Heat server files and optionally restart the server."
 
 
 def _wrap_linux_command(command, wineprefix=None):
@@ -143,27 +233,20 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [
-            server.data["exe_name"],
-            "-batchmode",
-            "-nographics",
-            "-logFile",
-            "./server.log",
-            "-port",
-            str(server.data["port"]),
-            "-queryport",
-            str(server.data["queryport"]),
-            "-map",
-            str(server.data["startmap"]),
-            "-maxplayers",
-            str(server.data["maxplayers"]),
-        ]
+    cmd = [server.data["exe_name"]]
     if IS_LINUX:
         cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )
     return cmd, server.data["dir"]
+
+
+def prestart(server):
+    """Refresh Heat's native server config before each launch."""
+
+    _bootstrap_server_settings_if_missing(server)
+    sync_server_config(server)
 
 
 def do_stop(server, j):
