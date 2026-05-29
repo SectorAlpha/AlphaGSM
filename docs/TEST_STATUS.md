@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (103)
+## PASSED (104)
 
 | Test | Type |
 |------|------|
@@ -56,6 +56,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | emserver | SteamCMD (Source) — PASSED 2026-05-23; focused integration now reaches real Source log readiness, hibernation-safe `info --json`, A2S query/info, and clean shutdown on the anonymous SteamCMD install path |
 | empyrionserver | Wine/Proton — PASSED 2026-05-29; the direct `DedicatedServer/EmpyrionDedicated.exe` Linux contract now syncs `dedicated.yaml` `Srv_Port`, reads readiness from `Logs/alphagsm-dedicated.log`, and proves `query`, `info`, `info --json`, and clean shutdown on Empyrion's live STCP TCP listener at `port + 3` instead of the older stale fixed-`30004` / A2S assumption |
 | exfilserver | SteamCMD |
+| fearthenightserver | Wine/Proton — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the Linux/Proton lane once AlphaGSM syncs `Moonlight/Saved/Config/WindowsServer/Engine.ini` and `GameUserSettings.ini`, launches the dedicated server with the real `Pittsburgh_Overworld?listen?Port=...?QueryPort=...?SessionName=...?MaxPlayers=...` map URL instead of the older stale bare-map contract, and treats the live health surface as generic `udp` on the managed game port because the current Linux runtime still does not expose a working A2S listener on `queryport` |
 | fofserver | SteamCMD (Source) |
 | frozenflameserver | SteamCMD |
 | gmodserver | SteamCMD (Source) |
@@ -202,7 +203,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (67)
+## SKIPPED (66)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -213,7 +214,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | blackwakeserver | Wine/Proton validation 2026-05-29: the bundled upstream `SERVER GUIDE.txt` still documents Windows-only dedicated servers, so do not mark enabled yet. AlphaGSM now avoids the regressed forced-Proton Linux wrapper for BLACKWAKE, and a bounded reused-install host-Wine rerun re-proved `query`, `info --json`, and clean `stop` on the managed A2S `queryport`. A fresh full SteamCMD-managed rerun then answered the remaining question and still failed: after setup completed and AlphaGSM auto-shifted the colliding default query port to `27016`, the live `output_log.txt` fell back into repeated `BotHandler.Update()` `IndexOutOfRangeException` spam and direct `alphagsm info --json` still timed out on A2S. The exact remaining blocker is therefore a fresh-install runtime/query failure under the current host-Wine path, not just missing validation time — app 423410 |
 | darkandlightserver | Wine/Proton validation 2026-05-29: the current branch no longer reaches even the narrowed generic-UDP contract. `alphagsm start` can still return success, but the managed `screen` session dies before `DNL/Saved/Logs/DNL.log` is created or either the game port or `queryport 27016` binds, and direct Proton repros still leave orphaned `DNLServer.exe` children with no log or listener. |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
-| fearthenightserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 764940 |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |

@@ -56,13 +56,17 @@ def test_fearthenight_get_start_command_builds_expected_args(tmp_path, monkeypat
             "dir": str(tmp_path) + "/",
             "exe_name": "Moonlight/Binaries/Win64/MoonlightServer.exe",
             "startmap": "Pittsburgh_Overworld",
+            "port": 7778,
+            "queryport": 27017,
+            "maxplayers": 24,
+            "servername": "FearTest",
         }
     )
 
     cmd, cwd = fearthenightserver.get_start_command(server)
 
     assert cmd[0] == "Moonlight/Binaries/Win64/MoonlightServer.exe"
-    assert "Pittsburgh_Overworld" in cmd
+    assert cmd[1] == "Pittsburgh_Overworld?listen?Port=7778?QueryPort=27017?SessionName=FearTest?MaxPlayers=24"
     assert cwd == server.data["dir"]
     assert wrap_calls == [True]
 

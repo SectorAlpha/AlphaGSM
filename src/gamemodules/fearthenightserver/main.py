@@ -1,8 +1,8 @@
 """Fear the Night dedicated server lifecycle helpers."""
 
+import configparser
 import os
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -27,6 +27,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "queryport", "maxplayers", "servername", "startmap")
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Moonlight/Binaries/Win64/MoonlightServer.exe"):
@@ -37,10 +38,18 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Moonlight/Binaries/
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-    gamemodule_common.set_server_defaults(server, {"startmap": "Pittsburgh_Overworld"})
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "queryport": "27015",
+            "maxplayers": "40",
+            "servername": "AlphaGSM %s" % (server.name,),
+            "startmap": "Pittsburgh_Overworld",
+        },
+    )
     gamemodule_common.ensure_backup_config(
         server,
-        backupfiles=["Moonlight/Saved", "Moonlight/Config"],
+        backupfiles=["Moonlight/Saved", "Moonlight/Config", "Moonlight/Binaries/Win64"],
         targets=["Moonlight/Saved", "Moonlight/Config"],
     )
     gamemodule_common.configure_port(
@@ -60,10 +69,91 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Moonlight/Binaries/
     return gamemodule_common.finalize_configure(server)
 
 
+def _engine_ini_path(server):
+    """Return the managed Fear the Night Engine.ini override path."""
+
+    return os.path.join(
+        server.data["dir"],
+        "Moonlight",
+        "Saved",
+        "Config",
+        "WindowsServer",
+        "Engine.ini",
+    )
+
+
+def _game_user_settings_path(server):
+    """Return the managed Fear the Night GameUserSettings.ini path."""
+
+    return os.path.join(
+        server.data["dir"],
+        "Moonlight",
+        "Saved",
+        "Config",
+        "WindowsServer",
+        "GameUserSettings.ini",
+    )
+
+
+def _load_ini(path):
+    """Return a permissive config parser for Unreal-style INI files."""
+
+    parser = configparser.RawConfigParser(strict=False)
+    parser.optionxform = str
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as handle:
+            parser.read_file(handle)
+    return parser
+
+
+def sync_server_config(server):
+    """Keep Fear the Night's native config files aligned with AlphaGSM values."""
+
+    if not server.data.get("dir"):
+        return
+
+    engine_ini_path = _engine_ini_path(server)
+    os.makedirs(os.path.dirname(engine_ini_path), exist_ok=True)
+    engine_ini = _load_ini(engine_ini_path)
+    if not engine_ini.has_section("URL"):
+        engine_ini.add_section("URL")
+    engine_ini.set("URL", "Port", str(int(server.data.get("port", 7777))))
+    engine_ini.set("URL", "PeerPort", str(int(server.data.get("port", 7777)) + 1))
+    if not engine_ini.has_section("OnlineSubsystemSteam"):
+        engine_ini.add_section("OnlineSubsystemSteam")
+    engine_ini.set(
+        "OnlineSubsystemSteam",
+        "GameServerQueryPort",
+        str(int(server.data.get("queryport", 27015))),
+    )
+    with open(engine_ini_path, "w", encoding="utf-8") as handle:
+        engine_ini.write(handle)
+
+    game_user_settings_path = _game_user_settings_path(server)
+    game_user_settings = _load_ini(game_user_settings_path)
+    if not game_user_settings.has_section("SessionSettings"):
+        game_user_settings.add_section("SessionSettings")
+    game_user_settings.set(
+        "SessionSettings",
+        "SessionName",
+        str(server.data.get("servername", "AlphaGSM %s" % (server.name,))),
+    )
+    if not game_user_settings.has_section("/Script/Engine.GameSession"):
+        game_user_settings.add_section("/Script/Engine.GameSession")
+    game_user_settings.set(
+        "/Script/Engine.GameSession",
+        "MaxPlayers",
+        str(int(server.data.get("maxplayers", 40))),
+    )
+    with open(game_user_settings_path, "w", encoding="utf-8") as handle:
+        game_user_settings.write(handle)
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download the Fear the Night server files via SteamCMD."
@@ -73,10 +163,38 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 
 restart = gamemodule_common.make_restart_hook()
+
+
+def prestart(server):
+    """Refresh Fear the Night's native config files before launch."""
+
+    sync_server_config(server)
+
+
+def get_query_address(server):
+    """Return the live Fear the Night query endpoint.
+
+    On the current Linux/Wine-Proton lane, the dedicated server binds the
+    managed game port as generic UDP but does not expose a working A2S listener
+    on the configured Steam query port. Keep the historical A2S mapping on
+    non-Linux hosts.
+    """
+
+    host = runtime_module.resolve_query_host(server)
+    if IS_LINUX:
+        return (host, int(server.data["port"]), "udp")
+    return (host, int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return get_query_address(server)
 
 
 def get_start_command(server):
@@ -85,7 +203,13 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], server.data["startmap"], "-game", "-server", "-log"]
+    map_url = (
+        f"{server.data['startmap']}?listen?Port={int(server.data.get('port', 7777))}"
+        f"?QueryPort={int(server.data.get('queryport', 27015))}"
+        f"?SessionName={server.data.get('servername', 'AlphaGSM %s' % (server.name,))}"
+        f"?MaxPlayers={int(server.data.get('maxplayers', 40))}"
+    )
+    cmd = [server.data["exe_name"], map_url, "-game", "-server", "-log"]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
@@ -98,7 +222,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Fear the Night using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -131,15 +255,15 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
-        str_keys=("startmap", "exe_name", "dir"),
+        int_keys=("port", "queryport", "maxplayers"),
+        str_keys=("servername", "startmap", "exe_name", "dir"),
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'udp'}),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'udp'}),
 )

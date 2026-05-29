@@ -48,6 +48,7 @@ Notes:
 - [x] emserver
 - [x] empyrionserver
 - [x] exfilserver
+- [x] fearthenightserver
 - [x] fofserver
 - [x] frozenflameserver
 - [x] gmodserver
@@ -199,7 +200,6 @@ Notes:
 - [ ] blackwakeserver
 - [ ] darkandlightserver
 - [ ] ducksideserver
-- [ ] fearthenightserver
 - [ ] hellletlooseserver
 - [ ] icarusserver
 - [ ] lifeisfeudalserver
