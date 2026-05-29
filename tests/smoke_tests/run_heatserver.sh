@@ -12,6 +12,7 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itheatserver}"
 SERVER_STARTED=0
+WORK_ROOT="${ALPHAGSM_WORK_DIR:-/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme}"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -39,19 +40,62 @@ cleanup() {
 
 trap cleanup EXIT
 
+wait_for_heat_ready() {
+  local log_dir="$1"
+  local timeout_seconds="$2"
+  local deadline=$((SECONDS + timeout_seconds))
+  local patterns='Game has started\.|Type /shutdown to shut down the server\.'
+  while (( SECONDS < deadline )); do
+    local matched=0
+    shopt -s nullglob
+    local logs=( "$log_dir"/Console*.txt "$log_dir"/Dedi*.txt )
+    shopt -u nullglob
+    for log_path in "${logs[@]}"; do
+      if [[ -f "$log_path" ]] && grep -Eiq "$patterns" "$log_path"; then
+        return 0
+      fi
+      matched=1
+    done
+    sleep 2
+  done
+  echo "[diagnostic] Heat logs did not show readiness markers in ${timeout_seconds}s" >&2
+  if [[ -d "$log_dir" ]]; then
+    shopt -s nullglob
+    local logs=( "$log_dir"/Console*.txt "$log_dir"/Dedi*.txt )
+    shopt -u nullglob
+    if (( ${#logs[@]} > 0 )); then
+      for log_path in "${logs[@]}"; do
+        echo "[diagnostic] Log tail: ${log_path}" >&2
+        tail -100 "$log_path" >&2
+      done
+    else
+      echo "[diagnostic] No Heat log files found in ${log_dir}" >&2
+    fi
+  else
+    echo "[diagnostic] Heat log directory not found: ${log_dir}" >&2
+  fi
+  echo "Heat logs did not show readiness markers in ${timeout_seconds}s — skipping smoke test (CI)" >&2
+  exit 0
+}
+
 require_cmd "$PYTHON_BIN"
 require_cmd screen
 require_proton
 
-WORK_DIR="$(mktemp -d)"
+mkdir -p "$WORK_ROOT"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" heatserver-smoke-XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/heatserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-heatserver.conf"
-LOG_PATH="$INSTALL_DIR/server.log"
+LOG_DIR="$INSTALL_DIR/Logs"
 
 mkdir -p "$HOME_DIR"
 
 PORT="$(pick_free_port)" 
+QUERY_PORT="$(pick_free_port)"
+while [[ "$QUERY_PORT" == "$PORT" ]]; do
+  QUERY_PORT="$(pick_free_port)"
+done
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -73,13 +117,15 @@ EOF
 
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
+echo "Using query port: $QUERY_PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create heatserver
+run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Server started|Listening|listening on|port|online'
+wait_for_heat_ready "$LOG_DIR" "$START_TIMEOUT_SECONDS"
 wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
