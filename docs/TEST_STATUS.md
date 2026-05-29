@@ -178,7 +178,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
-| pvrserver | Docker-primary validation lane 2026-05-29: `do_stop()` now uses the runtime-aware console hook, and the checked-in smoke/integration path now runs on the `steamcmd-linux` Docker backend first instead of the host process path. Do not mark enabled yet: a full uninterrupted Pavlov VR Docker lifecycle proof (`setup -> start -> query -> info -> stop`) is still pending after the latest long-running validation session remained in SteamCMD setup. |
+| pvrserver | Docker-primary Pavlov VR setup/start/stop now work on the `steamcmd-linux` runtime image, and the status-helper port (`port + 400`) is launched and UDP-bound, but promotion is still blocked because raw A2S probes to that helper port time out from both the host and inside the container. AlphaGSM `query` / `info` still fall back to generic TCP reachability, so the required A2S lifecycle proof is not complete yet. |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
