@@ -2,9 +2,12 @@
 
 This guide covers the `miscreatedserver` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29
+
 ## Requirements
 
-- `screen`
+- Docker recommended on Linux: branch-local or published `alphagsm-wine-proton-runtime`
+- Host/process fallback: `screen` plus a working Wine/Proton install
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -46,7 +49,8 @@ Setup configures:
 
 - the game port (default 64090)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated-server files
+- readiness is tracked from `user/server.log` on the validated Linux Wine/Proton path
 
 ## Useful Commands
 
@@ -59,6 +63,10 @@ alphagsm mymiscreat backup
 
 - Module name: `miscreatedserver`
 - Default port: 64090
+- Current supported validation lane on Linux: Docker-backed `wine-proton`
+- On Linux, `query`, `info`, and `info --json` currently use generic `tcp`
+  reachability on the managed game port instead of the older stale A2S probe
+  on `port + 1`
 
 ## Developer Notes
 
@@ -71,8 +79,9 @@ alphagsm mymiscreat backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: launch settings are passed directly on the command line from the managed datastore
 - **Max players**: `50`
+- **Readiness log**: `user/server.log`
 - **Template**: See [server-templates/miscreatedserver/](../server-templates/miscreatedserver/) if available
 
 ### Maps and Mods

@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 108      |
-| DISABLED | 63      |
-| SKIPPED  | 62      |
+| PASSED   | 112      |
+| DISABLED | 62      |
+| SKIPPED  | 59      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (108)
+## PASSED (109)
 
 | Test | Type |
 |------|------|
@@ -74,11 +74,14 @@ this pass aligned the runtime gate with that existing tracker state.
 | minecraft_velocity | Direct download |
 | minecraft_waterfall | Direct download |
 | memoriesofmarsserver | SteamCMD |
+| miscreatedserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM reads readiness from the real `user/server.log` surface and treats the live health surface as generic `tcp` on the managed main port instead of the older stale A2S-on-`port + 1` assumption |
 | codserver | Docker runtime — PASSED 2026-05-23; standard integration/smoke now run through the shared `steamcmd-linux` Docker runtime image, which supplies the legacy `libstdc++.so.5` compatibility library required by the old Linux dedicated binary |
 | mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke now drive the module through the shared `simple-tcp` Docker runtime image because upstream does not publish an anonymous Linux server binary, while process mode still works when a host `mumble-server`/`murmurd` package is installed |
 | mordserver | SteamCMD |
 | necserver | SteamCMD |
 | nmrihserver | SteamCMD (Source) |
+| noonesurvivedserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM uses the shared Xvfb/software-GL container entrypoint and aligns `query`, `info`, and `info --json` to the current generic `tcp` status surface on the managed main port instead of the older stale A2S `queryport` expectation |
+| notdserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM mirrors `ServerSettings.ini` into `LF/Saved/Config`, adds the required `-DisableAntiCheat` Linux launch flag, and aligns `query`, `info`, and `info --json` to the current generic `tcp` status surface on the managed main port instead of the older stale A2S `queryport` expectation |
 | opforserver | SteamCMD (GoldSrc) |
 | outpostzeroserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on Linux/Proton once AlphaGSM mirrors the shipped `RunServer.bat` contract by launching `WindowsServer/SurvivalGameServer.exe RedPlanet ... -log`, syncing `Saved/Config/WindowsServer/Game.ini`, seeding `steam_appid.txt` beside the Win64 binaries, and waiting for the real post-load discovery surface before `query`, `info`, and `info --json` on generic `udp` at the managed game port |
 | palworld | SteamCMD |
@@ -99,6 +102,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | scpslserver | SteamCMD |
 | smallandserver | SteamCMD |
 | sevendaystodie | SteamCMD — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the native Linux dedicated path once readiness follows the real `output_log__*.txt` surface instead of the stale screen log, the pre-start port refresh keeps the long SteamCMD setup from leaving a claimed stale port behind, and `query`, `info`, plus `info --json` are aligned to 7DTD's real A2S listener on the managed game port |
+| soulmask | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the validated Linux Docker-backed `wine-proton` lane once AlphaGSM launches the real Windows dedicated depot through root `WSServer.exe`, treats the live health surface as generic `tcp` on the managed main port instead of the older stale A2S assumption, and proves `query`, `info`, `info --json`, plus clean shutdown on the current server contract |
 | sonsoftheforestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM writes the managed JSON `user-data/dedicatedserver.cfg`, seeds `ownerswhitelist.txt` before first launch, starts Xvfb from the shared container entrypoint instead of a stuck in-container `xvfb-run` wrapper, and proves A2S `query`, `info`, `info --json`, plus clean shutdown on the managed `queryport` |
 | solserver | SteamCMD |
 | squad44server | SteamCMD |
@@ -139,7 +143,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## DISABLED (63)
+## DISABLED (62)
 
 | Test | Reason |
 |------|--------|
@@ -206,7 +210,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (64)
+## SKIPPED (59)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -221,10 +225,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
-| miscreatedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 302200 |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
-| noonesurvivedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2329680 |
-| notdserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 1420710 |
 | q3server | Direct download now installs the public ioquake3 Linux engine build, but CI lacks the licensed Quake III `baseq3/pak0.pk3` data required to start the dedicated server |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
@@ -268,7 +269,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | qlserver | Quake Live dedicated server (qzeroded.x64) exits immediately on startup; requires Steam authentication or specific server configuration |
 | redmserver | Requires txAdmin/authentication |
 | rtcwserver | Download prerequisite |
-| soulmask | Soulmask server exits unexpectedly on startup; requires investigation of runtime configuration or library requirements |
 | subnauticaserver | SteamCMD/platform issue |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |

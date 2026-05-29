@@ -2,9 +2,12 @@
 
 This guide covers the `noonesurvivedserver` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29
+
 ## Requirements
 
-- `screen`
+- Docker recommended on Linux: branch-local or published `alphagsm-wine-proton-runtime`
+- Host/process fallback: `screen` plus a working Wine/Proton install
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +47,10 @@ alphagsm mynoonesur stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated-server files
 
 ## Useful Commands
 
@@ -58,7 +62,11 @@ alphagsm mynoonesur backup
 ## Notes
 
 - Module name: `noonesurvivedserver`
-- Default port: 27015
+- Default port: `7777`
+- Default query port: `27015`
+- Current supported validation lane on Linux: Docker-backed `wine-proton`
+- On Linux, `query`, `info`, and `info --json` currently use generic `tcp`
+  reachability on the managed game port instead of A2S on `queryport`
 
 ## Developer Notes
 
@@ -71,7 +79,7 @@ alphagsm mynoonesur backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: launch settings are passed directly on the command line from the managed datastore
 - **Template**: See [server-templates/noonesurvivedserver/](../server-templates/noonesurvivedserver/) if available
 
 ### Maps and Mods

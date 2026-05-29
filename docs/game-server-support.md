@@ -66,11 +66,14 @@ Notes:
 - [x] minecraft_velocity
 - [x] minecraft_waterfall
 - [x] memoriesofmarsserver
+- [x] miscreatedserver
 - [x] codserver
 - [x] mumbleserver
 - [x] mordserver
 - [x] necserver
 - [x] nmrihserver
+- [x] noonesurvivedserver
+- [x] notdserver
 - [x] opforserver
 - [x] outpostzeroserver
 - [x] palworld
@@ -91,6 +94,7 @@ Notes:
 - [x] scpslserver
 - [x] smallandserver
 - [x] sevendaystodie
+- [x] soulmask
 - [x] sonsoftheforestserver
 - [x] solserver
 - [x] squad44server
@@ -207,10 +211,7 @@ Notes:
 - [ ] icarusserver
 - [ ] lifeisfeudalserver
 - [ ] medievalengineersserver
-- [ ] miscreatedserver
 - [ ] motortownserver
-- [ ] noonesurvivedserver
-- [ ] notdserver
 - [ ] q3server
 - [ ] reignofkingsserver
 - [ ] ror2server
@@ -254,7 +255,6 @@ Notes:
 - [ ] qlserver
 - [ ] redmserver
 - [ ] rtcwserver
-- [ ] soulmask
 - [ ] subnauticaserver
 - [ ] tsserver
 - [ ] twserver

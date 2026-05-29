@@ -53,6 +53,20 @@ setting_schema = {
 }
 
 
+def _container_runtime_env(_server):
+    """Return Docker runtime env for the shared wine-proton entrypoint."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="WRSHServer.exe"):
     """Collect and store configuration values for a No One Survived server."""
 
@@ -109,6 +123,20 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def get_query_address(server):
+    """Return the validated runtime query surface for No One Survived."""
+
+    if IS_LINUX:
+        return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the address used by AlphaGSM info for No One Survived."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a No One Survived dedicated server."""
 
@@ -139,7 +167,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop No One Survived using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -180,9 +208,11 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_env=_container_runtime_env,
 )

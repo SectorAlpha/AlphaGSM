@@ -3,6 +3,7 @@
 import os
 
 import screen
+import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
@@ -10,8 +11,9 @@ from server.settable_keys import SettingSpec, build_launch_arg_values
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from utils.platform_info import IS_LINUX
 
-steam_app_id = 3017300
+steam_app_id = 3017310
 steam_anonymous_login_possible = True
 
 commands = ("update", "restart")
@@ -78,7 +80,14 @@ setting_schema = {
 }
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="WSServer.sh"):
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    exe_name="WSServer.exe",
+):
     """Collect and store configuration values for a Soulmask server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -128,6 +137,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download the Soulmask server files via SteamCMD."
 
@@ -136,6 +146,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": IS_LINUX},
 )
 update.__doc__ = "Update the Soulmask server files and optionally restart the server."
 
@@ -179,7 +190,27 @@ def get_start_command(server):
     ]
     if server.data["mods"]:
         command.append('-mod="%s"' % (server.data["mods"],))
+    if IS_LINUX:
+        command = proton.wrap_command(
+            command,
+            wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
+        )
     return (command, server.data["dir"])
+
+
+def get_query_address(server):
+    """Return the effective query surface for Soulmask."""
+
+    if IS_LINUX:
+        return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the address used by the info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -226,14 +257,27 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'echoport', 'protocol': 'udp'}, {'key': 'echoport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+    port_definitions=(
+        {"key": "queryport", "protocol": "udp"},
+        {"key": "queryport", "protocol": "tcp"},
+        {"key": "echoport", "protocol": "udp"},
+        {"key": "echoport", "protocol": "tcp"},
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "protocol": "tcp"},
+    ),
+    prefer_proton=True,
 )
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'echoport', 'protocol': 'udp'}, {'key': 'echoport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
+get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=get_start_command,
+    port_definitions=(
+        {"key": "queryport", "protocol": "udp"},
+        {"key": "queryport", "protocol": "tcp"},
+        {"key": "echoport", "protocol": "udp"},
+        {"key": "echoport", "protocol": "tcp"},
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "protocol": "tcp"},
+    ),
+    prefer_proton=True,
 )

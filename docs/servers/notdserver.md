@@ -2,9 +2,12 @@
 
 This guide covers the `notdserver` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29
+
 ## Requirements
 
-- `screen`
+- Docker recommended on Linux: branch-local or published `alphagsm-wine-proton-runtime`
+- Host/process fallback: `screen` plus a working Wine/Proton install
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +47,12 @@ alphagsm mynotdserv stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated-server files
+- AlphaGSM mirrors the root `ServerSettings.ini` into `LF/Saved/Config/ServerSettings.ini`
+  before launch on Linux so the live runtime reads the managed settings
 
 ## Useful Commands
 
@@ -58,7 +64,11 @@ alphagsm mynotdserv backup
 ## Notes
 
 - Module name: `notdserver`
-- Default port: 27015
+- Default port: `7777`
+- Default query port: `27015`
+- Current supported validation lane on Linux: Docker-backed `wine-proton`
+- On Linux, `query`, `info`, and `info --json` currently use generic `tcp`
+  reachability on the managed game port instead of A2S on `queryport`
 
 ## Developer Notes
 
@@ -71,7 +81,7 @@ alphagsm mynotdserv backup
 
 ### Server Configuration
 
-- **Config files**: `ServerSettings.ini`
+- **Config files**: root `ServerSettings.ini`, mirrored at `LF/Saved/Config/ServerSettings.ini`
 - **Template**: See [server-templates/notdserver/](../server-templates/notdserver/) if available
 
 ### Maps and Mods

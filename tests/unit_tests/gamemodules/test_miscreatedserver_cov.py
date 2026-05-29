@@ -126,6 +126,41 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_miscreated_runtime_metadata_enables_xvfb_for_docker(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Bin64_dedicated/MiscreatedServer.exe",
+            "gameserverid": "100",
+            "maxplayers": 50,
+            "port": 64090,
+            "servername": "AlphaGSM miscreated",
+            "startmap": "islands",
+        }
+    )
+    exe_path = tmp_path / "Bin64_dedicated" / "MiscreatedServer.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
+def test_query_addresses_use_tcp_on_linux(monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    server = DummyServer()
+    server.data.update({"port": 64090})
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 64090, "tcp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 64090, "tcp")
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -141,8 +176,9 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 
 
 def test_status():
@@ -226,4 +262,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

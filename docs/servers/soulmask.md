@@ -4,7 +4,7 @@ This guide covers the `soulmask` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- `docker` for the validated Linux Wine/Proton path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +44,7 @@ alphagsm mysoulmask stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 8777)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,16 +58,18 @@ alphagsm mysoulmask backup
 ## Notes
 
 - Module name: `soulmask`
-- Default port: 27015
+- Default port: `8777`
+- Validated Linux runtime: Docker-backed `wine-proton`
+- Current query/info contract on Linux: generic `tcp` on the managed game port
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `WSServer.sh`
-- **Location**: `<install_dir>/WSServer.sh`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `3017300`
+- **Executable**: `WSServer.exe`
+- **Location**: `<install_dir>/WSServer.exe`
+- **Engine**: Windows dedicated server under Wine/Proton on Linux
+- **SteamCMD App ID**: `3017310`
 
 ### Server Configuration
 

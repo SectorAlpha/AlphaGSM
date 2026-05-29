@@ -134,6 +134,37 @@ def test_setting_schema_exposes_noonesurvived_launch_formats():
     assert mod.setting_schema["servername"].launch_arg_format == "-servername={value}"
 
 
+def test_noonesurvived_runtime_metadata_enables_xvfb_for_docker(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "WRSHServer.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "servername": "AlphaGSM noonesurvived",
+        }
+    )
+    (tmp_path / "WRSHServer.exe").write_text("")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
+def test_query_addresses_use_tcp_on_linux(monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 27015})
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "tcp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "tcp")
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -147,8 +178,9 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 
 
 def test_status():
@@ -220,4 +252,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
