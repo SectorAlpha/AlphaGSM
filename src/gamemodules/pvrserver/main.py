@@ -1,6 +1,8 @@
 """Pavlov VR dedicated server lifecycle helpers."""
 
 import os
+import shlex
+import subprocess as sp
 
 import screen
 import utils.steamcmd as steamcmd
@@ -89,7 +91,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
-install.__doc__ = "Download the Pavlov VR server files via SteamCMD."
+_shared_install = install
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -97,7 +99,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
-update.__doc__ = "Update the Pavlov VR server files and optionally restart the server."
+_shared_update = update
 
 
 restart = gamemodule_common.make_restart_hook()
@@ -106,6 +108,42 @@ restart.__doc__ = "Restart the Pavlov VR server."
 
 def _status_port(server):
     return int(server.data.get("port", DEFAULT_PORT)) + STATUS_PORT_OFFSET
+
+
+def _exe_path(server):
+    return os.path.join(server.data["dir"], server.data["exe_name"])
+
+
+def _recoverable_steamcmd_false_negative(server, ex):
+    output = getattr(ex, "output", "") or ""
+    return (
+        "state is 0x602 after update job." in output
+        and os.path.isfile(_exe_path(server))
+    )
+
+
+def install(server):
+    """Download the Pavlov VR server files via SteamCMD."""
+
+    try:
+        _shared_install(server)
+    except sp.CalledProcessError as ex:
+        if not _recoverable_steamcmd_false_negative(server, ex):
+            raise
+
+
+def update(server, validate=False, restart=False):
+    """Update the Pavlov VR server files and optionally restart the server."""
+
+    try:
+        _shared_update(server, validate=validate, restart=restart)
+    except sp.CalledProcessError as ex:
+        if not _recoverable_steamcmd_false_negative(server, ex):
+            raise
+        print("Server up to date")
+        if restart:
+            print("Starting the server up")
+            server.start()
 
 
 def get_query_address(server):
@@ -121,7 +159,7 @@ def get_info_address(server):
 def get_start_command(server):
     """Build the command used to launch a Pavlov VR dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    exe_path = _exe_path(server)
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     dynamic_args = build_launch_arg_values(
@@ -147,6 +185,7 @@ def do_stop(server, j):
 
 def status(server, verbose):
     """Detailed Pavlov VR status is not implemented yet."""
+
 
 
 def message(server, msg):
@@ -211,14 +250,29 @@ def get_container_spec(server):
     """Publish the gameplay port plus Pavlov's fixed status-helper port."""
 
     server.data["queryport"] = str(_status_port(server))
-    return gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=(
-            {'key': 'port', 'protocol': 'udp'},
-            {'key': 'port', 'protocol': 'tcp'},
-            {'key': 'queryport', 'protocol': 'udp'},
-            {'key': 'queryport', 'protocol': 'tcp'},
-        ),
-        stdin_open=True,
-    )(server)
+    requirements = get_runtime_requirements(server)
+    command, _cwd = get_start_command(server)
+    if not any(arg.startswith("-QueryPort=") for arg in command[1:]):
+        command.append("-QueryPort=" + str(server.data["queryport"]))
+    shell_command = " ".join(shlex.quote(part) for part in command)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            "getent passwd pavlov >/dev/null 2>&1 || "
+            "useradd -m -d /home/pavlov -s /bin/bash pavlov; "
+            "mkdir -p /home/pavlov/.config && "
+            "chown -R pavlov:pavlov /home/pavlov /srv/server && "
+            "export HOME=/home/pavlov USER=pavlov LOGNAME=pavlov "
+            "XDG_CONFIG_HOME=/home/pavlov/.config && "
+            "exec setpriv --reuid=$(id -u pavlov) --regid=$(id -g pavlov) "
+            "--clear-groups "
+            + shell_command,
+        ],
+    }
