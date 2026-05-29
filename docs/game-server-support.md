@@ -26,6 +26,7 @@ Notes:
 - [x] acserver
 - [x] ahl2server
 - [x] armarserver
+- [x] astroneerserver
 - [x] avserver
 - [x] bb2server
 - [x] btlserver
@@ -195,7 +196,6 @@ Notes:
 
 - [ ] stormworksserver
 - [ ] arksurvivalascended
-- [ ] astroneerserver
 - [ ] blackwakeserver
 - [ ] darkandlightserver
 - [ ] ducksideserver

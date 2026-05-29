@@ -134,6 +134,26 @@ def test_astroneerserver_get_start_command_builds_expected_args(tmp_path, monkey
     assert wrap_calls == [True]
 
 
+def test_astroneerserver_runtime_metadata_enables_xvfb_for_docker(tmp_path):
+    server = DummyServer("astro")
+    exe = tmp_path / "AstroServer.exe"
+    exe.write_text("")
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "AstroServer.exe", "port": 8777})
+
+    requirements = astroneerserver.get_runtime_requirements(server)
+    spec = astroneerserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "wine-proton"
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["ALPHAGSM_XVFB_DISPLAY"] == ":99"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+    assert spec["command"][0] == "AstroServer.exe"
+
+
 def test_atlasserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("atlas")
     exe_dir = tmp_path / "ShooterGame" / "Binaries" / "Linux"

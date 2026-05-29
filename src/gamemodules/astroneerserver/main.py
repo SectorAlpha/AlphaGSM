@@ -29,6 +29,20 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _container_runtime_env(_server):
+    """Return the Docker runtime env needed for Astroneer's UE4 prereqs."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="AstroServer.exe"):
     """Collect and store configuration values for an ASTRONEER server."""
 
@@ -88,6 +102,18 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the ASTRONEER server."
 
 
+def get_query_address(server):
+    """ASTRONEER exposes a generic TCP listener on the managed game port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+
+
+def get_info_address(server):
+    """Return the TCP address used by the info command."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch an ASTRONEER dedicated server."""
 
@@ -107,7 +133,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop the ASTRONEER server by interrupting the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -139,10 +165,12 @@ def checkvalue(server, key, *value):
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    extra_env=_container_runtime_env,
 )

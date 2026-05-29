@@ -126,10 +126,20 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_do_stop():
+def test_do_stop(monkeypatch):
     server = DummyServer()
+    send_mock = MagicMock()
+    monkeypatch.setattr(mod.runtime_module, "send_to_server", send_mock)
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    send_mock.assert_called_with(server, "\003")
+
+
+def test_query_and_info_addresses_use_tcp_on_main_port():
+    server = DummyServer()
+    server.data["port"] = 8777
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 8777, "tcp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 8777, "tcp")
 
 
 def test_status():
@@ -207,4 +217,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
