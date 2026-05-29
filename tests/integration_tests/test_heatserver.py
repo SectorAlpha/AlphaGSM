@@ -8,6 +8,7 @@ from conftest import (
     require_command,
     require_proton,
     pick_free_tcp_port,
+    wait_for_glob_log_marker,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -15,7 +16,6 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -41,9 +41,13 @@ def test_heatserver_lifecycle(tmp_path):
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    query_port = pick_free_tcp_port()
+    while query_port == port:
+        query_port = pick_free_tcp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "heatserver")
+    run_and_assert_ok(env, server_name, "set", "queryport", str(query_port))
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -55,10 +59,10 @@ def test_heatserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = install_dir / "server.log"
-        wait_for_log_marker(
-            log_path,
-            ["Server started", "Listening", "listening on", "port", "online"],
+        wait_for_glob_log_marker(
+            install_dir / "Logs",
+            "Console*.txt",
+            ["Game has started.", "Type /shutdown to shut down the server."],
             START_TIMEOUT,
             env=env,
             server_name=server_name,
@@ -96,3 +100,4 @@ def test_heatserver_lifecycle(tmp_path):
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)
