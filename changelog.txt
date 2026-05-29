@@ -14,7 +14,7 @@ high-level milestones.
 - Bannerlord: make the checked-in smoke/integration lane prefer the branch-local Docker runtime image that carries `.NET 6`, document the published-image `dotnet` gap, and record the remaining Linux blocker as a native dedicated-server segfault after `dotnet` startup rather than a missing host runtime.
 - Dark and Light: harden smoke/integration diagnostics so focused Linux/Proton reruns fail on the real regression surface when the managed `screen` session dies before `DNL.log` or any UDP listener appears, instead of rediscovering the same timeout blindly.
 - Empyrion: pin the Linux dedicated log to `Logs/alphagsm-dedicated.log`, update smoke/integration to read the real dedicated runtime log, and document that direct dedicated startup now reaches `Started a new game` before stalling without a proven query/info listener.
-- Pavlov VR: move the checked-in smoke/integration contract to the Docker runtime backend first and use the runtime-aware stop hook there, leaving only the final uninterrupted Docker lifecycle proof before promotion.
+- Pavlov VR: move the checked-in smoke/integration contract to the Docker runtime backend first, tolerate the known SteamCMD `state is 0x602 after update job` false-negative when `PavlovServer.sh` is already present, and record that the remaining blocker is now the non-responsive A2S status-helper port rather than setup timing.
 - Saleblazers: confirm the upstream `-config <DedicatedServerConfig.json>` flow is real on Linux/Wine, and narrow the remaining blocker to the dedicated console handoff stalling at `Waiting for Main Game Connection...` while the main process still advertises `Port 55000` instead of the configured hosting port.
 
 2026-05-28
@@ -91,8 +91,7 @@ high-level milestones.
 2026-05-13
 - Server support: remove stale disabled gates for `askaserver`, `battlecryoffreedomserver`, `blackops3server`, `enshrouded`, `groundbranchserver`, `mythofempiresserver`, `pixarkserver`, `reignofdwarfserver`, `sunkenlandserver`, and `theforestserver` after the tracker and current support surface had already moved them back into active coverage.
 - Docs: add a README-linked checkbox tracker page for current game-server support status, generated from `docs/TEST_STATUS.md`, so users can quickly scan supported and unsupported server names without reading the full integration-status report.
-- CI/runtime: add `libc++1` to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so native Linux servers such as `pvrserver` stop failing at launch on missing `libc++.so.1`.
-- CI/runtime: point the unversioned `libc++.so` loader name at the real `libc++.so.1` shared object in the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family after Ubuntu's `libc++-dev` package proved to be a linker script rather than a runtime ELF library.
+- CI/runtime: add `libc++1` to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `pvrserver` can launch on current hosts. In the first live rerun the dedicated server reached a running `status`, and `doctor` showed the module resolving to its Docker-first `steamcmd-linux` runtime instead of the old host process path.
 - CI/runtime: add Ubuntu Bionic's `libprotobuf10` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `libprotobuf.so.10` again.
 - CI/runtime: add Ubuntu Bionic's `libidn11` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `libidn.so.11` again.
 - CI/runtime: add Ubuntu Focal's `libldap-2.4-2` compatibility package to the shared Ubuntu 24.04 integration image and `steamcmd-linux` runtime family so `atlasserver` can load `liblber-2.4.so.2` again.
@@ -120,7 +119,7 @@ high-level milestones.
 - Docs: add server guides for the newly re-enabled and newly added server modules, and align smoke runners, README references, and developer/runtime guidance with the current Docker-backed contract.
 - Dev: add static runtime-contract coverage that enforces `get_runtime_requirements()` / `get_container_spec()` on maintained Docker-capable modules, and keep the backend matrix representative cases in sync with the supported runtime families.
 - Dev: add the shared `docker/` runtime family scaffolds and document the explicit container-runtime contract for maintained modules.
-- Server support: add `get_runtime_requirements()` / `get_container_spec()` wrappers and Docker image contracts across the current maintained server set, including `steamcmd-linux`, `wine-proton`, `java`, `simple-tcp`, `quake-linux`, and `service-console` families.
+- Server support: add `get_runtime_requirements()` / `get_container_spec()` wrappers across the current maintained server set, including `steamcmd-linux`, `wine-proton`, `java`, `simple-tcp`, `quake-linux`, and `service-console` families.
 - Docs: split end-user server guides into `docs/servers/`, keep README simple, and move implementation/runtime detail into `DEVELOPERS.md`.
 - Dev: convert more top-level game modules to package-backed layouts, colocate checked-in manifests beside the owning module, and keep canonical `__init__.py` import surfaces stable while moving main implementations to `main.py`.
 - Server support: expand curated manifests across Paper, proxy, TShock, Garry's Mod, Source-family addons, SCP:SL LabAPI, and MTA resources using authoritative release assets and dependency-aware apply flows.
