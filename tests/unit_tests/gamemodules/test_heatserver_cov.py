@@ -119,8 +119,8 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["queryport"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
-    assert cmd[0] == "Server.exe"
+    assert cmd == ["Server.exe"]
+    assert cwd == server.data["dir"]
 
 
 def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
@@ -184,6 +184,60 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_sync_server_config_updates_native_settings(tmp_path):
+    server = DummyServer("heat")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": "28015",
+            "queryport": "28016",
+            "maxplayers": "24",
+            "startmap": "Smallville",
+        }
+    )
+    config_dir = tmp_path / "Configuration"
+    config_dir.mkdir()
+    config_path = config_dir / "ServerSettings.cfg"
+    config_path.write_text(
+        "\n".join(
+            [
+                "portNumber = '7450'",
+                "steamAuthPort = '27015'",
+                "maxPlayers = '40'",
+                "levelName = 'America'",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    updated = config_path.read_text(encoding="utf-8")
+    assert "portNumber = '28015'" in updated
+    assert "steamAuthPort = '28016'" in updated
+    assert "maxPlayers = '24'" in updated
+    assert "levelName = 'Smallville'" in updated
+
+
+def test_sync_server_config_missing_key_raises(tmp_path):
+    server = DummyServer("heat")
+    server.data.update({"dir": str(tmp_path), "port": "28015"})
+    config_dir = tmp_path / "Configuration"
+    config_dir.mkdir()
+    config_path = config_dir / "ServerSettings.cfg"
+    config_path.write_text("portNumber = '7450'\n", encoding="utf-8")
+
+    with pytest.raises(ServerError, match="missing steamAuthPort"):
+        mod.sync_server_config(server)
+
+
+def test_sync_server_config_noops_without_install_dir():
+    server = DummyServer("heat")
+    server.data["port"] = "28015"
+
+    mod.sync_server_config(server)
+
+
 def test_query_and_info_address_use_queryport(monkeypatch):
     server = DummyServer("heat")
     server.data["queryport"] = "27016"
@@ -191,6 +245,39 @@ def test_query_and_info_address_use_queryport(monkeypatch):
 
     assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
     assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
+
+
+def test_prestart_syncs_server_config(tmp_path, monkeypatch):
+    server = DummyServer("heat")
+    server.data["dir"] = str(tmp_path)
+    called = []
+    monkeypatch.setattr(mod, "_bootstrap_server_settings_if_missing", lambda current: None)
+    monkeypatch.setattr(mod, "sync_server_config", lambda current: called.append(current))
+
+    mod.prestart(server)
+
+    assert called == [server]
+
+
+def test_prestart_bootstraps_missing_server_settings_before_sync(tmp_path, monkeypatch):
+    server = DummyServer("heat")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Server.exe",
+        }
+    )
+    (tmp_path / "Server.exe").write_text("", encoding="utf-8")
+    bootstrap_calls = []
+    sync_calls = []
+
+    monkeypatch.setattr(mod, "_bootstrap_server_settings_if_missing", lambda current: bootstrap_calls.append(current))
+    monkeypatch.setattr(mod, "sync_server_config", lambda current: sync_calls.append(current))
+
+    mod.prestart(server)
+
+    assert bootstrap_calls == [server]
+    assert sync_calls == [server]
 
 
 def test_do_stop():
