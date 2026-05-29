@@ -47,7 +47,7 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/pvrserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-pvrserver.conf"
-EXPECTED_PROTOCOL="a2s"
+EXPECTED_PROTOCOL="udp"
 
 mkdir -p "$HOME_DIR"
 
