@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 106      |
+| PASSED   | 107      |
 | DISABLED | 63      |
-| SKIPPED  | 64      |
+| SKIPPED  | 63      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (106)
+## PASSED (107)
 
 | Test | Type |
 |------|------|
@@ -53,6 +53,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | dodserver | SteamCMD (GoldSrc) |
 | dodsserver | SteamCMD (Source) |
 | doiserver | SteamCMD (Source) |
+| ecoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-29; fresh smoke and integration now both pass on the branch-local `steamcmd-linux` runtime image once AlphaGSM launches Eco in offline mode, seeds `.steam/sdk64/steamclient.so` plus `steam_appid.txt` inside the install tree, stages a writable `.net-bundle-cache`, syncs `Configs/Network.eco` side ports from the managed base port, and aligns `query`, `info`, and `info --json` to Eco's real generic `tcp` surface on the managed main port |
 | emserver | SteamCMD (Source) — PASSED 2026-05-23; focused integration now reaches real Source log readiness, hibernation-safe `info --json`, A2S query/info, and clean shutdown on the anonymous SteamCMD install path |
 | empyrionserver | Wine/Proton — PASSED 2026-05-29; the direct `DedicatedServer/EmpyrionDedicated.exe` Linux contract now syncs `dedicated.yaml` `Srv_Port`, reads readiness from `Logs/alphagsm-dedicated.log`, and proves `query`, `info`, `info --json`, and clean shutdown on Empyrion's live STCP TCP listener at `port + 3` instead of the older stale fixed-`30004` / A2S assumption |
 | exfilserver | SteamCMD |
@@ -249,7 +250,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | coduoserver | Archive/download prerequisite |
 | codwawserver | Archive/download prerequisite |
 | dstserver | DST requires a Klei cluster_token and cluster config to start; server exits immediately without them |
-| ecoserver | EcoServer crashes on startup; possible missing runtime dependency (libssl or glibc version mismatch) |
 | etlegacyserver | Archive/download prerequisite |
 | gravserver | SteamCMD/platform issue |
 | gtafivemserver | Requires txAdmin/authentication |

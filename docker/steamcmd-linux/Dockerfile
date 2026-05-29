@@ -13,11 +13,12 @@ RUN dpkg --add-architecture i386 \
         lib32stdc++6 \
         libcurl3t64-gnutls \
         libatomic1 \
-                  libc++1 \
+        libc++1 \
+        libgdiplus \
         libsdl2-2.0-0 \
         libpulse0 \
-       python3 \
-       wget \
+        python3 \
+        wget \
  && rm -rf /var/lib/apt/lists/*
 
 # Older dedicated servers in the steamcmd-linux family still link against

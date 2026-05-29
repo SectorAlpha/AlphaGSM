@@ -45,6 +45,7 @@ Notes:
 - [x] dodserver
 - [x] dodsserver
 - [x] doiserver
+- [x] ecoserver
 - [x] emserver
 - [x] empyrionserver
 - [x] exfilserver
@@ -235,7 +236,6 @@ Notes:
 - [ ] coduoserver
 - [ ] codwawserver
 - [ ] dstserver
-- [ ] ecoserver
 - [ ] etlegacyserver
 - [ ] gravserver
 - [ ] gtafivemserver

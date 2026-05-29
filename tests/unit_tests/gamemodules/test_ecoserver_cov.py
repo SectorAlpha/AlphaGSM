@@ -1,5 +1,6 @@
 """Full coverage tests for ecoserver."""
 
+import json
 import os
 import sys
 from unittest.mock import patch, MagicMock
@@ -110,11 +111,54 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "EcoServer"
     (tmp_path / "EcoServer").write_text("")
+    linux64_dir = tmp_path / "linux64"
+    linux64_dir.mkdir()
+    (linux64_dir / "steamclient.so").write_text("")
     server.data["port"] = 27015
     server.data["storage"] = "test"
     server.data["world"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[0] == "env"
+    assert "-offline" in cmd
+    assert (tmp_path / ".steam" / "sdk64" / "steamclient.so").is_symlink()
+
+
+def test_sync_server_config_writes_network_ports(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 32000
+    config_dir = tmp_path / "Configs"
+    config_dir.mkdir()
+    (config_dir / "Network.eco.template").write_text(
+        json.dumps({"Name": "Eco", "GameServerPort": 3000}),
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    written = json.loads((config_dir / "Network.eco").read_text(encoding="utf-8"))
+    assert written["GameServerPort"] == 32000
+    assert written["WebServerPort"] == 32001
+    assert written["RconServerPort"] == 32002
+    assert written["SteamServerPort"] == 32003
+
+
+def test_install_seeds_local_steam_bootstrap(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "EcoServer"
+    server.data["port"] = 3000
+    linux64_dir = tmp_path / "linux64"
+    linux64_dir.mkdir()
+    (linux64_dir / "steamclient.so").write_text("")
+    server.data["Steam_AppID"] = 739590
+    server.data["Steam_anonymous_login_possible"] = True
+
+    mod.install(server)
+
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="utf-8").strip() == "739590"
+    assert (tmp_path / ".steam" / "sdk64" / "steamclient.so").is_symlink()
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -130,8 +174,9 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
-    mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    with patch.object(mod.runtime_module, "send_to_server") as send_mock:
+        mod.do_stop(server, 0)
+    send_mock.assert_called_with(server, "\nsave\nshutdown\n")
 
 
 def test_status():
@@ -199,8 +244,41 @@ def test_checkvalue_dir():
     assert result == "/test/value"
 
 
+def test_get_runtime_requirements_declares_side_ports_and_libgdiplus():
+    server = DummyServer()
+    server.data["dir"] = "/srv/eco/"
+    server.data["port"] = 32000
+
+    requirements = mod.get_runtime_requirements(server)
+
+    dependency = requirements["host_dependencies"][0]
+    assert dependency["id"] == "libgdiplus"
+    assert "libgdiplus" in dependency["install_hints"]["linux"]
+    assert {"host": 32000, "container": 32000, "protocol": "udp"} in requirements["ports"]
+    assert {"host": 32000, "container": 32000, "protocol": "tcp"} in requirements["ports"]
+    assert {"host": 32001, "container": 32001, "protocol": "tcp"} in requirements["ports"]
+    assert {"host": 32002, "container": 32002, "protocol": "tcp"} in requirements["ports"]
+    assert {"host": 32003, "container": 32003, "protocol": "udp"} in requirements["ports"]
+
+
+def test_get_container_spec_sets_home_and_ld_library_path(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "EcoServer"
+    server.data["port"] = 32000
+    server.data["world"] = "eco"
+    server.data["storage"] = "Storage"
+    (tmp_path / "EcoServer").write_text("")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["env"] == {}
+    assert "HOME=." in spec["command"]
+    assert "LD_LIBRARY_PATH=.:./linux64" in spec["command"]
+    assert "DOTNET_BUNDLE_EXTRACT_BASE_DIR=.net-bundle-cache" in spec["command"]
+
+
 def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

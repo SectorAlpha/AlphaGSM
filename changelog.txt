@@ -230,6 +230,7 @@ high-level milestones.
 - Server support: tighten the Dark and Light smoke contract so Linux Wine/Proton coverage must prove UDP query/info on the claimed game port instead of only reaching a generic started state.
 - Server support: launch Saleblazers with the upstream headless dedicated flags on Linux Wine/Proton while keeping the SDL/Xvfb wrapper path documented as the current non-A2S blocker surface.
 - Server support: re-enable rimworldtogetherserver after updating the live Configs/ServerConfig.json port and aligning its TCP integration checks with the shared query/info contract.
+- Server support: re-enable ecoserver on the shared `steamcmd-linux` Docker runtime by launching Eco in offline mode, seeding local Steam bootstrap files (`steam_appid.txt` and `.steam/sdk64/steamclient.so`), staging a writable `.net-bundle-cache`, syncing `Configs/Network.eco` side ports, and aligning `query` / `info` to Eco's live generic TCP surface.
 - CLI: make `set` trigger module config-sync hooks only for explicitly declared game-config keys, so valid server config values sync immediately while AlphaGSM-only keys do not.
 - Server support: extend the explicit config-sync contract to mumbleserver, craftopiaserver, and scpslserver so `set` updates their managed INI/text server config values immediately.
 - Server support: let Java Minecraft modules sync `port`, `gamemode`, `difficulty`, and `maxplayers` back into server.properties through the shared custom/vanilla/paper lifecycle path.

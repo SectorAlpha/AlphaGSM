@@ -2,10 +2,13 @@
 
 This guide covers the `ecoserver` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29 via the shared `steamcmd-linux` Docker runtime.
+
 ## Requirements
 
 - `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- `docker` for the validated Linux runtime path
+- For local process launches on Linux, install `libgdiplus` plus the usual SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -47,6 +50,7 @@ Setup configures:
 - the game port (default 3000)
 - the install directory
 - SteamCMD downloads the server files
+- AlphaGSM writes `Configs/Network.eco` so the managed main port stays in sync with Eco's derived web, RCON, and Steam side ports
 
 ## Useful Commands
 
@@ -59,6 +63,9 @@ alphagsm myecoserve backup
 
 - Module name: `ecoserver`
 - Default port: 3000
+- AlphaGSM launches Eco in `-offline` mode for anonymous SteamCMD installs
+- `query`, `info`, and `info --json` use Eco's live generic `tcp` surface on the managed main port
+- The current validated stop path may fall back to AlphaGSM's built-in forced kill after the normal grace period if Eco ignores the generic console shutdown command
 
 ## Developer Notes
 

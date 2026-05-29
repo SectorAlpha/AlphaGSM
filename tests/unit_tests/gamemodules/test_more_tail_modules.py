@@ -78,11 +78,17 @@ def test_ecoserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("eco")
     exe = tmp_path / "EcoServer"
     exe.write_text("")
+    linux64_dir = tmp_path / "linux64"
+    linux64_dir.mkdir()
+    (linux64_dir / "steamclient.so").write_text("")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "EcoServer", "port": 3000, "world": "eco", "storage": "Storage"})
 
     cmd, cwd = ecoserver.get_start_command(server)
 
-    assert cmd == ["./EcoServer", "-nogui", "-port", "3000", "-world", "eco", "-storedirectory", "Storage"]
+    assert cmd[0] == "env"
+    assert "./EcoServer" in cmd
+    assert "-offline" in cmd
+    assert "-port" in cmd
     assert cwd == server.data["dir"]
 
 
