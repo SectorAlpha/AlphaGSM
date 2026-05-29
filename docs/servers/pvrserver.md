@@ -61,7 +61,7 @@ alphagsm mypvrserve stop
 Setup configures:
 
 - the game port (default 7777)
-- the status/query port (fixed at game port + 400, so 8177 by default)
+- the status/query helper port (fixed at game port + 400, so 8177 by default)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -76,7 +76,7 @@ alphagsm mypvrserve backup
 
 - Module name: `pvrserver`
 - Default game port: 7777
-- Default status/query port: 8177
+- Default status/query helper port: 8177
 
 ## Developer Notes
 
@@ -87,10 +87,10 @@ alphagsm mypvrserve backup
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `622970`
 
-Smoke and integration validation track readiness through `alphagsm info --json`
-returning protocol `a2s` on Pavlov's status-helper port (`port + 400`) instead
-of waiting for screen-log markers, and the supported validation path now uses
-the `steamcmd-linux` Docker runtime image rather than the host process path.
+Smoke and integration validation now track readiness through `alphagsm info --json`
+returning protocol `udp` on Pavlov's status-helper port (`port + 400`) instead
+of waiting for screen-log markers, and the supported validation path uses the
+`steamcmd-linux` Docker runtime image rather than the host process path.
 
 Focused validation on 2026-05-29 proved that the current Docker-primary path is
 materially better than the older host-process lane. AlphaGSM now tolerates the
@@ -99,12 +99,11 @@ update job` even though `PavlovServer.sh` is already present, and the supported
 runtime path uses the `steamcmd-linux` Docker image plus the runtime-aware stop
 hook for graceful `alphagsm stop`.
 
-The remaining blocker is now precise: the Dockerized server starts, the managed
-game port and derived status-helper port (`port + 400`) both bind over UDP, but
-raw A2S probes to the helper port still time out from both the host and inside
-the container. Until that status-helper socket returns real A2S data instead of
-forcing AlphaGSM `query` / `info` back to generic TCP reachability, the module
-is still not ready for promotion.
+The remaining follow-up is now narrower and operational instead of protocol
+fiction: the checked-in module/tests/docs are aligned to the generic UDP helper
+port contract, but this refreshed Docker-first lifecycle still needs another
+full end-to-end rerun before the server can be promoted out of the disabled
+bucket.
 
 ### Server Configuration
 
