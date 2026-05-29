@@ -59,18 +59,26 @@ alphagsm mylongvint backup
 
 - Module name: `longvinterserver`
 - Default port: 7777
-- Current CI status: disabled. The current SteamCMD build crashes during startup
-	with missing `BlueprintableOnlineBeacons` and `DiscordRpc` packaged script
-	dependencies before either the game port or query port opens.
+- Current CI status: still disabled. The older AlphaGSM lane expects `LongvinterServer.sh` plus a dedicated query-port contract, but current upstream Linux guidance has moved on to a native binary contract and does not yet provide a fresh end-to-end AlphaGSM lifecycle proof.
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `LongvinterServer.sh`
-- **Location**: `<install_dir>/LongvinterServer.sh`
+- **Historical AlphaGSM executable**: `LongvinterServer.sh`
+- **Current upstream Linux entrypoint**: `Longvinter/Binaries/Linux/LongvinterServer-Linux-Shipping`
+- **Observed modern Steam launch args**: `-log`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `1639880`
+
+Current blocker status on 2026-05-29 is more precise than the older packaged-script crash note:
+
+- the current public Steam app advertises a native Linux launch entrypoint at `Longvinter/Binaries/Linux/LongvinterServer-Linux-Shipping -log`, not the older shell-wrapper contract,
+- the current official wiki documents Linux setup around `Game.ini` plus optional `-GamePort`,
+- the older Docker guide is explicitly deprecated,
+- AlphaGSM is still wired to the stale launcher/query assumptions, so there is no fresh honest proof yet for the modern Linux runtime/query contract.
+
+Until the module is reconciled with that current upstream Linux contract and revalidated through `create -> setup -> start -> query -> info -> stop`, the disabled gate should stay in place.
 
 ### Server Configuration
 
