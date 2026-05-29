@@ -91,17 +91,17 @@ run_setup_or_skip_steamcmd() {
       local recommendation_line recommended_port
       recommendation_line=$(grep 'Recommended free port set:' "$output_file" | tail -n 1)
       recommended_port=$(sed -n 's/.*Recommended free port set:.*\<port=\([0-9][0-9]*\)\>.*/\1/p' <<<"$recommendation_line" | tail -n 1)
-      for token in ${recommendation_line#*Recommended free port set: }; do
-        case "$token" in
-          port=*) ;;
-          *=*)
-            local key="${token%%=*}"
-            local value="${token#*=}"
+      while IFS='=' read -r key value; do
+        case "$key" in
+          port) ;;
+          "")
+            ;;
+          *)
             echo "Applying recommended claimed port override: $key=$value"
             run_alphagsm "${1}" set "$key" "$value"
             ;;
         esac
-      done
+      done < <(parse_recommended_port_overrides_line "$recommendation_line")
       if [[ -n "$recommended_port" ]]; then
         local retry_args=()
         local replaced=0
@@ -138,6 +138,20 @@ run_setup_or_skip_steamcmd() {
   fi
   rm -f "$output_file"
   return 0
+}
+
+parse_recommended_port_overrides_line() {
+  local recommendation_line="$1"
+  local token payload
+  payload="${recommendation_line#*Recommended free port set: }"
+  for token in $payload; do
+    token="${token%,}"
+    case "$token" in
+      *=*)
+        printf '%s\n' "$token"
+        ;;
+    esac
+  done
 }
 
 # wait_for_ready LOG_PATH TIMEOUT_SECONDS [PATTERN]

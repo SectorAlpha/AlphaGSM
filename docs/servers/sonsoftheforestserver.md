@@ -4,8 +4,8 @@ This guide covers the `sonsoftheforestserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux hosts
+- Docker recommended on Linux (`alphagsm-wine-proton-runtime`)
+- For host/process mode: `screen`, Wine or Proton-GE, and `xvfb-run`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -46,9 +46,13 @@ alphagsm mysonsofth stop
 Setup configures:
 
 - the game port (default 8766)
-- the A2S query port (default 27015)
+- the A2S query port (default 27016)
+- the blob sync port (default 9700)
 - the install directory
 - SteamCMD downloads the Windows dedicated server files
+- AlphaGSM writes `user-data/dedicatedserver.cfg`, `steam_appid.txt`, and
+  `user-data/ownerswhitelist.txt` before the first launch so the dedicated
+  server clears its first-run self-tests without needing a manual restart
 
 ## Useful Commands
 
@@ -61,7 +65,11 @@ alphagsm mysonsofth backup
 
 - Module name: `sonsoftheforestserver`
 - Default game port: `8766`
-- Default query port: `27015`
+- Default query port: `27016`
+- Default blob sync port: `9700`
+- Current AlphaGSM status: supported and validated on the Docker-backed
+  `wine-proton` runtime, with A2S `query`, `info`, and `info --json` on the
+  managed query port
 
 ## Developer Notes
 
@@ -73,11 +81,13 @@ alphagsm mysonsofth backup
 - **SteamCMD App ID**: `2465200`
 
 AlphaGSM launches the dedicated server executable directly instead of the
-legacy `StartSOTFDedicated.bat` wrapper.
+legacy `StartSOTFDedicated.bat` wrapper, passing `-userdatapath ./user-data`
+plus Unity's dedicated `-batchmode -nographics -verboseLogging` flags.
 
 ### Server Configuration
 
-- **Config files**: `dedicatedserver.cfg`
+- **Config files**: `user-data/dedicatedserver.cfg`, `user-data/ownerswhitelist.txt`
+- **Log file**: `user-data/logs/sotf_log.txt`
 - **Template**: See [server-templates/sonsoftheforestserver/](../server-templates/sonsoftheforestserver/) if available
 
 ### Maps and Mods

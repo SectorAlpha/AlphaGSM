@@ -87,6 +87,7 @@ def test_medievalengineers_get_start_command_builds_expected_args(tmp_path, monk
 
 
 def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(sonsoftheforestserver, "IS_LINUX", False)
     monkeypatch.setattr(
         sonsoftheforestserver.proton,
         "wrap_command",
@@ -100,12 +101,17 @@ def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path, monkey
     cmd, cwd = sonsoftheforestserver.get_start_command(server)
 
     assert cmd[0] == "SonsOfTheForestDS.exe"
-    assert "-log" in cmd
+    assert "-userdatapath" in cmd
+    assert "./user-data" in cmd
+    assert "-batchmode" in cmd
+    assert "-nographics" in cmd
+    assert "-verboseLogging" in cmd
     assert cwd == server.data["dir"]
 
 
 def test_sonsoftheforest_runtime_requirements_use_wine_proton_family(tmp_path, monkeypatch):
     monkeypatch.setattr(sonsoftheforestserver, "IS_LINUX", True)
+    monkeypatch.setattr(sonsoftheforestserver.shutil, "which", lambda name: None)
     monkeypatch.setattr(
         sonsoftheforestserver.proton,
         "wrap_command",
@@ -125,7 +131,8 @@ def test_sonsoftheforest_runtime_requirements_use_wine_proton_family(tmp_path, m
             "dir": str(tmp_path) + "/",
             "exe_name": "SonsOfTheForestDS.exe",
             "port": 8766,
-            "queryport": 27015,
+            "queryport": 27016,
+            "blobsyncport": 9700,
         }
     )
 
@@ -135,13 +142,27 @@ def test_sonsoftheforest_runtime_requirements_use_wine_proton_family(tmp_path, m
     assert requirements["engine"] == "docker"
     assert requirements["family"] == "wine-proton"
     assert requirements["ports"] == [
-        {"host": 27015, "container": 27015, "protocol": "udp"},
-        {"host": 27015, "container": 27015, "protocol": "tcp"},
         {"host": 8766, "container": 8766, "protocol": "udp"},
-        {"host": 8766, "container": 8766, "protocol": "tcp"},
+        {"host": 27016, "container": 27016, "protocol": "udp"},
+        {"host": 9700, "container": 9700, "protocol": "udp"},
     ]
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["ALPHAGSM_XVFB_DISPLAY"] == ":99"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["SDL_AUDIODRIVER"] == "dummy"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
+    assert requirements["env"]["SteamAppId"] == "1326470"
+    assert requirements["env"]["SteamGameId"] == "1326470"
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "SonsOfTheForestDS.exe"
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["command"] == [
+        "SonsOfTheForestDS.exe",
+        "-userdatapath",
+        "./user-data",
+        "-batchmode",
+        "-nographics",
+        "-verboseLogging",
+    ]
 
 
 def test_large_batch_updates_download_and_optionally_restart(monkeypatch):

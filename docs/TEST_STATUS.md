@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 100      |
+| PASSED   | 101      |
 | DISABLED | 64      |
-| SKIPPED  | 69      |
+| SKIPPED  | 68      |
 
 ## Status Key
 
@@ -93,6 +93,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | silicaserver | SteamCMD |
 | scpslserver | SteamCMD |
 | smallandserver | SteamCMD |
+| sonsoftheforestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM writes the managed JSON `user-data/dedicatedserver.cfg`, seeds `ownerswhitelist.txt` before first launch, starts Xvfb from the shared container entrypoint instead of a stuck in-container `xvfb-run` wrapper, and proves A2S `query`, `info`, `info --json`, plus clean shutdown on the managed `queryport` |
 | solserver | SteamCMD |
 | squad44server | SteamCMD |
 | squadserver | SteamCMD |
@@ -177,7 +178,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
-| longvinterserver | Longvinter's current Linux dedicated-server contract is stale in AlphaGSM. Upstream now documents the native `Longvinter/Binaries/Linux/LongvinterServer-Linux-Shipping` entrypoint with `Game.ini` plus optional `-GamePort`, while the older wrapper/query assumptions are no longer validated. Keep disabled until the module and lifecycle tests are realigned and rerun end to end. |
+| longvinterserver | Longvinter's fresh anonymous Linux dedicated server now installs and launches via the shipped `LongvinterServer.sh` wrapper, but exits during EOS platform initialization with `ClientCredentials.ClientId must be an ANSI string between 1 and 64 in length` / `EOS_NotConfigured` before any proven gameplay or query listener binds. Upstream Longvinter community reports the same 2025-11 through 2026-04 EOS startup failure, so keep disabled until the packaged server is fixed or a documented credential/bootstrap workaround exists. |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
@@ -228,7 +229,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
-| sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |
 | bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |

@@ -59,26 +59,33 @@ alphagsm mylongvint backup
 
 - Module name: `longvinterserver`
 - Default port: 7777
-- Current CI status: still disabled. The older AlphaGSM lane expects `LongvinterServer.sh` plus a dedicated query-port contract, but current upstream Linux guidance has moved on to a native binary contract and does not yet provide a fresh end-to-end AlphaGSM lifecycle proof.
+- Current CI status: still disabled. Fresh anonymous Linux validation now gets
+  through install and launch via `LongvinterServer.sh`, but the packaged server
+  exits during EOS startup with `ClientCredentials.ClientId must be an ANSI
+  string between 1 and 64 in length` / `EOS_NotConfigured` before any proven
+  gameplay or query listener binds.
 
 ## Developer Notes
 
 ### Run File
 
-- **Historical AlphaGSM executable**: `LongvinterServer.sh`
-- **Current upstream Linux entrypoint**: `Longvinter/Binaries/Linux/LongvinterServer-Linux-Shipping`
-- **Observed modern Steam launch args**: `-log`
+- **AlphaGSM executable**: `LongvinterServer.sh`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `1639880`
 
-Current blocker status on 2026-05-29 is more precise than the older packaged-script crash note:
+Current blocker status on 2026-05-29 is now sharper than the older
+"stale launcher contract" note:
 
-- the current public Steam app advertises a native Linux launch entrypoint at `Longvinter/Binaries/Linux/LongvinterServer-Linux-Shipping -log`, not the older shell-wrapper contract,
-- the current official wiki documents Linux setup around `Game.ini` plus optional `-GamePort`,
-- the older Docker guide is explicitly deprecated,
-- AlphaGSM is still wired to the stale launcher/query assumptions, so there is no fresh honest proof yet for the modern Linux runtime/query contract.
+- the current anonymous Linux payload still launches through the shipped
+  `LongvinterServer.sh` wrapper on fresh installs,
+- the dedicated server then aborts during EOS platform initialization with
+  `ClientCredentials.ClientId must be an ANSI string between 1 and 64 in
+  length` and `EOS_NotConfigured`,
+- fresh community reports describe the same EOS startup failure across late
+  2025 through early 2026.
 
-Until the module is reconciled with that current upstream Linux contract and revalidated through `create -> setup -> start -> query -> info -> stop`, the disabled gate should stay in place.
+Until upstream ships a fixed dedicated payload or a documented
+credential/bootstrap workaround exists, the disabled gate should stay in place.
 
 ### Server Configuration
 

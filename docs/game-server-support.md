@@ -85,6 +85,7 @@ Notes:
 - [x] silicaserver
 - [x] scpslserver
 - [x] smallandserver
+- [x] sonsoftheforestserver
 - [x] solserver
 - [x] squad44server
 - [x] squadserver
@@ -214,7 +215,6 @@ Notes:
 - [ ] ror2server
 - [ ] scumserver
 - [ ] sniperelite4server
-- [ ] sonsoftheforestserver
 - [ ] bannerlordserver
 - [ ] starruptureserver
 - [ ] staxelserver
