@@ -46,7 +46,7 @@ alphagsm myempyrion stop
 Setup configures:
 
 - the game port (default 30000)
-- the historical `queryport` value (default 30004)
+- the derived TCP status port (`queryport`, default `port + 3`)
 - the install directory
 - SteamCMD downloads the Windows dedicated server files
 - when `dedicated.yaml` exists, AlphaGSM syncs the configured game port into
@@ -63,8 +63,9 @@ alphagsm myempyrion backup
 
 - Module name: `empyrionserver`
 - Default game port: 30000
-- Default stored `queryport`: 30004
-- Upstream `dedicated.yaml` documents `30004` as `Tel_Port`, not as a confirmed A2S query endpoint
+- Default stored `queryport`: `port + 3` (`30003` by default)
+- AlphaGSM `query`, `info`, and `info --json` use the live STCP TCP listener on `port + 3`
+- Upstream `dedicated.yaml` still documents `30004` as `Tel_Port`; AlphaGSM does not rely on that fixed legacy value for runtime readiness
 
 ## Developer Notes
 
@@ -83,33 +84,23 @@ binary as the intended host Wine/Proton contract, and the module now syncs
 `ServerConfig.Srv_Port` in `dedicated.yaml` from the AlphaGSM-owned `port`
 value and pins the Linux dedicated log to `Logs/alphagsm-dedicated.log` so
 smoke/integration read the actual server-owned runtime log instead of only the
-wrapper screen log. Focused Linux host validation on 2026-05-29 still stopped
-before any proven game/query readiness:
+wrapper screen log. Focused Linux host validation on 2026-05-29 proved the live
+runtime/query surface:
 
-- `queryport` remains a stored AlphaGSM value with default `30004`, but
-  upstream `dedicated.yaml` documents that number as `Tel_Port`, not as a
-  confirmed A2S query endpoint. The module does not currently claim a proven
-  native query-port mapping beyond syncing the main game port.
-- A bounded AlphaGSM-managed host repro on 2026-05-29 kept the direct dedicated
-  process alive for 240 seconds, synced `ServerConfig.Srv_Port` to `46319`,
-  created `Saves/Games/DediGame`, and advanced the stable dedicated log
-  (`Logs/alphagsm-dedicated.log`) through `Loading file '.../dedicated.yaml'`
-  to `Started a new game`. Even at that later state, repeated `ss -lpun` checks
-  still showed no listener on either the synced main port (`46319`) or the
-  documented telnet port (`30004`), and AlphaGSM `query` / `info --json`
-  continued to fail with `TCP ping failed: [Errno 111] Connection refused`.
-- A bounded launcher repro of `EmpyrionLauncher.exe -startDedi` under the same
-  wrapper still exits immediately, spawns a detached child that AlphaGSM cannot
-  supervise directly, and the child only logged the old `Failed to create batch
-  mode window: Success.` line before stalling.
+- the direct dedicated process reaches `Started a new game` under the managed
+  Wine/Proton launch path
+- AlphaGSM syncs `ServerConfig.Srv_Port` from the owned game port into
+  `dedicated.yaml`
+- the live AlphaGSM readiness/query/info surface is the generic TCP STCP
+  listener on `port + 3`, which Empyrion logs as `STCP: Now listening for
+  PfServers on port <port + 3>`
+- `query`, `info`, and `info --json` now use that derived TCP listener instead
+  of the older stale fixed-`30004` / A2S assumption
 
-The next bounded runtime/query fix is to re-prove which live port/protocol
-AlphaGSM should use for `query` and `info` now that `Srv_Port` sync is in
-place, the direct dedicated log is stable, and the dedicated process can reach
-`Started a new game` without ever exposing a reachable listener. Until that
-happens, `30004` remains only the documented `Tel_Port`, not a confirmed A2S
-endpoint, and the synced game port still has no proven listener contract under
-the current host Wine/Proton path.
+`EmpyrionLauncher.exe -startDedi` remains intentionally unused on Linux because
+the launcher exits after spawning a detached child and tears down the temporary
+display with it. The supervised direct dedicated binary remains the supported
+AlphaGSM contract.
 
 ### Server Configuration
 

@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-29
+- Server support: re-enable `empyrionserver` after proving the live Linux Wine/Proton query/info contract on Empyrion's STCP TCP listener (`port + 3`), aligning smoke/integration with that runtime surface, and retiring the older stale fixed-`30004` / A2S assumption.
 - Server support: re-enable `saleblazersserver` after syncing the managed `DedicatedServerConfig.json` into the live Windows payload, switching Linux/Wine smoke and integration to the proven `-config ./DedicatedServerConfig.json` plus `xvfb-run` startup shape, and proving `query`, `info`, and `info --json` on the real generic-UDP helper port (`port + 1`) instead of the older stale A2S assumption.
 - Server support: re-enable `stationeersserver` after aligning smoke/integration with the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), reopening the disabled gate, and proving the full AlphaGSM lifecycle on generic UDP `query` / `info`.
 - Longvinter: refresh the disabled/support-tracker language away from the older packaged-script crash story; current upstream Linux guidance points at the native `Longvinter/Binaries/Linux/LongvinterServer-Linux-Shipping` entrypoint with `Game.ini` plus optional `-GamePort`, so support should remain disabled until AlphaGSM's module and lifecycle tests are realigned with that contract.

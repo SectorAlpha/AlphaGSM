@@ -12,6 +12,7 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itempyrionse}"
 SERVER_STARTED=0
+DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -43,7 +44,9 @@ require_cmd "$PYTHON_BIN"
 require_cmd screen
 require_proton
 
-WORK_DIR="$(mktemp -d)"
+WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
+mkdir -p "$WORK_ROOT"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" empyrionserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/empyrionserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-empyrionserver.conf"
@@ -80,8 +83,11 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Loading file|Started a new game|Started process'
-wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" tcp "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

@@ -45,6 +45,7 @@ Notes:
 - [x] dodsserver
 - [x] doiserver
 - [x] emserver
+- [x] empyrionserver
 - [x] exfilserver
 - [x] fofserver
 - [x] frozenflameserver
@@ -197,7 +198,6 @@ Notes:
 - [ ] blackwakeserver
 - [ ] darkandlightserver
 - [ ] ducksideserver
-- [ ] empyrionserver
 - [ ] fearthenightserver
 - [ ] hellletlooseserver
 - [ ] icarusserver

@@ -41,6 +41,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=30000, dir=str(tmp_path))
     assert server.data['port'] == 30000
+    assert server.data["queryport"] == "30003"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -164,6 +165,32 @@ def test_prestart_syncs_dedicated_yaml(tmp_path):
         "ServerConfig:\n"
         "    Srv_Port: 42657\n"
     )
+    assert server.data["queryport"] == "42660"
+
+
+def test_query_and_info_address_use_derived_tcp_listener(monkeypatch):
+    server = DummyServer()
+    server.data["port"] = 46319
+    server.data["queryport"] = 30004
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 46322, "tcp")
+    assert mod.get_info_address(server) == ("10.0.0.10", 46322, "tcp")
+
+
+def test_runtime_requirements_publish_game_udp_and_stcp_tcp(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 46319
+    server.data["queryport"] = 30004
+
+    requirements = mod.get_runtime_requirements(server)
+    ports = {(entry["host"], entry["protocol"]) for entry in requirements["ports"]}
+
+    assert (46319, "udp") in ports
+    assert (46322, "tcp") in ports
+    assert (46322, "udp") not in ports
+    assert server.data["queryport"] == "46322"
 
 
 def test_get_start_command(tmp_path, monkeypatch):
