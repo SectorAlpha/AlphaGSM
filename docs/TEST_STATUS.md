@@ -173,7 +173,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
-| longvinterserver | Longvinter dedicated server (Steam app 1639880) crashes during startup with missing BlueprintableOnlineBeacons/DiscordRpc packaged scripts; game and query ports never open |
+| longvinterserver | Longvinter's current Linux dedicated-server contract is stale in AlphaGSM. Upstream now documents the native `Longvinter/Binaries/Linux/LongvinterServer-Linux-Shipping` entrypoint with `Game.ini` plus optional `-GamePort`, while the older wrapper/query assumptions are no longer validated. Keep disabled until the module and lifecycle tests are realigned and rerun end to end. |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
@@ -190,7 +190,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| stationeersserver | Stationeers dedicated server stalls under Unity NullGfxDevice in headless CI after SetConsoleOutputCP startup exception; game port never opens |
+| stationeersserver | Stationeers Linux validation 2026-05-29: the current blocker text is stale relative to the post-September-2025 upstream launch contract. AlphaGSM still uses the older `-loadlatest ... -batchmode -nographics` path, the integration test is still skipped, and the smoke runner is still disabled, while current upstream Linux guidance says to use `./rocketstation_DedicatedServer.x86_64 -file start ... -logFile "./server.log" -settings ...` and explicitly notes that Linux console logging is broken. Keep the disabled gate for now: there is no fresh end-to-end proof yet on the updated generic-UDP Linux path, so the exact remaining blocker is outdated AlphaGSM lifecycle wiring rather than a newly verified pass or fail on the current contract. |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
