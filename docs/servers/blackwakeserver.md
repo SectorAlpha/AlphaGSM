@@ -64,7 +64,7 @@ alphagsm myblackwak backup
 - Module name: `blackwakeserver`
 - Default game port: 7777
 - Default query port: 27015
-- Current validation status: still not enabled on Linux/Wine as of 2026-05-29, but materially closer. The bundled upstream `SERVER GUIDE.txt` still says Blackwake dedicated servers are Windows-only. AlphaGSM now avoids the regressed forced-Proton launch path on Linux, syncs `Server.cfg`, pins the documented `gamemode=7` dedicated startup path, disables bots by default with a managed password, and targets the declared Steam query port. A bounded 2026-05-29 host-Wine rerun then re-proved the managed AlphaGSM lifecycle can keep the `screen` session alive long enough for `query` and `info --json` to succeed on the managed `queryport`, and `stop` removed the live `screen` session again. The remaining gap is a fresh full checked-in setup-to-stop integration pass before promotion to enabled support.
+- Current validation status: still not enabled on Linux/Wine as of 2026-05-29. The bundled upstream `SERVER GUIDE.txt` still says Blackwake dedicated servers are Windows-only. AlphaGSM now avoids the regressed forced-Proton launch path on Linux, syncs `Server.cfg`, pins the documented `gamemode=7` dedicated startup path, disables bots by default with a managed password, and targets the declared Steam query port. A bounded reused-install host-Wine rerun re-proved that this path can answer `query` and `info --json` and can shut down cleanly, but the fresh full SteamCMD-managed rerun still did not promote: after setup finished and AlphaGSM shifted a colliding default `queryport` to `27016`, the live `output_log.txt` fell back into repeated `BotHandler.Update()` `IndexOutOfRangeException` spam and direct A2S probes still timed out. The remaining blocker is therefore a fresh-install runtime/query failure under the current host-Wine path, not just missing validation.
 
 ## Developer Notes
 
@@ -80,7 +80,7 @@ alphagsm myblackwak backup
 - **Config file**: See game module source
 - **Max players**: `54`
 - **Upstream flow**: the bundled `SERVER GUIDE.txt` says the first `BlackwakeServer.exe -batchmode -nographics` launch generates `Server.cfg` and exits, and that alternate configs can be selected with `-configFile <name>`.
-- **Managed defaults**: AlphaGSM now syncs `serverName`, `port`, `sport`, `gamemode=7`, and a default `serverpassword` into `Server.cfg` before launch. On the current headless Linux/Wine path it also forces `useBots=0`, and the active Linux launch path now prefers host `wine` over the regressed forced-Proton wrapper because bounded 2026-05-29 validation showed the Wine path could reach live A2S/info on the managed `queryport`.
+- **Managed defaults**: AlphaGSM now syncs `serverName`, `port`, `sport`, `gamemode=7`, and a default `serverpassword` into `Server.cfg` before launch. On the current headless Linux/Wine path it also forces `useBots=0`, and the active Linux launch path now prefers host `wine` over the regressed forced-Proton wrapper because bounded 2026-05-29 validation showed the Wine path could reach live A2S/info on a reused install. The exact blocker that remains is the fresh-install path: once SteamCMD setup completes, the dedicated runtime can still fall back into repeated `BotHandler.Update()` exceptions and leave A2S timing out.
 - **Template**: See [server-templates/blackwakeserver/](../server-templates/blackwakeserver/) if available
 
 ### Maps and Mods
