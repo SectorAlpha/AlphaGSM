@@ -1,5 +1,6 @@
 """Shared fixtures and helpers for AlphaGSM integration tests."""
 
+import importlib
 import json
 import os
 from pathlib import Path
@@ -239,6 +240,46 @@ def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
 # Config / env helpers
 # ---------------------------------------------------------------------------
 
+def _load_runtime_module(module_name, servermodulespackage="gamemodules."):
+    """Return the imported module used to probe runtime capability."""
+
+    module_name = str(module_name or "").strip()
+    if not module_name:
+        raise ImportError("Module name is required")
+
+    servermodulespackage = str(servermodulespackage or "gamemodules.")
+    src_path = str(REPO_ROOT / "src")
+    if src_path not in sys.path:
+        sys.path.insert(0, src_path)
+
+    if servermodulespackage == "gamemodules.":
+        from server.server import find_module  # pylint: disable=import-outside-toplevel
+
+        _resolved_name, module = find_module(module_name)
+        return module
+
+    return importlib.import_module(servermodulespackage + module_name)
+
+
+def _module_uses_explicit_docker_runtime(module_name, servermodulespackage="gamemodules."):
+    """Return whether *module_name* declares an explicit Docker runtime contract."""
+
+    try:
+        module = _load_runtime_module(
+            module_name,
+            servermodulespackage=servermodulespackage,
+        )
+    except Exception:  # pragma: no cover - kept intentionally defensive for test setup
+        return False
+
+    import server.runtime as runtime_module  # pylint: disable=import-outside-toplevel
+
+    return (
+        runtime_module._has_explicit_module_hook(module, "get_runtime_requirements")
+        and runtime_module._has_explicit_module_hook(module, "get_container_spec")
+    )
+
+
 def write_config(
     config_path,
     home_dir,
@@ -246,6 +287,9 @@ def write_config(
     *,
     backend="screen",
     runtime_backend="process",
+    docker_backend="subprocess",
+    module_name=None,
+    servermodulespackage="gamemodules.",
 ):
     """Write a minimal AlphaGSM config file pointing at *home_dir*."""
     download_root = home_dir / "downloads"
@@ -254,6 +298,16 @@ def write_config(
         download_root = Path(work_dir).expanduser() / "downloads"
     db_path = download_root / "downloads.txt"
     target_path = download_root / "downloads"
+    selected_runtime_backend = runtime_backend
+    if runtime_backend == "auto":
+        selected_runtime_backend = (
+            "docker"
+            if _module_uses_explicit_docker_runtime(
+                module_name,
+                servermodulespackage=servermodulespackage,
+            )
+            else "process"
+        )
     config_path.write_text(
         "\n".join([
             "[core]",
@@ -266,12 +320,16 @@ def write_config(
             "",
             "[server]",
             f"datapath = {home_dir / 'conf'}",
+            f"servermodulespackage = {servermodulespackage}",
             "",
             "[runtime]",
-            f"backend = {runtime_backend}",
+            f"backend = {selected_runtime_backend}",
             "",
-            f"[{runtime_backend}]",
+            "[process]",
             f"backend = {backend}",
+            "",
+            "[docker]",
+            f"backend = {docker_backend}",
             "",
             "[screen]",
             f"screenlog_path = {home_dir / 'logs'}",

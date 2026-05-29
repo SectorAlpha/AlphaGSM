@@ -44,7 +44,8 @@ def test_cod4server_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="docker",
+        runtime_backend="auto",
+        module_name="cod4server",
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()

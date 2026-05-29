@@ -1,5 +1,6 @@
 """Tests for shared integration-test config generation."""
 
+import importlib
 from pathlib import Path
 
 from tests.integration_tests.conftest import write_config
@@ -17,6 +18,8 @@ def test_write_config_uses_home_download_paths_by_default(tmp_path, monkeypatch)
     assert f"target_path = {home_dir / 'downloads' / 'downloads'}" in text
     assert "[runtime]" in text
     assert "backend = process" in text
+    assert "[process]" in text
+    assert "[docker]" in text
 
 
 def test_write_config_keeps_downloads_under_home_when_work_dir_is_set(tmp_path, monkeypatch):
@@ -34,6 +37,8 @@ def test_write_config_keeps_downloads_under_home_when_work_dir_is_set(tmp_path, 
     assert "sessiontag = AlphaGSM-TF2-IT#" in text
     assert "[runtime]" in text
     assert "backend = process" in text
+    assert "[process]" in text
+    assert "[docker]" in text
 
 
 def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypatch):
@@ -51,3 +56,58 @@ def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypa
     assert "sessiontag = AlphaGSM-TF2-IT#" in text
     assert "[runtime]" in text
     assert "backend = process" in text
+    assert "[process]" in text
+    assert "[docker]" in text
+
+
+def test_write_config_auto_prefers_docker_for_explicit_container_modules(
+    tmp_path, monkeypatch
+):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setattr(
+        helpers,
+        "_module_uses_explicit_docker_runtime",
+        lambda module_name, servermodulespackage="gamemodules.": True,
+    )
+
+    config_path = tmp_path / "alphagsm.conf"
+    home_dir = tmp_path / "home"
+    write_config(
+        config_path,
+        home_dir,
+        runtime_backend="auto",
+        backend="subprocess",
+        module_name="terraria.tshock",
+    )
+
+    text = config_path.read_text()
+    assert "[runtime]" in text
+    assert "backend = docker" in text
+    assert "[process]" in text
+    assert "[docker]" in text
+
+
+def test_write_config_auto_falls_back_to_process_for_non_container_modules(
+    tmp_path, monkeypatch
+):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setattr(
+        helpers,
+        "_module_uses_explicit_docker_runtime",
+        lambda module_name, servermodulespackage="gamemodules.": False,
+    )
+
+    config_path = tmp_path / "alphagsm.conf"
+    home_dir = tmp_path / "home"
+    write_config(
+        config_path,
+        home_dir,
+        runtime_backend="auto",
+        module_name="identityserver",
+    )
+
+    text = config_path.read_text()
+    assert "[runtime]" in text
+    assert "backend = process" in text
+    assert "[process]" in text
+    assert "[docker]" in text

@@ -70,7 +70,8 @@ def test_ecoserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="docker",
+        runtime_backend="auto",
+        module_name="ecoserver",
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()

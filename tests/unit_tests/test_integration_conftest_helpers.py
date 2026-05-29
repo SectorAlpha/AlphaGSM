@@ -259,6 +259,30 @@ def test_parse_recommended_port_overrides_reads_full_claim_set():
     }
 
 
+def test_module_uses_explicit_docker_runtime_for_custom_test_module():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    assert helpers._module_uses_explicit_docker_runtime(  # pylint: disable=protected-access
+        "portprobe",
+        servermodulespackage="tests.backend_integration_tests.testmodules.",
+    )
+
+
+def test_module_uses_explicit_docker_runtime_returns_false_when_module_load_fails(
+    monkeypatch,
+):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setattr(
+        helpers,
+        "_load_runtime_module",
+        lambda module_name, servermodulespackage="gamemodules.": (_ for _ in ()).throw(
+            ImportError("boom")
+        ),
+    )
+
+    assert not helpers._module_uses_explicit_docker_runtime("missing-module")  # pylint: disable=protected-access
+
+
 def test_run_setup_with_port_retry_applies_recommended_nonprimary_claims(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
 
