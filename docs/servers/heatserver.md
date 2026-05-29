@@ -76,14 +76,15 @@ AlphaGSM starts the upstream `Server.exe` console directly and the real server
 readiness signal lives under `Logs/Console*.txt` / `Logs/Dedi*.txt`, not a root
 `server.log`.
 
-Current `release_v1` behavior: AlphaGSM now bootstraps a missing
+Current `release_v1` behavior: AlphaGSM bootstraps a missing
 `Configuration/ServerSettings.cfg` by running the upstream first-launch config
 generation pass before the real managed start, then rewrites `portNumber`,
 `steamAuthPort`, `maxPlayers`, and `levelName` from the datastore.
 
-Remaining blocker: this branch still needs a fresh end-to-end SteamCMD-managed
-rerun to prove that the first real server launch now binds the AlphaGSM-managed
-ports and reaches A2S `query` / `info` readiness on the managed `queryport`.
+Validation status: enabled on 2026-05-29. A fresh SteamCMD-managed lifecycle
+now passes end to end on `release_v1`, including first-start config bootstrap,
+readiness from `Logs/Console*.txt`, A2S `query`, `info`, `info --json`, and
+clean shutdown on the managed `queryport`.
 
 ### Server Configuration
 
