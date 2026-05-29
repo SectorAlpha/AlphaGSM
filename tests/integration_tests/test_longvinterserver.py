@@ -24,9 +24,12 @@ pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
         reason=(
-            "Longvinter dedicated server (Steam app 1639880) crashes during startup "
-            "with missing BlueprintableOnlineBeacons/DiscordRpc packaged scripts; "
-            "game and query ports never open"
+            "Longvinter's current Linux dedicated-server contract is stale in AlphaGSM. "
+            "Upstream now documents the native Longvinter/Binaries/Linux/"
+            "LongvinterServer-Linux-Shipping entrypoint with Game.ini and optional "
+            "-GamePort, while the older wrapper/query assumptions are no longer "
+            "validated. Keep skipped until the module and lifecycle tests are "
+            "realigned and rerun end to end."
         )
     ),
 ]
