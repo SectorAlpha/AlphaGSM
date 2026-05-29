@@ -114,6 +114,7 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "OutpostZeroServer.exe"
     (tmp_path / "OutpostZeroServer.exe").write_text("")
+    server.data["startmap"] = "RedPlanet"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
@@ -121,15 +122,18 @@ def test_get_start_command(tmp_path, monkeypatch):
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "OutpostZeroServer.exe",
+        "RedPlanet",
         "-Port=27015",
         "-QueryPort=27015",
         "-MaxPlayers=27015",
         "-ServerName=test",
+        "-log",
     ]
     assert cwd == server.data["dir"]
 
 
 def test_setting_schema_exposes_outpostzero_launch_formats():
+    assert mod.setting_schema["startmap"].launch_arg_format == "{value}"
     assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
     assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
@@ -140,6 +144,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
+    server.data["startmap"] = "RedPlanet"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
@@ -148,11 +153,74 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_sync_server_config_writes_game_ini_and_steam_appid(tmp_path):
+    server = DummyServer("opz")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servername"] = "AlphaGSM opz"
+    server.data["maxplayers"] = 16
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+    server.data["startmap"] = "RedPlanet"
+    steam_appid_src = (
+        tmp_path
+        / "WindowsServer"
+        / "steam_appid.txt"
+    )
+    steam_appid_src.parent.mkdir(parents=True)
+    steam_appid_src.write_text("677480\n", encoding="ascii")
+
+    mod.sync_server_config(server)
+
+    game_ini = (
+        tmp_path
+        / "WindowsServer"
+        / "SurvivalGame"
+        / "Saved"
+        / "Config"
+        / "WindowsServer"
+        / "Game.ini"
+    )
+    appid_dst = (
+        tmp_path
+        / "WindowsServer"
+        / "SurvivalGame"
+        / "Binaries"
+        / "Win64"
+        / "steam_appid.txt"
+    )
+    assert game_ini.read_text(encoding="utf-8")
+    assert "ServerName = AlphaGSM opz" in game_ini.read_text(encoding="utf-8")
+    assert "MaxNumberPlayers = 16" in game_ini.read_text(encoding="utf-8")
+    assert appid_dst.read_text(encoding="ascii") == "677480\n"
+
+
 def test_do_stop():
     server = DummyServer()
     mod.runtime_module.send_to_server = MagicMock()
     mod.do_stop(server, 0)
     mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
+
+
+def test_query_and_info_address_use_udp_game_port_on_linux(monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    mod.runtime_module.resolve_query_host = MagicMock(return_value="127.0.0.1")
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "udp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "udp")
+
+
+def test_query_and_info_address_use_queryport_a2s_off_linux(monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    mod.runtime_module.resolve_query_host = MagicMock(return_value="127.0.0.1")
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
 
 
 def test_status():

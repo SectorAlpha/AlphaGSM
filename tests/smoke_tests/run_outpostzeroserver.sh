@@ -1,9 +1,4 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for outpostzeroserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
-
+#!/usr/bin/env bash
 set -Eeuo pipefail
 set -x
 
@@ -16,6 +11,7 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itoutpostzer}"
 SERVER_STARTED=0
+DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -45,12 +41,15 @@ trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
 require_cmd screen
+require_proton
 
-WORK_DIR="$(mktemp -d)"
+WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
+mkdir -p "$WORK_ROOT"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" outpostzeroserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/outpostzeroserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-outpostzeroserver.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-outpostzer-IT#$SERVER_NAME.log"
+LOG_PATH="$INSTALL_DIR/WindowsServer/SurvivalGame/Saved/Logs/SurvivalGame.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -82,8 +81,12 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" "Match State Changed from WaitingToStart to InProgress"
+wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

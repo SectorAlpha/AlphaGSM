@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 103      |
+| PASSED   | 105      |
 | DISABLED | 63      |
-| SKIPPED  | 67      |
+| SKIPPED  | 65      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (104)
+## PASSED (105)
 
 | Test | Type |
 |------|------|
@@ -79,6 +79,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | necserver | SteamCMD |
 | nmrihserver | SteamCMD (Source) |
 | opforserver | SteamCMD (GoldSrc) |
+| outpostzeroserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on Linux/Proton once AlphaGSM mirrors the shipped `RunServer.bat` contract by launching `WindowsServer/SurvivalGameServer.exe RedPlanet ... -log`, syncing `Saved/Config/WindowsServer/Game.ini`, seeding `steam_appid.txt` beside the Win64 binaries, and waiting for the real post-load discovery surface before `query`, `info`, and `info --json` on generic `udp` at the managed game port |
 | palworld | SteamCMD |
 | primalcarnageextinctionserver | Wine/Proton — PASSED 2026-05-28; the corrected dedicated launch argv now feeds the `PC-Docks?...?bIsDedicated=true` map URL directly to `PrimalCarnageServer.exe`, focused smoke/integration reach `LoadMap: PC-Docks`, `Game class is 'PCTeamDeathMatchGame'`, and `NetMode is now 1`, A2S/info succeed on the managed `queryport`, and `stop` closes the live UE3 ports cleanly |
 | pcarserver | PASSED 2026-05-23; standard smoke and focused integration now both pass, with readiness driven by `info --json` protocol `a2s` on the derived query port (`port + 1`) |
@@ -203,7 +204,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (66)
+## SKIPPED (65)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -222,7 +223,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | noonesurvivedserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2329680 |
 | notdserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 1420710 |
-| outpostzeroserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 762880 |
 | q3server | Direct download now installs the public ioquake3 Linux engine build, but CI lacks the licensed Quake III `baseq3/pak0.pk3` data required to start the dedicated server |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |

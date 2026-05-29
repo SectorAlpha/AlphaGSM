@@ -58,6 +58,7 @@ def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatc
         {
             "dir": str(tmp_path) + "/",
             "exe_name": "OutpostZeroServer.exe",
+            "startmap": "RedPlanet",
             "port": 7777,
             "queryport": 27015,
             "maxplayers": 16,
@@ -68,7 +69,9 @@ def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatc
     cmd, cwd = outpostzeroserver.get_start_command(server)
 
     assert cmd[0] == "OutpostZeroServer.exe"
+    assert cmd[1] == "RedPlanet"
     assert "-ServerName=AlphaGSM opz" in cmd
+    assert cmd[-1] == "-log"
     assert cwd == server.data["dir"]
 
 
@@ -93,6 +96,7 @@ def test_outpostzero_runtime_requirements_use_wine_proton_family(tmp_path, monke
         {
             "dir": str(tmp_path) + "/",
             "exe_name": "WindowsServer/SurvivalGameServer.exe",
+            "startmap": "RedPlanet",
             "port": 7777,
             "queryport": 27015,
             "maxplayers": 16,

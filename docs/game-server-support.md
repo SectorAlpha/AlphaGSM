@@ -71,6 +71,7 @@ Notes:
 - [x] necserver
 - [x] nmrihserver
 - [x] opforserver
+- [x] outpostzeroserver
 - [x] palworld
 - [x] primalcarnageextinctionserver
 - [x] pcarserver
@@ -208,7 +209,6 @@ Notes:
 - [ ] motortownserver
 - [ ] noonesurvivedserver
 - [ ] notdserver
-- [ ] outpostzeroserver
 - [ ] q3server
 - [ ] reignofkingsserver
 - [ ] returntomoriaserver
