@@ -11,8 +11,8 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 102      |
-| DISABLED | 64      |
+| PASSED   | 103      |
+| DISABLED | 63      |
 | SKIPPED  | 67      |
 
 ## Status Key
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (102)
+## PASSED (103)
 
 | Test | Type |
 |------|------|
@@ -66,6 +66,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | heatserver | Wine/Proton — PASSED 2026-05-29; a fresh SteamCMD-managed lifecycle now passes on `release_v1` after AlphaGSM bootstraps missing `Configuration/ServerSettings.cfg` on first launch, syncs `portNumber` / `steamAuthPort` / `maxPlayers` / `levelName` into the native config, reads readiness from `Logs/Console*.txt`, and proves A2S `query`, `info`, `info --json`, and clean shutdown on the managed `queryport` |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
+| longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
 | minecraft_paper | Direct download |
 | minecraft_vanilla | Direct download — PASSED 2026-05-16; local integration helper now selects the newest release compatible with the installed Java runtime |
 | minecraft_velocity | Direct download |
@@ -133,7 +134,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## DISABLED (64)
+## DISABLED (63)
 
 | Test | Reason |
 |------|--------|
@@ -179,7 +180,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
-| longvinterserver | Longvinter's fresh anonymous Linux dedicated server now installs and launches via the shipped `LongvinterServer.sh` wrapper, but exits during EOS platform initialization with `ClientCredentials.ClientId must be an ANSI string between 1 and 64 in length` / `EOS_NotConfigured` before any proven gameplay or query listener binds. Upstream Longvinter community reports the same 2025-11 through 2026-04 EOS startup failure, so keep disabled until the packaged server is fixed or a documented credential/bootstrap workaround exists. |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |

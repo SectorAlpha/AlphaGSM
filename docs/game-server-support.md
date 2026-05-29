@@ -58,6 +58,7 @@ Notes:
 - [x] heatserver
 - [x] kf2server
 - [x] l4dserver
+- [x] longvinterserver
 - [x] minecraft_paper
 - [x] minecraft_vanilla
 - [x] minecraft_velocity
@@ -169,7 +170,6 @@ Notes:
 - [ ] kfserver
 - [ ] l4d2server
 - [ ] lastoasisserver
-- [ ] longvinterserver
 - [ ] mw3server
 - [ ] ndserver
 - [ ] nightingale
