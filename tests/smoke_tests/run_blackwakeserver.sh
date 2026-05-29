@@ -1,9 +1,10 @@
 #\!/usr/bin/env bash
 # DISABLED: the bundled upstream SERVER GUIDE.txt still documents Windows-only
-# dedicated servers. A bounded 2026-05-29 Linux/Wine rerun now reaches managed
-# query/info and clean stop after dropping the regressed forced-Proton launch
-# path, but a fresh checked-in setup-to-stop smoke proof is still pending.
-echo "Smoke test for blackwakeserver is still disabled: upstream Blackwake docs say dedicated servers are Windows-only. The active Linux/Wine lane is materially better and now reaches managed query/info plus clean stop on a bounded reused-install rerun, but a fresh full smoke proof is still pending."
+# dedicated servers. A bounded 2026-05-29 Linux/Wine rerun reaches managed
+# query/info and clean stop on a reused install after dropping the regressed
+# forced-Proton launch path, but a fresh full SteamCMD-managed rerun still
+# falls back into BotHandler exception spam and A2S timeout.
+echo "Smoke test for blackwakeserver is still disabled: upstream Blackwake docs say dedicated servers are Windows-only. The active Linux/Wine lane is better on a reused install, but a fresh full SteamCMD-managed rerun still hits BotHandler exception spam and A2S timeout."
 exit 0
 
 set -Eeuo pipefail
