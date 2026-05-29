@@ -172,15 +172,15 @@ def test_query_and_runtime_ports_follow_fixed_offset(tmp_path):
     server.data["port"] = 27015
     server.data["queryport"] = 27016
 
-    assert mod.get_query_address(server)[1:] == (27415, "a2s")
-    assert mod.get_info_address(server)[1:] == (27415, "a2s")
+    assert mod.get_query_address(server)[1:] == (27415, "udp")
+    assert mod.get_info_address(server)[1:] == (27415, "udp")
 
     requirements = mod.get_runtime_requirements(server)
     ports = {(entry["host"], entry["protocol"]) for entry in requirements["ports"]}
     assert (27015, "udp") in ports
     assert (27015, "tcp") in ports
     assert (27415, "udp") in ports
-    assert (27415, "tcp") in ports
+    assert (27415, "tcp") not in ports
     assert server.data["queryport"] == "27415"
 
 
@@ -191,7 +191,7 @@ def test_runtime_requirements_without_port_use_default_offset():
 
     ports = {(entry["host"], entry["protocol"]) for entry in requirements["ports"]}
     assert (8177, "udp") in ports
-    assert (8177, "tcp") in ports
+    assert (8177, "tcp") not in ports
     assert server.data["queryport"] == "8177"
 
 
@@ -212,14 +212,15 @@ def test_get_container_spec_drops_root_before_launch(tmp_path):
     assert "XDG_CONFIG_HOME=/home/pavlov/.config" in spec["command"][2]
     assert (
         "exec setpriv --reuid=$(id -u pavlov) --regid=$(id -g pavlov) "
-        "--clear-groups ./PavlovServer.sh -PORT=27015 -Map=test -QueryPort=27415"
+        "--clear-groups ./PavlovServer.sh -PORT=27015 -Map=test"
     ) in spec["command"][2]
+    assert "-QueryPort=" not in spec["command"][2]
     assert spec["working_dir"] == "/srv/server"
 
 
 def test_setting_schema_launch_formats():
     assert mod.setting_schema["port"].launch_arg_format == "-PORT={value}"
-    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format is None
     assert mod.setting_schema["map"].launch_arg_format == "-Map={value}"
 
 
