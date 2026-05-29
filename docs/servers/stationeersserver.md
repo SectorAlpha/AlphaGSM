@@ -7,7 +7,7 @@ This guide covers the `stationeersserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- A host/runtime that can start the Unity dedicated server cleanly in headless mode
+- A Linux host/runtime that can start the Unity dedicated server cleanly in headless mode
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ alphagsm mystatione stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 27016)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -59,7 +59,9 @@ alphagsm mystatione backup
 ## Notes
 
 - Module name: `stationeersserver`
-- Default port: 27015
+- Default game port: `27016/udp`
+- Default update port: `27015/udp`
+- AlphaGSM query/info contract: generic `udp` on the managed game port
 
 ## Developer Notes
 
@@ -75,7 +77,7 @@ alphagsm mystatione backup
 - **Config file**: See game module source
 - **Max players**: `10`
 - **Template**: See [server-templates/stationeersserver/](../server-templates/stationeersserver/) if available
-- **Current status**: Disabled in CI. The Linux dedicated server starts under Unity `NullGfxDevice`, throws a `SetConsoleOutputCP` startup exception, and never opens its game port in headless CI.
+- **Current status**: The Linux direct server path now requires the post-September-2025 launch shape (`-file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`). A fresh host probe on 2026-05-29 proved that this path writes `server.log`, loads the `Lunar` world, binds the managed game port as generic `udp`, and answers `udp_ping` while `a2s_info` still times out. The module is still blocked from promotion until the shared disabled-server gate is reopened and the full AlphaGSM lifecycle is rerun on the updated lane.
 
 ### Maps and Mods
 
