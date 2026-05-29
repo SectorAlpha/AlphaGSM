@@ -218,6 +218,23 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
     ]
 
 
+def test_wrap_linux_command_does_not_force_proton(monkeypatch):
+    seen = {}
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+
+    def fake_wrap(cmd, wineprefix=None, prefer_proton=False):
+        seen["prefer_proton"] = prefer_proton
+        return ["env", "wine", *cmd]
+
+    monkeypatch.setattr(mod.proton, "wrap_command", fake_wrap)
+
+    wrapped = mod._wrap_linux_command(["BlackwakeServer.exe", "-batchmode"])
+
+    assert wrapped == ["env", "wine", "BlackwakeServer.exe", "-batchmode"]
+    assert seen["prefer_proton"] is False
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
