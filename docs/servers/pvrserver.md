@@ -92,18 +92,17 @@ returning protocol `udp` on Pavlov's status-helper port (`port + 400`) instead
 of waiting for screen-log markers, and the supported validation path uses the
 `steamcmd-linux` Docker runtime image rather than the host process path.
 
-Focused validation on 2026-05-29 proved that the current Docker-primary path is
-materially better than the older host-process lane. AlphaGSM now tolerates the
-known SteamCMD false-negative where app `622970` reports `state is 0x602 after
-update job` even though `PavlovServer.sh` is already present, and the supported
-runtime path uses the `steamcmd-linux` Docker image plus the runtime-aware stop
-hook for graceful `alphagsm stop`.
+Fresh smoke and focused integration reruns on 2026-05-29 now prove the current
+Docker-primary path end to end. AlphaGSM tolerates the known SteamCMD
+false-negative where app `622970` reports `state is 0x602 after update job`
+even though `PavlovServer.sh` is already present, and the supported runtime
+path uses the `steamcmd-linux` Docker image plus the runtime-aware stop hook
+for graceful `alphagsm stop`.
 
-The remaining follow-up is now narrower and operational instead of protocol
-fiction: the checked-in module/tests/docs are aligned to the generic UDP helper
-port contract, but this refreshed Docker-first lifecycle still needs another
-full end-to-end rerun before the server can be promoted out of the disabled
-bucket.
+The checked-in module, smoke test, integration test, and docs are now aligned
+to the real generic UDP helper-port contract: `query`, `info`, and `info
+--json` succeed through Pavlov VR's fixed status port at `port + 400`, so the
+older A2S-specific blocker text no longer applies.
 
 ### Server Configuration
 

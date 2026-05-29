@@ -74,6 +74,7 @@ Notes:
 - [x] q2server
 - [x] qwserver
 - [x] pvkiiserver
+- [x] pvrserver
 - [x] ricochetserver
 - [x] rimworldtogetherserver
 - [x] rust
@@ -85,6 +86,7 @@ Notes:
 - [x] solserver
 - [x] squad44server
 - [x] squadserver
+- [x] stationeersserver
 - [x] stnserver
 - [x] svenserver
 - [x] terraria_tshock
@@ -169,7 +171,6 @@ Notes:
 - [ ] nightingale
 - [ ] ohdserver
 - [ ] police1013server
-- [ ] pvrserver
 - [ ] pcars2server
 - [ ] q4server
 - [ ] roserver
@@ -180,7 +181,6 @@ Notes:
 - [ ] sfcserver
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound
-- [ ] stationeersserver
 - [ ] tiserver
 - [ ] veinserver
 - [ ] vrserver

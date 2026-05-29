@@ -7,6 +7,7 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     pick_free_tcp_port,
+    run_setup_with_port_retry,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -42,7 +43,7 @@ def test_stationeersserver_lifecycle(tmp_path):
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itstationeerss"
+    server_name = ("itstation" + tmp_path.name.replace("_", "")[-7:])[:15]
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
@@ -52,7 +53,12 @@ def test_stationeersserver_lifecycle(tmp_path):
     _create_or_skip_disabled(env, server_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 

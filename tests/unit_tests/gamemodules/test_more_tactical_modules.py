@@ -71,8 +71,8 @@ def test_pvrserver_query_addresses_use_fixed_status_port():
     server = DummyServer("pvr")
     server.data.update({"port": 7777, "queryport": "9100"})
 
-    assert pvrserver.get_query_address(server) == ("127.0.0.1", 8177, "a2s")
-    assert pvrserver.get_info_address(server) == ("127.0.0.1", 8177, "a2s")
+    assert pvrserver.get_query_address(server) == ("127.0.0.1", 8177, "udp")
+    assert pvrserver.get_info_address(server) == ("127.0.0.1", 8177, "udp")
 
 
 def test_tactical_modules_update_downloads_and_optionally_restart(monkeypatch):

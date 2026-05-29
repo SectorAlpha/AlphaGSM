@@ -11,8 +11,8 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 96      |
-| DISABLED | 66      |
+| PASSED   | 98      |
+| DISABLED | 64      |
 | SKIPPED  | 71      |
 
 ## Status Key
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (96)
+## PASSED (98)
 
 | Test | Type |
 |------|------|
@@ -82,6 +82,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | q2server | Direct download — PASSED 2026-05-18; setup now builds Yamagi Quake II from source, stages the official demo `baseq2` data for anonymous installs, defaults fresh servers to `demo1`, and query/info use the dedicated Quake II `status` protocol |
 | qwserver | Direct download — PASSED 2026-05-18; setup now stages the public nQuake shareware, KTX runtime, configs, and core maps needed for anonymous MVDSV installs, launches with `-game ktx`, and query/info use the dedicated QuakeWorld `status` protocol |
 | pvkiiserver | SteamCMD (Source) |
+| pvrserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image, and AlphaGSM `query`, `info`, and `info --json` correctly use Pavlov VR's helper UDP status port (`port + 400`) instead of the older stale A2S expectation |
 | ricochetserver | SteamCMD (GoldSrc) |
 | rimworldtogetherserver | Direct download |
 | rust | SteamCMD |
@@ -93,6 +94,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | solserver | SteamCMD |
 | squad44server | SteamCMD |
 | squadserver | SteamCMD |
+| stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port |
 | stnserver | SteamCMD |
 | svenserver | SteamCMD (GoldSrc) |
 | terraria_tshock | Direct download — PASSED 2026-05-28; smoke and focused integration both pass on the Docker-backed lifecycle once the shared `steamcmd-linux` runtime image includes the required `.NET` runtimes, and CI now builds that image from the branch before validation |
@@ -179,7 +181,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |
 | ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
-| pvrserver | Docker-primary Pavlov VR setup/start/stop now work on the `steamcmd-linux` runtime image, and the status-helper port (`port + 400`) is launched and UDP-bound, but promotion is still blocked because raw A2S probes to that helper port time out from both the host and inside the container. AlphaGSM `query` / `info` still fall back to generic TCP reachability, so the required A2S lifecycle proof is not complete yet. |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
@@ -190,7 +191,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| stationeersserver | Stationeers Linux validation 2026-05-29: the current blocker text is stale relative to the post-September-2025 upstream launch contract. AlphaGSM still uses the older `-loadlatest ... -batchmode -nographics` path, the integration test is still skipped, and the smoke runner is still disabled, while current upstream Linux guidance says to use `./rocketstation_DedicatedServer.x86_64 -file start ... -logFile "./server.log" -settings ...` and explicitly notes that Linux console logging is broken. Keep the disabled gate for now: there is no fresh end-to-end proof yet on the updated generic-UDP Linux path, so the exact remaining blocker is outdated AlphaGSM lifecycle wiring rather than a newly verified pass or fail on the current contract. |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |

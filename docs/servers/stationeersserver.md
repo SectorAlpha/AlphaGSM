@@ -77,7 +77,7 @@ alphagsm mystatione backup
 - **Config file**: See game module source
 - **Max players**: `10`
 - **Template**: See [server-templates/stationeersserver/](../server-templates/stationeersserver/) if available
-- **Current status**: The Linux direct server path now requires the post-September-2025 launch shape (`-file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`). A fresh host probe on 2026-05-29 proved that this path writes `server.log`, loads the `Lunar` world, binds the managed game port as generic `udp`, and answers `udp_ping` while `a2s_info` still times out. The module is still blocked from promotion until the shared disabled-server gate is reopened and the full AlphaGSM lifecycle is rerun on the updated lane.
+- **Current status**: A fresh smoke rerun and focused SteamCMD integration on 2026-05-29 now prove the post-September-2025 Linux launch shape end to end. AlphaGSM launches `rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`, the shared setup port-retry helper handles the colliding default `updateport`, and the full lifecycle passes with generic `udp` `query`, `info`, `info --json`, and clean shutdown on the managed game port.
 
 ### Maps and Mods
 
