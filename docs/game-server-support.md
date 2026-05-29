@@ -53,6 +53,7 @@ Notes:
 - [x] hl2dmserver
 - [x] hldmserver
 - [x] hldmsserver
+- [x] heatserver
 - [x] kf2server
 - [x] l4dserver
 - [x] minecraft_paper
@@ -197,7 +198,6 @@ Notes:
 - [ ] ducksideserver
 - [ ] empyrionserver
 - [ ] fearthenightserver
-- [ ] heatserver
 - [ ] hellletlooseserver
 - [ ] icarusserver
 - [ ] lifeisfeudalserver
