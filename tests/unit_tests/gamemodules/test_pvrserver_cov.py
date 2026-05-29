@@ -1,5 +1,6 @@
 """Full coverage tests for pvrserver."""
 
+import subprocess as sp
 import sys
 from unittest.mock import patch, MagicMock
 
@@ -69,6 +70,25 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_install_tolerates_steamcmd_0x602_when_executable_present(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PavlovServer.sh"
+    (tmp_path / "PavlovServer.sh").write_text("")
+    monkeypatch.setattr(
+        mod.steamcmd,
+        "download",
+        MagicMock(
+        side_effect=sp.CalledProcessError(
+            1,
+            ["steamcmd"],
+            output="Error! App '622970' state is 0x602 after update job.",
+        )),
+    )
+
+    mod.install(server)
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -85,6 +105,30 @@ def test_update_no_restart(tmp_path):
     server.data["Steam_AppID"] = 622970
     server.data["Steam_anonymous_login_possible"] = True
     mod.update(server, validate=False, restart=False)
+    assert server._stopped
+    assert not server._started
+
+
+def test_update_tolerates_steamcmd_0x602_when_executable_present(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PavlovServer.sh"
+    server.data["Steam_AppID"] = 622970
+    server.data["Steam_anonymous_login_possible"] = True
+    (tmp_path / "PavlovServer.sh").write_text("")
+    monkeypatch.setattr(
+        mod.steamcmd,
+        "download",
+        MagicMock(
+        side_effect=sp.CalledProcessError(
+            1,
+            ["steamcmd"],
+            output="Error! App '622970' state is 0x602 after update job.",
+        )),
+    )
+
+    mod.update(server, validate=False, restart=False)
+
     assert server._stopped
     assert not server._started
 
@@ -149,6 +193,28 @@ def test_runtime_requirements_without_port_use_default_offset():
     assert (8177, "udp") in ports
     assert (8177, "tcp") in ports
     assert server.data["queryport"] == "8177"
+
+
+def test_get_container_spec_drops_root_before_launch(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PavlovServer.sh"
+    (tmp_path / "PavlovServer.sh").write_text("")
+    server.data["map"] = "test"
+    server.data["port"] = 27015
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["command"][0:2] == ["sh", "-lc"]
+    assert "useradd -m -d /home/pavlov -s /bin/bash pavlov" in spec["command"][2]
+    assert "chown -R pavlov:pavlov /home/pavlov /srv/server" in spec["command"][2]
+    assert "export HOME=/home/pavlov USER=pavlov LOGNAME=pavlov" in spec["command"][2]
+    assert "XDG_CONFIG_HOME=/home/pavlov/.config" in spec["command"][2]
+    assert (
+        "exec setpriv --reuid=$(id -u pavlov) --regid=$(id -g pavlov) "
+        "--clear-groups ./PavlovServer.sh -PORT=27015 -Map=test -QueryPort=27415"
+    ) in spec["command"][2]
+    assert spec["working_dir"] == "/srv/server"
 
 
 def test_setting_schema_launch_formats():
