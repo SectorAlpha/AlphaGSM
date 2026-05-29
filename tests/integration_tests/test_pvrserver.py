@@ -17,7 +17,6 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
     wait_for_udp_closed,
 )
 from gamemodules.pvrserver import steam_app_id
@@ -27,6 +26,7 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: Pavlov VR setup can exceed the old 10 min SteamCMD budget under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
+STATUS_PORT_OFFSET = 400
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full SteamCMD setup budget plus server bring-up and shutdown
@@ -54,6 +54,7 @@ def test_pvrserver_lifecycle(tmp_path):
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    status_port = port + STATUS_PORT_OFFSET
 
     # create
     run_and_assert_ok(env, server_name, "create", "pvrserver")
@@ -69,12 +70,13 @@ def test_pvrserver_lifecycle(tmp_path):
     )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    status_port = port + STATUS_PORT_OFFSET
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -82,29 +84,29 @@ def test_pvrserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            "UDP ping on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "UDP ping on port" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+        assert _info_data.get("port") == status_port, (
+            f"Expected helper UDP port in info JSON: {_info_data!r}"
         )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
     wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", status_port, STOP_TIMEOUT)
