@@ -50,7 +50,8 @@ def _wait_for_udp_or_fail_fast(env, server_name, timeout_seconds, *, config_path
     while time.time() < deadline:
         info_result = run_alphagsm(env, server_name, "info", "--json")
         last_info_result = info_result
-        if info_result.returncode == 0:
+        info_ok = info_result.returncode == 0
+        if info_ok:
             info_data = json.loads(info_result.stdout.strip())
             if info_data.get("protocol") == "udp":
                 return info_data
