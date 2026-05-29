@@ -2,9 +2,12 @@
 
 This guide covers the `returntomoriaserver` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29
+
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -47,6 +50,9 @@ Setup configures:
 - the game port (default 7777)
 - the install directory
 - SteamCMD downloads the server files
+- AlphaGSM writes `MoriaServerConfig.ini` before first launch and keeps `ListenPort`,
+  `AdvertiseAddress`, and the world name aligned with the managed datastore
+- readiness is tracked through `Moria/Saved/Config/Status.json`
 
 ## Useful Commands
 
@@ -59,6 +65,9 @@ alphagsm myreturnto backup
 
 - Module name: `returntomoriaserver`
 - Default port: 7777
+- `query`, `info`, and `info --json` use generic UDP reachability on the managed game port
+- the default `AdvertiseAddress` is `local`; for internet-hosted servers set it to `auto`
+  or your public IP before sharing the server externally
 
 ## Developer Notes
 
@@ -72,6 +81,7 @@ alphagsm myreturnto backup
 ### Server Configuration
 
 - **Config files**: `MoriaServerConfig.ini`
+- **Runtime status file**: `Moria/Saved/Config/Status.json`
 - **Template**: See [server-templates/returntomoriaserver/](../server-templates/returntomoriaserver/) if available
 
 ### Maps and Mods

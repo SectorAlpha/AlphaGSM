@@ -136,6 +136,7 @@ def test_more_large_batch_updates_download_and_optionally_restart(monkeypatch):
         "download",
         lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
     )
+    monkeypatch.setattr(returntomoriaserver, "sync_server_config", lambda server: None)
 
     primalcarnageextinctionserver.update(pce, validate=True, restart=True)
     returntomoriaserver.update(moria, validate=False, restart=False)

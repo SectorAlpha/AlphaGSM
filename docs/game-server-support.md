@@ -123,6 +123,7 @@ Notes:
 - [x] pixarkserver
 - [x] remnantsserver
 - [x] readyornotserver
+- [x] returntomoriaserver
 - [x] rs2server
 - [x] insserver
 - [x] inssserver
@@ -211,7 +212,6 @@ Notes:
 - [ ] notdserver
 - [ ] q3server
 - [ ] reignofkingsserver
-- [ ] returntomoriaserver
 - [ ] ror2server
 - [ ] scumserver
 - [ ] sniperelite4server

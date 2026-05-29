@@ -1,6 +1,9 @@
 """Return to Moria dedicated server lifecycle helpers."""
 
+import configparser
 import os
+import signal
+import subprocess
 
 import screen
 import utils.proton as proton
@@ -15,6 +18,8 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 3349480
 steam_anonymous_login_possible = True
+DEFAULT_PORT = 7777
+DEFAULT_WORLD_NAME = "Dedicated Server World"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -27,6 +32,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "advertiseaddress", "worldname")
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="MoriaServer.exe"):
@@ -37,17 +43,33 @@ def configure(server, ask, port=None, dir=None, *, exe_name="MoriaServer.exe"):
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-    gamemodule_common.set_server_defaults(server, {"advertiseport": "7777"})
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "advertiseaddress": "local",
+            "worldname": DEFAULT_WORLD_NAME,
+        },
+    )
     gamemodule_common.ensure_backup_config(
         server,
-        backupfiles=["Moria/Saved/Worlds", "MoriaServerConfig.ini", "permissions.txt"],
-        targets=["Moria/Saved/Worlds", "MoriaServerConfig.ini", "permissions.txt"],
+        backupfiles=[
+            "Moria/Saved/SaveGamesDedicated",
+            "MoriaServerConfig.ini",
+            "MoriaServerPermissions.txt",
+            "MoriaServerRules.txt",
+        ],
+        targets=[
+            "Moria/Saved/SaveGamesDedicated",
+            "MoriaServerConfig.ini",
+            "MoriaServerPermissions.txt",
+            "MoriaServerRules.txt",
+        ],
     )
     gamemodule_common.configure_port(
         server,
         ask,
         port,
-        default_port=7777,
+        default_port=DEFAULT_PORT,
         prompt="Please specify the game port to use for this server:",
     )
     gamemodule_common.configure_install_dir(
@@ -60,10 +82,68 @@ def configure(server, ask, port=None, dir=None, *, exe_name="MoriaServer.exe"):
     return gamemodule_common.finalize_configure(server)
 
 
+def _config_path(server):
+    return os.path.join(server.data["dir"], "MoriaServerConfig.ini")
+
+
+def sync_server_config(server):
+    """Keep Return to Moria's managed config aligned with AlphaGSM settings."""
+
+    if not server.data.get("dir"):
+        return
+    parser = configparser.RawConfigParser(interpolation=None)
+    parser.optionxform = str
+    config_path = _config_path(server)
+    if os.path.isfile(config_path):
+        parser.read(config_path, encoding="utf-8")
+
+    defaults = {
+        "Main": {
+            "OptionalPassword": "",
+        },
+        "World": {
+            "Name": '"{}"'.format(server.data.get("worldname", DEFAULT_WORLD_NAME)),
+            "OptionalWorldFilename": "",
+        },
+        "World.Create": {
+            "Type": "campaign",
+            "Seed": "random",
+            "Difficulty.Preset": "normal",
+            'OptionalDLC.Array': '"DurinsFolk"',
+            'UpgradeOptionalDLC.Array': '""',
+        },
+        "Host": {
+            "ListenAddress": "",
+            "ListenPort": str(server.data.get("port", DEFAULT_PORT)),
+            "AdvertiseAddress": str(server.data.get("advertiseaddress", "local")),
+            "AdvertisePort": str(server.data.get("port", DEFAULT_PORT)),
+            "InitialConnectionRetryTime": "120",
+            "AfterDisconnectionRetryTime": "600",
+        },
+        "Console": {
+            "Enabled": "true",
+        },
+        "Performance": {
+            "ServerFPS": "60",
+            "LoadedAreaLimit": "12",
+        },
+    }
+    for section, values in defaults.items():
+        if not parser.has_section(section):
+            parser.add_section(section)
+        for key, value in values.items():
+            parser.set(section, key, value)
+
+    os.makedirs(server.data["dir"], exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as handle:
+        parser.write(handle, space_around_delimiters=False)
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download the Return to Moria server files via SteamCMD."
@@ -73,12 +153,31 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 update.__doc__ = "Update the Return to Moria server files and optionally restart the server."
 
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Return to Moria server."
+
+
+def prestart(server):
+    """Refresh the managed dedicated-server config before launch."""
+
+    sync_server_config(server)
+
+
+def get_query_address(server):
+    """Return the UDP listener exposed by Return to Moria."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the same UDP endpoint used by ``query``."""
+
+    return get_query_address(server)
 
 
 def get_start_command(server):
@@ -95,10 +194,51 @@ def get_start_command(server):
             prefer_proton=True,
         )
     return cmd, server.data["dir"]
+
+
+def _find_linux_server_pids(server):
+    """Return Linux-hosted Return to Moria server pids for *server*."""
+
+    if not IS_LINUX:
+        return []
+    install_marker = os.path.basename(os.path.normpath(server.data.get("dir", "")))
+    if not install_marker:
+        return []
+    try:
+        output = subprocess.check_output(
+            ["ps", "-eo", "pid=,args="],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return []
+
+    pids = []
+    for line in output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        pid_text, _sep, args = line.partition(" ")
+        if not pid_text.isdigit():
+            continue
+        if "MoriaServer-Win64-Shipping.exe" not in args:
+            continue
+        if install_marker not in args:
+            continue
+        pids.append(int(pid_text))
+    return pids
+
+
 def do_stop(server, j):
     """Stop Return to Moria using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    if IS_LINUX:
+        pids = _find_linux_server_pids(server)
+        for pid in pids:
+            os.kill(pid, signal.SIGINT)
+        if pids:
+            return
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -131,15 +271,15 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port", "advertiseport"),
-        str_keys=("exe_name", "dir"),
+        int_keys=("port",),
+        str_keys=("advertiseaddress", "worldname", "exe_name", "dir"),
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'advertiseport', 'protocol': 'udp'}, {'key': 'advertiseport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'advertiseport', 'protocol': 'udp'}, {'key': 'advertiseport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
 )
