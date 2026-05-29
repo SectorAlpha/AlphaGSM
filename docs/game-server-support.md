@@ -90,6 +90,7 @@ Notes:
 - [x] silicaserver
 - [x] scpslserver
 - [x] smallandserver
+- [x] sevendaystodie
 - [x] sonsoftheforestserver
 - [x] solserver
 - [x] squad44server
@@ -185,7 +186,6 @@ Notes:
 - [ ] rwserver
 - [ ] sampserver
 - [ ] seserver
-- [ ] sevendaystodie
 - [ ] sfcserver
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound

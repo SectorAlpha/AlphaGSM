@@ -2,6 +2,8 @@
 
 This guide covers the `sevendaystodie` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29 on the native Linux SteamCMD path.
+
 ## Requirements
 
 - `screen`
@@ -81,6 +83,9 @@ alphagsm mysevenday mod cleanup
 
 - Module name: `sevendaystodie`
 - Default port: 26900
+- AlphaGSM readiness for 7DTD follows the game's real `output_log__*.txt` file in the install root rather than the screen log.
+- `query`, `info`, and `info --json` now validate against 7DTD's live A2S listener on the managed main port.
+- On very long SteamCMD setups, refreshing the claimed port just before `start` avoids a stale free-port selection from the earlier setup step.
 
 ## Developer Notes
 
