@@ -2,9 +2,12 @@
 
 This guide covers the `ut2k4server` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29
+
 ## Requirements
 
 - `screen`
+- `7z` or `7zz` from `p7zip-full` or an equivalent package
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -45,7 +48,9 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- downloads and extracts the server archive
+- runs the full OldUnreal native Linux installer and patch flow
+- keeps per-instance runtime state under `.alphagsm/ut2k4-home` so one server's
+  user config does not leak into another instance
 
 ## Useful Commands
 
@@ -87,6 +92,10 @@ alphagsm myut2k4ser mod cleanup
 
 - Module name: `ut2k4server`
 - Default port: 7777
+- `query`, `info`, and `info --json` currently use generic `udp` reachability
+  on the managed game port
+- the current stop path may fall back to AlphaGSM's managed kill after the
+  graceful shutdown window if the UT2004 console does not exit on `stop`
 
 ## Developer Notes
 
@@ -99,6 +108,7 @@ alphagsm myut2k4ser mod cleanup
 ### Server Configuration
 
 - **Config file**: `System/UT2004.ini`
+- **Runtime HOME**: `.alphagsm/ut2k4-home`
 - **Max players**: `16`
 - **Template**: See [server-templates/ut2k4server/](../server-templates/ut2k4server/) if available
 

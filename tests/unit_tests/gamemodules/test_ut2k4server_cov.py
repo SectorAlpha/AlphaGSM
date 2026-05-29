@@ -149,6 +149,26 @@ def test_get_start_command(tmp_path):
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
 
+
+def test_get_start_command_uses_server_local_home(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    exe_path = tmp_path / "System/ucc-bin"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["configfile"] = "test"
+    server.data["gametype"] = "test"
+    server.data["maxplayers"] = 16
+    server.data["port"] = 7777
+    server.data["startmap"] = "DM-Antalus"
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "env"
+    assert any(token.startswith("HOME=") for token in cmd)
+    assert any(".alphagsm/ut2k4-home" in token for token in cmd if token.startswith("HOME="))
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -165,6 +185,23 @@ def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
     mod.screen.send_to_server.assert_called()
+
+
+def test_get_query_address_uses_managed_game_port(tmp_path):
+    server = DummyServer()
+    server.data["port"] = 27015
+
+    address = mod.get_query_address(server)
+
+    assert address == ("127.0.0.1", 27015, "udp")
+
+
+def test_get_info_address_matches_query_address():
+    server = DummyServer()
+    server.data["port"] = 27015
+
+    assert mod.get_info_address(server) == mod.get_query_address(server)
+
 
 def test_status():
     server = DummyServer()

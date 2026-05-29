@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 112      |
+| PASSED   | 113      |
 | DISABLED | 62      |
-| SKIPPED  | 59      |
+| SKIPPED  | 58      |
 
 ## Status Key
 
@@ -118,6 +118,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | thefrontserver | SteamCMD |
 | trackmaniaserver | Direct download — PASSED 2026-05-17; setup now syncs the configured XML-RPC port into `GameData/Config/dedicated_cfg.txt`, launch stays attached with `/nodaemon`, and query/info use TCP reachability on the XML-RPC endpoint |
 | unturned | SteamCMD |
+| ut2k4server | Direct download — PASSED 2026-05-29; fresh focused integration now passes once AlphaGSM requires the OldUnreal installer prerequisites, isolates the runtime `HOME` under `.alphagsm/ut2k4-home` so per-instance user state no longer leaks between servers, extends the setup budget for the full native installer path, and aligns `query`, `info`, and `info --json` to the current generic `udp` health surface on the managed game port |
 | ut99server | Direct download |
 | valheim | SteamCMD |
 | warbandserver | Direct download (Wine) — PASSED 2026-05-18; the module now uses the official `mb_warband_dedicated_1174.zip` archive directly instead of scraping the Cloudflare-blocked TaleWorlds page, syncs `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, runs the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers |
@@ -210,7 +211,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (59)
+## SKIPPED (58)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -272,7 +273,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | subnauticaserver | SteamCMD/platform issue |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |
-| ut2k4server | Download prerequisite |
 | vintagestoryserver | Download prerequisite |
 | vsserver | HLDS mod maps not available via SteamCMD |
 

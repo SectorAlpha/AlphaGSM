@@ -98,6 +98,12 @@ def _require_ut2k4_installer_prerequisites():
         "Install p7zip-full or another package that provides 7z/7zz."
     )
 
+
+def _runtime_home(server):
+    """Return the server-local home used to isolate UT2004 user config state."""
+
+    return os.path.join(server.data["dir"], ".alphagsm", "ut2k4-home")
+
 commands = ("mod",)
 command_args = gamemodule_common.build_setup_download_command_args(
     "The port for the server to listen on",
@@ -545,8 +551,12 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    runtime_home = _runtime_home(server)
+    os.makedirs(runtime_home, exist_ok=True)
     return (
         [
+            "env",
+            f"HOME={runtime_home}",
             "./" + server.data["exe_name"],
             "server",
             "%s?Game=%s?MaxPlayers=%s" % (
@@ -566,6 +576,18 @@ def do_stop(server, j):
     """Stop Unreal Tournament 2004 using the standard console command."""
 
     screen.send_to_server(server.name, "\nexit\n")
+
+
+def get_query_address(server):
+    """Probe the UT2004 game socket as generic UDP reachability."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Use UDP reachability for UT2004 info until a richer protocol is implemented."""
+
+    return get_query_address(server)
 
 
 def status(server, verbose):

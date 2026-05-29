@@ -232,6 +232,8 @@ def test_ut2k4server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = ut2k4server.get_start_command(server)
 
-    assert cmd[0] == "./System/ucc-bin"
+    assert cmd[0] == "env"
+    assert any(token.startswith("HOME=") for token in cmd)
+    assert "./System/ucc-bin" in cmd
     assert "DM-Antalus?Game=XGame.xDeathMatch?MaxPlayers=16" in cmd
     assert cwd == server.data["dir"]

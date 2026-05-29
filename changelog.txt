@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-29
+- Server support: re-enable `ut2k4server` after restoring the full OldUnreal native installer path on Linux, isolating each server's runtime `HOME` under `.alphagsm/ut2k4-home`, and proving fresh focused integration on the current generic `udp` health surface at the managed game port.
 - Server support: re-enable `notdserver` on the Docker-backed `wine-proton` Linux lane after mirroring `ServerSettings.ini` into `LF/Saved/Config`, adding the required `-DisableAntiCheat` launch flag, and proving fresh focused integration on the current generic `tcp` health surface at the managed game port instead of the older stale A2S `queryport` assumption.
 - Server support: re-enable `noonesurvivedserver` on the Docker-backed `wine-proton` Linux lane after switching validation to the shared Xvfb/software-GL container entrypoint and proving fresh focused integration on the current generic `tcp` health surface at the managed game port instead of the older stale A2S `queryport` assumption.
 - Server support: re-enable `miscreatedserver` on the Docker-backed `wine-proton` Linux lane after moving readiness to the real `user/server.log` surface and proving fresh focused integration on the current generic `tcp` health surface at the managed game port instead of the older stale A2S-on-`port + 1` assumption.

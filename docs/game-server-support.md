@@ -110,6 +110,7 @@ Notes:
 - [x] thefrontserver
 - [x] trackmaniaserver
 - [x] unturned
+- [x] ut2k4server
 - [x] ut99server
 - [x] valheim
 - [x] warbandserver
@@ -258,6 +259,5 @@ Notes:
 - [ ] subnauticaserver
 - [ ] tsserver
 - [ ] twserver
-- [ ] ut2k4server
 - [ ] vintagestoryserver
 - [ ] vsserver
