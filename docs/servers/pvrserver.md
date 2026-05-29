@@ -92,15 +92,19 @@ returning protocol `a2s` on Pavlov's status-helper port (`port + 400`) instead
 of waiting for screen-log markers, and the supported validation path now uses
 the `steamcmd-linux` Docker runtime image rather than the host process path.
 
-Focused host validation on 2026-05-28 proved that the longer 60 minute setup
-budget is enough for Pavlov VR's 9.17 GB SteamCMD payload. The next proven
-host-process blocker is missing `libc++.so.1`: AlphaGSM's shared local-runtime
-dependency gate now fails fast with a clear dependency error instead of
-returning success and only leaving the loader failure in the screen log, and it
-recommends installing `libc++1` when you need a local process run. The primary
-supported runtime path is the Docker/runtime-image flow, which already carries
-the needed libc++ runtime and now uses the module's runtime-aware stop hook for
-graceful `alphagsm stop`.
+Focused validation on 2026-05-29 proved that the current Docker-primary path is
+materially better than the older host-process lane. AlphaGSM now tolerates the
+known SteamCMD false-negative where app `622970` reports `state is 0x602 after
+update job` even though `PavlovServer.sh` is already present, and the supported
+runtime path uses the `steamcmd-linux` Docker image plus the runtime-aware stop
+hook for graceful `alphagsm stop`.
+
+The remaining blocker is now precise: the Dockerized server starts, the managed
+game port and derived status-helper port (`port + 400`) both bind over UDP, but
+raw A2S probes to the helper port still time out from both the host and inside
+the container. Until that status-helper socket returns real A2S data instead of
+forcing AlphaGSM `query` / `info` back to generic TCP reachability, the module
+is still not ready for promotion.
 
 ### Server Configuration
 
