@@ -39,10 +39,9 @@ setting_schema = {
     ),
     "queryport": SettingSpec(
         canonical_key="queryport",
-        description="Steam query port.",
+        description="Derived status-helper port (game port + 400).",
         value_type="integer",
-        apply_to=("datastore", "launch_args"),
-        launch_arg_format="-QueryPort={value}",
+        apply_to=("datastore",),
     ),
     "map": SettingSpec(
         canonical_key="map",
@@ -147,13 +146,13 @@ def update(server, validate=False, restart=False):
 
 
 def get_query_address(server):
-    """Pavlov VR uses Steam A2S on the dedicated query port."""
-    return (runtime_module.resolve_query_host(server), _status_port(server), "a2s")
+    """Pavlov VR exposes generic UDP reachability on the fixed status-helper port."""
+    return (runtime_module.resolve_query_host(server), _status_port(server), "udp")
 
 
 def get_info_address(server):
-    """Return the A2S address used by the info command."""
-    return (runtime_module.resolve_query_host(server), _status_port(server), "a2s")
+    """Return the generic UDP status-helper port used by the info command."""
+    return (runtime_module.resolve_query_host(server), _status_port(server), "udp")
 
 
 def get_start_command(server):
@@ -215,7 +214,7 @@ def checkvalue(server, key, *value):
 
 
 def get_runtime_requirements(server):
-    """Expose the gameplay port plus Pavlov's fixed status-helper port."""
+    """Expose the gameplay port plus Pavlov's fixed UDP status-helper port."""
 
     server.data["queryport"] = str(_status_port(server))
     return gamemodule_common.make_runtime_requirements_builder(
@@ -224,7 +223,6 @@ def get_runtime_requirements(server):
             {'key': 'port', 'protocol': 'udp'},
             {'key': 'port', 'protocol': 'tcp'},
             {'key': 'queryport', 'protocol': 'udp'},
-            {'key': 'queryport', 'protocol': 'tcp'},
         ),
         extra={
             "host_dependencies": [
@@ -247,13 +245,11 @@ def get_runtime_requirements(server):
 
 
 def get_container_spec(server):
-    """Publish the gameplay port plus Pavlov's fixed status-helper port."""
+    """Publish the gameplay port plus Pavlov's fixed UDP status-helper port."""
 
     server.data["queryport"] = str(_status_port(server))
     requirements = get_runtime_requirements(server)
     command, _cwd = get_start_command(server)
-    if not any(arg.startswith("-QueryPort=") for arg in command[1:]):
-        command.append("-QueryPort=" + str(server.data["queryport"]))
     shell_command = " ".join(shlex.quote(part) for part in command)
     return {
         "working_dir": "/srv/server",
