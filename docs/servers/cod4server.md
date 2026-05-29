@@ -5,6 +5,8 @@ This guide covers the `cod4server` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- owned base-game multiplayer assets that include `fileSysCheck.cfg` and
+  `main/localized_*.iwd`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -45,7 +47,9 @@ Setup configures:
 
 - the game port (default 28960)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the official Linux dedicated-server archive
+- still requires copied retail/localized multiplayer assets before the server
+  can finish startup
 
 ## Useful Commands
 
@@ -58,6 +62,8 @@ alphagsm mycod4serv backup
 
 - Module name: `cod4server`
 - Default port: 28960
+- Current blocker for anonymous installs: the default dedicated archive does
+  not ship `fileSysCheck.cfg` or `main/localized_*.iwd`
 
 ## Developer Notes
 
@@ -71,6 +77,8 @@ alphagsm mycod4serv backup
 
 - **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- **Owned base assets still required**: `fileSysCheck.cfg`,
+  `main/localized_*.iwd`
 - **Template**: See [server-templates/cod4server/](../server-templates/cod4server/) if available
 
 ### Maps and Mods

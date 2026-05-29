@@ -247,8 +247,8 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arma3_wasteland | Arma 3 variant (needs base arma3server) |
 | bbserver | HLDS mod maps not available via SteamCMD |
 | brickadiaserver | SteamCMD app requires authentication |
-| cod2server | Archive/download prerequisite |
-| cod4server | Archive/download prerequisite |
+| cod2server | Direct archive install now succeeds on `release_v1`, but the official Linux dedicated package still lacks the localized retail assets the binary requires at startup. A fresh Docker-backed integration rerun on 2026-05-29 reached the exact blocker: `main/localized_*.iwd` and `main/default_localize_mp.cfg` are missing, so COD2 still needs owned/copied base-game multiplayer assets even though the dedicated executable itself now installs correctly. |
+| cod4server | Direct archive install now succeeds on `release_v1`, but the default dedicated-server archive still lacks owned base-game files required at startup. A fresh Docker-backed integration rerun on 2026-05-29 proved the exact blocker: `fileSysCheck.cfg` plus `main/localized_*.iwd` are missing from the anonymous package, so COD4 still needs copied retail assets even though the dedicated executable itself now installs correctly. |
 | coduoserver | Archive/download prerequisite |
 | codwawserver | Archive/download prerequisite |
 | dstserver | DST requires a Klei cluster_token and cluster config to start; server exits immediately without them |

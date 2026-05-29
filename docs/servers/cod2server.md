@@ -5,6 +5,8 @@ This guide covers the `cod2server` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- owned base-game multiplayer assets that include `main/localized_*.iwd` and
+  `main/default_localize_mp.cfg`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -45,7 +47,9 @@ Setup configures:
 
 - the game port (default 28960)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the official Linux dedicated-server archive
+- still requires copied retail/localized multiplayer assets before the server
+  can finish startup
 
 ## Useful Commands
 
@@ -58,6 +62,8 @@ alphagsm mycod2serv backup
 
 - Module name: `cod2server`
 - Default port: 28960
+- Current blocker for anonymous installs: the official dedicated archive does
+  not ship `main/localized_*.iwd` or `main/default_localize_mp.cfg`
 
 ## Developer Notes
 
@@ -71,6 +77,8 @@ alphagsm mycod2serv backup
 
 - **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- **Owned base assets still required**: `main/localized_*.iwd`,
+  `main/default_localize_mp.cfg`
 - **Template**: See [server-templates/cod2server/](../server-templates/cod2server/) if available
 
 ### Maps and Mods
