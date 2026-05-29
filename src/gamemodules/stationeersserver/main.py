@@ -45,7 +45,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="rocketstation_Dedic
     gamemodule_common.set_server_defaults(
         server,
         {
-            "worldname": "Space",
+            "worldname": "Lunar",
             "savename": server.name,
             "servername": "AlphaGSM %s" % (server.name,),
             "serverpassword": "",
@@ -65,7 +65,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="rocketstation_Dedic
         server,
         ask,
         port,
-        default_port=27500,
+        default_port=27016,
         prompt="Please specify the game port to use for this server:",
     )
     gamemodule_common.configure_install_dir(
@@ -106,34 +106,55 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     command = [
         "./" + server.data["exe_name"],
-        "-loadlatest",
+        "-file",
+        "start",
         server.data["savename"],
         server.data["worldname"],
+        "-logFile",
+        "./server.log",
         "-settings",
-        "ServerName",
-        server.data["servername"],
         "StartLocalHost",
         "true",
         "ServerVisible",
         "true",
         "GamePort",
         str(server.data["port"]),
-        "UpdatePort",
-        str(server.data["updateport"]),
-        "AutoSave",
-        server.data["autosave"],
-        "SaveInterval",
-        str(server.data["saveinterval"]),
+        "UPNPEnabled",
+        server.data["upnp"],
+        "ServerName",
+        server.data["servername"],
         "ServerPassword",
         server.data["serverpassword"],
         "ServerMaxPlayers",
         str(server.data["maxplayers"]),
-        "UPNPEnabled",
-        server.data["upnp"],
+        "AutoSave",
+        server.data["autosave"],
+        "SaveInterval",
+        str(server.data["saveinterval"]),
+        "UpdatePort",
+        str(server.data["updateport"]),
+        "AutoPauseServer",
+        "true",
+        "UseSteamP2P",
+        "false",
+        "LocalIpAddress",
+        "0.0.0.0",
         "-batchmode",
         "-nographics",
     ]
     return (command, server.data["dir"])
+
+
+def get_query_address(server):
+    """Stationeers exposes its dedicated listener as a generic UDP port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the same UDP endpoint used by query()."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -167,25 +188,33 @@ def checkvalue(server, key, *value):
         *value,
         int_keys=("port", "updateport", "saveinterval", "maxplayers"),
         str_keys=(
-        "worldname",
-        "savename",
-        "servername",
-        "serverpassword",
-        "autosave",
-        "upnp",
-        "exe_name",
-        "dir",
-    ),
+            "worldname",
+            "savename",
+            "servername",
+            "serverpassword",
+            "autosave",
+            "upnp",
+            "exe_name",
+            "dir",
+        ),
     )
 
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'updateport', 'protocol': 'udp'}, {'key': 'updateport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    family="steamcmd-linux",
+    port_definitions=(
+        {"key": "updateport", "protocol": "udp"},
+        {"key": "port", "protocol": "udp"},
+    ),
 )
 
+
 get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'updateport', 'protocol': 'udp'}, {'key': 'updateport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
+    family="steamcmd-linux",
+    get_start_command=get_start_command,
+    port_definitions=(
+        {"key": "updateport", "protocol": "udp"},
+        {"key": "port", "protocol": "udp"},
+    ),
+    stdin_open=True,
 )
