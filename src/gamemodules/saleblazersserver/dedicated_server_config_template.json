@@ -1,0 +1,107 @@
+{
+  "LoginConfig": {
+    "HostingPort": 27015,
+    "bAnonymousAccount": true,
+    "GSLT": ""
+  },
+  "AdminConfig": {
+    "AdminSteamIDs": []
+  },
+  "LobbyConfig": {
+    "HostOptions": {},
+    "SerializedOptions": {
+      "Options": [
+        {"Key": "Lobby_Mode", "Value": "1"},
+        {"Key": "Lobby_Save", "Value": "21"},
+        {"Key": "Lobby_Name", "Value": "AlphaGSM Test"},
+        {"Key": "Lobby_Map", "Value": "2"},
+        {"Key": "Lobby_Password", "Value": ""},
+        {"Key": "Lobby_SaveName", "Value": "AlphaGSM World"},
+        {"Key": "Lobby_Capacity", "Value": "8"},
+        {"Key": "Lobby_FriendlyFire", "Value": "False"},
+        {"Key": "Lobby_PermissionsActive", "Value": "False"},
+        {"Key": "Lobby_CloudCharacters", "Value": "False"},
+        {"Key": "Lobby_NoDeathboxDrop", "Value": "False"},
+        {"Key": "Lobby_PacifistMode", "Value": "False"},
+        {"Key": "Lobby_EnemyDamageMod", "Value": "1"},
+        {"Key": "Lobby_PlayerDamageMod", "Value": "1"},
+        {"Key": "Lobby_HitStunModifier", "Value": "2.25"},
+        {"Key": "Lobby_ItemDensityMod", "Value": "0.5"},
+        {"Key": "Lobby_PlayerXPGainMod", "Value": "1"},
+        {"Key": "Lobby_TotemUnlockMod", "Value": "1"},
+        {"Key": "Lobby_RebirthCostMod", "Value": "0.2"},
+        {"Key": "Lobby_LocalMapDiscovery", "Value": "False"},
+        {"Key": "Lobby_PeacefulNight", "Value": "False"},
+        {"Key": "Lobby_InvincibleShop", "Value": "False"},
+        {"Key": "Lobby_ShopDifficulty", "Value": "1"},
+        {"Key": "Lobby_ShopXPGainMod", "Value": "1"},
+        {"Key": "Lobby_CustomerBudgetMod", "Value": "1"},
+        {"Key": "Lobby_CustomerNeedMod", "Value": "1"},
+        {"Key": "Lobby_CustomerRatingMod", "Value": "1"},
+        {"Key": "Lobby_HungerThirstRateMod", "Value": "1"},
+        {"Key": "Lobby_LethalHungerThirst", "Value": "False"},
+        {"Key": "Lobby_LethalCold", "Value": "False"},
+        {"Key": "Lobby_BuildingIntegrity", "Value": "True"},
+        {"Key": "Lobby_ResearchCost", "Value": "1"},
+        {"Key": "Lobby_ItemDurability", "Value": "True"},
+        {"Key": "Lobby_ArmorDurability", "Value": "True"},
+        {"Key": "Lobby_RandomPlayerSpawning", "Value": "0"},
+        {"Key": "Lobby_Difficulty", "Value": "2"},
+        {"Key": "Lobby_InvasionMode", "Value": "0"},
+        {"Key": "Lobby_Main", "Value": "True"},
+        {"Key": "Lobby_Friends", "Value": "False"},
+        {"Key": "Lobby_Version", "Value": "EDITOR"},
+        {"Key": "Lobby_LowerVersionBound", "Value": "v0.14.9.7"},
+        {"Key": "Lobby_UpperVersionBound", "Value": "v0.14.9.75"},
+        {"Key": "Lobby_Address", "Value": "90268932146419725"},
+        {"Key": "Lobby_Host", "Value": "90268932146419725"},
+        {"Key": "Lobby_HostName", "Value": "Dedicated Server"},
+        {"Key": "Lobby_DedicatedServer", "Value": "True"}
+      ]
+    },
+    "AutoSaveIntervalSeconds": 600,
+    "bAdvertiseServer": true
+  },
+  "GlobalPermissionConfig": {
+    "DefaulPermissions": {
+      "bCanManagePermissions": true,
+      "bCanManageAssignments": true,
+      "bCanKick": true,
+      "bCanBan": true,
+      "bCanUnBan": true,
+      "bCanManageAreas": true,
+      "bCanClaimAreas": true,
+      "bBanTotemTeleportation": false,
+      "totemTeleportationCooldown": 0,
+      "bannedCraftStations": 0,
+      "bBanMapPing": false,
+      "bBanWorldPing": false
+    },
+    "bOverrideControllability": false,
+    "ControllablePermissions": []
+  },
+  "AreaPermissionConfig": {
+    "DefaulPermissions": {
+      "bCanManagePermissions": true,
+      "bCanManageAssignments": true,
+      "bCanInteract": true,
+      "bCanPickup": true,
+      "bCanPlace": true,
+      "bCanBuild": true,
+      "bCanDismantle": true,
+      "bCanAccessContainer": true,
+      "bCanFastTravel": true,
+      "bCanThrow": true,
+      "bCanDamagePlayer": true,
+      "bCanDamageAI": true,
+      "bCanDamageItem": true,
+      "bCanDamageShop": true,
+      "shopManagementLevel": 5
+    },
+    "bOverrideControllability": false,
+    "ControllablePermissions": []
+  },
+  "MessageConfig": {
+    "AutoBroadcastMessages": ["Welcome Message"]
+  }
+}

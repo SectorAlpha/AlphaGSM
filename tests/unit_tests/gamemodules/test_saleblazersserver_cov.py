@@ -1,5 +1,6 @@
 """Full coverage tests for saleblazersserver."""
 
+import json
 import os
 import sys
 from unittest.mock import patch, MagicMock
@@ -39,8 +40,12 @@ class DummyServer:
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
-    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
-    assert server.data['port'] == 27015
+    mod.configure(server, ask=False, port=34567, dir=str(tmp_path))
+    assert server.data['port'] == 34567
+    assert server.data["queryport"] == "34568"
+    assert server.data["maxplayers"] == "8"
+    assert server.data["servername"] == server.name
+    assert server.data["serverpassword"] == ""
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -118,6 +123,8 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cmd == [
         "Default/Saleblazers.exe",
         "-headless",
+        "-config",
+        "./DedicatedServerConfig.json",
         "-batchmode",
         "-nographics",
         "-logFile",
@@ -140,6 +147,8 @@ def test_get_start_command_linux_drops_headless_flag(tmp_path, monkeypatch):
 
     assert cmd == [
         "Default/Saleblazers.exe",
+        "-config",
+        "./DedicatedServerConfig.json",
         "-batchmode",
         "-logFile",
         "./server.log",
@@ -193,13 +202,66 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_query_and_info_address_use_queryport(monkeypatch):
+def test_sync_server_config_writes_dedicated_server_json(tmp_path):
     server = DummyServer("sale")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": "34567",
+            "maxplayers": "12",
+            "servername": "AlphaGSM Test",
+            "serverpassword": "secret",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    config_path = tmp_path / "DedicatedServerConfig.json"
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    assert payload["LoginConfig"]["HostingPort"] == 34567
+    options = {
+        item["Key"]: item["Value"]
+        for item in payload["LobbyConfig"]["SerializedOptions"]["Options"]
+    }
+    assert options["Lobby_Name"] == "AlphaGSM Test"
+    assert options["Lobby_HostName"] == "AlphaGSM Test"
+    assert options["Lobby_Password"] == "secret"
+    assert options["Lobby_Capacity"] == "12"
+
+
+def test_prestart_refreshes_dedicated_config(tmp_path):
+    server = DummyServer("sale")
+    server.data.update({"dir": str(tmp_path) + "/", "port": "27015", "queryport": "99999"})
+
+    mod.prestart(server)
+
+    assert (tmp_path / "DedicatedServerConfig.json").is_file()
+    assert server.data["queryport"] == "27016"
+
+def test_query_and_info_address_use_derived_udp_status_port(monkeypatch):
+    server = DummyServer("sale")
+    server.data["port"] = "38721"
     server.data["queryport"] = "27016"
     monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
 
-    assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
-    assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert mod.get_query_address(server) == ("10.0.0.10", 38722, "udp")
+    assert mod.get_info_address(server) == ("10.0.0.10", 38722, "udp")
+
+
+def test_runtime_ports_follow_game_port_plus_one(tmp_path):
+    server = DummyServer("sale")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = "38721"
+    server.data["queryport"] = "27016"
+
+    requirements = mod.get_runtime_requirements(server)
+    ports = {(entry["host"], entry["protocol"]) for entry in requirements["ports"]}
+
+    assert (38721, "udp") in ports
+    assert (38721, "tcp") in ports
+    assert (38722, "udp") in ports
+    assert (38722, "tcp") in ports
+    assert server.data["queryport"] == "38722"
 
 
 def test_do_stop():

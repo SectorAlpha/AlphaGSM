@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 98      |
+| PASSED   | 99      |
 | DISABLED | 64      |
-| SKIPPED  | 71      |
+| SKIPPED  | 70      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (98)
+## PASSED (99)
 
 | Test | Type |
 |------|------|
@@ -87,6 +87,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | rimworldtogetherserver | Direct download |
 | rust | SteamCMD |
 | satisfactory | SteamCMD |
+| saleblazersserver | Wine/Proton — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the Linux/Wine dedicated path once AlphaGSM syncs `DedicatedServerConfig.json`, launches with the upstream `-config ./DedicatedServerConfig.json` contract under `xvfb-run` plus SDL `x11`/dummy audio/software GL, and treats the live helper surface as generic `udp` on `port + 1` instead of the older stale A2S `queryport` assumption |
 | ss14server | Direct download — PASSED 2026-05-25; smoke and integration both reach the managed `server_config.toml` status surface, and `query` / `info --json` now pass through the live `robust_status` endpoint on the supported host-`dotnet` path |
 | silicaserver | SteamCMD |
 | scpslserver | SteamCMD |
@@ -198,7 +199,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (71)
+## SKIPPED (70)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -225,7 +226,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | returntomoriaserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3349480 |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
-| saleblazersserver | Wine validation 2026-05-29: the current non-headless `xvfb-run` + SDL `x11` + dummy audio + software-GL lane is clearly further than the old NullGfx path, and fresh repros confirm the upstream `-config <DedicatedServerConfig.json>` flow is real on Linux/Wine. The exact blocker is now narrower: the main game reaches `Launching server...`, `Config file found! Loading config from PATH ./DedicatedServerConfig.json`, and `Starting server console window process...`, while the generated Proton `ServerConsoleLogs/ServerConsole_*.log` only reaches `Waiting for Main Game Connection...`; the run still advertises `Port 55000` in the early multicast line instead of the configured hosting port and never progresses to `Server hosted on port ...` or a queryable A2S state. |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | sonsoftheforestserver | Launcher now targets `SonsOfTheForestDS.exe` directly instead of the legacy batch wrapper, and CI now uses a 60 minute setup timeout for the large SteamCMD payload (app 2465200) |

@@ -1,5 +1,6 @@
 """Saleblazers dedicated server lifecycle helpers."""
 
+import json
 import os
 import shutil
 
@@ -7,6 +8,7 @@ import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec
 
 from utils.platform_info import IS_LINUX
 
@@ -16,6 +18,39 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 3099600
 steam_anonymous_login_possible = True
+DEFAULT_PORT = 27015
+STATUS_PORT_OFFSET = 1
+config_sync_keys = ("port", "maxplayers", "servername", "serverpassword")
+setting_schema = {
+    "port": SettingSpec(
+        canonical_key="port",
+        description="The primary game port for the server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("27015",),
+    ),
+    "maxplayers": SettingSpec(
+        canonical_key="maxplayers",
+        description="Maximum number of players allowed on the server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        examples=("8",),
+    ),
+    "servername": SettingSpec(
+        canonical_key="servername",
+        description="The public lobby name for the dedicated server.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        examples=("AlphaGSM Test",),
+    ),
+    "serverpassword": SettingSpec(
+        canonical_key="serverpassword",
+        description="Optional password required to join the server.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        secret=True,
+    ),
+}
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -38,19 +73,27 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Default/Saleblazers
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-    gamemodule_common.set_server_defaults(server, {"queryport": "27016"})
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "maxplayers": "8",
+            "servername": server.name,
+            "serverpassword": "",
+        },
+    )
     gamemodule_common.ensure_backup_config(
         server,
-        backupfiles=["Saleblazers_Data", "ServerSave"],
-        targets=["Saleblazers_Data", "ServerSave"],
+        backupfiles=["Saleblazers_Data", "ServerSave", "DedicatedServerConfig.json"],
+        targets=["Saleblazers_Data", "ServerSave", "DedicatedServerConfig.json"],
     )
     gamemodule_common.configure_port(
         server,
         ask,
         port,
-        default_port=27015,
+        default_port=DEFAULT_PORT,
         prompt="Please specify the game port to use for this server:",
     )
+    _sync_runtime_ports(server)
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -61,11 +104,80 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Default/Saleblazers
     return gamemodule_common.finalize_configure(server)
 
 
+def _config_path(server):
+    """Return the managed Saleblazers dedicated config path."""
+
+    return os.path.join(server.data["dir"], "DedicatedServerConfig.json")
+
+
+def _status_port(server):
+    """Return the observed Saleblazers UDP status port."""
+
+    return int(server.data.get("port", DEFAULT_PORT)) + STATUS_PORT_OFFSET
+
+
+def _sync_runtime_ports(server):
+    """Keep the derived Saleblazers status port aligned with the game port."""
+
+    server.data["queryport"] = str(_status_port(server))
+
+
+def _config_template_path():
+    """Return the packaged Saleblazers config template path."""
+
+    return os.path.join(os.path.dirname(__file__), "dedicated_server_config_template.json")
+
+
+def _load_config_payload(server):
+    """Load the managed Saleblazers config payload, seeding from the template."""
+
+    config_path = _config_path(server)
+    source_path = config_path if os.path.isfile(config_path) else _config_template_path()
+    with open(source_path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def _set_serialized_option(payload, key, value):
+    """Set or add a serialized lobby option inside the managed config payload."""
+
+    options = payload["LobbyConfig"]["SerializedOptions"]["Options"]
+    for item in options:
+        if item.get("Key") == key:
+            item["Value"] = value
+            return
+    options.append({"Key": key, "Value": value})
+
+
+def sync_server_config(server):
+    """Keep the managed Saleblazers config aligned with AlphaGSM data."""
+
+    payload = _load_config_payload(server)
+    payload.setdefault("LoginConfig", {})["HostingPort"] = int(server.data.get("port", 27015))
+    lobby_config = payload.setdefault("LobbyConfig", {})
+    lobby_config.setdefault("HostOptions", {})
+    lobby_config.setdefault("SerializedOptions", {}).setdefault("Options", [])
+    lobby_config.setdefault("AutoSaveIntervalSeconds", 600)
+    lobby_config.setdefault("bAdvertiseServer", True)
+    server_name = str(server.data.get("servername", server.name))
+    _set_serialized_option(payload, "Lobby_Name", server_name)
+    _set_serialized_option(payload, "Lobby_HostName", server_name)
+    _set_serialized_option(payload, "Lobby_Password", str(server.data.get("serverpassword", "")))
+    _set_serialized_option(payload, "Lobby_Capacity", str(server.data.get("maxplayers", "8")))
+    _set_serialized_option(payload, "Lobby_DedicatedServer", "True")
+
+    config_path = _config_path(server)
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Saleblazers server files via SteamCMD."
 
@@ -75,6 +187,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 
 restart = gamemodule_common.make_restart_hook()
@@ -110,13 +223,13 @@ def _wrap_linux_command(command, wineprefix=None):
 
 
 def get_query_address(server):
-    """Return the Saleblazers A2S query endpoint."""
+    """Return the Saleblazers generic UDP status endpoint."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), _status_port(server), "udp")
 
 
 def get_info_address(server):
-    """Return the Saleblazers A2S info endpoint."""
+    """Return the Saleblazers generic UDP info endpoint."""
 
     return get_query_address(server)
 
@@ -130,6 +243,8 @@ def get_start_command(server):
     cmd = [
         server.data["exe_name"],
         "-headless",
+        "-config",
+        "./DedicatedServerConfig.json",
         "-batchmode",
         "-nographics",
         "-logFile",
@@ -141,6 +256,8 @@ def get_start_command(server):
         # Xvfb-backed windowed server path and only retain batch logging.
         cmd = [
             server.data["exe_name"],
+            "-config",
+            "./DedicatedServerConfig.json",
             "-batchmode",
             "-logFile",
             "./server.log",
@@ -150,6 +267,13 @@ def get_start_command(server):
             wineprefix=server.data.get("wineprefix"),
         )
     return cmd, server.data["dir"]
+
+
+def prestart(server):
+    """Refresh the dedicated config before each launch."""
+
+    _sync_runtime_ports(server)
+    sync_server_config(server)
 
 
 def do_stop(server, j):
@@ -188,16 +312,41 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port", "queryport"),
-        str_keys=("exe_name", "dir"),
+        int_keys=("port", "queryport", "maxplayers"),
+        str_keys=("exe_name", "dir", "servername", "serverpassword"),
     )
 
-get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        extra_host_dependencies=(proton.xvfb_host_dependency(),),
+_shared_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+    port_definitions=(
+        {"key": "queryport", "protocol": "udp"},
+        {"key": "queryport", "protocol": "tcp"},
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "protocol": "tcp"},
+    ),
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+
+def get_runtime_requirements(server):
+    """Expose the game port plus the observed helper surface."""
+
+    _sync_runtime_ports(server)
+    return _shared_runtime_requirements(server)
+
+
+_shared_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=(
+        {"key": "queryport", "protocol": "udp"},
+        {"key": "queryport", "protocol": "tcp"},
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "protocol": "tcp"},
+    ),
 )
+
+
+def get_container_spec(server):
+    """Expose the container contract with the derived helper port included."""
+
+    _sync_runtime_ports(server)
+    return _shared_container_spec(server)

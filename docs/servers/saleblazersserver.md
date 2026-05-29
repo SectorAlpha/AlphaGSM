@@ -46,9 +46,11 @@ alphagsm mysaleblaz stop
 Setup configures:
 
 - the game port (default 27015)
-- the query port (default 27016)
+- the derived helper port (`port + 1`, default 27016)
 - the install directory
 - SteamCMD downloads the Windows dedicated server files
+- AlphaGSM syncs the managed `port`, lobby name, password, and player cap into
+  `DedicatedServerConfig.json`
 
 ## Useful Commands
 
@@ -61,8 +63,8 @@ alphagsm mysaleblaz backup
 
 - Module name: `saleblazersserver`
 - Default game port: 27015
-- Default query port: 27016
-- Current validation status: still not enabled on Linux/Wine as of 2026-05-29. The module now promotes the best-known Linux launcher shape into code: `xvfb-run` plus SDL `x11`, dummy audio, software GL (`LIBGL_ALWAYS_SOFTWARE=1`), and no explicit `-headless` flag. A fresh bounded repro against an already-installed tree under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme/saleblazers-runtime-debug/` confirmed the newer upstream `-config` flow is real: the main game log reaches `Launching server...`, `Config file found! Loading config from PATH ./DedicatedServerConfig.json`, and `Starting server console window process...`, while the generated Proton `LocalLow/.../ServerConsoleLogs/ServerConsole_*.log` reaches the dedicated-server banner and `Waiting for Main Game Connection...`. The remaining blocker is now precise: even with a valid config file and the current Xvfb wrapper, the Linux/Wine run still advertises `Port 55000` in the early multicast line instead of the configured hosting port, the main game never progresses to `Server hosted on port ...` or `Connected to Console Window!`, and AlphaGSM still cannot prove `query` / `info` / `info --json` readiness on A2S.
+- Default helper port: 27016 (`port + 1`)
+- Current validation status: PASSED 2026-05-29. Fresh smoke and focused integration now both pass on Linux/Wine once AlphaGSM writes `DedicatedServerConfig.json`, launches the upstream `-config ./DedicatedServerConfig.json` path under `xvfb-run` plus SDL `x11`, dummy audio, and software GL, and treats the live helper surface as generic `udp` on `port + 1`. The current readiness markers are `Server hosted on port ...` and `Connected to Console Window!`, and `query`, `info`, and `info --json` all pass on the derived helper port instead of the older stale A2S expectation.
 
 ## Developer Notes
 
@@ -73,19 +75,19 @@ alphagsm mysaleblaz backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `3099600`
 
-AlphaGSM treats `info --json` returning protocol `a2s` as the readiness gate.
-The plain Unity startup text in `server.log` is not stable enough to use as
-the only readiness marker. On Linux hosts AlphaGSM now launches Saleblazers
+AlphaGSM now treats `info --json` returning protocol `udp` on the derived
+helper port (`port + 1`) as the readiness gate. The plain Unity startup text in
+`server.log` is not stable enough to use as the only readiness marker, so the
+checked-in smoke and integration flows wait for the later
+`Server hosted on port ...` / `Connected to Console Window!` lines before
+confirming the helper listener. On Linux hosts AlphaGSM launches Saleblazers
 through `xvfb-run` with SDL `x11` video, dummy audio, software GL
 (`LIBGL_ALWAYS_SOFTWARE=1`), and without the explicit `-headless` flag because
 that is the first launcher shape that consistently reaches the dedicated-server
-bring-up path under Wine/Proton. The upstream docs also document
-`-config <DedicatedServerConfig.json>` as the supported non-interactive launch
-surface, and fresh repros confirm the game does load that file on Linux/Wine.
-The blocker is deeper: after `Config file found! ...` the main game stops at
-`Starting server console window process...`, while the generated
-`ServerConsoleLogs/ServerConsole_*.log` waits for the main game connection and
-never reaches the later `Server hosted on port ...` / Steam-init path.
+bring-up path under Wine/Proton. The upstream `-config
+<DedicatedServerConfig.json>` surface is now part of the managed contract, and
+AlphaGSM keeps the generated config aligned with the owned game port plus the
+basic lobby settings exposed through `set`.
 
 ### Server Configuration
 

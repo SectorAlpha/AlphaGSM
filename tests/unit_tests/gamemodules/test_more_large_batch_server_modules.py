@@ -81,6 +81,8 @@ def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatc
     assert cmd == [
         "Default/Saleblazers.exe",
         "-headless",
+        "-config",
+        "./DedicatedServerConfig.json",
         "-batchmode",
         "-nographics",
         "-logFile",

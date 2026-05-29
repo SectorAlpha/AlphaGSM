@@ -79,6 +79,7 @@ Notes:
 - [x] rimworldtogetherserver
 - [x] rust
 - [x] satisfactory
+- [x] saleblazersserver
 - [x] ss14server
 - [x] silicaserver
 - [x] scpslserver
@@ -211,7 +212,6 @@ Notes:
 - [ ] reignofkingsserver
 - [ ] returntomoriaserver
 - [ ] ror2server
-- [ ] saleblazersserver
 - [ ] scumserver
 - [ ] sniperelite4server
 - [ ] sonsoftheforestserver
