@@ -135,11 +135,7 @@ restart.__doc__ = "Restart the Blackwake server."
 def _wrap_linux_command(command, wineprefix=None):
     """Wrap the Windows server command for headless Linux hosts."""
 
-    wrapped = proton.wrap_command(
-        command,
-        wineprefix=wineprefix,
-        prefer_proton=True,
-    )
+    wrapped = proton.wrap_command(command, wineprefix=wineprefix)
     if shutil.which("xvfb-run") is None:
         return wrapped
     wrapped = proton.prepend_env_assignments(
