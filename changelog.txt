@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-29
+- Blackwake: stop hard-forcing Proton on Linux so the module can take the working headless host-Wine path; bounded 2026-05-29 validation on a reused install now re-proves managed `query` / `info --json` on the configured A2S `queryport` plus clean `stop`, while upstream still documents the dedicated server as Windows-only and a fresh full integration promotion run remains pending.
+- Server support: promote `heatserver` after a fresh SteamCMD-managed lifecycle proved that the first-start `Configuration/ServerSettings.cfg` bootstrap fixes the old default-port regression and restores A2S `query` / `info` / `info --json` on the managed `queryport`.
 - Heat: bootstrap `Configuration/ServerSettings.cfg` on the first managed `Server.exe` launch before syncing the AlphaGSM-managed ports/map/player count, so fresh installs no longer depend on a failed first runtime just to materialize writable native config.
 - Runtime metadata: extend the active Wine/Proton audit into `heatserver` by declaring its `xvfb-run` host dependency through shared runtime metadata and routing `stop` through the runtime-aware console hook.
 - ATLAS: seed install-local Steam bootstrap state (`steam_appid.txt`, `.steam/sdk64/steamclient.so`, Docker-only `HOME`, and install-local `LD_LIBRARY_PATH`) before the `steamcmd-linux` runtime launches so Docker validation no longer depends on host Steam home-directory state.
