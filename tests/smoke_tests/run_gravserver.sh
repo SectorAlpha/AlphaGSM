@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for gravserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with an operator-supplied GRAV dedicated server tree.
+echo "Smoke test for gravserver is ENABLED (BYO) - copy an owned GRAV dedicated server tree into <install_dir>/ so CAGGameServer-Win32-Shipping exists"
 exit 0
 
 set -Eeuo pipefail

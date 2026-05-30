@@ -149,6 +149,8 @@ Notes:
 - [x] dstserver
 - [x] etlegacyserver
 - [x] ets2server
+- [x] gravserver
+- [x] hogwarpserver
 - [x] minecraft_custom
 - [x] mxbikesserver
 - [x] q3server
@@ -252,9 +254,7 @@ Notes:
 - [ ] arma3_wasteland
 - [ ] bbserver
 - [ ] brickadiaserver
-- [ ] gravserver
 - [ ] gtafivemserver
-- [ ] hogwarpserver
 - [ ] identityserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver

@@ -5,6 +5,7 @@ This guide covers the `gravserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- an owned GRAV dedicated server tree staged locally
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +21,11 @@ Run setup:
 ```bash
 alphagsm mygravserv setup
 ```
+
+GRAV is supported in `ENABLED (BYO)` mode in AlphaGSM. Before `setup` or
+`start`, copy an owned GRAV dedicated server tree into your chosen
+`<install_dir>/` so the executable
+`<install_dir>/CAGGameServer-Win32-Shipping` exists.
 
 Start it:
 
@@ -43,8 +49,17 @@ alphagsm mygravserv stop
 
 Setup configures:
 
-- the game port (default 7778)
+- the game port (default 7777)
 - the install directory
+
+Suggested flow:
+
+```bash
+alphagsm mygravserv create gravserver
+alphagsm mygravserv setup -n 7777 /path/to/gravserver
+# copy the owned GRAV dedicated server files into /path/to/gravserver/
+alphagsm mygravserv start
+```
 
 ## Useful Commands
 
@@ -56,7 +71,7 @@ alphagsm mygravserv backup
 ## Notes
 
 - Module name: `gravserver`
-- Default port: 7778
+- Default port: 7777
 
 ## Developer Notes
 

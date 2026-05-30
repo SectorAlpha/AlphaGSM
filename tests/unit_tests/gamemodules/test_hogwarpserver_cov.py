@@ -62,6 +62,22 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
+
+def test_install_with_staged_files_and_no_url(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "HogWarpServer.exe"
+    (tmp_path / "HogWarpServer.exe").write_text("")
+    mod.install(server)
+
+
+def test_install_without_url_or_files_raises_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "HogWarpServer.exe"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -142,4 +158,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

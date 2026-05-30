@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 12 |
+| ENABLED (BYO) | 14 |
 | DISABLED | 61      |
-| SKIPPED  | 43      |
+| SKIPPED  | 41      |
 
 ## Status Key
 
@@ -151,7 +151,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (12)
+## ENABLED (BYO) (14)
 
 | Test | Type |
 |------|------|
@@ -161,6 +161,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | dstserver | owned cluster token/config |
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
+| gravserver | owned GRAV dedicated server tree |
+| hogwarpserver | archive URL or staged Windows server tree |
 | minecraft_custom | user-supplied server jar |
 | mxbikesserver | user-supplied dedicated archive URL |
 | q3server | owned base-game assets |
@@ -235,7 +237,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (43)
+## SKIPPED (41)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -270,9 +272,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arma3_wasteland | Arma 3 variant (needs base arma3server) |
 | bbserver | HLDS mod maps not available via SteamCMD |
 | brickadiaserver | SteamCMD app requires authentication |
-| gravserver | SteamCMD/platform issue |
 | gtafivemserver | Requires txAdmin/authentication |
-| hogwarpserver | SteamCMD/platform issue |
 | identityserver | SteamCMD app requires authentication |
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |

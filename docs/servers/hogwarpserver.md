@@ -5,6 +5,8 @@ This guide covers the `hogwarpserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- either a direct HogWarp dedicated-server archive URL or a pre-staged
+  HogWarp Windows server tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +22,13 @@ Run setup:
 ```bash
 alphagsm myhogwarps setup
 ```
+
+HogWarp is supported in `ENABLED (BYO)` mode in AlphaGSM. Before `setup` or
+`start`, either:
+
+- set `url` to a direct HogWarp dedicated-server archive, or
+- stage `HogWarpServer.exe` and the rest of the HogWarp server files inside
+  your chosen `<install_dir>/`
 
 Start it:
 
@@ -45,13 +54,32 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the server archive when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm myhogwarps create hogwarpserver
+alphagsm myhogwarps set url https://example.invalid/hogwarp-server.zip
+alphagsm myhogwarps setup -n 7777 /path/to/hogwarp
+alphagsm myhogwarps start
+```
+
+Or, if you already have the Windows server files:
+
+```bash
+alphagsm myhogwarps create hogwarpserver
+alphagsm myhogwarps setup -n 7777 /path/to/hogwarp
+# copy HogWarpServer.exe and the rest of the server tree into /path/to/hogwarp/
+alphagsm myhogwarps start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm myhogwarps update
 alphagsm myhogwarps backup
+alphagsm myhogwarps set url https://example.invalid/hogwarp-server.zip
 ```
 
 ## Notes

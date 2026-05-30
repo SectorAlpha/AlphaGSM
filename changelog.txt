@@ -290,3 +290,4 @@ Historical highlights
 2026
 - Accelerated platform and runtime work across Windows compatibility, Proton, Docker runtime families, docs/wiki automation, more commands, and broader game-module coverage.
 - Hardened CI and release workflows with runtime image publishing, port-collision fixes, and tighter test workflows.
+- Support: promote `gravserver` and `hogwarpserver` to `ENABLED (BYO)` with explicit operator guidance in the module errors, tracker, smoke/integration skip text, and server guides so these Windows-file lanes count as supported instead of looking like unresolved platform blockers.

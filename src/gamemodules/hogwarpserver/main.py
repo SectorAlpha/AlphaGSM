@@ -73,9 +73,21 @@ def configure(
 def install(server):
     """Download and install the HogWarp server archive."""
 
-    if "url" not in server.data or not server.data["url"]:
-        raise ServerError("A direct download URL is required for this server")
-    install_archive(server, detect_compression(server.data["download_name"]))
+    os.makedirs(server.data["dir"], exist_ok=True)
+    if "url" in server.data and server.data["url"]:
+        install_archive(server, detect_compression(server.data["download_name"]))
+        return
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "hogwarpserver",
+            "a real HogWarp dedicated server archive URL or a pre-staged HogWarp Windows server tree",
+            actions=(
+                "Set url to a direct HogWarp server archive before rerunning setup, or stage HogWarpServer.exe in <install_dir>",
+                "Retry setup once the archive URL or staged files are in place",
+            ),
+            docs_slug="hogwarpserver",
+        )
 
 
 def get_start_command(server):
@@ -83,7 +95,15 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "hogwarpserver",
+            "a real HogWarp dedicated server archive URL or a pre-staged HogWarp Windows server tree",
+            actions=(
+                "Set url to a direct HogWarp server archive before rerunning setup, or stage HogWarpServer.exe in <install_dir>",
+                "Retry start after the HogWarp files are present",
+            ),
+            docs_slug="hogwarpserver",
+        )
     return (
         ["./" + server.data["exe_name"], str(server.data["port"])],
         server.data["dir"],

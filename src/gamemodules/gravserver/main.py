@@ -63,9 +63,22 @@ def configure(server, ask, port=None, dir=None, *, exe_name="CAGGameServer-Win32
 
 
 def install(server):
-    """GRAV uses user-provided files; ensure the install directory exists."""
+    """GRAV uses user-provided files; validate that the owned server tree is staged."""
 
     os.makedirs(server.data["dir"], exist_ok=True)
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "gravserver",
+            "an owned GRAV dedicated server install",
+            actions=(
+                "Copy the GRAV dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry setup once the Win32 server tree is staged locally",
+            ),
+            docs_slug="gravserver",
+        )
 
 
 def get_start_command(server):
@@ -73,7 +86,17 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "gravserver",
+            "an owned GRAV dedicated server install",
+            actions=(
+                "Copy the GRAV dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry start after the Win32 server tree is present",
+            ),
+            docs_slug="gravserver",
+        )
     return (
         [
             "./" + server.data["exe_name"],

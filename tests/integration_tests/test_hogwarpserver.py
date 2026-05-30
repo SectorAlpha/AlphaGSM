@@ -1,7 +1,7 @@
 """Integration test for hogwarpserver.
 
-Disabled: HogWarp requires user-provided Windows server files (.exe)
-and is not available for automated download.  Awaiting further support.
+ENABLED (BYO): HogWarp requires an operator-supplied archive URL or staged
+Windows server files.
 """
 
 import pytest
@@ -27,7 +27,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires user-provided Windows server files (bring-your-own)")
+@pytest.mark.skip(
+    reason="ENABLED (BYO): set url to a direct HogWarp server archive or stage HogWarpServer.exe in <install_dir> before setup/start"
+)
 def test_hogwarpserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

@@ -1,7 +1,6 @@
 """Integration test for gravserver.
 
-Disabled: GRAV requires user-provided Win32 server files and is
-Windows-only.  Awaiting further support.
+ENABLED (BYO): GRAV requires an operator-supplied Win32 dedicated server tree.
 """
 
 import pytest
@@ -27,7 +26,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires user-provided Win32 server files (Windows-only)")
+@pytest.mark.skip(
+    reason="ENABLED (BYO): copy an owned GRAV dedicated server tree into <install_dir>/ so CAGGameServer-Win32-Shipping exists"
+)
 def test_gravserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")
