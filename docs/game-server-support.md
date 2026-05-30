@@ -25,6 +25,7 @@ Notes:
 
 - [x] acserver
 - [x] ahl2server
+- [x] arksurvivalascended
 - [x] armarserver
 - [x] astroneerserver
 - [x] avserver
@@ -243,7 +244,6 @@ Notes:
 
 ## Waiting On Prerequisites Or Validation
 
-- [ ] arksurvivalascended
 - [ ] ducksideserver
 - [ ] hellletlooseserver
 - [ ] medievalengineersserver

@@ -4,8 +4,7 @@ This guide covers the `arksurvivalascended` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Docker
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -59,6 +58,11 @@ alphagsm myarksurvi backup
 
 - Module name: `arksurvivalascended`
 - Default port: 27015
+- Current validation status: PASSED 2026-05-30. Fresh smoke and integration
+  now both pass on the Docker-backed Linux `wine-proton` runtime with
+  anonymous SteamCMD install for app `2430930`, and the supported Linux
+  health surface is generic `tcp` on the managed main game port instead of
+  the older stale log-marker and A2S assumptions.
 
 ## Developer Notes
 
@@ -66,8 +70,15 @@ alphagsm myarksurvi backup
 
 - **Executable**: `ShooterGame/Binaries/Win64/ArkAscendedServer.exe`
 - **Location**: `<install_dir>/ShooterGame/Binaries/Win64/ArkAscendedServer.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `2430930`
+
+The validated Linux path now runs through AlphaGSM's Docker-backed
+`wine-proton` runtime image rather than a host `screen` session. Anonymous
+SteamCMD setup for app `2430930` succeeds on the current branch, and the live
+server answers `query`, `info`, and `info --json` as generic `tcp` on the
+managed main port. The older `ShooterGame.log` readiness marker and A2S-style
+info assumptions are no longer part of the supported Linux path.
 
 ### Server Configuration
 

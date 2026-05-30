@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 121      |
+| PASSED   | 122      |
 | ENABLED (BYO) | 30 |
 | DISABLED | 57      |
-| SKIPPED  | 30      |
+| SKIPPED  | 29      |
 
 ## Status Key
 
@@ -28,12 +28,13 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (121)
+## PASSED (122)
 
 | Test | Type |
 |------|------|
 | acserver | SteamCMD |
 | ahl2server | SteamCMD (Source) |
+| arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image with anonymous SteamCMD install for app `2430930`, and the validated Linux health surface is generic `tcp` on the managed main game port instead of the older stale log-marker and A2S assumptions |
 | armarserver | SteamCMD |
 | astroneerserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM routes Astroneer's Docker lane through the shared in-container Xvfb entrypoint so UE4 prerequisite bootstrap no longer aborts with `Failed to create window`, and `query`, `info`, and `info --json` are aligned to the real generic `tcp` status surface on the managed main port instead of the older stale A2S expectation |
 | avserver | SteamCMD |
@@ -265,7 +266,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 
 | Test | Skip reason |
 |------|-------------|
-| arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
