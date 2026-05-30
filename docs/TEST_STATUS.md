@@ -12,12 +12,14 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
+| ENABLED (BYO) | 0 |
 | DISABLED | 61      |
-| SKIPPED  | 54      |
+| SKIPPED  | 55      |
 
 ## Status Key
 
 - **PASSED** — Test ran successfully in a prior session.
+- **ENABLED (BYO)** — Supported server module that still requires operator-supplied assets, config, auth, or URL.
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 
@@ -148,6 +150,11 @@ this pass aligned the runtime gate with that existing tracker state.
 | insserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for Source startup markers and `info --json` protocol `a2s` |
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
+
+## ENABLED (BYO) (0)
+
+| Test | Type |
+|------|------|
 
 ## DISABLED (61)
 
