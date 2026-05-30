@@ -18,6 +18,10 @@ lanes out of BYO and back into normal supported installs.
 - Treat anonymous companion content as part of the normal AlphaGSM install
   contract when the content is publicly redistributable or anonymously
   downloadable.
+- Make `gmodserver` the explicit rule for this class of dependency: if
+  AlphaGSM can legally fetch or stage the needed companion assets during
+  install, it should do so as part of `setup` / `install` rather than leaving
+  the server in `ENABLED (BYO)`.
 - Keep true retail assets explicit as `ENABLED (BYO)` until a legitimate
   non-BYO install path exists.
 - Prefer shared family installers over one-off module hacks.
@@ -53,6 +57,13 @@ Example pattern:
 
 These servers should not remain `ENABLED (BYO)` if the only missing piece is
 companion content that AlphaGSM can legitimately install.
+
+Short rule:
+
+- if AlphaGSM can get the assets the way `gmodserver` does, do it as part of
+  install
+- only leave the server in BYO when the remaining dependency is truly outside
+  AlphaGSM's legitimate automated install surface
 
 ### Retail-only assets
 
@@ -268,3 +279,9 @@ For any server kept in BYO:
 `gmodserver` is the right model only for anonymous companion content, not for
 retail-only base-game assets. AlphaGSM should auto-install what it can
 legitimately fetch, and keep explicit BYO handling for the rest.
+
+Operational shorthand:
+
+- if we can get the BYO assets like Garry's Mod does, include them in the
+  install process
+- if we cannot legitimately self-provision them, keep them as `ENABLED (BYO)`
