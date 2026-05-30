@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 24 |
+| ENABLED (BYO) | 29 |
 | DISABLED | 58      |
-| SKIPPED  | 39      |
+| SKIPPED  | 34      |
 
 ## Status Key
 
@@ -151,11 +151,13 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (24)
+## ENABLED (BYO) (29)
 
 | Test | Type |
 |------|------|
 | aloftserver | owned Aloft server tree |
+| ahlserver | owned Action Half-Life mod content tree |
+| bbserver | owned BrainBread mod content tree |
 | cod2server | owned localized base-game assets |
 | cod4server | owned base-game assets |
 | coduoserver | owned base multiplayer assets |
@@ -168,6 +170,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | identityserver | archive URL or staged Identity server tree |
 | minecraft_custom | user-supplied server jar |
 | mxbikesserver | user-supplied dedicated archive URL |
+| nsserver | owned Natural Selection mod content tree |
 | q3server | owned base-game assets |
 | qlserver | owned/authenticated entitlement plus server auth/config |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
@@ -177,10 +180,12 @@ this pass aligned the runtime gate with that existing tracker state.
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
 | subnauticaserver | owned client installation path |
+| tsserver | owned The Specialists mod content tree |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
+| vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (60)
+## DISABLED (58)
 
 | Test | Reason |
 |------|--------|
@@ -246,7 +251,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (39)
+## SKIPPED (34)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -268,7 +273,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
-| ahlserver | HLDS mod maps not available via SteamCMD |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |
 | arma3_desolationredux | Arma 3 variant (needs base arma3server) |
 | arma3_epoch | Arma 3 variant (needs base arma3server) |
@@ -276,14 +280,10 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arma3_headless | Arma 3 variant (needs base arma3server) |
 | arma3_vanilla | Arma 3 variant (needs base arma3server) |
 | arma3_wasteland | Arma 3 variant (needs base arma3server) |
-| bbserver | HLDS mod maps not available via SteamCMD |
 | brickadiaserver | SteamCMD app requires authentication |
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
-| nsserver | HLDS mod maps not available via SteamCMD |
-| tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |
-| vsserver | HLDS mod maps not available via SteamCMD |
 
 All integration tests have been tested and categorized. No untested servers remain.

@@ -22,6 +22,12 @@ Run setup:
 alphagsm mytsserver setup
 ```
 
+`tsserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide The
+Specialists mod payload. Before `start`, copy a complete owned The Specialists
+content tree into `<install_dir>/ts/` so
+`<install_dir>/ts/maps/ts_neobaroque.bsp` exists.
+
 Start it:
 
 ```bash
@@ -49,6 +55,15 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Suggested flow:
+
+```bash
+alphagsm mytsserver create tsserver
+alphagsm mytsserver setup -n 27015 /path/to/tsserver
+# copy the full The Specialists mod tree into /path/to/tsserver/ts/
+alphagsm mytsserver start
+```
 
 ## Useful Commands
 

@@ -22,6 +22,12 @@ Run setup:
 alphagsm mynsserver setup
 ```
 
+`nsserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide the Natural
+Selection mod payload. Before `start`, copy a complete owned Natural Selection
+content tree into `<install_dir>/ns/` so
+`<install_dir>/ns/maps/ns_hera.bsp` exists.
+
 Start it:
 
 ```bash
@@ -49,6 +55,15 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Suggested flow:
+
+```bash
+alphagsm mynsserver create nsserver
+alphagsm mynsserver setup -n 27015 /path/to/nsserver
+# copy the full Natural Selection mod tree into /path/to/nsserver/ns/
+alphagsm mynsserver start
+```
 
 ## Useful Commands
 

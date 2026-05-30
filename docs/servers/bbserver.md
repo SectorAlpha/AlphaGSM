@@ -22,6 +22,12 @@ Run setup:
 alphagsm mybbserver setup
 ```
 
+`bbserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide the
+BrainBread mod payload. Before `start`, copy a complete owned BrainBread
+content tree into `<install_dir>/brainbread/` so
+`<install_dir>/brainbread/maps/bb_chp4_slaywatch.bsp` exists.
+
 Start it:
 
 ```bash
@@ -49,6 +55,15 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Suggested flow:
+
+```bash
+alphagsm mybbserver create bbserver
+alphagsm mybbserver setup -n 27015 /path/to/bbserver
+# copy the full BrainBread mod tree into /path/to/bbserver/brainbread/
+alphagsm mybbserver start
+```
 
 ## Useful Commands
 

@@ -22,6 +22,12 @@ Run setup:
 alphagsm myvsserver setup
 ```
 
+`vsserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide the Vampire
+Slayer mod payload. Before `start`, copy a complete owned Vampire Slayer
+content tree into `<install_dir>/vs/` so
+`<install_dir>/vs/maps/vs_frost.bsp` exists.
+
 Start it:
 
 ```bash
@@ -49,6 +55,15 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Suggested flow:
+
+```bash
+alphagsm myvsserver create vsserver
+alphagsm myvsserver setup -n 27015 /path/to/vsserver
+# copy the full Vampire Slayer mod tree into /path/to/vsserver/vs/
+alphagsm myvsserver start
+```
 
 ## Useful Commands
 

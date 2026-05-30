@@ -1,5 +1,7 @@
 """Natural Selection-specific lifecycle, configuration, and update helpers."""
 
+import os
+
 from utils.valve_server import define_valve_server_module
 
 
@@ -30,17 +32,47 @@ command_descriptions = MODULE.command_descriptions
 command_functions = MODULE.command_functions
 max_stop_wait = MODULE.max_stop_wait
 configure = MODULE.configure
-install = MODULE.install
 doinstall = MODULE.doinstall
 prestart = MODULE.prestart
 update = MODULE.update
 restart = MODULE.restart
-get_start_command = MODULE.get_start_command
 do_stop = MODULE.do_stop
 status = MODULE.status
 message = MODULE.message
 backup = MODULE.backup
 checkvalue = MODULE.checkvalue
+
+
+def _assert_required_mod_content(install_dir):
+    """Raise when the Natural Selection mod payload has not been staged locally."""
+
+    required_map = os.path.join(install_dir, "ns", "maps", "ns_hera.bsp")
+    if os.path.isfile(required_map):
+        return
+    gamemodule_common.raise_byo_requirement(
+        "nsserver",
+        "an owned Natural Selection mod content tree",
+        actions=(
+            "Copy the complete Natural Selection mod tree into <install_dir>/ns/",
+            "Make sure <install_dir>/ns/maps/ns_hera.bsp exists after staging the content",
+            "Retry setup or start once the staged mod files are present locally",
+        ),
+        docs_slug="nsserver",
+    )
+
+
+def install(server):
+    """Install the HLDS base files, then require staged Natural Selection content."""
+
+    MODULE.install(server)
+    _assert_required_mod_content(server.data["dir"])
+
+
+def get_start_command(server):
+    """Build the start command after validating Natural Selection content."""
+
+    _assert_required_mod_content(server.data["dir"])
+    return MODULE.get_start_command(server)
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',

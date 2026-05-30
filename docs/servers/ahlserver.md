@@ -22,6 +22,12 @@ Run setup:
 alphagsm myahlserve setup
 ```
 
+`ahlserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide the Action
+Half-Life mod payload. Before `start`, copy a complete owned Action Half-Life
+content tree into `<install_dir>/action/` so
+`<install_dir>/action/maps/ahl_hydro.bsp` exists.
+
 Start it:
 
 ```bash
@@ -49,6 +55,15 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Suggested flow:
+
+```bash
+alphagsm myahlserve create ahlserver
+alphagsm myahlserve setup -n 27015 /path/to/ahlserver
+# copy the full Action Half-Life mod tree into /path/to/ahlserver/action/
+alphagsm myahlserve start
+```
 
 ## Useful Commands
 

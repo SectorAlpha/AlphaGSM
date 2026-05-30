@@ -144,6 +144,8 @@ Notes:
 ## Supported Now
 
 - [x] aloftserver
+- [x] ahlserver
+- [x] bbserver
 - [x] cod2server
 - [x] cod4server
 - [x] coduoserver
@@ -156,6 +158,7 @@ Notes:
 - [x] identityserver
 - [x] minecraft_custom
 - [x] mxbikesserver
+- [x] nsserver
 - [x] q3server
 - [x] qlserver
 - [x] redmserver
@@ -165,7 +168,9 @@ Notes:
 - [x] sof2server
 - [x] stormworksserver
 - [x] subnauticaserver
+- [x] tsserver
 - [x] ut3server
+- [x] vsserver
 - [x] lifeisfeudalserver
 
 ## Not Currently Supported
@@ -250,7 +255,6 @@ Notes:
 - [ ] starruptureserver
 - [ ] staxelserver
 - [ ] subsistenceserver
-- [ ] ahlserver
 - [ ] arma3_altislife
 - [ ] arma3_desolationredux
 - [ ] arma3_epoch
@@ -258,12 +262,8 @@ Notes:
 - [ ] arma3_headless
 - [ ] arma3_vanilla
 - [ ] arma3_wasteland
-- [ ] bbserver
 - [ ] brickadiaserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
 - [ ] minecraft_tekkit
-- [ ] nsserver
-- [ ] tsserver
 - [ ] twserver
-- [ ] vsserver
