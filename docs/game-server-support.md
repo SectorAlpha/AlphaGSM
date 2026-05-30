@@ -60,6 +60,7 @@ Notes:
 - [x] hldmserver
 - [x] hldmsserver
 - [x] heatserver
+- [x] icarusserver
 - [x] kf2server
 - [x] l4dserver
 - [x] longvinterserver
@@ -245,7 +246,6 @@ Notes:
 - [ ] arksurvivalascended
 - [ ] ducksideserver
 - [ ] hellletlooseserver
-- [ ] icarusserver
 - [ ] medievalengineersserver
 - [ ] motortownserver
 - [ ] reignofkingsserver

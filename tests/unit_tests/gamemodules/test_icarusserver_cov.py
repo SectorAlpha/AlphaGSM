@@ -12,6 +12,7 @@ _proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_prot
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.icarusserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -151,7 +152,21 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_runtime_requirements_enable_xvfb_container_env():
+    server = DummyServer()
+    server.data["dir"] = "/srv/icarus/"
+    server.data["exe_name"] = "IcarusServer.exe"
+    server.data["port"] = 17777
+    server.data["queryport"] = 17778
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
 def test_status():
@@ -229,4 +244,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

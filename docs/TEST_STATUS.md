@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 120      |
+| PASSED   | 121      |
 | ENABLED (BYO) | 30 |
-| DISABLED | 58      |
-| SKIPPED  | 31      |
+| DISABLED | 57      |
+| SKIPPED  | 30      |
 
 ## Status Key
 
@@ -28,7 +28,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (120)
+## PASSED (121)
 
 | Test | Type |
 |------|------|
@@ -70,6 +70,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | hldmserver | SteamCMD (GoldSrc) |
 | hldmsserver | SteamCMD (Source) |
 | heatserver | Wine/Proton — PASSED 2026-05-29; a fresh SteamCMD-managed lifecycle now passes on `release_v1` after AlphaGSM bootstraps missing `Configuration/ServerSettings.cfg` on first launch, syncs `portNumber` / `steamAuthPort` / `maxPlayers` / `levelName` into the native config, reads readiness from `Logs/Console*.txt`, and proves A2S `query`, `info`, `info --json`, and clean shutdown on the managed `queryport` |
+| icarusserver | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh integration and smoke now both pass on the branch-local `wine-proton` runtime image once AlphaGSM treats the validated Linux contract honestly: anonymous SteamCMD setup for app `2089300` succeeds, the server stays up in the shared Docker-backed Xvfb/software-GL lane, and `query`, `info`, plus `info --json` all use the live generic `tcp` surface on the managed main port instead of the older stale log-marker and A2S assumptions |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
 | longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
@@ -192,7 +193,7 @@ files, external services, or direct archive URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (58)
+## DISABLED (57)
 
 | Test | Reason |
 |------|--------|
@@ -258,7 +259,7 @@ files, external services, or direct archive URLs.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (31)
+## SKIPPED (30)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -267,7 +268,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
-| icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
