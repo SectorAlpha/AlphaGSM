@@ -8,6 +8,7 @@ import gamemodules.minecraft.custom as custom
 import utils.gamemodules.minecraft.properties_config as properties_config
 import gamemodules.minecraft.vanilla as vanilla
 import server.server as server_module
+from server import ServerError
 from utils.simple_kv_config import rewrite_equals_config
 
 html5lib = pytest.importorskip("html5lib")
@@ -796,3 +797,48 @@ def test_tekkit_get_file_url_returns_first_server_download(monkeypatch):
     monkeypatch.setattr(tekkit.html5lib, "parse", lambda file_obj, parser: FakeDom())
 
     assert tekkit.get_file_url("http://example.com/modpack") == "http://example.com/server.zip"
+
+
+def test_tekkit_install_without_url_or_staged_jar_raises_byo(tmp_path):
+    server = DummyServer("tekkit")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Tekkit.jar",
+            "download_name": "Tekkit.zip",
+            "url": None,
+        }
+    )
+
+    with pytest.raises(ServerError, match=r"ENABLED \(BYO\)"):
+        tekkit.install(server)
+
+
+def test_tekkit_install_allows_pre_staged_jar_without_url(tmp_path, monkeypatch):
+    server = DummyServer("tekkit")
+    staged_jar = tmp_path / "Tekkit.jar"
+    staged_jar.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Tekkit.jar",
+            "download_name": "Tekkit.zip",
+            "url": None,
+        }
+    )
+    observed = []
+
+    monkeypatch.setattr(tekkit.cust, "install", lambda server_obj, eula=False: observed.append((server_obj.name, eula)))
+
+    tekkit.install(server)
+
+    assert observed == [("tekkit", False)]
+    assert server.data["current_url"] is None
+
+
+def test_tekkit_get_start_command_missing_staged_jar_raises_byo(tmp_path):
+    server = DummyServer("tekkit")
+    server.data.update({"dir": str(tmp_path), "exe_name": "Tekkit.jar"})
+
+    with pytest.raises(ServerError, match=r"ENABLED \(BYO\)"):
+        tekkit.get_start_command(server)

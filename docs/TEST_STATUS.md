@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 29 |
+| ENABLED (BYO) | 30 |
 | DISABLED | 58      |
-| SKIPPED  | 34      |
+| SKIPPED  | 33      |
 
 ## Status Key
 
@@ -151,7 +151,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (29)
+## ENABLED (BYO) (30)
 
 | Test | Type |
 |------|------|
@@ -169,6 +169,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
 | minecraft_custom | user-supplied server jar |
+| minecraft_tekkit | direct Tekkit archive URL or staged Tekkit.jar |
 | mxbikesserver | user-supplied dedicated archive URL |
 | nsserver | owned Natural Selection mod content tree |
 | q3server | owned base-game assets |
@@ -251,7 +252,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (34)
+## SKIPPED (33)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -283,7 +284,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | brickadiaserver | SteamCMD app requires authentication |
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
-| minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | twserver | SteamCMD app requires authentication |
 
 All integration tests have been tested and categorized. No untested servers remain.

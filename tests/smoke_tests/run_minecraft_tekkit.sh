@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for minecraft_tekkit is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with an operator-supplied direct archive URL or staged Tekkit jar.
+echo "Smoke test for minecraft_tekkit is ENABLED (BYO) - set url to a direct Tekkit server archive URL or stage Tekkit.jar in <install_dir>/ before start"
 exit 0
 
 set -Eeuo pipefail

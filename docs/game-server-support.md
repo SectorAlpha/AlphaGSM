@@ -157,6 +157,7 @@ Notes:
 - [x] hogwarpserver
 - [x] identityserver
 - [x] minecraft_custom
+- [x] minecraft_tekkit
 - [x] mxbikesserver
 - [x] nsserver
 - [x] q3server
@@ -265,5 +266,4 @@ Notes:
 - [ ] brickadiaserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
-- [ ] minecraft_tekkit
 - [ ] twserver

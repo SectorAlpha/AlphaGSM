@@ -1,4 +1,7 @@
-"""Integration test for minecraft.tekkit."""
+"""Integration test for minecraft.tekkit.
+
+ENABLED (BYO): Tekkit requires an operator-supplied direct archive URL or staged jar.
+"""
 
 import pytest
 
@@ -25,7 +28,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="TechnicPack download page returns 403 Forbidden; server download URL unavailable")
+@pytest.mark.skip(
+    reason="ENABLED (BYO): set url to a direct Tekkit server archive URL or stage Tekkit.jar in <install_dir>/ before lifecycle validation"
+)
 def test_minecraft_tekkit_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("java")

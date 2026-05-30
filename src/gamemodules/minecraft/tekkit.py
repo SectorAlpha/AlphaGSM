@@ -12,6 +12,7 @@ import html5lib
 from .vanilla import *
 from . import vanilla as van
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
+from utils.gamemodules import common as gamemodule_common
 
 # path to the download page
 import server.runtime as runtime_module
@@ -118,8 +119,6 @@ def configure(
                     url = latest_url
                 else:
                     url = inp
-    if url == None:
-        raise ServerError("No download URL available")
     # tekkit run time updates so must have copied of everything so it can update them
     return van.configure(
         server,
@@ -135,8 +134,43 @@ def configure(
     )
 
 
+def _raise_tekkit_byo_requirement(*, start_phase):
+    """Raise the shared BYO guidance for Tekkit."""
+
+    retry_step = "Retry start once the direct archive URL or staged Tekkit.jar is in place"
+    if not start_phase:
+        retry_step = "Retry setup once the direct archive URL or staged Tekkit.jar is in place"
+    gamemodule_common.raise_byo_requirement(
+        "minecraft.tekkit",
+        "a direct Tekkit server archive URL or a staged Tekkit.jar",
+        actions=(
+            "Set url to a direct Tekkit server archive URL, or stage Tekkit.jar in <install_dir>/",
+            retry_step,
+        ),
+        docs_slug="minecraft-tekkit",
+    )
+
+
+def install(server, *, eula=False):
+    """Install Tekkit from a direct URL, or accept a staged Tekkit jar."""
+
+    if not os.path.isdir(server.data["dir"]):
+        os.makedirs(server.data["dir"])
+    mcjar = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not server.data.get("url"):
+        if not os.path.isfile(mcjar):
+            _raise_tekkit_byo_requirement(start_phase=False)
+        server.data["current_url"] = server.data.get("url")
+        server.data.save()
+        cust.install(server, eula=eula)
+        return
+    van.install(server, eula=eula)
+
+
 def get_start_command(server):
     """Build the command list used to launch a Tekkit server."""
+    if not os.path.isfile(os.path.join(server.data["dir"], server.data["exe_name"])):
+        _raise_tekkit_byo_requirement(start_phase=True)
     return [
         "java",
         "-Xmx3G",

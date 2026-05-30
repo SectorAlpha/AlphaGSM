@@ -22,6 +22,13 @@ Run setup:
 alphagsm mytekkit setup
 ```
 
+`minecraft.tekkit` is supported in `ENABLED (BYO)` mode. The old automatic
+TechnicPack page scrape is no longer reliable, so before `setup` or `start`
+you should either:
+
+- set `url` to a direct Tekkit server archive URL, or
+- stage `Tekkit.jar` directly inside `<install_dir>/`
+
 Start it:
 
 ```bash
@@ -46,6 +53,23 @@ Setup configures:
 
 - the game port (default 27015)
 - the install directory
+
+Suggested flow:
+
+```bash
+alphagsm mytekkit create minecraft.tekkit
+alphagsm mytekkit setup -n 25565 /path/to/minecraft-tekkit --url https://example.com/Tekkit.zip
+alphagsm mytekkit start
+```
+
+Or with a pre-staged jar:
+
+```bash
+alphagsm mytekkit create minecraft.tekkit
+alphagsm mytekkit setup -n 25565 /path/to/minecraft-tekkit
+# place Tekkit.jar in /path/to/minecraft-tekkit/
+alphagsm mytekkit start
+```
 
 ## Useful Commands
 
