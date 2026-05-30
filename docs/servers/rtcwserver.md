@@ -6,6 +6,10 @@ This guide covers the `rtcwserver` module in AlphaGSM.
 
 - `screen`
 - Python packages from `requirements.txt`
+- Original Return to Castle Wolfenstein multiplayer assets in `main/`
+  - `mp_bin.pk3`
+  - `mp_pak0.pk3` through `mp_pak5.pk3`
+  - `mp_pakmaps0.pk3` through `mp_pakmaps6.pk3`
 
 ## Quick Start
 
@@ -47,6 +51,10 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
+Before `start`, copy the original RTCW multiplayer pk3 set into the install's
+`main/` directory. The public ioRTCW engine release is not enough by itself for
+the dedicated multiplayer server.
+
 ## Useful Commands
 
 ```bash
@@ -86,6 +94,7 @@ alphagsm myrtcwserv mod cleanup
 - **Executable**: `iowolfded.x86_64`
 - **Location**: `<install_dir>/iowolfded.x86_64`
 - **Engine**: Custom
+- **Owned assets required before start**: `main/mp_bin.pk3`, `main/mp_pak0.pk3` through `main/mp_pak5.pk3`, and `main/mp_pakmaps0.pk3` through `main/mp_pakmaps6.pk3`
 
 ### Server Configuration
 

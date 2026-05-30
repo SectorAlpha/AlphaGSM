@@ -6,6 +6,9 @@ This guide covers the `etlegacyserver` module in AlphaGSM.
 
 - `screen`
 - Python packages from `requirements.txt`
+- Original Wolfenstein: Enemy Territory base assets in `etmain/`
+  - Minimum required file for the stock dedicated server: `etmain/pak0.pk3`
+  - Some mods may also require `etmain/pak1.pk3` and `etmain/pak2.pk3`
 
 ## Quick Start
 
@@ -46,6 +49,11 @@ Setup configures:
 - the game port (default 27960)
 - the install directory
 - downloads and extracts the server archive
+- installs the public ET: Legacy engine and `legacy/` mod bundle
+
+Before `start`, copy the original Wolfenstein: Enemy Territory base assets into
+the install's `etmain/` directory. Without `etmain/pak0.pk3`, the dedicated
+server exits at `FS_InitFilesystem: Original game data files not found`.
 
 ## Useful Commands
 
@@ -90,6 +98,7 @@ alphagsm myetlegacy mod cleanup
 - **Executable**: `etlded.x86_64`
 - **Location**: `<install_dir>/etlded.x86_64`
 - **Engine**: Custom
+- **Owned assets required before start**: `etmain/pak0.pk3` minimum; `pak1.pk3` / `pak2.pk3` may be needed for some mods
 
 ### Server Configuration
 

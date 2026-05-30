@@ -252,7 +252,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | cod4server | Direct archive install now succeeds on `release_v1`, but the default dedicated-server archive still lacks owned base-game files required at startup. A fresh Docker-backed integration rerun on 2026-05-29 proved the exact blocker: `fileSysCheck.cfg` plus `main/localized_*.iwd` are missing from the anonymous package, so COD4 still needs copied retail assets even though the dedicated executable itself now installs correctly. |
 | coduoserver | Direct archive install now succeeds on `release_v1`, but the COD: United Offensive dedicated package still depends on owned base Call of Duty multiplayer assets that are not included in the anonymous archive. A fresh Docker-backed integration rerun on 2026-05-30 proved the exact blocker: `main/pak0.pk3` or `main/default_mp.cfg` is still required from a base-game install before CODUO can finish startup. |
 | dstserver | DST requires a Klei cluster_token and cluster config to start; server exits immediately without them |
-| etlegacyserver | Archive/download prerequisite |
+| etlegacyserver | ET: Legacy archive setup now completes and the dedicated binary is wired correctly on `release_v1`, but fresh Docker-backed validation on 2026-05-30 proved the remaining blocker is owned base-game data: the public ET: Legacy release still exits at `FS_InitFilesystem: Original game data files not found` until `etmain/pak0.pk3` is copied in from an original Wolfenstein: Enemy Territory install. Some mods may also require `etmain/pak1.pk3` and `etmain/pak2.pk3`. |
 | gravserver | SteamCMD/platform issue |
 | gtafivemserver | Requires txAdmin/authentication |
 | hogwarpserver | SteamCMD/platform issue |
@@ -269,7 +269,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | pathoftitansserver | SteamCMD app requires authentication |
 | qlserver | Quake Live dedicated server (qzeroded.x64) exits immediately on startup; requires Steam authentication or specific server configuration |
 | redmserver | Requires txAdmin/authentication |
-| rtcwserver | Download prerequisite |
+| rtcwserver | ioRTCW archive setup is still a bring-your-own-assets lane. The engine release itself is downloadable, but the dedicated multiplayer server still requires original RTCW multiplayer data in `main/`, specifically `mp_bin.pk3`, `mp_pak0.pk3` through `mp_pak5.pk3`, and `mp_pakmaps0.pk3` through `mp_pakmaps6.pk3`, from an original Return to Castle Wolfenstein install. |
 | subnauticaserver | SteamCMD/platform issue |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |

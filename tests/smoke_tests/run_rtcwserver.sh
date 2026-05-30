@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for rtcwserver is disabled - see docs/TEST_STATUS.md for status"
+# DISABLED: RTCW dedicated multiplayer still requires original owned RTCW assets that are not available in CI.
+# See docs/TEST_STATUS.md for the exact required files and current status.
+echo "Smoke test for rtcwserver is disabled - requires original RTCW multiplayer assets (main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3)"
 exit 0
 
 set -Eeuo pipefail

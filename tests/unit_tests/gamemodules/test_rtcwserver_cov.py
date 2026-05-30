@@ -72,6 +72,10 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "iowolfded.x86_64"
     (tmp_path / "iowolfded.x86_64").write_text("")
+    main_dir = tmp_path / "main"
+    main_dir.mkdir()
+    for filename in mod.RTCW_REQUIRED_MULTIPLAYER_ASSETS:
+        (main_dir / filename).write_text("")
     server.data["fs_game"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
@@ -137,6 +141,19 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_requires_original_rtcw_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "iowolfded.x86_64"
+    (tmp_path / "iowolfded.x86_64").write_text("")
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["startmap"] = "test"
+    with pytest.raises(ServerError, match="main/mp_bin.pk3"):
         mod.get_start_command(server)
 
 def test_do_stop():

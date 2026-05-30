@@ -68,7 +68,7 @@ def test_configure_resolves_download(tmp_path):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "etl.x86_64"
+    server.data["exe_name"] = "etlded.x86_64"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
@@ -79,7 +79,7 @@ def test_install(tmp_path):
 def test_install_resolves_download(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "etl.x86_64"
+    server.data["exe_name"] = "etlded.x86_64"
     server.data["download_name"] = "test.tar.gz"
     with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
         mod.install(server)
@@ -88,15 +88,18 @@ def test_install_resolves_download(tmp_path):
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "etl.x86_64"
-    (tmp_path / "etl.x86_64").write_text("")
+    server.data["exe_name"] = "etlded.x86_64"
+    (tmp_path / "etlded.x86_64").write_text("")
+    etmain_dir = tmp_path / "etmain"
+    etmain_dir.mkdir()
+    (etmain_dir / "pak0.pk3").write_text("")
     server.data["configfile"] = "test"
     server.data["fs_game"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "./etl.x86_64",
+        "./etlded.x86_64",
         "+set",
         "fs_game",
         "test",
@@ -153,6 +156,19 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_requires_original_et_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "etlded.x86_64"
+    (tmp_path / "etlded.x86_64").write_text("")
+    server.data["configfile"] = "test"
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    with pytest.raises(ServerError, match="etmain/pak0.pk3"):
         mod.get_start_command(server)
 
 def test_do_stop():

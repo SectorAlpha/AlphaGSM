@@ -439,7 +439,7 @@ def configure(
     version=None,
     url=None,
     download_name=None,
-    exe_name="etl.x86_64",
+    exe_name="etlded.x86_64",
 ):
     """Collect and store configuration values for an ET: Legacy server."""
 
@@ -510,6 +510,18 @@ def install(server):
         apply_configured_mods(server)
 
 
+def _assert_required_base_assets(install_dir):
+    """Raise when the ET: Legacy install lacks the required original ET assets."""
+
+    pak0_path = os.path.join(install_dir, "etmain", "pak0.pk3")
+    if os.path.isfile(pak0_path):
+        return
+    raise ServerError(
+        "ET: Legacy requires the original Wolfenstein: Enemy Territory base assets before it can start. "
+        "Copy etmain/pak0.pk3 into this install. Some mods may also require etmain/pak1.pk3 and etmain/pak2.pk3."
+    )
+
+
 def sync_server_config(server):
     """Rewrite managed etl_server.cfg entries from datastore values."""
 
@@ -557,6 +569,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    _assert_required_base_assets(server.data["dir"])
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,

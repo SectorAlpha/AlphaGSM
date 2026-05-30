@@ -1,9 +1,3 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for etlegacyserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
-
 set -Eeuo pipefail
 set -x
 
@@ -16,6 +10,9 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itetlegacyse}"
 SERVER_STARTED=0
+DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+LOCAL_DOCKER_IMAGE="alphagsm-quake-linux-runtime:local"
+PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:latest"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -28,6 +25,20 @@ run_alphagsm() {
   echo
   echo "=== alphagsm $* ==="
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
+}
+
+resolve_docker_image() {
+  if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX:-}" ]]; then
+    printf '%s\n' "$ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX"
+    return 0
+  fi
+
+  if docker image inspect "$LOCAL_DOCKER_IMAGE" >/dev/null 2>&1; then
+    printf '%s\n' "$LOCAL_DOCKER_IMAGE"
+    return 0
+  fi
+
+  printf '%s\n' "$PUBLISHED_DOCKER_IMAGE"
 }
 
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
@@ -44,13 +55,16 @@ cleanup() {
 trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
-require_cmd screen
+require_cmd docker
 
-WORK_DIR="$(mktemp -d)"
+DOCKER_IMAGE="$(resolve_docker_image)"
+
+WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
+mkdir -p "$WORK_ROOT"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" etlegacyserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/etlegacyserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-etlegacyserver.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-etlegacyse-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -68,6 +82,12 @@ target_path = $HOME_DIR/downloads/downloads
 [server]
 datapath = $HOME_DIR/conf
 
+[runtime]
+backend = docker
+
+[process]
+backend = subprocess
+
 [screen]
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-etlegacyse-IT#
@@ -78,11 +98,20 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create etlegacyserver
+run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+
+if [[ ! -f "$INSTALL_DIR/etmain/pak0.pk3" ]]; then
+  echo "ET: Legacy requires original Wolfenstein: Enemy Territory etmain/pak0.pk3 assets before the dedicated server can start; setup only installs the public ET: Legacy engine and legacy mod bundle." >&2
+  exit 0
+fi
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "quake" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
