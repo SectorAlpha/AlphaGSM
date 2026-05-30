@@ -1,8 +1,8 @@
 """VEIN dedicated server lifecycle helpers."""
 
 import os
+import shlex
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import build_launch_arg_values
@@ -13,6 +13,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 2131400
 steam_anonymous_login_possible = True
+CONTAINER_STEAMCMD_DIR = "/opt/alphagsm-steamcmd"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -100,7 +101,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop VEIN using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -132,14 +133,65 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
-)
+def get_runtime_requirements(server):
+    """Return VEIN's native Linux Docker runtime contract."""
+
+    mounts = None
+    if "dir" in server.data:
+        mounts = [
+            {
+                "source": server.data["dir"],
+                "target": "/srv/server",
+                "mode": "rw",
+            },
+            {
+                "source": os.path.normpath(steamcmd.STEAMCMD_DIR),
+                "target": CONTAINER_STEAMCMD_DIR,
+                "mode": "ro",
+            },
+        ]
+
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=(
+            {"key": "queryport", "protocol": "udp"},
+            {"key": "queryport", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "tcp"},
+        ),
+        mounts=mounts,
+    )
+
+
+def get_container_spec(server):
+    """Run the native Linux server as the mounted server-directory owner."""
+
+    requirements = get_runtime_requirements(server)
+    command, _cwd = get_start_command(server)
+    shell_command = " ".join(shlex.quote(part) for part in command)
+    user_shell_command = "cd /srv/server && " + shell_command
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            (
+                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
+                'mkdir -p /home/alphagsm/.steam/sdk64; '
+                'chmod -R a+rwX /srv/server /home/alphagsm; '
+                'ln -sfn '
+                + CONTAINER_STEAMCMD_DIR
+                + '/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
+                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
+                "exec runuser -u alphagsm -- sh -lc "
+                + shlex.quote(user_shell_command)
+            ),
+        ],
+    }

@@ -4,9 +4,9 @@ This guide covers the `veinserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`) for host-process installs
 - Python packages from `requirements.txt`
+- Docker is the preferred Linux validation path and uses the shared `steamcmd-linux` runtime image
 
 ## Quick Start
 
@@ -44,9 +44,21 @@ alphagsm myveinserv stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
+
+On Linux, the validated support path is the native dedicated server inside
+AlphaGSM's shared `steamcmd-linux` Docker runtime. Fresh support validation
+proves:
+
+- anonymous SteamCMD install for app `2131400`
+- runtime launch through `VeinServer.sh`
+- non-root container execution with the Steam bootstrap mounted into
+  `~/.steam/sdk64/steamclient.so`
+- `query`, `info`, and `info --json` on generic `tcp` at the managed main
+  game port
 
 ## Useful Commands
 
@@ -66,7 +78,7 @@ alphagsm myveinserv backup
 
 - **Executable**: `VeinServer.sh`
 - **Location**: `<install_dir>/VeinServer.sh`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Native Linux dedicated server (SteamCMD)
 - **SteamCMD App ID**: `2131400`
 
 ### Server Configuration

@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-05-30
+Last updated: 2026-05-31
 
 ## Summary
 
@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 124      |
+| PASSED   | 125      |
 | ENABLED (BYO) | 30 |
-| DISABLED | 55      |
+| DISABLED | 54      |
 | SKIPPED  | 28      |
 
 ## Status Key
@@ -28,7 +28,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (124)
+## PASSED (125)
 
 | Test | Type |
 |------|------|
@@ -133,6 +133,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | ut2k4server | Direct download — PASSED 2026-05-29; fresh focused integration now passes once AlphaGSM requires the OldUnreal installer prerequisites, isolates the runtime `HOME` under `.alphagsm/ut2k4-home` so per-instance user state no longer leaks between servers, extends the setup budget for the full native installer path, and aligns `query`, `info`, and `info --json` to the current generic `udp` health surface on the managed game port |
 | ut99server | Direct download |
 | valheim | SteamCMD |
+| veinserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration now proves the old timeout-only disable note was stale: anonymous SteamCMD setup for app `2131400` completes on the validated native Linux lane, AlphaGSM launches `VeinServer.sh` inside the shared `steamcmd-linux` runtime as a non-root user with the host SteamCMD `steamclient.so` bootstrap mounted into `~/.steam/sdk64`, and the live health surface is generic `tcp` on the managed main game port rather than the older stale timeout-only assumption |
 | vintagestoryserver | Direct download / Docker runtime — PASSED 2026-05-30; fresh focused integration now passes once validation follows the module's existing `steamcmd-linux` Docker runtime instead of requiring host `dotnet`, and the rerun is pinned to the rebuilt branch-local `alphagsm-steamcmd-linux-runtime:test` image so `dotnet VintagestoryServer.dll --dataPath <install_dir>` resolves cleanly inside the container and AlphaGSM proves `query`, `info`, `info --json`, `status`, and `stop` on the managed generic `tcp` game port |
 | warbandserver | Direct download (Wine) — PASSED 2026-05-18; the module now uses the official `mb_warband_dedicated_1174.zip` archive directly instead of scraping the Cloudflare-blocked TaleWorlds page, syncs `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, runs the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers |
 | wfserver | SteamCMD |
@@ -196,7 +197,7 @@ files, external services, or direct archive URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (57)
+## DISABLED (54)
 
 | Test | Reason |
 |------|--------|
@@ -255,7 +256,6 @@ files, external services, or direct archive URLs.
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
 | tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
-| veinserver | SteamCMD app 2131400 download timeout; likely too large for automated CI testing |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
 | wreckfestserver | SteamCMD app 361580 installs no Linux-compatible dedicated server binary (WreckfestServer not present) |
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |

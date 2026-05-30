@@ -123,6 +123,7 @@ Notes:
 - [x] ut2k4server
 - [x] ut99server
 - [x] valheim
+- [x] veinserver
 - [x] vintagestoryserver
 - [x] warbandserver
 - [x] wfserver
@@ -237,7 +238,6 @@ Notes:
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound
 - [ ] tiserver
-- [ ] veinserver
 - [ ] vrserver
 - [ ] wreckfestserver
 - [ ] zmrserver
