@@ -12,6 +12,9 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itdarkandlig}"
 SERVER_STARTED=0
+DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+LOCAL_DOCKER_IMAGE="alphagsm-wine-proton-runtime:local"
+PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -42,77 +45,18 @@ run_alphagsm_capture() {
   return "$status"
 }
 
-tail_if_exists() {
-  local path="$1"
-  local line_count="${2:-40}"
-  if [[ ! -f "$path" ]]; then
-    echo "<missing: $path>"
-    return 0
-  fi
-  if [[ ! -s "$path" ]]; then
-    echo "<empty: $path>"
-    return 0
-  fi
-  tail -n "$line_count" "$path"
-}
-
-wait_for_udp_or_fail_fast() {
-  local server_name="$1"
-  local timeout_seconds="$2"
-  local deadline=$((SECONDS + timeout_seconds))
-  local screen_log_path="$HOME_DIR/logs/AlphaGSM-darkandlig-IT#$server_name.log"
-
-  while (( SECONDS < deadline )); do
-    if run_alphagsm_capture "$server_name" info --json >/dev/null; then
-      if EXPECTED_PORT="$PORT" INFO_JSON_PAYLOAD="$RUN_CAPTURED_OUTPUT" "${PYTHON_BIN:-python3}" - <<'PY'
-import json
-import os
-
-expected_port = int(os.environ["EXPECTED_PORT"])
-data = json.loads(os.environ["INFO_JSON_PAYLOAD"])
-assert data["protocol"] == "udp", data
-assert data["port"] == expected_port, data
-PY
-      then
-        return 0
-      fi
-    fi
-
-    local status_output
-    status_output="$(run_alphagsm_capture "$server_name" status || true)"
-    if grep -F "Server isn't running as no screen session" <<<"$status_output" >/dev/null; then
-      echo "[diagnostic] Dark and Light screen session died before UDP readiness" >&2
-      echo "[diagnostic] status output:" >&2
-      printf '%s\n' "$status_output" >&2
-      echo "[diagnostic] screen log tail ($screen_log_path):" >&2
-      tail_if_exists "$screen_log_path" >&2
-      echo "[diagnostic] DNL log tail ($LOG_PATH):" >&2
-      tail_if_exists "$LOG_PATH" >&2
-      exit 1
-    fi
-
-    sleep 5
-  done
-
-  echo "[diagnostic] Dark and Light never reached UDP readiness in ${timeout_seconds}s" >&2
-  echo "[diagnostic] screen log tail ($screen_log_path):" >&2
-  tail_if_exists "$screen_log_path" >&2
-  echo "[diagnostic] DNL log tail ($LOG_PATH):" >&2
-  tail_if_exists "$LOG_PATH" >&2
-  exit 1
-}
-
 wait_for_generic_udp_closed() {
-  local port="$1"
-  local timeout_seconds="$2"
+  local host="$1"
+  local port="$2"
+  local timeout_seconds="$3"
 
-  EXPECTED_PORT="$port" TIMEOUT_SECONDS="$timeout_seconds" "${PYTHON_BIN:-python3}" - <<'PY'
+  EXPECTED_HOST="$host" EXPECTED_PORT="$port" TIMEOUT_SECONDS="$timeout_seconds" "$PYTHON_BIN" - <<'PY'
 import os
 import socket
 import sys
 import time
 
-host = "127.0.0.1"
+host = os.environ["EXPECTED_HOST"]
 port = int(os.environ["EXPECTED_PORT"])
 deadline = time.time() + int(os.environ["TIMEOUT_SECONDS"])
 
@@ -136,6 +80,20 @@ raise SystemExit(
 PY
 }
 
+resolve_docker_image() {
+  if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON:-}" ]]; then
+    printf '%s\n' "$ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON"
+    return 0
+  fi
+
+  if docker image inspect "$LOCAL_DOCKER_IMAGE" >/dev/null 2>&1; then
+    printf '%s\n' "$LOCAL_DOCKER_IMAGE"
+    return 0
+  fi
+
+  printf '%s\n' "$PUBLISHED_DOCKER_IMAGE"
+}
+
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
@@ -150,18 +108,19 @@ cleanup() {
 trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
-require_cmd screen
-require_proton
+require_cmd docker
 
-WORK_DIR="$(mktemp -d)"
+DOCKER_IMAGE="$(resolve_docker_image)"
+WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
+mkdir -p "$WORK_ROOT"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" darkandlightserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/darkandlightserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-darkandlightserver.conf"
-LOG_PATH="$INSTALL_DIR/DNL/Saved/Logs/DNL.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)" 
+PORT="$(pick_free_port)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -175,6 +134,12 @@ target_path = $HOME_DIR/downloads/downloads
 [server]
 datapath = $HOME_DIR/conf
 
+[runtime]
+backend = docker
+
+[process]
+backend = subprocess
+
 [screen]
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-darkandlig-IT#
@@ -185,17 +150,19 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create darkandlightserver
+run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_udp_or_fail_fast "$SERVER_NAME" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 query_output="$(run_alphagsm_capture "$SERVER_NAME" query)"
 grep -F "Server port is open (UDP ping on port $PORT" <<<"$query_output" >/dev/null
-
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
-wait_for_generic_udp_closed "$PORT" "$STOP_TIMEOUT_SECONDS"
+wait_for_generic_udp_closed "127.0.0.1" "$PORT" "$STOP_TIMEOUT_SECONDS"
 
 run_alphagsm "$SERVER_NAME" status

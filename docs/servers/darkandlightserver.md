@@ -4,9 +4,7 @@ This guide covers the `darkandlightserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux hosts
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Docker
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -62,6 +60,13 @@ alphagsm mydarkandl backup
 - Module name: `darkandlightserver`
 - Default game port: 7777
 - Default query port: 27016
+- Current validation status: PASSED 2026-05-30. Fresh smoke and integration
+  now both pass on the Docker-backed Linux `wine-proton` runtime once AlphaGSM
+  launches Dark and Light through the shared in-container Xvfb/software-GL
+  path, treats the live health surface as generic `udp` on the managed main
+  game port, and routes stop through the shared runtime layer instead of
+  depending on a host `screen` console session or the older stale `queryport`
+  A2S assumption.
 
 ## Developer Notes
 
@@ -72,23 +77,13 @@ alphagsm mydarkandl backup
 - **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `630230`
 
-On Linux under Wine/Proton, the current branch no longer reaches even the
-narrowed generic-UDP contract. A fresh focused rerun on 2026-05-28 showed
-`alphagsm start` returning success, but the managed `screen` session died
-before `info --json` ever reported UDP readiness, `DNL/Saved/Logs/DNL.log` was
-never created, and direct host probes saw both the managed game port and
-`queryport` `27016` refuse UDP traffic.
-
-Direct repro of AlphaGSM's current Proton launch command kept
-`DNLServer.exe DNL_ALL?...?Port=<game-port>?QueryPort=27016 -nullRHI -log -unattended`
-alive for at least 90 seconds with no console output beyond the ProtonFixes
-"Skipping fix execution. We are probably running a unit test." warnings, still
-without creating `DNL.log` or binding either managed UDP listener. Because the
-`screen` session is already gone in that state, `alphagsm stop` refuses with
-`Can't stop a server that isn't running`, so the Linux stop hook cannot clean
-up the orphaned `DNLServer.exe` automatically. Treat the module as blocked on
-Linux until startup proves a real listener and a live AlphaGSM-managed session
-again.
+The validated Linux path now runs through AlphaGSM's Docker-backed
+`wine-proton` runtime image rather than a host `screen` session. The current
+checked-in smoke and integration coverage prove the live contract on the
+managed main game port: `query`, `info`, and `info --json` all succeed as
+generic `udp` once the containerized Xvfb/software-GL environment brings the
+Windows dedicated server up cleanly. The historical `queryport` `27016` A2S
+assumption is no longer part of the supported readiness contract on Linux.
 
 ### Server Configuration
 

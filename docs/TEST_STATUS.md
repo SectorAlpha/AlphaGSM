@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 119      |
+| PASSED   | 120      |
 | ENABLED (BYO) | 30 |
 | DISABLED | 58      |
-| SKIPPED  | 32      |
+| SKIPPED  | 31      |
 
 ## Status Key
 
@@ -28,7 +28,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (119)
+## PASSED (120)
 
 | Test | Type |
 |------|------|
@@ -52,6 +52,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | cssserver | SteamCMD (Source) |
 | craftopiaserver | SteamCMD |
 | dayofdragonsserver | SteamCMD |
+| darkandlightserver | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM treats the validated Linux contract honestly: Dark and Light answers `query`, `info`, and `info --json` on the managed main game port as generic `udp`, stop flows through the shared runtime layer, and the Docker-backed Xvfb/software-GL lane no longer depends on a live host `screen` session or the older stale `queryport` A2S assumption |
 | dmcserver | SteamCMD (GoldSrc) |
 | dodserver | SteamCMD (GoldSrc) |
 | dodsserver | SteamCMD (Source) |
@@ -257,14 +258,13 @@ files, external services, or direct archive URLs.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (32)
+## SKIPPED (31)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
 | arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
-| darkandlightserver | Wine/Proton validation 2026-05-29: the current branch no longer reaches even the narrowed generic-UDP contract. `alphagsm start` can still return success, but the managed `screen` session dies before `DNL/Saved/Logs/DNL.log` is created or either the game port or `queryport 27016` binds, and direct Proton repros still leave orphaned `DNLServer.exe` children with no log or listener. |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |

@@ -3,7 +3,6 @@
 import os
 import signal
 import subprocess
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -41,6 +40,20 @@ setting_schema = {
     ),
 }
 max_stop_wait = 1
+
+
+def _container_runtime_env(_server):
+    """Return Docker runtime env for the shared wine-proton entrypoint."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="DNL/Binaries/Win64/DNLServer.exe"):
@@ -205,7 +218,7 @@ def do_stop(server, j):
             os.kill(pid, signal.SIGTERM)
         if pids:
             return
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -236,10 +249,12 @@ def checkvalue(server, key, *value):
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    extra_env=_container_runtime_env,
 )

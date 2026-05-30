@@ -1,8 +1,7 @@
 """Integration test for darkandlightserver."""
 
-import json
-import time
-from pathlib import Path
+import os
+import subprocess
 
 import pytest
 
@@ -10,110 +9,83 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    require_proton,
     pick_free_tcp_port,
+    run_setup_with_port_retry,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    skip_for_known_steamcmd_issue,
+    wait_for_info_protocol,
     wait_for_generic_udp_closed,
 )
-from gamemodules.darkandlightserver import steam_app_id
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
+PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
 
-def _tail_if_exists(path, line_count=40):
-    """Return the last *line_count* lines from *path* if it exists."""
+def resolve_wine_proton_runtime_image():
+    """Prefer a branch-local Wine/Proton runtime image when available."""
 
-    file_path = Path(path)
-    if not file_path.is_file():
-        return f"<missing: {file_path}>"
-    lines = file_path.read_text(encoding="utf-8", errors="replace").splitlines()
-    if not lines:
-        return f"<empty: {file_path}>"
-    return "\n".join(lines[-line_count:])
+    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON")
+    if configured_image:
+        return configured_image
 
-
-def _wait_for_udp_or_fail_fast(env, server_name, timeout_seconds, *, config_path, install_dir):
-    """Wait for UDP readiness, but fail early if the screen session dies."""
-
-    deadline = time.time() + timeout_seconds
-    screen_log_path = config_path.parent / "home" / "logs" / f"AlphaGSM-IT#{server_name}.log"
-    dnl_log_path = install_dir / "DNL" / "Saved" / "Logs" / "DNL.log"
-    last_info_result = None
-
-    while time.time() < deadline:
-        info_result = run_alphagsm(env, server_name, "info", "--json")
-        last_info_result = info_result
-        info_ok = info_result.returncode == 0
-        if info_ok:
-            info_data = json.loads(info_result.stdout.strip())
-            if info_data.get("protocol") == "udp":
-                return info_data
-
-        status_result = run_alphagsm(env, server_name, "status")
-        if "Server isn't running as no screen session" in status_result.stdout:
-            pytest.fail(
-                "Dark and Light screen session died before UDP readiness.\n"
-                f"status stdout:\n{status_result.stdout}\n"
-                f"last info returncode: {info_result.returncode}\n"
-                f"last info stderr:\n{info_result.stderr}\n"
-                f"screen log tail ({screen_log_path}):\n{_tail_if_exists(screen_log_path)}\n"
-                f"DNL log tail ({dnl_log_path}):\n{_tail_if_exists(dnl_log_path)}"
-            )
-
-        time.sleep(5)
-
-    pytest.fail(
-        "Dark and Light never reached UDP readiness before timeout.\n"
-        f"last info returncode: {last_info_result.returncode if last_info_result else 'n/a'}\n"
-        f"last info stdout:\n{last_info_result.stdout if last_info_result else ''}\n"
-        f"last info stderr:\n{last_info_result.stderr if last_info_result else ''}\n"
-        f"screen log tail ({screen_log_path}):\n{_tail_if_exists(screen_log_path)}\n"
-        f"DNL log tail ({dnl_log_path}):\n{_tail_if_exists(dnl_log_path)}"
+    local_image = subprocess.run(
+        ["docker", "image", "inspect", LOCAL_WINE_PROTON_IMAGE],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
     )
+    if local_image.returncode == 0:
+        return LOCAL_WINE_PROTON_IMAGE
+
+    return PUBLISHED_WINE_PROTON_IMAGE
 
 
 def test_darkandlightserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_proton()
-    require_command("screen")
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itdarkandlight"
+    server_name = ("itdnl" + tmp_path.name.replace("_", "")[-10:])[:15]
+    image = resolve_wine_proton_runtime_image()
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        backend="subprocess",
+        runtime_backend="auto",
+        module_name="darkandlightserver",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "darkandlightserver")
+    run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    _setup_result, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+    )
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        _wait_for_udp_or_fail_fast(
-            env,
-            server_name,
-            START_TIMEOUT,
-            config_path=config_path,
-            install_dir=install_dir,
-        )
+        wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -132,6 +104,7 @@ def test_darkandlightserver_lifecycle(tmp_path):
 
         # info --json
         import json as _info_json
+
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "udp", (

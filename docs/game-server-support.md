@@ -42,6 +42,7 @@ Notes:
 - [x] cssserver
 - [x] craftopiaserver
 - [x] dayofdragonsserver
+- [x] darkandlightserver
 - [x] dmcserver
 - [x] dodserver
 - [x] dodsserver
@@ -242,7 +243,6 @@ Notes:
 ## Waiting On Prerequisites Or Validation
 
 - [ ] arksurvivalascended
-- [ ] darkandlightserver
 - [ ] ducksideserver
 - [ ] hellletlooseserver
 - [ ] icarusserver

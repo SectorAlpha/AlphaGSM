@@ -13,6 +13,7 @@ _proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_prot
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.darkandlightserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -167,7 +168,7 @@ def test_query_and_info_address_use_game_port_udp_on_linux(monkeypatch):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_do_stop_targets_linux_server_processes(monkeypatch):
@@ -177,7 +178,7 @@ def test_do_stop_targets_linux_server_processes(monkeypatch):
     server.data["queryport"] = 27016
     killed = []
 
-    mod.screen.send_to_server.reset_mock()
+    mod.runtime_module.send_to_server.reset_mock()
     monkeypatch.setattr(mod, "IS_LINUX", True)
     monkeypatch.setattr(
         mod,
@@ -189,7 +190,20 @@ def test_do_stop_targets_linux_server_processes(monkeypatch):
     mod.do_stop(server, 0)
 
     assert killed == [(4321, signal.SIGTERM), (5432, signal.SIGTERM)]
-    mod.screen.send_to_server.assert_not_called()
+    mod.runtime_module.send_to_server.assert_not_called()
+
+
+def test_runtime_requirements_enable_xvfb_container_env():
+    server = DummyServer()
+    server.data["dir"] = "/srv/dnl/"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27016
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
 def test_find_linux_server_pids_filters_for_matching_commandline(monkeypatch):
