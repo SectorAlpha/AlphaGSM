@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 116      |
+| PASSED   | 117      |
 | DISABLED | 62      |
-| SKIPPED  | 55      |
+| SKIPPED  | 54      |
 
 ## Status Key
 
@@ -79,6 +79,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | codserver | Docker runtime — PASSED 2026-05-23; standard integration/smoke now run through the shared `steamcmd-linux` Docker runtime image, which supplies the legacy `libstdc++.so.5` compatibility library required by the old Linux dedicated binary |
 | codwawserver | Docker runtime — PASSED 2026-05-30; fresh focused integration now passes on the shared `steamcmd-linux` runtime image once AlphaGSM drives the archive-backed install through Docker and aligns `query`, `info`, and `info --json` to the current generic `tcp` health surface on the managed game port |
 | mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke now drive the module through the shared `simple-tcp` Docker runtime image because upstream does not publish an anonymous Linux server binary, while process mode still works when a host `mumble-server`/`murmurd` package is installed |
+| mtaserver | Docker runtime — PASSED 2026-05-30; fresh focused integration and smoke now both pass on the branch-local `steamcmd-linux` runtime image once AlphaGSM auto-installs the official `baseconfig.tar.gz` payload, syncs `mods/deathmatch/mtaserver.conf` before launch, disables `ase` so no unmanaged `port + 123` listener is required, and aligns `query`, `info`, and `info --json` to MTA's real built-in HTTP listener on `httpport = port + 2` instead of the older stale ncurses/A2S assumptions |
 | mordserver | SteamCMD |
 | necserver | SteamCMD |
 | nmrihserver | SteamCMD (Source) |
@@ -264,7 +265,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | minecraft_bedrock | Minecraft.net Bedrock download page is JavaScript-rendered; URL scraper returns no results (module disabled) |
 | minecraft_custom | `minecraft.custom` is a bring-your-own-jar lane: place a real server jar at `<install_dir>/<exe_name>` and set `exe_name` before rerunning `setup`; AlphaGSM does not auto-select or auto-download an arbitrary custom server binary here. |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
-| mtaserver | Download/platform prerequisite |
 | mxbikesserver | MX Bikes is a bring-your-own-download lane: AlphaGSM can install and launch the dedicated server, but the upstream project does not expose a stable automated Linux server archive URL here. Provide a direct dedicated-server archive URL during setup or through `set url ...` before smoke/integration can run. |
 | nsserver | HLDS mod maps not available via SteamCMD |
 | pathoftitansserver | SteamCMD app requires authentication |

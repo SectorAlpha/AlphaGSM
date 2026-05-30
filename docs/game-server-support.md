@@ -71,6 +71,7 @@ Notes:
 - [x] codserver
 - [x] codwawserver
 - [x] mumbleserver
+- [x] mtaserver
 - [x] mordserver
 - [x] necserver
 - [x] nmrihserver
@@ -250,7 +251,6 @@ Notes:
 - [ ] minecraft_bedrock
 - [ ] minecraft_custom
 - [ ] minecraft_tekkit
-- [ ] mtaserver
 - [ ] mxbikesserver
 - [ ] nsserver
 - [ ] pathoftitansserver

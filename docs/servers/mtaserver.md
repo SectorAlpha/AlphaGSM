@@ -4,8 +4,12 @@ This guide covers the `mtaserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- `docker` for the validated Linux lifecycle
 - Python packages from `requirements.txt`
+
+Local process mode still exists for advanced/manual use, but the current
+supported AlphaGSM lifecycle on Linux is the shared Docker-backed
+`steamcmd-linux` runtime path.
 
 ## Quick Start
 
@@ -44,8 +48,24 @@ alphagsm mymtaserve stop
 Setup configures:
 
 - the game port (default 22003)
+- the built-in HTTP listener on `httpport = port + 2`
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the main Linux server archive
+- auto-installs the official `baseconfig.tar.gz` bundle when
+  `mods/deathmatch/mtaserver.conf` is missing
+- syncs `mods/deathmatch/mtaserver.conf` so AlphaGSM owns:
+  - `serverport`
+  - `httpserver = 1`
+  - `httpport`
+  - `ase = 0`
+
+AlphaGSM health checks use MTA's built-in HTTP listener, so:
+
+- `query` checks generic `tcp` on `httpport`
+- `info` and `info --json` report the same `tcp` listener
+
+Disabling `ase` avoids the extra unmanaged UDP announce port at `port + 123`,
+which keeps AlphaGSM's owned port set aligned with the validated lifecycle.
 
 ## Useful Commands
 
@@ -84,6 +104,7 @@ starting the resource in-game.
 
 - Module name: `mtaserver`
 - Default port: 22003
+- Default AlphaGSM-managed `httpport`: `22005`
 
 ## Developer Notes
 

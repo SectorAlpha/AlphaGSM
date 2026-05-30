@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-05-30
+- Server support: re-enable `mtaserver` on the Docker-backed `steamcmd-linux` Linux lane after auto-installing the official `baseconfig.tar.gz` payload, syncing `mods/deathmatch/mtaserver.conf` before launch, disabling `ase` so no unmanaged `port + 123` announce port is required, and proving fresh focused integration plus smoke on MTA's real built-in HTTP health surface at `httpport = port + 2`.
+
 2026-05-29
 - Server support: re-enable `minecraft_bungeecord` after proving the old tracker row was stale; AlphaGSM already resolves the upstream Jenkins build automatically during `setup`, and fresh focused integration now passes on the managed SLP/TCP proxy port without requiring a bring-your-own jar URL.
 - Documentation: turn the remaining bring-your-own Call of Duty lanes into proper operator guides by spelling out the exact owned asset copy targets and minimal setup flow for `cod2server`, `cod4server`, and `coduoserver`.

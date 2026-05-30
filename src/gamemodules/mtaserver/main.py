@@ -26,6 +26,7 @@ from server.modsupport.providers import resolve_direct_url_entry, resolve_mta_co
 from server.modsupport.reconcile import reconcile_mod_state
 from server.modsupport.registry import CuratedRegistryLoader
 from utils.archive_install import detect_compression, install_archive
+from utils.archive_install import sync_tree
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
@@ -34,6 +35,8 @@ from utils.gamemodules import common as gamemodule_common
 
 MTA_DOWNLOADS_PAGE = "https://linux.multitheftauto.com/"
 MTA_LATEST_DOWNLOAD_NAME = "multitheftauto_linux_x64.tar.gz"
+MTA_BASECONFIG_URL = "https://linux.multitheftauto.com/dl/baseconfig.tar.gz"
+MTA_BASECONFIG_DOWNLOAD_NAME = "baseconfig.tar.gz"
 MTA_MOD_CACHE_DIRNAME = "mtaserver"
 MTA_ALLOWED_RESOURCE_SUFFIXES = {
     ".7z": "7z",
@@ -75,6 +78,7 @@ command_descriptions = {
 }
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "httpport")
 
 
 def resolve_download(version=None):
@@ -148,6 +152,86 @@ def _cache_root(server) -> Path:
 
 def _resource_root(server) -> Path:
     return Path(server.data["dir"]) / MTA_RESOURCE_DESTINATION
+
+
+def _http_port(server) -> int:
+    return int(server.data.get("httpport", int(server.data["port"]) + 2))
+
+
+def _replace_xml_tag(text: str, tag: str, value) -> str:
+    pattern = re.compile(rf"(^\s*<{re.escape(tag)}>\s*)(.*?)(\s*</{re.escape(tag)}>\s*$)", re.MULTILINE)
+    replacement = rf"\g<1>{value}\g<3>"
+    if pattern.search(text):
+        return pattern.sub(replacement, text, count=1)
+    suffix = "" if text.endswith("\n") else "\n"
+    return text + suffix + f"<{tag}>{value}</{tag}>\n"
+
+
+def _mtaserver_conf_path(server) -> Path:
+    return Path(server.data["dir"]) / "mods" / "deathmatch" / "mtaserver.conf"
+
+
+def _download_mta_baseconfig(target_path: Path) -> Path:
+    """Download the official MTA baseconfig bundle with an explicit user agent."""
+
+    target_path = Path(target_path)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(MTA_BASECONFIG_URL, headers={"User-Agent": "AlphaGSM"})
+    temp_handle = None
+    temp_path = None
+    try:
+        temp_handle, temp_name = tempfile.mkstemp(
+            prefix=f".{target_path.name}.",
+            suffix=".tmp",
+            dir=target_path.parent,
+        )
+        temp_path = Path(temp_name)
+        with urllib.request.urlopen(request, timeout=30) as response, open(
+            temp_handle, "wb", closefd=True
+        ) as handle:
+            shutil.copyfileobj(response, handle)
+    except OSError as exc:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+        raise ModSupportError(
+            f"Failed to download Multi Theft Auto baseconfig archive: {exc}"
+        ) from exc
+
+    temp_path.replace(target_path)
+    return target_path
+
+
+def _ensure_baseconfig(server) -> None:
+    config_path = _mtaserver_conf_path(server)
+    if config_path.is_file():
+        return
+
+    cache_root = _cache_root(server) / "baseconfig"
+    archive_path = cache_root / MTA_BASECONFIG_DOWNLOAD_NAME
+    stage_root = cache_root / "stage"
+    if stage_root.exists():
+        shutil.rmtree(stage_root)
+    _download_mta_baseconfig(archive_path)
+    extract_tarball_safe(archive_path, stage_root)
+    source_root = stage_root / "baseconfig"
+    if not source_root.is_dir():
+        source_root = stage_root
+    target_root = Path(server.data["dir"]) / "mods" / "deathmatch"
+    sync_tree(str(source_root), str(target_root))
+
+
+def sync_server_config(server):
+    """Keep the managed MTA port settings aligned with mtaserver.conf."""
+
+    config_path = _mtaserver_conf_path(server)
+    if not config_path.is_file():
+        return
+    text = config_path.read_text(encoding="utf-8")
+    text = _replace_xml_tag(text, "serverport", int(server.data["port"]))
+    text = _replace_xml_tag(text, "httpserver", 1)
+    text = _replace_xml_tag(text, "httpport", _http_port(server))
+    text = _replace_xml_tag(text, "ase", 0)
+    config_path.write_text(text, encoding="utf-8")
 
 
 def _desired_entries(server) -> list[DesiredModEntry]:
@@ -597,6 +681,8 @@ def configure(
         if inp:
             port = int(inp)
     server.data["port"] = int(port)
+    server.data.setdefault("httpport", int(server.data["port"]) + 2)
+    server.data.setdefault("httpport_explicit", False)
     if dir is None:
         dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
         if ask:
@@ -638,9 +724,17 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url) or MTA_LATEST_DOWNLOAD_NAME)
     install_archive(server, detect_compression(server.data["download_name"]))
+    _ensure_baseconfig(server)
+    sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
+
+
+def prestart(server):
+    """Refresh the managed MTA config immediately before launch."""
+
+    sync_server_config(server)
 
 
 def get_start_command(server):
@@ -688,18 +782,47 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
+        int_keys=("port", "httpport"),
         str_keys=("url", "download_name", "exe_name", "dir", "version"),
     )
 
+
+def postset(server, key, *args, **kwargs):
+    """Keep the derived MTA http port aligned after datastore edits."""
+
+    del args, kwargs
+    if not key:
+        return
+    if key[0] == "httpport":
+        server.data["httpport_explicit"] = True
+        server.data.save()
+        sync_server_config(server)
+        return
+    if key[0] == "port" and not server.data.get("httpport_explicit", False):
+        server.data["httpport"] = int(server.data["port"]) + 2
+        server.data.save()
+        sync_server_config(server)
+
+
+def get_query_address(server):
+    """Use the built-in MTA HTTP listener for health checks."""
+
+    return ("127.0.0.1", _http_port(server), "tcp")
+
+
+def get_info_address(server):
+    """Use the built-in MTA HTTP listener for health checks."""
+
+    return ("127.0.0.1", _http_port(server), "tcp")
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'httpport', 'protocol': 'tcp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'httpport', 'protocol': 'tcp'}),
         stdin_open=True,
 )
