@@ -12,7 +12,9 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itvintagesto}"
 SERVER_STARTED=0
-DOCKER_IMAGE="${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest}"
+DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+LOCAL_DOCKER_IMAGE="alphagsm-steamcmd-linux-runtime:test"
+PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -25,6 +27,20 @@ run_alphagsm() {
   echo
   echo "=== alphagsm $* ==="
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
+}
+
+resolve_docker_image() {
+  if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-}" ]]; then
+    printf '%s\n' "$ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX"
+    return 0
+  fi
+
+  if docker image inspect "$LOCAL_DOCKER_IMAGE" >/dev/null 2>&1; then
+    printf '%s\n' "$LOCAL_DOCKER_IMAGE"
+    return 0
+  fi
+
+  printf '%s\n' "$PUBLISHED_DOCKER_IMAGE"
 }
 
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
@@ -43,7 +59,10 @@ trap cleanup EXIT
 require_cmd "$PYTHON_BIN"
 require_cmd docker
 
-WORK_DIR="$(mktemp -d)"
+DOCKER_IMAGE="$(resolve_docker_image)"
+WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
+mkdir -p "$WORK_ROOT"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" vintagestoryserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/vintagestoryserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-vintagestoryserver.conf"

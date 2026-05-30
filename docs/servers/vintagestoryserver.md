@@ -6,6 +6,7 @@ This guide covers the `vintagestoryserver` module in AlphaGSM.
 
 - `screen`
 - `.NET 10` runtime on process-backed hosts
+- Docker runtime supported through the shared `steamcmd-linux` family image
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -48,6 +49,7 @@ Setup configures:
 - the install directory
 - resolves the latest stable Linux server archive by default
 - downloads and extracts the server archive
+- keeps the existing Docker-backed `steamcmd-linux` lane available for hosts without local `dotnet`
 
 ## Useful Commands
 
@@ -78,6 +80,13 @@ alphagsm myvintages setup --url https://cdn.vintagestory.at/gamefiles/stable/vs_
 
 AlphaGSM follows the upstream `server.sh` launcher contract on Linux and starts
 the server with `dotnet VintagestoryServer.dll --dataPath <install_dir>`.
+
+The validated Linux integration lane on `release_v1` is the module's existing
+Docker-backed `steamcmd-linux` runtime. The checked-in integration and smoke
+paths now prefer a rebuilt local `alphagsm-steamcmd-linux-runtime:test` image
+when it is available, then fall back to
+`ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX`, then the published
+`ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image.
 
 ### Server Configuration
 

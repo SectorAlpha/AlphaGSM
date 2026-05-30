@@ -114,6 +114,7 @@ Notes:
 - [x] ut2k4server
 - [x] ut99server
 - [x] valheim
+- [x] vintagestoryserver
 - [x] warbandserver
 - [x] wfserver
 - [x] wurmserver
@@ -259,5 +260,4 @@ Notes:
 - [ ] subnauticaserver
 - [ ] tsserver
 - [ ] twserver
-- [ ] vintagestoryserver
 - [ ] vsserver

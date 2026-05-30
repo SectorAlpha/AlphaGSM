@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-29
+- Server support: re-enable `vintagestoryserver` after moving its validated Linux lane onto the module's existing Docker-backed `steamcmd-linux` runtime, teaching integration/smoke to prefer the rebuilt local `alphagsm-steamcmd-linux-runtime:test` image, and proving fresh focused lifecycle coverage on the current generic `tcp` game-port health surface without requiring host `dotnet`.
 - Server support: replace the vague `etlegacyserver` and `rtcwserver` archive/download prerequisite notes with exact owned-assets blockers, and make both modules fail fast on `start` with clear instructions about which original game files must be copied into `etmain/` or `main/` before the dedicated server can launch.
 - Server support: re-enable `codwawserver` on the Docker-backed `steamcmd-linux` Linux lane after proving the archive-backed install path can complete and that `query`, `info`, and `info --json` succeed on the current generic `tcp` health surface at the managed game port.
 - Server support: replace the old vague `coduoserver` archive prerequisite note with the exact owned-assets blocker proven by fresh Docker-backed integration: the dedicated archive still needs base Call of Duty assets such as `main/pak0.pk3` or `main/default_mp.cfg` from a retail install.
