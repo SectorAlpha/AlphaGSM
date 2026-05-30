@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-05-29
+Last updated: 2026-05-30
 
 ## Summary
 
@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 113      |
+| PASSED   | 114      |
 | DISABLED | 62      |
-| SKIPPED  | 58      |
+| SKIPPED  | 57      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (109)
+## PASSED (114)
 
 | Test | Type |
 |------|------|
@@ -76,6 +76,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | memoriesofmarsserver | SteamCMD |
 | miscreatedserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM reads readiness from the real `user/server.log` surface and treats the live health surface as generic `tcp` on the managed main port instead of the older stale A2S-on-`port + 1` assumption |
 | codserver | Docker runtime — PASSED 2026-05-23; standard integration/smoke now run through the shared `steamcmd-linux` Docker runtime image, which supplies the legacy `libstdc++.so.5` compatibility library required by the old Linux dedicated binary |
+| codwawserver | Docker runtime — PASSED 2026-05-30; fresh focused integration now passes on the shared `steamcmd-linux` runtime image once AlphaGSM drives the archive-backed install through Docker and aligns `query`, `info`, and `info --json` to the current generic `tcp` health surface on the managed game port |
 | mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke now drive the module through the shared `simple-tcp` Docker runtime image because upstream does not publish an anonymous Linux server binary, while process mode still works when a host `mumble-server`/`murmurd` package is installed |
 | mordserver | SteamCMD |
 | necserver | SteamCMD |
@@ -211,7 +212,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (58)
+## SKIPPED (57)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -249,8 +250,7 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | brickadiaserver | SteamCMD app requires authentication |
 | cod2server | Direct archive install now succeeds on `release_v1`, but the official Linux dedicated package still lacks the localized retail assets the binary requires at startup. A fresh Docker-backed integration rerun on 2026-05-29 reached the exact blocker: `main/localized_*.iwd` and `main/default_localize_mp.cfg` are missing, so COD2 still needs owned/copied base-game multiplayer assets even though the dedicated executable itself now installs correctly. |
 | cod4server | Direct archive install now succeeds on `release_v1`, but the default dedicated-server archive still lacks owned base-game files required at startup. A fresh Docker-backed integration rerun on 2026-05-29 proved the exact blocker: `fileSysCheck.cfg` plus `main/localized_*.iwd` are missing from the anonymous package, so COD4 still needs copied retail assets even though the dedicated executable itself now installs correctly. |
-| coduoserver | Archive/download prerequisite |
-| codwawserver | Archive/download prerequisite |
+| coduoserver | Direct archive install now succeeds on `release_v1`, but the COD: United Offensive dedicated package still depends on owned base Call of Duty multiplayer assets that are not included in the anonymous archive. A fresh Docker-backed integration rerun on 2026-05-30 proved the exact blocker: `main/pak0.pk3` or `main/default_mp.cfg` is still required from a base-game install before CODUO can finish startup. |
 | dstserver | DST requires a Klei cluster_token and cluster config to start; server exits immediately without them |
 | etlegacyserver | Archive/download prerequisite |
 | gravserver | SteamCMD/platform issue |

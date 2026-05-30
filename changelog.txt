@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-29
+- Server support: re-enable `codwawserver` on the Docker-backed `steamcmd-linux` Linux lane after proving the archive-backed install path can complete and that `query`, `info`, and `info --json` succeed on the current generic `tcp` health surface at the managed game port.
+- Server support: replace the old vague `coduoserver` archive prerequisite note with the exact owned-assets blocker proven by fresh Docker-backed integration: the dedicated archive still needs base Call of Duty assets such as `main/pak0.pk3` or `main/default_mp.cfg` from a retail install.
 - Server support: replace the old vague `cod2server` and `cod4server` "archive/download prerequisite" tracker rows with the exact owned-base-assets blockers proven by fresh Docker-backed integrations: COD2 still needs `main/localized_*.iwd` plus `main/default_localize_mp.cfg`, and COD4 still needs `fileSysCheck.cfg` plus `main/localized_*.iwd` from a retail install.
 - Server support: re-enable `ut2k4server` after restoring the full OldUnreal native installer path on Linux, isolating each server's runtime `HOME` under `.alphagsm/ut2k4-home`, and proving fresh focused integration on the current generic `udp` health surface at the managed game port.
 - Server support: re-enable `notdserver` on the Docker-backed `wine-proton` Linux lane after mirroring `ServerSettings.ini` into `LF/Saved/Config`, adding the required `-DisableAntiCheat` launch flag, and proving fresh focused integration on the current generic `tcp` health surface at the managed game port instead of the older stale A2S `queryport` assumption.

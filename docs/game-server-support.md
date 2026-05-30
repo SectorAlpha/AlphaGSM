@@ -68,6 +68,7 @@ Notes:
 - [x] memoriesofmarsserver
 - [x] miscreatedserver
 - [x] codserver
+- [x] codwawserver
 - [x] mumbleserver
 - [x] mordserver
 - [x] necserver
@@ -236,7 +237,6 @@ Notes:
 - [ ] cod2server
 - [ ] cod4server
 - [ ] coduoserver
-- [ ] codwawserver
 - [ ] dstserver
 - [ ] etlegacyserver
 - [ ] gravserver

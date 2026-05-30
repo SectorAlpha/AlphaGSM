@@ -5,6 +5,8 @@ This guide covers the `coduoserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- owned base Call of Duty multiplayer assets that include `main/pak0.pk3` or
+  `main/default_mp.cfg`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -46,6 +48,8 @@ Setup configures:
 - the game port (default 28960)
 - the install directory
 - downloads and extracts the server archive
+- still requires copied base Call of Duty multiplayer assets before the server
+  can finish startup
 
 ## Useful Commands
 
@@ -58,6 +62,9 @@ alphagsm mycoduoser backup
 
 - Module name: `coduoserver`
 - Default port: 28960
+- Current blocker for anonymous installs: the dedicated archive still depends
+  on owned base Call of Duty assets such as `main/pak0.pk3` or
+  `main/default_mp.cfg`
 
 ## Developer Notes
 
@@ -71,6 +78,8 @@ alphagsm mycoduoser backup
 
 - **Config file**: `<moddir>/server.cfg` (default `uo/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- **Owned base assets still required**: `main/pak0.pk3`,
+  `main/default_mp.cfg`
 - **Template**: See [server-templates/coduoserver/](../server-templates/coduoserver/) if available
 
 ### Maps and Mods
