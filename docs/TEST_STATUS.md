@@ -131,7 +131,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | warbandserver | Direct download (Wine) — PASSED 2026-05-18; the module now uses the official `mb_warband_dedicated_1174.zip` archive directly instead of scraping the Cloudflare-blocked TaleWorlds page, syncs `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, runs the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers |
 | wfserver | SteamCMD |
 | wurmserver | SteamCMD |
-| xntserver | Direct download |
+| xntserver | Direct download / Docker runtime — PASSED 2026-05-30; fresh focused integration plus smoke now both pass on the shared `quake-linux` runtime once AlphaGSM launches Xonotic through the upstream `server/server_linux.sh` dedicated wrapper, writes the managed `server.cfg` into the install-root `data/` path the engine actually reads, and spaces the Quake `query`, `info`, and `info --json` checks around DarkPlaces' rate-limit window |
 | battlecryoffreedomserver | SteamCMD (Proton) |
 | ckserver | SteamCMD |
 | enshrouded | SteamCMD (Proton) |

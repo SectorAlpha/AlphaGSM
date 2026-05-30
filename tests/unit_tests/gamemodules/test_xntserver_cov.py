@@ -74,7 +74,10 @@ def test_install(tmp_path):
     server.data["version"] = "test"
     server.data["userdir"] = "user"
     server.data["hostname"] = "Test Server"
+    server.data["gametype"] = "dm"
     mod.install(server)
+    assert (tmp_path / "data" / "server.cfg").read_text(encoding="utf-8").startswith('hostname "Test Server"')
+    assert (tmp_path / "user" / "data" / "server.cfg").exists()
 
 def test_install_resolves_download(tmp_path):
     server = DummyServer()
@@ -83,26 +86,30 @@ def test_install_resolves_download(tmp_path):
     server.data["download_name"] = "test.zip"
     server.data["userdir"] = "user"
     server.data["hostname"] = "Test Server"
+    server.data["gametype"] = "dm"
     with patch.object(mod, 'resolve_download', return_value=('0.8.6', 'https://example.com/xonotic.zip')):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/xonotic.zip'
+    assert (tmp_path / "data" / "server.cfg").exists()
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "xonotic-linux64-dedicated"
-    (tmp_path / "xonotic-linux64-dedicated").write_text("")
+    launcher_dir = tmp_path / "server"
+    launcher_dir.mkdir()
+    (launcher_dir / "server_linux.sh").write_text("")
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd[0] == "./server/server_linux.sh"
+    assert "+port" in cmd
+    assert cwd == server.data["dir"]
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "nonexistent"
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
@@ -110,10 +117,24 @@ def test_get_start_command_missing_exe(tmp_path):
     with pytest.raises(ServerError):
         mod.get_start_command(server)
 
+
+def test_prestart_refreshes_server_cfg(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["hostname"] = "AlphaGSM Test"
+    server.data["gametype"] = "dm"
+    server.data["userdir"] = "server"
+
+    mod.prestart(server)
+
+    assert (tmp_path / "data" / "server.cfg").exists()
+    assert (tmp_path / "server" / "data" / "server.cfg").exists()
+
 def test_do_stop():
     server = DummyServer()
-    mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    with patch.object(mod.runtime_module, "send_to_server") as mocked_send:
+        mod.do_stop(server, 0)
+    mocked_send.assert_called_with(server, "\nquit\n")
 
 def test_status():
     server = DummyServer()
@@ -193,4 +214,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

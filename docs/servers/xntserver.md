@@ -2,9 +2,13 @@
 
 This guide covers the `xntserver` module in AlphaGSM.
 
+Current status: PASSED 2026-05-30. The validated lifecycle now covers the
+shared `quake-linux` Docker runtime as well as the module's Quake
+`query` / `info` surface.
+
 ## Requirements
 
-- `screen`
+- Docker for the validated container-backed Linux runtime, or a compatible local process runtime
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -63,13 +67,14 @@ alphagsm myxntserve backup
 
 ### Run File
 
-- **Executable**: `xonotic-linux64-dedicated`
-- **Location**: `<install_dir>/xonotic-linux64-dedicated`
+- **Launcher**: `server/server_linux.sh`
+- **Runtime binary**: `xonotic-linux64-dedicated`
+- **Location**: `<install_dir>/server/server_linux.sh`
 - **Engine**: Custom
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: AlphaGSM writes the managed dedicated config to `<install_dir>/data/server.cfg`
 - **Template**: See [server-templates/xntserver/](../server-templates/xntserver/) if available
 
 ### Maps and Mods

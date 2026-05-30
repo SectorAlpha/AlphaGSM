@@ -4,7 +4,6 @@ import os
 import re
 import urllib.request
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -24,6 +23,34 @@ command_args = gamemodule_common.build_setup_version_download_command_args(
 command_descriptions = {}
 command_functions = {}
 max_stop_wait = 1
+
+
+def _get_managed_server_cfg_paths(server):
+    """Return the candidate server.cfg paths Xonotic may require."""
+
+    install_root_cfg = os.path.join(server.data["dir"], "data", "server.cfg")
+    userdir = server.data.get("userdir", "")
+    if userdir in ("", "."):
+        return [install_root_cfg]
+    userdir_cfg = os.path.join(server.data["dir"], userdir, "data", "server.cfg")
+    if os.path.normpath(userdir_cfg) == os.path.normpath(install_root_cfg):
+        return [install_root_cfg]
+    return [install_root_cfg, userdir_cfg]
+
+
+def _write_managed_server_cfg(server):
+    """Write a minimal dedicated config where Xonotic expects it."""
+
+    cfg_lines = [
+        f'hostname "{server.data["hostname"]}"',
+        f'g_gametype "{server.data["gametype"]}"',
+        "",
+    ]
+    cfg_body = "\n".join(cfg_lines)
+    for server_cfg in _get_managed_server_cfg_paths(server):
+        os.makedirs(os.path.dirname(server_cfg), exist_ok=True)
+        with open(server_cfg, "w", encoding="utf-8") as fh:
+            fh.write(cfg_body)
 
 
 def resolve_download(version=None):
@@ -106,30 +133,24 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
     install_archive(server, detect_compression(server.data["download_name"]))
-    # The Xonotic dedicated server exits with "Dedicated server requires
-    # server.cfg in your config directory" if the file does not exist in
-    # the -userdir/data/ path.  Create a minimal one so the server starts.
-    # Xonotic (DarkPlaces engine) stores user data under <userdir>/data/,
-    # so server.cfg must live at <userdir>/data/server.cfg, not <userdir>/server.cfg.
-    userdir_data = os.path.join(server.data["dir"], server.data["userdir"], "data")
-    os.makedirs(userdir_data, exist_ok=True)
-    server_cfg = os.path.join(userdir_data, "server.cfg")
-    if not os.path.exists(server_cfg):
-        with open(server_cfg, "w", encoding="utf-8") as fh:
-            fh.write(f'hostname "{server.data["hostname"]}"\n')
+    _write_managed_server_cfg(server)
+
+
+def prestart(server):
+    """Refresh the managed server.cfg before each launch."""
+
+    _write_managed_server_cfg(server)
 
 
 def get_start_command(server):
     """Build the command used to launch a Xonotic dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    launcher_path = os.path.join(server.data["dir"], "server", "server_linux.sh")
+    if not os.path.isfile(launcher_path):
+        raise ServerError("Dedicated launcher not found")
     return (
         [
-            "./" + server.data["exe_name"],
-            "-userdir",
-            os.path.join(server.data["dir"], server.data["userdir"]),
+            "./server/server_linux.sh",
             "+sv_public",
             "1",
             "+port",
@@ -146,7 +167,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Xonotic using the standard quit command."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):
