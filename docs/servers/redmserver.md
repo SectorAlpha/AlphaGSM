@@ -5,6 +5,8 @@ This guide covers the `redmserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- a Cfx.re server license key
+- operator-managed txAdmin or vanilla `server-data` provisioning
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +22,15 @@ Run setup:
 ```bash
 alphagsm myredmserv setup
 ```
+
+`redmserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can download the
+current Linux RedM artifact, but you still need to complete one of the
+supported Cfx provisioning flows before the server is actually ready:
+
+- txAdmin first-run provisioning against the downloaded artifact, including
+  browser-based account linking, PIN entry, and recipe/profile creation, or
+- a pre-staged vanilla `server-data/` tree with a valid `server.cfg`, license
+  key, resources, and any other RedM configuration you intend to run
 
 Start it:
 
@@ -47,6 +58,24 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
+Suggested txAdmin-oriented flow:
+
+```bash
+alphagsm myredmserv create redmserver
+alphagsm myredmserv setup -n 30120 /path/to/redmserver
+alphagsm myredmserv start
+# complete txAdmin provisioning in the browser against the downloaded artifact
+```
+
+Suggested vanilla/server-data flow:
+
+```bash
+alphagsm myredmserv create redmserver
+alphagsm myredmserv setup -n 30120 /path/to/redmserver
+# stage your server-data tree with server.cfg and sv_licenseKey
+alphagsm myredmserv start
+```
+
 ## Useful Commands
 
 ```bash
@@ -58,6 +87,7 @@ alphagsm myredmserv backup
 
 - Module name: `redmserver`
 - Default port: 30120
+- Install mode: `ENABLED (BYO)` txAdmin/server-data provisioning
 
 ## Developer Notes
 
@@ -69,7 +99,8 @@ alphagsm myredmserv backup
 
 ### Server Configuration
 
-- **Config file**: `server.cfg`
+- **Config file**: usually `server-data/server.cfg` for vanilla deployments, or the
+  txAdmin-managed profile under `txData/`
 - **Template**: See [server-templates/redmserver/](../server-templates/redmserver/) if available
 
 ### Maps and Mods

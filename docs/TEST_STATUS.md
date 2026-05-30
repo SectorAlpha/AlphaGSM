@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 20 |
+| ENABLED (BYO) | 22 |
 | DISABLED | 60      |
-| SKIPPED  | 41      |
+| SKIPPED  | 39      |
 
 ## Status Key
 
@@ -151,7 +151,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (20)
+## ENABLED (BYO) (22)
 
 | Test | Type |
 |------|------|
@@ -163,12 +163,14 @@ this pass aligned the runtime gate with that existing tracker state.
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
 | gravserver | owned GRAV dedicated server tree |
+| gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
 | minecraft_custom | user-supplied server jar |
 | mxbikesserver | user-supplied dedicated archive URL |
 | q3server | owned base-game assets |
 | qlserver | owned/authenticated entitlement plus server auth/config |
+| redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | rtcwserver | owned base-game assets |
 | mohaaserver | owned MOHAA dedicated server tree |
 | pathoftitansserver | Alderon auth token or staged archive override/server tree |
@@ -242,7 +244,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (41)
+## SKIPPED (39)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -276,12 +278,10 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arma3_wasteland | Arma 3 variant (needs base arma3server) |
 | bbserver | HLDS mod maps not available via SteamCMD |
 | brickadiaserver | SteamCMD app requires authentication |
-| gtafivemserver | Requires txAdmin/authentication |
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | nsserver | HLDS mod maps not available via SteamCMD |
-| redmserver | Requires txAdmin/authentication |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |
 | vsserver | HLDS mod maps not available via SteamCMD |

@@ -151,12 +151,14 @@ Notes:
 - [x] etlegacyserver
 - [x] ets2server
 - [x] gravserver
+- [x] gtafivemserver
 - [x] hogwarpserver
 - [x] identityserver
 - [x] minecraft_custom
 - [x] mxbikesserver
 - [x] q3server
 - [x] qlserver
+- [x] redmserver
 - [x] rtcwserver
 - [x] mohaaserver
 - [x] pathoftitansserver
@@ -258,12 +260,10 @@ Notes:
 - [ ] arma3_wasteland
 - [ ] bbserver
 - [ ] brickadiaserver
-- [ ] gtafivemserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
 - [ ] minecraft_tekkit
 - [ ] nsserver
-- [ ] redmserver
 - [ ] tsserver
 - [ ] twserver
 - [ ] vsserver

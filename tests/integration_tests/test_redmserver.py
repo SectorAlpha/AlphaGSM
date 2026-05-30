@@ -1,4 +1,7 @@
-"""Integration test for redmserver."""
+"""Integration test for redmserver.
+
+ENABLED (BYO): RedM requires operator-managed txAdmin/server-data provisioning.
+"""
 
 import pytest
 
@@ -23,7 +26,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="CFX server requires proot/container runtime")
+@pytest.mark.skip(
+    reason="ENABLED (BYO): complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
+)
 def test_redmserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

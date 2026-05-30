@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for redmserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with operator-managed txAdmin/server-data provisioning.
+echo "Smoke test for redmserver is ENABLED (BYO) - complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
 exit 0
 
 set -Eeuo pipefail
