@@ -3,12 +3,13 @@
 import os
 import re
 import shutil
+import subprocess as sp
+import tempfile
 import time
 import urllib.error
 import urllib.request
+import zipfile
 
-import downloader
-import screen
 from server import ServerError
 from utils import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
@@ -153,6 +154,70 @@ def _sync_tree(source, target):
             shutil.copy2(os.path.join(root, filename), os.path.join(target_root, filename))
 
 
+def _download_bedrock_archive(url, targetname, timeout):
+    """Download the Bedrock archive using browser-style headers."""
+
+    curl_path = shutil.which("curl")
+    if curl_path is not None:
+        command = [
+            curl_path,
+            "--http1.1",
+            "--fail",
+            "--location",
+            "--silent",
+            "--show-error",
+            "--retry",
+            str(BEDROCK_HTTP_RETRIES),
+            "--retry-delay",
+            str(BEDROCK_HTTP_RETRY_DELAY_SECONDS),
+            "--retry-all-errors",
+            "--connect-timeout",
+            str(min(30, timeout)),
+            "--speed-time",
+            str(timeout),
+            "--speed-limit",
+            "1",
+        ]
+        for key, value in BEDROCK_HTTP_HEADERS.items():
+            command.extend(["-H", f"{key}: {value}"])
+        command.extend(["--output", targetname, url])
+        result = sp.run(
+            command,
+            check=False,
+            stdout=sp.DEVNULL,
+            stderr=sp.PIPE,
+            text=True,
+        )
+        if result.returncode == 0:
+            return targetname
+
+    request = urllib.request.Request(url, headers=BEDROCK_HTTP_HEADERS)
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        with open(targetname, "wb") as out:
+            shutil.copyfileobj(response, out)
+    return targetname
+
+
+def _download_and_extract_bedrock_install(server):
+    """Stage the Bedrock archive in a temp dir and return the extracted root."""
+
+    staging_dir = tempfile.mkdtemp(
+        prefix="bedrock-download-",
+        dir=os.path.dirname(server.data["dir"]) or None,
+    )
+    archive_path = os.path.join(staging_dir, server.data["download_name"])
+    extract_root = os.path.join(staging_dir, "extract")
+    os.makedirs(extract_root, exist_ok=True)
+    _download_bedrock_archive(
+        server.data["url"],
+        archive_path,
+        BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS,
+    )
+    with zipfile.ZipFile(archive_path) as archive:
+        archive.extractall(extract_root)
+    return staging_dir, _resolve_archive_root(extract_root)
+
+
 def configure(
     server,
     ask,
@@ -250,16 +315,11 @@ def install(server):
         or server.data["current_url"] != server.data["url"]
         or not os.path.isfile(executable)
     ):
-        downloadpath = downloader.getpath(
-            "url",
-            (
-                server.data["url"],
-                server.data["download_name"],
-                "zip",
-                str(BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS),
-            ),
-        )
-        _sync_tree(_resolve_archive_root(downloadpath), server.data["dir"])
+        staging_dir, extracted_root = _download_and_extract_bedrock_install(server)
+        try:
+            _sync_tree(extracted_root, server.data["dir"])
+        finally:
+            shutil.rmtree(staging_dir, ignore_errors=True)
         os.chmod(executable, os.stat(executable).st_mode | 0o111)
         server.data["current_url"] = server.data["url"]
 
@@ -279,7 +339,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop a running Bedrock server via the console."""
 
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):
@@ -338,6 +398,7 @@ def get_runtime_requirements(server):
         server,
         family="service-console",
         port_definitions=({'key': 'port', 'protocol': 'udp'},),
+        extra={"stop_mode": "docker-stop"},
     )
 
 def get_container_spec(server):
@@ -348,4 +409,5 @@ def get_container_spec(server):
         port_definitions=({'key': 'port', 'protocol': 'udp'},),
         stdin_open=True,
         tty=True,
+        extra={"stop_mode": "docker-stop"},
     )

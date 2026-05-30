@@ -61,6 +61,7 @@ Notes:
 - [x] kf2server
 - [x] l4dserver
 - [x] longvinterserver
+- [x] minecraft_bedrock
 - [x] minecraft_paper
 - [x] minecraft_bungeecord
 - [x] minecraft_vanilla
@@ -248,7 +249,6 @@ Notes:
 - [ ] identityserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
-- [ ] minecraft_bedrock
 - [ ] minecraft_custom
 - [ ] minecraft_tekkit
 - [ ] mxbikesserver

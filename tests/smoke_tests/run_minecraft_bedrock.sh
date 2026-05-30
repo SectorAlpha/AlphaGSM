@@ -11,6 +11,9 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itminecraftb}"
 SERVER_STARTED=0
+DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
+LOCAL_DOCKER_IMAGE="alphagsm-service-console-runtime:local"
+PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-service-console-runtime:latest"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -23,6 +26,20 @@ run_alphagsm() {
   echo
   echo "=== alphagsm $* ==="
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
+}
+
+resolve_docker_image() {
+  if [[ -n "${ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE:-}" ]]; then
+    printf '%s\n' "$ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE"
+    return 0
+  fi
+
+  if docker image inspect "$LOCAL_DOCKER_IMAGE" >/dev/null 2>&1; then
+    printf '%s\n' "$LOCAL_DOCKER_IMAGE"
+    return 0
+  fi
+
+  printf '%s\n' "$PUBLISHED_DOCKER_IMAGE"
 }
 
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
@@ -39,13 +56,15 @@ cleanup() {
 trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
-require_cmd screen
+require_cmd docker
 
-WORK_DIR="$(mktemp -d)"
+DOCKER_IMAGE="$(resolve_docker_image)"
+WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
+mkdir -p "$WORK_ROOT"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" minecraft-bedrock-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/minecraft-bedrock-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-minecraft-bedrock.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-minecraftb-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -63,6 +82,12 @@ target_path = $HOME_DIR/downloads/downloads
 [server]
 datapath = $HOME_DIR/conf
 
+[runtime]
+backend = docker
+
+[process]
+backend = subprocess
+
 [screen]
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-minecraftb-IT#
@@ -71,8 +96,10 @@ EOF
 
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
+echo "Using image: $DOCKER_IMAGE"
 
 run_create_or_skip_disabled "$SERVER_NAME" create minecraft.bedrock
+run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
@@ -85,6 +112,7 @@ if [[ $? -ne 0 ]]; then
 fi
 set -e
 run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"

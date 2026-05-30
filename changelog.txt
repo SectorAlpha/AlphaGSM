@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-30
+- Server support: re-enable `minecraft_bedrock` on the Docker-backed `service-console` Linux lane after replacing the stale JavaScript-page assumption with a direct browser-header archive fetch, adding `libcurl4` to the shared runtime image, and switching the Bedrock container stop path to Docker-stop because the server echoes console `stop` input without exiting cleanly under the shared exec-console console path.
 - Server support: re-enable `mtaserver` on the Docker-backed `steamcmd-linux` Linux lane after auto-installing the official `baseconfig.tar.gz` payload, syncing `mods/deathmatch/mtaserver.conf` before launch, disabling `ase` so no unmanaged `port + 123` announce port is required, and proving fresh focused integration plus smoke on MTA's real built-in HTTP health surface at `httpport = port + 2`.
 
 2026-05-29

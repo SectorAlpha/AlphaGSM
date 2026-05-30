@@ -4,8 +4,8 @@ This guide covers the `minecraft.bedrock` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- Java 21 or compatible runtime
+- Docker is recommended on Linux; AlphaGSM can run Bedrock through the shared `service-console` runtime image.
+- For local process mode, install `screen` and the Bedrock shared-library dependencies, including `libcurl.so.4`.
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -60,6 +60,7 @@ alphagsm mybedrock set servername "AlphaGSM Bedrock Server"
 
 - Module name: `minecraft.bedrock`
 - Default port: 19132
+- Fresh Docker-backed support was revalidated on 2026-05-30 with `query`, `info`, `info --json`, and clean stop all passing on the shared `service-console` runtime family.
 
 ## Developer Notes
 

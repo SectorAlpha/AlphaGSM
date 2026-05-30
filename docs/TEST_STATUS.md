@@ -11,8 +11,8 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 117      |
-| DISABLED | 62      |
+| PASSED   | 118      |
+| DISABLED | 61      |
 | SKIPPED  | 54      |
 
 ## Status Key
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (116)
+## PASSED (118)
 
 | Test | Type |
 |------|------|
@@ -69,6 +69,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
 | longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
+| minecraft_bedrock | Docker runtime (service-console) — PASSED 2026-05-30; fresh focused integration now passes on the rebuilt branch-local `service-console` runtime image after AlphaGSM switches Bedrock setup from the stale JavaScript-page assumption to a direct browser-header archive fetch, keeps Docker-first lifecycle coverage on the shared runtime family, and uses Docker-stop for the container-backed stop path because Bedrock echoes console `stop` input without exiting cleanly under the shared exec-console path |
 | minecraft_paper | Direct download |
 | minecraft_bungeecord | Direct download — PASSED 2026-05-30; fresh focused integration now proves the tracker row was stale: AlphaGSM resolves the latest successful upstream BungeeCord Jenkins build automatically during `setup`, generates `config.yml`, and passes `query`, `info`, `info --json`, `status`, and clean shutdown on the managed SLP/TCP proxy port without requiring a bring-your-own jar URL |
 | minecraft_vanilla | Direct download — PASSED 2026-05-16; local integration helper now selects the newest release compatible with the installed Java runtime |
@@ -148,7 +149,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## DISABLED (62)
+## DISABLED (61)
 
 | Test | Reason |
 |------|--------|
@@ -262,7 +263,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | identityserver | SteamCMD app requires authentication |
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
-| minecraft_bedrock | Minecraft.net Bedrock download page is JavaScript-rendered; URL scraper returns no results (module disabled) |
 | minecraft_custom | `minecraft.custom` is a bring-your-own-jar lane: place a real server jar at `<install_dir>/<exe_name>` and set `exe_name` before rerunning `setup`; AlphaGSM does not auto-select or auto-download an arbitrary custom server binary here. |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | mxbikesserver | MX Bikes is a bring-your-own-download lane: AlphaGSM can install and launch the dedicated server, but the upstream project does not expose a stable automated Linux server archive URL here. Provide a direct dedicated-server archive URL during setup or through `set url ...` before smoke/integration can run. |

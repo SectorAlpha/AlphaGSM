@@ -122,33 +122,21 @@ def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monk
         }
     )
     download_root = tmp_path / "download"
+    staging_dir = tmp_path / "staging"
     executable = download_root / "bedrock_server"
     executable.parent.mkdir(parents=True)
     executable.write_text("")
     updates = []
-    download_calls = []
-
-    monkeypatch.setattr(
-        bedrock.downloader,
-        "getpath",
-        lambda module, args: download_calls.append((module, args)) or str(download_root),
-    )
     monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+    monkeypatch.setattr(
+        bedrock,
+        "_download_and_extract_bedrock_install",
+        lambda current_server: (str(staging_dir), str(download_root)),
+    )
 
     bedrock.install(server)
 
     assert (tmp_path / "server" / "bedrock_server").exists()
-    assert download_calls == [
-        (
-            "url",
-            (
-                "http://example.com/bedrock.zip",
-                "bedrock-server.zip",
-                "zip",
-                str(bedrock.BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS),
-            ),
-        )
-    ]
     assert updates[0][0].endswith("server.properties")
     assert updates[0][1]["server-port"] == "19132"
     assert updates[0][1]["level-name"] == "world_one"
@@ -289,6 +277,21 @@ def test_bedrock_get_start_command_uses_local_library_path(tmp_path):
     assert cwd == str(tmp_path)
 
 
+def test_bedrock_do_stop_uses_runtime_console(monkeypatch):
+    server = DummyServer("bedrock")
+    calls = []
+
+    monkeypatch.setattr(
+        bedrock.runtime_module,
+        "send_to_server",
+        lambda current_server, command: calls.append((current_server, command)),
+    )
+
+    bedrock.do_stop(server, 0)
+
+    assert calls == [(server, "\nstop\n")]
+
+
 def test_bedrock_query_and_info_use_raknet_udp():
     server = DummyServer("bedrock")
     server.data.update({"port": 19132})
@@ -309,6 +312,7 @@ def test_bedrock_runtime_requirements_use_service_console_family(tmp_path):
 
     assert requirements["engine"] == "docker"
     assert requirements["family"] == "service-console"
+    assert requirements["stop_mode"] == "docker-stop"
     assert requirements["mounts"] == [
         {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
     ]
@@ -334,6 +338,7 @@ def test_bedrock_container_spec_preserves_native_command(tmp_path):
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] is True
     assert spec["tty"] is True
+    assert spec["stop_mode"] == "docker-stop"
     assert spec["ports"] == [{"host": 19132, "container": 19132, "protocol": "udp"}]
     assert spec["command"] == ["env", "LD_LIBRARY_PATH=.", "./bedrock_server"]
     assert spec["env"] == {}
