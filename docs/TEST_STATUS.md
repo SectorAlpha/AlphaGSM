@@ -13,7 +13,7 @@ this pass aligned the runtime gate with that existing tracker state.
 |----------|-------|
 | PASSED   | 118      |
 | ENABLED (BYO) | 20 |
-| DISABLED | 61      |
+| DISABLED | 60      |
 | SKIPPED  | 41      |
 
 ## Status Key
@@ -176,7 +176,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | subnauticaserver | owned client installation path |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 
-## DISABLED (61)
+## DISABLED (60)
 
 | Test | Reason |
 |------|--------|
@@ -211,7 +211,6 @@ this pass aligned the runtime gate with that existing tracker state.
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
-| ets2server | SteamCMD app 1948160 installs the Linux dedicated server, but anonymous startup exits because the required exported server packages/settings file is missing; generate it from an owned ETS2 client with `export_server_packages` before the server can finish startup |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | hurtworldserver | SteamCMD app 405100 installs no Linux-compatible dedicated server binary (HurtworldDedicated not present) |
 | hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |

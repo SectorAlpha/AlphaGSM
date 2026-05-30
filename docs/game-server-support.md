@@ -197,7 +197,6 @@ Notes:
 - [ ] deadmatterserver
 - [ ] dayzarma2epochserver
 - [ ] dayzserver
-- [ ] ets2server
 - [ ] foundryserver
 - [ ] hurtworldserver
 - [ ] hzserver
