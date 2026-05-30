@@ -5,6 +5,7 @@ This guide covers the `mxbikesserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- A direct MX Bikes dedicated-server archive URL supplied by the operator
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -47,11 +48,17 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
+MX Bikes is currently a bring-your-own-download server in AlphaGSM. Before
+`setup`, provide a direct archive URL for the dedicated server, for example by
+running `alphagsm mymxbikess set url <https://.../mxbikes-dedicated.zip>` or
+passing the URL during setup.
+
 ## Useful Commands
 
 ```bash
 alphagsm mymxbikess update
 alphagsm mymxbikess backup
+alphagsm mymxbikess set url https://example.invalid/mxbikes-dedicated.zip
 ```
 
 ## Notes

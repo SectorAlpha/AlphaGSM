@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for mxbikesserver is disabled - see docs/TEST_STATUS.md for status"
+# DISABLED: MX Bikes currently requires the operator to provide a direct dedicated-server archive URL.
+# See docs/TEST_STATUS.md for the exact bring-your-own download requirement.
+echo "Smoke test for mxbikesserver is disabled - requires a user-provided dedicated-server archive URL"
 exit 0
 
 set -Eeuo pipefail

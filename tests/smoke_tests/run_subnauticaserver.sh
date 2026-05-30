@@ -1,7 +1,8 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for subnauticaserver is disabled - see docs/TEST_STATUS.md for status"
+# DISABLED: Nitrox now gets past the old .NET runtime issue in the Docker lane, but still requires
+# an owned Subnautica installation path (for example SUBNAUTICA_INSTALLATION_PATH) that CI does not have.
+# See docs/TEST_STATUS.md for the exact blocker and current status.
+echo "Smoke test for subnauticaserver is disabled - Nitrox requires an owned Subnautica installation path"
 exit 0
 
 set -Eeuo pipefail

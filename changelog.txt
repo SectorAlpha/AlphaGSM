@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-29
+- Server support: replace the vague `mxbikesserver` download-prerequisite note with the exact bring-your-own-download requirement: AlphaGSM expects the operator to supply a direct MX Bikes dedicated-server archive URL before setup can run.
+- Server support: replace the old `subnauticaserver` platform/runtime blocker with the exact owned-client requirement proven on `release_v1`: the Docker-backed Nitrox Linux lane now gets past the stale `.NET 9` issue, but startup still aborts with `Could not find Subnautica installation.` until an owned game path is supplied, such as `SUBNAUTICA_INSTALLATION_PATH`.
 - Server support: re-enable `vintagestoryserver` after moving its validated Linux lane onto the module's existing Docker-backed `steamcmd-linux` runtime, teaching integration/smoke to prefer the rebuilt local `alphagsm-steamcmd-linux-runtime:test` image, and proving fresh focused lifecycle coverage on the current generic `tcp` game-port health surface without requiring host `dotnet`.
 - Server support: replace the vague `etlegacyserver` and `rtcwserver` archive/download prerequisite notes with exact owned-assets blockers, and make both modules fail fast on `start` with clear instructions about which original game files must be copied into `etmain/` or `main/` before the dedicated server can launch.
 - Server support: re-enable `codwawserver` on the Docker-backed `steamcmd-linux` Linux lane after proving the archive-backed install path can complete and that `query`, `info`, and `info --json` succeed on the current generic `tcp` health surface at the managed game port.

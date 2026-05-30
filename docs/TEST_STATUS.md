@@ -265,13 +265,13 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | minecraft_custom | Custom jar (needs user-supplied URL) |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | mtaserver | Download/platform prerequisite |
-| mxbikesserver | Download prerequisite |
+| mxbikesserver | MX Bikes is a bring-your-own-download lane: AlphaGSM can install and launch the dedicated server, but the upstream project does not expose a stable automated Linux server archive URL here. Provide a direct dedicated-server archive URL during setup or through `set url ...` before smoke/integration can run. |
 | nsserver | HLDS mod maps not available via SteamCMD |
 | pathoftitansserver | SteamCMD app requires authentication |
 | qlserver | Quake Live dedicated server (qzeroded.x64) exits immediately on startup; requires Steam authentication or specific server configuration |
 | redmserver | Requires txAdmin/authentication |
 | rtcwserver | ioRTCW archive setup is still a bring-your-own-assets lane. The engine release itself is downloadable, but the dedicated multiplayer server still requires original RTCW multiplayer data in `main/`, specifically `mp_bin.pk3`, `mp_pak0.pk3` through `mp_pak5.pk3`, and `mp_pakmaps0.pk3` through `mp_pakmaps6.pk3`, from an original Return to Castle Wolfenstein install. |
-| subnauticaserver | SteamCMD/platform issue |
+| subnauticaserver | Nitrox Linux archive setup now succeeds under the Docker-backed `steamcmd-linux` runtime and the old `.NET 9` CI blocker is no longer the issue, but fresh validation on 2026-05-30 proved the current exact blocker is owned client data: `Nitrox.Server.Subnautica` aborts with `Could not find Subnautica installation.` until a real Subnautica install path is supplied (for example through `SUBNAUTICA_INSTALLATION_PATH` or Nitrox's configured game path). |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |
 | vsserver | HLDS mod maps not available via SteamCMD |

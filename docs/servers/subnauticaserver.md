@@ -5,6 +5,8 @@ This guide covers the `subnauticaserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- An owned Subnautica client installation path for Nitrox to inspect
+  - Nitrox currently looks for a configured game path or the `SUBNAUTICA_INSTALLATION_PATH` environment variable
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -47,6 +49,10 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
+Before `start`, provide Nitrox with a real owned Subnautica installation path.
+On the current Linux lane, the missing `.NET` runtime is no longer the blocker;
+startup now aborts only when Nitrox cannot find the base game files.
+
 ## Useful Commands
 
 ```bash
@@ -66,6 +72,7 @@ alphagsm mysubnauti backup
 - **Executable**: `Nitrox.Server.Subnautica`
 - **Location**: `<install_dir>/Nitrox.Server.Subnautica`
 - **Engine**: Custom
+- **Owned client path required before start**: set Nitrox's game path or `SUBNAUTICA_INSTALLATION_PATH` to a real Subnautica install
 
 ### Server Configuration
 
