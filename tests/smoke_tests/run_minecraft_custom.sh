@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
 # See docs/TEST_STATUS.md for current server status
-echo "Smoke test for minecraft_custom is disabled - see docs/TEST_STATUS.md for status"
+echo "Smoke test for minecraft_custom is disabled - place a real server jar at <install_dir>/<exe_name> and set exe_name before rerunning setup"
 exit 0
 
 set -Eeuo pipefail

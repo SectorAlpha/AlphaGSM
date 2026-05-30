@@ -26,7 +26,14 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="DST requires a Klei cluster_token and cluster config to start; server exits immediately without them")
+@pytest.mark.skip(
+    reason=(
+        "DST requires a real Klei cluster_token.txt plus cluster config under "
+        "<install_dir>/<confdir>/<cluster>/ (default "
+        "<install_dir>/DoNotStarveTogether/<server-name>/); without them the "
+        "server exits immediately on startup"
+    )
+)
 def test_dstserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

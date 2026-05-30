@@ -27,7 +27,12 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires user-provided server jar (bring-your-own)")
+@pytest.mark.skip(
+    reason=(
+        "Disabled: place a real custom Minecraft server jar at "
+        "<install_dir>/<exe_name> and set exe_name before rerunning setup"
+    )
+)
 def test_minecraft_custom_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("java")

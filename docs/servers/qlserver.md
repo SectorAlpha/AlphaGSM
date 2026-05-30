@@ -48,6 +48,23 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+Quake Live is currently a bring-your-own-authentication/config lane in
+AlphaGSM. The anonymous dedicated payload installs, but the current Linux
+server still exits immediately on startup unless the operator supplies the
+missing upstream requirements.
+
+In practice, treat the current requirement as:
+
+- an owned/authenticated Quake Live Steam entitlement instead of anonymous-only
+  SteamCMD setup
+- any server-side Quake Live auth/config material your deployment requires
+
+The current blocker is not a missing binary path. `qzeroded.x64` installs, but
+anonymous startup is still not sufficient to reach a queryable dedicated
+server. If you are testing this lane locally, start by authenticating the
+Steam install/update flow with an owned account, then retry the normal
+AlphaGSM lifecycle.
+
 ## Useful Commands
 
 ```bash
@@ -99,6 +116,9 @@ alphagsm myqlserver mod cleanup
 - **Config files**: `baseq3/server.cfg`
 - **Template**: See [server-templates/qlserver/](../server-templates/qlserver/) if available
 - **Schema-backed sync**: AlphaGSM keeps `hostname` and `startmap` aligned with `set`
+- **Current blocker**: anonymous SteamCMD setup alone is not enough; the
+  operator must provide the missing Quake Live authentication/config
+  prerequisites before `start` can succeed
 
 ### Maps and Mods
 

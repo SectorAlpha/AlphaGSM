@@ -48,6 +48,43 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+Don't Starve Together is currently a bring-your-own-config lane in AlphaGSM.
+The anonymous server payload installs, but startup still exits immediately
+unless you provide both:
+
+- a real `cluster_token.txt`
+- a real cluster config directory for the world you want to run
+
+With the module defaults, AlphaGSM starts DST with:
+
+- `-persistent_storage_root <install_dir>`
+- `-conf_dir DoNotStarveTogether`
+- `-cluster <server-name>`
+- `-shard Master`
+
+That means the expected default layout is:
+
+```text
+<install_dir>/DoNotStarveTogether/<server-name>/
+├── cluster_token.txt
+├── cluster.ini
+└── Master/
+    └── server.ini
+```
+
+If you change `cluster`, `shard`, or `confdir` with `alphagsm set`, place the
+files under the matching adjusted path before retrying `start`.
+
+Example:
+
+```bash
+alphagsm mydstserve create dstserver
+alphagsm mydstserve setup
+mkdir -p "<install_dir>/DoNotStarveTogether/mydstserve/Master"
+# Copy your real Klei token and cluster config into that directory tree
+alphagsm mydstserve start
+```
+
 ## Useful Commands
 
 ```bash

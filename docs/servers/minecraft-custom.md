@@ -47,6 +47,32 @@ Setup configures:
 - the game port (default 25565)
 - the install directory
 
+`minecraft.custom` is a bring-your-own-jar lane. AlphaGSM does not know which
+custom server binary you want by default, so `setup` only succeeds after you
+provide the jar yourself.
+
+Supported operator workflow:
+
+1. create the server
+2. choose the jar filename AlphaGSM should execute
+3. copy the real server jar into the install directory
+4. rerun `setup`
+5. start the server normally
+
+Example:
+
+```bash
+alphagsm mycustom create minecraft.custom
+alphagsm mycustom set exe_name paper-1.21.1.jar
+mkdir -p /srv/alphagsm/mycustom
+cp /path/to/paper-1.21.1.jar /srv/alphagsm/mycustom/
+alphagsm mycustom setup 25565 /srv/alphagsm/mycustom
+alphagsm mycustom start
+```
+
+If `setup` says `Can't find server jar (...)`, the fix is to place the jar at
+`<install_dir>/<exe_name>` or update `exe_name` and run `setup` again.
+
 ## Useful Commands
 
 ```bash
@@ -54,6 +80,7 @@ alphagsm mycustom update
 alphagsm mycustom backup
 alphagsm mycustom set gamemap CustomWorld
 alphagsm mycustom set servername "AlphaGSM Custom Server"
+alphagsm mycustom set exe_name paper-1.21.1.jar
 ```
 
 ## Notes
@@ -66,7 +93,7 @@ alphagsm mycustom set servername "AlphaGSM Custom Server"
 ### Run File
 
 - **Executable**: `custom .jar (user-specified)`
-- **Location**: `<install_dir>/custom .jar (user-specified)`
+- **Location**: `<install_dir>/<exe_name>`
 - **Engine**: Java (Custom)
 
 ### Server Configuration

@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-29
+- Documentation: make the remaining bring-your-own lanes more explicit for operators by spelling out the exact DST cluster-token/config path, the `minecraft.custom` jar placement and `exe_name` flow, and the current Quake Live authentication/config requirement directly in the guides, tracker rows, smoke headers, and integration skips.
 - Server support: replace the vague `mxbikesserver` download-prerequisite note with the exact bring-your-own-download requirement: AlphaGSM expects the operator to supply a direct MX Bikes dedicated-server archive URL before setup can run.
 - Server support: replace the old `subnauticaserver` platform/runtime blocker with the exact owned-client requirement proven on `release_v1`: the Docker-backed Nitrox Linux lane now gets past the stale `.NET 9` issue, but startup still aborts with `Could not find Subnautica installation.` until an owned game path is supplied, such as `SUBNAUTICA_INSTALLATION_PATH`.
 - Server support: re-enable `vintagestoryserver` after moving its validated Linux lane onto the module's existing Docker-backed `steamcmd-linux` runtime, teaching integration/smoke to prefer the rebuilt local `alphagsm-steamcmd-linux-runtime:test` image, and proving fresh focused lifecycle coverage on the current generic `tcp` game-port health surface without requiring host `dotnet`.
