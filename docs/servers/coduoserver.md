@@ -51,7 +51,7 @@ Setup configures:
 - still requires copied base Call of Duty multiplayer assets before the server
   can finish startup
 
-`coduoserver` is a bring-your-own-assets lane. AlphaGSM installs the dedicated
+`coduoserver` is supported in `ENABLED (BYO)` mode. AlphaGSM installs the dedicated
 binary for Call of Duty: United Offensive, but the archive still depends on
 owned base Call of Duty multiplayer files that are not bundled.
 

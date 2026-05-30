@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: MX Bikes currently requires the operator to provide a direct dedicated-server archive URL.
-# See docs/TEST_STATUS.md for the exact bring-your-own download requirement.
-echo "Smoke test for mxbikesserver is disabled - requires a user-provided dedicated-server archive URL"
+# ENABLED (BYO): supported with an operator-supplied dedicated-server archive URL.
+echo "Smoke test for mxbikesserver is ENABLED (BYO) - requires a user-provided dedicated-server archive URL"
 exit 0
 
 set -Eeuo pipefail

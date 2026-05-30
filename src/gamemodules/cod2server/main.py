@@ -464,9 +464,15 @@ def _assert_required_base_assets(install_dir):
     localized_config = os.path.isfile(os.path.join(install_dir, "main", "default_localize_mp.cfg"))
     if localized_archives or localized_config:
         return
-    raise ServerError(
-        "Call of Duty 2 requires localized base-game assets that are not present in this install: "
-        "main/localized_*.iwd or main/default_localize_mp.cfg. Provide a package or copied base assets that include them."
+    gamemodule_common.raise_byo_requirement(
+        "cod2server",
+        "owned Call of Duty 2 localized base-game assets",
+        actions=(
+            "Copy localized_*.iwd into <install_dir>/main/",
+            "Copy default_localize_mp.cfg into <install_dir>/main/",
+            "Retry start once those files are present",
+        ),
+        docs_slug="cod2server",
     )
 
 

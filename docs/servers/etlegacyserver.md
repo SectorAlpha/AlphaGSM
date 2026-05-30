@@ -51,7 +51,7 @@ Setup configures:
 - downloads and extracts the server archive
 - installs the public ET: Legacy engine and `legacy/` mod bundle
 
-Before `start`, copy the original Wolfenstein: Enemy Territory base assets into
+This server is supported in `ENABLED (BYO)` mode. Before `start`, copy the original Wolfenstein: Enemy Territory base assets into
 the install's `etmain/` directory. Without `etmain/pak0.pk3`, the dedicated
 server exits at `FS_InitFilesystem: Original game data files not found`.
 

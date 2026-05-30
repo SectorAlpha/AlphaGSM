@@ -62,6 +62,15 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
+
+def test_install_requires_direct_archive_url(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "mxbikes_dedicated"
+    server.data["download_name"] = "test.zip"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): mxbikesserver"):
+        mod.install(server)
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -142,4 +151,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 0 |
+| ENABLED (BYO) | 12 |
 | DISABLED | 61      |
-| SKIPPED  | 55      |
+| SKIPPED  | 43      |
 
 ## Status Key
 
@@ -151,10 +151,22 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (0)
+## ENABLED (BYO) (12)
 
 | Test | Type |
 |------|------|
+| cod2server | owned localized base-game assets |
+| cod4server | owned base-game assets |
+| coduoserver | owned base multiplayer assets |
+| dstserver | owned cluster token/config |
+| etlegacyserver | owned base-game assets |
+| ets2server | owned exported client packages/settings |
+| minecraft_custom | user-supplied server jar |
+| mxbikesserver | user-supplied dedicated archive URL |
+| q3server | owned base-game assets |
+| qlserver | owned/authenticated entitlement plus server auth/config |
+| rtcwserver | owned base-game assets |
+| subnauticaserver | owned client installation path |
 
 ## DISABLED (61)
 
@@ -223,7 +235,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (55)
+## SKIPPED (43)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -239,7 +251,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
-| q3server | Direct download now installs the public ioquake3 Linux engine build, but CI lacks the licensed Quake III `baseq3/pak0.pk3` data required to start the dedicated server |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
@@ -259,26 +270,16 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arma3_wasteland | Arma 3 variant (needs base arma3server) |
 | bbserver | HLDS mod maps not available via SteamCMD |
 | brickadiaserver | SteamCMD app requires authentication |
-| cod2server | `cod2server` is a bring-your-own-assets lane: the Linux dedicated archive now installs correctly on `release_v1`, but startup still needs the operator to copy owned Call of Duty 2 files into `<install_dir>/main/`, specifically `localized_*.iwd` plus `default_localize_mp.cfg`, before retrying `start`. |
-| cod4server | `cod4server` is a bring-your-own-assets lane: the dedicated archive now installs correctly on `release_v1`, but startup still needs the operator to copy owned Call of Duty 4 files into the server tree, specifically `fileSysCheck.cfg` at `<install_dir>/` plus `main/localized_*.iwd` under `<install_dir>/main/`, before retrying `start`. |
-| coduoserver | `coduoserver` is a bring-your-own-assets lane: the dedicated archive now installs correctly on `release_v1`, but startup still needs the operator to copy owned base Call of Duty multiplayer assets into `<install_dir>/main/`, specifically `pak0.pk3` or `default_mp.cfg`, before retrying `start`. |
-| dstserver | DST is a bring-your-own-config lane: the Steam payload installs, but startup still exits immediately until the operator places a real `cluster_token.txt` plus cluster config under the path AlphaGSM launches (`<install_dir>/<confdir>/<cluster>/`, default `<install_dir>/DoNotStarveTogether/<server-name>/`). |
-| etlegacyserver | ET: Legacy archive setup now completes and the dedicated binary is wired correctly on `release_v1`, but fresh Docker-backed validation on 2026-05-30 proved the remaining blocker is owned base-game data: the public ET: Legacy release still exits at `FS_InitFilesystem: Original game data files not found` until `etmain/pak0.pk3` is copied in from an original Wolfenstein: Enemy Territory install. Some mods may also require `etmain/pak1.pk3` and `etmain/pak2.pk3`. |
 | gravserver | SteamCMD/platform issue |
 | gtafivemserver | Requires txAdmin/authentication |
 | hogwarpserver | SteamCMD/platform issue |
 | identityserver | SteamCMD app requires authentication |
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
-| minecraft_custom | `minecraft.custom` is a bring-your-own-jar lane: place a real server jar at `<install_dir>/<exe_name>` and set `exe_name` before rerunning `setup`; AlphaGSM does not auto-select or auto-download an arbitrary custom server binary here. |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
-| mxbikesserver | MX Bikes is a bring-your-own-download lane: AlphaGSM can install and launch the dedicated server, but the upstream project does not expose a stable automated Linux server archive URL here. Provide a direct dedicated-server archive URL during setup or through `set url ...` before smoke/integration can run. |
 | nsserver | HLDS mod maps not available via SteamCMD |
 | pathoftitansserver | SteamCMD app requires authentication |
-| qlserver | Quake Live is currently a bring-your-own-authentication/config lane: `qzeroded.x64` installs, but anonymous SteamCMD startup still exits immediately. Retry this module only with an owned/authenticated Quake Live Steam entitlement and the required server-side Quake Live auth/config prerequisites. |
 | redmserver | Requires txAdmin/authentication |
-| rtcwserver | ioRTCW archive setup is still a bring-your-own-assets lane. The engine release itself is downloadable, but the dedicated multiplayer server still requires original RTCW multiplayer data in `main/`, specifically `mp_bin.pk3`, `mp_pak0.pk3` through `mp_pak5.pk3`, and `mp_pakmaps0.pk3` through `mp_pakmaps6.pk3`, from an original Return to Castle Wolfenstein install. |
-| subnauticaserver | Nitrox Linux archive setup now succeeds under the Docker-backed `steamcmd-linux` runtime and the old `.NET 9` CI blocker is no longer the issue, but fresh validation on 2026-05-30 proved the current exact blocker is owned client data: `Nitrox.Server.Subnautica` aborts with `Could not find Subnautica installation.` until a real Subnautica install path is supplied (for example through `SUBNAUTICA_INSTALLATION_PATH` or Nitrox's configured game path). |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |
 | vsserver | HLDS mod maps not available via SteamCMD |

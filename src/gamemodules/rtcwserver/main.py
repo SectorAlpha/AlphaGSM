@@ -507,10 +507,16 @@ def _assert_required_base_assets(install_dir):
     missing_assets = _missing_required_base_assets(install_dir)
     if not missing_assets:
         return
-    raise ServerError(
-        "Return to Castle Wolfenstein dedicated multiplayer requires original RTCW base assets that are not "
-        "present in this install. Copy the multiplayer pk3 set into main/: "
-        + ", ".join(missing_assets)
+    gamemodule_common.raise_byo_requirement(
+        "rtcwserver",
+        "original RTCW multiplayer data",
+        actions=(
+            "Copy the multiplayer pk3 set into <install_dir>/main/: {}".format(
+                ", ".join(missing_assets)
+            ),
+            "Retry start once those files are present",
+        ),
+        docs_slug="rtcwserver",
     )
 
 

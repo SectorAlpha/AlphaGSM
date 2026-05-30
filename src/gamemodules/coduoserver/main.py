@@ -473,9 +473,14 @@ def _assert_required_base_assets(install_dir):
         return
     if os.path.isfile(os.path.join(install_dir, "main", "default_mp.cfg")):
         return
-    raise ServerError(
-        "Call of Duty: United Offensive requires base Call of Duty assets that are not present in this install: "
-        "main/pak0.pk3 or main/default_mp.cfg. Provide a package or copied base-game assets that include them."
+    gamemodule_common.raise_byo_requirement(
+        "coduoserver",
+        "owned base Call of Duty multiplayer assets",
+        actions=(
+            "Copy pak0.pk3 into <install_dir>/main/ or copy default_mp.cfg into <install_dir>/main/",
+            "Retry start once those files are present",
+        ),
+        docs_slug="coduoserver",
     )
 
 

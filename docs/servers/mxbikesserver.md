@@ -48,7 +48,7 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
-MX Bikes is currently a bring-your-own-download server in AlphaGSM. Before
+MX Bikes is supported in `ENABLED (BYO)` mode in AlphaGSM. Before
 `setup`, provide a direct archive URL for the dedicated server, for example by
 running `alphagsm mymxbikess set url <https://.../mxbikes-dedicated.zip>` or
 passing the URL during setup.

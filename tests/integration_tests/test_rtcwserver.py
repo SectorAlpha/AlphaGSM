@@ -5,7 +5,7 @@ import pytest
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
-        reason="Requires original RTCW multiplayer assets (main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3) not available in CI"
+        reason="ENABLED (BYO): requires original RTCW multiplayer assets (main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3) not available in CI"
     ),
 ]
 

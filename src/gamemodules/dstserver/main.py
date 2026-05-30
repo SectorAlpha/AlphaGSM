@@ -26,6 +26,35 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _assert_cluster_config_present(server):
+    """Raise when the expected DST cluster config tree is not present yet."""
+
+    cluster_root = os.path.join(
+        server.data["dir"],
+        server.data.get("confdir", "DoNotStarveTogether"),
+        server.data.get("cluster", server.name),
+    )
+    shard_name = server.data.get("shard", "Master")
+    required_paths = (
+        os.path.join(cluster_root, "cluster_token.txt"),
+        os.path.join(cluster_root, "cluster.ini"),
+        os.path.join(cluster_root, shard_name, "server.ini"),
+    )
+    if all(os.path.isfile(path) for path in required_paths):
+        return
+    gamemodule_common.raise_byo_requirement(
+        "dstserver",
+        "a real Klei cluster token and cluster config",
+        actions=(
+            "Place cluster_token.txt under <install_dir>/<confdir>/<cluster>/",
+            "Place cluster.ini under <install_dir>/<confdir>/<cluster>/",
+            "Place {}/server.ini under <install_dir>/<confdir>/<cluster>/".format(shard_name),
+            "Retry start once those files are present",
+        ),
+        docs_slug="dstserver",
+    )
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="bin64/dontstarve_dedicated_server_nullrenderer_x64"):
     """Collect and store configuration values for a Don't Starve Together server."""
 
@@ -90,6 +119,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    _assert_cluster_config_present(server)
     return (
         [
             "./" + server.data["exe_name"],

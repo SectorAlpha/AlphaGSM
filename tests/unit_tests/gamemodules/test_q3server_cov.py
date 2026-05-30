@@ -72,6 +72,8 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "ioq3ded.x86_64"
     (tmp_path / "ioq3ded.x86_64").write_text("")
+    (tmp_path / "baseq3").mkdir()
+    (tmp_path / "baseq3" / "pak0.pk3").write_text("")
     server.data["fs_game"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
@@ -137,6 +139,19 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_requires_baseq3_data(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ioq3ded.x86_64"
+    (tmp_path / "ioq3ded.x86_64").write_text("")
+    server.data["fs_game"] = "baseq3"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["startmap"] = "q3dm17"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): q3server"):
         mod.get_start_command(server)
 
 def test_do_stop():

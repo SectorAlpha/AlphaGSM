@@ -72,7 +72,15 @@ def install(server):
     """Download and install the MX Bikes server archive."""
 
     if "url" not in server.data or not server.data["url"]:
-        raise ServerError("A direct download URL is required for this server")
+        gamemodule_common.raise_byo_requirement(
+            "mxbikesserver",
+            "a direct dedicated-server archive URL",
+            actions=(
+                "Set url to a real MX Bikes dedicated-server archive before rerunning setup",
+                "Retry setup once url points at the archive you want to install",
+            ),
+            docs_slug="mxbikesserver",
+        )
     install_archive(server, detect_compression(server.data["download_name"]))
 
 

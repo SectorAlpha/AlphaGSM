@@ -53,7 +53,7 @@ Setup configures:
 - the install directory
 - downloads and extracts the ioquake3 Linux engine archive
 
-After setup, copy your legitimate Quake III `pak0.pk3` into
+This server is supported in `ENABLED (BYO)` mode. After setup, copy your legitimate Quake III `pak0.pk3` into
 `<install_dir>/baseq3/` before running `start`. Upstream also recommends adding
 the freely available Quake III 1.32 point-release patch data (`pak1.pk3`
 through `pak8.pk3`) alongside it.

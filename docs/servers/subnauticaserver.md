@@ -49,7 +49,7 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
-Before `start`, provide Nitrox with a real owned Subnautica installation path.
+This server is supported in `ENABLED (BYO)` mode. Before `start`, provide Nitrox with a real owned Subnautica installation path.
 On the current Linux lane, the missing `.NET` runtime is no longer the blocker;
 startup now aborts only when Nitrox cannot find the base game files.
 

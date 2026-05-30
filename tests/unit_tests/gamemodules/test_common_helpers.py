@@ -254,6 +254,34 @@ def test_build_executable_path_setting_schema_reuses_standard_specs():
     }
 
 
+def test_format_byo_support_message_includes_actions_and_guide():
+    message = gamemodule_common.format_byo_support_message(
+        "cod2server",
+        "owned base-game assets",
+        actions=(
+            "Copy localized_*.iwd into <install_dir>/main/",
+            "Copy default_localize_mp.cfg into <install_dir>/main/",
+        ),
+        docs_slug="cod2server",
+    )
+
+    assert "ENABLED (BYO): cod2server is supported in AlphaGSM" in message
+    assert "operator-supplied owned base-game assets" in message
+    assert "Copy localized_*.iwd into <install_dir>/main/." in message
+    assert "Copy default_localize_mp.cfg into <install_dir>/main/." in message
+    assert "Guide: docs/servers/cod2server.md." in message
+
+
+def test_raise_byo_requirement_raises_server_error():
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): minecraft.custom"):
+        gamemodule_common.raise_byo_requirement(
+            "minecraft.custom",
+            "a real custom server jar",
+            actions=("Place the jar at <install_dir>/<exe_name>",),
+            docs_slug="minecraft-custom",
+        )
+
+
 @pytest.mark.parametrize(
     ("key", "value", "message"),
     [

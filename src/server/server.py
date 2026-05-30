@@ -84,6 +84,16 @@ def _load_enabled_byo_servers():
     return _load_status_reason_file(_ENABLED_BYO_SERVERS_PATH)
 
 
+def _format_enabled_byo_notice(module_name, reason):
+    """Return the standard create-time notice for ENABLED (BYO) modules."""
+
+    return (
+        "ENABLED (BYO): Server module '{}' is supported, but still requires "
+        "operator-supplied assets, config, authentication, or a direct URL "
+        "before setup/start can fully succeed.\nWhat to bring: {}"
+    ).format(module_name, reason)
+
+
 def _get_a2s_wake_hook(module):
     """Return an optional hook that wakes a hibernating A2S server."""
 
@@ -472,6 +482,7 @@ class Server(object):
         self.name = name
         if module is not None:
             truename, self.module = _findmodule(module)
+            byo_reason = _load_enabled_byo_servers().get(truename)
             if not os.path.isdir(DATAPATH):
                 try:
                     os.makedirs(DATAPATH)
@@ -486,6 +497,8 @@ class Server(object):
                 self.data.save()
             except IOError as ex:
                 raise ServerError("Error saving initial data", ex)
+            if byo_reason:
+                print(_format_enabled_byo_notice(truename, byo_reason))
         else:
             try:
                 self.data = data.JSONDataStore(os.path.join(DATAPATH, name + ".json"))

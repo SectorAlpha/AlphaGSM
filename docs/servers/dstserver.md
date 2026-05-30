@@ -48,7 +48,7 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
-Don't Starve Together is currently a bring-your-own-config lane in AlphaGSM.
+Don't Starve Together is supported in `ENABLED (BYO)` mode in AlphaGSM.
 The anonymous server payload installs, but startup still exits immediately
 unless you provide both:
 

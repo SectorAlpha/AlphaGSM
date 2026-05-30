@@ -159,6 +159,16 @@ def test_load_enabled_byo_servers_parses_reasons(monkeypatch, tmp_path):
     }
 
 
+def test_format_enabled_byo_notice_includes_reason():
+    notice = server_module._format_enabled_byo_notice(
+        "cod2server",
+        "copy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/",
+    )
+
+    assert "ENABLED (BYO): Server module 'cod2server' is supported" in notice
+    assert "What to bring: copy localized_*.iwd" in notice
+
+
 def test_findmodule_rejects_disabled_canonical_module_before_import(monkeypatch):
     class FakeCatalog:
         def resolve(self, name):

@@ -320,6 +320,34 @@ def print_unsupported_message(message="This server doesn't support generic messa
     print(message)
 
 
+def format_byo_support_message(module_name, requirement_summary, *, actions=(), docs_slug=None):
+    """Return a standard ENABLED (BYO) operator guidance message."""
+
+    message = (
+        "ENABLED (BYO): {} is supported in AlphaGSM, but this lane still requires "
+        "operator-supplied {}.".format(module_name, requirement_summary)
+    )
+    normalized_actions = [str(action).strip().rstrip(".") for action in actions if str(action).strip()]
+    if normalized_actions:
+        message += " " + " ".join("{}.".format(action) for action in normalized_actions)
+    if docs_slug:
+        message += " Guide: docs/servers/{}.md.".format(docs_slug)
+    return message
+
+
+def raise_byo_requirement(module_name, requirement_summary, *, actions=(), docs_slug=None):
+    """Raise a standard ENABLED (BYO) operator guidance error."""
+
+    raise ServerError(
+        format_byo_support_message(
+            module_name,
+            requirement_summary,
+            actions=actions,
+            docs_slug=docs_slug,
+        )
+    )
+
+
 def make_server_message_hook(*, command="say", runtime_module=None):
     """Return a runtime-aware ``message`` hook using the given console command."""
 

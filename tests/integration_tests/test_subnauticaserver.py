@@ -8,7 +8,7 @@ import pytest
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
-        reason="Nitrox requires an owned Subnautica installation path (for example SUBNAUTICA_INSTALLATION_PATH) that is not available in CI"
+        reason="ENABLED (BYO): Nitrox requires an owned Subnautica installation path (for example SUBNAUTICA_INSTALLATION_PATH) that is not available in CI"
     ),
 ]
 

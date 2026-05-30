@@ -143,6 +143,18 @@ Notes:
 
 ## Supported Now
 
+- [x] cod2server
+- [x] cod4server
+- [x] coduoserver
+- [x] dstserver
+- [x] etlegacyserver
+- [x] ets2server
+- [x] minecraft_custom
+- [x] mxbikesserver
+- [x] q3server
+- [x] qlserver
+- [x] rtcwserver
+- [x] subnauticaserver
 
 ## Not Currently Supported
 
@@ -221,7 +233,6 @@ Notes:
 - [ ] lifeisfeudalserver
 - [ ] medievalengineersserver
 - [ ] motortownserver
-- [ ] q3server
 - [ ] reignofkingsserver
 - [ ] ror2server
 - [ ] scumserver
@@ -241,26 +252,16 @@ Notes:
 - [ ] arma3_wasteland
 - [ ] bbserver
 - [ ] brickadiaserver
-- [ ] cod2server
-- [ ] cod4server
-- [ ] coduoserver
-- [ ] dstserver
-- [ ] etlegacyserver
 - [ ] gravserver
 - [ ] gtafivemserver
 - [ ] hogwarpserver
 - [ ] identityserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
-- [ ] minecraft_custom
 - [ ] minecraft_tekkit
-- [ ] mxbikesserver
 - [ ] nsserver
 - [ ] pathoftitansserver
-- [ ] qlserver
 - [ ] redmserver
-- [ ] rtcwserver
-- [ ] subnauticaserver
 - [ ] tsserver
 - [ ] twserver
 - [ ] vsserver

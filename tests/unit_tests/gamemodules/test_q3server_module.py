@@ -36,6 +36,8 @@ def test_q3server_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("q3")
     exe = tmp_path / "ioq3ded.x86_64"
     exe.write_text("")
+    (tmp_path / "baseq3").mkdir()
+    (tmp_path / "baseq3" / "pak0.pk3").write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -56,6 +58,8 @@ def test_q3server_get_start_command_builds_expected_args(tmp_path):
 
 def test_q3server_runtime_requirements_use_quake_linux_family(tmp_path):
     (tmp_path / "ioq3ded.x86_64").write_text("")
+    (tmp_path / "baseq3").mkdir()
+    (tmp_path / "baseq3" / "pak0.pk3").write_text("")
     server = DummyServer("q3")
     server.data.update(
         {

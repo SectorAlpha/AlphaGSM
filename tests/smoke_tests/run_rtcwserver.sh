@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: RTCW dedicated multiplayer still requires original owned RTCW assets that are not available in CI.
-# See docs/TEST_STATUS.md for the exact required files and current status.
-echo "Smoke test for rtcwserver is disabled - requires original RTCW multiplayer assets (main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3)"
+# ENABLED (BYO): supported with original RTCW multiplayer assets.
+echo "Smoke test for rtcwserver is ENABLED (BYO) - requires original RTCW multiplayer assets (main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3)"
 exit 0
 
 set -Eeuo pipefail

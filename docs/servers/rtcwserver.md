@@ -51,7 +51,7 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
-Before `start`, copy the original RTCW multiplayer pk3 set into the install's
+This server is supported in `ENABLED (BYO)` mode. Before `start`, copy the original RTCW multiplayer pk3 set into the install's
 `main/` directory. The public ioRTCW engine release is not enough by itself for
 the dedicated multiplayer server.
 

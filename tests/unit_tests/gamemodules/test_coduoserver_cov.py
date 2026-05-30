@@ -108,7 +108,7 @@ def test_install_rejects_missing_base_cod_assets(tmp_path):
         (uo_dir / "pakuo00.pk3").write_text("", encoding="utf-8")
 
     mod.install_archive.side_effect = fake_install_archive
-    with pytest.raises(ServerError, match="base Call of Duty assets"):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): coduoserver"):
         mod.install(server)
     mod.install_archive.side_effect = None
 
@@ -139,7 +139,7 @@ def test_install_flattens_nested_payload_before_missing_assets_gate(tmp_path):
 
     mod.install_archive.side_effect = fake_install_archive
     with patch.object(mod, "sync_tree", side_effect=fake_sync_tree) as sync_tree:
-        with pytest.raises(ServerError, match="base Call of Duty assets"):
+        with pytest.raises(ServerError, match="ENABLED \\(BYO\\): coduoserver"):
             mod.install(server)
 
     assert (tmp_path / "coduo_lnxded").is_file()
@@ -296,4 +296,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

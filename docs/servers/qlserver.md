@@ -48,7 +48,7 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
-Quake Live is currently a bring-your-own-authentication/config lane in
+Quake Live is supported in `ENABLED (BYO)` mode in
 AlphaGSM. The anonymous dedicated payload installs, but the current Linux
 server still exits immediately on startup unless the operator supplies the
 missing upstream requirements.

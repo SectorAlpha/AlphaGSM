@@ -27,7 +27,7 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires user-provided server archive URL (bring-your-own)")
+@pytest.mark.skip(reason="ENABLED (BYO): requires a user-provided dedicated-server archive URL")
 def test_mxbikesserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

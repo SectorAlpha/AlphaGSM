@@ -466,10 +466,15 @@ def _assert_required_base_assets(install_dir):
         missing_assets.append("main/localized_*.iwd")
     if not missing_assets:
         return
-    raise ServerError(
-        "Call of Duty 4 requires base-game assets that are not present in this install: %s. "
-        "The default dedicated-server archive does not include these files; provide a package or copied base assets that include them."
-        % (", ".join(missing_assets),)
+    gamemodule_common.raise_byo_requirement(
+        "cod4server",
+        "owned Call of Duty 4 base-game assets",
+        actions=(
+            "Copy fileSysCheck.cfg into <install_dir>/",
+            "Copy localized_*.iwd into <install_dir>/main/",
+            "Retry start once those files are present",
+        ),
+        docs_slug="cod4server",
     )
 
 

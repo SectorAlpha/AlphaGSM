@@ -29,7 +29,7 @@ STOP_TIMEOUT = 90
 
 @pytest.mark.skip(
     reason=(
-        "Disabled: place a real custom Minecraft server jar at "
+        "ENABLED (BYO): place a real custom Minecraft server jar at "
         "<install_dir>/<exe_name> and set exe_name before rerunning setup"
     )
 )

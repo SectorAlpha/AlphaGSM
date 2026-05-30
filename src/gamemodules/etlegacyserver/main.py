@@ -516,9 +516,15 @@ def _assert_required_base_assets(install_dir):
     pak0_path = os.path.join(install_dir, "etmain", "pak0.pk3")
     if os.path.isfile(pak0_path):
         return
-    raise ServerError(
-        "ET: Legacy requires the original Wolfenstein: Enemy Territory base assets before it can start. "
-        "Copy etmain/pak0.pk3 into this install. Some mods may also require etmain/pak1.pk3 and etmain/pak2.pk3."
+    gamemodule_common.raise_byo_requirement(
+        "etlegacyserver",
+        "original Wolfenstein: Enemy Territory base assets",
+        actions=(
+            "Copy etmain/pak0.pk3 into <install_dir>/etmain/",
+            "Some mods may also require etmain/pak1.pk3 and etmain/pak2.pk3",
+            "Retry start once the required assets are present",
+        ),
+        docs_slug="etlegacyserver",
     )
 
 

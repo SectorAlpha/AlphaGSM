@@ -247,6 +247,14 @@ def test_custom_install_writes_eula_before_first_boot(tmp_path, monkeypatch):
     assert observed == {"exists": True, "content": "eula=true\n"}
 
 
+def test_custom_install_requires_existing_server_jar(tmp_path):
+    server = DummyServer()
+    server.data.update({"dir": str(tmp_path), "exe_name": "paper.jar", "port": 25565})
+
+    with pytest.raises(custom.ServerError, match="ENABLED \\(BYO\\): minecraft.custom"):
+        custom.install(server)
+
+
 def test_custom_message_sends_tellraw_to_all_players(monkeypatch):
     server = DummyServer("hub")
     calls = []

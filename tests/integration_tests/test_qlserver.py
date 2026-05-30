@@ -27,7 +27,7 @@ STOP_TIMEOUT = 90
 
 @pytest.mark.skip(
     reason=(
-        "Quake Live installs qzeroded.x64, but anonymous SteamCMD startup still "
+        "ENABLED (BYO): Quake Live installs qzeroded.x64, but anonymous SteamCMD startup still "
         "exits immediately; this lane needs an owned/authenticated Quake Live "
         "entitlement plus any required server auth/config"
     )

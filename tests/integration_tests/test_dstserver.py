@@ -28,7 +28,7 @@ STOP_TIMEOUT = 90
 
 @pytest.mark.skip(
     reason=(
-        "DST requires a real Klei cluster_token.txt plus cluster config under "
+        "ENABLED (BYO): DST requires a real Klei cluster_token.txt plus cluster config under "
         "<install_dir>/<confdir>/<cluster>/ (default "
         "<install_dir>/DoNotStarveTogether/<server-name>/); without them the "
         "server exits immediately on startup"

@@ -148,6 +148,10 @@ def test_rtcwserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("rtcw")
     exe = tmp_path / "iowolfded.x86_64"
     exe.write_text("")
+    main_dir = tmp_path / "main"
+    main_dir.mkdir()
+    for filename in rtcwserver.RTCW_REQUIRED_MULTIPLAYER_ASSETS:
+        (main_dir / filename).write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -168,6 +172,10 @@ def test_rtcwserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_rtcwserver_runtime_requirements_use_quake_linux_family(tmp_path):
     (tmp_path / "iowolfded.x86_64").write_text("")
+    main_dir = tmp_path / "main"
+    main_dir.mkdir()
+    for filename in rtcwserver.RTCW_REQUIRED_MULTIPLAYER_ASSETS:
+        (main_dir / filename).write_text("")
     server = DummyServer("rtcw")
     server.data.update(
         {
@@ -242,6 +250,8 @@ def test_jk2server_runtime_requirements_use_quake_linux_family(tmp_path):
 
 def test_etlegacyserver_runtime_requirements_use_quake_linux_family(tmp_path):
     (tmp_path / "etl.x86_64").write_text("")
+    (tmp_path / "etmain").mkdir()
+    (tmp_path / "etmain" / "pak0.pk3").write_text("")
     server = DummyServer("etl")
     server.data.update(
         {

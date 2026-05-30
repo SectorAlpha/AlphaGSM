@@ -21,7 +21,7 @@ from conftest import (
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
-        reason="Requires original Wolfenstein: Enemy Territory base assets (etmain/pak0.pk3) not available in CI"
+        reason="ENABLED (BYO): requires original Wolfenstein: Enemy Territory base assets (etmain/pak0.pk3) not available in CI"
     ),
 ]
 

@@ -228,10 +228,15 @@ def install(server, *, eula=False):
         os.makedirs(server.data["dir"])
     mcjar = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(mcjar):
-        raise ServerError(
-            "Can't find server jar ({}). Please place the files in the directory and/or update the 'exe_name' then run setup again".format(
-                mcjar
-            )
+        gamemodule_common.raise_byo_requirement(
+            "minecraft.custom",
+            "a real custom Minecraft server jar",
+            actions=(
+                "Place the jar at <install_dir>/<exe_name>",
+                "Update exe_name if the jar has a different filename",
+                "Rerun setup once the jar is present",
+            ),
+            docs_slug="minecraft-custom",
         )
     server.data.save()
 

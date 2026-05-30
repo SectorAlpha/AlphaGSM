@@ -47,7 +47,7 @@ Setup configures:
 - the game port (default 25565)
 - the install directory
 
-`minecraft.custom` is a bring-your-own-jar lane. AlphaGSM does not know which
+`minecraft.custom` is supported in `ENABLED (BYO)` mode. AlphaGSM does not know which
 custom server binary you want by default, so `setup` only succeeds after you
 provide the jar yourself.
 

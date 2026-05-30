@@ -51,7 +51,7 @@ Setup configures:
 - still requires copied retail/localized multiplayer assets before the server
   can finish startup
 
-`cod4server` is a bring-your-own-assets lane. AlphaGSM installs the Linux
+`cod4server` is supported in `ENABLED (BYO)` mode. AlphaGSM installs the Linux
 dedicated binary for you, but the stock archive still does not include all of
 the owned multiplayer files the server expects at startup.
 

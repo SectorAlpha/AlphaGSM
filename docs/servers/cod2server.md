@@ -51,7 +51,7 @@ Setup configures:
 - still requires copied retail/localized multiplayer assets before the server
   can finish startup
 
-`cod2server` is a bring-your-own-assets lane. AlphaGSM installs the Linux
+`cod2server` is supported in `ENABLED (BYO)` mode. AlphaGSM installs the Linux
 dedicated binary for you, but the official archive still does not include the
 localized retail files the server expects at startup.
 

@@ -88,7 +88,7 @@ def test_install_rejects_missing_base_assets(tmp_path):
         (main_dir / "iw_12.iwd").write_text("", encoding="utf-8")
 
     mod.install_archive.side_effect = fake_install_archive
-    with pytest.raises(ServerError, match="fileSysCheck\.cfg, main/localized_\*\.iwd"):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): cod4server"):
         mod.install(server)
     mod.install_archive.side_effect = None
 
@@ -242,4 +242,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
