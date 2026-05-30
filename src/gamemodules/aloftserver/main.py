@@ -55,9 +55,22 @@ def configure(server, ask, port=None, dir=None, *, exe_name="AloftServerNoGuiLoa
 
 
 def install(server):
-    """Aloft uses user-provided files; ensure the install directory exists."""
+    """Aloft uses user-provided files; validate that the staged launch script exists."""
 
     os.makedirs(server.data["dir"], exist_ok=True)
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "aloftserver",
+            "an owned Aloft dedicated server install",
+            actions=(
+                "Copy the Aloft server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry setup once the staged server tree is present locally",
+            ),
+            docs_slug="aloftserver",
+        )
 
 
 def get_start_command(server):
@@ -65,7 +78,17 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "aloftserver",
+            "an owned Aloft dedicated server install",
+            actions=(
+                "Copy the Aloft server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry start after the staged server tree is present locally",
+            ),
+            docs_slug="aloftserver",
+        )
     return (
         [
             "pwsh",

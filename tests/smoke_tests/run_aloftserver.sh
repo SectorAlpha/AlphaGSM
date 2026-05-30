@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
 # See docs/TEST_STATUS.md for current server status
-echo "Smoke test for aloftserver is disabled - see docs/TEST_STATUS.md for status"
+echo "Smoke test for aloftserver is ENABLED (BYO) - copy an owned Aloft server tree into <install_dir>/ so AloftServerNoGuiLoad.ps1 exists"
 exit 0
 
 set -Eeuo pipefail

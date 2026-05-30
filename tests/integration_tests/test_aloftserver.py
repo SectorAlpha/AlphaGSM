@@ -1,7 +1,6 @@
 """Integration test for aloftserver.
 
-Disabled: Aloft requires user-provided server files (PowerShell script)
-and is not available for automated download.  Awaiting further support.
+ENABLED (BYO): Aloft requires an operator-supplied server tree.
 """
 
 import pytest
@@ -27,7 +26,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires user-provided server files (bring-your-own)")
+@pytest.mark.skip(
+    reason="ENABLED (BYO): copy an owned Aloft server tree into <install_dir>/ so AloftServerNoGuiLoad.ps1 exists"
+)
 def test_aloftserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

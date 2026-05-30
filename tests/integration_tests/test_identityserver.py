@@ -1,7 +1,7 @@
 """Integration test for identityserver.
 
-Disabled: Identity requires user-provided server archive URL
-and is not available for automated download.  Awaiting further support.
+ENABLED (BYO): Identity requires an operator-supplied archive URL or staged
+server tree.
 """
 
 import pytest
@@ -27,7 +27,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires user-provided server archive URL (bring-your-own)")
+@pytest.mark.skip(
+    reason="ENABLED (BYO): set url to a direct Identity server archive or stage IdentityServer.x86_64 in <install_dir> before setup/start"
+)
 def test_identityserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

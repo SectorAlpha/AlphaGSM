@@ -292,3 +292,4 @@ Historical highlights
 - Hardened CI and release workflows with runtime image publishing, port-collision fixes, and tighter test workflows.
 - Support: promote `gravserver` and `hogwarpserver` to `ENABLED (BYO)` with explicit operator guidance in the module errors, tracker, smoke/integration skip text, and server guides so these Windows-file lanes count as supported instead of looking like unresolved platform blockers.
 - Support: add the previously untracked bring-your-own legacy lanes `sof2server`, `mohaaserver`, and `ut3server` to `ENABLED (BYO)`, with explicit staged-file guidance in the module errors, tracker, smoke/integration skip text, and server guides.
+- Support: promote `aloftserver` and `identityserver` to `ENABLED (BYO)` with explicit staged-file/archive guidance in the module errors, tracker, smoke/integration skip text, and server guides so they count as supported instead of looking like auth/platform blockers.

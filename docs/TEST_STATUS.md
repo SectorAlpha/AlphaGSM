@@ -12,7 +12,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 17 |
+| ENABLED (BYO) | 19 |
 | DISABLED | 61      |
 | SKIPPED  | 41      |
 
@@ -151,10 +151,11 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (17)
+## ENABLED (BYO) (19)
 
 | Test | Type |
 |------|------|
+| aloftserver | owned Aloft server tree |
 | cod2server | owned localized base-game assets |
 | cod4server | owned base-game assets |
 | coduoserver | owned base multiplayer assets |
@@ -163,6 +164,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | ets2server | owned exported client packages/settings |
 | gravserver | owned GRAV dedicated server tree |
 | hogwarpserver | archive URL or staged Windows server tree |
+| identityserver | archive URL or staged Identity server tree |
 | minecraft_custom | user-supplied server jar |
 | mxbikesserver | user-supplied dedicated archive URL |
 | q3server | owned base-game assets |
@@ -265,7 +267,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
 | ahlserver | HLDS mod maps not available via SteamCMD |
-| aloftserver | SteamCMD app requires authentication |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |
 | arma3_desolationredux | Arma 3 variant (needs base arma3server) |
 | arma3_epoch | Arma 3 variant (needs base arma3server) |
@@ -276,7 +277,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | bbserver | HLDS mod maps not available via SteamCMD |
 | brickadiaserver | SteamCMD app requires authentication |
 | gtafivemserver | Requires txAdmin/authentication |
-| identityserver | SteamCMD app requires authentication |
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |

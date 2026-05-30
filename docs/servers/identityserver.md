@@ -5,6 +5,7 @@ This guide covers the `identityserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- either a direct Identity server archive URL or a pre-staged Identity server tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +21,13 @@ Run setup:
 ```bash
 alphagsm myidentity setup
 ```
+
+`identityserver` is supported in `ENABLED (BYO)` mode. Before `setup` or
+`start`, either:
+
+- set `url` to a direct Identity server archive, or
+- stage `IdentityServer.x86_64` and the rest of the Identity server files
+  inside your chosen `<install_dir>/`
 
 Start it:
 
@@ -45,13 +53,32 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the server archive when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm myidentity create identityserver
+alphagsm myidentity set url https://example.invalid/identity-server.zip
+alphagsm myidentity setup -n 7777 /path/to/identityserver
+alphagsm myidentity start
+```
+
+Or, if you already have the server files:
+
+```bash
+alphagsm myidentity create identityserver
+alphagsm myidentity setup -n 7777 /path/to/identityserver
+# copy IdentityServer.x86_64 and the rest of the server tree into /path/to/identityserver/
+alphagsm myidentity start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm myidentity update
 alphagsm myidentity backup
+alphagsm myidentity set url https://example.invalid/identity-server.zip
 ```
 
 ## Notes

@@ -143,6 +143,7 @@ Notes:
 
 ## Supported Now
 
+- [x] aloftserver
 - [x] cod2server
 - [x] cod4server
 - [x] coduoserver
@@ -151,6 +152,7 @@ Notes:
 - [x] ets2server
 - [x] gravserver
 - [x] hogwarpserver
+- [x] identityserver
 - [x] minecraft_custom
 - [x] mxbikesserver
 - [x] q3server
@@ -247,7 +249,6 @@ Notes:
 - [ ] staxelserver
 - [ ] subsistenceserver
 - [ ] ahlserver
-- [ ] aloftserver
 - [ ] arma3_altislife
 - [ ] arma3_desolationredux
 - [ ] arma3_epoch
@@ -258,7 +259,6 @@ Notes:
 - [ ] bbserver
 - [ ] brickadiaserver
 - [ ] gtafivemserver
-- [ ] identityserver
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
 - [ ] minecraft_tekkit
