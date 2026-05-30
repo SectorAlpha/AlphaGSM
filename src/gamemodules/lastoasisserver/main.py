@@ -1,8 +1,8 @@
 """Last Oasis dedicated server lifecycle helpers."""
 
 import os
+import shlex
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
@@ -42,7 +42,14 @@ setting_schema = {
 }
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="LastOasisServer.x86_64"):
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    exe_name="Mist/Binaries/Linux/MistServer-Linux-Shipping",
+):
     """Collect and store configuration values for a Last Oasis server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -125,7 +132,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Last Oasis using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -158,13 +165,39 @@ def checkvalue(server, key, *value):
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    family="steamcmd-linux",
+    port_definitions=(
+        {"key": "queryport", "protocol": "udp"},
+        {"key": "queryport", "protocol": "tcp"},
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "protocol": "tcp"},
+    ),
 )
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
-)
+
+def get_container_spec(server):
+    """Run the Linux server in Docker as the mounted server-directory owner."""
+
+    requirements = get_runtime_requirements(server)
+    command, _cwd = get_start_command(server)
+    shell_command = " ".join(shlex.quote(part) for part in command)
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            (
+                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
+                'mkdir -p /home/alphagsm/.steam/sdk64; '
+                'chmod -R a+rwX /srv/server /home/alphagsm; '
+                'ln -sfn /srv/server/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
+                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
+                f"exec runuser -u alphagsm -- {shell_command}"
+            ),
+        ],
+    }

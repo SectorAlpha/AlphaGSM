@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 123      |
+| PASSED   | 124      |
 | ENABLED (BYO) | 30 |
-| DISABLED | 56      |
+| DISABLED | 55      |
 | SKIPPED  | 28      |
 
 ## Status Key
@@ -28,7 +28,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (123)
+## PASSED (124)
 
 | Test | Type |
 |------|------|
@@ -74,6 +74,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | icarusserver | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh integration and smoke now both pass on the branch-local `wine-proton` runtime image once AlphaGSM treats the validated Linux contract honestly: anonymous SteamCMD setup for app `2089300` succeeds, the server stays up in the shared Docker-backed Xvfb/software-GL lane, and `query`, `info`, plus `info --json` all use the live generic `tcp` surface on the managed main port instead of the older stale log-marker and A2S assumptions |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
+| lastoasisserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-30; fresh integration now proves the old timeout-only disable note was stale: anonymous SteamCMD setup for app `920720` completes, AlphaGSM launches the real native Linux binary `Mist/Binaries/Linux/MistServer-Linux-Shipping` inside the shared `steamcmd-linux` runtime as a non-root user, seeds `~/.steam/sdk64/steamclient.so` from the install-local Linux payload, and the validated health surface is generic `tcp` on the managed main game port rather than the older stale A2S `queryport` assumption |
 | longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
 | minecraft_bedrock | Docker runtime (service-console) — PASSED 2026-05-30; fresh focused integration now passes on the rebuilt branch-local `service-console` runtime image after AlphaGSM switches Bedrock setup from the stale JavaScript-page assumption to a direct browser-header archive fetch, keeps Docker-first lifecycle coverage on the shared runtime family, and uses Docker-stop for the container-backed stop path because Bedrock echoes console `stop` input without exiting cleanly under the shared exec-console path |
 | minecraft_paper | Direct download |
@@ -239,7 +240,6 @@ files, external services, or direct archive URLs.
 | jk2server | JK2 download URL returns 404 |
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
-| lastoasisserver | SteamCMD download timeout; likely too large for automated CI testing |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
 | nightingale | SteamCMD download timeout; likely too large for automated CI testing |

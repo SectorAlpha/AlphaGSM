@@ -64,6 +64,7 @@ Notes:
 - [x] icarusserver
 - [x] kf2server
 - [x] l4dserver
+- [x] lastoasisserver
 - [x] longvinterserver
 - [x] minecraft_bedrock
 - [x] minecraft_paper
@@ -221,7 +222,6 @@ Notes:
 - [ ] jk2server
 - [ ] kfserver
 - [ ] l4d2server
-- [ ] lastoasisserver
 - [ ] mw3server
 - [ ] ndserver
 - [ ] nightingale

@@ -4,8 +4,7 @@ This guide covers the `lastoasisserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- SteamCMD access
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -44,7 +43,8 @@ alphagsm mylastoasi stop
 
 Setup configures:
 
-- the game port (default 15001)
+- the game port (default 15000)
+- the query port (default 15001)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -64,10 +64,16 @@ alphagsm mylastoasi backup
 
 ### Run File
 
-- **Executable**: `LastOasisServer.x86_64`
-- **Location**: `<install_dir>/LastOasisServer.x86_64`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `Mist/Binaries/Linux/MistServer-Linux-Shipping`
+- **Location**: `<install_dir>/Mist/Binaries/Linux/MistServer-Linux-Shipping`
+- **Engine**: Native Linux dedicated server via SteamCMD
 - **SteamCMD App ID**: `920720`
+
+### Runtime Notes
+
+- The validated Linux support path uses AlphaGSM's Docker-backed `steamcmd-linux` runtime.
+- The current health surface is generic `tcp` on the managed main game port.
+- `query`, `info`, and `info --json` do not use an A2S `queryport` contract on the working Linux path.
 
 ### Server Configuration
 
