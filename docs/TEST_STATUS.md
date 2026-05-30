@@ -12,7 +12,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 19 |
+| ENABLED (BYO) | 20 |
 | DISABLED | 61      |
 | SKIPPED  | 41      |
 
@@ -151,7 +151,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (19)
+## ENABLED (BYO) (20)
 
 | Test | Type |
 |------|------|
@@ -171,6 +171,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | qlserver | owned/authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets |
 | mohaaserver | owned MOHAA dedicated server tree |
+| pathoftitansserver | Alderon auth token or staged archive override/server tree |
 | sof2server | owned SOF2 dedicated server tree |
 | subnauticaserver | owned client installation path |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
@@ -281,7 +282,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | kerbalspaceprogramserver | SteamCMD/platform issue |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | nsserver | HLDS mod maps not available via SteamCMD |
-| pathoftitansserver | SteamCMD app requires authentication |
 | redmserver | Requires txAdmin/authentication |
 | tsserver | HLDS mod maps not available via SteamCMD |
 | twserver | SteamCMD app requires authentication |

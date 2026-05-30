@@ -5,6 +5,7 @@ This guide covers the `pathoftitansserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- an Alderon auth token for the hosting account, or a staged server archive override/tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +21,14 @@ Run setup:
 ```bash
 alphagsm mypathofti setup
 ```
+
+`pathoftitansserver` is supported in `ENABLED (BYO)` mode. Before `setup` or
+`start`, either:
+
+- set `auth_token` to an Alderon host account token so AlphaGSM can install via
+  `AlderonGamesCmd`, or
+- stage a direct archive override/server tree and point `url` at that archive if
+  you are using a prepackaged payload
 
 Start it:
 
@@ -45,13 +54,34 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- downloads and extracts the server archive
+- installs via `AlderonGamesCmd` when `auth_token` is present, or uses a direct
+  archive override when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm mypathofti create pathoftitansserver
+alphagsm mypathofti set auth_token your-alderon-token
+alphagsm mypathofti setup -n 7777 /path/to/pathoftitansserver
+alphagsm mypathofti start
+```
+
+Or with a staged archive override:
+
+```bash
+alphagsm mypathofti create pathoftitansserver
+alphagsm mypathofti set url https://example.invalid/pathoftitans-server.zip
+alphagsm mypathofti setup -n 7777 /path/to/pathoftitansserver
+alphagsm mypathofti start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm mypathofti update
 alphagsm mypathofti backup
+alphagsm mypathofti set auth_token your-alderon-token
+alphagsm mypathofti set url https://example.invalid/pathoftitans-server.zip
 ```
 
 ## Notes

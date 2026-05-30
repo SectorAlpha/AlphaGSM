@@ -78,6 +78,14 @@ def test_install(tmp_path):
     server.data["version"] = "test"
     mod.install(server)
 
+
+def test_install_without_token_or_url_raises_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PathOfTitansServer.sh"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -212,4 +220,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

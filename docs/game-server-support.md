@@ -159,6 +159,7 @@ Notes:
 - [x] qlserver
 - [x] rtcwserver
 - [x] mohaaserver
+- [x] pathoftitansserver
 - [x] sof2server
 - [x] subnauticaserver
 - [x] ut3server
@@ -263,7 +264,6 @@ Notes:
 - [ ] kerbalspaceprogramserver
 - [ ] minecraft_tekkit
 - [ ] nsserver
-- [ ] pathoftitansserver
 - [ ] redmserver
 - [ ] tsserver
 - [ ] twserver

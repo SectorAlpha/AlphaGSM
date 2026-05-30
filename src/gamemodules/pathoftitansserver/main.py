@@ -139,7 +139,15 @@ def install(server):
         return
     auth_token = server.data.get("auth_token")
     if not auth_token:
-        raise ServerError("An Alderon auth token is required for Path of Titans installs")
+        gamemodule_common.raise_byo_requirement(
+            "pathoftitansserver",
+            "an Alderon auth token or a staged Path of Titans server tree/archive override",
+            actions=(
+                "Set auth_token to an Alderon host account token before rerunning setup, or set url to a direct staged archive override",
+                "Retry setup once the token or staged archive path is available",
+            ),
+            docs_slug="pathoftitansserver",
+        )
     cmd_path = _get_updater_path()
     install_cmd = [
         cmd_path,
@@ -165,7 +173,17 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "pathoftitansserver",
+            "a staged Path of Titans server tree",
+            actions=(
+                "Complete setup with an Alderon auth token or staged archive override so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry start once the server tree is present in <install_dir>",
+            ),
+            docs_slug="pathoftitansserver",
+        )
     launch_target = (
         "%s?listen?MaxPlayers=%s"
         % (server.data.get("startmap", "Island"), server.data["maxplayers"])
