@@ -19,7 +19,7 @@ this pass aligned the runtime gate with that existing tracker state.
 ## Status Key
 
 - **PASSED** — Test ran successfully in a prior session.
-- **ENABLED (BYO)** — Supported server module that still requires operator-supplied assets, config, auth, or URL.
+- **ENABLED (BYO)** — Supported server module that still requires an explicit operator-provided prerequisite such as owned assets, authenticated install access, config/tokens, exported client files, an external service, or a direct URL.
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 
@@ -153,6 +153,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 ## ENABLED (BYO) (30)
 
+These supported rows are intentionally explicit about the blocker class:
+owned assets, authenticated install access, config/tokens, exported client
+files, external services, or direct archive URLs.
+
 | Test | Type |
 |------|------|
 | aloftserver | owned Aloft server tree |
@@ -161,7 +165,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | cod2server | owned localized base-game assets |
 | cod4server | owned base-game assets |
 | coduoserver | owned base multiplayer assets |
-| dstserver | owned cluster token/config |
+| dstserver | cluster token plus staged cluster config |
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
 | gravserver | owned GRAV dedicated server tree |
@@ -173,7 +177,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | mxbikesserver | user-supplied dedicated archive URL |
 | nsserver | owned Natural Selection mod content tree |
 | q3server | owned base-game assets |
-| qlserver | owned/authenticated entitlement plus server auth/config |
+| qlserver | authenticated entitlement plus server auth/config |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | rtcwserver | owned base-game assets |
 | mohaaserver | owned MOHAA dedicated server tree |

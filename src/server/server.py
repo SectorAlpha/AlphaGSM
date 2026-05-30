@@ -50,6 +50,15 @@ _ENABLED_BYO_SERVERS_PATH = os.path.join(
     "enabled_byo_servers.conf",
 )
 MODULE_CATALOG = load_default_module_catalog()
+_ENABLED_BYO_CATEGORY_DESCRIPTIONS = {
+    "assets": "operator-supplied files or installed game content",
+    "auth": "authenticated install access, entitlement, or account credentials",
+    "config": "operator-supplied config, tokens, credentials, or staged data",
+    "url": "a direct download URL or staged artifact override",
+    "export": "client-exported files from an owned game install",
+    "service": "an external local service dependency",
+    "mixed": "operator-managed prerequisites",
+}
 
 
 def _load_status_reason_file(path):
@@ -81,17 +90,54 @@ def _load_disabled_servers():
 def _load_enabled_byo_servers():
     """Load the BYO-enabled servers list from enabled_byo_servers.conf."""
 
-    return _load_status_reason_file(_ENABLED_BYO_SERVERS_PATH)
+    rows = {}
+    if not os.path.isfile(_ENABLED_BYO_SERVERS_PATH):
+        return rows
+
+    with open(_ENABLED_BYO_SERVERS_PATH, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            module_name = parts[0].strip()
+            if len(parts) >= 3:
+                category = parts[1].strip() or "mixed"
+                reason = "\t".join(parts[2:]).strip() or "No reason given"
+            elif len(parts) == 2:
+                category = "mixed"
+                reason = parts[1].strip() or "No reason given"
+            else:
+                category = "mixed"
+                reason = "No reason given"
+            rows[module_name] = {"category": category, "reason": reason}
+    return rows
 
 
-def _format_enabled_byo_notice(module_name, reason):
+def _normalize_enabled_byo_entry(entry):
+    """Return a normalized BYO metadata mapping."""
+
+    if isinstance(entry, MappingABC):
+        category = str(entry.get("category", "mixed")).strip() or "mixed"
+        reason = str(entry.get("reason", "No reason given")).strip() or "No reason given"
+        return {"category": category, "reason": reason}
+    return {"category": "mixed", "reason": str(entry).strip() or "No reason given"}
+
+
+def _format_enabled_byo_notice(module_name, entry):
     """Return the standard create-time notice for ENABLED (BYO) modules."""
 
+    metadata = _normalize_enabled_byo_entry(entry)
+    category = metadata["category"]
+    reason = metadata["reason"]
+    category_description = _ENABLED_BYO_CATEGORY_DESCRIPTIONS.get(
+        category,
+        _ENABLED_BYO_CATEGORY_DESCRIPTIONS["mixed"],
+    )
     return (
         "ENABLED (BYO): Server module '{}' is supported, but still requires "
-        "operator-supplied assets, config, authentication, or a direct URL "
-        "before setup/start can fully succeed.\nWhat to bring: {}"
-    ).format(module_name, reason)
+        "{} before setup/start can fully succeed.\nWhat to provide: {}"
+    ).format(module_name, category_description, reason)
 
 
 def _get_a2s_wake_hook(module):

@@ -143,30 +143,57 @@ def test_load_disabled_servers_parses_reasons(monkeypatch, tmp_path):
     }
 
 
-def test_load_enabled_byo_servers_parses_reasons(monkeypatch, tmp_path):
+def test_load_enabled_byo_servers_parses_reasons_and_categories(monkeypatch, tmp_path):
     enabled_path = tmp_path / "enabled_byo_servers.conf"
     enabled_path.write_text(
-        "cod2server\tcopy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/\n"
-        "minecraft.custom\tplace a server jar at <install_dir>/<exe_name>\n",
+        "cod2server\tassets\tcopy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/\n"
+        "minecraft.custom\turl\tplace a server jar at <install_dir>/<exe_name>\n",
         encoding="utf-8",
     )
 
     monkeypatch.setattr(server_module, "_ENABLED_BYO_SERVERS_PATH", str(enabled_path))
 
     assert server_module._load_enabled_byo_servers() == {
-        "cod2server": "copy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/",
-        "minecraft.custom": "place a server jar at <install_dir>/<exe_name>",
+        "cod2server": {
+            "category": "assets",
+            "reason": "copy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/",
+        },
+        "minecraft.custom": {
+            "category": "url",
+            "reason": "place a server jar at <install_dir>/<exe_name>",
+        },
     }
 
 
-def test_format_enabled_byo_notice_includes_reason():
+def test_load_enabled_byo_servers_defaults_legacy_rows_to_mixed(monkeypatch, tmp_path):
+    enabled_path = tmp_path / "enabled_byo_servers.conf"
+    enabled_path.write_text(
+        "cod2server\tcopy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(server_module, "_ENABLED_BYO_SERVERS_PATH", str(enabled_path))
+
+    assert server_module._load_enabled_byo_servers() == {
+        "cod2server": {
+            "category": "mixed",
+            "reason": "copy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/",
+        }
+    }
+
+
+def test_format_enabled_byo_notice_includes_category_and_reason():
     notice = server_module._format_enabled_byo_notice(
         "cod2server",
-        "copy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/",
+        {
+            "category": "assets",
+            "reason": "copy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/",
+        },
     )
 
     assert "ENABLED (BYO): Server module 'cod2server' is supported" in notice
-    assert "What to bring: copy localized_*.iwd" in notice
+    assert "requires operator-supplied files or installed game content" in notice
+    assert "What to provide: copy localized_*.iwd" in notice
 
 
 def test_findmodule_rejects_disabled_canonical_module_before_import(monkeypatch):
@@ -209,7 +236,7 @@ def test_findmodule_allows_enabled_byo_module(monkeypatch):
     monkeypatch.setattr(
         server_module,
         "_load_enabled_byo_servers",
-        lambda: {"cod2server": "copy assets"},
+        lambda: {"cod2server": {"category": "assets", "reason": "copy assets"}},
     )
     monkeypatch.setattr(server_module, "import_module", lambda _name: real_module)
     monkeypatch.setattr(server_module.runtime_module, "ensure_runtime_hooks", lambda module: None)
