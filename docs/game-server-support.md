@@ -163,8 +163,10 @@ Notes:
 - [x] mohaaserver
 - [x] pathoftitansserver
 - [x] sof2server
+- [x] stormworksserver
 - [x] subnauticaserver
 - [x] ut3server
+- [x] lifeisfeudalserver
 
 ## Not Currently Supported
 
@@ -232,14 +234,12 @@ Notes:
 
 ## Waiting On Prerequisites Or Validation
 
-- [ ] stormworksserver
 - [ ] arksurvivalascended
 - [ ] blackwakeserver
 - [ ] darkandlightserver
 - [ ] ducksideserver
 - [ ] hellletlooseserver
 - [ ] icarusserver
-- [ ] lifeisfeudalserver
 - [ ] medievalengineersserver
 - [ ] motortownserver
 - [ ] reignofkingsserver

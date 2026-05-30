@@ -1,6 +1,7 @@
 """Life is Feudal: Your Own dedicated server lifecycle helpers."""
 
 import os
+import socket
 
 import screen
 import utils.proton as proton
@@ -85,12 +86,32 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def _assert_local_mysql_available():
+    """Require the local MySQL/MariaDB service before launch."""
+
+    try:
+        conn = socket.create_connection(("127.0.0.1", 3306), timeout=1.0)
+    except OSError:
+        gamemodule_common.raise_byo_requirement(
+            "lifeisfeudalserver",
+            "a local MySQL/MariaDB service reachable on localhost:3306",
+            actions=(
+                "Start or provision MySQL/MariaDB locally so the server can reach localhost before rerunning start",
+                "Keep the database service running while AlphaGSM launches and manages the server",
+            ),
+            docs_slug="lifeisfeudalserver",
+        )
+    else:
+        conn.close()
+
+
 def get_start_command(server):
     """Build the command used to launch a Life is Feudal dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    _assert_local_mysql_available()
     cmd = [server.data["exe_name"]]
     if IS_LINUX:
         cmd = proton.wrap_command(

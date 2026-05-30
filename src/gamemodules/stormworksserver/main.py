@@ -4,7 +4,6 @@ import os
 
 import screen
 import utils.proton as proton
-import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.platform_info import IS_LINUX
 
@@ -65,22 +64,32 @@ def configure(server, ask, port=None, dir=None, *, exe_name="server64.exe"):
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-    download_kwargs={"force_windows": IS_LINUX},
-)
-install.__doc__ = "Download the Stormworks server files via SteamCMD."
+def install(server):
+    """Explain the owned-install requirement for Stormworks."""
+
+    gamemodule_common.raise_byo_requirement(
+        "stormworksserver",
+        "an owned Stormworks dedicated server tree",
+        actions=(
+            "Copy the real purchased Stormworks dedicated-server files into <install_dir> so server64.exe and its runtime data come from the owned game, not Steam app 1247090's redirect stub",
+            "Retry start once the owned server tree is staged in the install directory",
+        ),
+        docs_slug="stormworksserver",
+    )
 
 
-update = gamemodule_common.make_steamcmd_update_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-    download_kwargs={"force_windows": IS_LINUX},
-)
-update.__doc__ = "Update the Stormworks server files and optionally restart the server."
+def update(server, validate=False, restart=False):
+    """Explain the owned-install update requirement for Stormworks."""
+
+    gamemodule_common.raise_byo_requirement(
+        "stormworksserver",
+        "an operator-managed Stormworks server tree refresh",
+        actions=(
+            "Refresh the staged Stormworks dedicated-server files from an owned install instead of using Steam app 1247090",
+            "Retry start after restaging the owned files in <install_dir>",
+        ),
+        docs_slug="stormworksserver",
+    )
 
 
 restart = gamemodule_common.make_restart_hook()

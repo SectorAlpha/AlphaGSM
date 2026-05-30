@@ -12,8 +12,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 22 |
-| DISABLED | 60      |
+| ENABLED (BYO) | 24 |
+| DISABLED | 58      |
 | SKIPPED  | 39      |
 
 ## Status Key
@@ -151,7 +151,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (22)
+## ENABLED (BYO) (24)
 
 | Test | Type |
 |------|------|
@@ -175,8 +175,10 @@ this pass aligned the runtime gate with that existing tracker state.
 | mohaaserver | owned MOHAA dedicated server tree |
 | pathoftitansserver | Alderon auth token or staged archive override/server tree |
 | sof2server | owned SOF2 dedicated server tree |
+| stormworksserver | owned Stormworks dedicated server tree from the purchased game |
 | subnauticaserver | owned client installation path |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
+| lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
 ## DISABLED (60)
 
@@ -250,14 +252,12 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 
 | Test | Skip reason |
 |------|-------------|
-| stormworksserver | Wine: SteamCMD app 1247090 is now a redirect stub; server64.exe starts under Wine but produces no console output (redirect message appears in a Windows message box, not stdout); test waits full 300s before skipping |
 | arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
 | blackwakeserver | Wine/Proton validation 2026-05-29: the bundled upstream `SERVER GUIDE.txt` still documents Windows-only dedicated servers, so do not mark enabled yet. AlphaGSM now avoids the regressed forced-Proton Linux wrapper for BLACKWAKE, and a bounded reused-install host-Wine rerun re-proved `query`, `info --json`, and clean `stop` on the managed A2S `queryport`. A fresh full SteamCMD-managed rerun then answered the remaining question and still failed: after setup completed and AlphaGSM auto-shifted the colliding default query port to `27016`, the live `output_log.txt` fell back into repeated `BotHandler.Update()` `IndexOutOfRangeException` spam and direct `alphagsm info --json` still timed out on A2S. The exact remaining blocker is therefore a fresh-install runtime/query failure under the current host-Wine path, not just missing validation time — app 423410 |
 | darkandlightserver | Wine/Proton validation 2026-05-29: the current branch no longer reaches even the narrowed generic-UDP contract. `alphagsm start` can still return success, but the managed `screen` session dies before `DNL/Saved/Logs/DNL.log` is created or either the game port or `queryport 27016` binds, and direct Proton repros still leave orphaned `DNLServer.exe` children with no log or listener. |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | icarusserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2089300 |
-| lifeisfeudalserver | Wine: server starts but exits immediately — requires MySQL/MariaDB running on localhost (CmDb connection error #2002); MySQL skip guard added to test; app 320850 |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
 | motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |

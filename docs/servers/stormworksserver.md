@@ -2,10 +2,16 @@
 
 This guide covers the `stormworksserver` module in AlphaGSM.
 
+## Support Status
+
+`stormworksserver` is supported in `ENABLED (BYO)` mode. The old standalone
+Steam app `1247090` is now only a redirect stub, so AlphaGSM cannot fully
+provision this lane anonymously anymore.
+
 ## Requirements
 
 - `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- an owned Stormworks dedicated server tree from the purchased game
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -21,6 +27,10 @@ Run setup:
 ```bash
 alphagsm mystormwor setup
 ```
+
+Then stage the real owned server files into the install directory so
+`server64.exe` and its runtime data come from the purchased game, not the
+discontinued standalone stub.
 
 Start it:
 
@@ -46,7 +56,17 @@ Setup configures:
 
 - the game port (default 25566)
 - the install directory
-- SteamCMD downloads the server files
+- AlphaGSM records where the owned server tree should live
+
+## Bring Your Own Steps
+
+1. Run `alphagsm mystormwor create stormworksserver`.
+2. Run `alphagsm mystormwor setup` so AlphaGSM records the install directory.
+3. Copy an owned Stormworks dedicated server tree into that install directory.
+4. Re-run `alphagsm mystormwor start`.
+
+If `setup` or `start` reports an `ENABLED (BYO)` message, replace the staged
+files with the real owned server tree and retry.
 
 ## Useful Commands
 
@@ -66,7 +86,7 @@ alphagsm mystormwor backup
 
 - **Executable**: `server64.exe`
 - **Location**: `<install_dir>/server64.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Custom (owned install)
 - **SteamCMD App ID**: `1247090`
 
 ### Server Configuration

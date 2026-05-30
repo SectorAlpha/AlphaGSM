@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for lifeisfeudalserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with an operator-provided local MySQL/MariaDB service.
+echo "Smoke test for lifeisfeudalserver is ENABLED (BYO) - start or provision a local MySQL/MariaDB service reachable on localhost before lifecycle validation"
 exit 0
 
 set -Eeuo pipefail

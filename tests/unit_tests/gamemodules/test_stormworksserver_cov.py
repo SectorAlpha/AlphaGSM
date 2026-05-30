@@ -74,7 +74,8 @@ def test_install(tmp_path):
     server.data["exe_name"] = "server64.exe"
     server.data["Steam_AppID"] = 1247090
     server.data["Steam_anonymous_login_possible"] = True
-    mod.install(server)
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): stormworksserver"):
+        mod.install(server)
 
 
 def test_update_with_restart(tmp_path):
@@ -82,9 +83,8 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1247090
     server.data["Steam_anonymous_login_possible"] = True
-    mod.update(server, validate=True, restart=True)
-    assert server._stopped
-    assert server._started
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): stormworksserver"):
+        mod.update(server, validate=True, restart=True)
 
 
 def test_update_no_restart(tmp_path):
@@ -92,9 +92,8 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1247090
     server.data["Steam_anonymous_login_possible"] = True
-    mod.update(server, validate=False, restart=False)
-    assert server._stopped
-    assert not server._started
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): stormworksserver"):
+        mod.update(server, validate=False, restart=False)
 
 
 def test_update_stop_exception(tmp_path):
@@ -103,7 +102,8 @@ def test_update_stop_exception(tmp_path):
     server.data["Steam_AppID"] = 1247090
     server.data["Steam_anonymous_login_possible"] = True
     server.stop = MagicMock(side_effect=Exception('already stopped'))
-    mod.update(server, validate=False, restart=False)
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): stormworksserver"):
+        mod.update(server, validate=False, restart=False)
 
 
 def test_restart():
@@ -206,4 +206,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

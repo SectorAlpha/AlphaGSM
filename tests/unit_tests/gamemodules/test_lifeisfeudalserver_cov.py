@@ -109,12 +109,15 @@ def test_restart():
 
 def test_get_start_command(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
+    fake_conn = MagicMock()
+    monkeypatch.setattr(mod.socket, "create_connection", lambda *args, **kwargs: fake_conn)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "ddctd_cm_yo_server.exe"
     (tmp_path / "ddctd_cm_yo_server.exe").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    fake_conn.close.assert_called_once()
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -122,6 +125,21 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
     with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_requires_local_mysql(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    monkeypatch.setattr(
+        mod.socket,
+        "create_connection",
+        MagicMock(side_effect=OSError("connection refused")),
+    )
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ddctd_cm_yo_server.exe"
+    (tmp_path / "ddctd_cm_yo_server.exe").write_text("")
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): lifeisfeudalserver"):
         mod.get_start_command(server)
 
 
@@ -200,4 +218,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
