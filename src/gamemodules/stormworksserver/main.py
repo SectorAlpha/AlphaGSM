@@ -65,28 +65,29 @@ def configure(server, ask, port=None, dir=None, *, exe_name="server64.exe"):
 
 
 def install(server):
-    """Explain the owned-install requirement for Stormworks."""
+    """Explain the authenticated-install requirement for Stormworks."""
 
     gamemodule_common.raise_byo_requirement(
         "stormworksserver",
-        "an owned Stormworks dedicated server tree",
+        "authenticated Steam or SteamCMD access to the Stormworks Dedicated Server tool",
         actions=(
-            "Copy the real purchased Stormworks dedicated-server files into <install_dir> so server64.exe and its runtime data come from the owned game, not Steam app 1247090's redirect stub",
-            "Retry start once the owned server tree is staged in the install directory",
+            "Install the Stormworks Dedicated Server tool through a logged-in Steam client or authenticated SteamCMD workflow",
+            "Stage that installed server tree into <install_dir> so server64.exe and its runtime data come from the authenticated install rather than Steam app 1247090's redirect stub",
+            "Retry start once the authenticated server tree is staged in the install directory",
         ),
         docs_slug="stormworksserver",
     )
 
 
 def update(server, validate=False, restart=False):
-    """Explain the owned-install update requirement for Stormworks."""
+    """Explain the authenticated-install update requirement for Stormworks."""
 
     gamemodule_common.raise_byo_requirement(
         "stormworksserver",
-        "an operator-managed Stormworks server tree refresh",
+        "an authenticated Stormworks Dedicated Server tool refresh",
         actions=(
-            "Refresh the staged Stormworks dedicated-server files from an owned install instead of using Steam app 1247090",
-            "Retry start after restaging the owned files in <install_dir>",
+            "Refresh the staged Stormworks dedicated-server files through a logged-in Steam client or authenticated SteamCMD workflow instead of using Steam app 1247090 anonymously",
+            "Retry start after restaging the authenticated server tree in <install_dir>",
         ),
         docs_slug="stormworksserver",
     )

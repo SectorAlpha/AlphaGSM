@@ -1,8 +1,8 @@
 """
 Integration test for stormworksserver.
 
-ENABLED (BYO): Stormworks requires an owned dedicated server tree from the
-purchased game; Steam app 1247090 is now only a redirect stub.
+ENABLED (BYO): Stormworks requires authenticated Steam or SteamCMD access to
+install the Dedicated Server tool; Steam app 1247090 is now only a redirect stub.
 """
 
 import pytest
@@ -10,7 +10,7 @@ import pytest
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
-        reason="ENABLED (BYO): copy an owned Stormworks dedicated server tree into <install_dir>/ so server64.exe and its runtime data come from the purchased game, not Steam app 1247090's redirect stub"
+        reason="ENABLED (BYO): install the Stormworks Dedicated Server tool through logged-in Steam or authenticated SteamCMD, then stage that installed server tree into <install_dir>; Steam app 1247090 is only a redirect stub"
     ),
 ]
 

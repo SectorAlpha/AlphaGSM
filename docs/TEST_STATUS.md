@@ -175,7 +175,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | mohaaserver | owned MOHAA dedicated server tree |
 | pathoftitansserver | Alderon auth token or staged archive override/server tree |
 | sof2server | owned SOF2 dedicated server tree |
-| stormworksserver | owned Stormworks dedicated server tree from the purchased game |
+| stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
 | subnauticaserver | owned client installation path |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
