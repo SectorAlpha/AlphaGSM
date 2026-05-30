@@ -3,7 +3,6 @@
 import os
 import shutil
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -190,6 +189,12 @@ def prestart(server):
 def get_query_address(server):
     """Return the Steam query endpoint for Blackwake."""
 
+    if server.data.get("runtime") == "docker":
+        return (
+            runtime_module.resolve_query_host(server),
+            int(server.data["port"]),
+            "tcp",
+        )
     return (
         runtime_module.resolve_query_host(server),
         int(server.data["queryport"]),
@@ -206,7 +211,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Blackwake by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

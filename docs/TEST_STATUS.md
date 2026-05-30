@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 118      |
+| PASSED   | 119      |
 | ENABLED (BYO) | 30 |
 | DISABLED | 58      |
-| SKIPPED  | 33      |
+| SKIPPED  | 32      |
 
 ## Status Key
 
@@ -28,7 +28,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (118)
+## PASSED (119)
 
 | Test | Type |
 |------|------|
@@ -43,6 +43,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | btserver | SteamCMD |
 | bdserver | SteamCMD (GoldSrc) |
 | bmdmserver | SteamCMD (Source) |
+| blackwakeserver | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM treats the validated runtime contract honestly: `query`, `info`, and `info --json` use the stable generic `tcp` surface on the managed main port instead of the older stale A2S-on-`queryport` assumption, while `stop` routes through the shared runtime layer rather than a direct `screen` console call |
 | ccserver | SteamCMD (Source) |
 | colserver | SteamCMD |
 | counterstrike2 | SteamCMD (Source 2) — PASSED 2026-04-08 |
@@ -256,14 +257,13 @@ files, external services, or direct archive URLs.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (33)
+## SKIPPED (32)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
 | arksurvivalascended | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 2430930 |
-| blackwakeserver | Wine/Proton validation 2026-05-29: the bundled upstream `SERVER GUIDE.txt` still documents Windows-only dedicated servers, so do not mark enabled yet. AlphaGSM now avoids the regressed forced-Proton Linux wrapper for BLACKWAKE, and a bounded reused-install host-Wine rerun re-proved `query`, `info --json`, and clean `stop` on the managed A2S `queryport`. A fresh full SteamCMD-managed rerun then answered the remaining question and still failed: after setup completed and AlphaGSM auto-shifted the colliding default query port to `27016`, the live `output_log.txt` fell back into repeated `BotHandler.Update()` `IndexOutOfRangeException` spam and direct `alphagsm info --json` still timed out on A2S. The exact remaining blocker is therefore a fresh-install runtime/query failure under the current host-Wine path, not just missing validation time — app 423410 |
 | darkandlightserver | Wine/Proton validation 2026-05-29: the current branch no longer reaches even the narrowed generic-UDP contract. `alphagsm start` can still return success, but the managed `screen` session dies before `DNL/Saved/Logs/DNL.log` is created or either the game port or `queryport 27016` binds, and direct Proton repros still leave orphaned `DNLServer.exe` children with no log or listener. |
 | ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
 | hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |

@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-05-30
+- Server support: re-enable `blackwakeserver` on the Docker-backed `wine-proton` Linux lane after matching AlphaGSM to the runtime contract that actually passes in fresh validation: `query`, `info`, and `info --json` now use the stable generic `tcp` health surface on the managed main port instead of the older stale A2S-on-`queryport` assumption, and the smoke/integration paths both run through the shared runtime image.
 - Support-state UX: structure `ENABLED (BYO)` metadata by prerequisite class so AlphaGSM's create-time notice and tracker wording can distinguish owned assets from authenticated install access, operator config/tokens, direct URLs, exported client files, and external service dependencies without changing which modules count as supported.
 - Support state: move `minecraft.tekkit` into `ENABLED (BYO)` because automatic Technic page scraping is no longer reliable; AlphaGSM now supports either a direct Tekkit server archive URL or a pre-staged `Tekkit.jar`, and `setup` / `start` fail with explicit operator guidance instead of the old stale 403-based skip.
 - Support state: move `ahlserver`, `bbserver`, `nsserver`, `tsserver`, and `vsserver` into `ENABLED (BYO)` because Steam app `90` only provides the base HLDS runtime; AlphaGSM now fails `setup` and `start` with exact instructions to stage the full mod trees under `action/`, `brainbread/`, `ns/`, `ts/`, and `vs/` before lifecycle validation.

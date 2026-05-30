@@ -33,6 +33,7 @@ Notes:
 - [x] btserver
 - [x] bdserver
 - [x] bmdmserver
+- [x] blackwakeserver
 - [x] ccserver
 - [x] colserver
 - [x] counterstrike2
@@ -241,7 +242,6 @@ Notes:
 ## Waiting On Prerequisites Or Validation
 
 - [ ] arksurvivalascended
-- [ ] blackwakeserver
 - [ ] darkandlightserver
 - [ ] ducksideserver
 - [ ] hellletlooseserver

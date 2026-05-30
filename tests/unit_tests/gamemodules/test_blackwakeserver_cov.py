@@ -123,12 +123,20 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
-def test_query_and_info_address_use_queryport():
+def test_query_and_info_address_use_queryport_for_process_runtime():
     server = DummyServer(name="blackwake-it")
-    server.data.update({"queryport": 27016})
+    server.data.update({"queryport": 27016, "runtime": "process"})
 
     assert mod.get_query_address(server) == ("127.0.0.1", 27016, "a2s")
     assert mod.get_info_address(server) == ("127.0.0.1", 27016, "a2s")
+
+
+def test_query_and_info_address_use_tcp_main_port_for_docker_runtime():
+    server = DummyServer(name="blackwake-it")
+    server.data.update({"port": 34238, "queryport": 27016, "runtime": "docker"})
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 34238, "tcp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 34238, "tcp")
 
 
 def test_sync_server_config_updates_server_cfg(tmp_path):
@@ -248,8 +256,14 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
-    mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    sender = MagicMock()
+    original = mod.runtime_module.send_to_server
+    mod.runtime_module.send_to_server = sender
+    try:
+        mod.do_stop(server, 0)
+    finally:
+        mod.runtime_module.send_to_server = original
+    sender.assert_called_once_with(server, "\003")
 
 
 def test_status():
