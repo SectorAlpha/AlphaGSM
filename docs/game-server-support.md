@@ -102,6 +102,7 @@ Notes:
 - [x] scpslserver
 - [x] smallandserver
 - [x] sevendaystodie
+- [x] sniperelite4server
 - [x] soulmask
 - [x] sonsoftheforestserver
 - [x] solserver
@@ -251,7 +252,6 @@ Notes:
 - [ ] reignofkingsserver
 - [ ] ror2server
 - [ ] scumserver
-- [ ] sniperelite4server
 - [ ] bannerlordserver
 - [ ] starruptureserver
 - [ ] staxelserver

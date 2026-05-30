@@ -12,6 +12,7 @@ _proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_prot
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.sniperelite4server as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -69,6 +70,31 @@ def test_install(tmp_path):
     server.data["Steam_AppID"] = 568880
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
+
+
+def test_install_stages_example_default_cfg(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    example_cfg = tmp_path / "Docs" / "ExampleConfigs" / "Example1.cfg"
+    example_cfg.parent.mkdir(parents=True)
+    example_cfg.write_text("MapRotation.AddMap DM map\n", encoding="utf-8")
+
+    mod._ensure_default_cfg(server)
+
+    assert (tmp_path / "default.cfg").read_text(encoding="utf-8") == (
+        "MapRotation.AddMap DM map\n"
+    )
+
+
+def test_install_generates_fallback_default_cfg(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+
+    mod._ensure_default_cfg(server)
+
+    assert (tmp_path / "default.cfg").read_text(encoding="utf-8") == (
+        "// AlphaGSM generated default.cfg\n"
+    )
 
 
 def test_update_with_restart(tmp_path):
@@ -149,7 +175,20 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_runtime_requirements_enable_xvfb_container_env():
+    server = DummyServer()
+    server.data["dir"] = "/srv/se4/"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
 def test_status():
@@ -221,4 +260,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

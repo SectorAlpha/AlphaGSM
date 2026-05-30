@@ -1,8 +1,8 @@
 """Sniper Elite 4 dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -53,6 +53,23 @@ setting_schema = {
     **gamemodule_common.build_executable_path_setting_schema(),
 }
 
+DEFAULT_CFG_PATH = "default.cfg"
+EXAMPLE_DEFAULT_CFG_PATH = os.path.join("Docs", "ExampleConfigs", "Example1.cfg")
+
+
+def _container_runtime_env(_server):
+    """Return Docker runtime env for the shared wine-proton entrypoint."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
+
 
 def configure(server, ask, port=None, dir=None, *, exe_name="bin/SniperElite4_Dedicated.exe"):
     """Collect and store configuration values for a Sniper Elite 4 server."""
@@ -91,21 +108,52 @@ def configure(server, ask, port=None, dir=None, *, exe_name="bin/SniperElite4_De
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+def _ensure_default_cfg(server):
+    """Stage a default.cfg in the install root when the depot ships only examples."""
+
+    default_cfg_path = os.path.join(server.data["dir"], DEFAULT_CFG_PATH)
+    if os.path.isfile(default_cfg_path):
+        return
+
+    example_cfg_path = os.path.join(server.data["dir"], EXAMPLE_DEFAULT_CFG_PATH)
+    if os.path.isfile(example_cfg_path):
+        shutil.copyfile(example_cfg_path, default_cfg_path)
+        return
+
+    with open(default_cfg_path, "w", encoding="utf-8") as cfg_file:
+        cfg_file.write("// AlphaGSM generated default.cfg\n")
+
+
+_base_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
 )
-install.__doc__ = "Download the Sniper Elite 4 server files via SteamCMD."
+_base_install.__doc__ = "Download the Sniper Elite 4 server files via SteamCMD."
 
-
-update = gamemodule_common.make_steamcmd_update_hook(
+_base_update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
 )
+
+
+def install(server, *args, **kwargs):
+    """Download the Sniper Elite 4 server files and stage default.cfg."""
+
+    result = _base_install(server, *args, **kwargs)
+    _ensure_default_cfg(server)
+    return result
+
+
+def update(server, *args, **kwargs):
+    """Update the Sniper Elite 4 server files and refresh default.cfg."""
+
+    result = _base_update(server, *args, **kwargs)
+    _ensure_default_cfg(server)
+    return result
 
 restart = gamemodule_common.make_restart_hook()
 
@@ -135,10 +183,16 @@ def get_start_command(server):
     return cmd, server.data["dir"]
 
 
+def prestart(server):
+    """Ensure the install-root default.cfg exists before launch."""
+
+    _ensure_default_cfg(server)
+
+
 def do_stop(server, j):
     """Stop Sniper Elite 4 by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -172,9 +226,11 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_env=_container_runtime_env,
 )

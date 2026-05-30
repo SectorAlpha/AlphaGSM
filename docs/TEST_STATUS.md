@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 122      |
+| PASSED   | 123      |
 | ENABLED (BYO) | 30 |
-| DISABLED | 57      |
-| SKIPPED  | 29      |
+| DISABLED | 56      |
+| SKIPPED  | 28      |
 
 ## Status Key
 
@@ -28,7 +28,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (122)
+## PASSED (123)
 
 | Test | Type |
 |------|------|
@@ -112,6 +112,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | scpslserver | SteamCMD |
 | smallandserver | SteamCMD |
 | sevendaystodie | SteamCMD — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the native Linux dedicated path once readiness follows the real `output_log__*.txt` surface instead of the stale screen log, the pre-start port refresh keeps the long SteamCMD setup from leaving a claimed stale port behind, and `query`, `info`, plus `info --json` are aligned to 7DTD's real A2S listener on the managed game port |
+| sniperelite4server | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image with anonymous SteamCMD install for app `568880` once AlphaGSM stages an install-root `default.cfg` from the shipped example set, and the validated Linux health surface is generic `tcp` on the managed main game port instead of the older stale host-log and A2S assumptions |
 | soulmask | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the validated Linux Docker-backed `wine-proton` lane once AlphaGSM launches the real Windows dedicated depot through root `WSServer.exe`, treats the live health surface as generic `tcp` on the managed main port instead of the older stale A2S assumption, and proves `query`, `info`, `info --json`, plus clean shutdown on the current server contract |
 | sonsoftheforestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM writes the managed JSON `user-data/dedicatedserver.cfg`, seeds `ownerswhitelist.txt` before first launch, starts Xvfb from the shared container entrypoint instead of a stuck in-container `xvfb-run` wrapper, and proves A2S `query`, `info`, `info --json`, plus clean shutdown on the managed `queryport` |
 | solserver | SteamCMD |
@@ -260,7 +261,7 @@ files, external services, or direct archive URLs.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (30)
+## SKIPPED (28)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -273,7 +274,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
 | ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
-| sniperelite4server | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 568880 |
 | bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
