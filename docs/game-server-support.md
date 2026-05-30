@@ -156,7 +156,10 @@ Notes:
 - [x] q3server
 - [x] qlserver
 - [x] rtcwserver
+- [x] mohaaserver
+- [x] sof2server
 - [x] subnauticaserver
+- [x] ut3server
 
 ## Not Currently Supported
 

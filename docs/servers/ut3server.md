@@ -5,8 +5,8 @@ This guide covers the `ut3server` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- user-provided Unreal Tournament 3 dedicated server files
-- OpenSpy credentials if you want the server to authenticate and advertise
+- an owned Unreal Tournament 3 dedicated-server tree
+- optional OpenSpy credentials if you want the server to authenticate and advertise
 
 ## Quick Start
 
@@ -18,10 +18,27 @@ alphagsm myut3 status
 alphagsm myut3 stop
 ```
 
+`ut3server` is supported in `ENABLED (BYO)` mode. Before `setup` or `start`,
+copy an owned UT3 dedicated server tree into your chosen `<install_dir>/` so
+`<install_dir>/Binaries/ut3` exists. If you want authenticated public
+advertising, set `gsusername` and `gspassword` with your OpenSpy credentials
+before starting the server.
+
+Suggested flow:
+
+```bash
+alphagsm myut3 create ut3server
+alphagsm myut3 setup -n 7777 /path/to/ut3server
+# copy the owned UT3 dedicated server files into /path/to/ut3server/
+alphagsm myut3 set gsusername myopenspyuser
+alphagsm myut3 set gspassword myopenspypassword
+alphagsm myut3 start
+```
+
 ## Notes
 
 - Module name: `ut3server`
-- Install mode: bring-your-own server files
+- Install mode: ENABLED (BYO) server files
 - Default port: `7777`
 - Default query port: `6500`
 - Query/info protocol: `ut3` (Unreal3/GameSpy4 reachability probe)

@@ -78,6 +78,13 @@ def test_get_start_command_missing_executable(tmp_path):
         mod.get_start_command(server)
 
 
+def test_install_missing_owned_files_raises_byo(tmp_path):
+    server = DummyServer()
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "Binaries/ut3"})
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+
+
 def test_query_and_info_addresses_use_ut3_protocol():
     server = DummyServer()
     server.data["queryport"] = 6500

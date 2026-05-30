@@ -5,7 +5,7 @@ This guide covers the `mohaaserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- user-provided Medal of Honor: Allied Assault dedicated-server files
+- an owned Medal of Honor: Allied Assault dedicated-server tree
 - 32-bit runtime compatibility for the original server binary
 
 ## Quick Start
@@ -18,10 +18,23 @@ alphagsm mymohaa status
 alphagsm mymohaa stop
 ```
 
+`mohaaserver` is supported in `ENABLED (BYO)` mode. Before `setup` or `start`,
+copy an owned MOHAA dedicated server tree into your chosen `<install_dir>/` so
+`<install_dir>/mohaa_lnxded` exists.
+
+Suggested flow:
+
+```bash
+alphagsm mymohaa create mohaaserver
+alphagsm mymohaa setup -n 12203 /path/to/mohaaserver
+# copy the owned MOHAA dedicated server files into /path/to/mohaaserver/
+alphagsm mymohaa start
+```
+
 ## Notes
 
 - Module name: `mohaaserver`
-- Install mode: bring-your-own server files
+- Install mode: ENABLED (BYO) server files
 - Default port: `12203`
 - Query/info protocol: `udp` reachability on the game port
 - Executable: `./mohaa_lnxded`

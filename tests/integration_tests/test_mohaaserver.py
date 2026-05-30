@@ -1,6 +1,6 @@
 """Integration test for mohaaserver.
 
-Disabled: MOHAA requires user-provided 32-bit dedicated-server files.
+ENABLED (BYO): MOHAA requires an operator-supplied 32-bit dedicated server tree.
 """
 
 import pytest
@@ -8,7 +8,9 @@ import pytest
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="Disabled: requires user-provided 32-bit MOHAA dedicated-server files"),
+    pytest.mark.skip(
+        reason="ENABLED (BYO): copy an owned MOHAA dedicated server tree into <install_dir>/ so mohaa_lnxded exists"
+    ),
 ]
 
 

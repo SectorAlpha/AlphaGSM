@@ -54,9 +54,22 @@ def configure(server, ask, port=None, dir=None, *, exe_name="mohaa_lnxded"):
 
 
 def install(server):
-    """MOHAA uses user-provided files; ensure the install directory exists."""
+    """MOHAA uses user-provided files; validate that the dedicated binary is staged."""
 
     os.makedirs(server.data["dir"], exist_ok=True)
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "mohaaserver",
+            "an owned Medal of Honor: Allied Assault dedicated server install",
+            actions=(
+                "Copy the MOHAA dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry setup once the 32-bit Linux server files are staged locally",
+            ),
+            docs_slug="mohaaserver",
+        )
 
 
 def get_start_command(server):
@@ -64,7 +77,17 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "mohaaserver",
+            "an owned Medal of Honor: Allied Assault dedicated server install",
+            actions=(
+                "Copy the MOHAA dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry start after the 32-bit Linux server files are present",
+            ),
+            docs_slug="mohaaserver",
+        )
     return (
         [
             "./" + server.data["exe_name"],

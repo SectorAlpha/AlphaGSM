@@ -1,6 +1,6 @@
 """Integration test for sof2server.
 
-Disabled: SOF2 requires user-provided 32-bit dedicated-server files.
+ENABLED (BYO): SOF2 requires an operator-supplied 32-bit dedicated server tree.
 """
 
 import pytest
@@ -8,7 +8,9 @@ import pytest
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="Disabled: requires user-provided 32-bit SOF2 dedicated-server files"),
+    pytest.mark.skip(
+        reason="ENABLED (BYO): copy an owned SOF2 dedicated server tree into <install_dir>/ so sof2ded exists"
+    ),
 ]
 
 

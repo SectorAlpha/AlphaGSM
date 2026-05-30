@@ -5,7 +5,7 @@ This guide covers the `sof2server` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- user-provided Soldier of Fortune 2 dedicated-server files
+- an owned Soldier of Fortune 2 dedicated-server tree
 - 32-bit runtime compatibility for the original server binary
 
 ## Quick Start
@@ -18,10 +18,23 @@ alphagsm mysof2 status
 alphagsm mysof2 stop
 ```
 
+`sof2server` is supported in `ENABLED (BYO)` mode. Before `setup` or `start`,
+copy an owned SOF2 dedicated server tree into your chosen `<install_dir>/` so
+`<install_dir>/sof2ded` exists.
+
+Suggested flow:
+
+```bash
+alphagsm mysof2 create sof2server
+alphagsm mysof2 setup -n 20100 /path/to/sof2server
+# copy the owned SOF2 dedicated server files into /path/to/sof2server/
+alphagsm mysof2 start
+```
+
 ## Notes
 
 - Module name: `sof2server`
-- Install mode: bring-your-own server files
+- Install mode: ENABLED (BYO) server files
 - Default port: `20100`
 - Query/info protocol: `quake` on the game port
 - Executable: `./sof2ded`

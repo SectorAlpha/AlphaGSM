@@ -69,9 +69,23 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/ut3"):
 
 
 def install(server):
-    """UT3 uses user-provided files; ensure the install directory exists."""
+    """UT3 uses user-provided files; validate that the dedicated binary is staged."""
 
     os.makedirs(server.data["dir"], exist_ok=True)
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "ut3server",
+            "an owned Unreal Tournament 3 dedicated server install",
+            actions=(
+                "Copy the UT3 dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Set gsusername and gspassword as needed if you want OpenSpy-authenticated advertising",
+                "Retry setup once the staged server tree is present",
+            ),
+            docs_slug="ut3server",
+        )
 
 
 def get_start_command(server):
@@ -79,7 +93,18 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "ut3server",
+            "an owned Unreal Tournament 3 dedicated server install",
+            actions=(
+                "Copy the UT3 dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Set gsusername and gspassword as needed if you want OpenSpy-authenticated advertising",
+                "Retry start after the staged server tree is present",
+            ),
+            docs_slug="ut3server",
+        )
     travel_arg = gamemodule_common.build_unreal_travel_arg(
         server.data.get("defaultmap", "VCTF-Suspense"),
         options=(

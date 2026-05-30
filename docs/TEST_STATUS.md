@@ -12,7 +12,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 118      |
-| ENABLED (BYO) | 14 |
+| ENABLED (BYO) | 17 |
 | DISABLED | 61      |
 | SKIPPED  | 41      |
 
@@ -151,7 +151,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (14)
+## ENABLED (BYO) (17)
 
 | Test | Type |
 |------|------|
@@ -168,7 +168,10 @@ this pass aligned the runtime gate with that existing tracker state.
 | q3server | owned base-game assets |
 | qlserver | owned/authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets |
+| mohaaserver | owned MOHAA dedicated server tree |
+| sof2server | owned SOF2 dedicated server tree |
 | subnauticaserver | owned client installation path |
+| ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 
 ## DISABLED (61)
 

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because mohaaserver requires user-provided 32-bit dedicated-server files
-echo "Smoke test for mohaaserver is disabled - requires user-provided 32-bit dedicated-server files"
+# ENABLED (BYO): supported with an operator-supplied MOHAA dedicated server tree.
+echo "Smoke test for mohaaserver is ENABLED (BYO) - copy an owned MOHAA dedicated server tree into <install_dir>/ so mohaa_lnxded exists"
 exit 0

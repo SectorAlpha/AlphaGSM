@@ -1,6 +1,7 @@
 """Integration test for ut3server.
 
-Disabled: UT3 requires user-provided server files and OpenSpy credentials.
+ENABLED (BYO): UT3 requires an operator-supplied server tree; OpenSpy creds are
+optional for authenticated advertising.
 """
 
 import pytest
@@ -8,7 +9,9 @@ import pytest
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="Disabled: requires user-provided UT3 server files and OpenSpy credentials (bring-your-own)"),
+    pytest.mark.skip(
+        reason="ENABLED (BYO): copy an owned UT3 dedicated server tree into <install_dir>/ so Binaries/ut3 exists; set gsusername/gspassword if you want OpenSpy-authenticated advertising"
+    ),
 ]
 
 

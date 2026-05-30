@@ -54,9 +54,22 @@ def configure(server, ask, port=None, dir=None, *, exe_name="sof2ded"):
 
 
 def install(server):
-    """SOF2 uses user-provided files; ensure the install directory exists."""
+    """SOF2 uses user-provided files; validate that the dedicated binary is staged."""
 
     os.makedirs(server.data["dir"], exist_ok=True)
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "sof2server",
+            "an owned Soldier of Fortune 2 dedicated server install",
+            actions=(
+                "Copy the SOF2 dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry setup once the 32-bit Linux server files are staged locally",
+            ),
+            docs_slug="sof2server",
+        )
 
 
 def get_start_command(server):
@@ -64,7 +77,17 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "sof2server",
+            "an owned Soldier of Fortune 2 dedicated server install",
+            actions=(
+                "Copy the SOF2 dedicated server files into <install_dir> so {} exists".format(
+                    server.data["exe_name"]
+                ),
+                "Retry start after the 32-bit Linux server files are present",
+            ),
+            docs_slug="sof2server",
+        )
     return (
         [
             "./" + server.data["exe_name"],
