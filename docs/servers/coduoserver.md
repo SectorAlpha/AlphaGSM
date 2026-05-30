@@ -51,6 +51,31 @@ Setup configures:
 - still requires copied base Call of Duty multiplayer assets before the server
   can finish startup
 
+`coduoserver` is a bring-your-own-assets lane. AlphaGSM installs the dedicated
+binary for Call of Duty: United Offensive, but the archive still depends on
+owned base Call of Duty multiplayer files that are not bundled.
+
+Before `start`, copy the required files from a legitimate base Call of Duty
+installation into the AlphaGSM server tree:
+
+```text
+<install_dir>/main/pak0.pk3
+<install_dir>/main/default_mp.cfg
+```
+
+The current blocker is satisfied by the base Call of Duty multiplayer assets,
+not by files copied only into the `uo/` expansion directory.
+
+Minimal operator flow:
+
+```bash
+alphagsm mycoduoser create coduoserver
+alphagsm mycoduoser setup
+cp /path/to/cod/main/pak0.pk3 <install_dir>/main/
+cp /path/to/cod/main/default_mp.cfg <install_dir>/main/
+alphagsm mycoduoser start
+```
+
 ## Useful Commands
 
 ```bash
@@ -80,6 +105,7 @@ alphagsm mycoduoser backup
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Owned base assets still required**: `main/pak0.pk3`,
   `main/default_mp.cfg`
+- **Copy target before first start**: `<install_dir>/main/`
 - **Template**: See [server-templates/coduoserver/](../server-templates/coduoserver/) if available
 
 ### Maps and Mods

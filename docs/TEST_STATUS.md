@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 115      |
+| PASSED   | 116      |
 | DISABLED | 62      |
-| SKIPPED  | 56      |
+| SKIPPED  | 55      |
 
 ## Status Key
 
@@ -26,7 +26,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (114)
+## PASSED (116)
 
 | Test | Type |
 |------|------|
@@ -70,6 +70,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | l4dserver | SteamCMD (Source) |
 | longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
 | minecraft_paper | Direct download |
+| minecraft_bungeecord | Direct download — PASSED 2026-05-30; fresh focused integration now proves the tracker row was stale: AlphaGSM resolves the latest successful upstream BungeeCord Jenkins build automatically during `setup`, generates `config.yml`, and passes `query`, `info`, `info --json`, `status`, and clean shutdown on the managed SLP/TCP proxy port without requiring a bring-your-own jar URL |
 | minecraft_vanilla | Direct download — PASSED 2026-05-16; local integration helper now selects the newest release compatible with the installed Java runtime |
 | minecraft_velocity | Direct download |
 | minecraft_waterfall | Direct download |
@@ -213,7 +214,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (57)
+## SKIPPED (55)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -249,9 +250,9 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arma3_wasteland | Arma 3 variant (needs base arma3server) |
 | bbserver | HLDS mod maps not available via SteamCMD |
 | brickadiaserver | SteamCMD app requires authentication |
-| cod2server | Direct archive install now succeeds on `release_v1`, but the official Linux dedicated package still lacks the localized retail assets the binary requires at startup. A fresh Docker-backed integration rerun on 2026-05-29 reached the exact blocker: `main/localized_*.iwd` and `main/default_localize_mp.cfg` are missing, so COD2 still needs owned/copied base-game multiplayer assets even though the dedicated executable itself now installs correctly. |
-| cod4server | Direct archive install now succeeds on `release_v1`, but the default dedicated-server archive still lacks owned base-game files required at startup. A fresh Docker-backed integration rerun on 2026-05-29 proved the exact blocker: `fileSysCheck.cfg` plus `main/localized_*.iwd` are missing from the anonymous package, so COD4 still needs copied retail assets even though the dedicated executable itself now installs correctly. |
-| coduoserver | Direct archive install now succeeds on `release_v1`, but the COD: United Offensive dedicated package still depends on owned base Call of Duty multiplayer assets that are not included in the anonymous archive. A fresh Docker-backed integration rerun on 2026-05-30 proved the exact blocker: `main/pak0.pk3` or `main/default_mp.cfg` is still required from a base-game install before CODUO can finish startup. |
+| cod2server | `cod2server` is a bring-your-own-assets lane: the Linux dedicated archive now installs correctly on `release_v1`, but startup still needs the operator to copy owned Call of Duty 2 files into `<install_dir>/main/`, specifically `localized_*.iwd` plus `default_localize_mp.cfg`, before retrying `start`. |
+| cod4server | `cod4server` is a bring-your-own-assets lane: the dedicated archive now installs correctly on `release_v1`, but startup still needs the operator to copy owned Call of Duty 4 files into the server tree, specifically `fileSysCheck.cfg` at `<install_dir>/` plus `main/localized_*.iwd` under `<install_dir>/main/`, before retrying `start`. |
+| coduoserver | `coduoserver` is a bring-your-own-assets lane: the dedicated archive now installs correctly on `release_v1`, but startup still needs the operator to copy owned base Call of Duty multiplayer assets into `<install_dir>/main/`, specifically `pak0.pk3` or `default_mp.cfg`, before retrying `start`. |
 | dstserver | DST is a bring-your-own-config lane: the Steam payload installs, but startup still exits immediately until the operator places a real `cluster_token.txt` plus cluster config under the path AlphaGSM launches (`<install_dir>/<confdir>/<cluster>/`, default `<install_dir>/DoNotStarveTogether/<server-name>/`). |
 | etlegacyserver | ET: Legacy archive setup now completes and the dedicated binary is wired correctly on `release_v1`, but fresh Docker-backed validation on 2026-05-30 proved the remaining blocker is owned base-game data: the public ET: Legacy release still exits at `FS_InitFilesystem: Original game data files not found` until `etmain/pak0.pk3` is copied in from an original Wolfenstein: Enemy Territory install. Some mods may also require `etmain/pak1.pk3` and `etmain/pak2.pk3`. |
 | gravserver | SteamCMD/platform issue |
@@ -261,7 +262,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
 | minecraft_bedrock | Minecraft.net Bedrock download page is JavaScript-rendered; URL scraper returns no results (module disabled) |
-| minecraft_bungeecord | Java proxy (needs download URL) |
 | minecraft_custom | `minecraft.custom` is a bring-your-own-jar lane: place a real server jar at `<install_dir>/<exe_name>` and set `exe_name` before rerunning `setup`; AlphaGSM does not auto-select or auto-download an arbitrary custom server binary here. |
 | minecraft_tekkit | TechnicPack download page returns 403 Forbidden; server download URL unavailable |
 | mtaserver | Download/platform prerequisite |

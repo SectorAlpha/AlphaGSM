@@ -62,6 +62,7 @@ Notes:
 - [x] l4dserver
 - [x] longvinterserver
 - [x] minecraft_paper
+- [x] minecraft_bungeecord
 - [x] minecraft_vanilla
 - [x] minecraft_velocity
 - [x] minecraft_waterfall
@@ -247,7 +248,6 @@ Notes:
 - [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
 - [ ] minecraft_bedrock
-- [ ] minecraft_bungeecord
 - [ ] minecraft_custom
 - [ ] minecraft_tekkit
 - [ ] mtaserver

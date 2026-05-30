@@ -51,6 +51,32 @@ Setup configures:
 - still requires copied retail/localized multiplayer assets before the server
   can finish startup
 
+`cod2server` is a bring-your-own-assets lane. AlphaGSM installs the Linux
+dedicated binary for you, but the official archive still does not include the
+localized retail files the server expects at startup.
+
+Before `start`, copy the required owned files from a legitimate Call of Duty 2
+installation into the AlphaGSM server tree:
+
+```text
+<install_dir>/main/localized_*.iwd
+<install_dir>/main/default_localize_mp.cfg
+```
+
+Minimal operator flow:
+
+```bash
+alphagsm mycod2serv create cod2server
+alphagsm mycod2serv setup
+cp /path/to/cod2/main/localized_*.iwd <install_dir>/main/
+cp /path/to/cod2/main/default_localize_mp.cfg <install_dir>/main/
+alphagsm mycod2serv start
+```
+
+If startup still reports missing localized assets, check that the files landed
+under the server's `main/` directory, not a mod directory such as `uo/` or a
+custom `moddir`.
+
 ## Useful Commands
 
 ```bash
@@ -79,6 +105,7 @@ alphagsm mycod2serv backup
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Owned base assets still required**: `main/localized_*.iwd`,
   `main/default_localize_mp.cfg`
+- **Copy target before first start**: `<install_dir>/main/`
 - **Template**: See [server-templates/cod2server/](../server-templates/cod2server/) if available
 
 ### Maps and Mods

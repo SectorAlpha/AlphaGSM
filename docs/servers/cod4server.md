@@ -51,6 +51,32 @@ Setup configures:
 - still requires copied retail/localized multiplayer assets before the server
   can finish startup
 
+`cod4server` is a bring-your-own-assets lane. AlphaGSM installs the Linux
+dedicated binary for you, but the stock archive still does not include all of
+the owned multiplayer files the server expects at startup.
+
+Before `start`, copy the required owned files from a legitimate Call of Duty 4
+installation into the AlphaGSM server tree:
+
+```text
+<install_dir>/fileSysCheck.cfg
+<install_dir>/main/localized_*.iwd
+```
+
+Minimal operator flow:
+
+```bash
+alphagsm mycod4serv create cod4server
+alphagsm mycod4serv setup
+cp /path/to/cod4/fileSysCheck.cfg <install_dir>/
+cp /path/to/cod4/main/localized_*.iwd <install_dir>/main/
+alphagsm mycod4serv start
+```
+
+If the server still exits immediately, verify that `fileSysCheck.cfg` is at the
+server root and the localized `.iwd` files are under `main/`, not only inside a
+custom `moddir`.
+
 ## Useful Commands
 
 ```bash
@@ -79,6 +105,8 @@ alphagsm mycod4serv backup
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Owned base assets still required**: `fileSysCheck.cfg`,
   `main/localized_*.iwd`
+- **Copy targets before first start**: `<install_dir>/` for `fileSysCheck.cfg`,
+  `<install_dir>/main/` for `localized_*.iwd`
 - **Template**: See [server-templates/cod4server/](../server-templates/cod4server/) if available
 
 ### Maps and Mods
