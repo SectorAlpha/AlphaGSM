@@ -45,18 +45,22 @@ _DISABLED_SERVERS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "disabled_servers.conf",
 )
+_ENABLED_BYO_SERVERS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "enabled_byo_servers.conf",
+)
 MODULE_CATALOG = load_default_module_catalog()
 
 
-def _load_disabled_servers():
-    """Load the disabled servers list from disabled_servers.conf.
+def _load_status_reason_file(path):
+    """Load a tab-separated module->reason mapping file.
 
     Returns a dict mapping module name to reason string.
     """
-    disabled = {}
-    if not os.path.isfile(_DISABLED_SERVERS_PATH):
-        return disabled
-    with open(_DISABLED_SERVERS_PATH, encoding="utf-8") as fh:
+    rows = {}
+    if not os.path.isfile(path):
+        return rows
+    with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -64,8 +68,20 @@ def _load_disabled_servers():
             parts = line.split("\t", 1)
             module_name = parts[0].strip()
             reason = parts[1].strip() if len(parts) > 1 else "No reason given"
-            disabled[module_name] = reason
-    return disabled
+            rows[module_name] = reason
+    return rows
+
+
+def _load_disabled_servers():
+    """Load the disabled servers list from disabled_servers.conf."""
+
+    return _load_status_reason_file(_DISABLED_SERVERS_PATH)
+
+
+def _load_enabled_byo_servers():
+    """Load the BYO-enabled servers list from enabled_byo_servers.conf."""
+
+    return _load_status_reason_file(_ENABLED_BYO_SERVERS_PATH)
 
 
 def _get_a2s_wake_hook(module):

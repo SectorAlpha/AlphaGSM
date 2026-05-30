@@ -143,6 +143,22 @@ def test_load_disabled_servers_parses_reasons(monkeypatch, tmp_path):
     }
 
 
+def test_load_enabled_byo_servers_parses_reasons(monkeypatch, tmp_path):
+    enabled_path = tmp_path / "enabled_byo_servers.conf"
+    enabled_path.write_text(
+        "cod2server\tcopy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/\n"
+        "minecraft.custom\tplace a server jar at <install_dir>/<exe_name>\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(server_module, "_ENABLED_BYO_SERVERS_PATH", str(enabled_path))
+
+    assert server_module._load_enabled_byo_servers() == {
+        "cod2server": "copy localized_*.iwd and default_localize_mp.cfg into <install_dir>/main/",
+        "minecraft.custom": "place a server jar at <install_dir>/<exe_name>",
+    }
+
+
 def test_findmodule_rejects_disabled_canonical_module_before_import(monkeypatch):
     class FakeCatalog:
         def resolve(self, name):
@@ -168,6 +184,31 @@ def test_findmodule_rejects_disabled_canonical_module_before_import(monkeypatch)
     assert "teamfortress2" in message
     assert "Known-broken in CI" in message
     assert "open an issue or submit a pull request" in message
+
+
+def test_findmodule_allows_enabled_byo_module(monkeypatch):
+    real_module = SimpleNamespace(__file__="/tmp/real.py")
+
+    class FakeCatalog:
+        def resolve(self, name):
+            assert name == "cod2server"
+            return "cod2server"
+
+    monkeypatch.setattr(server_module, "MODULE_CATALOG", FakeCatalog(), raising=False)
+    monkeypatch.setattr(server_module, "_load_disabled_servers", lambda: {})
+    monkeypatch.setattr(
+        server_module,
+        "_load_enabled_byo_servers",
+        lambda: {"cod2server": "copy assets"},
+    )
+    monkeypatch.setattr(server_module, "import_module", lambda _name: real_module)
+    monkeypatch.setattr(server_module.runtime_module, "ensure_runtime_hooks", lambda module: None)
+    monkeypatch.setattr(server_module, "SERVERMODULEPACKAGE", "gamemodules.")
+
+    resolved_name, resolved_module = server_module._findmodule("cod2server")
+
+    assert resolved_name == "cod2server"
+    assert resolved_module is real_module
 
 
 def test_server_init_creates_new_datastore_and_saves(monkeypatch, tmp_path):
