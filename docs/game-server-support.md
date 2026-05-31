@@ -181,6 +181,7 @@ Notes:
 - [x] sof2server
 - [x] stormworksserver
 - [x] subnauticaserver
+- [x] tiserver
 - [x] tsserver
 - [x] ut3server
 - [x] vsserver
@@ -237,7 +238,6 @@ Notes:
 - [ ] sfcserver
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound
-- [ ] tiserver
 - [ ] vrserver
 - [ ] wreckfestserver
 - [ ] zmrserver

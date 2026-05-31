@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.tiserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.tiserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -39,6 +40,8 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data["eos_client_id"] == ""
+    assert server.data["eos_client_secret"] == ""
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -113,6 +116,8 @@ def test_get_start_command(tmp_path):
     server.data["map"] = "test"
     server.data["port"] = 27015
     server.data["queryport"] = 27015
+    server.data["eos_client_id"] = "client-id"
+    server.data["eos_client_secret"] = "client-secret"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "./TheIsleServer.sh",
@@ -120,6 +125,8 @@ def test_get_start_command(tmp_path):
         "-Port=27015",
         "-QueryPort=27015",
         "-log",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientId=client-id",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientSecret=client-secret",
     ]
     assert cwd == server.data["dir"]
 
@@ -141,10 +148,22 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_get_start_command_missing_eos_credentials_raises_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "TheIsleServer.sh"
+    (tmp_path / "TheIsleServer.sh").write_text("")
+    server.data["map"] = "test"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.get_start_command(server)
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -206,6 +225,18 @@ def test_checkvalue_exe_name():
     assert result == "/test/value"
 
 
+def test_checkvalue_eos_client_id():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("eos_client_id",), "abc")
+    assert result == "abc"
+
+
+def test_checkvalue_eos_client_secret():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("eos_client_secret",), "secret")
+    assert result == "secret"
+
+
 def test_checkvalue_dir():
     server = DummyServer()
     result = mod.checkvalue(server, ("dir",), "/test/value")
@@ -216,4 +247,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -72,11 +72,29 @@ def test_tiserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("ti")
     exe = tmp_path / "TheIsleServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "TheIsleServer.sh", "map": "TheIsle", "port": 7777, "queryport": "7778"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "TheIsleServer.sh",
+            "map": "TheIsle",
+            "port": 7777,
+            "queryport": "7778",
+            "eos_client_id": "client-id",
+            "eos_client_secret": "client-secret",
+        }
+    )
 
     cmd, cwd = tiserver.get_start_command(server)
 
-    assert cmd == ["./TheIsleServer.sh", "TheIsle", "-Port=7777", "-QueryPort=7778", "-log"]
+    assert cmd == [
+        "./TheIsleServer.sh",
+        "TheIsle",
+        "-Port=7777",
+        "-QueryPort=7778",
+        "-log",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientId=client-id",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientSecret=client-secret",
+    ]
     assert cwd == server.data["dir"]
 
 

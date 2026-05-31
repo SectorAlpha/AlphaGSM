@@ -1,11 +1,11 @@
 """The Isle dedicated server lifecycle helpers."""
 
 import os
+import shlex
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import build_launch_arg_values
+from server.settable_keys import SettingSpec, build_launch_arg_values
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -13,6 +13,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 412680
 steam_anonymous_login_possible = True
+CONTAINER_STEAMCMD_DIR = "/opt/alphagsm-steamcmd"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -29,6 +30,16 @@ setting_schema = {
     **gamemodule_common.build_unreal_setting_schema(
         positional_key="map",
         positional_description="The startup map.",
+    ),
+    "eos_client_id": SettingSpec(
+        canonical_key="eos_client_id",
+        description="Epic Online Services dedicated server client ID.",
+        secret=True,
+    ),
+    "eos_client_secret": SettingSpec(
+        canonical_key="eos_client_secret",
+        description="Epic Online Services dedicated server client secret.",
+        secret=True,
     ),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
@@ -47,6 +58,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="TheIsleServer.sh"):
         {
             "queryport": "7778",
             "map": "TheIsle",
+            "eos_client_id": "",
+            "eos_client_secret": "",
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -94,6 +107,18 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    eos_client_id = str(server.data.get("eos_client_id", "")).strip()
+    eos_client_secret = str(server.data.get("eos_client_secret", "")).strip()
+    if not eos_client_id or not eos_client_secret:
+        gamemodule_common.raise_byo_requirement(
+            "tiserver",
+            "Epic Online Services dedicated server client credentials",
+            actions=(
+                "Set eos_client_id and eos_client_secret before starting the server",
+                "Use the official dedicated-server guide to create TheIsle/Saved/Config/LinuxServer/Engine.ini if you prefer file-based EOS configuration",
+            ),
+            docs_slug="tiserver",
+        )
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -105,6 +130,8 @@ def get_start_command(server):
             "./" + server.data["exe_name"],
             *dynamic_args,
             "-log",
+            "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientId={}".format(eos_client_id),
+            "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientSecret={}".format(eos_client_secret),
         ],
         server.data["dir"],
     )
@@ -113,7 +140,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop The Isle by interrupting the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -141,18 +168,68 @@ def checkvalue(server, key, *value):
         *value,
         setting_schema=setting_schema,
         resolved_int_keys=("port", "queryport"),
-        resolved_str_keys=("map", "exe_name", "dir"),
+        resolved_str_keys=("map", "eos_client_id", "eos_client_secret", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def get_runtime_requirements(server):
+    """Return The Isle's native Linux Docker runtime contract."""
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
-)
+    mounts = None
+    if "dir" in server.data:
+        mounts = [
+            {
+                "source": server.data["dir"],
+                "target": "/srv/server",
+                "mode": "rw",
+            },
+            {
+                "source": os.path.normpath(steamcmd.STEAMCMD_DIR),
+                "target": CONTAINER_STEAMCMD_DIR,
+                "mode": "ro",
+            },
+        ]
+
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=(
+            {"key": "queryport", "protocol": "udp"},
+            {"key": "queryport", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "tcp"},
+        ),
+        mounts=mounts,
+    )
+
+
+def get_container_spec(server):
+    """Run The Isle as the mounted server-directory owner inside Docker."""
+
+    requirements = get_runtime_requirements(server)
+    command, _cwd = get_start_command(server)
+    shell_command = " ".join(shlex.quote(part) for part in command)
+    user_shell_command = "cd /srv/server && " + shell_command
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            (
+                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
+                'mkdir -p /home/alphagsm/.steam/sdk64; '
+                'chmod -R a+rwX /srv/server /home/alphagsm; '
+                'ln -sfn '
+                + CONTAINER_STEAMCMD_DIR
+                + '/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
+                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
+                "exec runuser -u alphagsm -- sh -lc "
+                + shlex.quote(user_shell_command)
+            ),
+        ],
+    }

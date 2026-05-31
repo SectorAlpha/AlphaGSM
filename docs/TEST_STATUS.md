@@ -12,8 +12,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 129      |
-| ENABLED (BYO) | 31 |
-| DISABLED | 49      |
+| ENABLED (BYO) | 32 |
+| DISABLED | 48      |
 | SKIPPED  | 28      |
 
 ## Status Key
@@ -162,7 +162,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (31)
+## ENABLED (BYO) (32)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, authenticated install access, config/tokens, exported client
@@ -197,12 +197,13 @@ files, external services, or direct archive URLs.
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
 | subnauticaserver | owned client installation path |
+| tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 | tsserver | owned The Specialists mod content tree |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (49)
+## DISABLED (48)
 
 | Test | Reason |
 |------|--------|
@@ -255,7 +256,6 @@ files, external services, or direct archive URLs.
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| tiserver | SteamCMD app 412680 installs no Linux-compatible dedicated server binary (executable file not found) |
 | vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
 | wreckfestserver | SteamCMD app 361580 installs no Linux-compatible dedicated server binary (WreckfestServer not present) |
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
