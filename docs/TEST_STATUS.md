@@ -11,11 +11,11 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 135      |
-| ENABLED (AUTH) | 4 |
+| PASSED   | 136      |
+| ENABLED (AUTH) | 5 |
 | ENABLED (BYO) | 28 |
-| DISABLED | 46      |
-| SKIPPED  | 28      |
+| DISABLED | 44      |
+| SKIPPED  | 22      |
 
 ## Status Key
 
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (137)
+## PASSED (136)
 
 | Test | Type |
 |------|------|
@@ -172,7 +172,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (4)
+## ENABLED (AUTH) (5)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -182,6 +182,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
 | pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
+| battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
 ## ENABLED (BYO) (30)
@@ -240,7 +241,6 @@ URLs.
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atlasserver | Docker-first validation 2026-05-29: the checked-in lane now seeds install-local Steam bootstrap state for the `steamcmd-linux` runtime, and a focused rerun under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` proved the remaining blocker is no longer missing compatibility libraries. SteamCMD was actively populating `steamapps/downloading/1006030` (about `25G`) and the staged `ShooterGame/Binaries/Linux/ShooterGameServer` reproduced an immediate `Signal 11 caught.` crash inside the validated Docker image; `ldd` resolved the legacy OpenSSL/protobuf/Steam dependencies cleanly, so the exact remaining blocker is an early ATLAS binary segfault before A2S `info` / `query` can come up. |
-| battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
@@ -271,7 +271,7 @@ URLs.
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (28)
+## SKIPPED (22)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 

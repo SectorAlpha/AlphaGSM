@@ -165,6 +165,7 @@ Notes:
 - [x] gtafivemserver
 - [x] pathoftitansserver
 - [x] redmserver
+- [x] battlebitserver
 - [x] tiserver
 
 ## Supported Now
@@ -215,7 +216,6 @@ Notes:
 - [ ] arma3server
 - [ ] arma3wastelandserver
 - [ ] atlasserver
-- [ ] battlebitserver
 - [ ] bf1942server
 - [ ] bfvserver
 - [ ] boserver

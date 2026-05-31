@@ -25,7 +25,12 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found)")
+@pytest.mark.skip(
+    reason=(
+        "ENABLED (AUTH): BattleBit community servers install anonymously, but start still requires "
+        "a reachable BattleBit community server apiendpoint and host-side community-server provisioning/approval"
+    )
+)
 def test_battlebitserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
