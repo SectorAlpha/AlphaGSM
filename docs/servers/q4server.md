@@ -5,6 +5,8 @@ This guide covers the `q4server` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- either a direct Quake 4 dedicated-server archive URL or a pre-staged Quake 4
+  Linux dedicated server tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +22,13 @@ Run setup:
 ```bash
 alphagsm myq4server setup
 ```
+
+`q4server` is supported in `ENABLED (BYO)` mode. Before `setup` or `start`,
+either:
+
+- set `url` to a working Quake 4 dedicated-server archive, or
+- stage `q4ded.x86` and the rest of the Quake 4 server files inside your
+  chosen `<install_dir>/`
 
 Start it:
 
@@ -45,7 +54,25 @@ Setup configures:
 
 - the game port (default 28004)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the server archive when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm myq4server create q4server
+alphagsm myq4server set url https://example.invalid/q4-dedicated.tar.gz
+alphagsm myq4server setup -n 28004 /path/to/q4
+alphagsm myq4server start
+```
+
+Or, if you already have the server files:
+
+```bash
+alphagsm myq4server create q4server
+alphagsm myq4server setup -n 28004 /path/to/q4
+# copy q4ded.x86 and the rest of the server tree into /path/to/q4/
+alphagsm myq4server start
+```
 
 ## Useful Commands
 
@@ -54,6 +81,7 @@ alphagsm myq4server update
 alphagsm myq4server backup
 alphagsm myq4server set servername "AlphaGSM Q4"
 alphagsm myq4server set map q4dm6
+alphagsm myq4server set url https://example.invalid/q4-dedicated.tar.gz
 ```
 
 `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg` immediately through the schema-backed config-sync path.

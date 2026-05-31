@@ -422,10 +422,22 @@ def configure(
 def install(server):
     """Download and install the Jedi Outcast server archive."""
 
-    if "url" not in server.data or not server.data["url"]:
-        server.data["url"] = JK2_DEDICATED_URL
-        server.data.setdefault("download_name", JK2_DEDICATED_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    os.makedirs(server.data["dir"], exist_ok=True)
+    configured_url = str(server.data.get("url") or "").strip()
+    if configured_url and configured_url != JK2_DEDICATED_URL:
+        install_archive(server, detect_compression(server.data["download_name"]))
+    else:
+        exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+        if not os.path.isfile(exe_path):
+            gamemodule_common.raise_byo_requirement(
+                "jk2server",
+                "a real Jedi Outcast dedicated-server archive URL or a pre-staged Jedi Outcast server tree",
+                actions=(
+                    "Set url to a working Jedi Outcast server archive before rerunning setup, or stage jk2mvded.x86_64 in <install_dir>",
+                    "Retry setup once the archive URL or staged files are in place",
+                ),
+                docs_slug="jk2server",
+            )
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
@@ -436,7 +448,15 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "jk2server",
+            "a real Jedi Outcast dedicated-server archive URL or a pre-staged Jedi Outcast server tree",
+            actions=(
+                "Set url to a working Jedi Outcast server archive before rerunning setup, or stage jk2mvded.x86_64 in <install_dir>",
+                "Retry start once the archive URL or staged files are in place",
+            ),
+            docs_slug="jk2server",
+        )
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,

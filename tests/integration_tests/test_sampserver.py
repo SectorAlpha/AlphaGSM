@@ -1,6 +1,6 @@
 """Integration test for sampserver.
 
-Disabled: SA-MP download domain files.sa-mp.com is dead
+ENABLED (BYO): set a working archive url or stage samp03svr before setup/start
 """
 
 import pytest
@@ -22,7 +22,12 @@ from conftest import (
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="SA-MP download domain files.sa-mp.com is dead"),
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): set url to a working SA-MP dedicated-server archive or "
+            "stage samp03svr in <install_dir> before setup/start"
+        )
+    ),
 ]
 
 START_TIMEOUT = 600

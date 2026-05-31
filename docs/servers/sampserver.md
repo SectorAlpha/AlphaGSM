@@ -5,6 +5,8 @@ This guide covers the `sampserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- either a direct SA-MP dedicated-server archive URL or a pre-staged SA-MP
+  Linux server tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +22,13 @@ Run setup:
 ```bash
 alphagsm mysampserv setup
 ```
+
+`sampserver` is supported in `ENABLED (BYO)` mode. Before `setup` or `start`,
+either:
+
+- set `url` to a working SA-MP dedicated-server archive, or
+- stage `samp03svr` and the rest of the SA-MP server files inside your chosen
+  `<install_dir>/`
 
 Start it:
 
@@ -45,13 +54,32 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the server archive when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm mysampserv create sampserver
+alphagsm mysampserv set url https://example.invalid/samp-server.tar.gz
+alphagsm mysampserv setup -n 7777 /path/to/samp
+alphagsm mysampserv start
+```
+
+Or, if you already have the server files:
+
+```bash
+alphagsm mysampserv create sampserver
+alphagsm mysampserv setup -n 7777 /path/to/samp
+# copy samp03svr and the rest of the server tree into /path/to/samp/
+alphagsm mysampserv start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm mysampserv update
 alphagsm mysampserv backup
+alphagsm mysampserv set url https://example.invalid/samp-server.tar.gz
 ```
 
 ## Notes

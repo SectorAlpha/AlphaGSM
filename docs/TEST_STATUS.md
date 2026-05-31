@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 139      |
+| PASSED   | 140      |
 | ENABLED (AUTH) | 5 |
-| ENABLED (BYO) | 28 |
-| DISABLED | 41      |
+| ENABLED (BYO) | 32 |
+| DISABLED | 37      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -188,7 +188,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (30)
+## ENABLED (BYO) (32)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -199,6 +199,7 @@ URLs.
 | aloftserver | owned Aloft server tree |
 | ahlserver | owned Action Half-Life mod content tree |
 | atsserver | owned exported client packages/settings |
+| bf1942server | direct archive URL or staged Battlefield 1942 Linux dedicated server tree |
 | bbserver | owned BrainBread mod content tree |
 | cod2server | owned localized base-game assets |
 | cod4server | owned base-game assets |
@@ -209,13 +210,16 @@ URLs.
 | gravserver | owned GRAV dedicated server tree |
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
+| jk2server | direct archive URL or staged Jedi Outcast Linux dedicated server tree |
 | minecraft_custom | user-supplied server jar |
 | minecraft_tekkit | direct Tekkit archive URL or staged Tekkit.jar |
 | mxbikesserver | user-supplied dedicated archive URL |
 | nsserver | owned Natural Selection mod content tree |
 | q3server | owned base-game assets |
+| q4server | direct archive URL or staged Quake 4 Linux dedicated server tree |
 | qlserver | authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets |
+| sampserver | direct archive URL or staged SA-MP Linux dedicated server tree |
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
@@ -225,7 +229,7 @@ URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (41)
+## DISABLED (37)
 
 | Test | Reason |
 |------|--------|
@@ -243,7 +247,6 @@ URLs.
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atlasserver | Docker-first validation 2026-05-29: the checked-in lane now seeds install-local Steam bootstrap state for the `steamcmd-linux` runtime, and a focused rerun under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` proved the remaining blocker is no longer missing compatibility libraries. SteamCMD was actively populating `steamapps/downloading/1006030` (about `25G`) and the staged `ShooterGame/Binaries/Linux/ShooterGameServer` reproduced an immediate `Signal 11 caught.` crash inside the validated Docker image; `ldd` resolved the legacy OpenSSL/protobuf/Steam dependencies cleanly, so the exact remaining blocker is an early ATLAS binary segfault before A2S `info` / `query` can come up. |
-| bf1942server | Download domain bf1942.lightcubed.com is dead |
 | bfvserver | Download URL (GameFront) is dead or gated |
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
@@ -255,16 +258,13 @@ URLs.
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | iosserver | IOSoccer dedicated server segfaults on startup |
-| jk2server | JK2 download URL returns 404 |
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
-| q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
-| sampserver | Download domain files.sa-mp.com is dead |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |

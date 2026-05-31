@@ -65,6 +65,15 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
+def test_install_without_override_url_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "jk2mvded.x86_64"
+    server.data["url"] = mod.JK2_DEDICATED_URL
+    server.data["download_name"] = mod.JK2_DEDICATED_NAME
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): jk2server"):
+        mod.install(server)
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -106,7 +115,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): jk2server"):
         mod.get_start_command(server)
 
 def test_do_stop():

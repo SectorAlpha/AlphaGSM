@@ -1,6 +1,6 @@
 """Integration test for bf1942server.
 
-Disabled: Download domain bf1942.lightcubed.com is dead
+ENABLED (BYO): set a working archive url or stage bf1942_lnxded before setup/start
 """
 
 import pytest
@@ -22,7 +22,12 @@ from conftest import (
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="Download domain bf1942.lightcubed.com is dead"),
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): set url to a working Battlefield 1942 dedicated-server "
+            "archive or stage bf1942_lnxded in <install_dir> before setup/start"
+        )
+    ),
 ]
 
 START_TIMEOUT = 600

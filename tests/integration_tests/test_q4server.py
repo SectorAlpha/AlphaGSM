@@ -1,6 +1,6 @@
 """Integration test for q4server.
 
-Disabled: Quake 4 download URL returns 404
+ENABLED (BYO): set a working archive url or stage q4ded.x86 before setup/start
 """
 
 import pytest
@@ -22,7 +22,12 @@ from conftest import (
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="Quake 4 download URL returns 404"),
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): set url to a working Quake 4 dedicated-server archive "
+            "or stage q4ded.x86 in <install_dir> before setup/start"
+        )
+    ),
 ]
 
 START_TIMEOUT = 600

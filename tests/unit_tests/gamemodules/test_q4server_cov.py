@@ -66,6 +66,16 @@ def test_install(tmp_path):
     server.data["fs_game"] = "q4base"
     mod.install(server)
 
+def test_install_without_override_url_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "q4ded.x86"
+    server.data["url"] = mod.Q4_SERVER_URL
+    server.data["download_name"] = mod.Q4_SERVER_NAME
+    server.data["fs_game"] = "q4base"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): q4server"):
+        mod.install(server)
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -132,7 +142,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): q4server"):
         mod.get_start_command(server)
 
 def test_do_stop():

@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.sampserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.sampserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 class DummyData(dict):
     def save(self):
@@ -62,6 +63,15 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
+def test_install_without_override_url_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "samp03svr"
+    server.data["url"] = mod.SAMP_LATEST_URL
+    server.data["download_name"] = mod.SAMP_LATEST_DOWNLOAD_NAME
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): sampserver"):
+        mod.install(server)
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -74,13 +84,13 @@ def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): sampserver"):
         mod.get_start_command(server)
 
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()
@@ -140,4 +150,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

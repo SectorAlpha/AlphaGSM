@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for bf1942server is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): set url to a working Battlefield 1942 dedicated-server archive
+# or stage bf1942_lnxded in <install_dir> before setup/start.
+echo "Smoke test for bf1942server requires ENABLED (BYO) input: set url to a working Battlefield 1942 dedicated-server archive or stage bf1942_lnxded in <install_dir> before setup/start."
 exit 0
 
 set -Eeuo pipefail

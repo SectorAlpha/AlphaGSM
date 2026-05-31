@@ -439,10 +439,22 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
 def install(server):
     """Download and install the Quake 4 server archive."""
 
-    if "url" not in server.data or not server.data["url"]:
-        server.data["url"] = Q4_SERVER_URL
-        server.data.setdefault("download_name", Q4_SERVER_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    os.makedirs(server.data["dir"], exist_ok=True)
+    configured_url = str(server.data.get("url") or "").strip()
+    if configured_url and configured_url != Q4_SERVER_URL:
+        install_archive(server, detect_compression(server.data["download_name"]))
+    else:
+        exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+        if not os.path.isfile(exe_path):
+            gamemodule_common.raise_byo_requirement(
+                "q4server",
+                "a real Quake 4 dedicated-server archive URL or a pre-staged Quake 4 server tree",
+                actions=(
+                    "Set url to a working Quake 4 server archive before rerunning setup, or stage q4ded.x86 in <install_dir>",
+                    "Retry setup once the archive URL or staged files are in place",
+                ),
+                docs_slug="q4server",
+            )
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
@@ -479,7 +491,15 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "q4server",
+            "a real Quake 4 dedicated-server archive URL or a pre-staged Quake 4 server tree",
+            actions=(
+                "Set url to a working Quake 4 server archive before rerunning setup, or stage q4ded.x86 in <install_dir>",
+                "Retry start once the archive URL or staged files are in place",
+            ),
+            docs_slug="q4server",
+        )
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,

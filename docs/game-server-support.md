@@ -176,6 +176,7 @@ Notes:
 - [x] aloftserver
 - [x] ahlserver
 - [x] atsserver
+- [x] bf1942server
 - [x] bbserver
 - [x] cod2server
 - [x] cod4server
@@ -186,13 +187,16 @@ Notes:
 - [x] gravserver
 - [x] hogwarpserver
 - [x] identityserver
+- [x] jk2server
 - [x] minecraft_custom
 - [x] minecraft_tekkit
 - [x] mxbikesserver
 - [x] nsserver
 - [x] q3server
+- [x] q4server
 - [x] qlserver
 - [x] rtcwserver
+- [x] sampserver
 - [x] mohaaserver
 - [x] sof2server
 - [x] stormworksserver
@@ -218,7 +222,6 @@ Notes:
 - [ ] arma3server
 - [ ] arma3wastelandserver
 - [ ] atlasserver
-- [ ] bf1942server
 - [ ] bfvserver
 - [ ] boserver
 - [ ] brokeprotocolserver
@@ -230,16 +233,13 @@ Notes:
 - [ ] dayzserver
 - [ ] foundryserver
 - [ ] iosserver
-- [ ] jk2server
 - [ ] kfserver
 - [ ] l4d2server
 - [ ] mw3server
 - [ ] ndserver
 - [ ] police1013server
 - [ ] pcars2server
-- [ ] q4server
 - [ ] roserver
-- [ ] sampserver
 - [ ] sfcserver
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound

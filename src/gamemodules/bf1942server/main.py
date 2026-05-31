@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -67,10 +66,22 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
 def install(server):
     """Download and install the Battlefield 1942 server archive."""
 
-    if "url" not in server.data or not server.data["url"]:
-        server.data["url"] = BF1942_SERVER_URL
-        server.data.setdefault("download_name", BF1942_SERVER_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    os.makedirs(server.data["dir"], exist_ok=True)
+    configured_url = str(server.data.get("url") or "").strip()
+    if configured_url and configured_url != BF1942_SERVER_URL:
+        install_archive(server, detect_compression(server.data["download_name"]))
+        return
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "bf1942server",
+            "a real Battlefield 1942 dedicated-server archive URL or a pre-staged Battlefield 1942 server tree",
+            actions=(
+                "Set url to a working Battlefield 1942 server archive before rerunning setup, or stage bf1942_lnxded in <install_dir>",
+                "Retry setup once the archive URL or staged files are in place",
+            ),
+            docs_slug="bf1942server",
+        )
 
 
 def get_start_command(server):
@@ -78,7 +89,15 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "bf1942server",
+            "a real Battlefield 1942 dedicated-server archive URL or a pre-staged Battlefield 1942 server tree",
+            actions=(
+                "Set url to a working Battlefield 1942 server archive before rerunning setup, or stage bf1942_lnxded in <install_dir>",
+                "Retry start once the archive URL or staged files are in place",
+            ),
+            docs_slug="bf1942server",
+        )
     return (
         [
             "./" + server.data["exe_name"],
@@ -96,7 +115,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Battlefield 1942 by interrupting the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -60,10 +59,22 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
 def install(server):
     """Download and install the SAMP server archive."""
 
-    if "url" not in server.data or not server.data["url"]:
-        server.data["url"] = SAMP_LATEST_URL
-        server.data.setdefault("download_name", SAMP_LATEST_DOWNLOAD_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    os.makedirs(server.data["dir"], exist_ok=True)
+    configured_url = str(server.data.get("url") or "").strip()
+    if configured_url and configured_url != SAMP_LATEST_URL:
+        install_archive(server, detect_compression(server.data["download_name"]))
+        return
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "sampserver",
+            "a real SA-MP dedicated-server archive URL or a pre-staged SA-MP server tree",
+            actions=(
+                "Set url to a working SA-MP server archive before rerunning setup, or stage samp03svr in <install_dir>",
+                "Retry setup once the archive URL or staged files are in place",
+            ),
+            docs_slug="sampserver",
+        )
 
 
 def get_start_command(server):
@@ -71,14 +82,22 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "sampserver",
+            "a real SA-MP dedicated-server archive URL or a pre-staged SA-MP server tree",
+            actions=(
+                "Set url to a working SA-MP server archive before rerunning setup, or stage samp03svr in <install_dir>",
+                "Retry start once the archive URL or staged files are in place",
+            ),
+            docs_slug="sampserver",
+        )
     return ["./" + server.data["exe_name"]], server.data["dir"]
 
 
 def do_stop(server, j):
     """Stop SAMP using the standard shutdown command."""
 
-    screen.send_to_server(server.name, "\nexit\n")
+    runtime_module.send_to_server(server, "\nexit\n")
 
 
 def status(server, verbose):
