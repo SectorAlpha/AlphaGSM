@@ -27,16 +27,16 @@ class DummyServer:
 
 def test_argoserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("argo")
-    exe = tmp_path / "argo_server_x64"
+    exe = tmp_path / "argoserver"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "argo_server_x64",
+            "exe_name": "argoserver",
             "configfile": "server.cfg",
             "profilesdir": "profiles",
             "port": 2302,
-            "bindaddress": "0.0.0.0",
+            "world": "empty",
             "mod": "",
         }
     )
@@ -44,17 +44,13 @@ def test_argoserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = argoserver.get_start_command(server)
 
     assert cmd == [
-        "./argo_server_x64",
-        "-config",
-        "server.cfg",
-        "-profiles",
-        "profiles",
-        "-port",
-        "2302",
-        "-name",
-        "argo",
-        "-ip",
-        "0.0.0.0",
+        "./argoserver",
+        "-config=server.cfg",
+        "-port=2302",
+        "-profiles=profiles",
+        "-name=argo",
+        "-world=empty",
+        "-autoinit",
     ]
     assert cwd == server.data["dir"]
 

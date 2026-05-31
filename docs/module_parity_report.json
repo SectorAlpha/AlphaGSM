@@ -72,8 +72,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -308,8 +308,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],

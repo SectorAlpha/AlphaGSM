@@ -25,6 +25,7 @@ Notes:
 
 - [x] acserver
 - [x] ahl2server
+- [x] argoserver
 - [x] arksurvivalascended
 - [x] armarserver
 - [x] astroneerserver
@@ -205,7 +206,6 @@ Notes:
 - [ ] dysserver
 - [ ] accserver
 - [ ] alienarenaserver
-- [ ] argoserver
 - [ ] ark
 - [ ] arma2coserver
 - [ ] arma3altislifeserver

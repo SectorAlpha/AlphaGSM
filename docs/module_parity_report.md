@@ -9,7 +9,7 @@
 | ahlserver | - | disabled | yes | no | - |
 | alienarenaserver | - | disabled | no | no | status |
 | aloftserver | - | active | no | yes | status |
-| argoserver | - | disabled | no | no | status |
+| argoserver | - | active | no | yes | status |
 | ark | - | disabled | no | no | status |
 | arksurvivalascended | - | active | no | yes | status |
 | arma2coserver | - | disabled | no | no | status |
@@ -34,7 +34,7 @@
 | atsserver | - | active | no | yes | status |
 | avserver | - | active | no | yes | status |
 | bannerlordserver | - | active | no | yes | status |
-| battlebitserver | - | disabled | no | no | status |
+| battlebitserver | - | active | no | yes | status |
 | battlecryoffreedomserver | - | active | no | yes | status |
 | bb2server | - | active | yes | yes | - |
 | bbserver | - | disabled | yes | no | - |

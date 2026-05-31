@@ -5,11 +5,13 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from server.settable_keys import resolve_requested_key
 
 sys.modules.pop('gamemodules.argoserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.argoserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -65,10 +67,39 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "argo_server_x64"
+    server.data["exe_name"] = "argoserver"
     server.data["Steam_AppID"] = 563930
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["configfile"] = "server.cfg"
+    server.data["servername"] = "AlphaGSM Test"
     mod.install(server)
+    assert (tmp_path / "server.cfg").read_text() == 'hostname = "AlphaGSM Test";\n'
+
+
+def test_sync_server_config_writes_servername(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "server.cfg"
+    server.data["servername"] = 'Alpha "Quoted"'
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "server.cfg").read_text() == 'hostname = "Alpha \\"Quoted\\"";\n'
+
+
+def test_sync_server_config_without_dir_is_noop():
+    server = DummyServer()
+    server.data["configfile"] = "server.cfg"
+    server.data["servername"] = "AlphaGSM Test"
+
+    mod.sync_server_config(server)
+
+
+def test_setting_schema_resolves_hostname_alias():
+    resolved = resolve_requested_key("hostname", mod.setting_schema)
+
+    assert resolved.canonical_key == "servername"
+    assert resolved.storage_key == "servername"
 
 
 def test_update_with_restart(tmp_path):
@@ -110,13 +141,13 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "argo_server_x64"
-    (tmp_path / "argo_server_x64").write_text("")
-    server.data["bindaddress"] = "test"
+    server.data["exe_name"] = "argoserver"
+    (tmp_path / "argoserver").write_text("")
     server.data["configfile"] = "test"
     server.data["mod"] = "test"
     server.data["port"] = 27015
     server.data["profilesdir"] = "test"
+    server.data["world"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
 
@@ -125,11 +156,11 @@ def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    server.data["bindaddress"] = "test"
     server.data["configfile"] = "test"
     server.data["mod"] = "test"
     server.data["port"] = 27015
     server.data["profilesdir"] = "test"
+    server.data["world"] = "test"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
 
@@ -137,7 +168,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -195,7 +226,7 @@ def test_checkvalue_profilesdir():
 
 def test_checkvalue_bindaddress():
     server = DummyServer()
-    result = mod.checkvalue(server, ("bindaddress",), "/test/value")
+    result = mod.checkvalue(server, ("servername",), "/test/value")
     assert result == "/test/value"
 
 
@@ -211,6 +242,12 @@ def test_checkvalue_exe_name():
     assert result == "/test/value"
 
 
+def test_checkvalue_world():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("world",), "/test/value")
+    assert result == "/test/value"
+
+
 def test_checkvalue_dir():
     server = DummyServer()
     result = mod.checkvalue(server, ("dir",), "/test/value")
@@ -221,4 +258,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

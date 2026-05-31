@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 136      |
+| PASSED   | 137      |
 | ENABLED (AUTH) | 5 |
 | ENABLED (BYO) | 28 |
-| DISABLED | 44      |
+| DISABLED | 43      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -30,12 +30,13 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (136)
+## PASSED (137)
 
 | Test | Type |
 |------|------|
 | acserver | SteamCMD |
 | ahl2server | SteamCMD (Source) |
+| argoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration and smoke now prove the old missing-executable disabled note was stale: anonymous SteamCMD setup for app `563930` installs the real native Linux dedicated payload, AlphaGSM launches the shipped `argoserver` binary inside the shared `steamcmd-linux` runtime, syncs `server.cfg` from the managed `servername`, and validates `query`, `info`, and `info --json` on Argo's current generic `tcp` health surface at the managed main game port |
 | arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image with anonymous SteamCMD install for app `2430930`, and the validated Linux health surface is generic `tcp` on the managed main game port instead of the older stale log-marker and A2S assumptions |
 | armarserver | SteamCMD |
 | astroneerserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM routes Astroneer's Docker lane through the shared in-container Xvfb entrypoint so UE4 prerequisite bootstrap no longer aborts with `Failed to create window`, and `query`, `info`, and `info --json` are aligned to the real generic `tcp` status surface on the managed main port instead of the older stale A2S expectation |
@@ -230,7 +231,6 @@ URLs.
 | dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | accserver | SteamCMD app 1430110 requires authentication (No subscription) |
 | alienarenaserver | SteamCMD app 629540 reports success but installs no game files (no Linux depot) |
-| argoserver | SteamCMD app 563930 installs no Linux-compatible executable |
 | ark | SteamCMD app 376030 is 23GB; too large for automated CI testing |
 | arma2coserver | SteamCMD app 33935 requires authentication (No subscription) |
 | arma3altislifeserver | SteamCMD app 233780 requires authentication (No subscription) |

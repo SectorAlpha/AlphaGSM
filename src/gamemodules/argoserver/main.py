@@ -2,9 +2,9 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
@@ -24,9 +24,36 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("servername",)
+setting_schema = {
+    "servername": SettingSpec(
+        canonical_key="servername",
+        aliases=("hostname",),
+        description="The public hostname written to server.cfg.",
+        value_type="string",
+        apply_to=("datastore", "native_config"),
+        native_config_key="hostname",
+        examples=("AlphaGSM Server",),
+    )
+}
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="argo_server_x64"):
+def sync_server_config(server):
+    """Write managed server.cfg values from datastore settings."""
+
+    if "dir" not in server.data:
+        return
+    configfile = server.data.get("configfile", "server.cfg")
+    servername = server.data.get("servername", "AlphaGSM %s" % (server.name,))
+    config_path = os.path.join(server.data["dir"], configfile)
+    config_dir = os.path.dirname(config_path)
+    if config_dir:
+        os.makedirs(config_dir, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as handle:
+        handle.write('hostname = "%s";\n' % (servername.replace('"', '\\"'),))
+
+
+def configure(server, ask, port=None, dir=None, *, exe_name="argoserver"):
     """Collect and store configuration values for an Argo server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -39,7 +66,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="argo_server_x64"):
         {
             "configfile": "server.cfg",
             "profilesdir": "profiles",
-            "bindaddress": "0.0.0.0",
+            "servername": "AlphaGSM %s" % (server.name,),
+            "world": "empty",
             "mod": "",
         },
     )
@@ -69,6 +97,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Argo server files via SteamCMD."
 
@@ -77,6 +106,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Argo server files and optionally restart the server."
 
@@ -93,26 +123,22 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     command = [
         "./" + server.data["exe_name"],
-        "-config",
-        server.data["configfile"],
-        "-profiles",
-        server.data["profilesdir"],
-        "-port",
-        str(server.data["port"]),
-        "-name",
-        server.name,
-        "-ip",
-        server.data["bindaddress"],
+        "-config=%s" % (server.data["configfile"],),
+        "-port=%s" % (server.data["port"],),
+        "-profiles=%s" % (server.data["profilesdir"],),
+        "-name=%s" % (server.name,),
+        "-world=%s" % (server.data["world"],),
+        "-autoinit",
     ]
     if server.data["mod"]:
-        command.extend(["-mod", server.data["mod"]])
+        command.append("-mod=%s" % (server.data["mod"],))
     return (command, server.data["dir"])
 
 
 def do_stop(server, j):
     """Stop Argo by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -134,14 +160,17 @@ def backup(server, profile=None):
 def checkvalue(server, key, *value):
     """Validate supported Argo datastore edits."""
 
-    return gamemodule_common.handle_basic_checkvalue(
-        server,
-        key,
-        *value,
-        int_keys=("port",),
-        str_keys=("configfile", "profilesdir", "bindaddress", "mod", "exe_name", "dir"),
-        backup_module=backup_utils,
-    )
+    if len(key) == 0:
+        raise ServerError("Invalid key")
+    if key[0] == "backup":
+        return backup_utils.checkdatavalue(server.data["backup"], key, *value)
+    if len(value) == 0:
+        raise ServerError("No value specified")
+    if key[0] == "port":
+        return int(value[0])
+    if key[0] in ("configfile", "profilesdir", "servername", "world", "mod", "exe_name", "dir"):
+        return str(value[0])
+    raise ServerError("Unsupported key")
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
