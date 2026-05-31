@@ -348,6 +348,70 @@ def raise_byo_requirement(module_name, requirement_summary, *, actions=(), docs_
     )
 
 
+def format_auth_support_message(module_name, requirement_summary, *, actions=(), docs_slug=None):
+    """Return a standard ENABLED (AUTH) operator guidance message."""
+
+    message = (
+        "ENABLED (AUTH): {} is supported in AlphaGSM, but this lane still requires "
+        "{}.".format(module_name, requirement_summary)
+    )
+    normalized_actions = [str(action).strip().rstrip(".") for action in actions if str(action).strip()]
+    if normalized_actions:
+        message += " " + " ".join("{}.".format(action) for action in normalized_actions)
+    if docs_slug:
+        message += " Guide: docs/servers/{}.md.".format(docs_slug)
+    return message
+
+
+def raise_auth_requirement(module_name, requirement_summary, *, actions=(), docs_slug=None):
+    """Raise a standard ENABLED (AUTH) operator guidance error."""
+
+    raise ServerError(
+        format_auth_support_message(
+            module_name,
+            requirement_summary,
+            actions=actions,
+            docs_slug=docs_slug,
+        )
+    )
+
+
+def get_provider_requirements(module, server):
+    """Return provider requirement metadata declared by a module."""
+
+    hook = getattr(module, "get_provider_requirements", None)
+    if hook is None:
+        return []
+    requirements = hook(server)
+    if requirements is None:
+        return []
+    return list(requirements)
+
+
+def validate_provider_requirements(module_name, server, *, phase, requirements):
+    """Validate shared provider-backed prerequisites for a lifecycle phase."""
+
+    for requirement in requirements:
+        if phase not in tuple(requirement.get("required_for", ())):
+            continue
+        keys = tuple(requirement.get("keys", ()))
+        if not keys:
+            raise_auth_requirement(
+                module_name,
+                requirement["summary"],
+                actions=requirement.get("actions", ()),
+                docs_slug=requirement.get("docs_slug"),
+            )
+        missing = [key for key in keys if not str(server.data.get(key, "")).strip()]
+        if missing:
+            raise_auth_requirement(
+                module_name,
+                requirement["summary"],
+                actions=requirement.get("actions", ()),
+                docs_slug=requirement.get("docs_slug"),
+            )
+
+
 def make_server_message_hook(*, command="say", runtime_module=None):
     """Return a runtime-aware ``message`` hook using the given console command."""
 
