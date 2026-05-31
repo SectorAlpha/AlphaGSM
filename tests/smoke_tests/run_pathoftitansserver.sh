@@ -1,7 +1,7 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for pathoftitansserver is ENABLED (BYO) - set auth_token to an Alderon host account token or provide a staged archive override before setup/start"
+#!/usr/bin/env bash
+# ENABLED (AUTH): Path of Titans needs an Alderon host token for managed
+# AlderonGamesCmd installs, or a staged archive override path.
+echo "Smoke test for pathoftitansserver is ENABLED (AUTH) - set auth_token to an Alderon host account token for AlderonGamesCmd installs, or provide a staged archive override before setup/start"
 exit 0
 
 set -Eeuo pipefail

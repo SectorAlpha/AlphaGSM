@@ -51,7 +51,7 @@ def resolve_steamcmd_linux_runtime_image():
 
 
 @pytest.mark.skip(
-    reason="ENABLED (BYO): The Isle dedicated server now installs anonymously on Linux, but start still requires eos_client_id and eos_client_secret for Epic Online Services dedicated-server authentication"
+    reason="ENABLED (AUTH): The Isle dedicated server now installs anonymously on Linux, but start still requires eos_client_id and eos_client_secret for Epic Online Services dedicated-server authentication"
 )
 @pytest.mark.timeout(TEST_TIMEOUT)
 def test_tiserver_lifecycle(tmp_path):

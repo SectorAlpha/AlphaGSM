@@ -12,14 +12,16 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 129      |
-| ENABLED (BYO) | 32 |
+| ENABLED (AUTH) | 2 |
+| ENABLED (BYO) | 30 |
 | DISABLED | 48      |
 | SKIPPED  | 28      |
 
 ## Status Key
 
 - **PASSED** — Test ran successfully in a prior session.
-- **ENABLED (BYO)** — Supported server module that still requires an explicit operator-provided prerequisite such as owned assets, authenticated install access, config/tokens, exported client files, an external service, or a direct URL.
+- **ENABLED (AUTH)** — Supported server module that still requires provider-managed authentication, credentials, tokens, licenses, or provisioning before setup/start can fully succeed.
+- **ENABLED (BYO)** — Supported server module that still requires an explicit operator-provided prerequisite such as owned assets, exported client files, an external service, or a direct URL.
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
 - **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
 
@@ -162,11 +164,21 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (32)
+## ENABLED (AUTH) (2)
+
+These supported rows require provider-managed authentication, credentials,
+tokens, licenses, or provisioning before setup/start can fully succeed.
+
+| Test | Type |
+|------|------|
+| pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
+| tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
+
+## ENABLED (BYO) (30)
 
 These supported rows are intentionally explicit about the blocker class:
-owned assets, authenticated install access, config/tokens, exported client
-files, external services, or direct archive URLs.
+owned assets, exported client files, external services, or direct archive
+URLs.
 
 | Test | Type |
 |------|------|
@@ -193,11 +205,9 @@ files, external services, or direct archive URLs.
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | rtcwserver | owned base-game assets |
 | mohaaserver | owned MOHAA dedicated server tree |
-| pathoftitansserver | Alderon auth token or staged archive override/server tree |
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
 | subnauticaserver | owned client installation path |
-| tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 | tsserver | owned The Specialists mod content tree |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 | vsserver | owned Vampire Slayer mod content tree |

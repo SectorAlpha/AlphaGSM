@@ -137,6 +137,26 @@ def test_setting_schema_exposes_theisle_launch_formats():
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 
+def test_get_provider_requirements_declares_eos_credentials():
+    server = DummyServer()
+    requirements = mod.get_provider_requirements(server)
+    assert requirements == [
+        {
+            "provider": "eos",
+            "kind": "credential",
+            "keys": ("eos_client_id", "eos_client_secret"),
+            "required_for": ("start",),
+            "support_category": "provider-auth",
+            "summary": "Epic Online Services dedicated-server credentials",
+            "actions": (
+                "Set eos_client_id and eos_client_secret before starting the server",
+                "Use the official dedicated-server guide to create TheIsle/Saved/Config/LinuxServer/Engine.ini if you prefer file-based EOS configuration",
+            ),
+            "docs_slug": "tiserver",
+        }
+    ]
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -148,7 +168,7 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_get_start_command_missing_eos_credentials_raises_byo(tmp_path):
+def test_get_start_command_missing_eos_credentials_raises_auth(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "TheIsleServer.sh"
@@ -156,7 +176,7 @@ def test_get_start_command_missing_eos_credentials_raises_byo(tmp_path):
     server.data["map"] = "test"
     server.data["port"] = 27015
     server.data["queryport"] = 27015
-    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+    with pytest.raises(ServerError, match="ENABLED \\(AUTH\\)"):
         mod.get_start_command(server)
 
 

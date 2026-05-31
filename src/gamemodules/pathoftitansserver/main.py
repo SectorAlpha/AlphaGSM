@@ -6,7 +6,6 @@ import subprocess as sp
 import uuid
 
 import downloader
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -137,17 +136,13 @@ def install(server):
     if server.data.get("url"):
         install_archive(server, detect_compression(server.data["download_name"]))
         return
+    gamemodule_common.validate_provider_requirements(
+        "pathoftitansserver",
+        server,
+        phase="setup",
+        requirements=get_provider_requirements(server),
+    )
     auth_token = server.data.get("auth_token")
-    if not auth_token:
-        gamemodule_common.raise_byo_requirement(
-            "pathoftitansserver",
-            "an Alderon auth token or a staged Path of Titans server tree/archive override",
-            actions=(
-                "Set auth_token to an Alderon host account token before rerunning setup, or set url to a direct staged archive override",
-                "Retry setup once the token or staged archive path is available",
-            ),
-            docs_slug="pathoftitansserver",
-        )
     cmd_path = _get_updater_path()
     install_cmd = [
         cmd_path,
@@ -168,11 +163,49 @@ def install(server):
     sp.run(install_cmd, check=True)
 
 
+def get_provider_requirements(server):
+    """Declare the provider-managed prerequisites for Path of Titans."""
+
+    return [
+        {
+            "provider": "alderon",
+            "kind": "token",
+            "keys": ("auth_token",),
+            "required_for": ("setup",),
+            "support_category": "provider-token",
+            "summary": "an Alderon host account token for AlderonGamesCmd installs",
+            "actions": (
+                "Set auth_token to an Alderon host account token before rerunning setup, or set url to a direct staged archive override",
+                "Retry setup once the token or staged archive path is available",
+            ),
+            "docs_slug": "pathoftitansserver",
+        }
+    ]
+
+
 def get_start_command(server):
     """Build the command used to launch a Path of Titans dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
+        if server.data.get("url"):
+            gamemodule_common.raise_byo_requirement(
+                "pathoftitansserver",
+                "a staged Path of Titans server tree",
+                actions=(
+                    "Complete setup with a staged archive override so {} exists".format(
+                        server.data["exe_name"]
+                    ),
+                    "Retry start once the server tree is present in <install_dir>",
+                ),
+                docs_slug="pathoftitansserver",
+            )
+        gamemodule_common.validate_provider_requirements(
+            "pathoftitansserver",
+            server,
+            phase="setup",
+            requirements=get_provider_requirements(server),
+        )
         gamemodule_common.raise_byo_requirement(
             "pathoftitansserver",
             "a staged Path of Titans server tree",
@@ -225,7 +258,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Path of Titans using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

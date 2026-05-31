@@ -4,7 +4,7 @@ This guide covers the `tiserver` module in AlphaGSM.
 
 ## Support Status
 
-`tiserver` is supported in `ENABLED (BYO)` mode.
+`tiserver` is supported in `ENABLED (AUTH)` mode.
 
 AlphaGSM can:
 

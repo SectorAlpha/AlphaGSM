@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.pathoftitansserver', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.pathoftitansserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 class DummyData(dict):
     def save(self):
@@ -79,11 +80,31 @@ def test_install(tmp_path):
     mod.install(server)
 
 
-def test_install_without_token_or_url_raises_byo(tmp_path):
+def test_get_provider_requirements_declares_alderon_token():
+    server = DummyServer()
+    requirements = mod.get_provider_requirements(server)
+    assert requirements == [
+        {
+            "provider": "alderon",
+            "kind": "token",
+            "keys": ("auth_token",),
+            "required_for": ("setup",),
+            "support_category": "provider-token",
+            "summary": "an Alderon host account token for AlderonGamesCmd installs",
+            "actions": (
+                "Set auth_token to an Alderon host account token before rerunning setup, or set url to a direct staged archive override",
+                "Retry setup once the token or staged archive path is available",
+            ),
+            "docs_slug": "pathoftitansserver",
+        }
+    ]
+
+
+def test_install_without_token_or_url_raises_auth(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "PathOfTitansServer.sh"
-    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+    with pytest.raises(ServerError, match="ENABLED \\(AUTH\\)"):
         mod.install(server)
 
 def test_get_start_command(tmp_path):
@@ -120,7 +141,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()

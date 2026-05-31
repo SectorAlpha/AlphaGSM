@@ -101,6 +101,26 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def get_provider_requirements(server):
+    """Declare the provider-managed prerequisites for The Isle."""
+
+    return [
+        {
+            "provider": "eos",
+            "kind": "credential",
+            "keys": ("eos_client_id", "eos_client_secret"),
+            "required_for": ("start",),
+            "support_category": "provider-auth",
+            "summary": "Epic Online Services dedicated-server credentials",
+            "actions": (
+                "Set eos_client_id and eos_client_secret before starting the server",
+                "Use the official dedicated-server guide to create TheIsle/Saved/Config/LinuxServer/Engine.ini if you prefer file-based EOS configuration",
+            ),
+            "docs_slug": "tiserver",
+        }
+    ]
+
+
 def get_start_command(server):
     """Build the command used to launch The Isle dedicated server."""
 
@@ -109,16 +129,12 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     eos_client_id = str(server.data.get("eos_client_id", "")).strip()
     eos_client_secret = str(server.data.get("eos_client_secret", "")).strip()
-    if not eos_client_id or not eos_client_secret:
-        gamemodule_common.raise_byo_requirement(
-            "tiserver",
-            "Epic Online Services dedicated server client credentials",
-            actions=(
-                "Set eos_client_id and eos_client_secret before starting the server",
-                "Use the official dedicated-server guide to create TheIsle/Saved/Config/LinuxServer/Engine.ini if you prefer file-based EOS configuration",
-            ),
-            docs_slug="tiserver",
-        )
+    gamemodule_common.validate_provider_requirements(
+        "tiserver",
+        server,
+        phase="start",
+        requirements=get_provider_requirements(server),
+    )
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,

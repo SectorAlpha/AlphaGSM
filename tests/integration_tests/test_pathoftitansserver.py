@@ -1,7 +1,7 @@
 """Integration test for pathoftitansserver.
 
-ENABLED (BYO): Path of Titans requires an Alderon auth token or a staged
-archive override/server tree.
+ENABLED (AUTH): Path of Titans requires an Alderon auth token for the managed
+install flow unless you are using a direct staged archive override.
 """
 
 import pytest
@@ -28,7 +28,7 @@ STOP_TIMEOUT = 90
 
 
 @pytest.mark.skip(
-    reason="ENABLED (BYO): set auth_token to an Alderon host account token or provide a staged archive override before setup/start"
+    reason="ENABLED (AUTH): set auth_token to an Alderon host account token for AlderonGamesCmd installs, or provide a staged archive override before setup/start"
 )
 def test_pathoftitansserver_lifecycle(tmp_path):
     require_integration_opt_in()

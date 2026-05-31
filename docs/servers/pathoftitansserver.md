@@ -22,7 +22,7 @@ Run setup:
 alphagsm mypathofti setup
 ```
 
-`pathoftitansserver` is supported in `ENABLED (BYO)` mode. Before `setup` or
+`pathoftitansserver` is supported in `ENABLED (AUTH)` mode. Before `setup` or
 `start`, either:
 
 - set `auth_token` to an Alderon host account token so AlphaGSM can install via

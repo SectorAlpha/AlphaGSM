@@ -154,6 +154,8 @@ Notes:
 
 ## Supported Now
 
+- [x] pathoftitansserver
+- [x] tiserver
 
 ## Supported Now
 
@@ -180,11 +182,9 @@ Notes:
 - [x] redmserver
 - [x] rtcwserver
 - [x] mohaaserver
-- [x] pathoftitansserver
 - [x] sof2server
 - [x] stormworksserver
 - [x] subnauticaserver
-- [x] tiserver
 - [x] tsserver
 - [x] ut3server
 - [x] vsserver
