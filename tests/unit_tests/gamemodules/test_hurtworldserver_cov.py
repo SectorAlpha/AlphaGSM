@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.hurtworldserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.hurtworldserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -64,7 +65,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "HurtworldDedicated"
+    server.data["exe_name"] = "Hurtworld.x86_64"
     server.data["Steam_AppID"] = 405100
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -109,14 +110,18 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "HurtworldDedicated"
-    (tmp_path / "HurtworldDedicated").write_text("")
+    server.data["exe_name"] = "Hurtworld.x86_64"
+    (tmp_path / "Hurtworld.x86_64").write_text("")
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
-    server.data["worldname"] = "test"
+    server.data["servername"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[0] == "./Hurtworld.x86_64"
+    assert "-exec" in cmd
+    assert "host 27015;queryport 27015;maxplayers 27015;servername test" in cmd
+    assert cmd[-2:] == ["-logfile", "output.txt"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -126,15 +131,28 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
-    server.data["worldname"] = "test"
+    server.data["servername"] = "test"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_get_start_command_falls_back_to_detected_linux_executable(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "HurtworldDedicated"
+    (tmp_path / "Hurtworld.x86").write_text("")
+    server.data["maxplayers"] = 20
+    server.data["port"] = 12871
+    server.data["queryport"] = 12872
+    server.data["servername"] = "fallback"
+    cmd, _cwd = mod.get_start_command(server)
+    assert cmd[0] == "./Hurtworld.x86"
 
 
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -192,7 +210,7 @@ def test_checkvalue_maxplayers():
 
 def test_checkvalue_worldname():
     server = DummyServer()
-    result = mod.checkvalue(server, ("worldname",), "/test/value")
+    result = mod.checkvalue(server, ("servername",), "/test/value")
     assert result == "/test/value"
 
 
@@ -212,4 +230,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

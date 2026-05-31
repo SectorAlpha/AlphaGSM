@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -25,8 +24,10 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 command_functions = {}
 max_stop_wait = 1
 
+DEFAULT_EXECUTABLES = ("Hurtworld.x86_64", "Hurtworld.x86", "hurtworld.so")
 
-def configure(server, ask, port=None, dir=None, *, exe_name="HurtworldDedicated"):
+
+def configure(server, ask, port=None, dir=None, *, exe_name="Hurtworld.x86_64"):
     """Collect and store configuration values for a Hurtworld server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -39,7 +40,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="HurtworldDedicated"
         {
             "queryport": "12872",
             "maxplayers": "50",
-            "worldname": server.name,
+            "servername": "AlphaGSM %s" % (server.name,),
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -62,6 +63,21 @@ def configure(server, ask, port=None, dir=None, *, exe_name="HurtworldDedicated"
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
     return gamemodule_common.finalize_configure(server)
+
+
+def _resolve_executable_name(server):
+    """Return the real dedicated executable from the installed Linux payload."""
+
+    configured = server.data.get("exe_name")
+    candidates = []
+    if configured:
+        candidates.append(configured)
+    candidates.extend(name for name in DEFAULT_EXECUTABLES if name not in candidates)
+
+    for candidate in candidates:
+        if os.path.isfile(os.path.join(server.data["dir"], candidate)):
+            return candidate
+    raise ServerError("Executable file not found")
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
@@ -87,22 +103,21 @@ restart.__doc__ = "Restart the Hurtworld server."
 def get_start_command(server):
     """Build the command used to launch a Hurtworld dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    executable = _resolve_executable_name(server)
     return (
         [
-            "./" + server.data["exe_name"],
+            "./" + executable,
             "-batchmode",
             "-nographics",
-            "-port",
-            str(server.data["port"]),
-            "-queryport",
-            str(server.data["queryport"]),
-            "-worldname",
-            str(server.data["worldname"]),
-            "-maxplayers",
-            str(server.data["maxplayers"]),
+            "-exec",
+            (
+                f"host {server.data['port']};"
+                f"queryport {server.data['queryport']};"
+                f"maxplayers {server.data['maxplayers']};"
+                f"servername {server.data['servername']}"
+            ),
+            "-logfile",
+            "output.txt",
         ],
         server.data["dir"],
     )
@@ -111,7 +126,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Hurtworld using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -138,17 +153,19 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port", "queryport", "maxplayers"),
-        str_keys=("worldname", "exe_name", "dir"),
+        str_keys=("servername", "exe_name", "dir"),
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'udp'}),
+        extra={"stop_mode": "docker-stop"},
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'udp'}),
         stdin_open=True,
+        extra={"stop_mode": "docker-stop"},
 )

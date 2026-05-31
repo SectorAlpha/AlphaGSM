@@ -106,7 +106,7 @@
 | hldmserver | - | active | yes | yes | - |
 | hldmsserver | - | active | yes | yes | - |
 | hogwarpserver | - | active | no | yes | status |
-| hurtworldserver | hw | disabled | no | no | status |
+| hurtworldserver | hw | active | no | yes | status |
 | hzserver | - | disabled | no | no | status |
 | icarusserver | - | active | no | yes | status |
 | identityserver | - | active | no | yes | status |
@@ -224,7 +224,7 @@
 | tfcserver | - | active | yes | yes | - |
 | theforestserver | - | active | no | yes | status |
 | thefrontserver | tfserver | active | no | yes | status |
-| tiserver | - | disabled | no | no | status |
+| tiserver | - | active | no | yes | status |
 | trackmaniaserver | - | active | no | yes | status |
 | ts3server | - | active | no | yes | status |
 | tsserver | - | disabled | yes | no | - |
