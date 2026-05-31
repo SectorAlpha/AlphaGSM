@@ -49,6 +49,10 @@ _ENABLED_BYO_SERVERS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "enabled_byo_servers.conf",
 )
+_ENABLED_AUTH_SERVERS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "enabled_auth_servers.conf",
+)
 MODULE_CATALOG = load_default_module_catalog()
 _ENABLED_BYO_CATEGORY_DESCRIPTIONS = {
     "assets": "operator-supplied files or installed game content",
@@ -58,6 +62,13 @@ _ENABLED_BYO_CATEGORY_DESCRIPTIONS = {
     "export": "client-exported files from an owned game install",
     "service": "an external local service dependency",
     "mixed": "operator-managed prerequisites",
+}
+_ENABLED_AUTH_CATEGORY_DESCRIPTIONS = {
+    "provider-auth": "provider-managed credentials or account authentication",
+    "provider-token": "provider-issued runtime token",
+    "provider-license": "provider-issued license or entitlement",
+    "provider-provisioning": "provider-managed setup or provisioning flow",
+    "mixed": "provider-managed prerequisites",
 }
 
 
@@ -87,14 +98,13 @@ def _load_disabled_servers():
     return _load_status_reason_file(_DISABLED_SERVERS_PATH)
 
 
-def _load_enabled_byo_servers():
-    """Load the BYO-enabled servers list from enabled_byo_servers.conf."""
-
+def _load_typed_supported_status_file(path, *, default_category="mixed"):
+    """Load a typed supported-status file."""
     rows = {}
-    if not os.path.isfile(_ENABLED_BYO_SERVERS_PATH):
+    if not os.path.isfile(path):
         return rows
 
-    with open(_ENABLED_BYO_SERVERS_PATH, encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -102,26 +112,50 @@ def _load_enabled_byo_servers():
             parts = line.split("\t")
             module_name = parts[0].strip()
             if len(parts) >= 3:
-                category = parts[1].strip() or "mixed"
+                category = parts[1].strip() or default_category
                 reason = "\t".join(parts[2:]).strip() or "No reason given"
             elif len(parts) == 2:
-                category = "mixed"
+                category = default_category
                 reason = parts[1].strip() or "No reason given"
             else:
-                category = "mixed"
+                category = default_category
                 reason = "No reason given"
             rows[module_name] = {"category": category, "reason": reason}
     return rows
 
 
+def _load_enabled_byo_servers():
+    """Load the BYO-enabled servers list from enabled_byo_servers.conf."""
+
+    return _load_typed_supported_status_file(
+        _ENABLED_BYO_SERVERS_PATH,
+        default_category="mixed",
+    )
+
+
+def _load_enabled_auth_servers():
+    """Load the AUTH-enabled servers list from enabled_auth_servers.conf."""
+
+    return _load_typed_supported_status_file(
+        _ENABLED_AUTH_SERVERS_PATH,
+        default_category="mixed",
+    )
+
+
+def _normalize_supported_entry(entry, *, default_category="mixed"):
+    """Return a normalized supported-status metadata mapping."""
+
+    if isinstance(entry, MappingABC):
+        category = str(entry.get("category", default_category)).strip() or default_category
+        reason = str(entry.get("reason", "No reason given")).strip() or "No reason given"
+        return {"category": category, "reason": reason}
+    return {"category": default_category, "reason": str(entry).strip() or "No reason given"}
+
+
 def _normalize_enabled_byo_entry(entry):
     """Return a normalized BYO metadata mapping."""
 
-    if isinstance(entry, MappingABC):
-        category = str(entry.get("category", "mixed")).strip() or "mixed"
-        reason = str(entry.get("reason", "No reason given")).strip() or "No reason given"
-        return {"category": category, "reason": reason}
-    return {"category": "mixed", "reason": str(entry).strip() or "No reason given"}
+    return _normalize_supported_entry(entry, default_category="mixed")
 
 
 def _format_enabled_byo_notice(module_name, entry):
@@ -136,6 +170,22 @@ def _format_enabled_byo_notice(module_name, entry):
     )
     return (
         "ENABLED (BYO): Server module '{}' is supported, but still requires "
+        "{} before setup/start can fully succeed.\nWhat to provide: {}"
+    ).format(module_name, category_description, reason)
+
+
+def _format_enabled_auth_notice(module_name, entry):
+    """Return the standard create-time notice for ENABLED (AUTH) modules."""
+
+    metadata = _normalize_supported_entry(entry, default_category="mixed")
+    category = metadata["category"]
+    reason = metadata["reason"]
+    category_description = _ENABLED_AUTH_CATEGORY_DESCRIPTIONS.get(
+        category,
+        _ENABLED_AUTH_CATEGORY_DESCRIPTIONS["mixed"],
+    )
+    return (
+        "ENABLED (AUTH): Server module '{}' is supported, but still requires "
         "{} before setup/start can fully succeed.\nWhat to provide: {}"
     ).format(module_name, category_description, reason)
 
@@ -528,6 +578,7 @@ class Server(object):
         self.name = name
         if module is not None:
             truename, self.module = _findmodule(module)
+            auth_reason = _load_enabled_auth_servers().get(truename)
             byo_reason = _load_enabled_byo_servers().get(truename)
             if not os.path.isdir(DATAPATH):
                 try:
@@ -543,6 +594,8 @@ class Server(object):
                 self.data.save()
             except IOError as ex:
                 raise ServerError("Error saving initial data", ex)
+            if auth_reason:
+                print(_format_enabled_auth_notice(truename, auth_reason))
             if byo_reason:
                 print(_format_enabled_byo_notice(truename, byo_reason))
         else:

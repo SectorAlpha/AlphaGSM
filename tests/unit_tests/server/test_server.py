@@ -182,6 +182,86 @@ def test_load_enabled_byo_servers_defaults_legacy_rows_to_mixed(monkeypatch, tmp
     }
 
 
+def test_load_enabled_auth_servers_parses_reasons_and_categories(monkeypatch, tmp_path):
+    enabled_path = tmp_path / "enabled_auth_servers.conf"
+    enabled_path.write_text(
+        "tiserver\tprovider-auth\tset eos_client_id and eos_client_secret before start\n"
+        "pathoftitansserver\tprovider-token\tset auth_token before setup/start\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(server_module, "_ENABLED_AUTH_SERVERS_PATH", str(enabled_path))
+
+    assert server_module._load_enabled_auth_servers() == {
+        "tiserver": {
+            "category": "provider-auth",
+            "reason": "set eos_client_id and eos_client_secret before start",
+        },
+        "pathoftitansserver": {
+            "category": "provider-token",
+            "reason": "set auth_token before setup/start",
+        },
+    }
+
+
+def test_load_enabled_auth_servers_defaults_legacy_rows_to_mixed(monkeypatch, tmp_path):
+    enabled_path = tmp_path / "enabled_auth_servers.conf"
+    enabled_path.write_text(
+        "tiserver\tset eos_client_id and eos_client_secret before start\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(server_module, "_ENABLED_AUTH_SERVERS_PATH", str(enabled_path))
+
+    assert server_module._load_enabled_auth_servers() == {
+        "tiserver": {
+            "category": "mixed",
+            "reason": "set eos_client_id and eos_client_secret before start",
+        }
+    }
+
+
+def test_format_enabled_auth_notice_includes_category_and_reason():
+    notice = server_module._format_enabled_auth_notice(
+        "tiserver",
+        {
+            "category": "provider-auth",
+            "reason": "set eos_client_id and eos_client_secret before start",
+        },
+    )
+
+    assert "ENABLED (AUTH): Server module 'tiserver' is supported" in notice
+    assert "requires provider-managed credentials or account authentication" in notice
+    assert "What to provide: set eos_client_id" in notice
+
+
+def test_server_create_prints_enabled_auth_notice(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(server_module, "DATAPATH", str(tmp_path))
+    monkeypatch.setattr(
+        server_module,
+        "_findmodule",
+        lambda module_name: ("tiserver", DummyModule()),
+    )
+    monkeypatch.setattr(
+        server_module,
+        "_load_enabled_auth_servers",
+        lambda: {
+            "tiserver": {
+                "category": "provider-auth",
+                "reason": "set eos_client_id and eos_client_secret before start",
+            }
+        },
+    )
+    monkeypatch.setattr(server_module, "_load_enabled_byo_servers", lambda: {})
+    monkeypatch.setattr(server_module.runtime_module, "sync_runtime_metadata", lambda _server, save=False: False)
+
+    server_module.Server("authnotice", module="tiserver")
+
+    output = capsys.readouterr().out
+    assert "ENABLED (AUTH): Server module 'tiserver' is supported" in output
+    assert "What to provide: set eos_client_id and eos_client_secret before start" in output
+
+
 def test_format_enabled_byo_notice_includes_category_and_reason():
     notice = server_module._format_enabled_byo_notice(
         "cod2server",

@@ -34,9 +34,26 @@ def test_parse_status_sections_includes_enabled_byo():
     assert rows["SKIPPED"] == ["stormworksserver"]
 
 
+def test_parse_status_sections_includes_enabled_auth():
+    text = """
+## PASSED (1)
+| Test | Type |
+|------|------|
+| acserver | SteamCMD |
+
+## ENABLED (AUTH) (1)
+| Test | Type |
+|------|------|
+| tiserver | eos credentials |
+"""
+    rows = parse_status_sections(text)
+    assert rows["ENABLED (AUTH)"] == ["tiserver"]
+
+
 def test_render_support_tracker_counts_enabled_byo_as_supported():
     rows = {
         "PASSED": ["acserver"],
+        "ENABLED (AUTH)": ["tiserver"],
         "ENABLED (BYO)": ["cod2server"],
         "DISABLED": ["bfvserver"],
         "SKIPPED": ["stormworksserver"],
@@ -44,6 +61,7 @@ def test_render_support_tracker_counts_enabled_byo_as_supported():
     rendered = render_support_tracker(rows)
     assert "## Supported Now" in rendered
     assert "- [x] acserver" in rendered
+    assert "- [x] tiserver" in rendered
     assert "- [x] cod2server" in rendered
     assert "- [ ] bfvserver" in rendered
     assert "- [ ] stormworksserver" in rendered

@@ -9,6 +9,7 @@ import sys
 
 SECTIONS = (
     ("PASSED", "Supported Now", "[x]"),
+    ("ENABLED (AUTH)", "Supported Now", "[x]"),
     ("ENABLED (BYO)", "Supported Now", "[x]"),
     ("DISABLED", "Not Currently Supported", "[ ]"),
     ("SKIPPED", "Waiting On Prerequisites Or Validation", "[ ]"),
