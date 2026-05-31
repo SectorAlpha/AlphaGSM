@@ -70,13 +70,28 @@ def test_ckserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_jc2server_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("jc2")
-    exe = tmp_path / "openjc2-server"
+    exe = tmp_path / "Jcmp-Server"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "openjc2-server", "port": 7777, "maxplayers": "64", "gamemode": "freeroam"})
+    (tmp_path / "default_config.lua").write_text(
+        'Server = {\n'
+        '    MaxPlayers = 5000,\n'
+        '    BindPort = 7777,\n'
+        '    Name = "JC2-MP Server",\n'
+        '}\n'
+    )
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Jcmp-Server",
+            "port": 7777,
+            "maxplayers": "64",
+            "servername": "AlphaGSM JC2",
+        }
+    )
 
     cmd, cwd = jc2server.get_start_command(server)
 
-    assert cmd == ["./openjc2-server", "--port", "7777", "--players", "64", "--mode", "freeroam"]
+    assert cmd == ["./Jcmp-Server"]
     assert cwd == server.data["dir"]
 
 

@@ -1,5 +1,9 @@
 """Integration test for jc2server."""
 
+import json
+import os
+import subprocess
+
 import pytest
 
 from conftest import (
@@ -7,88 +11,114 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     pick_free_tcp_port,
+    run_setup_with_port_retry,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
-from gamemodules.jc2server import steam_app_id
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 1800
+TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
+LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
+PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
 
 
-@pytest.mark.skip(reason="JC2-MP (app 261140) installs no Linux-compatible server binary (openjc2-server not present); module disabled")
+def resolve_steamcmd_linux_runtime_image():
+    """Prefer an explicit or local SteamCMD Linux runtime image when available."""
+
+    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
+    if configured_image:
+        return configured_image
+
+    local_image = subprocess.run(
+        ["docker", "image", "inspect", LOCAL_DOCKER_IMAGE],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if local_image.returncode == 0:
+        return LOCAL_DOCKER_IMAGE
+
+    return PUBLISHED_DOCKER_IMAGE
+
+
+@pytest.mark.timeout(TEST_TIMEOUT)
 def test_jc2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itjc2server"
+    server_name = ("itjc2" + tmp_path.name.replace("_", "")[-10:])[:15]
+    image = resolve_steamcmd_linux_runtime_image()
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        backend="subprocess",
+        runtime_backend="auto",
+        module_name="jc2server",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
-    # create
     run_and_assert_ok(env, server_name, "create", "jc2server")
+    run_and_assert_ok(env, server_name, "set", "image", image)
 
-    # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    _setup_result, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+        timeout=SETUP_TIMEOUT,
+    )
 
-    # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
+        info_data = wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
+        assert info_data.get("protocol") == "tcp", (
+            f"Expected tcp protocol in info JSON: {info_data!r}"
+        )
+        assert info_data.get("port") == port, (
+            f"Expected JC2 readiness on managed game port: {info_data!r}"
         )
 
-        # status
         run_and_assert_ok(env, server_name, "status")
 
-        # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
-
-        # info
-        info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "Players     : 0/" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
-
-        # info --json
-        import json as _info_json
-        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert "TCP ping on port" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert "Server info" in info_result.stdout or "No further details available." in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
+
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        info_data = json.loads(info_json_result.stdout.strip())
+        assert info_data.get("protocol") == "tcp", (
+            f"Expected tcp protocol in info JSON: {info_data!r}"
+        )
+        assert info_data.get("port") == port, (
+            f"Expected JC2 readiness on managed game port: {info_data!r}"
         )
     finally:
-        # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
-    # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
