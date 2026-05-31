@@ -83,6 +83,7 @@ Notes:
 - [x] nmrihserver
 - [x] noonesurvivedserver
 - [x] notdserver
+- [x] nightingale
 - [x] opforserver
 - [x] outpostzeroserver
 - [x] palworld
@@ -225,7 +226,6 @@ Notes:
 - [ ] l4d2server
 - [ ] mw3server
 - [ ] ndserver
-- [ ] nightingale
 - [ ] ohdserver
 - [ ] police1013server
 - [ ] pcars2server

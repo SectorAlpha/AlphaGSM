@@ -4,9 +4,9 @@ This guide covers the `nightingale` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`) for host-process installs
 - Python packages from `requirements.txt`
+- Docker is the preferred Linux validation path and uses the shared `steamcmd-linux` runtime image
 
 ## Quick Start
 
@@ -48,6 +48,17 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+On Linux, the validated support path is the native dedicated server inside
+AlphaGSM's shared `steamcmd-linux` Docker runtime. Fresh support validation
+proves:
+
+- anonymous SteamCMD install for app `3796810`
+- runtime launch through `NWXServer.sh`
+- non-root container execution with the Steam bootstrap mounted into
+  `~/.steam/sdk64/steamclient.so`
+- `query`, `info`, and `info --json` on generic `tcp` at the managed main
+  game port
+
 ## Useful Commands
 
 ```bash
@@ -66,7 +77,7 @@ alphagsm mynighting backup
 
 - **Executable**: `NWXServer.sh`
 - **Location**: `<install_dir>/NWXServer.sh`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Native Linux dedicated server (SteamCMD)
 - **SteamCMD App ID**: `3796810`
 
 ### Server Configuration

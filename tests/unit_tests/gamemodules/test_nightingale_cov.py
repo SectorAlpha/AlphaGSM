@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.nightingale', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.nightingale as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -110,7 +111,8 @@ def test_get_start_command(tmp_path):
     server.data["exe_name"] = "NWXServer.sh"
     (tmp_path / "NWXServer.sh").write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == ["./NWXServer.sh"]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -124,7 +126,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -191,3 +193,45 @@ def test_checkvalue_backup():
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
 
+
+def test_runtime_requirements_without_dir_keep_default_server_mount_behavior():
+    server = DummyServer()
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["family"] == "steamcmd-linux"
+    assert "mounts" not in requirements
+
+
+def test_get_container_spec_runs_as_non_root(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["exe_name"] = "NWXServer.sh"
+    server.data["port"] = 7777
+    (tmp_path / "NWXServer.sh").write_text("")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["stdin_open"] is True
+    assert spec["tty"] is False
+    assert {
+        "source": str(tmp_path),
+        "target": "/srv/server",
+        "mode": "rw",
+    } in spec["mounts"]
+    assert {
+        "source": os.path.normpath(mod.steamcmd.STEAMCMD_DIR),
+        "target": mod.CONTAINER_STEAMCMD_DIR,
+        "mode": "ro",
+    } in spec["mounts"]
+    shell_command = spec["command"][-1]
+    assert "useradd -M -u 1000 -o alphagsm;" in shell_command
+    assert "mkdir -p /home/alphagsm/.steam/sdk64;" in shell_command
+    assert "chmod -R a+rwX /srv/server /home/alphagsm;" in shell_command
+    assert (
+        f"ln -sfn {mod.CONTAINER_STEAMCMD_DIR}/linux64/steamclient.so "
+        "/home/alphagsm/.steam/sdk64/steamclient.so;"
+    ) in shell_command
+    assert "export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm;" in shell_command
+    assert "exec runuser -u alphagsm -- sh -lc 'cd /srv/server && ./NWXServer.sh'" in shell_command
