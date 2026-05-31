@@ -1,6 +1,6 @@
 """Integration test for skyrimtogetherrebornserver.
 
-Disabled: TiltedEvolution has no GitHub release assets
+ENABLED (BYO): set a working archive url or stage SkyrimTogetherServer before setup/start
 """
 
 import pytest
@@ -22,7 +22,12 @@ from conftest import (
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="TiltedEvolution has no GitHub release assets"),
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): set url to a working Skyrim Together Reborn server "
+            "archive or stage SkyrimTogetherServer in <install_dir> before setup/start"
+        )
+    ),
 ]
 
 START_TIMEOUT = 600

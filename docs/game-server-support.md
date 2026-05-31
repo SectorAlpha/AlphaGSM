@@ -178,6 +178,7 @@ Notes:
 - [x] atsserver
 - [x] bf1942server
 - [x] bbserver
+- [x] bfvserver
 - [x] cod2server
 - [x] cod4server
 - [x] coduoserver
@@ -197,6 +198,7 @@ Notes:
 - [x] qlserver
 - [x] rtcwserver
 - [x] sampserver
+- [x] skyrimtogetherrebornserver
 - [x] mohaaserver
 - [x] sof2server
 - [x] stormworksserver
@@ -222,7 +224,6 @@ Notes:
 - [ ] arma3server
 - [ ] arma3wastelandserver
 - [ ] atlasserver
-- [ ] bfvserver
 - [ ] boserver
 - [ ] brokeprotocolserver
 - [ ] chivalryserver
@@ -241,7 +242,6 @@ Notes:
 - [ ] pcars2server
 - [ ] roserver
 - [ ] sfcserver
-- [ ] skyrimtogetherrebornserver
 - [ ] starbound
 - [ ] zmrserver
 - [ ] zpsserver

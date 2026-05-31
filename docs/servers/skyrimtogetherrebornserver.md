@@ -5,6 +5,8 @@ This guide covers the `skyrimtogetherrebornserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- either a direct Skyrim Together Reborn server archive URL or a pre-staged
+  Skyrim Together Reborn server tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +22,13 @@ Run setup:
 ```bash
 alphagsm myskyrimto setup
 ```
+
+`skyrimtogetherrebornserver` is supported in `ENABLED (BYO)` mode. Before
+`setup` or `start`, either:
+
+- set `url` to a working Skyrim Together Reborn server archive, or
+- stage `SkyrimTogetherServer` and the rest of the server files inside your
+  chosen `<install_dir>/`
 
 Start it:
 
@@ -45,13 +54,32 @@ Setup configures:
 
 - the game port (default 10578)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the server archive when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm myskyrimto create skyrimtogetherrebornserver
+alphagsm myskyrimto set url https://example.invalid/skyrimtogether-server.zip
+alphagsm myskyrimto setup -n 10578 /path/to/skyrimtogether
+alphagsm myskyrimto start
+```
+
+Or, if you already have the server files:
+
+```bash
+alphagsm myskyrimto create skyrimtogetherrebornserver
+alphagsm myskyrimto setup -n 10578 /path/to/skyrimtogether
+# copy SkyrimTogetherServer and the rest of the server tree into /path/to/skyrimtogether/
+alphagsm myskyrimto start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm myskyrimto update
 alphagsm myskyrimto backup
+alphagsm myskyrimto set url https://example.invalid/skyrimtogether-server.zip
 ```
 
 ## Notes

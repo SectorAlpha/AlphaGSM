@@ -1,7 +1,6 @@
 """Integration test for bfvserver.
 
-Disabled: BFV download URL (GameFront) is likely dead or gated.
-Awaiting further support.
+ENABLED (BYO): set a working archive url or stage bfvietnam_lnxded before setup/start
 """
 
 import pytest
@@ -27,7 +26,12 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: download URL (GameFront) is likely dead or gated")
+@pytest.mark.skip(
+    reason=(
+        "ENABLED (BYO): set url to a working Battlefield Vietnam dedicated-server "
+        "archive or stage bfvietnam_lnxded in <install_dir> before setup/start"
+    )
+)
 def test_bfvserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

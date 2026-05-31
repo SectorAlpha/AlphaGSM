@@ -13,8 +13,8 @@ this pass aligned the runtime gate with that existing tracker state.
 |----------|-------|
 | PASSED   | 140      |
 | ENABLED (AUTH) | 5 |
-| ENABLED (BYO) | 32 |
-| DISABLED | 37      |
+| ENABLED (BYO) | 34 |
+| DISABLED | 35      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -188,7 +188,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (32)
+## ENABLED (BYO) (34)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -201,6 +201,7 @@ URLs.
 | atsserver | owned exported client packages/settings |
 | bf1942server | direct archive URL or staged Battlefield 1942 Linux dedicated server tree |
 | bbserver | owned BrainBread mod content tree |
+| bfvserver | direct archive URL or staged Battlefield Vietnam Linux dedicated server tree |
 | cod2server | owned localized base-game assets |
 | cod4server | owned base-game assets |
 | coduoserver | owned base multiplayer assets |
@@ -220,6 +221,7 @@ URLs.
 | qlserver | authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets |
 | sampserver | direct archive URL or staged SA-MP Linux dedicated server tree |
+| skyrimtogetherrebornserver | direct archive URL or staged Skyrim Together Reborn server tree |
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
@@ -229,7 +231,7 @@ URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (37)
+## DISABLED (35)
 
 | Test | Reason |
 |------|--------|
@@ -247,7 +249,6 @@ URLs.
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atlasserver | Docker-first validation 2026-05-29: the checked-in lane now seeds install-local Steam bootstrap state for the `steamcmd-linux` runtime, and a focused rerun under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` proved the remaining blocker is no longer missing compatibility libraries. SteamCMD was actively populating `steamapps/downloading/1006030` (about `25G`) and the staged `ShooterGame/Binaries/Linux/ShooterGameServer` reproduced an immediate `Signal 11 caught.` crash inside the validated Docker image; `ldd` resolved the legacy OpenSSL/protobuf/Steam dependencies cleanly, so the exact remaining blocker is an early ATLAS binary segfault before A2S `info` / `query` can come up. |
-| bfvserver | Download URL (GameFront) is dead or gated |
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | chivalryserver | SteamCMD app 220070 now repairs the missing `PhysXUpdateLoader.so` alias, syncs the managed engine ports, and exposes the install-root Steam library paths so the Linux binary can locate `steamclient.so`, but anonymous startup still aborts in `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` before A2S `query` / `info` ever become reachable |
@@ -266,7 +267,6 @@ URLs.
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
-| skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |

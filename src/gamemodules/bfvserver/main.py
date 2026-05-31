@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -66,11 +65,21 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
 
 def install(server):
     """Download and install the Battlefield Vietnam server archive."""
-
-    if "url" not in server.data or not server.data["url"]:
-        server.data["url"] = BFV_SERVER_URL
-        server.data.setdefault("download_name", BFV_SERVER_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    os.makedirs(server.data["dir"], exist_ok=True)
+    url = server.data.get("url") or BFV_SERVER_URL
+    download_name = server.data.get("download_name") or BFV_SERVER_NAME
+    if url != BFV_SERVER_URL:
+        server.data["url"] = url
+        server.data["download_name"] = download_name
+        install_archive(server, detect_compression(download_name))
+        return
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "bfvserver",
+            "set url to a working Battlefield Vietnam dedicated-server archive "
+            "or stage bfvietnam_lnxded in <install_dir> before setup/start",
+        )
 
 
 def get_start_command(server):
@@ -78,7 +87,11 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "bfvserver",
+            "set url to a working Battlefield Vietnam dedicated-server archive "
+            "or stage bfvietnam_lnxded in <install_dir> before setup/start",
+        )
     return (
         [
             "./" + server.data["exe_name"],
@@ -96,7 +109,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Battlefield Vietnam by interrupting the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

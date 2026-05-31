@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -102,13 +101,25 @@ def configure(
 
 def install(server):
     """Download and install the Skyrim Together Reborn server archive."""
-
-    if "url" not in server.data or not server.data["url"]:
-        resolved_version, resolved_url = resolve_download(version=server.data.get("version"))
-        server.data["version"] = resolved_version
-        server.data["url"] = resolved_url
-        server.data.setdefault("download_name", os.path.basename(resolved_url))
-    install_archive(server, detect_compression(server.data["download_name"]))
+    os.makedirs(server.data["dir"], exist_ok=True)
+    url = server.data.get("url")
+    download_name = server.data.get("download_name")
+    if not url:
+        url = ""
+    if not download_name:
+        download_name = os.path.basename(url) or "skyrim-together-reborn-server.zip"
+    if url:
+        server.data["url"] = url
+        server.data["download_name"] = download_name
+        install_archive(server, detect_compression(download_name))
+        return
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "skyrimtogetherrebornserver",
+            "set url to a working Skyrim Together Reborn server archive "
+            "or stage SkyrimTogetherServer in <install_dir> before setup/start",
+        )
 
 
 def get_start_command(server):
@@ -116,7 +127,11 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "skyrimtogetherrebornserver",
+            "set url to a working Skyrim Together Reborn server archive "
+            "or stage SkyrimTogetherServer in <install_dir> before setup/start",
+        )
     return (
         ["./" + server.data["exe_name"], "--port", str(server.data["port"])],
         server.data["dir"],
@@ -126,7 +141,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Skyrim Together Reborn by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

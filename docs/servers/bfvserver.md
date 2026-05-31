@@ -5,6 +5,8 @@ This guide covers the `bfvserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- either a direct Battlefield Vietnam dedicated-server archive URL or a
+  pre-staged Battlefield Vietnam Linux dedicated server tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +22,13 @@ Run setup:
 ```bash
 alphagsm mybfvserve setup
 ```
+
+`bfvserver` is supported in `ENABLED (BYO)` mode. Before `setup` or `start`,
+either:
+
+- set `url` to a working Battlefield Vietnam dedicated-server archive, or
+- stage `bfvietnam_lnxded` and the rest of the Battlefield Vietnam server
+  files inside your chosen `<install_dir>/`
 
 Start it:
 
@@ -45,13 +54,32 @@ Setup configures:
 
 - the game port (default 15567)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the server archive when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm mybfvserve create bfvserver
+alphagsm mybfvserve set url https://example.invalid/bfv-dedicated.run
+alphagsm mybfvserve setup -n 15567 /path/to/bfv
+alphagsm mybfvserve start
+```
+
+Or, if you already have the server files:
+
+```bash
+alphagsm mybfvserve create bfvserver
+alphagsm mybfvserve setup -n 15567 /path/to/bfv
+# copy bfvietnam_lnxded and the rest of the server tree into /path/to/bfv/
+alphagsm mybfvserve start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm mybfvserve update
 alphagsm mybfvserve backup
+alphagsm mybfvserve set url https://example.invalid/bfv-dedicated.run
 ```
 
 ## Notes
