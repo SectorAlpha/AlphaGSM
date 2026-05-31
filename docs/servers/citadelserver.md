@@ -4,8 +4,7 @@ This guide covers the `citadelserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Docker
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -44,9 +43,11 @@ alphagsm mycitadels stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default `7777`)
+- the Steam query port (default `27015`)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the native Linux dedicated-server payload for app `489650`
+- AlphaGSM runs the validated Linux path through the shared `steamcmd-linux` Docker runtime
 
 ## Useful Commands
 
@@ -58,15 +59,18 @@ alphagsm mycitadels backup
 ## Notes
 
 - Module name: `citadelserver`
-- Default port: 27015
+- Default game port: `7777`
+- Default query port: `27015`
+- Supported Linux health contract: `query`, `info`, and `info --json` use generic `tcp` on the managed main game port
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `CitadelServer-Linux-Shipping`
-- **Location**: `<install_dir>/CitadelServer-Linux-Shipping`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `CitadelServer.sh`
+- **Fallback executable**: `Citadel/Binaries/Linux/CitadelServer-Linux-Shipping`
+- **Location**: `<install_dir>/CitadelServer.sh`
+- **Engine**: Native Linux dedicated server via SteamCMD
 - **SteamCMD App ID**: `489650`
 
 ### Server Configuration

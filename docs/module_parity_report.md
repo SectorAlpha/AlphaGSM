@@ -53,7 +53,7 @@
 | btserver | - | active | no | yes | status |
 | ccserver | - | active | yes | yes | - |
 | chivalryserver | cmwserver | active | no | yes | status |
-| citadelserver | - | disabled | no | no | status |
+| citadelserver | - | active | no | yes | status |
 | ckserver | - | active | no | yes | status |
 | cod2server | - | active | no | yes | status |
 | cod4server | - | active | no | yes | status |

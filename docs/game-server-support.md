@@ -36,6 +36,7 @@ Notes:
 - [x] bmdmserver
 - [x] blackwakeserver
 - [x] ccserver
+- [x] citadelserver
 - [x] colserver
 - [x] counterstrike2
 - [x] csczserver
@@ -213,7 +214,6 @@ Notes:
 - [ ] bfvserver
 - [ ] boserver
 - [ ] brokeprotocolserver
-- [ ] citadelserver
 - [ ] chivalryserver
 - [ ] conanexiles
 - [ ] counterstrikeglobaloffensive
