@@ -28,13 +28,22 @@ class DummyServer:
 
 def test_jc3server_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("jc3")
-    exe = tmp_path / "openjc3-server"
+    exe = tmp_path / "Server"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "openjc3-server", "port": 7777, "maxplayers": "64", "gamemode": "freeroam"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Server",
+            "port": 7777,
+            "maxplayers": "32",
+            "servername": "AlphaGSM JC3",
+            "host": "0.0.0.0",
+        }
+    )
 
     cmd, cwd = jc3server.get_start_command(server)
 
-    assert cmd == ["./openjc3-server", "--port", "7777", "--players", "64", "--mode", "freeroam"]
+    assert cmd == ["./Server"]
     assert cwd == server.data["dir"]
 
 

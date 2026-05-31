@@ -62,6 +62,7 @@ Notes:
 - [x] hldmsserver
 - [x] heatserver
 - [x] icarusserver
+- [x] jc3server
 - [x] kf2server
 - [x] l4dserver
 - [x] lastoasisserver
@@ -221,7 +222,6 @@ Notes:
 - [ ] hzserver
 - [ ] iosserver
 - [ ] jc2server
-- [ ] jc3server
 - [ ] jk2server
 - [ ] kfserver
 - [ ] l4d2server

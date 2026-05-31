@@ -115,7 +115,7 @@
 | interstellarriftserver | - | active | no | yes | status |
 | iosserver | - | disabled | yes | no | - |
 | jc2server | - | disabled | no | no | status |
-| jc3server | - | disabled | no | no | status |
+| jc3server | - | active | no | yes | status |
 | jk2server | - | disabled | no | no | status |
 | kerbalspaceprogramserver | - | active | no | yes | status |
 | kf2server | - | active | no | yes | status |
