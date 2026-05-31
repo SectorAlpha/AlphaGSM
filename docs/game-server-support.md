@@ -154,7 +154,9 @@ Notes:
 
 ## Supported Now
 
+- [x] gtafivemserver
 - [x] pathoftitansserver
+- [x] redmserver
 - [x] tiserver
 
 ## Supported Now
@@ -170,7 +172,6 @@ Notes:
 - [x] etlegacyserver
 - [x] ets2server
 - [x] gravserver
-- [x] gtafivemserver
 - [x] hogwarpserver
 - [x] identityserver
 - [x] minecraft_custom
@@ -179,7 +180,6 @@ Notes:
 - [x] nsserver
 - [x] q3server
 - [x] qlserver
-- [x] redmserver
 - [x] rtcwserver
 - [x] mohaaserver
 - [x] sof2server

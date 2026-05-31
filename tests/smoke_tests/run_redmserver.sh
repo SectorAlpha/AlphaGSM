@@ -1,6 +1,6 @@
-#\!/usr/bin/env bash
-# ENABLED (BYO): supported with operator-managed txAdmin/server-data provisioning.
-echo "Smoke test for redmserver is ENABLED (BYO) - complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
+#!/usr/bin/env bash
+# ENABLED (AUTH): supported with Cfx-backed txAdmin/server-data provisioning.
+echo "Smoke test for redmserver is ENABLED (AUTH) - complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
 exit 0
 
 set -Eeuo pipefail

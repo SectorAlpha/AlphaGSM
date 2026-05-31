@@ -23,7 +23,7 @@ Run setup:
 alphagsm mygtafivem setup
 ```
 
-`gtafivemserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can download the
+`gtafivemserver` is supported in `ENABLED (AUTH)` mode. AlphaGSM can download the
 current Linux FXServer artifact, but you still need to complete one of the
 supported Cfx provisioning flows before the server is actually ready:
 
@@ -87,7 +87,7 @@ alphagsm mygtafivem backup
 
 - Module name: `gtafivemserver`
 - Default port: 30120
-- Install mode: `ENABLED (BYO)` txAdmin/server-data provisioning
+- Install mode: `ENABLED (AUTH)` txAdmin/server-data provisioning
 
 ## Developer Notes
 

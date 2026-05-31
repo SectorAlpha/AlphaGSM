@@ -12,8 +12,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 129      |
-| ENABLED (AUTH) | 2 |
-| ENABLED (BYO) | 30 |
+| ENABLED (AUTH) | 4 |
+| ENABLED (BYO) | 28 |
 | DISABLED | 48      |
 | SKIPPED  | 28      |
 
@@ -164,14 +164,16 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (2)
+## ENABLED (AUTH) (4)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
 
 | Test | Type |
 |------|------|
+| gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
 | pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
+| redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
 ## ENABLED (BYO) (30)
@@ -193,7 +195,6 @@ URLs.
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
 | gravserver | owned GRAV dedicated server tree |
-| gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
 | minecraft_custom | user-supplied server jar |
@@ -202,7 +203,6 @@ URLs.
 | nsserver | owned Natural Selection mod content tree |
 | q3server | owned base-game assets |
 | qlserver | authenticated entitlement plus server auth/config |
-| redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | rtcwserver | owned base-game assets |
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |

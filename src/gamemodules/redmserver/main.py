@@ -4,7 +4,6 @@ import os
 import re
 import urllib.request
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -104,12 +103,47 @@ def install(server):
     install_archive(server, detect_compression(server.data["download_name"]))
 
 
+def get_provider_requirements(server):
+    """Declare the provider-managed prerequisites for RedM."""
+
+    return [
+        {
+            "provider": "cfx",
+            "kind": "provisioning",
+            "keys": (),
+            "required_for": ("start",),
+            "support_category": "provider-provisioning",
+            "summary": "txAdmin/server-data provisioning with server.cfg and a Cfx license key",
+            "actions": (
+                "Complete txAdmin first-run provisioning against the downloaded artifact, or stage a vanilla server-data tree with server.cfg and sv_licenseKey before starting",
+            ),
+            "docs_slug": "redmserver",
+        }
+    ]
+
+
+def _has_cfx_provisioning(server):
+    """Return whether a provisioned RedM server-data or txAdmin tree exists."""
+
+    server_root = server.data["dir"]
+    return os.path.isfile(os.path.join(server_root, "server-data", "server.cfg")) or os.path.isdir(
+        os.path.join(server_root, "txData")
+    )
+
+
 def get_start_command(server):
     """Build the command used to launch a RedM dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    if not _has_cfx_provisioning(server):
+        gamemodule_common.validate_provider_requirements(
+            "redmserver",
+            server,
+            phase="start",
+            requirements=get_provider_requirements(server),
+        )
     return (
         ["./" + server.data["exe_name"], "+set", "sv_port", str(server.data["port"])],
         server.data["dir"],
@@ -119,7 +153,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop RedM by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

@@ -1,6 +1,7 @@
 """Integration test for redmserver.
 
-ENABLED (BYO): RedM requires operator-managed txAdmin/server-data provisioning.
+ENABLED (AUTH): RedM requires Cfx-backed txAdmin or vanilla server-data
+provisioning before lifecycle validation.
 """
 
 import pytest
@@ -27,7 +28,7 @@ STOP_TIMEOUT = 90
 
 
 @pytest.mark.skip(
-    reason="ENABLED (BYO): complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
+    reason="ENABLED (AUTH): complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
 )
 def test_redmserver_lifecycle(tmp_path):
     require_integration_opt_in()

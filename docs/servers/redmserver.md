@@ -23,7 +23,7 @@ Run setup:
 alphagsm myredmserv setup
 ```
 
-`redmserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can download the
+`redmserver` is supported in `ENABLED (AUTH)` mode. AlphaGSM can download the
 current Linux RedM artifact, but you still need to complete one of the
 supported Cfx provisioning flows before the server is actually ready:
 
@@ -87,7 +87,7 @@ alphagsm myredmserv backup
 
 - Module name: `redmserver`
 - Default port: 30120
-- Install mode: `ENABLED (BYO)` txAdmin/server-data provisioning
+- Install mode: `ENABLED (AUTH)` txAdmin/server-data provisioning
 
 ## Developer Notes
 
