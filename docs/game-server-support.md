@@ -110,6 +110,7 @@ Notes:
 - [x] silicaserver
 - [x] scpslserver
 - [x] smallandserver
+- [x] seserver
 - [x] sevendaystodie
 - [x] sniperelite4server
 - [x] soulmask
@@ -237,7 +238,6 @@ Notes:
 - [ ] q4server
 - [ ] roserver
 - [ ] sampserver
-- [ ] seserver
 - [ ] sfcserver
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound

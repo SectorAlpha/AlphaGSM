@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 134      |
+| PASSED   | 135      |
 | ENABLED (AUTH) | 4 |
 | ENABLED (BYO) | 28 |
-| DISABLED | 45      |
+| DISABLED | 46      |
 | SKIPPED  | 28      |
 
 ## Status Key
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (134)
+## PASSED (135)
 
 | Test | Type |
 |------|------|
@@ -122,6 +122,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | silicaserver | SteamCMD |
 | scpslserver | SteamCMD |
 | smallandserver | SteamCMD |
+| seserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh focused integration now proves the old missing-binary disable note was stale in a narrower way: anonymous SteamCMD setup for app `298740` installs the real Windows dedicated payload, AlphaGSM launches `DedicatedServer64/SpaceEngineersDedicated.exe` inside the shared `wine-proton` runtime from its required `DedicatedServer64` working directory, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port instead of the older stale fake-native `DedicatedServer64` contract |
 | sevendaystodie | SteamCMD — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the native Linux dedicated path once readiness follows the real `output_log__*.txt` surface instead of the stale screen log, the pre-start port refresh keeps the long SteamCMD setup from leaving a claimed stale port behind, and `query`, `info`, plus `info --json` are aligned to 7DTD's real A2S listener on the managed game port |
 | sniperelite4server | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image with anonymous SteamCMD install for app `568880` once AlphaGSM stages an install-root `default.cfg` from the shipped example set, and the validated Linux health surface is generic `tcp` on the managed main game port instead of the older stale host-log and A2S assumptions |
 | soulmask | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the validated Linux Docker-backed `wine-proton` lane once AlphaGSM launches the real Windows dedicated depot through root `WSServer.exe`, treats the live health surface as generic `tcp` on the managed main port instead of the older stale A2S assumption, and proves `query`, `info`, `info --json`, plus clean shutdown on the current server contract |
@@ -218,7 +219,7 @@ URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (47)
+## DISABLED (46)
 
 | Test | Reason |
 |------|--------|
@@ -262,7 +263,6 @@ URLs.
 | q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
 | sampserver | Download domain files.sa-mp.com is dead |
-| seserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh focused integration now proves the old missing-binary disable note was stale in a narrower way: anonymous SteamCMD setup for app `298740` installs the real Windows dedicated payload, AlphaGSM launches `DedicatedServer64/SpaceEngineersDedicated.exe` inside the shared `wine-proton` runtime from its required `DedicatedServer64` working directory, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port instead of the older stale fake-native `DedicatedServer64` contract |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
