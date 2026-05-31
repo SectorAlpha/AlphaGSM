@@ -1,6 +1,5 @@
 """Full coverage tests for rwserver."""
 
-import os
 import sys
 from unittest.mock import patch, MagicMock
 
@@ -10,6 +9,7 @@ sys.modules.pop('gamemodules.rwserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.rwserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -39,6 +39,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=4254, dir=str(tmp_path))
     assert server.data['port'] == 4254
+    assert server.data["queryport"] == 4253
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -64,7 +65,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "server.jar"
+    server.data["exe_name"] = "RisingWorldServer.x64"
     server.data["Steam_AppID"] = 339010
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -109,30 +110,59 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "server.jar"
-    (tmp_path / "server.jar").write_text("")
-    server.data["javapath"] = "test"
+    server.data["exe_name"] = "RisingWorldServer.x64"
+    (tmp_path / "RisingWorldServer.x64").write_text("")
     server.data["port"] = 27015
     server.data["world"] = "test"
+    server.data["servername"] = "Alpha"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd[0:2] == ["sh", "-lc"]
+    assert "RisingWorldServer.x64" in cmd[2]
+    props = (tmp_path / "server.properties").read_text(encoding="utf-8")
+    assert "Server_Port=27015" in props
+    assert "World_Name=test" in props
+    assert "Server_Name=Alpha" in props
 
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    server.data["javapath"] = "test"
     server.data["port"] = 27015
     server.data["world"] = "test"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
 
 
+def test_get_query_address_uses_derived_query_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 4255
+    address = mod.get_query_address(server)
+    assert address == ("127.0.0.1", 4254, "tcp")
+
+
+def test_sync_server_config_writes_native_keys(tmp_path):
+    server = DummyServer("rw")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 4255,
+            "servername": "AlphaGSM RW",
+            "world": "myworld",
+        }
+    )
+    mod.sync_server_config(server)
+    props = (tmp_path / "server.properties").read_text(encoding="utf-8")
+    assert "Server_Port=4255" in props
+    assert "Server_Name=AlphaGSM RW" in props
+    assert "World_Name=myworld" in props
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -190,8 +220,8 @@ def test_checkvalue_world():
 
 def test_checkvalue_javapath():
     server = DummyServer()
-    result = mod.checkvalue(server, ("javapath",), "/test/value")
-    assert result == "/test/value"
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("javapath",), "/test/value")
 
 
 def test_checkvalue_exe_name():
@@ -210,4 +240,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

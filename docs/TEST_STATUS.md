@@ -11,9 +11,9 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 126      |
+| PASSED   | 127      |
 | ENABLED (BYO) | 31 |
-| DISABLED | 52      |
+| DISABLED | 51      |
 | SKIPPED  | 28      |
 
 ## Status Key
@@ -28,7 +28,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (126)
+## PASSED (127)
 
 | Test | Type |
 |------|------|
@@ -155,6 +155,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | readyornotserver | Re-enabled: PASSED 2026-03-28; smoke now follows `ReadyOrNot/Saved/Logs/ReadyOrNot.log`, and integration now waits on the module-owned A2S `queryport` path instead of assuming `port + 1` |
 | returntomoriaserver | Wine/Proton — PASSED 2026-05-29; fresh smoke and focused integration now both pass after AlphaGSM manages `MoriaServerConfig.ini` up front, keeps `Console.Enabled=true` for lifecycle control, syncs `ListenPort` plus the advertised host settings before first launch, and treats the live health surface as generic `udp` on the managed game port with readiness proven through `Moria/Saved/Config/Status.json` instead of the older stale wrapper-log / timeout assumptions |
 | rs2server | Re-enabled: PASSED 2026-05-28; focused host integration now proves the full AlphaGSM lifecycle against the module-owned A2S `queryport`, including `query`, `info`, `info --json`, and shutdown verification after the shared setup port-retry helper and explicit smoke `queryport` wiring landed |
+| rwserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old disabled Java-era note was stale: anonymous SteamCMD setup for app `339010` installs the current native Linux dedicated server, AlphaGSM launches `RisingWorldServer.x64` with the required `LD_LIBRARY_PATH` bootstrap inside the shared `steamcmd-linux` runtime as a non-root user, syncs `Server_Port` / `Server_Name` / `World_Name` into `server.properties`, and validates `query`, `info`, and `info --json` on Rising World's real TCP web-query surface at `serverport - 1` |
 | insserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for Source startup markers and `info --json` protocol `a2s` |
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
@@ -249,7 +250,6 @@ files, external services, or direct archive URLs.
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q4server | Quake 4 download URL returns 404 |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
-| rwserver | SteamCMD app 339010 installs no Linux-compatible dedicated server binary (server.jar not present) |
 | sampserver | Download domain files.sa-mp.com is dead |
 | seserver | SteamCMD app 298740 installs no Linux-compatible dedicated server binary (executable file not found) |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |

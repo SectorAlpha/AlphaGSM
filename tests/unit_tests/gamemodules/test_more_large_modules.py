@@ -40,13 +40,22 @@ def test_jc3server_get_start_command_builds_expected_args(tmp_path):
 
 def test_rwserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("rw")
-    exe = tmp_path / "server.jar"
+    exe = tmp_path / "RisingWorldServer.x64"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "server.jar", "javapath": "java", "world": "rw", "port": 4254})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "RisingWorldServer.x64",
+            "world": "rw",
+            "port": 4255,
+            "servername": "AlphaGSM RW",
+        }
+    )
 
     cmd, cwd = rwserver.get_start_command(server)
 
-    assert cmd == ["java", "-jar", "server.jar", "--server", "rw", "4254"]
+    assert cmd[0:2] == ["sh", "-lc"]
+    assert "RisingWorldServer.x64" in cmd[2]
     assert cwd == server.data["dir"]
 
 

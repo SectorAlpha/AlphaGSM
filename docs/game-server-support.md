@@ -145,6 +145,7 @@ Notes:
 - [x] readyornotserver
 - [x] returntomoriaserver
 - [x] rs2server
+- [x] rwserver
 - [x] insserver
 - [x] inssserver
 - [x] ts3server
@@ -231,7 +232,6 @@ Notes:
 - [ ] pcars2server
 - [ ] q4server
 - [ ] roserver
-- [ ] rwserver
 - [ ] sampserver
 - [ ] seserver
 - [ ] sfcserver

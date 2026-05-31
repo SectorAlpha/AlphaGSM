@@ -1,17 +1,19 @@
 """Rising World dedicated server lifecycle helpers."""
 
 import os
+import shlex
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
+from utils.simple_kv_config import rewrite_equals_config
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 339010
 steam_anonymous_login_possible = True
+CONTAINER_STEAMCMD_DIR = "/opt/alphagsm-steamcmd"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -24,9 +26,27 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "servername", "world")
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="server.jar", javapath="java"):
+def _sync_derived_ports(server):
+    if "port" not in server.data:
+        return
+    server.data["queryport"] = int(server.data["port"]) - 1
+
+
+def _config_path(server):
+    return os.path.join(server.data["dir"], "server.properties")
+
+
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    exe_name="RisingWorldServer.x64",
+):
     """Collect and store configuration values for a Rising World server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -39,19 +59,18 @@ def configure(server, ask, port=None, dir=None, *, exe_name="server.jar", javapa
         {
             "servername": "AlphaGSM %s" % (server.name,),
             "world": server.name,
-            "javapath": javapath,
         },
     )
     gamemodule_common.ensure_backup_config(
         server,
-        backupfiles=["world", "plugins", "server.properties", "server.jar"],
-        targets=["world", "plugins", "server.properties"],
+        backupfiles=["Logs", "world", "plugins", "server.properties"],
+        targets=["Logs", "world", "plugins", "server.properties"],
     )
     gamemodule_common.configure_port(
         server,
         ask,
         port,
-        default_port=4254,
+        default_port=4255,
         prompt="Please specify the game port to use for this server:",
     )
     gamemodule_common.configure_install_dir(
@@ -61,6 +80,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="server.jar", javapa
         prompt="Where would you like to install the Rising World server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    _sync_derived_ports(server)
     return gamemodule_common.finalize_configure(server)
 
 
@@ -84,29 +104,59 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Rising World server."
 
 
+def sync_server_config(server):
+    """Write supported datastore values to Rising World's server.properties."""
+
+    _sync_derived_ports(server)
+    rewrite_equals_config(
+        _config_path(server),
+        {
+            "Server_Port": int(server.data["port"]),
+            "Server_Name": str(
+                server.data.get("servername", "AlphaGSM %s" % (server.name,))
+            ),
+            "World_Name": str(server.data.get("world", server.name)),
+        },
+    )
+
+
 def get_start_command(server):
     """Build the command used to launch a Rising World dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    sync_server_config(server)
     return (
         [
-            server.data["javapath"],
-            "-jar",
-            server.data["exe_name"],
-            "--server",
-            server.data["world"],
-            str(server.data["port"]),
+            "sh",
+            "-lc",
+            (
+                'export LD_LIBRARY_PATH="$PWD/linux64:$PWD:${LD_LIBRARY_PATH:-}"; '
+                "exec ./" + shlex.quote(server.data["exe_name"])
+            ),
         ],
         server.data["dir"],
     )
 
 
+def get_query_address(server):
+    """Return Rising World's HTTP query TCP endpoint."""
+
+    _sync_derived_ports(server)
+    return runtime_module.resolve_query_host(server), int(server.data["queryport"]), "tcp"
+
+
+def get_info_address(server):
+    """Return the Rising World TCP info endpoint."""
+
+    return get_query_address(server)
+
+
 def do_stop(server, j):
     """Stop Rising World using the standard console command."""
 
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):
@@ -133,35 +183,69 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port",),
-        str_keys=("servername", "world", "javapath", "exe_name", "dir"),
+        str_keys=("servername", "world", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 
+
 def get_runtime_requirements(server):
-    java_major = server.data.get("java_major")
-    if java_major is None:
-        java_major = runtime_module.infer_minecraft_java_major(
-            server.data.get("version")
-        )
+    """Return Rising World's native Linux Docker runtime contract."""
+
+    mounts = None
+    if "dir" in server.data:
+        mounts = [
+            {
+                "source": server.data["dir"],
+                "target": "/srv/server",
+                "mode": "rw",
+            },
+            {
+                "source": os.path.normpath(steamcmd.STEAMCMD_DIR),
+                "target": CONTAINER_STEAMCMD_DIR,
+                "mode": "ro",
+            },
+        ]
+
+    _sync_derived_ports(server)
     return runtime_module.build_runtime_requirements(
         server,
-        family="java",
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
-        env={
-            "ALPHAGSM_JAVA_MAJOR": str(java_major),
-            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "server.jar"),
-        },
-        extra={"java": int(java_major)},
+        family="steamcmd-linux",
+        port_definitions=(
+            {"key": "queryport", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "tcp"},
+        ),
+        mounts=mounts,
     )
 
+
 def get_container_spec(server):
+    """Run the native Linux server in Docker as the mounted server owner."""
+
     requirements = get_runtime_requirements(server)
-    return runtime_module.build_container_spec(
-        server,
-        family="java",
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
-        env=requirements.get("env", {}),
-        stdin_open=True,
-        tty=True,
-    )
+    command, _cwd = get_start_command(server)
+    shell_command = " ".join(shlex.quote(part) for part in command)
+    user_shell_command = "cd /srv/server && " + shell_command
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            (
+                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
+                'mkdir -p /home/alphagsm/.steam/sdk64; '
+                'chmod -R a+rwX /srv/server /home/alphagsm; '
+                'ln -sfn '
+                + CONTAINER_STEAMCMD_DIR
+                + '/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
+                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
+                "exec runuser -u alphagsm -- sh -lc "
+                + shlex.quote(user_shell_command)
+            ),
+        ],
+    }

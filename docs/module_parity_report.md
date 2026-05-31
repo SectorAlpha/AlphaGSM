@@ -31,7 +31,7 @@
 | askaserver | - | active | no | yes | status |
 | astroneerserver | - | active | no | yes | status |
 | atlasserver | - | active | no | yes | status |
-| atsserver | - | disabled | no | no | status |
+| atsserver | - | active | no | yes | status |
 | avserver | - | active | no | yes | status |
 | bannerlordserver | - | active | no | yes | status |
 | battlebitserver | - | disabled | no | no | status |
@@ -125,7 +125,7 @@
 | lastoasisserver | - | active | no | yes | status |
 | lifeisfeudalserver | - | active | no | yes | status |
 | longvinterserver | - | active | no | yes | status |
-| medievalengineersserver | - | active | no | yes | status |
+| medievalengineersserver | - | disabled | no | no | status |
 | memoriesofmarsserver | - | active | no | yes | status |
 | minecraft.bedrock | mcbserver | active | no | yes | status |
 | minecraft.bungeecord | - | active | no | yes | status |
@@ -185,7 +185,7 @@
 | rs2server | risingstorm2vietnam | active | no | yes | status |
 | rtcwserver | - | active | no | yes | status |
 | rust | - | active | no | yes | status |
-| rwserver | - | disabled | no | no | status |
+| rwserver | - | active | no | yes | status |
 | saleblazersserver | - | active | no | yes | status |
 | sampserver | - | disabled | no | no | status |
 | satisfactory | sfserver | active | no | yes | status |
