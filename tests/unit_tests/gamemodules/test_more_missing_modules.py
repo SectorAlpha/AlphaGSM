@@ -1,6 +1,7 @@
 import gamemodules.arksurvivalascended as arksurvivalascended
 import gamemodules.conanexiles as conanexiles
 import gamemodules.nightingale as nightingale
+from unittest.mock import patch
 
 
 class DummyData(dict):
@@ -28,14 +29,14 @@ class DummyServer:
 
 def test_conanexiles_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("conan")
-    exe_dir = tmp_path / "ConanSandbox" / "Binaries" / "Linux"
+    exe_dir = tmp_path / "ConanSandbox" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
-    exe = exe_dir / "ConanSandboxServer"
+    exe = exe_dir / "ConanSandboxServer-Win64-Shipping.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "ConanSandbox/Binaries/Linux/ConanSandboxServer",
+            "exe_name": "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe",
             "map": "ConanSandbox",
             "maxplayers": 40,
             "port": 7777,
@@ -43,9 +44,10 @@ def test_conanexiles_get_start_command_builds_expected_args(tmp_path):
         }
     )
 
-    cmd, cwd = conanexiles.get_start_command(server)
+    with patch.object(conanexiles, "IS_LINUX", False):
+        cmd, cwd = conanexiles.get_start_command(server)
 
-    assert cmd[0] == "./ConanSandbox/Binaries/Linux/ConanSandboxServer"
+    assert cmd[0] == "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
     assert "-Port=7777" in cmd
     assert cwd == server.data["dir"]
 

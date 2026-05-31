@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 137      |
+| PASSED   | 138      |
 | ENABLED (AUTH) | 5 |
 | ENABLED (BYO) | 28 |
-| DISABLED | 43      |
+| DISABLED | 42      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (137)
+## PASSED (138)
 
 | Test | Type |
 |------|------|
@@ -51,6 +51,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | ccserver | SteamCMD (Source) |
 | citadelserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration and smoke now prove the old missing-binary disabled note was stale: anonymous SteamCMD setup for app `489650` installs the real native Linux dedicated payload, AlphaGSM launches the shipped `CitadelServer.sh` wrapper or falls back to the nested `Citadel/Binaries/Linux/CitadelServer-Linux-Shipping` binary, mounts the shared Steam bootstrap into `~/.steam/sdk64/steamclient.so`, and validates `query`, `info`, and `info --json` on Citadel's real generic `tcp` health surface at the managed main game port rather than the older stale `queryport` A2S assumption |
 | colserver | SteamCMD |
+| conanexiles | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh smoke, formal integration, and direct shipping-exe probe now all prove the old missing-Linux-binary row was stale. Anonymous SteamCMD app `443030` installs a real Windows dedicated payload, AlphaGSM launches `ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe` inside the shared `wine-proton` runtime, syncs `Engine.ini` / `Game.ini` under `ConanSandbox/Saved/Config/WindowsServer/`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the old fake native-Linux contract |
 | counterstrike2 | SteamCMD (Source 2) — PASSED 2026-04-08 |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
@@ -246,7 +247,6 @@ URLs.
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | chivalryserver | SteamCMD app 220070 now repairs the missing `PhysXUpdateLoader.so` alias, syncs the managed engine ports, and exposes the install-root Steam library paths so the Linux binary can locate `steamclient.so`, but anonymous startup still aborts in `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` before A2S `query` / `info` ever become reachable |
-| conanexiles | SteamCMD app 443030 installs no Linux-compatible dedicated server binary (ConanSandboxServer not present) |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | dabserver | Dedicated server binary segfaults on startup |
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |

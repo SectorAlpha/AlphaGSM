@@ -39,6 +39,7 @@ Notes:
 - [x] ccserver
 - [x] citadelserver
 - [x] colserver
+- [x] conanexiles
 - [x] counterstrike2
 - [x] csczserver
 - [x] csserver
@@ -221,7 +222,6 @@ Notes:
 - [ ] boserver
 - [ ] brokeprotocolserver
 - [ ] chivalryserver
-- [ ] conanexiles
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver
 - [ ] deadmatterserver

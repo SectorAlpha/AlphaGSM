@@ -61,7 +61,7 @@
 | coduoserver | - | active | no | yes | status |
 | codwawserver | - | active | no | yes | status |
 | colserver | - | active | no | yes | status |
-| conanexiles | - | disabled | no | no | status |
+| conanexiles | - | active | no | yes | status |
 | counterstrike2 | cs2, cs2server | active | yes | yes | - |
 | counterstrikeglobaloffensive | csgo, csgoserver | disabled | yes | no | - |
 | craftopiaserver | ctserver | active | no | yes | status |

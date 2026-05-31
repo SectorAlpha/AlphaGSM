@@ -2,10 +2,12 @@
 
 This guide covers the `conanexiles` module in AlphaGSM.
 
+Status: `PASSED` on Linux through the shared Docker `wine-proton` runtime.
+
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Docker if you want the validated Linux runtime path
+- SteamCMD access for app `443030` (anonymous download works)
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -13,70 +15,75 @@ This guide covers the `conanexiles` module in AlphaGSM.
 Create the server:
 
 ```bash
-alphagsm myconanexi create conanexiles
+alphagsm myconan create conanexiles
 ```
 
 Run setup:
 
 ```bash
-alphagsm myconanexi setup
+alphagsm myconan setup
 ```
 
 Start it:
 
 ```bash
-alphagsm myconanexi start
+alphagsm myconan start
 ```
 
 Check it:
 
 ```bash
-alphagsm myconanexi status
+alphagsm myconan status
+alphagsm myconan query
+alphagsm myconan info
 ```
 
 Stop it:
 
 ```bash
-alphagsm myconanexi stop
+alphagsm myconan stop
 ```
 
 ## Setup Details
 
 Setup configures:
 
-- the game port (default 27015)
+- the main game port, default `7777/udp`
+- the dedicated query port, default `27015/udp`
 - the install directory
-- SteamCMD downloads the server files
+- the shipped Windows dedicated payload, which AlphaGSM runs on Linux through the shared `wine-proton` runtime
+
+## Config Files
+
+AlphaGSM manages the normal Conan Exiles server config layout under:
+
+- `<install_dir>/ConanSandbox/Saved/Config/WindowsServer/Engine.ini`
+- `<install_dir>/ConanSandbox/Saved/Config/WindowsServer/Game.ini`
+- `<install_dir>/ConanSandbox/Saved/Config/WindowsServer/ServerSettings.ini`
+
+Checked-in starter templates live under [docs/server-templates/conanexiles/](../server-templates/conanexiles/).
+
+AlphaGSM keeps these values aligned automatically:
+
+- `port` -> `Engine.ini` `[URL] Port`
+- `queryport` -> `Engine.ini` `[OnlineSubsystemNull] GameServerQueryPort`
+- `servername` -> `Engine.ini` `[OnlineSubsystem] ServerName`
+- `maxplayers` -> `Game.ini` `[/Script/Engine.GameSession] MaxPlayers`
+
+## Runtime Contract
+
+- Preferred executable on Linux: `ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe`
+- Query surface: A2S on the managed `queryport`
+- Default map: `ConanSandbox`
+
+The game port also exposes gameplay traffic on `port`, and Conan keeps a hardcoded pinger on `port + 1`.
 
 ## Useful Commands
 
 ```bash
-alphagsm myconanexi update
-alphagsm myconanexi backup
+alphagsm myconan set queryport 27015
+alphagsm myconan set servername "AlphaGSM Conan"
+alphagsm myconan set maxplayers 16
+alphagsm myconan update
+alphagsm myconan backup
 ```
-
-## Notes
-
-- Module name: `conanexiles`
-- Default port: 27015
-
-## Developer Notes
-
-### Run File
-
-- **Executable**: `ConanSandbox/Binaries/Linux/ConanSandboxServer`
-- **Location**: `<install_dir>/ConanSandbox/Binaries/Linux/ConanSandboxServer`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `443030`
-
-### Server Configuration
-
-- **Config file**: See game module source
-- **Max players**: `40`
-- **Template**: See [server-templates/conanexiles/](../server-templates/conanexiles/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
