@@ -31,15 +31,15 @@ future SteamCMD authenticated-install support and secret-management work.
   of hand-written per-module text.
 - Distinguish provider-backed prerequisites from generic BYO assets at the
   module-contract level.
-- Keep the public support state compatible with the existing `ENABLED (BYO)`
-  model for now.
+- Introduce a clearer public support state for provider-backed cases:
+  `ENABLED (AUTH)`.
 - Make the API extensible enough to absorb the future SteamCMD auth-profile
   design without creating a second parallel system.
 
 ## Non-Goals
 
 - Implementing a full secret-storage system in this pass.
-- Replacing the existing `ENABLED (BYO)` support state immediately.
+- Replacing every existing support-state row in one pass.
 - Reclassifying every current BYO server in one change.
 - Building provider-specific UI flows beyond shared validation and messaging.
 
@@ -49,7 +49,7 @@ Today the repository has multiple kinds of provider-managed prerequisites, but
 they are represented inconsistently:
 
 - some modules use bespoke datastore keys and inline `ServerError` messages
-- some use `ENABLED (BYO)` wording that hides the true provider class
+- some use generic `ENABLED (BYO)` wording that hides the true provider class
 - some docs imply owned assets when the real dependency is credentials,
   licensing, or operator provisioning
 
@@ -100,7 +100,7 @@ It also lets AlphaGSM distinguish:
 - provider license keys
 - provider-managed provisioning flows
 
-without forcing public support-state changes first.
+while also supporting a clearer public support-state split.
 
 ## Alternatives Considered
 
@@ -218,17 +218,25 @@ The formatted error should:
 
 ## Support-State Mapping
 
-Publicly, these modules can remain under `ENABLED (BYO)` for now.
+Publicly, provider-backed prerequisites should map to:
 
-Internally, AlphaGSM should distinguish these support categories:
+- `ENABLED (AUTH)`
+
+True operator-supplied asset/export/url/service cases should remain:
+
+- `ENABLED (BYO)`
+
+Internally, AlphaGSM should still distinguish these provider support
+categories:
 
 - `provider-auth`
 - `provider-token`
 - `provider-license`
 - `provider-provisioning`
 
-This keeps the existing public counts stable while making the support model
-more precise for future reporting and automation.
+This gives users a clearer supported-state split while still preserving the
+more precise internal provider classes needed for future automation and auth
+features.
 
 ## Initial Migration Targets
 
@@ -274,7 +282,7 @@ A future authenticated-install module entry could look like:
 
 That means we do not need a separate conceptual system later. Provider-backed
 requirements and authenticated-install requirements can share the same module
-contract.
+contract, and both can present publicly as `ENABLED (AUTH)` when appropriate.
 
 ## Error Handling
 
@@ -344,8 +352,9 @@ Mitigation:
 Implement the shared `get_provider_requirements(server)` module hook now,
 backed by shared validation and messaging helpers.
 
-Migrate the first provider-backed servers onto that hook before expanding into
-full secret-management or authenticated SteamCMD profile support.
+Migrate the first provider-backed servers onto that hook and classify them
+publicly as `ENABLED (AUTH)` before expanding into full secret-management or
+authenticated SteamCMD profile support.
 
 This is the smallest clean step that:
 
@@ -353,4 +362,3 @@ This is the smallest clean step that:
 - improves accuracy today
 - avoids more one-off module logic
 - and gives the future SteamCMD auth work a compatible place to plug in
-
