@@ -55,6 +55,22 @@ Where applicable, it should also integrate cleanly with:
 
 The goal is that a user can create and operate a new server type using the same AlphaGSM mental model they already use for Minecraft, TF2, or CS:GO.
 
+## Support-State Contract
+
+When lifecycle work changes a server's practical support status, keep the repo's
+public support buckets semantically clean:
+
+- `PASSED` — integration is green and the server self-provisions on the
+  supported path
+- `ENABLED (AUTH)` — the module is supported, but setup/start still needs
+  provider-managed authentication, credentials, tokens, licenses, or
+  provisioning
+- `ENABLED (BYO)` — the module is supported, but still needs owned assets,
+  exported client files, direct archive URLs, or local services
+
+Do not flatten provider-backed prerequisites into generic BYO wording when the
+shared auth/provider contract is a better fit.
+
 ## Game Module Function Contract
 
 Every canonical top-level game module is a package-backed Python module under
@@ -81,6 +97,7 @@ should now be directories, with the main implementation in `main.py`.
 | `checkvalue` | `(server, key, *values, **kwargs)` | `set` | Validate and convert a value before it is stored.  Return the sanitised value, return the string `"DELETE"` to request deletion, or raise `ServerError` with a clear message for invalid input.  Delegate backup-related keys to `backup_utils.checkdatavalue`. |
 | `get_runtime_requirements` | `(server)` | runtime selection | Return runtime metadata for Docker-capable modules.  Preferred families today are `"java"`, `"quake-linux"`, `"service-console"`, `"simple-tcp"`, `"steamcmd-linux"`, and `"wine-proton"`.  Use `{"engine": "docker", "family": "<family>"}` plus fields like `java`, `env`, `mounts`, and `ports`.  Legacy aliases `"minecraft"` and `"ts3"` are still accepted and normalized.  Every maintained game module must define this wrapper in module scope, usually by calling shared builders through `import server.runtime as runtime_module`. |
 | `get_container_spec` | `(server)` | Docker launch | Return the Docker launch spec: container working dir, command, stdin/tty settings, env, mounts, and published ports.  Keep this wrapper in module scope even when it delegates to shared runtime helpers. |
+| `get_provider_requirements` | `(server)` | support-state / prerequisite validation | Return declarative provider-backed prerequisite metadata when the module depends on provider-managed credentials, tokens, licenses, or provisioning. Use shared categories such as `provider-auth`, `provider-token`, `provider-license`, and `provider-provisioning`. Validate them with `utils.gamemodules.common.validate_provider_requirements(...)` at the appropriate lifecycle phase. |
 
 ### Optional functions — add these where the server supports them
 
@@ -133,6 +150,8 @@ Before marking a new game module complete, verify all of these:
 - [ ] `get_query_address` is defined if the query port differs from the game port or the server uses a non-A2S protocol
 - [ ] `import server.runtime as runtime_module` appears in modules that use shared Docker builders
 - [ ] `get_runtime_requirements` and `get_container_spec` are available in module scope and describe the correct image family, env, mounts, and ports through explicit wrappers
+- [ ] provider-backed prerequisites use `get_provider_requirements(server)` plus shared validation instead of bespoke one-off auth/licensing errors
+- [ ] public support-state wording matches the real prerequisite class: `ENABLED (AUTH)` for provider-managed requirements, `ENABLED (BYO)` for owned assets/exports/URLs/services
 - [ ] runtime/container claim metadata can be derived during `setup` before `install` finishes; do not make `get_container_spec` depend on already-installed files unless the setup-time path has a safe fallback
 - [ ] `update` and `restart` are wired up in `commands` / `command_functions` if offered
 - [ ] at least one unit test exists under `tests/unit_tests/` for the module or its shared helper surface
@@ -173,6 +192,9 @@ Do not treat a lifecycle task as complete just because the server now starts.
 - Treat `docs/TEST_STATUS.md` as the source of truth for enablement state, then
   regenerate `docs/game-server-support.md` from it in the same slice instead of
   hand-editing the generated tracker.
+- If the only remaining prerequisite is provider-managed auth/provisioning,
+  prefer `ENABLED (AUTH)` over a vague BYO note, and move the row into
+  `enabled_auth_servers.conf`.
 - Only sync `disabled_servers.conf` when the server is genuinely hard-disabled;
   if the server is merely waiting on validation or still under investigation,
   keep it in `SKIPPED` with an evidence-backed note instead of bouncing it
@@ -222,6 +244,19 @@ metadata as part of the lifecycle contract too:
 - if the module or its launch script invokes `xvfb-run`, declare the shared
   Linux `xvfb-run` dependency so AlphaGSM can recommend Docker instead of
   attempting a broken local launch
+
+## Future SteamCMD Auth Note
+
+Steam-auth-gated installs should grow into this same provider-backed contract.
+
+- Treat the future SteamCMD auth-profile flow as an upcoming provider-backed
+  prerequisite, not as an unrelated exception path.
+- When auditing auth-gated servers now, note whether the likely blocker is:
+  - anonymous SteamCMD not being sufficient
+  - a future authenticated SteamCMD profile
+  - true retail/base-game assets that still would not arrive even with login
+- Prefer evidence-backed notes that make that future migration straightforward
+  once the shared SteamCMD auth profile work lands.
 
 When running local integration or smoke verification, prefer the repository's
 shared scratch root under

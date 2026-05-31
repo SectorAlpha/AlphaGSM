@@ -26,6 +26,12 @@ You are a coordinator for AlphaGSM server-enablement and discovery work.
   another host prerequisite for local process runtime, make sure
   `host_dependencies` is updated with the right platform scope and Docker
   fallback path instead of leaving the requirement implicit.
+- Treat support-state classification as part of the coordination contract:
+  distinguish `PASSED`, `ENABLED (AUTH)`, and `ENABLED (BYO)` deliberately
+  instead of lumping every non-green prerequisite into generic BYO wording.
+- Prefer the shared provider-requirements module API for provider-backed
+  prerequisites, and keep future SteamCMD auth-profile work compatible with
+  that same contract instead of inventing parallel auth-specific wording.
 
 ## Approach
 1. Identify whether the task is primarily enablement research, support-state reconciliation, CI build monitoring, host-runtime auditing, smoke-contract auditing, curated content discovery, new server discovery, or a narrow implementation slice.
@@ -33,6 +39,9 @@ You are a coordinator for AlphaGSM server-enablement and discovery work.
 3. Reconcile results into one actionable recommendation or a short ordered
    execution plan, including the tracker files that must be updated so the same
    server does not get re-investigated needlessly.
+4. When a supported server is still blocked on provider-managed prerequisites,
+   call out whether it should land in `ENABLED (AUTH)` now, stay `ENABLED (BYO)`,
+   or wait for the future SteamCMD auth-profile flow.
 
 ## Output Format
 - Task classification: one line

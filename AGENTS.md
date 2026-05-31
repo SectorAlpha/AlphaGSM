@@ -235,6 +235,12 @@ explicit module-scope wrappers.
 Aim to keep as many server modules **enabled** as possible.
 
 - A server is considered enabled only when its integration test passes.
+- Use the public support states consistently:
+  - `PASSED` for fully validated self-provisioning servers
+  - `ENABLED (AUTH)` for supported servers that still require provider-managed
+    authentication, credentials, tokens, licenses, or provisioning
+  - `ENABLED (BYO)` for supported servers that still require operator-supplied
+    owned assets, exported files, direct archive URLs, or local services
 - A server enablement task is **not done** until the repo trackers are updated
   in the same change: mark the server passed/enabled in `docs/TEST_STATUS.md`,
   update the matching server guide status note when needed, and clear any stale
@@ -263,6 +269,33 @@ the repository state so the same task is not rediscovered later.
 - If a server remains blocked, leave an evidence-backed note describing the
   current blocker so the next agent does not restart the investigation from
   scratch.
+
+## Provider Requirement Contract
+
+Provider-backed prerequisites should use the shared module API instead of ad
+hoc per-module wording.
+
+- Modules that need provider-managed credentials, tokens, licenses, or
+  provisioning should declare `get_provider_requirements(server)` and validate
+  them through `utils.gamemodules.common.validate_provider_requirements(...)`.
+- Prefer shared provider categories such as:
+  - `provider-auth`
+  - `provider-token`
+  - `provider-license`
+  - `provider-provisioning`
+- If a module supports both a provider-auth path and a staged override path,
+  keep the shared provider metadata for the auth path and add the smallest
+  possible module-specific branch for the override case instead of abandoning
+  the shared API.
+- When reclassifying a supported server, move it between `enabled_auth_servers.conf`
+  and `enabled_byo_servers.conf` deliberately instead of flattening everything
+  into generic BYO wording.
+- Keep the public docs aligned with the true prerequisite class:
+  `ENABLED (AUTH)` for provider-backed requirements, `ENABLED (BYO)` for owned
+  assets, exports, URLs, or local services.
+- Treat the future SteamCMD auth-profile flow as part of this same contract:
+  Steam-auth-gated installs should eventually map through the shared provider
+  requirement model rather than inventing a parallel secret/config system.
 
 ## Integration Test Timeout Policy
 
