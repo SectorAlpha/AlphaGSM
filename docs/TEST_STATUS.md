@@ -12,8 +12,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 126      |
-| ENABLED (BYO) | 30 |
-| DISABLED | 53      |
+| ENABLED (BYO) | 31 |
+| DISABLED | 52      |
 | SKIPPED  | 28      |
 
 ## Status Key
@@ -159,7 +159,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (BYO) (30)
+## ENABLED (BYO) (31)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, authenticated install access, config/tokens, exported client
@@ -169,6 +169,7 @@ files, external services, or direct archive URLs.
 |------|------|
 | aloftserver | owned Aloft server tree |
 | ahlserver | owned Action Half-Life mod content tree |
+| atsserver | owned exported client packages/settings |
 | bbserver | owned BrainBread mod content tree |
 | cod2server | owned localized base-game assets |
 | cod4server | owned base-game assets |
@@ -198,7 +199,7 @@ files, external services, or direct archive URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (53)
+## DISABLED (52)
 
 | Test | Reason |
 |------|--------|
@@ -216,7 +217,6 @@ files, external services, or direct archive URLs.
 | arma3headlessserver | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3server | SteamCMD app 233780 requires authentication (No subscription) |
 | arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
-| atsserver | SteamCMD app 2239530 installs no Linux-compatible dedicated server binary (americantruck_server not present) |
 | atlasserver | Docker-first validation 2026-05-29: the checked-in lane now seeds install-local Steam bootstrap state for the `steamcmd-linux` runtime, and a focused rerun under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` proved the remaining blocker is no longer missing compatibility libraries. SteamCMD was actively populating `steamapps/downloading/1006030` (about `25G`) and the staged `ShooterGame/Binaries/Linux/ShooterGameServer` reproduced an immediate `Signal 11 caught.` crash inside the validated Docker image; `ldd` resolved the legacy OpenSSL/protobuf/Steam dependencies cleanly, so the exact remaining blocker is an early ATLAS binary segfault before A2S `info` / `query` can come up. |
 | battlebitserver | SteamCMD app 689410 installs no Linux-compatible dedicated server binary (executable file not found) |
 | bf1942server | Download domain bf1942.lightcubed.com is dead |

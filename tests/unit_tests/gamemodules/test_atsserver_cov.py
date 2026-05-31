@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.atsserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.atsserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -109,6 +110,10 @@ def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "bin/linux_x64/americantruck_server"
+    config_dir = tmp_path / ".local/share/American Truck Simulator"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    (config_dir / "server_packages.sii").write_text("")
+    (config_dir / "server_packages.dat").write_text("")
     exe_path = tmp_path / "bin/linux_x64/americantruck_server"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
@@ -128,10 +133,30 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_get_start_command_missing_exported_packages(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "bin/linux_x64/americantruck_server"
+    exe_path = tmp_path / "bin/linux_x64/americantruck_server"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+
+    with pytest.raises(ServerError) as excinfo:
+        mod.get_start_command(server)
+
+    message = str(excinfo.value)
+    assert "ENABLED (BYO)" in message
+    assert "server_packages.sii" in message
+    assert "server_packages.dat" in message
+    assert "docs/servers/atsserver.md" in message
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -203,4 +228,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

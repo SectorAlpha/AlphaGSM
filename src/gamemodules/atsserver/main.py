@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -24,6 +23,43 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+
+
+def _server_home_dir(server):
+    """Return the ATS user/home directory expected by the dedicated server."""
+
+    configdir = server.data.get("configdir", ".local/share/American Truck Simulator")
+    return os.path.join(server.data["dir"], configdir)
+
+
+def _required_export_paths(server):
+    """Return the exported ATS payload files required for startup."""
+
+    home_dir = _server_home_dir(server)
+    return (
+        os.path.join(home_dir, "server_packages.sii"),
+        os.path.join(home_dir, "server_packages.dat"),
+    )
+
+
+def _ensure_exported_server_packages(server):
+    """Fail fast when the exported ATS server package files are missing."""
+
+    missing_paths = [path for path in _required_export_paths(server) if not os.path.isfile(path)]
+    if not missing_paths:
+        return
+
+    home_dir = _server_home_dir(server)
+    gamemodule_common.raise_byo_requirement(
+        "atsserver",
+        "exported ATS server packages/settings from an owned client install",
+        actions=(
+            "Run export_server_packages from an owned American Truck Simulator client.",
+            f"Copy server_packages.sii and server_packages.dat into {home_dir}.",
+            "Retry start once the exported files are staged.",
+        ),
+        docs_slug="atsserver",
+    )
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="bin/linux_x64/americantruck_server"):
@@ -86,6 +122,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    _ensure_exported_server_packages(server)
     return (
         [
             "./" + server.data["exe_name"],
@@ -103,7 +140,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop ATS by interrupting the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

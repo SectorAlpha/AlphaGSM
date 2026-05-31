@@ -1,7 +1,8 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for atsserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): ATS is supported once exported server_packages.sii/server_packages.dat
+# from an owned client install are staged under
+# <install_dir>/.local/share/American Truck Simulator/.
+echo "Smoke test for atsserver requires exported ATS server_packages.sii/server_packages.dat - see docs/servers/atsserver.md"
 exit 0
 
 set -Eeuo pipefail

@@ -25,7 +25,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="ATS (app 2239530) installs no Linux-compatible server binary (americantruck_server not present); module disabled")
+@pytest.mark.skip(
+    reason="ENABLED (BYO): ATS dedicated server still needs exported client server_packages.sii/server_packages.dat staged under <install_dir>/.local/share/American Truck Simulator/ before start"
+)
 def test_atsserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

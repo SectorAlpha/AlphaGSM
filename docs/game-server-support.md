@@ -153,6 +153,7 @@ Notes:
 
 - [x] aloftserver
 - [x] ahlserver
+- [x] atsserver
 - [x] bbserver
 - [x] cod2server
 - [x] cod4server
@@ -198,7 +199,6 @@ Notes:
 - [ ] arma3headlessserver
 - [ ] arma3server
 - [ ] arma3wastelandserver
-- [ ] atsserver
 - [ ] atlasserver
 - [ ] battlebitserver
 - [ ] bf1942server
