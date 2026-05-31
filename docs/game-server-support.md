@@ -63,6 +63,7 @@ Notes:
 - [x] hldmsserver
 - [x] heatserver
 - [x] hurtworldserver
+- [x] hzserver
 - [x] icarusserver
 - [x] jc2server
 - [x] jc3server
@@ -225,7 +226,6 @@ Notes:
 - [ ] dayzarma2epochserver
 - [ ] dayzserver
 - [ ] foundryserver
-- [ ] hzserver
 - [ ] iosserver
 - [ ] jk2server
 - [ ] kfserver

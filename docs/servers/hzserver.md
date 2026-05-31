@@ -1,12 +1,17 @@
-# Humanitz
+# HumanitZ
 
 This guide covers the `hzserver` module in AlphaGSM.
 
-## Requirements
+## Support Status
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+- Status: `PASSED`
+- Validated on Linux through the shared Docker `wine-proton` runtime
+- Anonymous SteamCMD app id: `2728330`
+
+AlphaGSM now supports HumanitZ on Linux by installing the Windows dedicated
+payload through SteamCMD and running the real Win64 server binary under the
+shared Wine/Proton runtime. The validated health surface is generic `udp` on
+the managed `queryport`.
 
 ## Quick Start
 
@@ -31,6 +36,8 @@ alphagsm myhzserver start
 Check it:
 
 ```bash
+alphagsm myhzserver query
+alphagsm myhzserver info --json
 alphagsm myhzserver status
 ```
 
@@ -44,13 +51,34 @@ alphagsm myhzserver stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port, default `7777`
+- the query port, default `27016`
 - the install directory
-- SteamCMD downloads the server files
+- anonymous SteamCMD download for app `2728330`
+
+On Linux, AlphaGSM uses the shared `wine-proton` Docker runtime for the
+supported path.
+
+## Runtime Contract
+
+- Executable: `HumanitZServer/Binaries/Win64/HumanitZServer-Win64-Shipping.exe`
+- Working directory: `<install_dir>`
+- Config file: `<install_dir>/HumanitZServer/GameServerSettings.ini`
+- Reference config: `<install_dir>/HumanitZServer/REF_GameServerSettings.ini`
+- Query/info surface: generic `udp` on `queryport`
+
+Before start, AlphaGSM stages `GameServerSettings.ini` from the shipped
+reference config when needed and syncs:
+
+- `servername`
+- `maxplayers`
 
 ## Useful Commands
 
 ```bash
+alphagsm myhzserver set servername "My HumanitZ Server"
+alphagsm myhzserver set maxplayers 24
+alphagsm myhzserver set queryport 27020
 alphagsm myhzserver update
 alphagsm myhzserver backup
 ```
@@ -58,24 +86,5 @@ alphagsm myhzserver backup
 ## Notes
 
 - Module name: `hzserver`
-- Default port: 27016
-
-## Developer Notes
-
-### Run File
-
-- **Executable**: `HumanitZServer.sh`
-- **Location**: `<install_dir>/HumanitZServer.sh`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `2728330`
-
-### Server Configuration
-
-- **Config file**: See game module source
-- **Template**: See [server-templates/hzserver/](../server-templates/hzserver/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- SteamCMD app id: `2728330`
+- Supported Linux path: Docker `wine-proton`

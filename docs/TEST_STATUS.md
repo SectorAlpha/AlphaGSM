@@ -11,7 +11,7 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 132      |
+| PASSED   | 133      |
 | ENABLED (AUTH) | 4 |
 | ENABLED (BYO) | 28 |
 | DISABLED | 46      |
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (132)
+## PASSED (133)
 
 | Test | Type |
 |------|------|
@@ -75,6 +75,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | hldmsserver | SteamCMD (Source) |
 | heatserver | Wine/Proton — PASSED 2026-05-29; a fresh SteamCMD-managed lifecycle now passes on `release_v1` after AlphaGSM bootstraps missing `Configuration/ServerSettings.cfg` on first launch, syncs `portNumber` / `steamAuthPort` / `maxPlayers` / `levelName` into the native config, reads readiness from `Logs/Console*.txt`, and proves A2S `query`, `info`, `info --json`, and clean shutdown on the managed `queryport` |
 | hurtworldserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration and smoke now prove the old missing-binary disable note was stale: anonymous SteamCMD setup for app `405100` installs the real native Linux dedicated payload, AlphaGSM prefers `Hurtworld.x86_64` while falling back to the shipped Linux executables, launches the real headless `-exec "host ...;queryport ...;maxplayers ...;servername ..."` contract inside the shared `steamcmd-linux` runtime, and validates A2S `query`, `info`, and `info --json` on the managed `queryport` |
+| hzserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh focused integration and smoke now prove the old missing-binary disable note was stale in a narrower way: anonymous SteamCMD setup for app `2728330` installs a Windows-only dedicated payload, AlphaGSM launches the real `HumanitZServer-Win64-Shipping.exe` binary inside the shared `wine-proton` runtime, mirrors `ServerName` and `MaxPlayers` into `HumanitZServer/GameServerSettings.ini` from the shipped reference config, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed `queryport` instead of the older stale Linux-binary assumption |
 | icarusserver | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh integration and smoke now both pass on the branch-local `wine-proton` runtime image once AlphaGSM treats the validated Linux contract honestly: anonymous SteamCMD setup for app `2089300` succeeds, the server stays up in the shared Docker-backed Xvfb/software-GL lane, and `query`, `info`, plus `info --json` all use the live generic `tcp` surface on the managed main port instead of the older stale log-marker and A2S assumptions |
 | jc2server | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old disabled missing-executable note was stale: anonymous SteamCMD setup for app `261140` installs the current native Linux dedicated server, AlphaGSM launches the real `Jcmp-Server` binary inside the shared `steamcmd-linux` runtime, seeds the required native `config.lua` from `default_config.lua`, stages the shipped `default_scripts/` into `scripts/`, and validates `query`, `info`, and `info --json` on JC2-MP's real generic `tcp` health surface at the managed main game port rather than the older stale CLI and A2S assumptions |
 | jc3server | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old disabled missing-executable note was stale: anonymous SteamCMD setup for app `619960` installs the current native Linux dedicated server, AlphaGSM launches the real `Server` binary inside the shared `steamcmd-linux` runtime as a non-root user with the host SteamCMD `steamclient.so` bootstrap mounted into `~/.steam/sdk64`, syncs the native `config.json` before start, and validates `query`, `info`, and `info --json` on JC3MP's real TCP health surface at `httpPort = port + 3` rather than the older stale CLI/A2S assumptions |
@@ -250,7 +251,6 @@ URLs.
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
 | foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
-| hzserver | SteamCMD app 2728330 installs no Linux-compatible dedicated server binary (executable file not found) |
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | jk2server | JK2 download URL returns 404 |
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |

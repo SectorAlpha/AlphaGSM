@@ -107,7 +107,7 @@
 | hldmsserver | - | active | yes | yes | - |
 | hogwarpserver | - | active | no | yes | status |
 | hurtworldserver | hw | active | no | yes | status |
-| hzserver | - | disabled | no | no | status |
+| hzserver | - | active | no | yes | status |
 | icarusserver | - | active | no | yes | status |
 | identityserver | - | active | no | yes | status |
 | insserver | - | active | yes | yes | - |

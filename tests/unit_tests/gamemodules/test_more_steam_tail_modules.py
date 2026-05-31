@@ -37,13 +37,31 @@ def test_colserver_configure_sets_defaults(tmp_path):
 
 def test_hzserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("hz")
-    exe = tmp_path / "HumanitZServer.sh"
+    exe = tmp_path / "HumanitZServer" / "Binaries" / "Win64" / "HumanitZServer-Win64-Shipping.exe"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "HumanitZServer.sh", "map": "Main", "port": 7777, "queryport": "27016"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "HumanitZServer/Binaries/Win64/HumanitZServer-Win64-Shipping.exe",
+            "port": 7777,
+            "queryport": "27016",
+            "servername": "AlphaGSM HZ",
+        }
+    )
 
-    cmd, cwd = hzserver.get_start_command(server)
+    from unittest.mock import patch
 
-    assert cmd == ["./HumanitZServer.sh", "Main", "-Port=7777", "-QueryPort=27016"]
+    with patch.object(hzserver, "IS_LINUX", False):
+        cmd, cwd = hzserver.get_start_command(server)
+
+    assert cmd == [
+        "HumanitZServer/Binaries/Win64/HumanitZServer-Win64-Shipping.exe",
+        "-log",
+        "-port=7777",
+        "-queryport=27016",
+        "-steamservername=AlphaGSM HZ",
+    ]
     assert cwd == server.data["dir"]
 
 
