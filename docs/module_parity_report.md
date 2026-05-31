@@ -242,7 +242,7 @@
 | warbandserver | - | active | no | yes | status |
 | wetserver | wet | active | no | yes | status |
 | wfserver | - | active | no | yes | status |
-| wreckfestserver | - | disabled | no | no | status |
+| wreckfestserver | - | active | no | yes | status |
 | wurmserver | - | active | no | yes | status |
 | xntserver | - | active | no | yes | status |
 | zmrserver | - | disabled | yes | no | - |

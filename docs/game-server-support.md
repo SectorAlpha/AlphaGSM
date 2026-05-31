@@ -139,6 +139,7 @@ Notes:
 - [x] veinserver
 - [x] vintagestoryserver
 - [x] warbandserver
+- [x] wreckfestserver
 - [x] wfserver
 - [x] wurmserver
 - [x] xntserver
@@ -242,7 +243,6 @@ Notes:
 - [ ] sfcserver
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound
-- [ ] wreckfestserver
 - [ ] zmrserver
 - [ ] zpsserver
 

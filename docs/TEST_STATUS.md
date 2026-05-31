@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 138      |
+| PASSED   | 139      |
 | ENABLED (AUTH) | 5 |
 | ENABLED (BYO) | 28 |
-| DISABLED | 42      |
+| DISABLED | 41      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (138)
+## PASSED (139)
 
 | Test | Type |
 |------|------|
@@ -151,6 +151,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | veinserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration now proves the old timeout-only disable note was stale: anonymous SteamCMD setup for app `2131400` completes on the validated native Linux lane, AlphaGSM launches `VeinServer.sh` inside the shared `steamcmd-linux` runtime as a non-root user with the host SteamCMD `steamclient.so` bootstrap mounted into `~/.steam/sdk64`, and the live health surface is generic `tcp` on the managed main game port rather than the older stale timeout-only assumption |
 | vintagestoryserver | Direct download / Docker runtime — PASSED 2026-05-30; fresh focused integration now passes once validation follows the module's existing `steamcmd-linux` Docker runtime instead of requiring host `dotnet`, and the rerun is pinned to the rebuilt branch-local `alphagsm-steamcmd-linux-runtime:test` image so `dotnet VintagestoryServer.dll --dataPath <install_dir>` resolves cleanly inside the container and AlphaGSM proves `query`, `info`, `info --json`, `status`, and `stop` on the managed generic `tcp` game port |
 | warbandserver | Direct download (Wine) — PASSED 2026-05-18; the module now uses the official `mb_warband_dedicated_1174.zip` archive directly instead of scraping the Cloudflare-blocked TaleWorlds page, syncs `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, runs the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers |
+| wreckfestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old missing-Linux-binary disabled note was stale: anonymous SteamCMD setup for app `361580` installs the real Windows dedicated payload, AlphaGSM launches the shipped `Wreckfest_x64.exe` under the shared `wine-proton` runtime, seeds `server_config.cfg` from the vendor `initial_server_config.cfg`, syncs `game_port` / `query_port` / `steam_port` plus managed server identity settings, and validates `query`, `info`, and `info --json` on the current generic `tcp` health surface at the managed main game port instead of the older fake native-Linux / A2S contract |
 | wfserver | SteamCMD |
 | wurmserver | SteamCMD |
 | xntserver | Direct download / Docker runtime — PASSED 2026-05-30; fresh focused integration plus smoke now both pass on the shared `quake-linux` runtime once AlphaGSM launches Xonotic through the upstream `server/server_linux.sh` dedicated wrapper, writes the managed `server.cfg` into the install-root `data/` path the engine actually reads, and spaces the Quake `query`, `info`, and `info --json` checks around DarkPlaces' rate-limit window |
@@ -224,7 +225,7 @@ URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (44)
+## DISABLED (41)
 
 | Test | Reason |
 |------|--------|
@@ -267,7 +268,6 @@ URLs.
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| wreckfestserver | SteamCMD app 361580 installs no Linux-compatible dedicated server binary (WreckfestServer not present) |
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
