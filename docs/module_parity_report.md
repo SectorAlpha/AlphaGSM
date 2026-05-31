@@ -192,7 +192,7 @@
 | sbotsserver | sbots | active | no | yes | status |
 | scpslserver | scpslsmserver | active | no | yes | status |
 | scumserver | - | disabled | no | no | status |
-| seserver | - | disabled | no | no | status |
+| seserver | - | active | no | yes | status |
 | sevendaystodie | sdtdserver | active | no | yes | status |
 | sfcserver | - | disabled | yes | no | - |
 | silicaserver | - | active | no | yes | status |

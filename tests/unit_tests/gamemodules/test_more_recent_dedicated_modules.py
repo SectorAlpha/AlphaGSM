@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import gamemodules.abfserver as abfserver
 import gamemodules.seserver as seserver
 import gamemodules.vrserver as vrserver
@@ -52,14 +54,30 @@ def test_vrserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_seserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("se")
-    exe = tmp_path / "DedicatedServer64"
+    exe = tmp_path / "DedicatedServer64" / "SpaceEngineersDedicated.exe"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "DedicatedServer64", "world": "se", "port": 27015})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "DedicatedServer64/SpaceEngineersDedicated.exe",
+            "port": 27015,
+        }
+    )
 
-    cmd, cwd = seserver.get_start_command(server)
+    with patch.object(seserver, "IS_LINUX", False):
+        cmd, cwd = seserver.get_start_command(server)
 
-    assert cmd == ["./DedicatedServer64", "-console", "-path", str(tmp_path) + "/", "-world", "se", "-port", "27015"]
-    assert cwd == server.data["dir"]
+    assert cmd == [
+        "SpaceEngineersDedicated.exe",
+        "-console",
+        "-path",
+        str(tmp_path),
+        "-port",
+        "27015",
+        "-start",
+    ]
+    assert cwd == str(tmp_path / "DedicatedServer64")
 
 
 def test_recent_modules_update_downloads_and_optionally_restart(monkeypatch):
@@ -74,14 +92,16 @@ def test_recent_modules_update_downloads_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         abfserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, **kwargs: calls.append(
+            (path, app_id, anon, validate, kwargs)
+        ),
     )
 
     abfserver.update(abf, validate=True, restart=True)
     vrserver.update(vr, validate=False, restart=False)
     seserver.update(se, validate=False, restart=False)
 
-    assert ("/srv/abf/", 2857200, True, True) in calls
-    assert ("/srv/vr/", 1829350, True, False) in calls
-    assert ("/srv/se/", 298740, True, False) in calls
+    assert ("/srv/abf/", 2857200, True, True, {}) in calls
+    assert ("/srv/vr/", 1829350, True, False, {}) in calls
+    assert ("/srv/se/", 298740, True, False, {"force_windows": True}) in calls
     assert abf.start_calls == 1
