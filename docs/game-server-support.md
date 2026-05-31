@@ -102,6 +102,7 @@ Notes:
 - [x] qwserver
 - [x] pvkiiserver
 - [x] pvrserver
+- [x] vrserver
 - [x] ricochetserver
 - [x] rimworldtogetherserver
 - [x] rust
@@ -241,7 +242,6 @@ Notes:
 - [ ] sfcserver
 - [ ] skyrimtogetherrebornserver
 - [ ] starbound
-- [ ] vrserver
 - [ ] wreckfestserver
 - [ ] zmrserver
 - [ ] zpsserver

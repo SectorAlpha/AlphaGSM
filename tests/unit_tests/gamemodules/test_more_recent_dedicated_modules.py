@@ -42,13 +42,18 @@ def test_abfserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_vrserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("vr")
-    exe = tmp_path / "VRisingServer"
+    exe = tmp_path / "VRisingServer.exe"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "VRisingServer", "port": 9876, "queryport": "27016"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "VRisingServer.exe", "port": 9876, "queryport": "27016"})
 
-    cmd, cwd = vrserver.get_start_command(server)
+    with patch.object(
+        vrserver.proton,
+        "wrap_command",
+        side_effect=lambda command, **_kwargs: command,
+    ):
+        cmd, cwd = vrserver.get_start_command(server)
 
-    assert cmd == ["./VRisingServer", "-persistentDataPath", str(tmp_path / "save-data"), "-serverPort", "9876", "-queryPort", "27016"]
+    assert cmd == ["VRisingServer.exe", "-persistentDataPath", str(tmp_path / "save-data"), "-serverPort", "9876", "-queryPort", "27016"]
     assert cwd == server.data["dir"]
 
 

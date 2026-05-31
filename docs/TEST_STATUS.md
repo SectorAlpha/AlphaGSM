@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (136)
+## PASSED (137)
 
 | Test | Type |
 |------|------|
@@ -114,6 +114,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | qwserver | Direct download — PASSED 2026-05-18; setup now stages the public nQuake shareware, KTX runtime, configs, and core maps needed for anonymous MVDSV installs, launches with `-game ktx`, and query/info use the dedicated QuakeWorld `status` protocol |
 | pvkiiserver | SteamCMD (Source) |
 | pvrserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image, and AlphaGSM `query`, `info`, and `info --json` correctly use Pavlov VR's helper UDP status port (`port + 400`) instead of the older stale A2S expectation |
+| vrserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh smoke and focused integration now both prove the old missing-binary disabled note was stale: anonymous SteamCMD setup for app `1829350` installs the real Windows dedicated payload, AlphaGSM stages `Settings/ServerHostSettings.json` from the managed template, launches `VRisingServer.exe` under the shared Wine/Proton runtime with `-persistentDataPath`, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed `queryport` |
 | ricochetserver | SteamCMD (GoldSrc) |
 | rimworldtogetherserver | Direct download |
 | rust | SteamCMD |
@@ -220,7 +221,7 @@ URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (45)
+## DISABLED (44)
 
 | Test | Reason |
 |------|--------|
@@ -266,7 +267,6 @@ URLs.
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
 | skyrimtogetherrebornserver | TiltedEvolution has no GitHub release assets |
 | starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
-| vrserver | SteamCMD app 1829350 installs no Linux-compatible dedicated server binary (executable file not found) |
 | wreckfestserver | SteamCMD app 361580 installs no Linux-compatible dedicated server binary (WreckfestServer not present) |
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |

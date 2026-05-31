@@ -237,7 +237,7 @@
 | valheim | vhserver | active | no | yes | status |
 | veinserver | - | active | no | yes | status |
 | vintagestoryserver | vintsserver | active | no | yes | status |
-| vrserver | - | disabled | no | no | status |
+| vrserver | - | active | no | yes | status |
 | vsserver | - | disabled | yes | no | - |
 | warbandserver | - | active | no | yes | status |
 | wetserver | wet | active | no | yes | status |

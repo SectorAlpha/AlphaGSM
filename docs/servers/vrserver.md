@@ -2,11 +2,16 @@
 
 This guide covers the `vrserver` module in AlphaGSM.
 
-## Requirements
+## Support Status
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+- Status: `PASSED`
+- Validated on Linux through the shared Docker `wine-proton` runtime
+- Anonymous SteamCMD app id: `1829350`
+
+AlphaGSM now supports V Rising on Linux by installing the Windows dedicated
+payload through anonymous SteamCMD and running the real server binary under the
+shared Wine/Proton runtime. The validated health surface is generic `udp` on
+the managed `queryport`.
 
 ## Quick Start
 
@@ -31,6 +36,8 @@ alphagsm myvrserver start
 Check it:
 
 ```bash
+alphagsm myvrserver query
+alphagsm myvrserver info --json
 alphagsm myvrserver status
 ```
 
@@ -44,13 +51,42 @@ alphagsm myvrserver stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port, default `9876`
+- the query port, default `9877`
 - the install directory
-- SteamCMD downloads the server files
+- anonymous SteamCMD download for app `1829350`
+
+On Linux, AlphaGSM uses the shared `wine-proton` Docker runtime for the
+supported path.
+
+## Runtime Contract
+
+- Executable: `VRisingServer.exe`
+- Working directory: `<install_dir>`
+- Persistent data path: `<install_dir>/save-data`
+- Managed host settings: `<install_dir>/Settings/ServerHostSettings.json`
+- Query/info surface: generic `udp` on `queryport`
+
+Before start, AlphaGSM stages `ServerHostSettings.json` from the checked-in
+template and syncs:
+
+- `servername`
+- `port`
+- `queryport`
+- `maxplayers`
+
+The validated launch contract is:
+
+```text
+VRisingServer.exe -persistentDataPath <install_dir>/save-data -serverPort <port> -queryPort <queryport>
+```
 
 ## Useful Commands
 
 ```bash
+alphagsm myvrserver set servername "My V Rising Server"
+alphagsm myvrserver set maxplayers 50
+alphagsm myvrserver set queryport 9878
 alphagsm myvrserver update
 alphagsm myvrserver backup
 ```
@@ -58,24 +94,5 @@ alphagsm myvrserver backup
 ## Notes
 
 - Module name: `vrserver`
-- Default port: 27016
-
-## Developer Notes
-
-### Run File
-
-- **Executable**: `VRisingServer`
-- **Location**: `<install_dir>/VRisingServer`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `1829350`
-
-### Server Configuration
-
-- **Config file**: See game module source
-- **Template**: See [server-templates/vrserver/](../server-templates/vrserver/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- SteamCMD app id: `1829350`
+- Supported Linux path: Docker `wine-proton`
