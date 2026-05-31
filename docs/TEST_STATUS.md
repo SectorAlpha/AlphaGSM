@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (135)
+## PASSED (136)
 
 | Test | Type |
 |------|------|
@@ -58,6 +58,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | cryofallserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration and smoke now prove the old missing-binary disable note was stale: anonymous SteamCMD setup for app `1061710` installs a real native `.NET 6` dedicated server payload, AlphaGSM stages `Data/SettingsServer.xml` from a managed template, launches `dotnet Binaries/Server/CryoFall_Server.dll loadOrNew` inside the shared `steamcmd-linux` runtime, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | dayofdragonsserver | SteamCMD |
 | darkandlightserver | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM treats the validated Linux contract honestly: Dark and Light answers `query`, `info`, and `info --json` on the managed main game port as generic `udp`, stop flows through the shared runtime layer, and the Docker-backed Xvfb/software-GL lane no longer depends on a live host `screen` session or the older stale `queryport` A2S assumption |
+| deadpolyserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh focused integration now proves the old missing-binary disable note was stale in a narrower way: anonymous SteamCMD setup for app `2208380` installs the real Windows dedicated payload, AlphaGSM stages `DeadPoly/Saved/Config` from the shipped `1 RENAME Config` tree, launches `DeadPolyServer.exe -log -nosteam` under the shared Wine/Proton runtime, and validates `query`, `info`, and `info --json` on the current generic `tcp` health surface at the managed `queryport` |
 | dmcserver | SteamCMD (GoldSrc) |
 | dodserver | SteamCMD (GoldSrc) |
 | dodsserver | SteamCMD (Source) |
@@ -219,7 +220,7 @@ URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (46)
+## DISABLED (45)
 
 | Test | Reason |
 |------|--------|
@@ -247,7 +248,6 @@ URLs.
 | conanexiles | SteamCMD app 443030 installs no Linux-compatible dedicated server binary (ConanSandboxServer not present) |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | dabserver | Dedicated server binary segfaults on startup |
-| deadpolyserver | SteamCMD app 2208380 installs no Linux-compatible dedicated server binary (executable file not found) |
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |

@@ -46,6 +46,7 @@ Notes:
 - [x] cryofallserver
 - [x] dayofdragonsserver
 - [x] darkandlightserver
+- [x] deadpolyserver
 - [x] dmcserver
 - [x] dodserver
 - [x] dodsserver
@@ -222,7 +223,6 @@ Notes:
 - [ ] conanexiles
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver
-- [ ] deadpolyserver
 - [ ] deadmatterserver
 - [ ] dayzarma2epochserver
 - [ ] dayzserver

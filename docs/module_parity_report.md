@@ -75,7 +75,7 @@
 | dayzarma2epochserver | - | disabled | no | no | status |
 | dayzserver | - | disabled | no | no | status |
 | deadmatterserver | - | disabled | no | no | status |
-| deadpolyserver | - | disabled | no | no | status |
+| deadpolyserver | - | active | no | yes | status |
 | dmcserver | - | active | yes | yes | - |
 | dodserver | - | active | yes | yes | - |
 | dodsserver | - | active | yes | yes | - |

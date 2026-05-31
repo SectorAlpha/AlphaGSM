@@ -2,11 +2,16 @@
 
 This guide covers the `deadpolyserver` module in AlphaGSM.
 
-## Requirements
+## Support Status
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+- Status: `PASSED`
+- Validated on Linux through the shared Docker `wine-proton` runtime
+- Anonymous SteamCMD app id: `2208380`
+
+AlphaGSM now supports DeadPoly on Linux by installing the Windows dedicated
+payload through anonymous SteamCMD and running the real server binary under the
+shared Wine/Proton runtime. The validated health surface is generic `tcp` on
+the managed `queryport`.
 
 ## Quick Start
 
@@ -31,6 +36,8 @@ alphagsm mydeadpoly start
 Check it:
 
 ```bash
+alphagsm mydeadpoly query
+alphagsm mydeadpoly info --json
 alphagsm mydeadpoly status
 ```
 
@@ -44,13 +51,41 @@ alphagsm mydeadpoly stop
 
 Setup configures:
 
-- the game port (default 7779)
+- the game port, default `7777`
+- the query port, default `7778`
 - the install directory
-- SteamCMD downloads the server files
+- anonymous SteamCMD download for app `2208380`
+
+On Linux, AlphaGSM uses the shared `wine-proton` Docker runtime for the
+supported path.
+
+## Runtime Contract
+
+- Executable: `DeadPolyServer.exe`
+- Fallback executable: `DeadPoly/Binaries/Win64/DeadPolyServer.exe`
+- Working directory: `<install_dir>`
+- Config seed: `<install_dir>/DeadPoly/Saved/1 RENAME Config`
+- Managed config: `<install_dir>/DeadPoly/Saved/Config/WindowsServer/Game.ini`
+- Query/info surface: generic `tcp` on `queryport`
+
+Before start, AlphaGSM stages the shipped `1 RENAME Config` tree into
+`DeadPoly/Saved/Config` when needed and syncs:
+
+- `servername`
+- `maxplayers`
+
+The validated launch contract is:
+
+```text
+DeadPolyServer.exe -log -nosteam -port=<port> -queryport=<queryport> -maxplayers=<maxplayers>
+```
 
 ## Useful Commands
 
 ```bash
+alphagsm mydeadpoly set servername "My DeadPoly Server"
+alphagsm mydeadpoly set maxplayers 32
+alphagsm mydeadpoly set queryport 27020
 alphagsm mydeadpoly update
 alphagsm mydeadpoly backup
 ```
@@ -58,25 +93,5 @@ alphagsm mydeadpoly backup
 ## Notes
 
 - Module name: `deadpolyserver`
-- Default port: 7779
-
-## Developer Notes
-
-### Run File
-
-- **Executable**: `DeadPolyServer.sh`
-- **Location**: `<install_dir>/DeadPolyServer.sh`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `2208380`
-
-### Server Configuration
-
-- **Config file**: See game module source
-- **Max players**: `100`
-- **Template**: See [server-templates/deadpolyserver/](../server-templates/deadpolyserver/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- SteamCMD app id: `2208380`
+- Supported Linux path: Docker `wine-proton`
