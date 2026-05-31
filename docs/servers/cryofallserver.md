@@ -2,11 +2,15 @@
 
 This guide covers the `cryofallserver` module in AlphaGSM.
 
-## Requirements
+## Support Status
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+- Status: `PASSED`
+- Validated on Linux through the shared Docker `steamcmd-linux` runtime
+- Anonymous SteamCMD app id: `1061710`
+
+AlphaGSM now supports CryoFall on Linux with the native `.NET 6` dedicated
+server payload delivered by anonymous SteamCMD. The validated health surface is
+generic `udp` on the managed main game port.
 
 ## Quick Start
 
@@ -31,6 +35,8 @@ alphagsm mycryofall start
 Check it:
 
 ```bash
+alphagsm mycryofall query
+alphagsm mycryofall info --json
 alphagsm mycryofall status
 ```
 
@@ -44,13 +50,38 @@ alphagsm mycryofall stop
 
 Setup configures:
 
-- the game port (default 49001)
+- the game port, default `6000`
 - the install directory
-- SteamCMD downloads the server files
+- anonymous SteamCMD download for app `1061710`
+
+On Linux, AlphaGSM uses the shared `steamcmd-linux` Docker runtime for the
+validated path.
+
+## Runtime Contract
+
+- Executable: `Binaries/Server/CryoFall_Server.dll`
+- Runtime: `dotnet`
+- Working directory: `<install_dir>`
+- Config file: `<install_dir>/Data/SettingsServer.xml`
+- Query/info surface: generic `udp` on the managed main port
+
+Before start, AlphaGSM stages and syncs:
+
+- `port`
+- `servername`
+- `maxplayers`
+
+AlphaGSM launches the dedicated server with the required world mode:
+
+```text
+dotnet Binaries/Server/CryoFall_Server.dll loadOrNew
+```
 
 ## Useful Commands
 
 ```bash
+alphagsm mycryofall set servername "My CryoFall Server"
+alphagsm mycryofall set maxplayers 32
 alphagsm mycryofall update
 alphagsm mycryofall backup
 ```
@@ -58,24 +89,5 @@ alphagsm mycryofall backup
 ## Notes
 
 - Module name: `cryofallserver`
-- Default port: 49001
-
-## Developer Notes
-
-### Run File
-
-- **Executable**: `CryoFall_Server`
-- **Location**: `<install_dir>/CryoFall_Server`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `1061710`
-
-### Server Configuration
-
-- **Config file**: See game module source
-- **Template**: See [server-templates/cryofallserver/](../server-templates/cryofallserver/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- SteamCMD app id: `1061710`
+- Supported Linux path: Docker `steamcmd-linux`

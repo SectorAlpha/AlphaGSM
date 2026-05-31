@@ -65,7 +65,7 @@
 | counterstrike2 | cs2, cs2server | active | yes | yes | - |
 | counterstrikeglobaloffensive | csgo, csgoserver | disabled | yes | no | - |
 | craftopiaserver | ctserver | active | no | yes | status |
-| cryofallserver | - | disabled | no | no | status |
+| cryofallserver | - | active | no | yes | status |
 | csczserver | - | active | yes | yes | - |
 | csserver | - | active | yes | yes | - |
 | cssserver | - | active | yes | yes | - |

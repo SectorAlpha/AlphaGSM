@@ -43,6 +43,7 @@ Notes:
 - [x] csserver
 - [x] cssserver
 - [x] craftopiaserver
+- [x] cryofallserver
 - [x] dayofdragonsserver
 - [x] darkandlightserver
 - [x] dmcserver
@@ -219,7 +220,6 @@ Notes:
 - [ ] chivalryserver
 - [ ] conanexiles
 - [ ] counterstrikeglobaloffensive
-- [ ] cryofallserver
 - [ ] dabserver
 - [ ] deadpolyserver
 - [ ] deadmatterserver
