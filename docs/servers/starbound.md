@@ -5,6 +5,7 @@ This guide covers the `starbound` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- a native Starbound server tree containing `linux64/starbound_server`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -21,6 +22,11 @@ Run setup:
 ```bash
 alphagsm mystarboun setup
 ```
+
+`starbound` is supported in `ENABLED (BYO)` mode. The current anonymous
+SteamCMD app does not ship the required Linux server binary, so before `setup`
+or `start` you should stage a native Starbound server tree containing
+`linux64/starbound_server` inside your chosen `<install_dir>/`.
 
 Start it:
 
@@ -46,7 +52,15 @@ Setup configures:
 
 - the game port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+
+Suggested flow:
+
+```bash
+alphagsm mystarboun create starbound
+alphagsm mystarboun setup -n /path/to/starbound
+# copy linux64/starbound_server and the rest of the native server tree into /path/to/starbound/
+alphagsm mystarboun start
+```
 
 ## Useful Commands
 

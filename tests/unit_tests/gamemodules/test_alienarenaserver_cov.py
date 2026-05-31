@@ -67,7 +67,18 @@ def test_install(tmp_path):
     server.data["exe_name"] = "crx-dedicated"
     server.data["Steam_AppID"] = 629540
     server.data["Steam_anonymous_login_possible"] = True
+    (tmp_path / "crx-dedicated").write_text("")
     mod.install(server)
+
+
+def test_install_without_staged_tree_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "crx-dedicated"
+    server.data["Steam_AppID"] = 629540
+    server.data["Steam_anonymous_login_possible"] = True
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): alienarenaserver"):
+        mod.install(server)
 
 
 def test_update_with_restart(tmp_path):
@@ -148,7 +159,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): alienarenaserver"):
         mod.get_start_command(server)
 
 

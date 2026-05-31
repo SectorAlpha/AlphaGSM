@@ -13,8 +13,8 @@ this pass aligned the runtime gate with that existing tracker state.
 |----------|-------|
 | PASSED   | 140      |
 | ENABLED (AUTH) | 5 |
-| ENABLED (BYO) | 34 |
-| DISABLED | 35      |
+| ENABLED (BYO) | 36 |
+| DISABLED | 33      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -188,7 +188,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (34)
+## ENABLED (BYO) (36)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -198,6 +198,7 @@ URLs.
 |------|------|
 | aloftserver | owned Aloft server tree |
 | ahlserver | owned Action Half-Life mod content tree |
+| alienarenaserver | staged native Alien Arena dedicated server tree |
 | atsserver | owned exported client packages/settings |
 | bf1942server | direct archive URL or staged Battlefield 1942 Linux dedicated server tree |
 | bbserver | owned BrainBread mod content tree |
@@ -225,20 +226,20 @@ URLs.
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
+| starbound | staged native Starbound server tree |
 | subnauticaserver | owned client installation path |
 | tsserver | owned The Specialists mod content tree |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (35)
+## DISABLED (33)
 
 | Test | Reason |
 |------|--------|
 | bsserver | Blade Symphony: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | accserver | SteamCMD app 1430110 requires authentication (No subscription) |
-| alienarenaserver | SteamCMD app 629540 reports success but installs no game files (no Linux depot) |
 | ark | SteamCMD app 376030 is 23GB; too large for automated CI testing |
 | arma2coserver | SteamCMD app 33935 requires authentication (No subscription) |
 | arma3altislifeserver | SteamCMD app 233780 requires authentication (No subscription) |
@@ -267,7 +268,6 @@ URLs.
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
 | sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
-| starbound | SteamCMD app 211820 installs no Linux-compatible dedicated server binary (linux64/starbound_server not present) |
 | zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 

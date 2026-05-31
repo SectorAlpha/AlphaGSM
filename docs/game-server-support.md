@@ -175,6 +175,7 @@ Notes:
 
 - [x] aloftserver
 - [x] ahlserver
+- [x] alienarenaserver
 - [x] atsserver
 - [x] bf1942server
 - [x] bbserver
@@ -202,6 +203,7 @@ Notes:
 - [x] mohaaserver
 - [x] sof2server
 - [x] stormworksserver
+- [x] starbound
 - [x] subnauticaserver
 - [x] tsserver
 - [x] ut3server
@@ -213,7 +215,6 @@ Notes:
 - [ ] bsserver
 - [ ] dysserver
 - [ ] accserver
-- [ ] alienarenaserver
 - [ ] ark
 - [ ] arma2coserver
 - [ ] arma3altislifeserver
@@ -242,7 +243,6 @@ Notes:
 - [ ] pcars2server
 - [ ] roserver
 - [ ] sfcserver
-- [ ] starbound
 - [ ] zmrserver
 - [ ] zpsserver
 

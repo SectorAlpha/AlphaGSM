@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.starbound', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.starbound as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -62,7 +63,20 @@ def test_install(tmp_path):
     server.data["exe_name"] = "linux64/starbound_server"
     server.data["Steam_AppID"] = 211820
     server.data["Steam_anonymous_login_possible"] = True
+    exe_path = tmp_path / "linux64/starbound_server"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
     mod.install(server)
+
+
+def test_install_without_staged_tree_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "linux64/starbound_server"
+    server.data["Steam_AppID"] = 211820
+    server.data["Steam_anonymous_login_possible"] = True
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): starbound"):
+        mod.install(server)
 
 
 def test_update_with_restart(tmp_path):
@@ -116,14 +130,14 @@ def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): starbound"):
         mod.get_start_command(server)
 
 
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -177,4 +191,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

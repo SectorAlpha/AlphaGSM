@@ -1,4 +1,7 @@
-"""Integration test for starbound."""
+"""Integration test for starbound.
+
+ENABLED (BYO): stage a native Starbound server tree before setup/start
+"""
 
 import pytest
 
@@ -25,7 +28,12 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Starbound (app 211820) installs no Linux-compatible server binary (linux64/starbound_server not present); module disabled")
+@pytest.mark.skip(
+    reason=(
+        "ENABLED (BYO): stage a native Starbound server tree containing "
+        "linux64/starbound_server in <install_dir> before setup/start"
+    )
+)
 def test_starbound_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

@@ -5,6 +5,7 @@ This guide covers the `alienarenaserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- a native Alien Arena dedicated server tree containing `crx-dedicated`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -21,6 +22,11 @@ Run setup:
 ```bash
 alphagsm myalienare setup
 ```
+
+`alienarenaserver` is supported in `ENABLED (BYO)` mode. The current anonymous
+SteamCMD app does not deliver the native server payload, so before `setup` or
+`start` you should stage a native Alien Arena dedicated server tree containing
+`crx-dedicated` inside your chosen `<install_dir>/`.
 
 Start it:
 
@@ -46,7 +52,15 @@ Setup configures:
 
 - the game port (default 27910)
 - the install directory
-- SteamCMD downloads the server files
+
+Suggested flow:
+
+```bash
+alphagsm myalienare create alienarenaserver
+alphagsm myalienare setup -n 27910 /path/to/alienarena
+# copy crx-dedicated and the rest of the native server tree into /path/to/alienarena/
+alphagsm myalienare start
+```
 
 ## Useful Commands
 

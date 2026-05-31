@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for alienarenaserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): stage a native Alien Arena dedicated server tree containing
+# crx-dedicated in <install_dir> before setup/start.
+echo "Smoke test for alienarenaserver requires ENABLED (BYO) input: stage a native Alien Arena dedicated server tree containing crx-dedicated in <install_dir> before setup/start."
 exit 0
 
 set -Eeuo pipefail

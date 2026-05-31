@@ -430,6 +430,13 @@ def install(server):
     """Download the Alien Arena server files via SteamCMD."""
 
     _base_install(server)
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "alienarenaserver",
+            "stage a native Alien Arena dedicated server tree containing crx-dedicated "
+            "in <install_dir> before setup/start",
+        )
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
@@ -458,7 +465,11 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "alienarenaserver",
+            "stage a native Alien Arena dedicated server tree containing crx-dedicated "
+            "in <install_dir> before setup/start",
+        )
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,
