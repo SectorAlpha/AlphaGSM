@@ -49,13 +49,27 @@ def test_hzserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_ohdserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("ohd")
-    exe = tmp_path / "OHDServer.sh"
+    exe = tmp_path / "HarshDoorstopServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "OHDServer.sh", "map": "FOB_Anvil", "port": 7777, "queryport": "27015"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "HarshDoorstopServer.sh",
+            "port": 7777,
+            "queryport": "27015",
+            "servername": "AlphaGSM OHD",
+        }
+    )
 
     cmd, cwd = ohdserver.get_start_command(server)
 
-    assert cmd == ["./OHDServer.sh", "FOB_Anvil", "-Port=7777", "-QueryPort=27015", "-log"]
+    assert cmd == [
+        "./HarshDoorstopServer.sh",
+        "-Port=7777",
+        "-QueryPort=27015",
+        "-SteamServerName=AlphaGSM OHD",
+        "-log",
+    ]
     assert cwd == server.data["dir"]
 
 

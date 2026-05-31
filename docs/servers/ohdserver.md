@@ -4,7 +4,7 @@ This guide covers the `ohdserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- `docker` for the validated branch-local `steamcmd-linux` runtime path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +44,8 @@ alphagsm myohdserve stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default `7777`)
+- the A2S query port (default `27015`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,20 +59,24 @@ alphagsm myohdserve backup
 ## Notes
 
 - Module name: `ohdserver`
-- Default port: 27015
+- Default port: `7777`
+- Default query port: `27015`
+- Validated Linux support path: native Linux dedicated payload on the shared `steamcmd-linux` runtime image
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `OHDServer.sh`
-- **Location**: `<install_dir>/OHDServer.sh`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `HarshDoorstopServer.sh` (falls back to `HarshDoorstop/Binaries/Linux/HarshDoorstopServer-Linux-Shipping` when needed)
+- **Location**: `<install_dir>/HarshDoorstopServer.sh`
+- **Engine**: native Linux Unreal dedicated server
 - **SteamCMD App ID**: `950900`
+- **Launch contract**: `HarshDoorstopServer.sh -Port=<port> -QueryPort=<queryport> -log`
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config files**: runtime launch options plus the upstream Harsh Doorstop payload
+- **Health surface**: A2S `query`, `info`, and `info --json` on the managed `queryport`
 - **Template**: See [server-templates/ohdserver/](../server-templates/ohdserver/) if available
 
 ### Maps and Mods

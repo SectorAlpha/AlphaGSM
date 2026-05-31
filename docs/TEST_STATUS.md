@@ -11,7 +11,7 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 131      |
+| PASSED   | 132      |
 | ENABLED (AUTH) | 4 |
 | ENABLED (BYO) | 28 |
 | DISABLED | 46      |
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (131)
+## PASSED (132)
 
 | Test | Type |
 |------|------|
@@ -100,6 +100,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | noonesurvivedserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM uses the shared Xvfb/software-GL container entrypoint and aligns `query`, `info`, and `info --json` to the current generic `tcp` status surface on the managed main port instead of the older stale A2S `queryport` expectation |
 | notdserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM mirrors `ServerSettings.ini` into `LF/Saved/Config`, adds the required `-DisableAntiCheat` Linux launch flag, and aligns `query`, `info`, and `info --json` to the current generic `tcp` status surface on the managed main port instead of the older stale A2S `queryport` expectation |
 | nightingale | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh integration now proves the old timeout-only disable note was stale: anonymous SteamCMD setup for app `3796810` completes on the validated native Linux lane, AlphaGSM launches `NWXServer.sh` inside the shared `steamcmd-linux` runtime as a non-root user with the host SteamCMD `steamclient.so` bootstrap mounted into `~/.steam/sdk64`, and the live health surface is generic `tcp` on the managed main game port instead of the older stale host-log and A2S assumptions |
+| ohdserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration and smoke now prove the old missing-binary disable note was stale: anonymous SteamCMD setup for app `950900` installs the real native Linux dedicated payload, AlphaGSM launches the shipped `HarshDoorstopServer.sh` wrapper or falls back to the nested `HarshDoorstop/Binaries/Linux/HarshDoorstopServer-Linux-Shipping` binary, mounts the shared Steam bootstrap into `~/.steam/sdk64/steamclient.so`, and validates A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale main-port / executable-name assumptions |
 | opforserver | SteamCMD (GoldSrc) |
 | outpostzeroserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on Linux/Proton once AlphaGSM mirrors the shipped `RunServer.bat` contract by launching `WindowsServer/SurvivalGameServer.exe RedPlanet ... -log`, syncing `Saved/Config/WindowsServer/Game.ini`, seeding `steam_appid.txt` beside the Win64 binaries, and waiting for the real post-load discovery surface before `query`, `info`, and `info --json` on generic `udp` at the managed game port |
 | palworld | SteamCMD |
@@ -256,7 +257,6 @@ URLs.
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | ndserver | SteamCMD app 111710 installs incomplete Nuclear Dawn content (missing core game files); server crashes after loading Game_srv.so |
-| ohdserver | SteamCMD app 950900 installs no Linux-compatible dedicated server binary (executable file not found) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | q4server | Quake 4 download URL returns 404 |

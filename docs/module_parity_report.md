@@ -153,7 +153,7 @@
 | ns2cserver | - | active | no | yes | status |
 | ns2server | - | active | no | yes | status |
 | nsserver | - | disabled | yes | no | - |
-| ohdserver | - | disabled | no | no | status |
+| ohdserver | - | active | no | yes | status |
 | onsetserver | - | active | no | yes | status |
 | opforserver | - | active | yes | yes | - |
 | outpostzeroserver | - | active | no | yes | status |

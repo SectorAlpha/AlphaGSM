@@ -88,6 +88,7 @@ Notes:
 - [x] noonesurvivedserver
 - [x] notdserver
 - [x] nightingale
+- [x] ohdserver
 - [x] opforserver
 - [x] outpostzeroserver
 - [x] palworld
@@ -231,7 +232,6 @@ Notes:
 - [ ] l4d2server
 - [ ] mw3server
 - [ ] ndserver
-- [ ] ohdserver
 - [ ] police1013server
 - [ ] pcars2server
 - [ ] q4server
