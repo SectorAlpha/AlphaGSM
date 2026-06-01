@@ -2,8 +2,6 @@
 
 import os
 from pathlib import Path
-import subprocess as sp
-
 from server.modsupport.source_addons import build_source_addon_mod_support
 from server.modsupport.registry import CuratedRegistryLoader
 import utils.steamcmd as steamcmd
@@ -77,72 +75,49 @@ def _finalize_source_install(server):
             with open(script_path, "wb") as handle:
                 handle.write(content.replace(b"\r\n", b"\n"))
 
+def _download_l4d2_server(server, validate):
+    """Install the L4D2 dedicated payload by layering Windows then Linux depots.
 
-def _raise_auth_install_requirement():
-    gamemodule_common.raise_auth_requirement(
-        "l4d2server",
-        "authenticated Steam or SteamCMD access to install the Left 4 Dead 2 dedicated server depots",
-        actions=(
-            "Authenticate Steam or SteamCMD with an account that is entitled to Left 4 Dead 2 before retrying setup",
-            "Re-run setup after the future AlphaGSM SteamCMD auth-profile flow is configured for this host",
-        ),
-        docs_slug="l4d2server",
-    )
+    Valve's current anonymous SteamCMD path for app 222860 rejects a
+    Linux-only install with ``Invalid platform``. The documented workaround is
+    to stage the Windows depots first, then apply the Linux depots into the
+    same install tree.
+    """
+
+    for force_platform in ("windows", "linux"):
+        steamcmd.download(
+            server.data["dir"],
+            steam_app_id,
+            True,
+            validate=validate,
+            force_platform=force_platform,
+        )
 
 
-def _translate_auth_install_failure(exc):
-    output = str(getattr(exc, "output", "") or "")
-    if "Failed to install app '222860' (Invalid platform)" in output:
-        _raise_auth_install_requirement()
-    raise exc
+def _finish_l4d2_install(server):
+    """Run the normal Source post-install steps for the staged server tree."""
 
-
-_base_doinstall = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=True,
-    download_kwargs={"force_platform": "linux"},
-)
-_base_install = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=True,
-    sync_server_config=MODULE.sync_server_config,
-    post_download_hook=_finalize_source_install,
-    download_kwargs={"force_platform": "linux"},
-)
-_base_update = gamemodule_common.make_steamcmd_update_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=True,
-    sync_server_config=MODULE.sync_server_config,
-    post_download_hook=_finalize_source_install,
-    download_kwargs={"force_platform": "linux"},
-)
+    _finalize_source_install(server)
+    MODULE.sync_server_config(server)
 
 
 def doinstall(server):
-    try:
-        _base_doinstall(server)
-    except sp.CalledProcessError as exc:
-        _translate_auth_install_failure(exc)
+    _download_l4d2_server(server, validate=True)
 
 
 def install(server):
-    try:
-        _base_install(server)
-    except sp.CalledProcessError as exc:
-        _translate_auth_install_failure(exc)
+    _download_l4d2_server(server, validate=False)
+    _finish_l4d2_install(server)
 
 
 prestart = MODULE.prestart
 
 
 def update(server, validate=False, restart=False):
-    try:
-        _base_update(server, validate=validate, restart=restart)
-    except sp.CalledProcessError as exc:
-        _translate_auth_install_failure(exc)
+    _download_l4d2_server(server, validate=validate)
+    _finish_l4d2_install(server)
+    if restart:
+        MODULE.restart(server)
 
 
 restart = MODULE.restart

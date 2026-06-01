@@ -1,7 +1,4 @@
-"""Integration test for l4d2server.
-
-ENABLED (AUTH): requires authenticated Steam/SteamCMD entitlement for app 222860
-"""
+"""Integration test for l4d2server."""
 
 import json
 import time
@@ -27,15 +24,7 @@ from conftest import (
 from gamemodules.l4d2server import steam_app_id
 from utils.valve_server import detect_query_host
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(
-        reason=(
-            "ENABLED (AUTH): authenticate Steam or SteamCMD with an account "
-            "entitled to Left 4 Dead 2 Dedicated Server before lifecycle validation"
-        )
-    ),
-]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90

@@ -7,14 +7,13 @@ This guide covers the `l4d2server` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- Authenticated Steam or SteamCMD access with an account entitled to Left 4 Dead 2 Dedicated Server
 
 ## Support Status
 
-`l4d2server` is supported in `ENABLED (AUTH)` mode. In this environment the
-current anonymous SteamCMD install path for app `222860` returns `Invalid
-platform`, so this lane needs authenticated Steam or SteamCMD entitlement
-instead of a staged asset tree.
+`l4d2server` is fully supported. AlphaGSM now installs app `222860`
+anonymously by staging the Windows depots first and then applying the Linux
+depots into the same server tree, which matches the current working SteamCMD
+install path for Left 4 Dead 2 Dedicated Server.
 
 ## Quick Start
 
@@ -58,11 +57,10 @@ Setup configures:
 - SteamCMD downloads the server files
 - default configuration and backup settings
 
-Before `setup` can succeed on this host, authenticate Steam or SteamCMD with an
-account entitled to Left 4 Dead 2 Dedicated Server. If `setup` reports an
-`ENABLED (AUTH)` requirement, the anonymous SteamCMD lane is still unavailable
-and the future AlphaGSM SteamCMD auth-profile flow is required for a full
-automated install.
+`setup` now uses the proven two-phase anonymous SteamCMD install flow for app
+`222860`: Windows depots first, then Linux depots in the same directory. This
+works around the current SteamCMD `Invalid platform` failure for a Linux-only
+anonymous install.
 
 ## Useful Commands
 
@@ -106,7 +104,9 @@ alphagsm myl4d2serv backup
 - **Mod directory**: `left4dead2/addons/`
 - **Workshop support**: No
 - **Mod notes**: AlphaGSM can now manage Left 4 Dead 2 addons from checked-in `manifest` entries plus direct `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular Source admin/plugin stacks such as MetaMod and SourceMod. Direct URLs can point at `.vpk` files or supported archives; provider-backed and manifest sources currently install supported archives only. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps its cache/state under `.alphagsm/mods/left4dead2/`.
-- **Current status**: Supported in `ENABLED (AUTH)` mode. The current anonymous SteamCMD lane for app `222860` returns `Invalid platform` on Linux here, so authenticate Steam or SteamCMD with an entitled account before retrying setup/start.
+- **Current status**: Fully supported. The current anonymous SteamCMD lane for
+  app `222860` works when AlphaGSM stages the Windows depots first and then the
+  Linux depots into the same install tree.
 - **Map install**: Copy `.bsp` files into `left4dead2/maps/` and add to `left4dead2/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `left4dead2/addons/`.
 

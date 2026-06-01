@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 222860.
-echo "Smoke test for l4d2server is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Left 4 Dead 2 Dedicated Server before setup/start."
-exit 0
-
 set -Eeuo pipefail
 set -x
 

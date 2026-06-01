@@ -75,6 +75,7 @@ Notes:
 - [x] kerbalspaceprogramserver
 - [x] kf2server
 - [x] l4dserver
+- [x] l4d2server
 - [x] lastoasisserver
 - [x] longvinterserver
 - [x] minecraft_bedrock
@@ -169,7 +170,6 @@ Notes:
 ## Supported Now
 
 - [x] gtafivemserver
-- [x] l4d2server
 - [x] arma2coserver
 - [x] arma3server
 - [x] arma3altislifeserver

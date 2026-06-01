@@ -162,7 +162,7 @@ def test_ndserver_start_command_accepts_staged_mod_content(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_l4d2server_install_requests_linux_payload_explicitly(tmp_path, monkeypatch):
+def test_l4d2server_install_requests_windows_then_linux_payloads(tmp_path, monkeypatch):
     server = DummyServer("l4d2mods")
     module = importlib.import_module("gamemodules.l4d2server")
 
@@ -198,12 +198,21 @@ def test_l4d2server_install_requests_linux_payload_explicitly(tmp_path, monkeypa
             "validate": False,
             "mod": None,
             "force_windows": False,
+            "force_platform": "windows",
+        },
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": None,
+            "force_windows": False,
             "force_platform": "linux",
-        }
+        },
     ]
 
 
-def test_l4d2server_install_reports_auth_requirement_on_invalid_platform(tmp_path, monkeypatch):
+def test_l4d2server_install_propagates_download_failures(tmp_path, monkeypatch):
     server = DummyServer("l4d2mods")
     module = importlib.import_module("gamemodules.l4d2server")
 
@@ -218,8 +227,9 @@ def test_l4d2server_install_reports_auth_requirement_on_invalid_platform(tmp_pat
 
     monkeypatch.setattr("utils.steamcmd.download", fake_download)
 
-    with pytest.raises(Exception, match="ENABLED \\(AUTH\\): l4d2server"):
+    with pytest.raises(sp.CalledProcessError) as excinfo:
         module.install(server)
+    assert "Invalid platform" in excinfo.value.output
 
 
 def test_l4d2server_start_command_accepts_staged_server_tree(tmp_path):

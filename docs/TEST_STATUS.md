@@ -11,11 +11,11 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 140      |
-| ENABLED (AUTH) | 42 |
+| PASSED   | 144      |
+| ENABLED (AUTH) | 41 |
 | ENABLED (BYO) | 40 |
-| DISABLED | 8      |
-| SKIPPED  | 6      |
+| DISABLED | 7      |
+| SKIPPED  | 4      |
 
 ## Status Key
 
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (143)
+## PASSED (144)
 
 | Test | Type |
 |------|------|
@@ -87,6 +87,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | kerbalspaceprogramserver | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh smoke and focused integration now prove the old SteamCMD/platform skip note was stale: AlphaGSM downloads the Linux LunaMultiplayer release directly, launches the native `LMPServer-linux-x64/Server` host inside the shared `steamcmd-linux` runtime, creates first-run `Config/ConnectionSettings.xml` and `GeneralSettings.xml` when the upstream archive has not generated them yet, syncs the managed port, server name, and max players before start, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
+| l4d2server | SteamCMD (Source) — PASSED 2026-06-01; fresh formal integration and smoke now prove app `222860` does support anonymous installs again when AlphaGSM stages the Windows depots first and then applies the Linux depots into the same server tree. The validated lifecycle uses the normal Source host-process lane, and `query`, `info`, plus `info --json` all answer via real A2S on the managed game port instead of the earlier stale `ENABLED (AUTH)` assumption. |
 | lastoasisserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-30; fresh integration now proves the old timeout-only disable note was stale: anonymous SteamCMD setup for app `920720` completes, AlphaGSM launches the real native Linux binary `Mist/Binaries/Linux/MistServer-Linux-Shipping` inside the shared `steamcmd-linux` runtime as a non-root user, seeds `~/.steam/sdk64/steamclient.so` from the install-local Linux payload, and the validated health surface is generic `tcp` on the managed main game port rather than the older stale A2S `queryport` assumption |
 | longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
 | minecraft_bedrock | Docker runtime (service-console) — PASSED 2026-05-30; fresh focused integration now passes on the rebuilt branch-local `service-console` runtime image after AlphaGSM switches Bedrock setup from the stale JavaScript-page assumption to a direct browser-header archive fetch, keeps Docker-first lifecycle coverage on the shared runtime family, and uses Docker-stop for the container-backed stop path because Bedrock echoes console `stop` input without exiting cleanly under the shared exec-console path |
@@ -178,7 +179,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (42)
+## ENABLED (AUTH) (41)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -186,7 +187,6 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | Test | Type |
 |------|------|
 | gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
-| l4d2server | authenticated Steam/SteamCMD entitlement for Left 4 Dead 2 Dedicated Server installs |
 | arma2coserver | authenticated Steam/SteamCMD entitlement for Arma 2: Combined Operations dedicated server app `33935` |
 | arma3server | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
 | arma3altislifeserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
