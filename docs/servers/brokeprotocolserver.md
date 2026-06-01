@@ -2,6 +2,15 @@
 
 This guide covers the `brokeprotocolserver` module in AlphaGSM.
 
+## Status
+
+`brokeprotocolserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+BROKE PROTOCOL app `696370`. The current dedicated-server hosting flow relies
+on the main game install tree rather than a separate anonymous Linux server
+tool.
+
 ## Requirements
 
 - `screen`
