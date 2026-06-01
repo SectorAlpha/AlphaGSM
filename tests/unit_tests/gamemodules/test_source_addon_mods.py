@@ -104,6 +104,32 @@ def test_zmrserver_start_command_accepts_staged_mod_content(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_ndserver_install_requires_staged_mod_content(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    with pytest.raises(Exception, match="ENABLED \\(BYO\\): ndserver"):
+        module.install(server)
+
+
+def test_ndserver_start_command_accepts_staged_mod_content(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+    required_map = tmp_path / "nucleardawn" / "maps" / "hydro.bsp"
+    required_map.parent.mkdir(parents=True)
+    required_map.write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[0] == "./srcds_run"
+    assert cwd == server.data["dir"]
+
+
 def test_l4d2_configure_seeds_mod_state_defaults(tmp_path):
     server = DummyServer("l4d2mods")
 

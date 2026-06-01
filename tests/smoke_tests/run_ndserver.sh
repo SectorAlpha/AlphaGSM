@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for ndserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with an operator-supplied Nuclear Dawn content tree.
+echo "Smoke test for ndserver is ENABLED (BYO) - copy the full Nuclear Dawn content tree into <install_dir>/nucleardawn/ so maps/hydro.bsp exists"
 exit 0
 
 set -Eeuo pipefail

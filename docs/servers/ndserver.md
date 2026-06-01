@@ -7,6 +7,13 @@ This guide covers the `ndserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
+- A staged Nuclear Dawn content tree under `<install_dir>/nucleardawn/`
+
+## Support Status
+
+`ndserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the
+anonymous dedicated-server scaffold, but the current public payload still lacks
+the full Nuclear Dawn game content needed for a working server.
 
 ## Quick Start
 
@@ -49,6 +56,11 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Before `start`, stage the full Nuclear Dawn tree so
+`<install_dir>/nucleardawn/maps/hydro.bsp` exists. If `setup` or `start`
+reports an `ENABLED (BYO)` requirement, the anonymous dedicated payload is still
+missing the actual game content.
 
 ## Useful Commands
 
@@ -94,6 +106,6 @@ alphagsm myndserver backup
 - **Mod directory**: `nucleardawn/addons/`
 - **Workshop support**: No
 - **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/nucleardawn/`.
-- **Current status**: The anonymous dedicated-server app currently installs only a partial `nucleardawn` tree in CI. It is missing the core game payload needed for a working server, so this module remains disabled until the missing content source is identified.
+- **Current status**: Supported in `ENABLED (BYO)` mode. The anonymous dedicated-server app still installs only a partial `nucleardawn/` tree, so stage the real game content before retrying startup.
 - **Map install**: Copy `.bsp` files into `nucleardawn/maps/` and add to `nucleardawn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `nucleardawn/addons/`.

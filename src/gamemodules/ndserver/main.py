@@ -1,5 +1,7 @@
 """Nuclear Dawn-specific lifecycle, configuration, and update helpers."""
 
+import os
+
 from server.modsupport.source_addons import (
         build_source_addon_mod_support,
         load_shared_source_curated_registry,
@@ -49,12 +51,44 @@ def configure(server, ask, port=None, dir=None, *, exe_name=None):
         return result
 
 
-install = MODULE.install
+def _assert_required_mod_content(install_dir):
+        """Raise when Nuclear Dawn content has not been staged locally."""
+
+        required_map = os.path.join(install_dir, "nucleardawn", "maps", "hydro.bsp")
+        if os.path.isfile(required_map):
+                return
+        gamemodule_common.raise_byo_requirement(
+                "ndserver",
+                "a staged Nuclear Dawn content tree",
+                actions=(
+                        "Copy the complete Nuclear Dawn content tree into <install_dir>/nucleardawn/",
+                        "Make sure <install_dir>/nucleardawn/maps/hydro.bsp exists after staging the game files",
+                        "Retry setup or start once the staged content is present locally",
+                ),
+                docs_slug="ndserver",
+        )
+
+
+def install(server):
+        """Install the dedicated scaffold, then require staged Nuclear Dawn content."""
+
+        MODULE.install(server)
+        _assert_required_mod_content(server.data["dir"])
+
+
 doinstall = MODULE.doinstall
 prestart = MODULE.prestart
 update = MODULE.update
 restart = MODULE.restart
-get_start_command = MODULE.get_start_command
+
+
+def get_start_command(server):
+        """Build the start command after validating staged Nuclear Dawn content."""
+
+        _assert_required_mod_content(server.data["dir"])
+        return MODULE.get_start_command(server)
+
+
 do_stop = MODULE.do_stop
 status = MODULE.status
 message = MODULE.message

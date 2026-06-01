@@ -194,6 +194,7 @@ Notes:
 - [x] minecraft_custom
 - [x] minecraft_tekkit
 - [x] mxbikesserver
+- [x] ndserver
 - [x] nsserver
 - [x] q3server
 - [x] q4server
@@ -240,7 +241,6 @@ Notes:
 - [ ] kfserver
 - [ ] l4d2server
 - [ ] mw3server
-- [ ] ndserver
 - [ ] police1013server
 - [ ] pcars2server
 - [ ] roserver
