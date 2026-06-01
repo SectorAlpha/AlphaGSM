@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
@@ -63,12 +62,22 @@ def configure(server, ask, port=None, dir=None, *, exe_name="FoundryDedicatedSer
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-)
-install.__doc__ = "Download the FOUNDRY server files via SteamCMD."
+def install(server):
+    """Download FOUNDRY via SteamCMD or require a staged native server tree."""
+
+    os.makedirs(server.data["dir"], exist_ok=True)
+    steamcmd.download(
+        server.data["dir"],
+        steam_app_id,
+        steam_anonymous_login_possible,
+    )
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        gamemodule_common.raise_byo_requirement(
+            "foundryserver",
+            "stage a native FOUNDRY dedicated server tree containing "
+            "FoundryDedicatedServer in <install_dir> before setup/start",
+        )
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -86,7 +95,11 @@ def get_start_command(server):
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+        gamemodule_common.raise_byo_requirement(
+            "foundryserver",
+            "stage a native FOUNDRY dedicated server tree containing "
+            "FoundryDedicatedServer in <install_dir> before setup/start",
+        )
     return (
         [
             "./" + server.data["exe_name"],
@@ -104,7 +117,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop FOUNDRY using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

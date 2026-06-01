@@ -1,4 +1,7 @@
-"""Integration test for foundryserver."""
+"""Integration test for foundryserver.
+
+ENABLED (BYO): stage a native FOUNDRY dedicated server tree before setup/start
+"""
 
 import pytest
 
@@ -20,7 +23,15 @@ from conftest import (
 )
 from gamemodules.foundryserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): stage a native FOUNDRY dedicated server tree "
+            "containing FoundryDedicatedServer in <install_dir> before setup/start"
+        )
+    ),
+]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 

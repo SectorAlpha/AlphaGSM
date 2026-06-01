@@ -186,6 +186,7 @@ Notes:
 - [x] dstserver
 - [x] etlegacyserver
 - [x] ets2server
+- [x] foundryserver
 - [x] gravserver
 - [x] hogwarpserver
 - [x] identityserver
@@ -233,7 +234,6 @@ Notes:
 - [ ] deadmatterserver
 - [ ] dayzarma2epochserver
 - [ ] dayzserver
-- [ ] foundryserver
 - [ ] iosserver
 - [ ] kfserver
 - [ ] l4d2server

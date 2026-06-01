@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.foundryserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.foundryserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -66,7 +67,18 @@ def test_install(tmp_path):
     server.data["exe_name"] = "FoundryDedicatedServer"
     server.data["Steam_AppID"] = 2915550
     server.data["Steam_anonymous_login_possible"] = True
+    (tmp_path / "FoundryDedicatedServer").write_text("")
     mod.install(server)
+
+
+def test_install_without_staged_tree_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "FoundryDedicatedServer"
+    server.data["Steam_AppID"] = 2915550
+    server.data["Steam_anonymous_login_possible"] = True
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): foundryserver"):
+        mod.install(server)
 
 
 def test_update_with_restart(tmp_path):
@@ -124,14 +136,14 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["port"] = 27015
     server.data["servername"] = "test"
     server.data["worldname"] = "test"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): foundryserver"):
         mod.get_start_command(server)
 
 
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -203,4 +215,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

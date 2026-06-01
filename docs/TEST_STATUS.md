@@ -13,8 +13,8 @@ this pass aligned the runtime gate with that existing tracker state.
 |----------|-------|
 | PASSED   | 140      |
 | ENABLED (AUTH) | 5 |
-| ENABLED (BYO) | 36 |
-| DISABLED | 33      |
+| ENABLED (BYO) | 37 |
+| DISABLED | 32      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -188,7 +188,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (36)
+## ENABLED (BYO) (37)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -209,6 +209,7 @@ URLs.
 | dstserver | cluster token plus staged cluster config |
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
+| foundryserver | staged native FOUNDRY dedicated server tree |
 | gravserver | owned GRAV dedicated server tree |
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
@@ -233,7 +234,7 @@ URLs.
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 
-## DISABLED (33)
+## DISABLED (32)
 
 | Test | Reason |
 |------|--------|
@@ -258,7 +259,6 @@ URLs.
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
 | dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
-| foundryserver | SteamCMD app 2915550 installs no Linux-compatible dedicated server binary (FoundryDedicatedServer not present) |
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |

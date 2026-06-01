@@ -5,6 +5,7 @@ This guide covers the `foundryserver` module in AlphaGSM.
 ## Requirements
 
 - `screen`
+- a native FOUNDRY dedicated server tree containing `FoundryDedicatedServer`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -21,6 +22,11 @@ Run setup:
 ```bash
 alphagsm myfoundrys setup
 ```
+
+`foundryserver` is supported in `ENABLED (BYO)` mode. The current anonymous
+SteamCMD app does not deliver the required native server payload, so before
+`setup` or `start` you should stage a native FOUNDRY dedicated server tree
+containing `FoundryDedicatedServer` inside your chosen `<install_dir>/`.
 
 Start it:
 
@@ -46,7 +52,15 @@ Setup configures:
 
 - the game port (default 37200)
 - the install directory
-- SteamCMD downloads the server files
+
+Suggested flow:
+
+```bash
+alphagsm myfoundrys create foundryserver
+alphagsm myfoundrys setup -n 37200 /path/to/foundry
+# copy FoundryDedicatedServer and the rest of the native server tree into /path/to/foundry/
+alphagsm myfoundrys start
+```
 
 ## Useful Commands
 
