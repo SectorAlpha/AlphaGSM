@@ -71,6 +71,7 @@ Notes:
 - [x] icarusserver
 - [x] jc2server
 - [x] jc3server
+- [x] kerbalspaceprogramserver
 - [x] kf2server
 - [x] l4dserver
 - [x] lastoasisserver
@@ -269,4 +270,3 @@ Notes:
 - [ ] bannerlordserver
 - [ ] starruptureserver
 - [ ] subsistenceserver
-- [ ] kerbalspaceprogramserver

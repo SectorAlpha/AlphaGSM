@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (140)
+## PASSED (141)
 
 | Test | Type |
 |------|------|
@@ -83,6 +83,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | icarusserver | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh integration and smoke now both pass on the branch-local `wine-proton` runtime image once AlphaGSM treats the validated Linux contract honestly: anonymous SteamCMD setup for app `2089300` succeeds, the server stays up in the shared Docker-backed Xvfb/software-GL lane, and `query`, `info`, plus `info --json` all use the live generic `tcp` surface on the managed main port instead of the older stale log-marker and A2S assumptions |
 | jc2server | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old disabled missing-executable note was stale: anonymous SteamCMD setup for app `261140` installs the current native Linux dedicated server, AlphaGSM launches the real `Jcmp-Server` binary inside the shared `steamcmd-linux` runtime, seeds the required native `config.lua` from `default_config.lua`, stages the shipped `default_scripts/` into `scripts/`, and validates `query`, `info`, and `info --json` on JC2-MP's real generic `tcp` health surface at the managed main game port rather than the older stale CLI and A2S assumptions |
 | jc3server | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old disabled missing-executable note was stale: anonymous SteamCMD setup for app `619960` installs the current native Linux dedicated server, AlphaGSM launches the real `Server` binary inside the shared `steamcmd-linux` runtime as a non-root user with the host SteamCMD `steamclient.so` bootstrap mounted into `~/.steam/sdk64`, syncs the native `config.json` before start, and validates `query`, `info`, and `info --json` on JC3MP's real TCP health surface at `httpPort = port + 3` rather than the older stale CLI/A2S assumptions |
+| kerbalspaceprogramserver | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh smoke and focused integration now prove the old SteamCMD/platform skip note was stale: AlphaGSM downloads the Linux LunaMultiplayer release directly, launches the native `LMPServer-linux-x64/Server` host inside the shared `steamcmd-linux` runtime, creates first-run `Config/ConnectionSettings.xml` and `GeneralSettings.xml` when the upstream archive has not generated them yet, syncs the managed port, server name, and max players before start, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
 | lastoasisserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-30; fresh integration now proves the old timeout-only disable note was stale: anonymous SteamCMD setup for app `920720` completes, AlphaGSM launches the real native Linux binary `Mist/Binaries/Linux/MistServer-Linux-Shipping` inside the shared `steamcmd-linux` runtime as a non-root user, seeds `~/.steam/sdk64/steamclient.so` from the install-local Linux payload, and the validated health surface is generic `tcp` on the managed main game port rather than the older stale A2S `queryport` assumption |
@@ -287,7 +288,7 @@ URLs.
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (6)
+## SKIPPED (5)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -298,6 +299,5 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
-| kerbalspaceprogramserver | SteamCMD/platform issue |
 
 All integration tests have been tested and categorized. No untested servers remain.

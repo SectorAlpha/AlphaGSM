@@ -4,7 +4,7 @@ This guide covers the `kerbalspaceprogramserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- Docker for the validated Linux runtime path
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -45,7 +45,8 @@ Setup configures:
 
 - the game port (default 8800)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the Linux LunaMultiplayer server archive
+- prepares the first-run XML config files AlphaGSM manages before start
 
 ## Useful Commands
 
@@ -63,14 +64,17 @@ alphagsm mykerbalsp backup
 
 ### Run File
 
-- **Executable**: `Server`
-- **Location**: `<install_dir>/Server`
-- **Engine**: Custom
+- **Executable**: `LMPServer-linux-x64/Server`
+- **Location**: `<install_dir>/LMPServer-linux-x64/Server`
+- **Runtime**: Native Linux, validated through the shared `steamcmd-linux` Docker runtime
+- **Health surface**: generic `udp` on the managed main game port
 
 ### Server Configuration
 
-- **Config file**: See game module source
-- **Template**: See [server-templates/kerbalspaceprogramserver/](../server-templates/kerbalspaceprogramserver/) if available
+- **Config files**:
+  - `<install_dir>/LMPServer-linux-x64/Config/ConnectionSettings.xml`
+  - `<install_dir>/LMPServer-linux-x64/Config/GeneralSettings.xml`
+- AlphaGSM creates these files on first launch when the upstream archive has not generated them yet, then keeps the managed port, server name, and max players in sync before start.
 
 ### Maps and Mods
 
