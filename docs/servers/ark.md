@@ -4,8 +4,8 @@ This guide covers the `ark` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Docker or another supported AlphaGSM runtime backend
+- SteamCMD access for app `376030`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -44,7 +44,8 @@ alphagsm myark stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +59,9 @@ alphagsm myark backup
 ## Notes
 
 - Module name: `ark`
-- Default port: 27015
+- Default game port: `7777`
+- Default query port: `27015`
+- Validated Linux support path: Docker `steamcmd-linux` runtime with A2S `query` / `info` on `queryport`
 
 ## Developer Notes
 
@@ -66,7 +69,7 @@ alphagsm myark backup
 
 - **Executable**: `ShooterGame/Binaries/Linux/ShooterGameServer`
 - **Location**: `<install_dir>/ShooterGame/Binaries/Linux/ShooterGameServer`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Native Linux dedicated server via SteamCMD
 - **SteamCMD App ID**: `376030`
 
 ### Server Configuration

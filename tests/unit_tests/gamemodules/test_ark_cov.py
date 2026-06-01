@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.ark', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.ark as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -125,6 +126,27 @@ def test_get_start_command(tmp_path):
     server.data["sessionname"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[0] == "./ShooterGameServer"
+    assert cwd == str(tmp_path / "ShooterGame" / "Binaries" / "Linux")
+
+
+def test_get_start_command_sanitizes_sessionname_spaces(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path = tmp_path / "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["adminpassword"] = "test"
+    server.data["map"] = "TheIsland"
+    server.data["maxplayers"] = 70
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+    server.data["serverpassword"] = ""
+    server.data["sessionname"] = "AlphaGSM itark"
+    cmd, _cwd = mod.get_start_command(server)
+    assert "SessionName=AlphaGSM_itark" in cmd[1]
+    assert "SessionName=AlphaGSM itark" not in cmd[1]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -145,7 +167,61 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_get_query_address():
+    server = DummyServer()
+    server.data["queryport"] = 27015
+    mod.runtime_module.resolve_query_host.return_value = "127.0.0.1"
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+
+
+def test_get_info_address():
+    server = DummyServer()
+    server.data["queryport"] = 27015
+    mod.runtime_module.resolve_query_host.return_value = "127.0.0.1"
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
+
+
+def test_get_runtime_requirements_mounts(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    mod.steamcmd.STEAMCMD_DIR = "/tmp/steamcmd"
+    requirements = mod.get_runtime_requirements(server)
+    assert requirements["family"] == "steamcmd-linux"
+    assert any(
+        mount["target"] == "/srv/server" for mount in requirements["mounts"]
+    )
+    assert any(
+        mount["target"] == mod.CONTAINER_STEAMCMD_DIR
+        for mount in requirements["mounts"]
+    )
+
+
+def test_get_container_spec_uses_non_root_steam_bootstrap(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["exe_name"] = "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path = tmp_path / "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["adminpassword"] = "test"
+    server.data["map"] = "TheIsland"
+    server.data["maxplayers"] = 70
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+    server.data["serverpassword"] = ""
+    server.data["sessionname"] = "AlphaGSM itark"
+    mod.steamcmd.STEAMCMD_DIR = "/tmp/steamcmd"
+    spec = mod.get_container_spec(server)
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["stdin_open"] is True
+    shell = spec["command"][-1]
+    assert "/home/alphagsm/.steam/sdk64/steamclient.so" in shell
+    assert "/opt/alphagsm-steamcmd/linux64/steamclient.so" in shell
+    assert "runuser -u alphagsm" in shell
+    assert "cd /srv/server/ShooterGame/Binaries/Linux" in shell
 
 
 def test_status():
@@ -241,4 +317,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

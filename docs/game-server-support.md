@@ -26,6 +26,7 @@ Notes:
 - [x] acserver
 - [x] ahl2server
 - [x] argoserver
+- [x] ark
 - [x] arksurvivalascended
 - [x] armarserver
 - [x] astroneerserver
@@ -257,7 +258,6 @@ Notes:
 
 - [ ] bsserver
 - [ ] dysserver
-- [ ] ark
 - [ ] atlasserver
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver

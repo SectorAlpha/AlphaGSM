@@ -10,7 +10,7 @@
 | alienarenaserver | - | disabled | no | no | status |
 | aloftserver | - | active | no | yes | status |
 | argoserver | - | active | no | yes | status |
-| ark | - | disabled | no | no | status |
+| ark | - | active | no | yes | status |
 | arksurvivalascended | - | active | no | yes | status |
 | arma2coserver | - | disabled | no | no | status |
 | arma3.altislife | - | active | yes | yes | - |

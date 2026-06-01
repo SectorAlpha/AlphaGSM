@@ -1,8 +1,8 @@
 """ARK: Survival Evolved dedicated server lifecycle helpers."""
 
 import os
+import shlex
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -13,6 +13,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 376030
 steam_anonymous_login_possible = True
+CONTAINER_STEAMCMD_DIR = "/opt/alphagsm-steamcmd"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -37,6 +38,12 @@ setting_schema = {
     ),
 }
 max_stop_wait = 1
+
+
+def _launch_session_name(server):
+    """Return a launch-safe session name for ARK's URL-style map argument."""
+
+    return str(server.data["sessionname"]).replace(" ", "_")
 
 
 def configure(
@@ -113,11 +120,12 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    working_dir = os.path.dirname(exe_path) or server.data["dir"]
     map_args = (
         "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
         % (
             server.data["map"],
-            server.data["sessionname"],
+            _launch_session_name(server),
             server.data["port"],
             server.data["queryport"],
             server.data["maxplayers"],
@@ -127,15 +135,31 @@ def get_start_command(server):
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
     return (
-        ["./" + server.data["exe_name"], map_args, "-server", "-log"],
-        server.data["dir"],
+        ["./" + os.path.basename(server.data["exe_name"]), map_args, "-server", "-log"],
+        working_dir,
     )
 
 
 def do_stop(server, j):
     """Send the standard quit command to ARK."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
+
+
+def get_query_address(server):
+    """Return ARK's A2S query surface on the managed query port."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
+
+
+def get_info_address(server):
+    """Return ARK's info surface on the managed query port."""
+
+    return get_query_address(server)
 
 
 def status(server, verbose):
@@ -165,14 +189,68 @@ def checkvalue(server, key, *value):
         str_keys=("map", "sessionname", "adminpassword", "serverpassword", "exe_name", "dir"),
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def get_runtime_requirements(server):
+    """Return ARK's native Linux Docker runtime contract."""
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
-)
+    mounts = None
+    if "dir" in server.data:
+        mounts = [
+            {
+                "source": server.data["dir"],
+                "target": "/srv/server",
+                "mode": "rw",
+            },
+            {
+                "source": os.path.normpath(steamcmd.STEAMCMD_DIR),
+                "target": CONTAINER_STEAMCMD_DIR,
+                "mode": "ro",
+            },
+        ]
+
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=(
+            {"key": "queryport", "protocol": "udp"},
+            {"key": "queryport", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "tcp"},
+        ),
+        mounts=mounts,
+    )
+
+
+def get_container_spec(server):
+    """Run ARK in Docker as the mounted server-directory owner."""
+
+    requirements = get_runtime_requirements(server)
+    command, cwd = get_start_command(server)
+    shell_command = " ".join(shlex.quote(part) for part in command)
+    relative_cwd = os.path.relpath(cwd, server.data["dir"])
+    container_cwd = "/srv/server"
+    if relative_cwd not in (".", ""):
+        container_cwd = "/srv/server/" + relative_cwd
+    user_shell_command = "cd " + shlex.quote(container_cwd) + " && " + shell_command
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            (
+                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
+                'mkdir -p /home/alphagsm/.steam/sdk64; '
+                'chmod -R a+rwX /srv/server /home/alphagsm; '
+                'ln -sfn '
+                + CONTAINER_STEAMCMD_DIR
+                + '/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
+                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
+                "exec runuser -u alphagsm -- sh -lc "
+                + shlex.quote(user_shell_command)
+            ),
+        ],
+    }
