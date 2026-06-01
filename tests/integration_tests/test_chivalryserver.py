@@ -20,7 +20,12 @@ from conftest import (
 )
 from gamemodules.chivalryserver import steam_app_id
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Chivalry: Medieval Warfare Dedicated Server app 220070 before setup/start"
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90

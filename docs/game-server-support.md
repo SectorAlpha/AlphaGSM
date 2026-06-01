@@ -194,6 +194,7 @@ Notes:
 - [x] police1013server
 - [x] pcars2server
 - [x] roserver
+- [x] chivalryserver
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -249,7 +250,6 @@ Notes:
 - [ ] ark
 - [ ] atlasserver
 - [ ] brokeprotocolserver
-- [ ] chivalryserver
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver
 - [ ] iosserver

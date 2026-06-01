@@ -2,6 +2,13 @@
 
 This guide covers the `chivalryserver` module in AlphaGSM.
 
+## Status
+
+`chivalryserver` is currently `ENABLED (AUTH)`.
+
+Before `setup` or `start`, authenticate Steam or SteamCMD with an account
+entitled to Chivalry: Medieval Warfare Dedicated Server app `220070`.
+
 ## Requirements
 
 - `screen`
