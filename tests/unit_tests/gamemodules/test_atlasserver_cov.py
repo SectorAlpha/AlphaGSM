@@ -35,6 +35,13 @@ class DummyServer:
         self._started = True
 
 
+def _stage_server_grid(tmp_path):
+    shooter_dir = tmp_path / "ShooterGame"
+    (shooter_dir / "ServerGrid").mkdir(parents=True, exist_ok=True)
+    (shooter_dir / "ServerGrid.json").write_text("{}")
+    (shooter_dir / "ServerGrid.ServerOnly.json").write_text("{}")
+
+
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=57555, dir=str(tmp_path))
@@ -116,6 +123,7 @@ def test_get_start_command(tmp_path):
     exe_path = tmp_path / "ShooterGame/Binaries/Linux/ShooterGameServer"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
+    _stage_server_grid(tmp_path)
     server.data["adminpassword"] = "test"
     server.data["map"] = "test"
     server.data["maxplayers"] = 27015
@@ -125,7 +133,68 @@ def test_get_start_command(tmp_path):
     server.data["sessionname"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
-    assert cmd[0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
+    assert cmd[0] == "./ShooterGameServer"
+    assert cwd == str(tmp_path / "ShooterGame" / "Binaries" / "Linux")
+
+
+def test_get_start_command_sanitizes_sessionname_spaces(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path = tmp_path / "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    _stage_server_grid(tmp_path)
+    server.data["adminpassword"] = "test"
+    server.data["map"] = "Ocean"
+    server.data["maxplayers"] = 100
+    server.data["port"] = 57555
+    server.data["queryport"] = 57561
+    server.data["serverpassword"] = ""
+    server.data["sessionname"] = "AlphaGSM atlas"
+    cmd, _cwd = mod.get_start_command(server)
+    assert "SessionName=AlphaGSM_atlas" in cmd[1]
+    assert "SessionName=AlphaGSM atlas" not in cmd[1]
+
+
+def test_get_start_command_requires_server_grid_export(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path = tmp_path / "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["adminpassword"] = "test"
+    server.data["map"] = "Ocean"
+    server.data["maxplayers"] = 100
+    server.data["port"] = 57555
+    server.data["queryport"] = 57561
+    server.data["serverpassword"] = ""
+    server.data["sessionname"] = "AlphaGSM atlas"
+
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): atlasserver"):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_accepts_staged_server_grid_export(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path = tmp_path / "ShooterGame/Binaries/Linux/ShooterGameServer"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    _stage_server_grid(tmp_path)
+    server.data["adminpassword"] = "test"
+    server.data["map"] = "Ocean"
+    server.data["maxplayers"] = 100
+    server.data["port"] = 57555
+    server.data["queryport"] = 57561
+    server.data["serverpassword"] = ""
+    server.data["sessionname"] = "AlphaGSM atlas"
+
+    cmd, cwd = mod.get_start_command(server)
+    assert cmd[0] == "./ShooterGameServer"
+    assert cwd == str(tmp_path / "ShooterGame" / "Binaries" / "Linux")
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -157,9 +226,7 @@ def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_p
     exe_path = tmp_path / "ShooterGame" / "Binaries" / "Linux" / "ShooterGameServer"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
-    steamclient_path = tmp_path / "linux64" / "steamclient.so"
-    steamclient_path.parent.mkdir(parents=True, exist_ok=True)
-    steamclient_path.write_text("")
+    _stage_server_grid(tmp_path)
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -173,11 +240,11 @@ def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_p
             "sessionname": "AlphaGSM atlas",
         }
     )
+    mod.steamcmd.STEAMCMD_DIR = "/tmp/steamcmd"
 
     requirements = mod.get_runtime_requirements(server)
     spec = mod.get_container_spec(server)
 
-    assert requirements["engine"] == "docker"
     assert requirements["family"] == "steamcmd-linux"
     assert requirements["ports"] == [
         {"host": 57561, "container": 57561, "protocol": "udp"},
@@ -185,18 +252,16 @@ def test_runtime_requirements_and_container_spec_use_steamcmd_linux_family(tmp_p
         {"host": 57555, "container": 57555, "protocol": "udp"},
         {"host": 57555, "container": 57555, "protocol": "tcp"},
     ]
+    assert any(mount["target"] == "/srv/server" for mount in requirements["mounts"])
+    assert any(mount["target"] == mod.CONTAINER_STEAMCMD_DIR for mount in requirements["mounts"])
     assert spec["working_dir"] == "/srv/server"
-    assert spec["env"]["HOME"] == "/srv/server"
-    assert spec["env"]["LD_LIBRARY_PATH"].startswith(
-        "/srv/server:/srv/server/linux64:/srv/server/ShooterGame/Binaries/Linux"
-    )
-    assert spec["command"][0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
-    assert spec["command"][2:] == ["-server", "-log"]
     assert spec["stdin_open"] is True
-    assert (tmp_path / "steam_appid.txt").read_text(encoding="utf-8") == "1006030\n"
-    steamclient_link = tmp_path / ".steam" / "sdk64" / "steamclient.so"
-    assert steamclient_link.is_symlink()
-    assert steamclient_link.resolve() == steamclient_path
+    shell = spec["command"][-1]
+    assert "/home/alphagsm/.steam/sdk64/steamclient.so" in shell
+    assert "/opt/alphagsm-steamcmd/linux64/steamclient.so" in shell
+    assert "runuser -u alphagsm" in shell
+    assert "cd /srv/server/ShooterGame/Binaries/Linux" in shell
+    assert "./ShooterGameServer" in shell
 
 
 def test_do_stop_uses_runtime_send_to_server(monkeypatch):

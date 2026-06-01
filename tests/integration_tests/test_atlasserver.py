@@ -21,7 +21,16 @@ from conftest import (
 )
 from gamemodules.atlasserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): ATLAS still needs a staged ServerGrid.json, "
+            "ServerGrid.ServerOnly.json, and ServerGrid folder under "
+            "<install_dir>/ShooterGame/ before start"
+        )
+    ),
+]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 

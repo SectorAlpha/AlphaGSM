@@ -1,6 +1,7 @@
 """ATLAS dedicated server lifecycle helpers."""
 
 import os
+import shlex
 
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -12,6 +13,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1006030
 steam_anonymous_login_possible = True
+CONTAINER_STEAMCMD_DIR = "/opt/alphagsm-steamcmd"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -38,53 +40,45 @@ setting_schema = {
 max_stop_wait = 1
 
 
-def _ensure_local_steam_bootstrap(install_dir):
-    """Seed Steamworks files inside the install tree for Docker launches."""
+def _launch_session_name(server):
+    """Return a launch-safe session name for ATLAS' URL-style map argument."""
 
-    steam_appid_path = os.path.join(install_dir, "steam_appid.txt")
-    with open(steam_appid_path, "w", encoding="utf-8") as handle:
-        handle.write(f"{steam_app_id}\n")
-
-    steamclient_src = os.path.join(install_dir, "linux64", "steamclient.so")
-    if not os.path.isfile(steamclient_src):
-        return
-
-    sdk_dir = os.path.join(install_dir, ".steam", "sdk64")
-    os.makedirs(sdk_dir, exist_ok=True)
-    steamclient_dst = os.path.join(sdk_dir, "steamclient.so")
-    steamclient_relpath = os.path.relpath(steamclient_src, sdk_dir)
-    if os.path.lexists(steamclient_dst):
-        if os.path.islink(steamclient_dst) and os.readlink(steamclient_dst) == steamclient_relpath:
-            return
-        os.remove(steamclient_dst)
-    os.symlink(steamclient_relpath, steamclient_dst)
+    return str(server.data["sessionname"]).replace(" ", "_")
 
 
-def _atlas_library_path(install_dir, exe_dir):
-    """Return the library search path needed for ATLAS' legacy runtime."""
+def _server_grid_paths(server):
+    """Return the ATLAS grid export files and directory expected at runtime."""
 
-    return os.pathsep.join(
-        filter(
-            None,
-            (
-                install_dir,
-                os.path.join(install_dir, "linux64"),
-                exe_dir,
-                os.environ.get("LD_LIBRARY_PATH"),
-            ),
-        )
+    shooter_dir = os.path.join(server.data["dir"], "ShooterGame")
+    return (
+        os.path.join(shooter_dir, "ServerGrid.json"),
+        os.path.join(shooter_dir, "ServerGrid.ServerOnly.json"),
+        os.path.join(shooter_dir, "ServerGrid"),
     )
 
 
-def _container_env(server):
-    """Return the Docker-only environment needed for ATLAS startup."""
+def _ensure_server_grid_export(server):
+    """Fail fast when the required ATLAS server-grid export is missing."""
 
-    container_dir = runtime_module.DEFAULT_CONTAINER_WORKDIR
-    exe_dir = os.path.dirname(os.path.join(container_dir, server.data["exe_name"]))
-    return {
-        "HOME": container_dir,
-        "LD_LIBRARY_PATH": _atlas_library_path(container_dir, exe_dir),
-    }
+    grid_json, grid_server_only, grid_dir = _server_grid_paths(server)
+    missing = [
+        path
+        for path in (grid_json, grid_server_only, grid_dir)
+        if not (os.path.isfile(path) or os.path.isdir(path))
+    ]
+    if not missing:
+        return
+
+    gamemodule_common.raise_byo_requirement(
+        "atlasserver",
+        "a staged ATLAS server-grid export",
+        actions=(
+            "Generate or export ServerGrid.json, ServerGrid.ServerOnly.json, and the ServerGrid folder with the official ServerGridEditor.",
+            f"Copy those three items into {os.path.join(server.data['dir'], 'ShooterGame')}.",
+            "Retry start once the grid export is staged.",
+        ),
+        docs_slug="atlasserver",
+    )
 
 
 def configure(
@@ -174,11 +168,13 @@ def get_start_command(server):
     exe_path = os.path.join(install_dir, server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    _ensure_server_grid_export(server)
+    working_dir = os.path.dirname(exe_path) or install_dir
     map_args = (
         "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
         % (
             server.data["map"],
-            server.data["sessionname"],
+            _launch_session_name(server),
             server.data["port"],
             server.data["queryport"],
             server.data["maxplayers"],
@@ -188,8 +184,8 @@ def get_start_command(server):
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
     return (
-        ["./" + server.data["exe_name"], map_args, "-server", "-log"],
-        server.data["dir"],
+        ["./" + os.path.basename(server.data["exe_name"]), map_args, "-server", "-log"],
+        working_dir,
     )
 
 
@@ -226,25 +222,67 @@ def checkvalue(server, key, *value):
         str_keys=("map", "sessionname", "serverpassword", "adminpassword", "exe_name", "dir"),
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def get_runtime_requirements(server):
+    """Return ATLAS' native Linux Docker runtime contract."""
 
-def get_container_spec(server):
-    """Build the Docker launch spec and seed Steam bootstrap files locally."""
+    mounts = None
+    if "dir" in server.data:
+        mounts = [
+            {
+                "source": os.path.normpath(server.data["dir"]),
+                "target": "/srv/server",
+                "mode": "rw",
+            },
+            {
+                "source": os.path.normpath(steamcmd.STEAMCMD_DIR),
+                "target": CONTAINER_STEAMCMD_DIR,
+                "mode": "ro",
+            },
+        ]
 
-    _ensure_local_steam_bootstrap(os.path.normpath(server.data["dir"]))
-    return runtime_module.build_container_spec(
+    return runtime_module.build_runtime_requirements(
         server,
         family="steamcmd-linux",
-        get_start_command=get_start_command,
         port_definitions=(
             {"key": "queryport", "protocol": "udp"},
             {"key": "queryport", "protocol": "tcp"},
             {"key": "port", "protocol": "udp"},
             {"key": "port", "protocol": "tcp"},
         ),
-        env=_container_env(server),
-        stdin_open=True,
+        mounts=mounts,
     )
+
+def get_container_spec(server):
+    """Run ATLAS in Docker as the mounted server-directory owner."""
+
+    requirements = get_runtime_requirements(server)
+    command, cwd = get_start_command(server)
+    shell_command = " ".join(shlex.quote(part) for part in command)
+    relative_cwd = os.path.relpath(cwd, os.path.normpath(server.data["dir"]))
+    container_cwd = "/srv/server"
+    if relative_cwd not in (".", ""):
+        container_cwd = "/srv/server/" + relative_cwd
+    user_shell_command = "cd " + shlex.quote(container_cwd) + " && " + shell_command
+    return {
+        "working_dir": "/srv/server",
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            (
+                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
+                'mkdir -p /home/alphagsm/.steam/sdk64; '
+                'chmod -R a+rwX /srv/server /home/alphagsm; '
+                'ln -sfn '
+                + CONTAINER_STEAMCMD_DIR
+                + '/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
+                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
+                "exec runuser -u alphagsm -- sh -lc "
+                + shlex.quote(user_shell_command)
+            ),
+        ],
+    }

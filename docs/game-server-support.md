@@ -217,6 +217,7 @@ Notes:
 - [x] ahlserver
 - [x] alienarenaserver
 - [x] atsserver
+- [x] atlasserver
 - [x] bf1942server
 - [x] bbserver
 - [x] bfvserver
@@ -258,7 +259,6 @@ Notes:
 
 - [ ] bsserver
 - [ ] dysserver
-- [ ] atlasserver
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver
 - [ ] iosserver

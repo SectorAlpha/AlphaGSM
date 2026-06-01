@@ -13,8 +13,8 @@ this pass aligned the runtime gate with that existing tracker state.
 |----------|-------|
 | PASSED   | 144      |
 | ENABLED (AUTH) | 41 |
-| ENABLED (BYO) | 40 |
-| DISABLED | 7      |
+| ENABLED (BYO) | 41 |
+| DISABLED | 6      |
 | SKIPPED  | 4      |
 
 ## Status Key
@@ -228,7 +228,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (40)
+## ENABLED (BYO) (41)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -240,6 +240,7 @@ URLs.
 | ahlserver | owned Action Half-Life mod content tree |
 | alienarenaserver | staged native Alien Arena dedicated server tree |
 | atsserver | owned exported client packages/settings |
+| atlasserver | staged `ServerGrid.json`, `ServerGrid.ServerOnly.json`, and `ServerGrid/` export under `ShooterGame/` |
 | bf1942server | direct archive URL or staged Battlefield 1942 Linux dedicated server tree |
 | bbserver | owned BrainBread mod content tree |
 | bfvserver | direct archive URL or staged Battlefield Vietnam Linux dedicated server tree |
@@ -277,13 +278,12 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (7)
+## DISABLED (6)
 
 | Test | Reason |
 |------|--------|
 | bsserver | Blade Symphony: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
-| atlasserver | Docker-first validation 2026-05-29: the checked-in lane now seeds install-local Steam bootstrap state for the `steamcmd-linux` runtime, and a focused rerun under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` proved the remaining blocker is no longer missing compatibility libraries. SteamCMD was actively populating `steamapps/downloading/1006030` (about `25G`) and the staged `ShooterGame/Binaries/Linux/ShooterGameServer` reproduced an immediate `Signal 11 caught.` crash inside the validated Docker image; `ldd` resolved the legacy OpenSSL/protobuf/Steam dependencies cleanly, so the exact remaining blocker is an early ATLAS binary segfault before A2S `info` / `query` can come up. |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | dabserver | Dedicated server binary segfaults on startup |
 | iosserver | IOSoccer dedicated server repeatedly segfaults immediately after executing the dedicated server config |
