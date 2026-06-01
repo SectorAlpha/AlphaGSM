@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (141)
+## PASSED (142)
 
 | Test | Type |
 |------|------|
@@ -136,6 +136,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | squad44server | SteamCMD |
 | squadserver | SteamCMD |
 | stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port |
+| starruptureserver | Docker runtime (Wine/Proton) — PASSED 2026-06-01; fresh focused integration plus follow-up smoke validation now prove the old timeout-only skip was stale: anonymous SteamCMD setup for app `3809400` installs the real Windows dedicated payload, AlphaGSM launches `StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe` inside the shared `wine-proton` runtime, stages root `DSSettings.txt` from the checked-in template before launch, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | stnserver | SteamCMD |
 | svenserver | SteamCMD (GoldSrc) |
 | terraria_tshock | Direct download — PASSED 2026-05-28; smoke and focused integration both pass on the Docker-backed lifecycle once the shared `steamcmd-linux` runtime image includes the required `.NET` runtimes, and CI now builds that image from the branch before validation |
@@ -288,7 +289,7 @@ URLs.
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (5)
+## SKIPPED (4)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -297,7 +298,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
-| starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
 
 All integration tests have been tested and categorized. No untested servers remain.

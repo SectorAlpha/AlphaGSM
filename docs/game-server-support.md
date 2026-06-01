@@ -124,6 +124,7 @@ Notes:
 - [x] squad44server
 - [x] squadserver
 - [x] stationeersserver
+- [x] starruptureserver
 - [x] stnserver
 - [x] svenserver
 - [x] terraria_tshock
@@ -268,5 +269,4 @@ Notes:
 - [ ] medievalengineersserver
 - [ ] scumserver
 - [ ] bannerlordserver
-- [ ] starruptureserver
 - [ ] subsistenceserver

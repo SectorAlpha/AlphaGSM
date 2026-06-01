@@ -2,10 +2,11 @@
 
 This guide covers the `starruptureserver` module in AlphaGSM.
 
+Status: supported on Linux through the shared Docker `wine-proton` runtime.
+
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- `docker`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -46,7 +47,8 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated server payload for app `3809400`
+- AlphaGSM stages `DSSettings.txt` into the install root before launch
 
 ## Useful Commands
 
@@ -59,20 +61,22 @@ alphagsm mystarrupt backup
 
 - Module name: `starruptureserver`
 - Default port: 7777
+- Health surface: generic `udp` on the managed main game port
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `StarRuptureServerEOS.exe`
-- **Location**: `<install_dir>/StarRuptureServerEOS.exe`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe`
+- **Location**: `<install_dir>/StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe`
+- **Runtime**: shared Docker `wine-proton`
 - **SteamCMD App ID**: `3809400`
 
 ### Server Configuration
 
-- **Config file**: See game module source
-- **Template**: See [server-templates/starruptureserver/](../server-templates/starruptureserver/) if available
+- **Config file**: `<install_dir>/DSSettings.txt`
+- **Template**: [server-templates/starruptureserver/DSSettings.txt](../server-templates/starruptureserver/DSSettings.txt)
+- **Managed fields**: AlphaGSM refreshes `SessionName` from the configured server name before each start
 
 ### Maps and Mods
 

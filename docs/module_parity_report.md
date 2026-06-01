@@ -207,7 +207,7 @@
 | squadserver | - | active | no | yes | status |
 | ss14server | - | active | no | yes | status |
 | starbound | sbserver | disabled | no | no | status |
-| starruptureserver | - | disabled | no | no | status |
+| starruptureserver | - | active | no | yes | status |
 | stationeersserver | stserver | active | no | yes | status |
 | staxelserver | - | active | no | yes | status |
 | stnserver | - | active | no | yes | status |
