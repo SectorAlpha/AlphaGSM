@@ -2,6 +2,13 @@
 
 This guide covers the `roserver` module in AlphaGSM.
 
+## Status
+
+`roserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Red Orchestra dedicated server app `223250`.
+
 ## Requirements
 
 - `screen`

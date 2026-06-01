@@ -25,7 +25,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Blackwake: Overgrowth (app 416881) requires authentication (No subscription); module disabled")
+@pytest.mark.skip(
+    reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Blackwake: Overgrowth dedicated server app 416881 before setup/start"
+)
 def test_boserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

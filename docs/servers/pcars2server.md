@@ -2,6 +2,13 @@
 
 This guide covers the `pcars2server` module in AlphaGSM.
 
+## Status
+
+`pcars2server` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Project CARS 2 dedicated server app `413770`.
+
 ## Requirements
 
 - `screen`

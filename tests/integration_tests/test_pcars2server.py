@@ -25,7 +25,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="SteamCMD app 413770 requires authentication (No subscription)")
+@pytest.mark.skip(
+    reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Project CARS 2 dedicated server app 413770 before setup/start"
+)
 def test_pcars2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

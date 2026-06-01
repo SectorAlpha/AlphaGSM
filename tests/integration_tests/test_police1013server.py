@@ -25,7 +25,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Police 1013 (app 2691380) requires authentication (No subscription); module disabled")
+@pytest.mark.skip(
+    reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Police 1013 dedicated server app 2691380 before setup/start"
+)
 def test_police1013server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

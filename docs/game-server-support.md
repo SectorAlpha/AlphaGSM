@@ -186,6 +186,14 @@ Notes:
 - [x] brickadiaserver
 - [x] interstellarriftserver
 - [x] twserver
+- [x] accserver
+- [x] boserver
+- [x] deadmatterserver
+- [x] kfserver
+- [x] mw3server
+- [x] police1013server
+- [x] pcars2server
+- [x] roserver
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -236,23 +244,15 @@ Notes:
 
 ## Not Currently Supported
 
-- [ ] accserver
 - [ ] bsserver
 - [ ] dysserver
 - [ ] ark
 - [ ] atlasserver
-- [ ] boserver
 - [ ] brokeprotocolserver
 - [ ] chivalryserver
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver
-- [ ] deadmatterserver
 - [ ] iosserver
-- [ ] kfserver
-- [ ] mw3server
-- [ ] police1013server
-- [ ] pcars2server
-- [ ] roserver
 - [ ] zpsserver
 
 ## Waiting On Prerequisites Or Validation

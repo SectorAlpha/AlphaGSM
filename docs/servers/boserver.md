@@ -2,6 +2,13 @@
 
 This guide covers the `boserver` module in AlphaGSM.
 
+## Status
+
+`boserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Blackwake: Overgrowth dedicated server app `416881`.
+
 ## Requirements
 
 - `screen`

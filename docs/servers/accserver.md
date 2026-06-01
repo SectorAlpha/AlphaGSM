@@ -2,6 +2,13 @@
 
 This guide covers the `accserver` module in AlphaGSM.
 
+## Status
+
+`accserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Assetto Corsa Competizione dedicated server app `1430110`.
+
 ## Requirements
 
 - `screen`

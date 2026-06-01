@@ -2,6 +2,13 @@
 
 This guide covers the `kfserver` module in AlphaGSM.
 
+## Status
+
+`kfserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Killing Floor dedicated server app `215360`.
+
 ## Requirements
 
 - `screen`

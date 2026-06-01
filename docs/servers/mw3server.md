@@ -2,6 +2,13 @@
 
 This guide covers the `mw3server` module in AlphaGSM.
 
+## Status
+
+`mw3server` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Modern Warfare 3 dedicated server app `115310`.
+
 ## Requirements
 
 - `screen`

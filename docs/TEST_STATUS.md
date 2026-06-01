@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 140      |
-| ENABLED (AUTH) | 25 |
+| ENABLED (AUTH) | 33 |
 | ENABLED (BYO) | 40 |
-| DISABLED | 18      |
+| DISABLED | 10      |
 | SKIPPED  | 13      |
 
 ## Status Key
@@ -175,7 +175,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (25)
+## ENABLED (AUTH) (33)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -203,6 +203,14 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | brickadiaserver | authenticated Steam/SteamCMD entitlement for Brickadia dedicated server app `3017590` |
 | interstellarriftserver | authenticated Steam/SteamCMD entitlement for Interstellar Rift dedicated server app `363360` |
 | twserver | authenticated Steam/SteamCMD entitlement for server app `380840` |
+| accserver | authenticated Steam/SteamCMD entitlement for Assetto Corsa Competizione dedicated server app `1430110` |
+| boserver | authenticated Steam/SteamCMD entitlement for Blackwake: Overgrowth dedicated server app `416881` |
+| deadmatterserver | authenticated Steam/SteamCMD entitlement for Dead Matter dedicated server app `1110990` |
+| kfserver | authenticated Steam/SteamCMD entitlement for Killing Floor dedicated server app `215360` |
+| mw3server | authenticated Steam/SteamCMD entitlement for Modern Warfare 3 dedicated server app `115310` |
+| police1013server | authenticated Steam/SteamCMD entitlement for Police 1013 dedicated server app `2691380` |
+| pcars2server | authenticated Steam/SteamCMD entitlement for Project CARS 2 dedicated server app `413770` |
+| roserver | authenticated Steam/SteamCMD entitlement for Red Orchestra dedicated server app `223250` |
 | pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
@@ -257,27 +265,19 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (18)
+## DISABLED (10)
 
 | Test | Reason |
 |------|--------|
-| accserver | SteamCMD app 1430110 requires authentication (No subscription) |
 | bsserver | Blade Symphony: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | ark | SteamCMD app 376030 is 23GB; too large for automated CI testing |
 | atlasserver | Docker-first validation 2026-05-29: the checked-in lane now seeds install-local Steam bootstrap state for the `steamcmd-linux` runtime, and a focused rerun under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` proved the remaining blocker is no longer missing compatibility libraries. SteamCMD was actively populating `steamapps/downloading/1006030` (about `25G`) and the staged `ShooterGame/Binaries/Linux/ShooterGameServer` reproduced an immediate `Signal 11 caught.` crash inside the validated Docker image; `ldd` resolved the legacy OpenSSL/protobuf/Steam dependencies cleanly, so the exact remaining blocker is an early ATLAS binary segfault before A2S `info` / `query` can come up. |
-| boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
 | chivalryserver | SteamCMD app 220070 now repairs the missing `PhysXUpdateLoader.so` alias, syncs the managed engine ports, and exposes the install-root Steam library paths so the Linux binary can locate `steamclient.so`, but anonymous startup still aborts in `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` before A2S `query` / `info` ever become reachable |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | dabserver | Dedicated server binary segfaults on startup |
-| deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
 | iosserver | IOSoccer dedicated server segfaults on startup |
-| kfserver | SteamCMD app 215360 requires authentication (No subscription) |
-| mw3server | SteamCMD app 115310 requires authentication (No subscription) |
-| police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
-| pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
-| roserver | SteamCMD app 223250 requires authentication (No subscription) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
 ## SKIPPED (13)

@@ -2,6 +2,13 @@
 
 This guide covers the `police1013server` module in AlphaGSM.
 
+## Status
+
+`police1013server` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Police 1013 dedicated server app `2691380`.
+
 ## Requirements
 
 - `screen`

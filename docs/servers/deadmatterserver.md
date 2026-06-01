@@ -2,6 +2,13 @@
 
 This guide covers the `deadmatterserver` module in AlphaGSM.
 
+## Status
+
+`deadmatterserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Dead Matter dedicated server app `1110990`.
+
 ## Requirements
 
 - `screen`

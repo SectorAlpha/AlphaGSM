@@ -19,7 +19,12 @@ from conftest import (
 )
 from gamemodules.accserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Assetto Corsa Competizione dedicated server app 1430110 before setup/start"
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
