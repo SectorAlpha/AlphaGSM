@@ -167,6 +167,16 @@ Notes:
 
 - [x] gtafivemserver
 - [x] l4d2server
+- [x] arma2coserver
+- [x] arma3server
+- [x] arma3altislifeserver
+- [x] arma3desolationreduxserver
+- [x] arma3epochserver
+- [x] arma3exileserver
+- [x] arma3headlessserver
+- [x] arma3wastelandserver
+- [x] dayzarma2epochserver
+- [x] dayzserver
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -217,18 +227,10 @@ Notes:
 
 ## Not Currently Supported
 
+- [ ] accserver
 - [ ] bsserver
 - [ ] dysserver
-- [ ] accserver
 - [ ] ark
-- [ ] arma2coserver
-- [ ] arma3altislifeserver
-- [ ] arma3desolationreduxserver
-- [ ] arma3epochserver
-- [ ] arma3exileserver
-- [ ] arma3headlessserver
-- [ ] arma3server
-- [ ] arma3wastelandserver
 - [ ] atlasserver
 - [ ] boserver
 - [ ] brokeprotocolserver
@@ -236,8 +238,6 @@ Notes:
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver
 - [ ] deadmatterserver
-- [ ] dayzarma2epochserver
-- [ ] dayzserver
 - [ ] iosserver
 - [ ] kfserver
 - [ ] mw3server

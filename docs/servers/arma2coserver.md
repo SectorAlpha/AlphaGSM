@@ -2,6 +2,13 @@
 
 This guide covers the `arma2coserver` module in AlphaGSM.
 
+## Status
+
+`arma2coserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 2: Combined Operations dedicated server app `33935`.
+
 ## Requirements
 
 - `screen`

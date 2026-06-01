@@ -2,6 +2,13 @@
 
 This guide covers the `dayzarma2epochserver` module in AlphaGSM.
 
+## Status
+
+`dayzarma2epochserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 2: Combined Operations dedicated server app `33935`.
+
 ## Requirements
 
 - `screen`

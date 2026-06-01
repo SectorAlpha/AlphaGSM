@@ -2,6 +2,13 @@
 
 This guide covers the `dayzserver` module in AlphaGSM.
 
+## Status
+
+`dayzserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+DayZ dedicated server app `223350`.
+
 ## Requirements
 
 - `screen`

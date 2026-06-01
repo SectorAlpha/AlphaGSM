@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-06-01
+- Support state: promote `arma2coserver`, the Arma 3 family (`arma3server`, `arma3altislifeserver`, `arma3desolationreduxserver`, `arma3epochserver`, `arma3exileserver`, `arma3headlessserver`, `arma3wastelandserver`), `dayzarma2epochserver`, and `dayzserver` into `ENABLED (AUTH)` after narrowing their current blocker to Steam entitlement rather than broken Linux lifecycle wiring; the guides, smoke headers, integration skip reasons, and support tracker now say plainly that these lanes need authenticated Steam or SteamCMD access before `setup`.
+
 2026-05-31
 - Support state: reclassify `l4d2server` from `ENABLED (BYO)` to `ENABLED (AUTH)` after proving the real blocker is not missing assets but anonymous SteamCMD entitlement: app `222860` still returns `Invalid platform` on Linux even with an explicit Linux depot override, so AlphaGSM now treats this lane as authenticated Steam/SteamCMD access required and documents that future SteamCMD auth-profile flow explicitly in the guide, smoke header, integration skip reason, and tracker row.
 - Support state: promote `ndserver` into `ENABLED (BYO)` now that the old disabled row is narrowed to its real requirement class instead of looking like a mysterious Linux runtime failure; AlphaGSM now fails fast with explicit staged-content guidance for the missing Nuclear Dawn game tree, and the guide, smoke header, integration skip reason, and tracker row document the required local content before startup.

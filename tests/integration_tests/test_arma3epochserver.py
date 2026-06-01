@@ -19,7 +19,12 @@ from conftest import (
 )
 from gamemodules.arma3epochserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Arma 3 dedicated server app 233780 before setup/start"
+    ),
+]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 

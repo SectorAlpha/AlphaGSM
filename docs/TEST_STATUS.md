@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-05-31
+Last updated: 2026-06-01
 
 ## Summary
 
@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 140      |
-| ENABLED (AUTH) | 6 |
+| ENABLED (AUTH) | 16 |
 | ENABLED (BYO) | 40 |
-| DISABLED | 28      |
+| DISABLED | 18      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -175,7 +175,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (6)
+## ENABLED (AUTH) (16)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -184,6 +184,16 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 |------|------|
 | gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
 | l4d2server | authenticated Steam/SteamCMD entitlement for Left 4 Dead 2 Dedicated Server installs |
+| arma2coserver | authenticated Steam/SteamCMD entitlement for Arma 2: Combined Operations dedicated server app `33935` |
+| arma3server | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3altislifeserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3desolationreduxserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3epochserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3exileserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3headlessserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3wastelandserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| dayzarma2epochserver | authenticated Steam/SteamCMD entitlement for Arma 2: Combined Operations dedicated server app `33935` |
+| dayzserver | authenticated Steam/SteamCMD entitlement for DayZ dedicated server app `223350` |
 | pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
@@ -238,22 +248,14 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (28)
+## DISABLED (18)
 
 | Test | Reason |
 |------|--------|
+| accserver | SteamCMD app 1430110 requires authentication (No subscription) |
 | bsserver | Blade Symphony: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
 | dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
-| accserver | SteamCMD app 1430110 requires authentication (No subscription) |
 | ark | SteamCMD app 376030 is 23GB; too large for automated CI testing |
-| arma2coserver | SteamCMD app 33935 requires authentication (No subscription) |
-| arma3altislifeserver | SteamCMD app 233780 requires authentication (No subscription) |
-| arma3desolationreduxserver | SteamCMD app 233780 requires authentication (No subscription) |
-| arma3epochserver | SteamCMD app 233780 requires authentication (No subscription) |
-| arma3exileserver | SteamCMD app 233780 requires authentication (No subscription) |
-| arma3headlessserver | SteamCMD app 233780 requires authentication (No subscription) |
-| arma3server | SteamCMD app 233780 requires authentication (No subscription) |
-| arma3wastelandserver | SteamCMD app 233780 requires authentication (No subscription) |
 | atlasserver | Docker-first validation 2026-05-29: the checked-in lane now seeds install-local Steam bootstrap state for the `steamcmd-linux` runtime, and a focused rerun under `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` proved the remaining blocker is no longer missing compatibility libraries. SteamCMD was actively populating `steamapps/downloading/1006030` (about `25G`) and the staged `ShooterGame/Binaries/Linux/ShooterGameServer` reproduced an immediate `Signal 11 caught.` crash inside the validated Docker image; `ldd` resolved the legacy OpenSSL/protobuf/Steam dependencies cleanly, so the exact remaining blocker is an early ATLAS binary segfault before A2S `info` / `query` can come up. |
 | boserver | SteamCMD app 416881 requires authentication (No subscription) |
 | brokeprotocolserver | SteamCMD app 696370 returns Invalid platform on Linux; Windows-only |
@@ -261,8 +263,6 @@ URLs.
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | dabserver | Dedicated server binary segfaults on startup |
 | deadmatterserver | SteamCMD app 1110990 requires authentication (No subscription) |
-| dayzarma2epochserver | SteamCMD app 33935 requires authentication (No subscription) |
-| dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
