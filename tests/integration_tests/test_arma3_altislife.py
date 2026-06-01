@@ -28,7 +28,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="SteamCMD app 233780 requires authentication (No subscription)")
+@pytest.mark.skip(
+    reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Arma 3 dedicated server app 233780 before setup/start"
+)
 def test_arma3_altislife_lifecycle(tmp_path):
     require_integration_opt_in()
     require_command("screen")

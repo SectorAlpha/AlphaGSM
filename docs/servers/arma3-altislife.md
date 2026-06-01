@@ -2,6 +2,13 @@
 
 This guide covers the `arma3.altislife` module in AlphaGSM.
 
+## Status
+
+`arma3.altislife` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 3 dedicated server app `233780`.
+
 ## Requirements
 
 - `screen`

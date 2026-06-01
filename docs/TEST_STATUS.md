@@ -12,10 +12,10 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 140      |
-| ENABLED (AUTH) | 35 |
+| ENABLED (AUTH) | 42 |
 | ENABLED (BYO) | 40 |
 | DISABLED | 8      |
-| SKIPPED  | 13      |
+| SKIPPED  | 6      |
 
 ## Status Key
 
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (139)
+## PASSED (140)
 
 | Test | Type |
 |------|------|
@@ -175,7 +175,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (35)
+## ENABLED (AUTH) (42)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -192,6 +192,13 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | arma3exileserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
 | arma3headlessserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
 | arma3wastelandserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3_altislife | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3_desolationredux | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3_epoch | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3_exile | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3_headless | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3_vanilla | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
+| arma3_wasteland | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
 | dayzarma2epochserver | authenticated Steam/SteamCMD entitlement for Arma 2: Combined Operations dedicated server app `33935` |
 | dayzserver | authenticated Steam/SteamCMD entitlement for DayZ dedicated server app `223350` |
 | ducksideserver | authenticated Steam/SteamCMD entitlement for Duckside dedicated server app `2690320` |
@@ -280,7 +287,7 @@ URLs.
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (13)
+## SKIPPED (6)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
@@ -291,13 +298,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
-| arma3_altislife | Arma 3 variant (needs base arma3server) |
-| arma3_desolationredux | Arma 3 variant (needs base arma3server) |
-| arma3_epoch | Arma 3 variant (needs base arma3server) |
-| arma3_exile | Arma 3 variant (needs base arma3server) |
-| arma3_headless | Arma 3 variant (needs base arma3server) |
-| arma3_vanilla | Arma 3 variant (needs base arma3server) |
-| arma3_wasteland | Arma 3 variant (needs base arma3server) |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
 
 All integration tests have been tested and categorized. No untested servers remain.

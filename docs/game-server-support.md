@@ -175,6 +175,13 @@ Notes:
 - [x] arma3exileserver
 - [x] arma3headlessserver
 - [x] arma3wastelandserver
+- [x] arma3_altislife
+- [x] arma3_desolationredux
+- [x] arma3_epoch
+- [x] arma3_exile
+- [x] arma3_headless
+- [x] arma3_vanilla
+- [x] arma3_wasteland
 - [x] dayzarma2epochserver
 - [x] dayzserver
 - [x] ducksideserver
@@ -262,11 +269,4 @@ Notes:
 - [ ] bannerlordserver
 - [ ] starruptureserver
 - [ ] subsistenceserver
-- [ ] arma3_altislife
-- [ ] arma3_desolationredux
-- [ ] arma3_epoch
-- [ ] arma3_exile
-- [ ] arma3_headless
-- [ ] arma3_vanilla
-- [ ] arma3_wasteland
 - [ ] kerbalspaceprogramserver
