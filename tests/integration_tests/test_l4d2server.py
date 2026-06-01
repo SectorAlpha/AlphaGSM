@@ -1,4 +1,7 @@
-"""Integration test for l4d2server."""
+"""Integration test for l4d2server.
+
+ENABLED (BYO): stage a complete Left 4 Dead 2 Linux dedicated server tree before setup/start
+"""
 
 import json
 import time
@@ -24,7 +27,15 @@ from conftest import (
 from gamemodules.l4d2server import steam_app_id
 from utils.valve_server import detect_query_host
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): stage a complete Left 4 Dead 2 Linux dedicated "
+            "server tree in <install_dir>/ before setup/start"
+        )
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90

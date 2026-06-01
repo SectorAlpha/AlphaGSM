@@ -191,6 +191,7 @@ Notes:
 - [x] hogwarpserver
 - [x] identityserver
 - [x] jk2server
+- [x] l4d2server
 - [x] minecraft_custom
 - [x] minecraft_tekkit
 - [x] mxbikesserver
@@ -239,7 +240,6 @@ Notes:
 - [ ] dayzserver
 - [ ] iosserver
 - [ ] kfserver
-- [ ] l4d2server
 - [ ] mw3server
 - [ ] police1013server
 - [ ] pcars2server

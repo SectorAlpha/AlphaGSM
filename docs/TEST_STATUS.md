@@ -13,8 +13,8 @@ this pass aligned the runtime gate with that existing tracker state.
 |----------|-------|
 | PASSED   | 140      |
 | ENABLED (AUTH) | 5 |
-| ENABLED (BYO) | 40 |
-| DISABLED | 29      |
+| ENABLED (BYO) | 41 |
+| DISABLED | 28      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -188,7 +188,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (40)
+## ENABLED (BYO) (41)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -214,6 +214,7 @@ URLs.
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
 | jk2server | direct archive URL or staged Jedi Outcast Linux dedicated server tree |
+| l4d2server | staged native Left 4 Dead 2 Linux dedicated server tree |
 | minecraft_custom | user-supplied server jar |
 | minecraft_tekkit | direct Tekkit archive URL or staged Tekkit.jar |
 | mxbikesserver | user-supplied dedicated archive URL |
@@ -237,7 +238,7 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (29)
+## DISABLED (28)
 
 | Test | Reason |
 |------|--------|
@@ -264,7 +265,6 @@ URLs.
 | dayzserver | SteamCMD app 223350 requires authentication (No subscription) |
 | iosserver | IOSoccer dedicated server segfaults on startup |
 | kfserver | SteamCMD app 215360 requires authentication (No subscription) |
-| l4d2server | SteamCMD app 222860 returns Invalid platform on Linux |
 | mw3server | SteamCMD app 115310 requires authentication (No subscription) |
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |

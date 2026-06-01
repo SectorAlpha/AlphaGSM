@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for l4d2server is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with an operator-supplied Left 4 Dead 2 Linux dedicated server tree.
+echo "Smoke test for l4d2server is ENABLED (BYO) - stage a complete Left 4 Dead 2 Linux dedicated server tree in <install_dir>/ so srcds_run and left4dead2/maps/c5m1_waterfront.bsp exist"
 exit 0
 
 set -Eeuo pipefail

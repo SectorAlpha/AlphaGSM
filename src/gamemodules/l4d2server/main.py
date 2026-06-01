@@ -59,12 +59,53 @@ def configure(server, ask, port=None, dir=None, *, exe_name=None):
     return result
 
 
-install = MODULE.install
+def _assert_required_server_tree(install_dir):
+    """Raise when the staged Left 4 Dead 2 server tree is not present locally."""
+
+    required_exe = os.path.join(install_dir, "srcds_run")
+    required_map = os.path.join(install_dir, "left4dead2", "maps", "c5m1_waterfront.bsp")
+    if os.path.isfile(required_exe) and os.path.isfile(required_map):
+        return
+    gamemodule_common.raise_byo_requirement(
+        "l4d2server",
+        "a staged native Left 4 Dead 2 dedicated server tree",
+        actions=(
+            "Stage a complete Left 4 Dead 2 Linux dedicated server tree into <install_dir>/",
+            "Make sure <install_dir>/srcds_run and <install_dir>/left4dead2/maps/c5m1_waterfront.bsp exist before retrying setup/start",
+            "Retry setup or start once the staged server files are present locally",
+        ),
+        docs_slug="l4d2server",
+    )
+
+
+def install(server):
+    """Install the anonymous payload when possible, otherwise require a staged tree."""
+
+    if os.path.isfile(os.path.join(server.data["dir"], "srcds_run")):
+        MODULE.sync_server_config(server)
+        _assert_required_server_tree(server.data["dir"])
+        return
+    try:
+        MODULE.install(server)
+    except Exception:
+        _assert_required_server_tree(server.data["dir"])
+        raise
+    _assert_required_server_tree(server.data["dir"])
+
+
 doinstall = MODULE.doinstall
 prestart = MODULE.prestart
 update = MODULE.update
 restart = MODULE.restart
-get_start_command = MODULE.get_start_command
+
+
+def get_start_command(server):
+    """Build the start command after validating the staged server tree."""
+
+    _assert_required_server_tree(server.data["dir"])
+    return MODULE.get_start_command(server)
+
+
 do_stop = MODULE.do_stop
 status = MODULE.status
 message = MODULE.message
