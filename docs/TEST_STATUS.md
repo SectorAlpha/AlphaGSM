@@ -12,8 +12,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 140      |
-| ENABLED (AUTH) | 5 |
-| ENABLED (BYO) | 41 |
+| ENABLED (AUTH) | 6 |
+| ENABLED (BYO) | 40 |
 | DISABLED | 28      |
 | SKIPPED  | 22      |
 
@@ -175,7 +175,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (5)
+## ENABLED (AUTH) (6)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -183,12 +183,13 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | Test | Type |
 |------|------|
 | gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
+| l4d2server | authenticated Steam/SteamCMD entitlement for Left 4 Dead 2 Dedicated Server installs |
 | pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (41)
+## ENABLED (BYO) (40)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -214,7 +215,6 @@ URLs.
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
 | jk2server | direct archive URL or staged Jedi Outcast Linux dedicated server tree |
-| l4d2server | staged native Left 4 Dead 2 Linux dedicated server tree |
 | minecraft_custom | user-supplied server jar |
 | minecraft_tekkit | direct Tekkit archive URL or staged Tekkit.jar |
 | mxbikesserver | user-supplied dedicated archive URL |
@@ -225,7 +225,7 @@ URLs.
 | qlserver | authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets |
 | sampserver | direct archive URL or staged SA-MP Linux dedicated server tree |
-| sfcserver | staged SourceForts Classic tree plus owned Half-Life 2: Deathmatch / Source SDK Base 2013 Multiplayer content |
+| sfcserver | official SourceForts Classic ModDB full-version tree staged under `sfclassic/` |
 | skyrimtogetherrebornserver | direct archive URL or staged Skyrim Together Reborn server tree |
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |

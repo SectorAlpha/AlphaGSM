@@ -24,7 +24,7 @@ MODULE = define_valve_server_module(
     client_port=27005,
     sourcetv_port=27020,
     steam_port=None,
-    app_id_mod=None,
+    app_id_mod='sfclassic',
     config_subdir='cfg',
     config_default='server.cfg',
 )
@@ -51,6 +51,12 @@ def configure(server, ask, port=None, dir=None, *, exe_name=None):
         return result
 
 
+doinstall = MODULE.doinstall
+prestart = MODULE.prestart
+update = MODULE.update
+restart = MODULE.restart
+
+
 def _assert_required_mod_content(install_dir):
         """Raise when SourceForts Classic content has not been staged locally."""
 
@@ -59,27 +65,21 @@ def _assert_required_mod_content(install_dir):
                 return
         gamemodule_common.raise_byo_requirement(
                 "sfcserver",
-                "a staged SourceForts Classic mod tree plus the owned Half-Life 2: Deathmatch and Source SDK Base 2013 Multiplayer content it depends on",
+                "an official SourceForts Classic full-version tree from ModDB staged under <install_dir>/sfclassic/",
                 actions=(
-                        "Copy the complete SourceForts Classic content tree into <install_dir>/sfclassic/",
-                        "Make sure <install_dir>/sfclassic/maps/sf_astrodome.bsp exists after staging the mod files",
-                        "Provide the owned Half-Life 2: Deathmatch and Source SDK Base 2013 Multiplayer content this mod expects locally before retrying start",
+                        "Download the latest SourceForts Classic full-version archive from the official ModDB files page",
+                        "Extract or copy that full sfclassic tree into <install_dir>/sfclassic/ so sfclassic/maps/sf_astrodome.bsp exists",
+                        "Retry setup or start after the full SourceForts Classic content tree is present locally",
                 ),
                 docs_slug="sfcserver",
         )
 
 
 def install(server):
-        """Install the SDK base files, then require staged SourceForts Classic content."""
+        """Install the SDK base scaffold, then require staged SourceForts Classic content."""
 
         MODULE.install(server)
         _assert_required_mod_content(server.data["dir"])
-
-
-doinstall = MODULE.doinstall
-prestart = MODULE.prestart
-update = MODULE.update
-restart = MODULE.restart
 
 
 def get_start_command(server):

@@ -166,6 +166,7 @@ Notes:
 ## Supported Now
 
 - [x] gtafivemserver
+- [x] l4d2server
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -191,7 +192,6 @@ Notes:
 - [x] hogwarpserver
 - [x] identityserver
 - [x] jk2server
-- [x] l4d2server
 - [x] minecraft_custom
 - [x] minecraft_tekkit
 - [x] mxbikesserver

@@ -147,6 +147,7 @@ def download(
     validate=True,
     mod=None,
     force_windows=False,
+    force_platform=None,
 ):
     """Download a game server via SteamCMD, optionally setting a GoldSrc mod.
 
@@ -159,6 +160,8 @@ def download(
         force_windows: If ``True`` instruct SteamCMD to download the Windows
             depot rather than the native Linux one.  Required for Windows-only
             game servers that are launched via Wine or Proton on Linux.
+        force_platform: Optional explicit platform override such as
+            ``"linux"`` or ``"windows"``.
     """
     # check to see if steamcmd exists
     install_steamcmd()
@@ -166,8 +169,14 @@ def download(
 
     print("Running SteamCMD")
     proc_list = [STEAMCMD_EXE]
+    if force_platform is not None:
+        force_platform = str(force_platform).strip().lower() or None
     if force_windows:
-        proc_list.extend(["+@sSteamCmdForcePlatformType", "windows"])
+        if force_platform not in (None, "windows"):
+            raise ValueError("force_windows cannot be combined with non-windows force_platform")
+        force_platform = "windows"
+    if force_platform is not None:
+        proc_list.extend(["+@sSteamCmdForcePlatformType", force_platform])
     proc_list.extend(["+force_install_dir", path])
     proc_list.extend(_get_login_args(steam_anonymous_login_possible))
     if mod is not None:

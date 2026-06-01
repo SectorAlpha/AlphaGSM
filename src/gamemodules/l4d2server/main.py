@@ -2,9 +2,11 @@
 
 import os
 from pathlib import Path
+import subprocess as sp
 
 from server.modsupport.source_addons import build_source_addon_mod_support
 from server.modsupport.registry import CuratedRegistryLoader
+import utils.steamcmd as steamcmd
 from utils.valve_server import define_valve_server_module
 
 
@@ -59,51 +61,92 @@ def configure(server, ask, port=None, dir=None, *, exe_name=None):
     return result
 
 
-def _assert_required_server_tree(install_dir):
-    """Raise when the staged Left 4 Dead 2 server tree is not present locally."""
+def _finalize_source_install(server):
+    """Apply the standard Valve Source install cleanup after SteamCMD."""
 
-    required_exe = os.path.join(install_dir, "srcds_run")
-    required_map = os.path.join(install_dir, "left4dead2", "maps", "c5m1_waterfront.bsp")
-    if os.path.isfile(required_exe) and os.path.isfile(required_map):
-        return
-    gamemodule_common.raise_byo_requirement(
+    if os.path.isfile(os.path.join(server.data["dir"], "srcds_run_64")):
+        server.data["exe_name"] = "srcds_run_64"
+
+    for script_name in ("srcds_run", "srcds_run.sh", os.path.join("bin", "srcds_run.sh")):
+        script_path = os.path.join(server.data["dir"], script_name)
+        if not os.path.isfile(script_path):
+            continue
+        with open(script_path, "rb") as handle:
+            content = handle.read()
+        if content.startswith(b"#!") and b"\r\n" in content:
+            with open(script_path, "wb") as handle:
+                handle.write(content.replace(b"\r\n", b"\n"))
+
+
+def _raise_auth_install_requirement():
+    gamemodule_common.raise_auth_requirement(
         "l4d2server",
-        "a staged native Left 4 Dead 2 dedicated server tree",
+        "authenticated Steam or SteamCMD access to install the Left 4 Dead 2 dedicated server depots",
         actions=(
-            "Stage a complete Left 4 Dead 2 Linux dedicated server tree into <install_dir>/",
-            "Make sure <install_dir>/srcds_run and <install_dir>/left4dead2/maps/c5m1_waterfront.bsp exist before retrying setup/start",
-            "Retry setup or start once the staged server files are present locally",
+            "Authenticate Steam or SteamCMD with an account that is entitled to Left 4 Dead 2 before retrying setup",
+            "Re-run setup after the future AlphaGSM SteamCMD auth-profile flow is configured for this host",
         ),
         docs_slug="l4d2server",
     )
 
 
-def install(server):
-    """Install the anonymous payload when possible, otherwise require a staged tree."""
+def _translate_auth_install_failure(exc):
+    output = str(getattr(exc, "output", "") or "")
+    if "Failed to install app '222860' (Invalid platform)" in output:
+        _raise_auth_install_requirement()
+    raise exc
 
-    if os.path.isfile(os.path.join(server.data["dir"], "srcds_run")):
-        MODULE.sync_server_config(server)
-        _assert_required_server_tree(server.data["dir"])
-        return
+
+_base_doinstall = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=True,
+    download_kwargs={"force_platform": "linux"},
+)
+_base_install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=True,
+    sync_server_config=MODULE.sync_server_config,
+    post_download_hook=_finalize_source_install,
+    download_kwargs={"force_platform": "linux"},
+)
+_base_update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=True,
+    sync_server_config=MODULE.sync_server_config,
+    post_download_hook=_finalize_source_install,
+    download_kwargs={"force_platform": "linux"},
+)
+
+
+def doinstall(server):
     try:
-        MODULE.install(server)
-    except Exception:
-        _assert_required_server_tree(server.data["dir"])
-        raise
-    _assert_required_server_tree(server.data["dir"])
+        _base_doinstall(server)
+    except sp.CalledProcessError as exc:
+        _translate_auth_install_failure(exc)
 
 
-doinstall = MODULE.doinstall
+def install(server):
+    try:
+        _base_install(server)
+    except sp.CalledProcessError as exc:
+        _translate_auth_install_failure(exc)
+
+
 prestart = MODULE.prestart
-update = MODULE.update
+
+
+def update(server, validate=False, restart=False):
+    try:
+        _base_update(server, validate=validate, restart=restart)
+    except sp.CalledProcessError as exc:
+        _translate_auth_install_failure(exc)
+
+
 restart = MODULE.restart
-
-
-def get_start_command(server):
-    """Build the start command after validating the staged server tree."""
-
-    _assert_required_server_tree(server.data["dir"])
-    return MODULE.get_start_command(server)
+get_start_command = MODULE.get_start_command
 
 
 do_stop = MODULE.do_stop

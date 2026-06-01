@@ -250,6 +250,36 @@ def test_download_forces_windows_platform_when_flag_set(monkeypatch):
     assert platform_idx < cmd.index("+app_update")
 
 
+def test_download_forces_named_platform_when_requested(monkeypatch):
+    calls = []
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
+    monkeypatch.setattr(
+        steamcmd_module.sp,
+        "run",
+        lambda cmd, stdout, stderr, text, check: (
+            calls.append(cmd)
+            or sp.CompletedProcess(cmd, 0, "Success! App '222860' fully installed.\n")
+        ),
+    )
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: "/abs/" + path)
+
+    steamcmd_module.download(
+        "srv/game",
+        222860,
+        True,
+        validate=False,
+        force_platform="linux",
+    )
+
+    cmd = calls[1]
+    assert "+@sSteamCmdForcePlatformType" in cmd
+    platform_idx = cmd.index("+@sSteamCmdForcePlatformType")
+    assert cmd[platform_idx + 1] == "linux"
+    assert platform_idx < cmd.index("+app_update")
+
+
 def test_download_does_not_add_platform_flag_by_default(monkeypatch):
     calls = []
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))

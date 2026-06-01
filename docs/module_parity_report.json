@@ -1134,8 +1134,8 @@
     "canonical_id": "l4d2server",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1370,8 +1370,8 @@
     "canonical_id": "ndserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1876,8 +1876,8 @@
     "canonical_id": "sfcserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -2395,8 +2395,8 @@
     "canonical_id": "zmrserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],

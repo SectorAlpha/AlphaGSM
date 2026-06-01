@@ -4,6 +4,7 @@ import importlib
 import json
 from pathlib import Path
 import shutil
+import subprocess as sp
 import tarfile
 import zipfile
 
@@ -52,14 +53,45 @@ class DummyServer:
         self.data = DummyData()
 
 
-def test_sfcserver_install_requires_staged_mod_content(tmp_path):
+def test_sfcserver_install_requests_sfclassic_mod_payload(tmp_path, monkeypatch):
     server = DummyServer("sfcmods")
     module = importlib.import_module("gamemodules.sfcserver")
 
     module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    calls = []
 
-    with pytest.raises(Exception, match="ENABLED \\(BYO\\): sfcserver"):
-        module.install(server)
+    def fake_download(path, app_id, anonymous, validate=True, mod=None, force_windows=False, force_platform=None):
+        calls.append(
+            {
+                "path": path,
+                "app_id": app_id,
+                "anonymous": anonymous,
+                "validate": validate,
+                "mod": mod,
+                "force_windows": force_windows,
+                "force_platform": force_platform,
+            }
+        )
+        (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+        required_map = tmp_path / "sfclassic" / "maps" / "sf_astrodome.bsp"
+        required_map.parent.mkdir(parents=True, exist_ok=True)
+        required_map.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("utils.valve_server.steamcmd.download", fake_download)
+
+    module.install(server)
+
+    assert calls == [
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": "sfclassic",
+            "force_windows": False,
+            "force_platform": None,
+        }
+    ]
 
 
 def test_sfcserver_start_command_accepts_staged_mod_content(tmp_path):
@@ -130,13 +162,63 @@ def test_ndserver_start_command_accepts_staged_mod_content(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_l4d2server_install_requires_staged_server_tree_when_anonymous_install_fails(tmp_path):
+def test_l4d2server_install_requests_linux_payload_explicitly(tmp_path, monkeypatch):
+    server = DummyServer("l4d2mods")
+    module = importlib.import_module("gamemodules.l4d2server")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    calls = []
+
+    def fake_download(path, app_id, anonymous, validate=True, mod=None, force_windows=False, force_platform=None):
+        calls.append(
+            {
+                "path": path,
+                "app_id": app_id,
+                "anonymous": anonymous,
+                "validate": validate,
+                "mod": mod,
+                "force_windows": force_windows,
+                "force_platform": force_platform,
+            }
+        )
+        (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+        required_map = tmp_path / "left4dead2" / "maps" / "c5m1_waterfront.bsp"
+        required_map.parent.mkdir(parents=True, exist_ok=True)
+        required_map.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("utils.valve_server.steamcmd.download", fake_download)
+
+    module.install(server)
+
+    assert calls == [
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": None,
+            "force_windows": False,
+            "force_platform": "linux",
+        }
+    ]
+
+
+def test_l4d2server_install_reports_auth_requirement_on_invalid_platform(tmp_path, monkeypatch):
     server = DummyServer("l4d2mods")
     module = importlib.import_module("gamemodules.l4d2server")
 
     module.configure(server, ask=False, port=27015, dir=str(tmp_path))
 
-    with pytest.raises(Exception, match="ENABLED \\(BYO\\): l4d2server"):
+    def fake_download(path, app_id, anonymous, validate=True, mod=None, force_windows=False, force_platform=None):
+        raise sp.CalledProcessError(
+            8,
+            ["steamcmd.sh"],
+            output="ERROR! Failed to install app '222860' (Invalid platform)\n",
+        )
+
+    monkeypatch.setattr("utils.steamcmd.download", fake_download)
+
+    with pytest.raises(Exception, match="ENABLED \\(AUTH\\): l4d2server"):
         module.install(server)
 
 

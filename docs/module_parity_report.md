@@ -120,7 +120,7 @@
 | kerbalspaceprogramserver | - | active | no | yes | status |
 | kf2server | - | active | no | yes | status |
 | kfserver | - | disabled | no | no | status |
-| l4d2server | - | disabled | yes | no | - |
+| l4d2server | - | active | yes | yes | - |
 | l4dserver | - | active | yes | yes | - |
 | lastoasisserver | - | active | no | yes | status |
 | lifeisfeudalserver | - | active | no | yes | status |
@@ -144,7 +144,7 @@
 | mw3server | - | active | no | yes | status |
 | mxbikesserver | - | active | no | yes | status |
 | mythofempiresserver | - | active | no | yes | status |
-| ndserver | - | disabled | yes | no | - |
+| ndserver | - | active | yes | yes | - |
 | necserver | - | active | no | yes | status |
 | nightingale | - | active | no | yes | status |
 | nmrihserver | - | active | yes | yes | - |
@@ -194,7 +194,7 @@
 | scumserver | - | disabled | no | no | status |
 | seserver | - | active | no | yes | status |
 | sevendaystodie | sdtdserver | active | no | yes | status |
-| sfcserver | - | disabled | yes | no | - |
+| sfcserver | - | active | yes | yes | - |
 | silicaserver | - | active | no | yes | status |
 | skyrimtogetherrebornserver | - | disabled | no | no | status |
 | smallandserver | - | active | no | yes | status |
@@ -245,5 +245,5 @@
 | wreckfestserver | - | active | no | yes | status |
 | wurmserver | - | active | no | yes | status |
 | xntserver | - | active | no | yes | status |
-| zmrserver | - | disabled | yes | no | - |
+| zmrserver | - | active | yes | yes | - |
 | zpsserver | - | disabled | yes | no | - |

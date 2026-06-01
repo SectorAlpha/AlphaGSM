@@ -1,6 +1,6 @@
 """Integration test for l4d2server.
 
-ENABLED (BYO): stage a complete Left 4 Dead 2 Linux dedicated server tree before setup/start
+ENABLED (AUTH): requires authenticated Steam/SteamCMD entitlement for app 222860
 """
 
 import json
@@ -31,8 +31,8 @@ pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
         reason=(
-            "ENABLED (BYO): stage a complete Left 4 Dead 2 Linux dedicated "
-            "server tree in <install_dir>/ before setup/start"
+            "ENABLED (AUTH): authenticate Steam or SteamCMD with an account "
+            "entitled to Left 4 Dead 2 Dedicated Server before lifecycle validation"
         )
     ),
 ]

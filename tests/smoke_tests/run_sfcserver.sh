@@ -1,6 +1,7 @@
-#\!/usr/bin/env bash
-# ENABLED (BYO): supported with a staged SourceForts Classic tree plus owned HL2DM/SDK 2013 MP content.
-echo "Smoke test for sfcserver is ENABLED (BYO) - stage the full SourceForts Classic tree in <install_dir>/sfclassic/ so maps/sf_astrodome.bsp exists, and provide the owned Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer content it expects."
+#!/usr/bin/env bash
+
+# ENABLED (BYO): supported with an official SourceForts Classic ModDB full-version tree staged locally.
+echo "Smoke test for sfcserver is ENABLED (BYO) - download the official SourceForts Classic full-version archive from ModDB, then stage the extracted sfclassic tree in <install_dir>/sfclassic/ so sfclassic/maps/sf_astrodome.bsp exists."
 exit 0
 
 set -Eeuo pipefail
@@ -83,6 +84,10 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'SV_ActivateServer|Server is hibernating|ready'
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

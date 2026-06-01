@@ -1,6 +1,6 @@
 """Integration test for sfcserver.
 
-ENABLED (BYO): stage SourceForts Classic plus the owned HL2DM/SDK 2013 MP content it expects
+ENABLED (BYO): stage the official SourceForts Classic ModDB full-version tree before setup/start
 """
 
 import pytest
@@ -26,9 +26,8 @@ pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
         reason=(
-            "ENABLED (BYO): stage the full SourceForts Classic tree in "
-            "<install_dir>/sfclassic/ and provide the owned Half-Life 2: "
-            "Deathmatch plus Source SDK Base 2013 Multiplayer content it expects"
+            "ENABLED (BYO): stage the official SourceForts Classic ModDB full-version tree "
+            "in <install_dir>/sfclassic/ so sfclassic/maps/sf_astrodome.bsp exists"
         )
     ),
 ]

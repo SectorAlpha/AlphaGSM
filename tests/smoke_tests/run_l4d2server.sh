@@ -1,6 +1,7 @@
-#\!/usr/bin/env bash
-# ENABLED (BYO): supported with an operator-supplied Left 4 Dead 2 Linux dedicated server tree.
-echo "Smoke test for l4d2server is ENABLED (BYO) - stage a complete Left 4 Dead 2 Linux dedicated server tree in <install_dir>/ so srcds_run and left4dead2/maps/c5m1_waterfront.bsp exist"
+#!/usr/bin/env bash
+
+# ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 222860.
+echo "Smoke test for l4d2server is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Left 4 Dead 2 Dedicated Server before setup/start."
 exit 0
 
 set -Eeuo pipefail
@@ -83,6 +84,10 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'SV_ActivateServer|Server is hibernating|ready'
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
