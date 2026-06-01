@@ -200,6 +200,7 @@ Notes:
 - [x] qlserver
 - [x] rtcwserver
 - [x] sampserver
+- [x] sfcserver
 - [x] skyrimtogetherrebornserver
 - [x] mohaaserver
 - [x] sof2server
@@ -210,6 +211,7 @@ Notes:
 - [x] ut3server
 - [x] vsserver
 - [x] lifeisfeudalserver
+- [x] zmrserver
 
 ## Not Currently Supported
 
@@ -242,8 +244,6 @@ Notes:
 - [ ] police1013server
 - [ ] pcars2server
 - [ ] roserver
-- [ ] sfcserver
-- [ ] zmrserver
 - [ ] zpsserver
 
 ## Waiting On Prerequisites Or Validation

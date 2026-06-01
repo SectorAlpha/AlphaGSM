@@ -13,8 +13,8 @@ this pass aligned the runtime gate with that existing tracker state.
 |----------|-------|
 | PASSED   | 140      |
 | ENABLED (AUTH) | 5 |
-| ENABLED (BYO) | 37 |
-| DISABLED | 32      |
+| ENABLED (BYO) | 39 |
+| DISABLED | 30      |
 | SKIPPED  | 22      |
 
 ## Status Key
@@ -188,7 +188,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
 
-## ENABLED (BYO) (37)
+## ENABLED (BYO) (39)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -223,6 +223,7 @@ URLs.
 | qlserver | authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets |
 | sampserver | direct archive URL or staged SA-MP Linux dedicated server tree |
+| sfcserver | staged SourceForts Classic tree plus owned Half-Life 2: Deathmatch / Source SDK Base 2013 Multiplayer content |
 | skyrimtogetherrebornserver | direct archive URL or staged Skyrim Together Reborn server tree |
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |
@@ -233,8 +234,9 @@ URLs.
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
+| zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (32)
+## DISABLED (30)
 
 | Test | Reason |
 |------|--------|
@@ -267,8 +269,6 @@ URLs.
 | police1013server | SteamCMD app 2691380 requires authentication (No subscription) |
 | pcars2server | SteamCMD app 413770 requires authentication (No subscription) |
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
-| sfcserver | SourceForts Classic requires Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer (Steam app 243750); anonymous SteamCMD app 244310 lacks required runtime modules and exits at soundemittersystem.so |
-| zmrserver | SteamCMD app 244310 installs incomplete Zombie Master: Reborn content (only cfg scaffold, no mod payload) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
 ## SKIPPED (22)

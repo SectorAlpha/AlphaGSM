@@ -7,7 +7,13 @@ This guide covers the `zmrserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- Manual Zombie Master: Reborn server content; SteamCMD app `244310` only installs `Source SDK Base 2013 Dedicated Server`
+- A staged Zombie Master: Reborn content tree under `<install_dir>/zombie_master_reborn/`
+
+## Support Status
+
+`zmrserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the
+generic Source SDK Base 2013 Dedicated Server scaffold from anonymous SteamCMD,
+but the real `zombie_master_reborn/` payload still has to be staged locally.
 
 ## Quick Start
 
@@ -50,6 +56,11 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Before `start`, stage the full Zombie Master: Reborn tree so
+`<install_dir>/zombie_master_reborn/maps/zm_docksofthedead.bsp` exists. If
+`setup` or `start` reports an `ENABLED (BYO)` requirement, the public app
+`244310` scaffold is still missing the actual mod payload.
 
 ## Useful Commands
 
@@ -95,6 +106,6 @@ alphagsm myzmrserve backup
 - **Mod directory**: `zombie_master_reborn/addons/`
 - **Workshop support**: No
 - **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/zombie_master_reborn/`.
-- **Current status**: Anonymous SteamCMD only provides the generic Source SDK 2013 dedicated server scaffold. It does not include the `zombie_master_reborn` mod payload, so this module remains disabled until a real content source or additional install step is implemented.
+- **Current status**: Supported in `ENABLED (BYO)` mode. Anonymous SteamCMD app `244310` only provides the generic Source SDK 2013 dedicated server scaffold, so stage the real `zombie_master_reborn/` content tree before retrying startup.
 - **Map install**: Copy `.bsp` files into `zombie_master_reborn/maps/` and add to `zombie_master_reborn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `zombie_master_reborn/addons/`.

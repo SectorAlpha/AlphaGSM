@@ -7,7 +7,16 @@ This guide covers the `sfcserver` module in AlphaGSM.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- A legitimate copy of Half-Life 2: Deathmatch and Source SDK Base 2013 Multiplayer
+- A staged SourceForts Classic content tree under `<install_dir>/sfclassic/`
+- Owned Half-Life 2: Deathmatch and Source SDK Base 2013 Multiplayer content that the mod expects at runtime
+
+## Support Status
+
+`sfcserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the
+generic Source SDK Base 2013 Dedicated Server scaffold from anonymous SteamCMD,
+but it still needs the real SourceForts Classic mod content plus the owned
+Half-Life 2: Deathmatch / Source SDK Base 2013 Multiplayer assets the mod
+depends on.
 
 ## Quick Start
 
@@ -50,6 +59,11 @@ Setup configures:
 - the executable name
 - SteamCMD downloads the server files
 - default configuration and backup settings
+
+Before `start`, stage the full SourceForts Classic tree so
+`<install_dir>/sfclassic/maps/sf_astrodome.bsp` exists. If `setup` or `start`
+reports an `ENABLED (BYO)` requirement, the public app `244310` payload alone is
+not enough for this module.
 
 ## Useful Commands
 
@@ -95,6 +109,6 @@ alphagsm mysfcserve backup
 - **Mod directory**: `sfclassic/addons/`
 - **Workshop support**: No
 - **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/sfclassic/`.
-- **Current status**: Disabled in CI. The public SourceForts payload can be downloaded, but its own `gameinfo.txt` declares `SteamAppId 243750` and requires a legitimate Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer install. Anonymous SteamCMD app `244310` is not enough; the combined server exits at `soundemittersystem.so` before readiness.
+- **Current status**: Supported in `ENABLED (BYO)` mode. Anonymous SteamCMD app `244310` still only provides the generic SDK scaffold, so stage the real `sfclassic/` content tree and the owned Half-Life 2: Deathmatch / Source SDK Base 2013 Multiplayer assets the mod expects before retrying startup.
 - **Map install**: Copy `.bsp` files into `sfclassic/maps/` and add to `sfclassic/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `sfclassic/addons/`.

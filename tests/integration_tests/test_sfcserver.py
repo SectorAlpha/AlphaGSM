@@ -1,4 +1,7 @@
-"""Integration test for sfcserver."""
+"""Integration test for sfcserver.
+
+ENABLED (BYO): stage SourceForts Classic plus the owned HL2DM/SDK 2013 MP content it expects
+"""
 
 import pytest
 
@@ -19,7 +22,16 @@ from conftest import (
 )
 from gamemodules.sfcserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): stage the full SourceForts Classic tree in "
+            "<install_dir>/sfclassic/ and provide the owned Half-Life 2: "
+            "Deathmatch plus Source SDK Base 2013 Multiplayer content it expects"
+        )
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90

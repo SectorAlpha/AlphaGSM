@@ -1,4 +1,7 @@
-"""Integration test for zmrserver."""
+"""Integration test for zmrserver.
+
+ENABLED (BYO): stage a complete Zombie Master: Reborn content tree before setup/start
+"""
 
 import pytest
 
@@ -19,7 +22,15 @@ from conftest import (
 )
 from gamemodules.zmrserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): stage the complete Zombie Master: Reborn content "
+            "tree in <install_dir>/zombie_master_reborn/ before setup/start"
+        )
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90

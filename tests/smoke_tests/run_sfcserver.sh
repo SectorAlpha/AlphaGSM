@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for sfcserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with a staged SourceForts Classic tree plus owned HL2DM/SDK 2013 MP content.
+echo "Smoke test for sfcserver is ENABLED (BYO) - stage the full SourceForts Classic tree in <install_dir>/sfclassic/ so maps/sf_astrodome.bsp exists, and provide the owned Half-Life 2: Deathmatch plus Source SDK Base 2013 Multiplayer content it expects."
 exit 0
 
 set -Eeuo pipefail

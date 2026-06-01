@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for zmrserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (BYO): supported with an operator-supplied Zombie Master: Reborn content tree.
+echo "Smoke test for zmrserver is ENABLED (BYO) - copy the full Zombie Master: Reborn content tree into <install_dir>/zombie_master_reborn/ so maps/zm_docksofthedead.bsp exists"
 exit 0
 
 set -Eeuo pipefail
