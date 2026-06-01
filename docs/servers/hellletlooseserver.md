@@ -2,6 +2,13 @@
 
 This guide covers the `hellletlooseserver` module in AlphaGSM.
 
+## Status
+
+`hellletlooseserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Hell Let Loose dedicated server app `822500`.
+
 ## Requirements
 
 - `screen`

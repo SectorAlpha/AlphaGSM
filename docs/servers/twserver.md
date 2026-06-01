@@ -2,6 +2,13 @@
 
 This guide covers the `twserver` module in AlphaGSM.
 
+## Status
+
+`twserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+server app `380840`.
+
 ## Requirements
 
 - `screen`

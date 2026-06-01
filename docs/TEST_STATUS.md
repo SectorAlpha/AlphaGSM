@@ -12,10 +12,10 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 140      |
-| ENABLED (AUTH) | 16 |
+| ENABLED (AUTH) | 25 |
 | ENABLED (BYO) | 40 |
 | DISABLED | 18      |
-| SKIPPED  | 22      |
+| SKIPPED  | 13      |
 
 ## Status Key
 
@@ -175,7 +175,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (16)
+## ENABLED (AUTH) (25)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -194,6 +194,15 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | arma3wastelandserver | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |
 | dayzarma2epochserver | authenticated Steam/SteamCMD entitlement for Arma 2: Combined Operations dedicated server app `33935` |
 | dayzserver | authenticated Steam/SteamCMD entitlement for DayZ dedicated server app `223350` |
+| ducksideserver | authenticated Steam/SteamCMD entitlement for Duckside dedicated server app `2690320` |
+| hellletlooseserver | authenticated Steam/SteamCMD entitlement for Hell Let Loose dedicated server app `822500` |
+| motortownserver | authenticated Steam/SteamCMD entitlement for Motor Town dedicated server app `2223650` |
+| reignofkingsserver | authenticated Steam/SteamCMD entitlement for Reign of Kings dedicated server app `381690` |
+| ror2server | authenticated Steam/SteamCMD entitlement for Risk of Rain 2 dedicated server app `1180760` |
+| staxelserver | authenticated Steam/SteamCMD entitlement for Staxel dedicated server app `755170` |
+| brickadiaserver | authenticated Steam/SteamCMD entitlement for Brickadia dedicated server app `3017590` |
+| interstellarriftserver | authenticated Steam/SteamCMD entitlement for Interstellar Rift dedicated server app `363360` |
+| twserver | authenticated Steam/SteamCMD entitlement for server app `380840` |
 | pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
@@ -271,22 +280,16 @@ URLs.
 | roserver | SteamCMD app 223250 requires authentication (No subscription) |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (22)
+## SKIPPED (13)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
-| ducksideserver | SteamCMD app 2690320 requires authentication (No subscription) |
-| hellletlooseserver | SteamCMD app 822500 requires authentication (No subscription) |
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
-| motortownserver | SteamCMD app 2223650 requires authentication (No subscription) |
-| reignofkingsserver | SteamCMD app 381690 requires authentication (No subscription) |
-| ror2server | SteamCMD app 1180760 requires authentication (No subscription) |
 | scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
 | starruptureserver | Wine: SteamCMD download timed out under the default integration setup budget; CI now uses a 60 minute setup timeout for app 3809400 |
-| staxelserver | SteamCMD app 755170 requires authentication (No subscription) |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
 | arma3_altislife | Arma 3 variant (needs base arma3server) |
 | arma3_desolationredux | Arma 3 variant (needs base arma3server) |
@@ -295,9 +298,6 @@ Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` gua
 | arma3_headless | Arma 3 variant (needs base arma3server) |
 | arma3_vanilla | Arma 3 variant (needs base arma3server) |
 | arma3_wasteland | Arma 3 variant (needs base arma3server) |
-| brickadiaserver | SteamCMD app requires authentication |
-| interstellarriftserver | SteamCMD app requires authentication |
 | kerbalspaceprogramserver | SteamCMD/platform issue |
-| twserver | SteamCMD app requires authentication |
 
 All integration tests have been tested and categorized. No untested servers remain.

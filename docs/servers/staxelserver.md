@@ -2,6 +2,13 @@
 
 This guide covers the `staxelserver` module in AlphaGSM.
 
+## Status
+
+`staxelserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Staxel dedicated server app `755170`.
+
 ## Requirements
 
 - `screen`

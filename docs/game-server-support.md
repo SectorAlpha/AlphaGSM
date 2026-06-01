@@ -177,6 +177,15 @@ Notes:
 - [x] arma3wastelandserver
 - [x] dayzarma2epochserver
 - [x] dayzserver
+- [x] ducksideserver
+- [x] hellletlooseserver
+- [x] motortownserver
+- [x] reignofkingsserver
+- [x] ror2server
+- [x] staxelserver
+- [x] brickadiaserver
+- [x] interstellarriftserver
+- [x] twserver
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -248,16 +257,10 @@ Notes:
 
 ## Waiting On Prerequisites Or Validation
 
-- [ ] ducksideserver
-- [ ] hellletlooseserver
 - [ ] medievalengineersserver
-- [ ] motortownserver
-- [ ] reignofkingsserver
-- [ ] ror2server
 - [ ] scumserver
 - [ ] bannerlordserver
 - [ ] starruptureserver
-- [ ] staxelserver
 - [ ] subsistenceserver
 - [ ] arma3_altislife
 - [ ] arma3_desolationredux
@@ -266,7 +269,4 @@ Notes:
 - [ ] arma3_headless
 - [ ] arma3_vanilla
 - [ ] arma3_wasteland
-- [ ] brickadiaserver
-- [ ] interstellarriftserver
 - [ ] kerbalspaceprogramserver
-- [ ] twserver

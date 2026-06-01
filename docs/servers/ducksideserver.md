@@ -2,6 +2,13 @@
 
 This guide covers the `ducksideserver` module in AlphaGSM.
 
+## Status
+
+`ducksideserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Duckside dedicated server app `2690320`.
+
 ## Requirements
 
 - `screen`

@@ -2,6 +2,13 @@
 
 This guide covers the `interstellarriftserver` module in AlphaGSM.
 
+## Status
+
+`interstellarriftserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Interstellar Rift dedicated server app `363360`.
+
 ## Requirements
 
 - `screen`

@@ -20,7 +20,12 @@ from conftest import (
 )
 from gamemodules.hellletlooseserver import steam_app_id
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Hell Let Loose dedicated server app 822500 before setup/start"
+    ),
+]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 

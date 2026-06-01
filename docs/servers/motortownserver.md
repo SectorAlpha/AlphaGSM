@@ -2,6 +2,13 @@
 
 This guide covers the `motortownserver` module in AlphaGSM.
 
+## Status
+
+`motortownserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Motor Town dedicated server app `2223650`.
+
 ## Requirements
 
 - `screen`

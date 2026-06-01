@@ -2,6 +2,13 @@
 
 This guide covers the `ror2server` module in AlphaGSM.
 
+## Status
+
+`ror2server` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Risk of Rain 2 dedicated server app `1180760`.
+
 ## Requirements
 
 - `screen`

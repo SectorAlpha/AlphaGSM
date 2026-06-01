@@ -2,6 +2,13 @@
 
 This guide covers the `reignofkingsserver` module in AlphaGSM.
 
+## Status
+
+`reignofkingsserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Reign of Kings dedicated server app `381690`.
+
 ## Requirements
 
 - `screen`

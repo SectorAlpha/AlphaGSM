@@ -2,6 +2,13 @@
 
 This guide covers the `brickadiaserver` module in AlphaGSM.
 
+## Status
+
+`brickadiaserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Brickadia dedicated server app `3017590`.
+
 ## Requirements
 
 - `screen`
