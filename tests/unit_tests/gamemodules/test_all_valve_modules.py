@@ -377,7 +377,7 @@ def test_zmrserver_configure(tmp_path):
 # ── Zombie Panic! Source ─────────────────────────────────────────────────────
 
 def test_zpsserver_configure(tmp_path):
-    _configure_and_check("zpsserver", 17505, "zps", "srcds_run", "zps_deadend", tmp_path)
+    _configure_and_check("zpsserver", 4523420, "zp", "hlds_run", "zph_industry", tmp_path)
 
 
 # ── IOSoccer ─────────────────────────────────────────────────────────────────

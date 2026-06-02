@@ -34,7 +34,6 @@ THIN_SOURCE_MODULES = [
     "pvkiiserver",
     "sfcserver",
     "zmrserver",
-    "zpsserver",
 ]
 
 

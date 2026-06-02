@@ -453,6 +453,24 @@ def test_legacy_source_module_prestart_writes_runtime_steam_appid_file(tmp_path)
     assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "317360\n"
 
 
+def test_zpsserver_prestart_writes_goldsrc_runtime_steam_appid_file(tmp_path):
+    module = importlib.import_module("gamemodules.zpsserver")
+    (tmp_path / "zp").mkdir(parents=True)
+    (tmp_path / "zp" / "server.cfg").write_text("", encoding="utf-8")
+    (tmp_path / "hlds_run").write_text("", encoding="utf-8")
+    server = SimpleNamespace(
+        name="zpsalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "Steam_AppID": 4523420,
+        },
+    )
+
+    module.prestart(server)
+
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "70\n"
+
+
 def test_dabserver_install_requires_authenticated_current_content(tmp_path):
     module = importlib.import_module("gamemodules.dabserver")
     server = SimpleNamespace(
