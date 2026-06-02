@@ -1,6 +1,8 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
+# DISABLED: IOSoccer still crashes on the public branch in the validated
+# Docker-backed Source lane, and fresh anonymous SteamCMD probes also fail to
+# set the advertised sdk2013 branches iosoccer2025 and beta ("Failed to set
+# beta"). See docs/TEST_STATUS.md for the current blocker details.
 echo "Smoke test for iosserver is disabled - see docs/TEST_STATUS.md for status"
 exit 0
 
