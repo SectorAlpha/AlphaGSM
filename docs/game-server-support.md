@@ -265,8 +265,8 @@ Notes:
 - [ ] counterstrikeglobaloffensive
 - [ ] iosserver
 - [ ] zpsserver
+- [ ] medievalengineersserver
 
 ## Waiting On Prerequisites Or Validation
 
-- [ ] medievalengineersserver
 - [ ] subsistenceserver

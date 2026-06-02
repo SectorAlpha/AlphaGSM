@@ -4,7 +4,7 @@ This guide covers the `medievalengineersserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- Docker for the validated Linux runtime path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 - Proton compatibility runtime on Linux; bare Wine is not sufficient for the current dedicated server build
@@ -74,7 +74,7 @@ alphagsm mymedieval backup
 
 - **Config files**: `global.cfg`
 - **Template**: See [server-templates/medievalengineersserver/](../server-templates/medievalengineersserver/) if available
-- **Current status**: Disabled in CI. With Proton installed, the dedicated server now gets past the old bare-Wine startup failure but still exits before producing any Medieval Engineers server log or readiness marker. By cleanup time there is no running process left for `stop`, so more runtime-specific investigation is still required.
+- **Current status**: Disabled in CI. Fresh Docker `wine-proton` validation now proves the remaining blocker is inside the Windows runtime bootstrap, not SteamCMD or a missing executable: anonymous app `367970` installs the full dedicated payload, but under Proton the dedicated EXE throws `System.PlatformNotSupportedException: Video driver  not supported`, then emits follow-on missing-resource and XML-serializer exceptions including missing `Content\\Textures\\Splashscreens` before AlphaGSM can reach server logs or A2S readiness.
 
 ### Maps and Mods
 

@@ -14,8 +14,8 @@ this pass aligned the runtime gate with that existing tracker state.
 | PASSED   | 145      |
 | ENABLED (AUTH) | 44 |
 | ENABLED (BYO) | 41 |
-| DISABLED | 4      |
-| SKIPPED  | 2      |
+| DISABLED | 5      |
+| SKIPPED  | 1      |
 
 ## Status Key
 
@@ -282,7 +282,7 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (4)
+## DISABLED (5)
 
 | Test | Reason |
 |------|--------|
@@ -290,14 +290,14 @@ URLs.
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | iosserver | IOSoccer now stages a clean `server.cfg` in the Docker-backed Source lane, and even with parent runtime AppID `673560` staged into `steam_appid.txt` the dedicated server still falls into the same repeated `srcds_run` segmentation-fault restart loop immediately after launch |
 | zpsserver | Zombie Panic! Source gets through Breakpad startup and VPK hash loading, then segfaults before creating its expected pid/debug details; host `setarch -X` and `-debug` probes change timing but do not avoid the crash |
+| medievalengineersserver | Anonymous SteamCMD app `367970` still installs the full Windows dedicated payload, but the Proton/Wine startup path fails inside the dedicated UI/runtime bootstrap: Xalia throws `System.PlatformNotSupportedException: Video driver  not supported`, then the process emits follow-on missing-resource and XML-serializer exceptions including missing `Content\\Textures\\Splashscreens` before producing any server logs or A2S readiness |
 
-## SKIPPED (2)
+## SKIPPED (1)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
-| medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
 
 All integration tests have been tested and categorized. No untested servers remain.
