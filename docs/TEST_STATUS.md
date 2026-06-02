@@ -12,10 +12,10 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 145      |
-| ENABLED (AUTH) | 43 |
+| ENABLED (AUTH) | 44 |
 | ENABLED (BYO) | 41 |
 | DISABLED | 4      |
-| SKIPPED  | 3      |
+| SKIPPED  | 2      |
 
 ## Status Key
 
@@ -180,7 +180,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (43)
+## ENABLED (AUTH) (44)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -222,6 +222,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | police1013server | authenticated Steam/SteamCMD entitlement for Police 1013 dedicated server app `2691380` |
 | pcars2server | authenticated Steam/SteamCMD entitlement for Project CARS 2 dedicated server app `413770` |
 | roserver | authenticated Steam/SteamCMD entitlement for Red Orchestra dedicated server app `223250` |
+| bannerlordserver | authenticated Steam/SteamCMD access to Bannerlord dedicated server app `1863440` branch `linux_test`, plus a TaleWorlds custom server token before start |
 | chivalryserver | authenticated Steam/SteamCMD entitlement for Chivalry: Medieval Warfare Dedicated Server app `220070` |
 | brokeprotocolserver | authenticated Steam/SteamCMD entitlement for BROKE PROTOCOL app `696370` |
 | bsserver | authenticated Steam or SteamCMD entitlement for Blade Symphony dedicated server app `228780` plus the shared owned `berimbau` depot content that can be missing from anonymous installs |
@@ -290,14 +291,13 @@ URLs.
 | iosserver | IOSoccer now stages a clean `server.cfg` in the Docker-backed Source lane, and even with parent runtime AppID `673560` staged into `steam_appid.txt` the dedicated server still falls into the same repeated `srcds_run` segmentation-fault restart loop immediately after launch |
 | zpsserver | Zombie Panic! Source gets through Breakpad startup and VPK hash loading, then segfaults before creating its expected pid/debug details; host `setarch -X` and `-debug` probes change timing but do not avoid the crash |
 
-## SKIPPED (3)
+## SKIPPED (2)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
-| bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
 
 All integration tests have been tested and categorized. No untested servers remain.

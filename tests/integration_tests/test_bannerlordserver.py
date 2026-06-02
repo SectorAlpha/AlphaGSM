@@ -21,7 +21,16 @@ from conftest import (
 )
 from gamemodules.bannerlordserver import steam_app_id
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (AUTH): authenticate Steam or SteamCMD with an account that can "
+            "access Bannerlord dedicated server app 1863440 branch linux_test, then "
+            "provide a TaleWorlds custom server token before start"
+        )
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90

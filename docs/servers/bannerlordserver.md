@@ -2,12 +2,22 @@
 
 This guide covers the `bannerlordserver` module in AlphaGSM.
 
-## Requirements
+## Support Status
 
-- `docker` for the supported validation path on `release_v1`
-- host `dotnet` only if you intentionally run the legacy process-backed path outside Docker
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+`bannerlordserver` is supported in `ENABLED (AUTH)` mode.
+
+AlphaGSM can:
+
+- manage the dedicated server lifecycle
+- install the Linux dedicated payload through SteamCMD when authenticated access is available
+- launch the Linux server through the shared `steamcmd-linux` Docker runtime
+
+The remaining operator-provided prerequisites are:
+
+- authenticated Steam or SteamCMD access to Bannerlord dedicated server app `1863440` branch `linux_test`
+- a TaleWorlds custom server token before `start`
+
+Anonymous SteamCMD is not enough for the supported Linux branch.
 
 ## Quick Start
 
@@ -17,11 +27,21 @@ Create the server:
 alphagsm mybannerlo create bannerlordserver
 ```
 
+Configure SteamCMD credentials in your AlphaGSM user config so `setup` can use an entitled account:
+
+```ini
+[downloader.steamcmd]
+username = YOUR_STEAM_USERNAME
+password = YOUR_STEAM_PASSWORD
+```
+
 Run setup:
 
 ```bash
 alphagsm mybannerlo setup
 ```
+
+Generate a custom server token from the Bannerlord multiplayer client, then stage it where the dedicated server can use it, or pass it through the supported launch argument flow described in the official TaleWorlds hosting guide.
 
 Start it:
 
@@ -41,14 +61,34 @@ Stop it:
 alphagsm mybannerlo stop
 ```
 
+## Requirements
+
+- Docker for the supported Linux runtime path
+- SteamCMD
+- authenticated Steam or SteamCMD access to Bannerlord dedicated server app `1863440` branch `linux_test`
+- a TaleWorlds custom server token generated from an owned Bannerlord multiplayer account
+
 ## Setup Details
 
 Setup configures:
 
-- the game port (default 7210)
+- the game port
 - the install directory
-- SteamCMD downloads the server files
-- AlphaGSM launches the Linux starter from `bin/Linux64_Shipping_Server/`
+- the Linux dedicated branch `linux_test` from Steam app `1863440`
+- the Linux starter under `bin/Linux64_Shipping_Server/`
+
+## TaleWorlds Custom Server Token
+
+Bannerlord dedicated hosting requires a custom server token tied to a Bannerlord account.
+
+The official TaleWorlds flow is:
+
+1. Launch Bannerlord multiplayer and log in.
+2. Open the in-game console.
+3. Run `customserver.gettoken`.
+4. Copy the generated token to the host that will run the dedicated server, or pass it on launch with `/dedicatedcustomserverauthtoken`.
+
+The token expires periodically, so replace it when TaleWorlds rotates it.
 
 ## Useful Commands
 
@@ -60,12 +100,10 @@ alphagsm mybannerlo backup
 ## Notes
 
 - Module name: `bannerlordserver`
-- Default port: 7210
-- Anonymous SteamCMD installs for app `1863440` do succeed; the stale disabled gate was caused by the module pointing at a nonexistent root executable instead of the installed Linux starter.
-- The current Linux launch path is `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll` from `bin/Linux64_Shipping_Server/`.
-- The supported validation path on `release_v1` is the module's existing `steamcmd-linux` Docker runtime. The checked-in smoke and integration runners now prefer the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image when it is present, then fall back to `ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX`, then the published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image.
-- On this branch, the published `ghcr.io/...:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, so it does not prove the real Bannerlord lifecycle here.
-- The branch-local Docker image gets to the real server runtime, but Bannerlord is still not green there: after setup succeeds and `dotnet --info` confirms `.NET 6.0.36`, `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` segfaults immediately and the managed container exits `139` before AlphaGSM can reach A2S `query` or `info`.
+- Steam App ID: `1863440`
+- Steam branch: `linux_test`
+- Default port: `7210`
+- Default executable: `bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`
 
 ## Developer Notes
 
@@ -73,17 +111,11 @@ alphagsm mybannerlo backup
 
 - **Executable**: `TaleWorlds.Starter.DotNetCore.Linux.dll`
 - **Location**: `<install_dir>/bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: `.NET` Linux dedicated server started through `dotnet`
 - **SteamCMD App ID**: `1863440`
+- **Steam branch**: `linux_test`
 
-### Server Configuration
+### Runtime Notes
 
-- **Config file**: See game module source
-- **Max players**: `32`
-- **Template**: See [server-templates/bannerlordserver/](../server-templates/bannerlordserver/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- The supported Linux lane is the module's `steamcmd-linux` Docker runtime contract.
+- The validated setup blocker is no longer a missing `dotnet` runtime. The real gating requirement is access to the authenticated `linux_test` branch plus a valid custom server token.

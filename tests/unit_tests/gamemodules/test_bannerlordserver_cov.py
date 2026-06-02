@@ -68,25 +68,39 @@ def test_install(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = mod.BANNERLORD_LINUX_DLL
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
     mod.install(server)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/",
+        1863440,
+        False,
+        validate=False,
+        beta_branch=mod.BANNERLORD_LINUX_BETA_BRANCH,
+    )
 
 
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
     mod.update(server, validate=True, restart=True)
     assert server._stopped
     assert server._started
+    mod.steamcmd.download.assert_called_with(
+        str(tmp_path) + "/",
+        1863440,
+        False,
+        validate=True,
+        beta_branch=mod.BANNERLORD_LINUX_BETA_BRANCH,
+    )
 
 
 def test_update_no_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
     mod.update(server, validate=False, restart=False)
     assert server._stopped
     assert not server._started
@@ -96,7 +110,7 @@ def test_update_stop_exception(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
     server.stop = MagicMock(side_effect=Exception('already stopped'))
     mod.update(server, validate=False, restart=False)
 

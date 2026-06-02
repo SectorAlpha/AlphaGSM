@@ -148,6 +148,8 @@ def download(
     mod=None,
     force_windows=False,
     force_platform=None,
+    beta_branch=None,
+    beta_password=None,
 ):
     """Download a game server via SteamCMD, optionally setting a GoldSrc mod.
 
@@ -162,6 +164,8 @@ def download(
             game servers that are launched via Wine or Proton on Linux.
         force_platform: Optional explicit platform override such as
             ``"linux"`` or ``"windows"``.
+        beta_branch: Optional Steam branch name to install.
+        beta_password: Optional branch password paired with ``beta_branch``.
     """
     # check to see if steamcmd exists
     install_steamcmd()
@@ -179,6 +183,31 @@ def download(
         proc_list.extend(["+@sSteamCmdForcePlatformType", force_platform])
     proc_list.extend(["+force_install_dir", path])
     proc_list.extend(_get_login_args(steam_anonymous_login_possible))
+    if beta_branch:
+        proc_list.extend(["+app_update", str(Steam_AppID), "-beta", str(beta_branch)])
+        if beta_password:
+            proc_list.extend(["-betapassword", str(beta_password)])
+        proc_list.append("+quit")
+        if validate:
+            proc_list.insert(-1, "validate")
+        last_output = ""
+        for attempt in range(STEAMCMD_RETRIES):
+            proc = sp.run(
+                proc_list, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False
+            )
+            print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
+            last_output = proc.stdout
+            if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
+                _ensure_steamclient_symlinks()
+                return
+            if attempt + 1 < STEAMCMD_RETRIES:
+                retry_delay = _steamcmd_retry_delay(proc.stdout, Steam_AppID)
+                print(
+                    "SteamCMD did not complete install cleanly, retrying in %ss..."
+                    % (retry_delay,)
+                )
+                time.sleep(retry_delay)
+        raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
     if mod is not None:
         proc_list.extend(["+app_set_config", "90", "mod", str(mod)])
     proc_list.extend(["+app_update", str(Steam_AppID), "+quit"])

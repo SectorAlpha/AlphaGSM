@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -11,7 +10,8 @@ from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1863440
-steam_anonymous_login_possible = True
+steam_anonymous_login_possible = False
+BANNERLORD_LINUX_BETA_BRANCH = "linux_test"
 
 BANNERLORD_LINUX_LAUNCH_DIR = os.path.join("bin", "Linux64_Shipping_Server")
 BANNERLORD_LINUX_DLL = os.path.join(
@@ -79,6 +79,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"beta_branch": BANNERLORD_LINUX_BETA_BRANCH},
 )
 install.__doc__ = "Download the Bannerlord server files via SteamCMD."
 
@@ -87,6 +88,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"beta_branch": BANNERLORD_LINUX_BETA_BRANCH},
 )
 update.__doc__ = "Update the Bannerlord server files and optionally restart the server."
 

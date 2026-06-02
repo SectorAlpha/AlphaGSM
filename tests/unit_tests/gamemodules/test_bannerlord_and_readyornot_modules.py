@@ -137,12 +137,12 @@ def test_bannerlord_and_readyornot_update_downloads_and_optionally_restart(monke
     monkeypatch.setattr(
         bannerlordserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, **kwargs: calls.append((path, app_id, anon, validate, kwargs)),
     )
 
     bannerlordserver.update(banner, validate=True, restart=True)
     readyornotserver.update(ron, validate=False, restart=False)
 
-    assert ("/srv/banner/", 1863440, True, True) in calls
-    assert ("/srv/ron/", 950290, True, False) in calls
+    assert ("/srv/banner/", 1863440, False, True, {"beta_branch": bannerlordserver.BANNERLORD_LINUX_BETA_BRANCH}) in calls
+    assert ("/srv/ron/", 950290, True, False, {"force_windows": True}) in calls
     assert banner.start_calls == 1

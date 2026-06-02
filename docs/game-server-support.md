@@ -205,6 +205,7 @@ Notes:
 - [x] police1013server
 - [x] pcars2server
 - [x] roserver
+- [x] bannerlordserver
 - [x] chivalryserver
 - [x] brokeprotocolserver
 - [x] bsserver
@@ -268,5 +269,4 @@ Notes:
 ## Waiting On Prerequisites Or Validation
 
 - [ ] medievalengineersserver
-- [ ] bannerlordserver
 - [ ] subsistenceserver
