@@ -644,8 +644,8 @@
     "canonical_id": "dabserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1066,8 +1066,8 @@
     "canonical_id": "iosserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1182,8 +1182,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1846,8 +1846,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],

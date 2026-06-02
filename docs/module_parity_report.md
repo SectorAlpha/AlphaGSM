@@ -69,7 +69,7 @@
 | csczserver | - | active | yes | yes | - |
 | csserver | - | active | yes | yes | - |
 | cssserver | - | active | yes | yes | - |
-| dabserver | - | disabled | yes | no | - |
+| dabserver | - | active | yes | yes | - |
 | darkandlightserver | - | active | no | yes | status |
 | dayofdragonsserver | dodrserver | active | no | yes | status |
 | dayzarma2epochserver | - | disabled | no | no | status |
@@ -113,7 +113,7 @@
 | insserver | - | active | yes | yes | - |
 | inssserver | - | active | no | yes | status |
 | interstellarriftserver | - | active | no | yes | status |
-| iosserver | - | disabled | yes | no | - |
+| iosserver | - | active | yes | yes | - |
 | jc2server | - | active | no | yes | status |
 | jc3server | - | active | no | yes | status |
 | jk2server | - | disabled | no | no | status |
@@ -125,7 +125,7 @@
 | lastoasisserver | - | active | no | yes | status |
 | lifeisfeudalserver | - | active | no | yes | status |
 | longvinterserver | - | active | no | yes | status |
-| medievalengineersserver | - | disabled | no | no | status |
+| medievalengineersserver | - | active | no | yes | status |
 | memoriesofmarsserver | - | active | no | yes | status |
 | minecraft.bedrock | mcbserver | active | no | yes | status |
 | minecraft.bungeecord | - | active | no | yes | status |
@@ -191,7 +191,7 @@
 | satisfactory | sfserver | active | no | yes | status |
 | sbotsserver | sbots | active | no | yes | status |
 | scpslserver | scpslsmserver | active | no | yes | status |
-| scumserver | - | disabled | no | no | status |
+| scumserver | - | active | no | yes | status |
 | seserver | - | active | no | yes | status |
 | sevendaystodie | sdtdserver | active | no | yes | status |
 | sfcserver | - | active | yes | yes | - |

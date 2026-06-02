@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -93,13 +92,13 @@ restart.__doc__ = "Restart the SCUM server."
 
 
 def get_query_address(server):
-    """SCUM uses Steam A2S on the dedicated query port."""
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    """Return the validated Linux/Wine query surface for SCUM."""
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def get_info_address(server):
-    """Return the A2S address used by the info command."""
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    """Return the validated Linux/Wine info surface for SCUM."""
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
 
 
 def get_start_command(server):
@@ -131,7 +130,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop SCUM using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

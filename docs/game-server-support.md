@@ -116,6 +116,7 @@ Notes:
 - [x] ss14server
 - [x] silicaserver
 - [x] scpslserver
+- [x] scumserver
 - [x] smallandserver
 - [x] seserver
 - [x] sevendaystodie
@@ -267,6 +268,5 @@ Notes:
 ## Waiting On Prerequisites Or Validation
 
 - [ ] medievalengineersserver
-- [ ] scumserver
 - [ ] bannerlordserver
 - [ ] subsistenceserver

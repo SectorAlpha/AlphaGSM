@@ -12,6 +12,7 @@ _proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_prot
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.scumserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -136,6 +137,14 @@ def test_setting_schema_exposes_scum_launch_formats():
     assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
 
 
+def test_query_and_info_address_use_tcp_on_main_port():
+    server = DummyServer()
+    server.data["port"] = "43509"
+    server.data["queryport"] = "43511"
+    assert mod.get_query_address(server) == ("127.0.0.1", 43509, "tcp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 43509, "tcp")
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -150,7 +159,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -228,4 +237,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

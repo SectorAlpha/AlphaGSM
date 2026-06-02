@@ -11,11 +11,11 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 144      |
+| PASSED   | 145      |
 | ENABLED (AUTH) | 41 |
 | ENABLED (BYO) | 41 |
 | DISABLED | 6      |
-| SKIPPED  | 4      |
+| SKIPPED  | 3      |
 
 ## Status Key
 
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (144)
+## PASSED (145)
 
 | Test | Type |
 |------|------|
@@ -128,6 +128,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | ss14server | Direct download — PASSED 2026-05-25; smoke and integration both reach the managed `server_config.toml` status surface, and `query` / `info --json` now pass through the live `robust_status` endpoint on the supported host-`dotnet` path |
 | silicaserver | SteamCMD |
 | scpslserver | SteamCMD |
+| scumserver | Wine/Proton — PASSED 2026-06-02; fresh Docker-backed integration now proves the old timeout-only skip was stale: anonymous SteamCMD setup for app `3792580` installs the real Windows dedicated payload, AlphaGSM launches `SCUM/Binaries/Win64/SCUMServer.exe` under the shared `wine-proton` runtime, and the validated Linux health surface is generic `tcp` on the managed main game port instead of the older A2S/queryport assumption |
 | smallandserver | SteamCMD |
 | seserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh focused integration now proves the old missing-binary disable note was stale in a narrower way: anonymous SteamCMD setup for app `298740` installs the real Windows dedicated payload, AlphaGSM launches `DedicatedServer64/SpaceEngineersDedicated.exe` inside the shared `wine-proton` runtime from its required `DedicatedServer64` working directory, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port instead of the older stale fake-native `DedicatedServer64` contract |
 | sevendaystodie | SteamCMD — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the native Linux dedicated path once readiness follows the real `output_log__*.txt` surface instead of the stale screen log, the pre-start port refresh keeps the long SteamCMD setup from leaving a claimed stale port behind, and `query`, `info`, plus `info --json` are aligned to 7DTD's real A2S listener on the managed game port |
@@ -289,14 +290,13 @@ URLs.
 | iosserver | IOSoccer dedicated server repeatedly segfaults immediately after executing the dedicated server config |
 | zpsserver | Dedicated server binary segfaults on startup |
 
-## SKIPPED (4)
+## SKIPPED (3)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 | Test | Skip reason |
 |------|-------------|
 | medievalengineersserver | Proton starts but Medieval Engineers exits before producing server logs or readiness markers; no running process remains for stop/query |
-| scumserver | Wine: SteamCMD download timed out (>60 min) even with extended timeout; app 3792580 (SCUM) is extremely large — run with extended timeout and no competing downloads |
 | bannerlordserver | Docker-path validation 2026-05-29: treat the module's existing `steamcmd-linux` runtime as the supported lane on `release_v1`, not a host-`dotnet` prerequisite. The stale published `ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest` image on the current host still fails earlier with `exec: "dotnet": executable file not found in $PATH`, but the branch-local `alphagsm-steamcmd-linux-runtime:bannerlord-dotnet` image proves the remaining blocker is deeper: SteamCMD setup for app `1863440` succeeds, `.NET 6.0.36` is present, and `dotnet TaleWorlds.Starter.DotNetCore.Linux.dll ...` still segfaults immediately while the managed container exits `139` before A2S `query` or `info` can come up. |
 | subsistenceserver | Wine/Proton validation 2026-05-28: app `1362640` still fails before AlphaGSM can reach A2S readiness; forced-Proton headless launch crashes in UE3 global-shader compilation, and the Wine-plus-`xvfb-run` variant changes the failure mode but still exits on later shader/compiler/runtime errors |
 
