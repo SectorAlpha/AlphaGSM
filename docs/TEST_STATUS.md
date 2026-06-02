@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 ## Summary
 
@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 145      |
-| ENABLED (AUTH) | 41 |
+| ENABLED (AUTH) | 42 |
 | ENABLED (BYO) | 41 |
-| DISABLED | 6      |
+| DISABLED | 5      |
 | SKIPPED  | 3      |
 
 ## Status Key
@@ -180,7 +180,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (41)
+## ENABLED (AUTH) (42)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -224,6 +224,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | roserver | authenticated Steam/SteamCMD entitlement for Red Orchestra dedicated server app `223250` |
 | chivalryserver | authenticated Steam/SteamCMD entitlement for Chivalry: Medieval Warfare Dedicated Server app `220070` |
 | brokeprotocolserver | authenticated Steam/SteamCMD entitlement for BROKE PROTOCOL app `696370` |
+| bsserver | authenticated Steam or SteamCMD entitlement for Blade Symphony dedicated server app `228780` plus the shared owned `berimbau` depot content that can be missing from anonymous installs |
 | pathoftitansserver | Alderon host account token for managed installs, or staged archive override |
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
@@ -279,15 +280,14 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (6)
+## DISABLED (5)
 
 | Test | Reason |
 |------|--------|
-| bsserver | Blade Symphony: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
-| dysserver | Dystopia: 2006-era 32-bit Source binary (bin/linux32/srcds) cannot load game modules on modern systems; exits immediately |
+| dysserver | Full Dystopia content now stages correctly, including `dystopia/gameinfo.txt`, but the legacy 32-bit Source dedicated server still exits immediately on startup under the Docker-backed `steamcmd-linux` lane |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
-| dabserver | Dedicated server binary segfaults on startup |
-| iosserver | IOSoccer dedicated server repeatedly segfaults immediately after executing the dedicated server config |
+| dabserver | Dedicated server still crashes on startup after a full SteamCMD install; the current Docker-backed Source lane narrows the failure to the legacy 32-bit Steam/bootstrap path |
+| iosserver | IOSoccer now stages a clean `server.cfg` in the Docker-backed Source lane but still enters a restart loop with repeated segmentation faults immediately after launch |
 | zpsserver | Dedicated server binary segfaults on startup |
 
 ## SKIPPED (3)

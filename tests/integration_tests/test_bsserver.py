@@ -1,6 +1,7 @@
 """Integration test for bsserver."""
 
 import json
+import os
 
 import pytest
 
@@ -12,6 +13,7 @@ from conftest import (
     write_config,
     alphagsm_env,
     run_and_assert_ok,
+    run_setup_with_port_retry,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
@@ -28,33 +30,69 @@ from conftest import (
 from gamemodules.bsserver import steam_app_id
 from utils.valve_server import detect_query_host
 
-pytestmark = [pytest.mark.integration]
-
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason="ENABLED (AUTH): authenticate Steam or SteamCMD with an account entitled to Blade Symphony so shared depot 225601 installs alongside dedicated app 228780 before setup/start"
+    ),
+]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+
+
+def resolve_steamcmd_linux_runtime_image():
+    """Return the local steamcmd-linux runtime image when available."""
+
+    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
+    if configured_image:
+        return configured_image
+    return "alphagsm-steamcmd-linux-runtime:test"
 
 
 def test_bsserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itbsserver"
+    image = resolve_steamcmd_linux_runtime_image()
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        backend="subprocess",
+        runtime_backend="auto",
+        module_name="bsserver",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
+    clientport = pick_free_udp_port()
+    while clientport == port:
+        clientport = pick_free_udp_port()
+    sourcetvport = pick_free_udp_port()
+    while sourcetvport in {port, clientport}:
+        sourcetvport = pick_free_udp_port()
     query_host = detect_query_host()
 
     # create
     run_and_assert_ok(env, server_name, "create", "bsserver")
+    run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "clientport", str(clientport))
+    run_and_assert_ok(env, server_name, "set", "sourcetvport", str(sourcetvport))
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+        timeout=START_TIMEOUT,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 

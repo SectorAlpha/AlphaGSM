@@ -1,7 +1,6 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for bsserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 228780/225600 shared content.
+echo "Smoke test for bsserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Blade Symphony so shared depot 225601 installs alongside dedicated app 228780 before setup/start."
 exit 0
 
 set -Eeuo pipefail

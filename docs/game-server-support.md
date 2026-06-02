@@ -207,6 +207,7 @@ Notes:
 - [x] roserver
 - [x] chivalryserver
 - [x] brokeprotocolserver
+- [x] bsserver
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -258,7 +259,6 @@ Notes:
 
 ## Not Currently Supported
 
-- [ ] bsserver
 - [ ] dysserver
 - [ ] counterstrikeglobaloffensive
 - [ ] dabserver

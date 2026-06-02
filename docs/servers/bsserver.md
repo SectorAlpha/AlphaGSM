@@ -2,10 +2,18 @@
 
 This guide covers the `bsserver` module in AlphaGSM.
 
+## Status
+
+`bsserver` is currently `ENABLED (AUTH)`.
+
+Before `start`, authenticate Steam or SteamCMD with an account entitled to
+Blade Symphony so the shared `berimbau` content depot installs alongside the
+dedicated server tool.
+
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Docker or a compatible local runtime for the `steamcmd-linux` family
+- SteamCMD runtime libraries when using the host/process lane
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -21,6 +29,11 @@ Run setup:
 ```bash
 alphagsm mybsserver setup
 ```
+
+If anonymous setup finishes but `start` reports that `berimbau/GameInfo.txt` is
+missing, install with authenticated Steam or SteamCMD access for an owned Blade
+Symphony account, or stage a full owned `berimbau/` content tree into the
+install directory before starting again.
 
 Start it:
 
@@ -44,11 +57,14 @@ alphagsm mybsserver stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default `27015`)
 - the install directory
 - the executable name
-- SteamCMD downloads the server files
-- default configuration and backup settings
+- SteamCMD downloads the dedicated server tool app `228780`
+
+Authenticated installs may still need the owned Blade Symphony app content so
+the shared depot that contains `berimbau/GameInfo.txt` and the wider
+`berimbau/` content tree is present.
 
 ## Useful Commands
 
@@ -60,14 +76,14 @@ alphagsm mybsserver backup
 ## Notes
 
 - Module name: `bsserver`
-- Default port: 27015
+- Default port: `27015`
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `srcds_run.sh`
-- **Location**: `<install_dir>/srcds_run.sh`
+- **Executable**: `bin/srcds_run.sh`
+- **Location**: `<install_dir>/bin/srcds_run.sh`
 - **Engine**: Source
 - **SteamCMD App ID**: `228780`
 
@@ -75,9 +91,9 @@ alphagsm mybsserver backup
 
 - **Config file**: `berimbau/cfg/server.cfg`
 - **Key settings**:
-  - `hostname` — Server name
-  - `sv_maxrate` — Max network rate
-  - `rcon_password` — Remote console password
+  - `hostname` - Server name
+  - `rcon_password` - Remote console password
+  - `sv_password` - Join password
 - **Default port**: `27015`
 - **Default map**: `duel_winter`
 - **Max players**: `16`
@@ -85,13 +101,12 @@ alphagsm mybsserver backup
   - Game port: `27015` (UDP)
   - Client port: `27005` (UDP)
   - SourceTV port: `27020` (UDP)
-- **Template**: See [server-templates/bsserver/](../server-templates/bsserver/)
 
 ### Maps and Mods
 
 - **Map directory**: `berimbau/maps/`
 - **Mod directory**: `berimbau/addons/`
 - **Workshop support**: No
-- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/berimbau/`.
-- **Map install**: Copy `.bsp` files into `berimbau/maps/` and add to `berimbau/cfg/mapcycle.txt`.
-- **Mod install**: Copy addon folders into `berimbau/addons/`.
+- **Mod notes**: AlphaGSM supports `manifest`, direct archive `url`,
+  `gamebanana`, and `moddb` addon sources for this server through the shared
+  Source addon flow once the owned `berimbau` content tree is present.

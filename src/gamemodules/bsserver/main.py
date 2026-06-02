@@ -1,10 +1,12 @@
 """Blade Symphony-specific lifecycle, configuration, and update helpers."""
 
+import os
+
 from server.modsupport.source_addons import (
         build_source_addon_mod_support,
         load_shared_source_curated_registry,
 )
-from utils.valve_server import define_valve_server_module
+from utils.valve_server import define_valve_server_module, legacy_source_docker_mounts
 
 
 import server.runtime as runtime_module
@@ -61,14 +63,38 @@ message = MODULE.message
 backup = MODULE.backup
 checkvalue = MODULE.checkvalue
 
+
+def _require_shared_blade_symphony_content(server):
+        """Fail fast when the dedicated tool lacks the shared berimbau content tree."""
+
+        gameinfo_path = os.path.join(server.data["dir"], "berimbau", "GameInfo.txt")
+        if os.path.isfile(gameinfo_path):
+                return
+        gamemodule_common.raise_auth_requirement(
+                "bsserver",
+                "authenticated Steam or SteamCMD access to the owned Blade Symphony app content, because anonymous dedicated installs can leave the shared berimbau depot missing",
+                actions=(
+                        "Authenticate Steam or SteamCMD with an account entitled to Blade Symphony so shared depot 225601 installs alongside app 228780",
+                        "Or stage a full owned berimbau content tree containing GameInfo.txt under <install_dir>/berimbau/ before start",
+                ),
+                docs_slug="bsserver",
+        )
+
+
+def prestart(server, *args, **kwargs):
+        _require_shared_blade_symphony_content(server)
+        return MODULE.prestart(server, *args, **kwargs)
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
+        mounts=legacy_source_docker_mounts,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
+        mounts=legacy_source_docker_mounts,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
         stdin_open=True,
 )

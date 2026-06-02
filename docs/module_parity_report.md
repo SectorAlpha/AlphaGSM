@@ -48,7 +48,7 @@
 | boserver | - | disabled | no | no | status |
 | brickadiaserver | - | active | no | yes | status |
 | brokeprotocolserver | - | disabled | no | no | status |
-| bsserver | - | disabled | yes | no | - |
+| bsserver | - | active | yes | yes | - |
 | btlserver | - | active | no | yes | status |
 | btserver | - | active | no | yes | status |
 | ccserver | - | active | yes | yes | - |
@@ -69,7 +69,7 @@
 | csczserver | - | active | yes | yes | - |
 | csserver | - | active | yes | yes | - |
 | cssserver | - | active | yes | yes | - |
-| dabserver | - | active | yes | yes | - |
+| dabserver | - | disabled | yes | no | - |
 | darkandlightserver | - | active | no | yes | status |
 | dayofdragonsserver | dodrserver | active | no | yes | status |
 | dayzarma2epochserver | - | disabled | no | no | status |
@@ -113,7 +113,7 @@
 | insserver | - | active | yes | yes | - |
 | inssserver | - | active | no | yes | status |
 | interstellarriftserver | - | active | no | yes | status |
-| iosserver | - | active | yes | yes | - |
+| iosserver | - | disabled | yes | no | - |
 | jc2server | - | active | no | yes | status |
 | jc3server | - | active | no | yes | status |
 | jk2server | - | disabled | no | no | status |
