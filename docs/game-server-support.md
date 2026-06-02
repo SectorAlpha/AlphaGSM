@@ -266,7 +266,7 @@ Notes:
 - [ ] iosserver
 - [ ] zpsserver
 - [ ] medievalengineersserver
+- [ ] subsistenceserver
 
 ## Waiting On Prerequisites Or Validation
 
-- [ ] subsistenceserver
