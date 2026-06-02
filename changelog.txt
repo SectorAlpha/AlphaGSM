@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-06-02
+- Tracker hygiene: tighten the remaining legacy Source blocker notes for `dysserver`, `iosserver`, and `zpsserver` after fresh runtime probes. The tracker now reflects that Dystopia stages full content and resolves the expected `bin/linux32` server libs before exiting with code `1`, IOSoccer still segfaults even when the parent runtime AppID is staged into `steam_appid.txt`, and Zombie Panic! Source consistently reaches Breakpad plus VPK hash loading before crashing despite `setarch -X` and `-debug` probes.
 - Support state: promote `dabserver` from `DISABLED` to `ENABLED (AUTH)` after proving the old crash story was only half of the real support picture. The retired dedicated tool app `317800` still crashes under the Docker-backed legacy Source lane even after AlphaGSM stages the correct runtime `steam_appid.txt`, while the current Double Action app `317360` rejects anonymous SteamCMD with `No subscription`, so AlphaGSM now fails fast with explicit authenticated Steam/SteamCMD guidance or staged-current-content guidance instead of pretending this is just a dead anonymous Linux lane.
 
 2026-06-01

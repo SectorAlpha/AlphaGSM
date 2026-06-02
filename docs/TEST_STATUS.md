@@ -285,10 +285,10 @@ URLs.
 
 | Test | Reason |
 |------|--------|
-| dysserver | Full Dystopia content now stages correctly, including `dystopia/gameinfo.txt`, but the legacy 32-bit Source dedicated server still exits immediately on startup under the Docker-backed `steamcmd-linux` lane |
+| dysserver | Full Dystopia content now stages correctly, including `dystopia/gameinfo.txt`; the staged `bin/srcds_run.sh` launcher resolves the expected `bin/linux32` Source server libs under the Docker-backed `steamcmd-linux` lane, but the legacy 32-bit dedicated binary still exits immediately with code `1` before container stdout or A2S readiness |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
-| iosserver | IOSoccer now stages a clean `server.cfg` in the Docker-backed Source lane but still enters a restart loop with repeated segmentation faults immediately after launch |
-| zpsserver | Dedicated server binary segfaults on startup |
+| iosserver | IOSoccer now stages a clean `server.cfg` in the Docker-backed Source lane, and even with parent runtime AppID `673560` staged into `steam_appid.txt` the dedicated server still falls into the same repeated `srcds_run` segmentation-fault restart loop immediately after launch |
+| zpsserver | Zombie Panic! Source gets through Breakpad startup and VPK hash loading, then segfaults before creating its expected pid/debug details; host `setarch -X` and `-debug` probes change timing but do not avoid the crash |
 
 ## SKIPPED (3)
 
