@@ -1,7 +1,10 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for dysserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (AUTH): Dystopia's supported server path now targets the auth-gated
+# Dystopia Beta Dedicated Server tool on app 17595 (the historical Previous
+# beta lane). Authenticate Steam or SteamCMD with an entitled account before
+# setup; anonymous SteamCMD returns No subscription on that path.
+# See docs/TEST_STATUS.md and docs/servers/dysserver.md for details.
+echo "Smoke test for dysserver requires authenticated Steam or SteamCMD access - see docs/TEST_STATUS.md and docs/servers/dysserver.md"
 exit 0
 
 set -Eeuo pipefail

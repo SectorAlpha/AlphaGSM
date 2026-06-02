@@ -286,7 +286,7 @@ def test_csserver_configure(tmp_path):
 
 def test_dysserver_configure(tmp_path):
     _configure_and_check(
-        "dysserver", 17585, "dystopia", "bin/srcds_run.sh", "dys_broadcast", tmp_path
+        "dysserver", 17595, "dystopia", "bin/srcds_run.sh", "dys_broadcast", tmp_path
     )
 
 

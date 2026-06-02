@@ -4,7 +4,7 @@ from server.modsupport.source_addons import (
         build_source_addon_mod_support,
         load_shared_source_curated_registry,
 )
-from utils.valve_server import define_valve_server_module
+from utils.valve_server import define_valve_server_module, legacy_source_docker_mounts
 
 
 import server.runtime as runtime_module
@@ -13,7 +13,7 @@ from utils.gamemodules import common as gamemodule_common
 MODULE = define_valve_server_module(
     game_name='Dystopia',
     engine='source',
-    steam_app_id=17585,
+    steam_app_id=17595,
     game_dir='dystopia',
     executable='bin/srcds_run.sh',
     default_map='dys_broadcast',
@@ -36,6 +36,7 @@ MOD_SUPPORT = build_source_addon_mod_support(
 )
 
 steam_app_id = MODULE.steam_app_id
+steam_anonymous_login_possible = False
 commands = MODULE.commands + MOD_SUPPORT.commands
 command_args = {**MODULE.command_args, **MOD_SUPPORT.command_args}
 command_descriptions = {**MODULE.command_descriptions, **MOD_SUPPORT.command_descriptions}
@@ -63,12 +64,14 @@ checkvalue = MODULE.checkvalue
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
+        mounts=legacy_source_docker_mounts,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
+        mounts=legacy_source_docker_mounts,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
         stdin_open=True,
 )

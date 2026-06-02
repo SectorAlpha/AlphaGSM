@@ -766,8 +766,8 @@
     "canonical_id": "dysserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],

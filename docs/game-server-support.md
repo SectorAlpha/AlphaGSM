@@ -210,6 +210,7 @@ Notes:
 - [x] brokeprotocolserver
 - [x] bsserver
 - [x] dabserver
+- [x] dysserver
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -261,7 +262,6 @@ Notes:
 
 ## Not Currently Supported
 
-- [ ] dysserver
 - [ ] counterstrikeglobaloffensive
 - [ ] iosserver
 - [ ] zpsserver

@@ -82,7 +82,7 @@
 | doiserver | - | active | yes | yes | - |
 | dstserver | - | active | no | yes | status |
 | ducksideserver | - | active | no | yes | status |
-| dysserver | - | disabled | yes | no | - |
+| dysserver | - | active | yes | yes | - |
 | ecoserver | - | active | no | yes | status |
 | empyrionserver | - | active | no | yes | status |
 | emserver | - | active | yes | yes | - |

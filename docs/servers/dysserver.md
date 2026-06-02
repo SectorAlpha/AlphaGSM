@@ -4,7 +4,7 @@ This guide covers the `dysserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- authenticated Steam or SteamCMD access to the Dystopia Beta Dedicated Server tool (`app 17595`)
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -47,7 +47,7 @@ Setup configures:
 - the game port (default 27015)
 - the install directory
 - the executable name
-- SteamCMD downloads the server files
+- SteamCMD downloads the auth-gated beta dedicated server files
 - default configuration and backup settings
 
 ## Useful Commands
@@ -69,7 +69,19 @@ alphagsm mydysserve backup
 - **Executable**: `srcds_run.sh`
 - **Location**: `<install_dir>/srcds_run.sh`
 - **Engine**: Source
-- **SteamCMD App ID**: `17585`
+- **SteamCMD App ID**: `17595`
+
+Current support status: `ENABLED (AUTH)`. The historical Dystopia Linux server
+guide points to the `Previous` beta lane, and fresh 2026-06-02 SteamCMD probes
+show that this supported beta-dedicated path now maps to app `17595`, which
+returns `No subscription` on anonymous SteamCMD. AlphaGSM therefore treats
+`dysserver` as an auth-backed supported server instead of a generic runtime
+failure.
+
+If you only use the older anonymous app `17585` path, AlphaGSM can still stage
+full content, but current Docker-backed Source repros show the legacy 32-bit
+server binary exiting immediately before A2S readiness. The supported route is
+to authenticate Steam or SteamCMD for app `17595`.
 
 ### Server Configuration
 
