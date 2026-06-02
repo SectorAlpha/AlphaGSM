@@ -208,6 +208,7 @@ Notes:
 - [x] chivalryserver
 - [x] brokeprotocolserver
 - [x] bsserver
+- [x] dabserver
 - [x] pathoftitansserver
 - [x] redmserver
 - [x] battlebitserver
@@ -261,7 +262,6 @@ Notes:
 
 - [ ] dysserver
 - [ ] counterstrikeglobaloffensive
-- [ ] dabserver
 - [ ] iosserver
 - [ ] zpsserver
 

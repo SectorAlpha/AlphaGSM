@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-06-02
+- Support state: promote `dabserver` from `DISABLED` to `ENABLED (AUTH)` after proving the old crash story was only half of the real support picture. The retired dedicated tool app `317800` still crashes under the Docker-backed legacy Source lane even after AlphaGSM stages the correct runtime `steam_appid.txt`, while the current Double Action app `317360` rejects anonymous SteamCMD with `No subscription`, so AlphaGSM now fails fast with explicit authenticated Steam/SteamCMD guidance or staged-current-content guidance instead of pretending this is just a dead anonymous Linux lane.
+
 2026-06-01
 - Support state: promote `bsserver` from `DISABLED` to `ENABLED (AUTH)` after proving the current blocker is not a dead legacy-Source runtime path but missing entitled Blade Symphony app content. The dedicated tool app `228780` can still start without the shared `berimbau` depot, so AlphaGSM now fails fast with explicit guidance to authenticate Steam or SteamCMD for the owned game content before `start`.
 - Support state: move `atlasserver` from `DISABLED` to `ENABLED (BYO)` after proving the checked-in Docker `steamcmd-linux` lane now launches the dedicated binary far enough to expose the real blocker. ATLAS no longer dies at the earlier compatibility-library/segfault surface; it now fails fast with explicit guidance to stage `ServerGrid.json`, `ServerGrid.ServerOnly.json`, and the `ServerGrid/` export under `ShooterGame/` before start.

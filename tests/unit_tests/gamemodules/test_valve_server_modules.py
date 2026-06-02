@@ -232,7 +232,7 @@ def test_valve_updateconfig_preserves_unknown_lines_and_appends_missing_keys(tmp
     ]
 
 
-def test_valve_updateconfig_appends_quoted_multi_word_duplicate_values(tmp_path):
+def test_valve_updateconfig_rewrites_quoted_multi_word_values_in_place(tmp_path):
     valve_server = importlib.import_module("utils.valve_server")
     cfg_path = tmp_path / "server.cfg"
     cfg_path.write_text('hostname "Old Name"\nsv_cheats 0\n', encoding="utf-8")
@@ -243,9 +243,8 @@ def test_valve_updateconfig_appends_quoted_multi_word_duplicate_values(tmp_path)
     )
 
     assert cfg_path.read_text(encoding="utf-8").splitlines() == [
-        'hostname "Old Name"',
-        "sv_cheats 0",
         'hostname "Configured CSS"',
+        "sv_cheats 0",
     ]
 
 
@@ -333,9 +332,11 @@ def test_valve_source_module_exposes_wake_hook(monkeypatch):
     server = SimpleNamespace(name="cssalpha", data={})
 
     monkeypatch.setattr(
-        valve_server.screen,
-        "send_to_server",
-        lambda name, payload: calls.append((name, payload)),
+        valve_server,
+        "_runtime_module",
+        lambda: SimpleNamespace(
+            send_to_server=lambda server_obj, payload: calls.append((server_obj.name, payload))
+        ),
     )
 
     delay = module.MODULE.wake_a2s_query(server)
@@ -356,7 +357,14 @@ def test_valve_source_module_exposes_source_info_hooks():
 
 def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
     (tmp_path / "srcds_run").write_text("")
+    steamcmd_root = tmp_path / "steamcmd"
+    for bits in ("linux32", "linux64"):
+        sdk_dir = steamcmd_root / bits
+        sdk_dir.mkdir(parents=True)
+        (sdk_dir / "steamclient.so").write_text("")
+    valve_server.steamcmd.STEAMCMD_DIR = str(steamcmd_root)
     server = SimpleNamespace(
         name="cssalpha",
         data={
@@ -378,7 +386,9 @@ def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     assert requirements["engine"] == "docker"
     assert requirements["family"] == "steamcmd-linux"
     assert requirements["mounts"] == [
-        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(steamcmd_root / "linux64"), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {"source": str(steamcmd_root / "linux32"), "target": "/root/.steam/sdk32", "mode": "ro"},
     ]
     assert requirements["ports"] == [
         {"host": 27015, "container": 27015, "protocol": "udp"},
@@ -388,6 +398,98 @@ def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] is True
     assert spec["command"][:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
+
+
+def test_legacy_source_module_runtime_requirements_include_steam_sdk_mounts(tmp_path):
+    module = importlib.import_module("gamemodules.dabserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    (tmp_path / "dabds.sh").write_text("")
+    steamcmd_root = tmp_path / "steamcmd"
+    for bits in ("linux32", "linux64"):
+        sdk_dir = steamcmd_root / bits
+        sdk_dir.mkdir(parents=True)
+        (sdk_dir / "steamclient.so").write_text("")
+    valve_server.steamcmd.STEAMCMD_DIR = str(steamcmd_root)
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "port": 27015,
+            "clientport": 27005,
+            "sourcetvport": 27020,
+            "exe_name": "dabds.sh",
+            "startmap": "da_rooftops",
+            "server_cfg": "server.cfg",
+            "maxplayers": "10",
+        },
+    )
+
+    requirements = module.get_runtime_requirements(server)
+    spec = module.get_container_spec(server)
+
+    assert requirements["mounts"] == [
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(steamcmd_root / "linux64"), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {"source": str(steamcmd_root / "linux32"), "target": "/root/.steam/sdk32", "mode": "ro"},
+    ]
+    assert spec["mounts"] == requirements["mounts"]
+
+
+def test_legacy_source_module_prestart_writes_runtime_steam_appid_file(tmp_path):
+    module = importlib.import_module("gamemodules.dabserver")
+    (tmp_path / "dab").mkdir(parents=True)
+    (tmp_path / "dab" / "GameInfo.txt").write_text("", encoding="utf-8")
+    (tmp_path / "dabds.sh").write_text("", encoding="utf-8")
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "Steam_AppID": 317800,
+        },
+    )
+
+    module.prestart(server)
+
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "317360\n"
+
+
+def test_dabserver_install_requires_authenticated_current_content(tmp_path):
+    module = importlib.import_module("gamemodules.dabserver")
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "server_cfg": "server.cfg",
+            "servername": "AlphaGSM Double Action: Boogaloo",
+            "rconpassword": "",
+            "serverpassword": "",
+        },
+    )
+
+    with pytest.raises(Exception, match="ENABLED \\(AUTH\\)"):
+        module.install(server)
+
+
+def test_dabserver_install_accepts_staged_current_content(tmp_path):
+    module = importlib.import_module("gamemodules.dabserver")
+    staged_dir = tmp_path / "dab" / "cfg"
+    staged_dir.mkdir(parents=True)
+    (tmp_path / "dab" / "GameInfo.txt").write_text("", encoding="utf-8")
+    (tmp_path / "dabds.sh").write_text("", encoding="utf-8")
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "server_cfg": "server.cfg",
+            "servername": "AlphaGSM Double Action: Boogaloo",
+            "rconpassword": "",
+            "serverpassword": "",
+        },
+    )
+
+    module.install(server)
+
+    assert (staged_dir / "server.cfg").is_file()
 
 
 def test_validate_source_startmap_accepts_installed_map(tmp_path):
@@ -455,7 +557,7 @@ def test_source_console_status_collects_new_log_output(monkeypatch, tmp_path):
     log_file.write_text("existing\n", encoding="utf-8")
     server = SimpleNamespace(name="cssalpha", data={})
 
-    def fake_send_to_server(_name, _payload):
+    def fake_send_to_server(_server, _payload):
         with open(log_file, "a", encoding="utf-8") as handle:
             handle.write(
                 "status\n"
@@ -468,7 +570,11 @@ def test_source_console_status_collects_new_log_output(monkeypatch, tmp_path):
             )
 
     monkeypatch.setattr(valve_server.screen, "logpath", lambda _name: str(log_file))
-    monkeypatch.setattr(valve_server.screen, "send_to_server", fake_send_to_server)
+    monkeypatch.setattr(
+        valve_server,
+        "_runtime_module",
+        lambda: SimpleNamespace(send_to_server=fake_send_to_server),
+    )
     monkeypatch.setattr(valve_server.time, "sleep", lambda *_args: None)
 
     parsed = valve_server.source_console_status(server, timeout=1.0)

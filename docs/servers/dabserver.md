@@ -2,9 +2,19 @@
 
 This guide covers the `dabserver` module in AlphaGSM.
 
+## Status
+
+`dabserver` is currently `ENABLED (AUTH)`.
+
+Before `setup` or `start`, authenticate Steam or SteamCMD with an account
+entitled to Double Action: Boogaloo so the current app `317360` content can be
+staged into the install directory. The retired dedicated tool app `317800`
+still crashes on modern Linux, and anonymous SteamCMD for app `317360`
+currently returns `No subscription`.
+
 ## Requirements
 
-- `screen`
+- Docker or a compatible local runtime for the `steamcmd-linux` family
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -21,6 +31,10 @@ Run setup:
 ```bash
 alphagsm mydabserve setup
 ```
+
+If you have not already staged the current Double Action content, setup will
+fail fast with `ENABLED (AUTH)` guidance instead of trying to use the retired
+anonymous dedicated tool path.
 
 Start it:
 
@@ -47,8 +61,15 @@ Setup configures:
 - the game port (default 27015)
 - the install directory
 - the executable name
-- SteamCMD downloads the server files
 - default configuration and backup settings
+
+AlphaGSM supports two practical paths:
+
+- authenticate Steam or SteamCMD and stage the current Double Action app
+  `317360` content before setup/start
+- or manually stage a full current content tree containing
+  `dab/GameInfo.txt`, `dabds.sh`, and the Linux Source SDK 2013 multiplayer
+  server files under `<install_dir>/`
 
 ## Useful Commands
 
@@ -69,7 +90,9 @@ alphagsm mydabserve backup
 - **Executable**: `dabds.sh`
 - **Location**: `<install_dir>/dabds.sh`
 - **Engine**: Source
-- **SteamCMD App ID**: `317800`
+- **SteamCMD App IDs**:
+  - retired dedicated tool: `317800`
+  - current entitled game content: `317360`
 
 ### Server Configuration
 

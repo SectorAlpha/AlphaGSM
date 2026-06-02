@@ -69,7 +69,7 @@
 | csczserver | - | active | yes | yes | - |
 | csserver | - | active | yes | yes | - |
 | cssserver | - | active | yes | yes | - |
-| dabserver | - | disabled | yes | no | - |
+| dabserver | - | active | yes | yes | - |
 | darkandlightserver | - | active | no | yes | status |
 | dayofdragonsserver | dodrserver | active | no | yes | status |
 | dayzarma2epochserver | - | disabled | no | no | status |

@@ -126,12 +126,9 @@ def _runtime_module():
 
 
 def _send_console_input(server, text):
-    """Send console input through screen for process servers and runtime for containers."""
+    """Send console input through the shared runtime abstraction."""
 
-    runtime_name = getattr(getattr(server, "data", None), "get", lambda *_: None)("runtime")
-    if runtime_name == "docker":
-        return _runtime_module().send_to_server(server, text)
-    return screen.send_to_server(server.name, text)
+    return _runtime_module().send_to_server(server, text)
 
 
 def _default_backup_config(game_dir):
@@ -370,10 +367,56 @@ def _ensure_steamclient_link():
         os.symlink(steamclient_src, dst_path)
 
 
+def _write_runtime_steam_appid(server, app_id):
+    """Write a runtime steam_appid.txt file when a module needs one."""
+
+    if app_id in (None, ""):
+        return
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return
+    os.makedirs(install_dir, exist_ok=True)
+    with open(os.path.join(install_dir, "steam_appid.txt"), "w", encoding="ascii") as handle:
+        handle.write(f"{int(app_id)}\n")
+
+
+def _steamcmd_sdk_mounts():
+    """Return Docker bind mounts for Steam SDK client directories when present."""
+
+    mounts = []
+    for src_subdir, target_dir in (
+        ("linux64", "/root/.steam/sdk64"),
+        ("linux32", "/root/.steam/sdk32"),
+    ):
+        source_dir = os.path.join(steamcmd.STEAMCMD_DIR, src_subdir)
+        source_file = os.path.join(source_dir, "steamclient.so")
+        if not os.path.isfile(source_file):
+            continue
+        mounts.append(
+            {
+                "source": source_dir,
+                "target": target_dir,
+                "mode": "ro",
+            }
+        )
+    return mounts
+
+
+def legacy_source_docker_mounts(server):
+    """Return Docker mounts for legacy Source-family SteamCMD servers."""
+
+    mounts = []
+    server_dir = server.data.get("dir")
+    if server_dir:
+        mounts.append({"source": server_dir, "target": "/srv/server", "mode": "rw"})
+    mounts.extend(_steamcmd_sdk_mounts())
+    return mounts
+
+
 def updateconfig(filename, config_values):
     """Rewrite a simple key/value config file while preserving unknown lines."""
 
-    rewrite_single_token_space_config(filename, config_values)
+    rewrite_space_config(filename, config_values)
 
 
 def validate_source_startmap(server, game_dir, startmap):
@@ -436,6 +479,7 @@ def define_valve_server_module(
     sourcetv_port=None,
     steam_port=None,
     app_id_mod=None,
+    runtime_app_id=None,
     config_subdir="cfg",
     config_default="server.cfg",
     default_server_config=None,
@@ -594,6 +638,7 @@ def define_valve_server_module(
         doinstall(server)
         if server.data["exe_name"] == "srcds_run" and os.path.isfile(server.data["dir"] + "srcds_run_64"):
             server.data["exe_name"] = "srcds_run_64"
+        _write_runtime_steam_appid(server, runtime_app_id)
 
         # Strip Windows CRLF line endings from srcds startup scripts.  Some
         # older games (e.g. Insurgency) ship srcds_run with \r\n endings which
@@ -661,6 +706,7 @@ def define_valve_server_module(
         """Perform common Valve-engine startup preparation."""
 
         _ensure_steamclient_link()
+        _write_runtime_steam_appid(server, runtime_app_id)
 
     def update(server, validate=False, restart=False):
         """Update the server files and optionally restart the server."""
@@ -736,10 +782,14 @@ def define_valve_server_module(
             "engine": "docker",
             "family": "steamcmd-linux",
         }
+        mounts = []
         if "dir" in server.data:
-            requirements["mounts"] = [
+            mounts.append(
                 {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
-            ]
+            )
+        mounts.extend(_steamcmd_sdk_mounts())
+        if mounts:
+            requirements["mounts"] = mounts
         ports = []
         for key in ("port", "clientport", "sourcetvport", "steamport"):
             if key in server.data and server.data[key] is not None:
