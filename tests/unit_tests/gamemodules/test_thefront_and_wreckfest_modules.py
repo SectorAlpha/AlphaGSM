@@ -54,7 +54,12 @@ def test_thefrontserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_wreckfestserver_get_start_command_builds_expected_args(tmp_path):
+def test_wreckfestserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        wreckfestserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("wreck")
     exe = tmp_path / "Wreckfest_x64.exe"
     exe.write_text("")
