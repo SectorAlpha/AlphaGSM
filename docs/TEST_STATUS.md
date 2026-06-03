@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-06-02
+Last updated: 2026-06-03
 
 ## Summary
 
@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 146      |
+| PASSED   | 147      |
 | ENABLED (AUTH) | 47 |
 | ENABLED (BYO) | 41 |
-| DISABLED | 2      |
+| DISABLED | 1      |
 | SKIPPED  | 0      |
 
 ## Status Key
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (146)
+## PASSED (147)
 
 | Test | Type |
 |------|------|
@@ -96,6 +96,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | minecraft_vanilla | Direct download — PASSED 2026-05-16; local integration helper now selects the newest release compatible with the installed Java runtime |
 | minecraft_velocity | Direct download |
 | minecraft_waterfall | Direct download |
+| medievalengineersserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; fresh formal integration and smoke now prove the old immediate Proton-crash note was stale: anonymous SteamCMD setup for app `367970` completes, AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, launches `DedicatedServer64/MedievalEngineersDedicated.exe` inside the shared `wine-proton` runtime with the rebuilt Wine prefix bootstrap, and validates `query`, `info`, and `info --json` on the current generic `tcp` health surface at the managed main game port instead of the older stale A2S expectation. |
 | memoriesofmarsserver | SteamCMD |
 | miscreatedserver | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the Docker-backed Linux `wine-proton` lane once AlphaGSM reads readiness from the real `user/server.log` surface and treats the live health surface as generic `tcp` on the managed main port instead of the older stale A2S-on-`port + 1` assumption |
 | codserver | Docker runtime — PASSED 2026-05-23; standard integration/smoke now run through the shared `steamcmd-linux` Docker runtime image, which supplies the legacy `libstdc++.so.5` compatibility library required by the old Linux dedicated binary |
@@ -286,12 +287,11 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (2)
+## DISABLED (1)
 
 | Test | Reason |
 |------|--------|
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
-| medievalengineersserver | Anonymous SteamCMD app `367970` installs the full Windows dedicated payload and AlphaGSM now stages `instance-data/MedievalEngineers-Dedicated.cfg` before launch, but the real dedicated EXE is a Windows GUI Mono/.NET 4.6.1 assembly and the current Proton/Wine runtime still exits immediately with `c0000135` before A2S readiness |
 
 ## SKIPPED (0)
 

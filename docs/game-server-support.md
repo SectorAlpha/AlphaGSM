@@ -84,6 +84,7 @@ Notes:
 - [x] minecraft_vanilla
 - [x] minecraft_velocity
 - [x] minecraft_waterfall
+- [x] medievalengineersserver
 - [x] memoriesofmarsserver
 - [x] miscreatedserver
 - [x] codserver
@@ -266,7 +267,6 @@ Notes:
 ## Not Currently Supported
 
 - [ ] counterstrikeglobaloffensive
-- [ ] medievalengineersserver
 
 ## Waiting On Prerequisites Or Validation
 

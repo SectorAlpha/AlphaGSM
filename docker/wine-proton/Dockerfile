@@ -15,9 +15,11 @@ RUN dpkg --add-architecture i386 \
         ca-certificates \
         cabextract \
         curl \
+        fontconfig \
         lib32gcc-s1 \
         lib32stdc++6 \
         libatomic1 \
+        libgdiplus \
         libsdl2-2.0-0 \
         libpulse0 \
         python3 \
@@ -34,6 +36,7 @@ RUN dpkg --add-architecture i386 \
 
 RUN wineboot --init \
     && winetricks -q win10 \
+    && (winetricks -q --force corefonts || true) \
     && (winetricks -q --force vcrun2019 || true) \
     && (winetricks -q --force vcrun2022 || true) \
     && (wineserver --kill || true) \

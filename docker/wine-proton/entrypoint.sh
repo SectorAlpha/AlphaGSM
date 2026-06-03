@@ -11,13 +11,26 @@ XVFB_AUTH_DIR=""
 XVFB_AUTH_FILE=""
 XVFB_PID=""
 
+bootstrap_wineprefix() {
+    if [[ ! -d "/opt/wine" ]]; then
+        mkdir -p "${WINEPREFIX_PATH}"
+        return
+    fi
+
+    mkdir -p "${WINEPREFIX_PATH}"
+
+    if [[ ! -f "${WINEPREFIX_PATH}/system.reg" || ! -d "${WINEPREFIX_PATH}/drive_c/windows/mono/mono-2.0" ]]; then
+        cp -a --update=none /opt/wine/. "${WINEPREFIX_PATH}/"
+    fi
+}
+
 if [[ -n "${NATIVE_COMMAND}" && "${NATIVE_COMMAND##*.}" != "exe" ]]; then
     if command -v "${NATIVE_COMMAND}" >/dev/null 2>&1 || [[ -x "${NATIVE_COMMAND}" ]]; then
         exec "$@"
     fi
 fi
 
-mkdir -p "${WINEPREFIX_PATH}"
+bootstrap_wineprefix
 
 export DISPLAY="${DISPLAY:-}"
 export WINEDLLOVERRIDES="${WINEDLLOVERRIDES-winex11.drv=}"

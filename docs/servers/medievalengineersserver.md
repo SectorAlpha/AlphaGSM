@@ -74,7 +74,7 @@ alphagsm mymedieval backup
 
 - **Config files**: `instance-data/MedievalEngineers-Dedicated.cfg`
 - **Template**: See [server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg](../server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg)
-- **Current status**: Disabled in CI. AlphaGSM now stages `instance-data/MedievalEngineers-Dedicated.cfg` before launch and gets through anonymous SteamCMD setup and `start`, but the real dedicated EXE is a Windows GUI Mono/.NET 4.6.1 assembly and the current Proton/Wine runtime still exits immediately with `c0000135` before A2S readiness.
+- **Current status**: Supported on the validated Docker `wine-proton` Linux lane. AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, launches `DedicatedServer64/MedievalEngineersDedicated.exe` through the shared Wine/Proton runtime, and the current health surface is generic `tcp` on the managed main port.
 
 ### Maps and Mods
 
