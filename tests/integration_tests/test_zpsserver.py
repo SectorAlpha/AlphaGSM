@@ -28,7 +28,13 @@ from utils.valve_server import detect_query_host
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
-        reason="SteamCMD app 4523420 stages the current GoldSrc Zombie Panic! Dedicated Server payload and Docker launches hlds_run successfully, but HLDS still dies at 'SteamAPI_Init() failed; create pipe failed' after loading /root/.steam/sdk32/steamclient.so, before A2S readiness."
+        reason=(
+            "ENABLED (AUTH): install and run an authenticated Steam client session "
+            "alongside Zombie Panic! Dedicated Server app 4523420 before start; "
+            "even with the SteamDB-advertised -steam -secure launch flags, HLDS "
+            "still reports SteamAPI_IsSteamRunning() missing under the anonymous "
+            "Docker lane"
+        )
     ),
 ]
 

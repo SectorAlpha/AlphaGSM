@@ -246,4 +246,4 @@
 | wurmserver | - | active | no | yes | status |
 | xntserver | - | active | no | yes | status |
 | zmrserver | - | active | yes | yes | - |
-| zpsserver | - | disabled | yes | no | - |
+| zpsserver | - | active | yes | yes | - |

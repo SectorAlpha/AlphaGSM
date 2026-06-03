@@ -263,10 +263,10 @@ Notes:
 ## Not Currently Supported
 
 - [ ] counterstrikeglobaloffensive
-- [ ] zpsserver
 - [ ] medievalengineersserver
 - [ ] subsistenceserver
 
 ## Waiting On Prerequisites Or Validation
 
 - [ ] iosserver
+- [ ] zpsserver

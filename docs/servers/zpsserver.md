@@ -61,7 +61,7 @@ alphagsm myzpsserve backup
 
 - Module name: `zpsserver`
 - Default port: `27015`
-- Current status: disabled in automated testing. SteamCMD app `4523420` now stages the current GoldSrc dedicated payload and Docker launches `hlds_run`, but HLDS still dies at `SteamAPI_Init() failed; create pipe failed` after loading `/root/.steam/sdk32/steamclient.so`, before A2S readiness.
+- Current status: `ENABLED (AUTH)`. SteamCMD app `4523420` stages the current GoldSrc dedicated payload, and the dedicated launch contract now matches SteamDB (`hlds_run -game zp -steam -secure`), but the validated Linux lane still expects a real authenticated Steam client session. Fresh Docker probes still stop at `SteamAPI_IsSteamRunning() did not locate a running instance of Steam` / `SteamAPI_Init() failed; create pipe failed` before A2S readiness.
 
 ## Developer Notes
 
