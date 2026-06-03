@@ -71,13 +71,13 @@ alphagsm myiosserve backup
 - **Engine**: Source
 - **SteamCMD App ID**: `673990`
 
-Current validation status: the public IOSoccer dedicated-server branch still is
-not enablement-ready on Linux. Fresh Docker-backed repros prove AlphaGSM now
-stages a clean `iosoccer/cfg/server.cfg`, but the public branch still falls
-into a repeated `srcds_run` segmentation-fault restart loop immediately after
-launch. Fresh anonymous SteamCMD probes also fail to set the advertised
-sdk2013 branches `iosoccer2025` and `beta` with `Failed to set beta`, so there
-is no proven anonymous branch-based workaround yet.
+Current validation status: `ENABLED (AUTH)`. AlphaGSM targets the dedicated
+tool app `673990`, but the supported sdk2013 branches `iosoccer2025` / `beta`
+are not anonymously accessible. Fresh SteamCMD probes against the dedicated
+tool app still return `ERROR! Failed to set beta 'iosoccer2025'` for anonymous
+login, while the public branch continues to crash on Linux after startup. The
+supported path is authenticated Steam or SteamCMD access to the dedicated tool
+branch before `setup`.
 
 ### Server Configuration
 

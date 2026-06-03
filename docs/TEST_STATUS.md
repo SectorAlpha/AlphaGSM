@@ -12,9 +12,9 @@ this pass aligned the runtime gate with that existing tracker state.
 | Status   | Count |
 |----------|-------|
 | PASSED   | 145      |
-| ENABLED (AUTH) | 45 |
+| ENABLED (AUTH) | 46 |
 | ENABLED (BYO) | 41 |
-| DISABLED | 5      |
+| DISABLED | 4      |
 | SKIPPED  | 0      |
 
 ## Status Key
@@ -288,7 +288,6 @@ URLs.
 | Test | Reason |
 |------|--------|
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
-| iosserver | IOSoccer now stages a clean `server.cfg` in the Docker-backed Source lane, and even with parent runtime AppID `673560` staged into `steam_appid.txt` the public branch still falls into the same repeated `srcds_run` segmentation-fault restart loop immediately after launch; fresh anonymous SteamCMD probes also fail to set the advertised sdk2013 branches `iosoccer2025` and `beta` (`Failed to set beta`), so there is no proven anonymous branch-based workaround yet |
 | zpsserver | Zombie Panic! Dedicated Server app `4523420` now stages the current GoldSrc payload and Docker launches `hlds_run` successfully, but HLDS still dies at `SteamAPI_Init() failed; create pipe failed` after loading `/root/.steam/sdk32/steamclient.so`, before A2S readiness |
 | medievalengineersserver | Anonymous SteamCMD app `367970` installs the full Windows dedicated payload and AlphaGSM now stages `instance-data/MedievalEngineers-Dedicated.cfg` before launch, but the real dedicated EXE is a Windows GUI Mono/.NET 4.6.1 assembly and the current Proton/Wine runtime still exits immediately with `c0000135` before A2S readiness |
 | subsistenceserver | Anonymous SteamCMD app `1362640` still installs the full Windows dedicated payload, but the validated Docker `wine-proton` lane now proves both shipped launchers fail before readiness: Win64 exits immediately with `Please install DirectX 9.0c or later` even after staging `d3dx9` into a server-local Wine prefix, and the older Win32/llvmpipe path still dies in the same DirectX prerequisite gate before A2S readiness |
@@ -298,3 +297,4 @@ URLs.
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 All integration tests have been tested and categorized. No untested servers remain.
+| iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |

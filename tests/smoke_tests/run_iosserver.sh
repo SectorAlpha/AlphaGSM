@@ -1,9 +1,9 @@
 #\!/usr/bin/env bash
-# DISABLED: IOSoccer still crashes on the public branch in the validated
-# Docker-backed Source lane, and fresh anonymous SteamCMD probes also fail to
-# set the advertised sdk2013 branches iosoccer2025 and beta ("Failed to set
-# beta"). See docs/TEST_STATUS.md for the current blocker details.
-echo "Smoke test for iosserver is disabled - see docs/TEST_STATUS.md for status"
+# ENABLED (AUTH): IOSoccer Dedicated Server app 673990 currently needs
+# authenticated Steam or SteamCMD access to the iosoccer2025/beta sdk2013
+# branch before setup. Anonymous SteamCMD fails to set those branches, and
+# the public branch still crashes on Linux. See docs/servers/iosserver.md.
+echo "Smoke test for iosserver is ENABLED (AUTH) - authenticate Steam/SteamCMD for app 673990 branch iosoccer2025 or beta before setup; see docs/servers/iosserver.md"
 exit 0
 
 set -Eeuo pipefail

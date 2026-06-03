@@ -113,7 +113,7 @@
 | insserver | - | active | yes | yes | - |
 | inssserver | - | active | no | yes | status |
 | interstellarriftserver | - | active | no | yes | status |
-| iosserver | - | disabled | yes | no | - |
+| iosserver | - | active | yes | yes | - |
 | jc2server | - | active | no | yes | status |
 | jc3server | - | active | no | yes | status |
 | jk2server | - | disabled | no | no | status |
