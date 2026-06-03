@@ -53,6 +53,9 @@ def test_fivem_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("fivem")
     exe = tmp_path / "run.sh"
     exe.write_text("")
+    server_data_dir = tmp_path / "server-data"
+    server_data_dir.mkdir()
+    (server_data_dir / "server.cfg").write_text("", encoding="utf-8")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "run.sh", "port": 30120})
 
     cmd, cwd = gtafivemserver.get_start_command(server)

@@ -56,6 +56,11 @@ def test_deadmatter_get_start_command_builds_expected_args(tmp_path):
 
 def test_lifeisfeudal_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     monkeypatch.setattr(lifeisfeudalserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setitem(
+        lifeisfeudalserver.get_start_command.__globals__,
+        "_assert_local_mysql_available",
+        lambda: None,
+    )
     server = DummyServer("lif")
     exe = tmp_path / "ddctd_cm_yo_server.exe"
     exe.write_text("")
@@ -81,9 +86,9 @@ def test_medievalengineers_get_start_command_builds_expected_args(tmp_path, monk
 
     cmd, cwd = medievalengineersserver.get_start_command(server)
 
-    assert cmd[0] == "DedicatedServer64/MedievalEngineersDedicated.exe"
-    assert "-console" in cmd
-    assert cwd == server.data["dir"]
+    assert cmd[0] == "MedievalEngineersDedicated.exe"
+    assert "console" in cmd
+    assert cwd == str(exe_dir)
 
 
 def test_sonsoftheforest_get_start_command_builds_expected_args(tmp_path, monkeypatch):

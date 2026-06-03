@@ -215,6 +215,7 @@ def test_prestart_refreshes_config(tmp_path):
 
 def test_do_stop_uses_runtime_layer():
     server = DummyServer()
+    mod.runtime_module.send_to_server.reset_mock()
     mod.do_stop(server, 0)
     mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 

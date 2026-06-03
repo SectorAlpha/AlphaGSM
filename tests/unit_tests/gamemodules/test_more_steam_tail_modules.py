@@ -103,14 +103,16 @@ def test_tail_modules_update_downloads_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         colserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, **kwargs: calls.append(
+            (path, app_id, anon, validate, kwargs)
+        ),
     )
 
     colserver.update(col, validate=True, restart=True)
     hzserver.update(hz, validate=False, restart=False)
     ohdserver.update(ohd, validate=False, restart=False)
 
-    assert ("/srv/col/", 748090, True, True) in calls
-    assert ("/srv/hz/", 2728330, True, False) in calls
-    assert ("/srv/ohd/", 950900, True, False) in calls
+    assert ("/srv/col/", 748090, True, True, {}) in calls
+    assert ("/srv/hz/", 2728330, True, False, {"force_windows": True}) in calls
+    assert ("/srv/ohd/", 950900, True, False, {}) in calls
     assert col.start_calls == 1

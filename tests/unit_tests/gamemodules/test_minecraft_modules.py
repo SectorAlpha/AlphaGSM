@@ -670,14 +670,18 @@ def test_custom_start_command_passes_explicit_port():
     assert command == ["java", "-jar", "minecraft_server.jar", "nogui", "--port", "25565"]
 
 
-def test_tekkit_runtime_wrappers_use_java_family():
+def test_tekkit_runtime_wrappers_use_java_family(tmp_path):
     server = DummyServer("tekkit")
+    server_dir = tmp_path / "tekkit"
+    server_dir.mkdir()
+    (server_dir / "Tekkit.jar").write_text("", encoding="utf-8")
     server.data.update(
         {
-            "dir": "/srv/tekkit",
+            "dir": str(server_dir),
             "exe_name": "Tekkit.jar",
             "port": 25566,
             "version": "1.12.2",
+            "url": "https://example.com/Tekkit.zip",
         }
     )
 

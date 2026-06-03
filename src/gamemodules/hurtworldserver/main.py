@@ -104,6 +104,7 @@ def get_start_command(server):
     """Build the command used to launch a Hurtworld dedicated server."""
 
     executable = _resolve_executable_name(server)
+    server_name = str(server.data.get("servername") or ("AlphaGSM %s" % (server.name,)))
     return (
         [
             "./" + executable,
@@ -114,7 +115,7 @@ def get_start_command(server):
                 f"host {server.data['port']};"
                 f"queryport {server.data['queryport']};"
                 f"maxplayers {server.data['maxplayers']};"
-                f"servername {server.data['servername']}"
+                f"servername {server_name}"
             ),
             "-logfile",
             "output.txt",

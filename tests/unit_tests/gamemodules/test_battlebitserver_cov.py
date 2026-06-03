@@ -1,6 +1,7 @@
 """Full coverage tests for battlebitserver."""
 
 import sys
+import types
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,7 +21,9 @@ with patch.dict(
     from server import ServerError
 
     mod.runtime_module.send_to_server = MagicMock()
-    mod.proton.wrap_command = MagicMock(side_effect=lambda cmd, **_: ["wrapped"] + list(cmd))
+    mod.proton = types.SimpleNamespace(
+        wrap_command=MagicMock(side_effect=lambda cmd, **_: ["wrapped"] + list(cmd))
+    )
 
 
 class DummyData(dict):

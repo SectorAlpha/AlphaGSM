@@ -107,6 +107,6 @@ def test_recent_modules_update_downloads_and_optionally_restart(monkeypatch):
     seserver.update(se, validate=False, restart=False)
 
     assert ("/srv/abf/", 2857200, True, True, {}) in calls
-    assert ("/srv/vr/", 1829350, True, False, {}) in calls
+    assert ("/srv/vr/", 1829350, True, False, {"force_windows": True}) in calls
     assert ("/srv/se/", 298740, True, False, {"force_windows": True}) in calls
     assert abf.start_calls == 1

@@ -92,13 +92,14 @@ def test_ecoserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_tail_modules_update_downloads_and_optionally_restart(monkeypatch):
+def test_tail_modules_update_downloads_and_optionally_restart(monkeypatch, tmp_path):
     tw = DummyServer("tw")
     tw.data["dir"] = "/srv/tw/"
     wf = DummyServer("wf")
     wf.data["dir"] = "/srv/wf/"
     eco = DummyServer("eco")
-    eco.data["dir"] = "/srv/eco/"
+    eco.data["dir"] = str(tmp_path / "eco") + "/"
+    (tmp_path / "eco").mkdir()
     calls = []
 
     monkeypatch.setattr(
@@ -113,5 +114,5 @@ def test_tail_modules_update_downloads_and_optionally_restart(monkeypatch):
 
     assert ("/srv/tw/", 380840, False, True) in calls
     assert ("/srv/wf/", 1136510, True, False) in calls
-    assert ("/srv/eco/", 739590, True, False) in calls
+    assert (eco.data["dir"], 739590, True, False) in calls
     assert tw.start_calls == 1

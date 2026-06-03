@@ -134,7 +134,12 @@ def test_astroneerserver_get_start_command_builds_expected_args(tmp_path, monkey
     assert wrap_calls == [True]
 
 
-def test_astroneerserver_runtime_metadata_enables_xvfb_for_docker(tmp_path):
+def test_astroneerserver_runtime_metadata_enables_xvfb_for_docker(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        astroneerserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("astro")
     exe = tmp_path / "AstroServer.exe"
     exe.write_text("")
@@ -160,6 +165,10 @@ def test_atlasserver_get_start_command_builds_expected_args(tmp_path):
     exe_dir.mkdir(parents=True)
     exe = exe_dir / "ShooterGameServer"
     exe.write_text("")
+    shooter_dir = tmp_path / "ShooterGame"
+    (shooter_dir / "ServerGrid").mkdir(exist_ok=True)
+    (shooter_dir / "ServerGrid.json").write_text("{}", encoding="utf-8")
+    (shooter_dir / "ServerGrid.ServerOnly.json").write_text("{}", encoding="utf-8")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -177,12 +186,12 @@ def test_atlasserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = atlasserver.get_start_command(server)
 
     assert cmd == [
-        "./ShooterGame/Binaries/Linux/ShooterGameServer",
-        "Ocean?listen?SessionName=AlphaGSM atlas?Port=57555?QueryPort=57561?MaxPlayers=100?ServerAdminPassword=alphagsm",
+        "./ShooterGameServer",
+        "Ocean?listen?SessionName=AlphaGSM_atlas?Port=57555?QueryPort=57561?MaxPlayers=100?ServerAdminPassword=alphagsm",
         "-server",
         "-log",
     ]
-    assert cwd == server.data["dir"]
+    assert cwd == str(exe_dir)
 
 
 def test_more_dedicated_modules_update_downloads_and_optionally_restart(monkeypatch):

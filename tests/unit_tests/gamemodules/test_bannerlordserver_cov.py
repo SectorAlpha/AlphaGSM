@@ -69,6 +69,7 @@ def test_install(tmp_path):
     server.data["exe_name"] = mod.BANNERLORD_LINUX_DLL
     server.data["Steam_AppID"] = 1863440
     server.data["Steam_anonymous_login_possible"] = False
+    mod.steamcmd.download = MagicMock()
     mod.install(server)
     mod.steamcmd.download.assert_called_once_with(
         str(tmp_path) + "/",
@@ -84,6 +85,7 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1863440
     server.data["Steam_anonymous_login_possible"] = False
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=True, restart=True)
     assert server._stopped
     assert server._started

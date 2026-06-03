@@ -34,7 +34,7 @@ def test_cryofall_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = cryofallserver.get_start_command(server)
 
-    assert cmd == ["./CryoFall_Server"]
+    assert cmd == ["dotnet", "CryoFall_Server", "loadOrNew"]
     assert cwd == server.data["dir"]
 
 

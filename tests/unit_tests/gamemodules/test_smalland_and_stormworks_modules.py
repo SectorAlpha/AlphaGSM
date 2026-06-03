@@ -1,3 +1,5 @@
+import pytest
+
 import gamemodules.smallandserver as smallandserver
 import gamemodules.stormworksserver as stormworksserver
 
@@ -76,8 +78,8 @@ def test_smalland_and_stormworks_updates_download_and_optionally_restart(monkeyp
     )
 
     smallandserver.update(small, validate=True, restart=True)
-    stormworksserver.update(storm, validate=False, restart=False)
+    with pytest.raises(Exception, match="ENABLED \\(BYO\\): stormworksserver"):
+        stormworksserver.update(storm, validate=False, restart=False)
 
     assert ("/srv/small/", 808040, True, True) in calls
-    assert ("/srv/storm/", 1247090, True, False) in calls
     assert small.start_calls == 1

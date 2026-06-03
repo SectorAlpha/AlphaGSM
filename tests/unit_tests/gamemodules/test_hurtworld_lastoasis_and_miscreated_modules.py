@@ -44,7 +44,7 @@ def test_hurtworld_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = hurtworldserver.get_start_command(server)
 
     assert cmd[0] == "./HurtworldDedicated"
-    assert "-worldname" in cmd
+    assert "host 12871;queryport 12872;maxplayers 50;servername AlphaGSM hurt" in cmd[4]
     assert cwd == server.data["dir"]
 
 
