@@ -12,7 +12,6 @@ STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SETUP_TIMEOUT_SECONDS="${SETUP_TIMEOUT_SECONDS:-3600}"
 SERVER_NAME="${SERVER_NAME:-itlastoasis}"
 SERVER_STARTED=0
-DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
 LOCAL_DOCKER_IMAGE="alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
 
@@ -60,8 +59,7 @@ require_cmd "$PYTHON_BIN"
 require_cmd docker
 
 DOCKER_IMAGE="$(resolve_docker_image)"
-WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
-mkdir -p "$WORK_ROOT"
+WORK_ROOT="$(resolve_work_root)"
 WORK_DIR="$(mktemp -d -p "$WORK_ROOT" lastoasisserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/lastoasisserver-server"

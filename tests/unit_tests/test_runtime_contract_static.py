@@ -24,9 +24,7 @@ GAME_CONFIG_HINTS = {
     '"difficulty"',
     '"levelname"',
 }
-DEFAULT_TEST_WORK_DIR = Path(
-    "/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
-)
+DEFAULT_TEST_WORK_DIR = Path("/tmp/alphagsm-work")
 
 
 def _game_module_names():
@@ -73,7 +71,7 @@ def _runtime_contract_root(module_name):
     if work_dir:
         root = Path(work_dir).expanduser() / "pytest-runtime-contract" / module_name.replace(".", "-")
     else:
-        root = Path("/tmp") / module_name.replace(".", "-")
+        root = DEFAULT_TEST_WORK_DIR / "pytest-runtime-contract" / module_name.replace(".", "-")
     shutil.rmtree(root, ignore_errors=True)
     return root
 

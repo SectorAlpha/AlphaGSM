@@ -2,6 +2,14 @@
 # Shared helpers for smoke tests.
 # Source this after defining run_alphagsm().
 
+DEFAULT_WORK_ROOT="${DEFAULT_WORK_ROOT:-/tmp/alphagsm-work}"
+
+resolve_work_root() {
+  local work_root="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
+  mkdir -p "$work_root"
+  printf '%s\n' "$work_root"
+}
+
 # pick_free_port
 # Return an ephemeral port that is free on both TCP and UDP.
 # The dual-protocol check mirrors AlphaGSM's port-manager pre-flight

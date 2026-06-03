@@ -11,7 +11,6 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-900}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itnoonesurvi}"
 SERVER_STARTED=0
-DEFAULT_WORK_ROOT="/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
 LOCAL_DOCKER_IMAGE="alphagsm-wine-proton-runtime:local"
 PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
@@ -60,8 +59,7 @@ require_cmd docker
 
 DOCKER_IMAGE="$(resolve_docker_image)"
 
-WORK_ROOT="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
-mkdir -p "$WORK_ROOT"
+WORK_ROOT="$(resolve_work_root)"
 WORK_DIR="$(mktemp -d -p "$WORK_ROOT" noonesurvivedserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/noonesurvivedserver-server"

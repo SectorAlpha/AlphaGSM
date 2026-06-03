@@ -12,7 +12,6 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itheatserver}"
 SERVER_STARTED=0
-WORK_ROOT="${ALPHAGSM_WORK_DIR:-/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme}"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -82,7 +81,7 @@ require_cmd "$PYTHON_BIN"
 require_cmd screen
 require_proton
 
-mkdir -p "$WORK_ROOT"
+WORK_ROOT="$(resolve_work_root)"
 WORK_DIR="$(mktemp -d -p "$WORK_ROOT" heatserver-smoke-XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/heatserver-server"

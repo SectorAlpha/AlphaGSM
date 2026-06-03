@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-06-03
+- CI/workflow: remove the machine-specific `/media/.../useme` scratch-root assumption from smoke and integration test plumbing. Smoke runners now resolve their work root through a shared helper that prefers `ALPHAGSM_WORK_DIR` and otherwise falls back to `/tmp/alphagsm-work`, integration tests use the same default root, and the runtime-contract unit coverage now reflects the portable temp-root contract.
 - CI/contracts: fix the remaining runtime-contract and template-default drift that was keeping the PR red after the final server-enablement slices. The static Docker manifest test now understands `ENABLED (BYO)` and `ENABLED (AUTH)` prerequisite guards, shared module/runtime metadata is back in sync for `zpsserver`, `cryofallserver`, `notdserver`, `subsistenceserver`, `ahlserver`, and `atlasserver`, and the checked-in server-template examples now cover the supported defaults and runtime-template shapes they actually document.
 - Server support: re-enable `medievalengineersserver` on the validated Docker `wine-proton` Linux lane. AlphaGSM now stages `instance-data/MedievalEngineers-Dedicated.cfg`, reuses the shared Wine prefix bootstrap with `fontconfig`, `libgdiplus`, and `corefonts` available in the runtime image, and fresh integration plus smoke validate `query`, `info`, and `info --json` over the current generic `tcp` health surface on the managed main port.
 - Server support: re-enable `subsistenceserver` on the validated Docker `wine-proton` Linux lane. AlphaGSM now launches the upstream Win64 `UDK.exe` dedicated host, hands Docker the bare Windows command so the shared Wine/Proton entrypoint can seed the Wine prefix and Xvfb correctly, and syncs the real UDK config layer so the managed `queryport` becomes authoritative before start. Fresh integration plus smoke now validate `query`, `info`, and `info --json` over A2S on the managed query port.
@@ -184,7 +185,6 @@ high-level milestones.
 - Query/info: add an explicit `ut3` Unreal3/GameSpy4 reachability probe so `ut3server` reports its real query surface instead of falling back to generic TCP reachability.
 - HYPERCHARGE: Unboxed: stop treating `hcuserver` as an A2S-on-`queryport` server; the Linux dedicated build now uses generic UDP reachability on the gameplay port, ignores stale `queryport` claims, and has active smoke/integration coverage wired to the real `Unboxed.log` readiness marker.
 - StickyBots: confirm the headless Linux dedicated server still reaches a live A2S query state on `queryport` despite its startup `SteamAPI_Init()` warning, re-enable smoke/integration coverage on `info --json` protocol `a2s`, and document the real readiness contract.
-- Test infrastructure: make the static runtime-contract tests default to `/tmp` unless `ALPHAGSM_WORK_DIR` is explicitly set, so local validation no longer depends on the external `/media/.../useme` path existing on disk.
 - Server support: add `onsetserver` for Onset with the upstream `server_config.json` contract, Linux `start_linux.sh --config` launch path, documented derived query/http ports, and smoke/integration coverage.
 - Server support: add `ns2server` for Natural Selection 2 with the Linux Spark dedicated-server launch contract, per-instance config/workshop directories, A2S query/info wiring on the main port, and smoke/integration coverage.
 - Server support: add `ns2cserver` for NS2: Combat with the Linux Spark dedicated-server launch contract, per-instance config/workshop directories, A2S query/info wiring on the main port, and smoke/integration coverage.
@@ -329,7 +329,6 @@ high-level milestones.
 - Server support: validate `set startmap` against installed `.bsp` files for low-risk Source server batches so obvious bad map names fail before start.
 
 2026-04-15
-- Release prep: set the preferred local integration-test work directory to /media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme when available.
 - Release prep: add changelog discipline guidance via AGENTS.md and skills/changelog-discipline/SKILL.md.
 - Release prep: update user-facing CLI and project text to reference 2026 and point to changelog.txt.
 - CI: add cross-platform standalone binary build smoke jobs for Linux, Windows, and macOS artifacts.

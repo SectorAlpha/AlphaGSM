@@ -17,9 +17,8 @@ from utils.steamcmd import _steamcmd_state_202_flake
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
-DEFAULT_INTEGRATION_WORK_DIR = Path(
-    "/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme"
-)
+DEFAULT_INTEGRATION_WORK_DIR = Path("/tmp/alphagsm-work")
+
 
 # ---------------------------------------------------------------------------
 # Override pytest-timeout for integration tests (default pytest.ini is 10s)
@@ -348,22 +347,21 @@ def alphagsm_env(config_path):
     return env
 
 
-def build_integration_tmp_path(test_name, tmp_path_factory):
+def build_integration_tmp_path(test_name, _tmp_path_factory):
     """Return the temp directory root for an integration test."""
     work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
-    if not work_dir and DEFAULT_INTEGRATION_WORK_DIR.exists():
-        work_dir = str(DEFAULT_INTEGRATION_WORK_DIR)
-    if not work_dir:
-        return tmp_path_factory.mktemp(test_name)
-
-    root = Path(work_dir).expanduser() / "pytest-integration"
+    root = (
+        Path(work_dir).expanduser()
+        if work_dir
+        else DEFAULT_INTEGRATION_WORK_DIR
+    ) / "pytest-integration"
     root.mkdir(parents=True, exist_ok=True)
     return Path(tempfile.mkdtemp(prefix=f"{test_name}-", dir=str(root)))
 
 
 @pytest.fixture
 def tmp_path(request, tmp_path_factory):
-    """Create and clean integration-test temp dirs under ``ALPHAGSM_WORK_DIR``."""
+    """Create and clean integration-test temp dirs under the shared work root."""
     path = build_integration_tmp_path(request.node.name, tmp_path_factory)
     try:
         yield path

@@ -7,6 +7,7 @@ import sys
 import types
 
 import pytest
+from utils.simple_kv_config import rewrite_space_config
 
 
 def test_wait_for_a2s_ready_fails_even_when_tcp_is_open_and_logs_exist(monkeypatch, tmp_path):
@@ -189,22 +190,20 @@ def test_build_integration_tmp_path_uses_work_dir(monkeypatch, tmp_path):
     assert result.is_dir()
 
 
-def test_build_integration_tmp_path_falls_back_to_pytest_factory(monkeypatch, tmp_path):
+def test_build_integration_tmp_path_uses_default_work_root(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     monkeypatch.delenv("ALPHAGSM_WORK_DIR", raising=False)
-    monkeypatch.setattr(helpers, "DEFAULT_INTEGRATION_WORK_DIR", tmp_path / "missing-default")
-
-    expected = tmp_path / "fallback"
+    monkeypatch.setattr(helpers, "DEFAULT_INTEGRATION_WORK_DIR", tmp_path / "shared-work")
 
     class _Factory:
         def mktemp(self, name):
-            assert name == "ndserver"
-            expected.mkdir()
-            return expected
+            raise AssertionError("mktemp should not be used when a default work root exists")
 
     result = helpers.build_integration_tmp_path("ndserver", _Factory())
 
-    assert result == Path(expected)
+    assert result.parent == tmp_path / "shared-work" / "pytest-integration"
+    assert result.name.startswith("ndserver-")
+    assert result.is_dir()
 
 
 def test_write_config_keeps_downloads_inside_test_home_by_default(monkeypatch, tmp_path):
@@ -257,6 +256,47 @@ def test_parse_recommended_port_overrides_reads_full_claim_set():
         "queryport": 27016,
         "peerport": 27017,
     }
+
+
+def test_set_source_hibernation_preserves_line_boundaries_when_appending(tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    server_cfg = tmp_path / "server.cfg"
+    server_cfg.write_text('hostname "AlphaGSM IOSoccer"', encoding="utf-8")
+
+    helpers.set_source_hibernation(server_cfg, enabled=True)
+
+    assert server_cfg.read_text(encoding="utf-8") == (
+        'hostname "AlphaGSM IOSoccer"\n'
+        "sv_hibernate_when_empty 1\n"
+    )
+
+
+def test_iosserver_hibernation_and_rewrite_sequence_keeps_lines_separate(tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    server_cfg = tmp_path / "server.cfg"
+    server_cfg.write_text(
+        'exec shared_server.cfg\n\nhostname "IOSoccer Dedicated Server"',
+        encoding="utf-8",
+    )
+
+    helpers.set_source_hibernation(server_cfg, enabled=True)
+    rewrite_space_config(
+        server_cfg,
+        {
+            "hostname": '"AlphaGSM IOSoccer"',
+            "rcon_password": '""',
+            "sv_password": '""',
+        },
+    )
+
+    assert server_cfg.read_text(encoding="utf-8") == (
+        "exec shared_server.cfg\n"
+        "\n"
+        'hostname "AlphaGSM IOSoccer"\n'
+        "sv_hibernate_when_empty 1\n"
+        'rcon_password ""\n'
+        'sv_password ""\n'
+    )
 
 
 def test_module_uses_explicit_docker_runtime_for_custom_test_module():
