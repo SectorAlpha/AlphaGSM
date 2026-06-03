@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-06-03
+- Server support: re-enable `subsistenceserver` on the validated Docker `wine-proton` Linux lane. AlphaGSM now launches the upstream Win64 `UDK.exe` dedicated host, hands Docker the bare Windows command so the shared Wine/Proton entrypoint can seed the Wine prefix and Xvfb correctly, and syncs the real UDK config layer so the managed `queryport` becomes authoritative before start. Fresh integration plus smoke now validate `query`, `info`, and `info --json` over A2S on the managed query port.
+
 2026-06-02
 - Tracker hygiene: `zpsserver` now tracks the current `4523420` GoldSrc dedicated payload instead of the stale Source-era `17505` lane, but stays disabled because fresh Docker-backed repros still die at `SteamAPI_Init() failed; create pipe failed` after loading `/root/.steam/sdk32/steamclient.so`.
 - Tracker hygiene: tighten `iosserver` again after fresh SteamCMD branch probes. The public IOSoccer dedicated-server branch still segfaults in the Docker-backed Source lane even with a clean staged `server.cfg`, and anonymous SteamCMD also fails to set the advertised sdk2013 branches `iosoccer2025` and `beta`, so there is still no proven anonymous branch-based workaround.

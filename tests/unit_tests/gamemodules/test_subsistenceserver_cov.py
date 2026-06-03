@@ -12,6 +12,7 @@ _proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_prot
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.subsistenceserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -111,15 +112,24 @@ def test_get_start_command(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "Binaries/Win32/run_dedicated_server.bat"
-    exe_path = tmp_path / "Binaries/Win32/run_dedicated_server.bat"
+    server.data["exe_name"] = "Binaries/Win64/UDK.exe"
+    exe_path = tmp_path / "Binaries/Win64/UDK.exe"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
-    server.data["maxplayers"] = 27015
+    server.data["maxplayers"] = 10
     server.data["port"] = 27015
-    server.data["queryport"] = 27015
+    server.data["queryport"] = 27016
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "Binaries/Win64/UDK.exe",
+        "server",
+        "coldmap1?steamsockets",
+        "-log",
+        "-Port=27015",
+        "-QueryPort=27016",
+        "-MaxPlayers=10",
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -133,10 +143,114 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_get_query_and_info_address():
+    server = DummyServer()
+    server.data["queryport"] = 27016
+
+    query_address = mod.get_query_address(server)
+    info_address = mod.get_info_address(server)
+
+    assert query_address == ("127.0.0.1", 27016, "a2s")
+    assert info_address == query_address
+
+
+def test_sync_server_config(tmp_path):
+    server = DummyServer("subs")
+    config_dir = tmp_path / "UDKGame" / "Config"
+    config_dir.mkdir(parents=True)
+    for filename in ("DefaultEngine.ini", "DefaultEngineUDK.ini", "UDKEngine.ini"):
+        (config_dir / filename).write_text("QueryPort=27015\n")
+    for filename in ("DefaultDedServerSettings.ini", "UDKDedServerSettings.ini"):
+        (config_dir / filename).write_text(
+            "MaxPlayers=32\nServerName=Subsistence Server\nPassword=password\n"
+        )
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "queryport": 27016,
+            "maxplayers": 10,
+            "servername": "AlphaGSM subs",
+            "serverpassword": "",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    for filename in ("DefaultEngine.ini", "DefaultEngineUDK.ini", "UDKEngine.ini"):
+        assert (config_dir / filename).read_text() == "QueryPort=27016\n"
+    for filename in ("DefaultDedServerSettings.ini", "UDKDedServerSettings.ini"):
+        assert (config_dir / filename).read_text() == (
+            "MaxPlayers=10\nServerName=AlphaGSM subs\nPassword=\n"
+        )
+
+
+def test_container_start_command_strips_host_wrappers(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "Binaries/Win64/UDK.exe"
+    exe_path = tmp_path / "Binaries/Win64/UDK.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["maxplayers"] = 10
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *cmd,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda command, **env_vars: [
+            "env",
+            *["%s=%s" % (key, value) for key, value in env_vars.items()],
+            *command[1:],
+        ] if command and command[0] == "env" else ["env", *["%s=%s" % (key, value) for key, value in env_vars.items()], *command],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "unwrap_runtime_command",
+        lambda command: command[command.index("wine") + 1 :],
+    )
+
+    command, cwd = mod._container_start_command(server)
+
+    assert command == [
+        "Binaries/Win64/UDK.exe",
+        "server",
+        "coldmap1?steamsockets",
+        "-log",
+        "-Port=27015",
+        "-QueryPort=27016",
+        "-MaxPlayers=10",
+    ]
+    assert cwd == server.data["dir"]
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_prestart_syncs_server_config(monkeypatch):
+    server = DummyServer()
+    sync_calls = []
+    monkeypatch.setattr(mod, "sync_server_config", lambda current_server: sync_calls.append(current_server))
+
+    mod.prestart(server)
+
+    assert sync_calls == [server]
 
 
 def test_status():
@@ -208,4 +322,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

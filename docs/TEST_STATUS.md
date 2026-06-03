@@ -11,10 +11,10 @@ this pass aligned the runtime gate with that existing tracker state.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 145      |
+| PASSED   | 146      |
 | ENABLED (AUTH) | 47 |
 | ENABLED (BYO) | 41 |
-| DISABLED | 3      |
+| DISABLED | 2      |
 | SKIPPED  | 0      |
 
 ## Status Key
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (145)
+## PASSED (146)
 
 | Test | Type |
 |------|------|
@@ -136,6 +136,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | soulmask | Wine/Proton — PASSED 2026-05-29; fresh focused integration now passes on the validated Linux Docker-backed `wine-proton` lane once AlphaGSM launches the real Windows dedicated depot through root `WSServer.exe`, treats the live health surface as generic `tcp` on the managed main port instead of the older stale A2S assumption, and proves `query`, `info`, `info --json`, plus clean shutdown on the current server contract |
 | sonsoftheforestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image once AlphaGSM writes the managed JSON `user-data/dedicatedserver.cfg`, seeds `ownerswhitelist.txt` before first launch, starts Xvfb from the shared container entrypoint instead of a stuck in-container `xvfb-run` wrapper, and proves A2S `query`, `info`, `info --json`, plus clean shutdown on the managed `queryport` |
 | solserver | SteamCMD |
+| subsistenceserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; fresh focused integration plus smoke now prove the earlier DirectX-only disabled note was stale. Anonymous SteamCMD setup for app `1362640` installs the full Windows dedicated payload, AlphaGSM launches the upstream `Binaries/Win64/UDK.exe` dedicated host inside the shared `wine-proton` runtime, hands Docker the bare Windows command so the shared entrypoint can seed the Wine prefix and Xvfb correctly, syncs the real UDK config layer so the managed `queryport` becomes authoritative before start, and validates `query`, `info`, and `info --json` over A2S on the managed query port |
 | squad44server | SteamCMD |
 | squadserver | SteamCMD |
 | stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port |
@@ -180,7 +181,7 @@ this pass aligned the runtime gate with that existing tracker state.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (45)
+## ENABLED (AUTH) (47)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -232,6 +233,8 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | redmserver | txAdmin/server-data provisioning plus Cfx license key |
 | battlebitserver | BattleBit community-server provisioning/approval plus a reachable `apiendpoint` (optional `apitoken`) |
 | tiserver | EOS dedicated-server client ID/secret for Epic Online Services authentication |
+| iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
+| zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |
 
 ## ENABLED (BYO) (41)
 
@@ -283,18 +286,15 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (5)
+## DISABLED (2)
 
 | Test | Reason |
 |------|--------|
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | medievalengineersserver | Anonymous SteamCMD app `367970` installs the full Windows dedicated payload and AlphaGSM now stages `instance-data/MedievalEngineers-Dedicated.cfg` before launch, but the real dedicated EXE is a Windows GUI Mono/.NET 4.6.1 assembly and the current Proton/Wine runtime still exits immediately with `c0000135` before A2S readiness |
-| subsistenceserver | Anonymous SteamCMD app `1362640` still installs the full Windows dedicated payload, but the validated Docker `wine-proton` lane now proves both shipped launchers fail before readiness: Win64 exits immediately with `Please install DirectX 9.0c or later` even after staging `d3dx9` into a server-local Wine prefix, and the older Win32/llvmpipe path still dies in the same DirectX prerequisite gate before A2S readiness |
 
 ## SKIPPED (0)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
 All integration tests have been tested and categorized. No untested servers remain.
-| iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
-| zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |

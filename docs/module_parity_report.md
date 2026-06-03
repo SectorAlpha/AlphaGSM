@@ -125,7 +125,7 @@
 | lastoasisserver | - | active | no | yes | status |
 | lifeisfeudalserver | - | active | no | yes | status |
 | longvinterserver | - | active | no | yes | status |
-| medievalengineersserver | - | disabled | no | no | status |
+| medievalengineersserver | - | active | no | yes | status |
 | memoriesofmarsserver | - | active | no | yes | status |
 | minecraft.bedrock | mcbserver | active | no | yes | status |
 | minecraft.bungeecord | - | active | no | yes | status |
@@ -213,7 +213,7 @@
 | stnserver | - | active | no | yes | status |
 | stormworksserver | - | active | no | yes | status |
 | subnauticaserver | - | active | no | yes | status |
-| subsistenceserver | - | disabled | no | no | status |
+| subsistenceserver | - | active | no | yes | status |
 | sunkenlandserver | - | active | no | yes | status |
 | svenserver | - | active | yes | yes | - |
 | teamfortress2 | tf2, tf2server | active | yes | yes | - |

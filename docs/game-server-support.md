@@ -124,6 +124,7 @@ Notes:
 - [x] soulmask
 - [x] sonsoftheforestserver
 - [x] solserver
+- [x] subsistenceserver
 - [x] squad44server
 - [x] squadserver
 - [x] stationeersserver
@@ -215,6 +216,8 @@ Notes:
 - [x] redmserver
 - [x] battlebitserver
 - [x] tiserver
+- [x] iosserver
+- [x] zpsserver
 
 ## Supported Now
 
@@ -264,9 +267,6 @@ Notes:
 
 - [ ] counterstrikeglobaloffensive
 - [ ] medievalengineersserver
-- [ ] subsistenceserver
 
 ## Waiting On Prerequisites Or Validation
 
-- [ ] iosserver
-- [ ] zpsserver
