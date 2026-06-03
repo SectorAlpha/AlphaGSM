@@ -2,6 +2,7 @@
 
 import os
 import sys
+import xml.etree.ElementTree as ET
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -41,6 +42,9 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27016, dir=str(tmp_path))
     assert server.data['port'] == 27016
+    assert server.data["servername"] == "AlphaGSM testserver"
+    assert server.data["worldname"] == "testserver"
+    assert server.data["maxplayers"] == mod.DEFAULT_MAX_PLAYERS
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -115,7 +119,16 @@ def test_get_start_command(tmp_path, monkeypatch):
     exe_path.write_text("")
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "MedievalEngineersDedicated.exe",
+        "console",
+        "path",
+        os.path.abspath(str(tmp_path / "instance-data")),
+        "port",
+        "27015",
+    ]
+    assert cwd == str(tmp_path / "DedicatedServer64")
+    assert (tmp_path / "instance-data").is_dir()
 
 
 def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
@@ -133,7 +146,14 @@ def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
     mod.get_start_command(server)
 
     wrap_mock.assert_called_with(
-        ["DedicatedServer64/MedievalEngineersDedicated.exe", "-console", "-port", "27015"],
+        [
+            "MedievalEngineersDedicated.exe",
+            "console",
+            "path",
+            "Z:" + str((tmp_path / "instance-data").resolve()).replace("/", "\\"),
+            "port",
+            "27015",
+        ],
         wineprefix=None,
         prefer_proton=True,
     )
@@ -151,7 +171,7 @@ def test_get_start_command_reuses_shared_wrapped_command_on_linux(tmp_path, monk
         "TEMP",
         "proton",
         "run",
-        "DedicatedServer64/MedievalEngineersDedicated.exe",
+        "MedievalEngineersDedicated.exe",
     ]
     monkeypatch.setattr(mod.proton, "wrap_command", lambda *args, **kwargs: list(shared_wrapper))
     server = DummyServer()
@@ -178,8 +198,96 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
-    mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    with patch.object(mod.runtime_module, "send_to_server") as mocked_send:
+        mod.do_stop(server, 0)
+    mocked_send.assert_called_with(server, "\003")
+
+
+def test_sync_server_config_writes_dedicated_cfg(tmp_path):
+    server = DummyServer(name="meit")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 27016
+    server.data["servername"] = "AlphaGSM Medieval"
+    server.data["worldname"] = "MedievalWorld"
+    server.data["maxplayers"] = "12"
+
+    mod.sync_server_config(server)
+
+    config_path = tmp_path / "instance-data" / mod.DEDICATED_CONFIG_NAME
+    assert config_path.is_file()
+
+    root = ET.parse(config_path).getroot()
+    assert root.tag.endswith("MyConfigDedicated")
+    assert root.findtext("ServerPort") == "27016"
+    assert root.findtext("SteamPort") == "27017"
+    assert root.findtext("ServerName") == "AlphaGSM Medieval"
+    assert root.findtext("WorldName") == "MedievalWorld"
+    assert root.findtext("IgnoreLastSession") == "false"
+    assert root.findtext("RemoteApiEnabled") == "false"
+    assert root.find("Scenario").attrib["Subtype"] == mod.DEFAULT_SCENARIO
+    assert root.find("SessionSettings/MaxPlayers").text == "12"
+
+
+def test_prestart_syncs_server_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 27016
+
+    mod.prestart(server)
+
+    assert (tmp_path / "instance-data" / mod.DEDICATED_CONFIG_NAME).is_file()
+
+
+def test_runtime_requirements_enable_xvfb_container_env():
+    server = DummyServer()
+    server.data["dir"] = "/srv/me/"
+    server.data["port"] = 27015
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
+def test_container_spec_prefers_proton_runtime(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DedicatedServer64/MedievalEngineersDedicated.exe"
+    exe_path = tmp_path / "DedicatedServer64/MedievalEngineersDedicated.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["port"] = 27015
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+
+
+def test_instance_data_path_uses_windows_style_on_linux(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+
+    assert mod._instance_data_path(server) == "Z:" + str(
+        (tmp_path / "instance-data").resolve()
+    ).replace("/", "\\")
+
+
+def test_container_spec_uses_dedicated_server_working_dir(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 27015
+    server.data["exe_name"] = "DedicatedServer64/MedievalEngineersDedicated.exe"
+    exe_path = tmp_path / "DedicatedServer64/MedievalEngineersDedicated.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == mod.CONTAINER_WORKING_DIR
 
 
 def test_status():
@@ -235,8 +343,25 @@ def test_checkvalue_dir():
     assert result == "/test/value"
 
 
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM Medieval")
+    assert result == "AlphaGSM Medieval"
+
+
+def test_checkvalue_worldname():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("worldname",), "World01")
+    assert result == "World01"
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "12")
+    assert result == 12
+
+
 def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -72,9 +72,9 @@ alphagsm mymedieval backup
 
 ### Server Configuration
 
-- **Config files**: `global.cfg`
-- **Template**: See [server-templates/medievalengineersserver/](../server-templates/medievalengineersserver/) if available
-- **Current status**: Disabled in CI. Fresh Docker `wine-proton` validation now proves the remaining blocker is inside the Windows runtime bootstrap, not SteamCMD or a missing executable: anonymous app `367970` installs the full dedicated payload, but under Proton the dedicated EXE throws `System.PlatformNotSupportedException: Video driver  not supported`, then emits follow-on missing-resource and XML-serializer exceptions including missing `Content\\Textures\\Splashscreens` before AlphaGSM can reach server logs or A2S readiness.
+- **Config files**: `instance-data/MedievalEngineers-Dedicated.cfg`
+- **Template**: See [server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg](../server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg)
+- **Current status**: Disabled in CI. AlphaGSM now stages `instance-data/MedievalEngineers-Dedicated.cfg` before launch and gets through anonymous SteamCMD setup and `start`, but the real dedicated EXE is a Windows GUI Mono/.NET 4.6.1 assembly and the current Proton/Wine runtime still exits immediately with `c0000135` before A2S readiness.
 
 ### Maps and Mods
 

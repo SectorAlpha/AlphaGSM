@@ -1,8 +1,8 @@
 """Medieval Engineers dedicated server lifecycle helpers."""
 
 import os
+import xml.etree.ElementTree as ET
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -15,6 +15,11 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 367970
 steam_anonymous_login_possible = True
+CONTAINER_WORKING_DIR = f"{proton.CONTAINER_SERVER_DIR}/DedicatedServer64"
+DEDICATED_CONFIG_NAME = "MedievalEngineers-Dedicated.cfg"
+DEFAULT_SCENARIO = "SafeAreaStart"
+DEFAULT_MAX_PLAYERS = "8"
+config_sync_keys = ("port", "servername", "worldname", "maxplayers")
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -29,6 +34,132 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _container_runtime_env(_server):
+    """Return Docker runtime env for the shared wine-proton entrypoint."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
+
+
+def _instance_data_dir(server):
+    """Return the local dedicated-server data directory."""
+
+    instance_dir = os.path.abspath(os.path.join(server.data["dir"], "instance-data"))
+    os.makedirs(instance_dir, exist_ok=True)
+    return instance_dir
+
+
+def _instance_data_path(server):
+    """Return the dedicated-server data path expected by the binary."""
+
+    instance_dir = _instance_data_dir(server)
+    if IS_LINUX:
+        normalized = instance_dir.replace("\\", "/")
+        return "Z:" + normalized.replace("/", "\\")
+    return instance_dir
+
+
+def _dedicated_config_path(server):
+    """Return the managed dedicated config path."""
+
+    return os.path.join(_instance_data_dir(server), DEDICATED_CONFIG_NAME)
+
+
+def _build_dedicated_config_tree(server):
+    """Return a dedicated config tree aligned with the managed datastore."""
+
+    root = ET.Element(
+        "MyConfigDedicated",
+        {
+            "xmlns:xsd": "http://www.w3.org/2001/XMLSchema",
+            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        },
+    )
+    session_settings = ET.SubElement(root, "SessionSettings")
+    session_values = (
+        ("GameMode", "Survival"),
+        ("InventorySizeMultiplier", "1"),
+        ("OnlineMode", "PUBLIC"),
+        ("MaxPlayers", str(server.data.get("maxplayers") or DEFAULT_MAX_PLAYERS)),
+        ("MaxFloatingObjects", "64"),
+        ("MaxBackupSaves", "5"),
+        ("EnableSpectator", "false"),
+        ("EnableCopyPaste", "true"),
+        ("ShowPlayerNamesOnHud", "true"),
+        ("AutoSaveInMinutes", "5"),
+        ("ProceduralSeed", "0"),
+        ("DestructibleBlocks", "true"),
+        ("ViewDistance", "2600"),
+        ("Enable3rdPersonView", "true"),
+        ("EnableSunRotation", "true"),
+        ("PhysicsIterations", "4"),
+        ("SunRotationIntervalMinutes", "120"),
+        ("DaysPerSeason", "4"),
+        ("MaxSolarAltitude", "0.41"),
+        ("EnableVoxelDestruction", "true"),
+        ("EnableStructuralSimulation", "true"),
+        ("MessageOfTheDay", ""),
+        ("ServerSideChatLogging", "true"),
+        ("EnableLargeDynamicGridDecay", "true"),
+        ("ResourceDecayTime", "300"),
+        ("AbandonedGridDecayTime", "168"),
+        ("MaximumBots", "10"),
+        ("EnableHostileAI", "true"),
+        ("EnableFastTravel", "true"),
+        ("EnableTravelReachability", "true"),
+        ("MaxActiveFracturePieces", "50"),
+    )
+    for key, value in session_values:
+        node = ET.SubElement(session_settings, key)
+        node.text = value
+
+    ET.SubElement(
+        root,
+        "Scenario",
+        {"Type": "ScenarioDefinition", "Subtype": DEFAULT_SCENARIO},
+    )
+    ET.SubElement(root, "LoadWorld").text = ""
+    ET.SubElement(root, "IP").text = "0.0.0.0"
+    ET.SubElement(root, "SteamPort").text = str(int(server.data["port"]) + 1)
+    ET.SubElement(root, "ServerPort").text = str(server.data["port"])
+    ET.SubElement(root, "AsteroidAmount").text = "4"
+    ET.SubElement(root, "Administrators").text = ""
+    ET.SubElement(root, "Banned").text = ""
+    ET.SubElement(root, "Mods").text = ""
+    ET.SubElement(root, "GroupID").text = "0"
+    ET.SubElement(root, "ServerName").text = (
+        server.data.get("servername") or "AlphaGSM %s" % (server.name,)
+    )
+    ET.SubElement(root, "WorldName").text = (
+        server.data.get("worldname") or server.name
+    )
+    ET.SubElement(root, "PauseGameWhenEmpty").text = "false"
+    ET.SubElement(root, "IgnoreLastSession").text = "false"
+    ET.SubElement(root, "RemoteApiEnabled").text = "false"
+    ET.SubElement(root, "PublicRemoteApiEnabled").text = "false"
+    ET.SubElement(root, "RemoteSecurityKey").text = ""
+    ET.SubElement(root, "RemoteApiPort").text = "8080"
+    return ET.ElementTree(root)
+
+
+def sync_server_config(server):
+    """Create or update the dedicated config under the managed data path."""
+
+    config_path = _dedicated_config_path(server)
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    tree = _build_dedicated_config_tree(server)
+    if hasattr(ET, "indent"):
+        ET.indent(tree, space="  ")
+    tree.write(config_path, encoding="utf-8", xml_declaration=True)
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServer64/MedievalEngineersDedicated.exe"):
     """Collect and store configuration values for a Medieval Engineers server."""
 
@@ -37,10 +168,18 @@ def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServer64/M
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "servername": "AlphaGSM %s" % (server.name,),
+            "worldname": server.name,
+            "maxplayers": DEFAULT_MAX_PLAYERS,
+        },
+    )
     gamemodule_common.ensure_backup_config(
         server,
-        backupfiles=["DedicatedServer64", "Content", "global.cfg"],
-        targets=["DedicatedServer64", "Content", "global.cfg"],
+        backupfiles=["DedicatedServer64", "Content", "instance-data"],
+        targets=["DedicatedServer64", "Content", "instance-data"],
     )
     gamemodule_common.configure_port(
         server,
@@ -80,24 +219,40 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Medieval Engineers server."
 
 
+def prestart(server):
+    """Stage Medieval Engineers config before launch."""
+
+    sync_server_config(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Medieval Engineers dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], "-console", "-port", str(server.data["port"])]
+    working_dir = os.path.dirname(exe_path) or server.data["dir"]
+    cmd = [
+        os.path.basename(server.data["exe_name"]),
+        "console",
+        "path",
+        _instance_data_path(server),
+        "port",
+        str(server.data["port"]),
+    ]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
-    return cmd, server.data["dir"]
+    return cmd, working_dir
+
+
 def do_stop(server, j):
     """Stop Medieval Engineers using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -130,15 +285,20 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
-        str_keys=("exe_name", "dir"),
+        int_keys=("port", "maxplayers"),
+        str_keys=("exe_name", "dir", "servername", "worldname"),
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        prefer_proton=True,
+        extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    prefer_proton=True,
+    extra_env=_container_runtime_env,
+    working_dir=CONTAINER_WORKING_DIR,
 )
