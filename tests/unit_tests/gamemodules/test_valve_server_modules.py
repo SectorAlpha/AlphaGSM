@@ -435,8 +435,9 @@ def test_legacy_source_module_runtime_requirements_include_steam_sdk_mounts(tmp_
     assert spec["mounts"] == requirements["mounts"]
 
 
-def test_legacy_source_module_prestart_writes_runtime_steam_appid_file(tmp_path):
+def test_legacy_source_module_prestart_writes_runtime_steam_appid_file(tmp_path, monkeypatch):
     module = importlib.import_module("gamemodules.dabserver")
+    valve_server = importlib.import_module("utils.valve_server")
     (tmp_path / "dab").mkdir(parents=True)
     (tmp_path / "dab" / "GameInfo.txt").write_text("", encoding="utf-8")
     (tmp_path / "dabds.sh").write_text("", encoding="utf-8")
@@ -448,13 +449,15 @@ def test_legacy_source_module_prestart_writes_runtime_steam_appid_file(tmp_path)
         },
     )
 
+    monkeypatch.setattr(valve_server, "_ensure_steamclient_link", lambda: None)
     module.prestart(server)
 
     assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "317360\n"
 
 
-def test_zpsserver_prestart_writes_goldsrc_runtime_steam_appid_file(tmp_path):
+def test_zpsserver_prestart_writes_goldsrc_runtime_steam_appid_file(tmp_path, monkeypatch):
     module = importlib.import_module("gamemodules.zpsserver")
+    valve_server = importlib.import_module("utils.valve_server")
     (tmp_path / "zp").mkdir(parents=True)
     (tmp_path / "zp" / "server.cfg").write_text("", encoding="utf-8")
     (tmp_path / "hlds_run").write_text("", encoding="utf-8")
@@ -466,6 +469,7 @@ def test_zpsserver_prestart_writes_goldsrc_runtime_steam_appid_file(tmp_path):
         },
     )
 
+    monkeypatch.setattr(valve_server, "_ensure_steamclient_link", lambda: None)
     module.prestart(server)
 
     assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "70\n"

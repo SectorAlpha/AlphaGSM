@@ -203,7 +203,11 @@ def test_do_stop():
 
 def test_query_and_info_address_use_udp_game_port_on_linux(monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
-    mod.runtime_module.resolve_query_host = MagicMock(return_value="127.0.0.1")
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="127.0.0.1"),
+    )
     server = DummyServer()
     server.data["port"] = 7777
     server.data["queryport"] = 27015
@@ -214,7 +218,11 @@ def test_query_and_info_address_use_udp_game_port_on_linux(monkeypatch):
 
 def test_query_and_info_address_use_queryport_a2s_off_linux(monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
-    mod.runtime_module.resolve_query_host = MagicMock(return_value="127.0.0.1")
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="127.0.0.1"),
+    )
     server = DummyServer()
     server.data["port"] = 7777
     server.data["queryport"] = 27015
