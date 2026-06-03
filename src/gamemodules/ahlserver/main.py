@@ -68,6 +68,13 @@ def install(server):
     _assert_required_mod_content(server.data["dir"])
 
 
+def prestart(server):
+    """Require staged Action Half-Life content before launch."""
+
+    MODULE.prestart(server)
+    _assert_required_mod_content(server.data["dir"])
+
+
 def get_start_command(server):
     """Build the start command after validating Action Half-Life content."""
 
@@ -81,7 +88,7 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
-        get_start_command=get_start_command,
+        get_start_command=MODULE.get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}),
         stdin_open=True,
 )

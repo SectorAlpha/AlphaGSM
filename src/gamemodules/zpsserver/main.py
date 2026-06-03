@@ -1,5 +1,6 @@
 """Zombie Panic!-specific lifecycle, configuration, and update helpers."""
 
+import server.runtime as runtime_module
 from utils.valve_server import define_valve_server_module
 
 MODULE = define_valve_server_module(

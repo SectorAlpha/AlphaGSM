@@ -149,6 +149,12 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the ATLAS server."
 
 
+def prestart(server):
+    """Require the staged ATLAS grid export before launch."""
+
+    _ensure_server_grid_export(server)
+
+
 def get_query_address(server):
     """ATLAS uses Steam A2S on the dedicated query port."""
 
@@ -161,14 +167,15 @@ def get_info_address(server):
     return get_query_address(server)
 
 
-def get_start_command(server):
+def _build_start_command(server, *, validate_grid):
     """Build the command used to launch an ATLAS dedicated server."""
 
     install_dir = os.path.normpath(server.data["dir"])
     exe_path = os.path.join(install_dir, server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    _ensure_server_grid_export(server)
+    if validate_grid:
+        _ensure_server_grid_export(server)
     working_dir = os.path.dirname(exe_path) or install_dir
     map_args = (
         "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
@@ -187,6 +194,12 @@ def get_start_command(server):
         ["./" + os.path.basename(server.data["exe_name"]), map_args, "-server", "-log"],
         working_dir,
     )
+
+
+def get_start_command(server):
+    """Build the command used to launch an ATLAS dedicated server."""
+
+    return _build_start_command(server, validate_grid=True)
 
 
 def do_stop(server, j):
@@ -256,7 +269,7 @@ def get_container_spec(server):
     """Run ATLAS in Docker as the mounted server-directory owner."""
 
     requirements = get_runtime_requirements(server)
-    command, cwd = get_start_command(server)
+    command, cwd = _build_start_command(server, validate_grid=False)
     shell_command = " ".join(shlex.quote(part) for part in command)
     relative_cwd = os.path.relpath(cwd, os.path.normpath(server.data["dir"]))
     container_cwd = "/srv/server"

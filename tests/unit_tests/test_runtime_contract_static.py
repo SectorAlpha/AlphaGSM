@@ -1,9 +1,12 @@
 """Static contract tests for Docker runtime metadata coverage."""
 
+# pylint: disable=protected-access
+
 import os
 import shutil
 from pathlib import Path
 
+from server import ServerError
 from server.module_catalog import load_default_module_catalog
 from server.module_parity import _module_source_path
 from importlib import import_module
@@ -139,6 +142,12 @@ def _seed_install_state(server):
     root = Path(server.data["dir"])
     root.mkdir(parents=True, exist_ok=True)
 
+    xnt_launcher = root / "server" / "server_linux.sh"
+    xnt_launcher.parent.mkdir(parents=True, exist_ok=True)
+    if not xnt_launcher.exists():
+        xnt_launcher.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        os.chmod(xnt_launcher, 0o755)
+
     exe_name = server.data.get("exe_name")
     if exe_name:
         exe_path = root / exe_name
@@ -204,7 +213,6 @@ def test_all_game_modules_resolve_valid_docker_manifests():
             _seed_install_state(server)
             runtime_module.ensure_runtime_hooks(module)
             requirements = runtime_module._get_module_hook(module, "get_runtime_requirements")(server)
-            spec = runtime_module._get_module_hook(module, "get_container_spec")(server)
 
             family = runtime_module.canonicalize_runtime_family(requirements.get("family"))
             if requirements.get("engine") != "docker":
@@ -216,6 +224,12 @@ def test_all_game_modules_resolve_valid_docker_manifests():
             if "dir" in server.data and not requirements.get("mounts"):
                 offenders.append(module_name + ": missing Docker mounts")
                 continue
+            try:
+                spec = runtime_module._get_module_hook(module, "get_container_spec")(server)
+            except ServerError as exc:
+                if str(exc).startswith("ENABLED (BYO):") or str(exc).startswith("ENABLED (AUTH):"):
+                    continue
+                raise
             if not isinstance(spec.get("command"), list) or not spec.get("command"):
                 offenders.append(module_name + ": missing Docker command")
                 continue

@@ -27,6 +27,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "servername", "maxplayers")
 
 
 def configure(

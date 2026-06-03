@@ -273,6 +273,7 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
         {"key": "port", "protocol": "udp"},
     ),
     extra_env=_container_runtime_env,
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 

@@ -29,6 +29,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ()
 setting_schema = {
     **gamemodule_common.build_unreal_setting_schema(),
     **gamemodule_common.build_executable_path_setting_schema(),

@@ -1,5 +1,7 @@
 """Reusable helpers for AlphaGSM game module hook implementations."""
 
+# pylint: disable=too-many-lines
+
 from __future__ import annotations
 
 import copy
@@ -978,6 +980,8 @@ def _resolve_optional_mapping(value, server):
         value = value(server)
     if value is None:
         return None
+    if isinstance(value, (list, tuple)):
+        return copy.deepcopy(list(value))
     return dict(value)
 
 
