@@ -33,6 +33,7 @@ def test_colserver_configure_sets_defaults(tmp_path):
 
     assert server.data["Steam_AppID"] == 748090
     assert server.data["world"] == "col"
+    assert server.data["queryport"] == "27003"
 
 
 def test_hzserver_get_start_command_builds_expected_args(tmp_path):

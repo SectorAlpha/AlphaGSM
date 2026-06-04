@@ -4,7 +4,7 @@ This guide covers the `colserver` module in AlphaGSM.
 
 ## Requirements
 
-- `screen`
+- Docker for the validated Linux runtime path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +44,8 @@ alphagsm mycolserve stop
 
 Setup configures:
 
-- the game port (default 27004)
+- the game port (default 27005)
+- the query port (`queryport`) one lower than the game port by default
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +59,9 @@ alphagsm mycolserve backup
 ## Notes
 
 - Module name: `colserver`
-- Default port: 27004
+- Validated Linux path: Docker `steamcmd-linux` runtime
+- Default game port: `27005`
+- Default query port: `27004`
 
 ## Developer Notes
 
@@ -71,9 +74,10 @@ alphagsm mycolserve backup
 
 ### Server Configuration
 
-- **Config files**: `server_settings.json`
+- **Config files**: `server.config.json`
 - **Max players**: `16`
 - **Template**: See [server-templates/colserver/](../server-templates/colserver/) if available
+- **Health surface**: generic `udp` on the managed `queryport`
 
 ### Maps and Mods
 
