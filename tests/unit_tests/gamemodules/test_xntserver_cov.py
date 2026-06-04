@@ -120,6 +120,22 @@ def test_get_start_command_nested_archive_root(tmp_path):
     assert cmd[0] == "./xonotic-linux-dedicated.sh"
     assert cwd == str(content_root)
 
+
+def test_get_container_spec_uses_nested_archive_workdir(tmp_path):
+    server = DummyServer()
+    content_root = tmp_path / "Xonotic"
+    content_root.mkdir()
+    (content_root / "xonotic-linux-dedicated.sh").write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["gametype"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["userdir"] = "test"
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == os.path.join(mod.runtime_module.DEFAULT_CONTAINER_WORKDIR, "Xonotic")
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

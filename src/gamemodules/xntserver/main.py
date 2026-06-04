@@ -86,6 +86,17 @@ def _resolve_content_root(server):
     return server.data["dir"]
 
 
+def _resolve_container_working_dir(server):
+    """Map the resolved host content root into the container workdir."""
+
+    content_root = os.path.normpath(_resolve_content_root(server))
+    install_root = os.path.normpath(server.data["dir"])
+    rel_root = os.path.relpath(content_root, install_root)
+    if rel_root == ".":
+        return runtime_module.DEFAULT_CONTAINER_WORKDIR
+    return os.path.join(runtime_module.DEFAULT_CONTAINER_WORKDIR, rel_root)
+
+
 def resolve_download(version=None):
     """Resolve an official Xonotic release zip URL."""
 
@@ -273,9 +284,14 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
+def get_container_spec(server):
+    """Build a Docker spec that preserves nested extracted Xonotic roots."""
+
+    return runtime_module.build_container_spec(
+        server,
         family='quake-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-)
+        working_dir=_resolve_container_working_dir(server),
+    )
