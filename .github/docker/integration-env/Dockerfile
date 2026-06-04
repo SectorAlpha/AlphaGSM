@@ -13,7 +13,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 #                                         xauth is needed by xvfb-run itself
 #   lib32gcc-s1 lib32stdc++6           — 32-bit runtime (Source engine servers)
 #   p7zip-full                          — .7z archive support
-#   unzip bzip2                         — archive formats used by some servers
+#   unzip bzip2 xz-utils                — archive formats used by some servers
 #   libatomic1                          — GCC atomics used by UE4 / Unity servers
 #   libc++1                             — LLVM C++ runtime used by newer native
 #                                         Linux dedicated servers such as Pavlov VR
@@ -40,7 +40,7 @@ RUN dpkg --add-architecture i386 \
        xvfb xauth \
         lib32gcc-s1 lib32stdc++6 \
         p7zip-full \
-        unzip bzip2 \
+        unzip bzip2 xz-utils \
                              libatomic1 libc++1 libsdl2-2.0-0 \
         libpulse0 \
         libcurl3t64-gnutls \

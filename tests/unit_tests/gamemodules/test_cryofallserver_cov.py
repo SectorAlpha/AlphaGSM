@@ -133,6 +133,14 @@ def test_sync_server_config(tmp_path):
     assert "<players_max_count>42</players_max_count>" in text
 
 
+def test_sync_server_config_without_dir_is_noop():
+    server = DummyServer()
+    server.data["port"] = 6123
+    server.data["servername"] = "AlphaGSM Cryo"
+    server.data["maxplayers"] = 42
+    mod.sync_server_config(server)
+
+
 def test_get_query_and_info_address():
     server = DummyServer()
     server.data["port"] = 6000

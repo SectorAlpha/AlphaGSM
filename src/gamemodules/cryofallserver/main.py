@@ -98,6 +98,9 @@ restart.__doc__ = "Restart the CryoFall server."
 def sync_server_config(server):
     """Create or update Data/SettingsServer.xml with managed settings."""
 
+    if not server.data.get("dir"):
+        return
+
     data_dir = os.path.join(server.data["dir"], "Data")
     config_path = os.path.join(data_dir, "SettingsServer.xml")
     os.makedirs(data_dir, exist_ok=True)
