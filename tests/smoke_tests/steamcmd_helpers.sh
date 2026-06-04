@@ -10,6 +10,11 @@ resolve_work_root() {
   printf '%s\n' "$work_root"
 }
 
+is_supported_prerequisite_skip_output() {
+  local output_file="$1"
+  grep -qE 'ENABLED \(BYO\):|ENABLED \(AUTH\):|Smoke test for .* is ENABLED \(BYO\)|Smoke test for .* is ENABLED \(AUTH\)' "$output_file"
+}
+
 # pick_free_port
 # Return an ephemeral port that is free on both TCP and UDP.
 # The dual-protocol check mirrors AlphaGSM's port-manager pre-flight
@@ -75,6 +80,11 @@ run_create_or_skip_disabled() {
   local rc=${PIPESTATUS[0]}
   set -e
   if [[ $rc -ne 0 ]]; then
+    if is_supported_prerequisite_skip_output "$output_file"; then
+      echo "Server module requires supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
+      rm -f "$output_file"
+      exit 0
+    fi
     if grep -q 'is currently disabled' "$output_file"; then
       echo "Server module is currently disabled — skipping smoke test (CI)" >&2
       rm -f "$output_file"
@@ -95,6 +105,11 @@ run_setup_or_skip_steamcmd() {
   local rc=${PIPESTATUS[0]}
   set -e
   if [[ $rc -ne 0 ]]; then
+    if is_supported_prerequisite_skip_output "$output_file"; then
+      echo "Setup needs supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
+      rm -f "$output_file"
+      exit 0
+    fi
     if grep -q 'Recommended free port set:' "$output_file"; then
       local recommendation_line recommended_port
       recommendation_line=$(grep 'Recommended free port set:' "$output_file" | tail -n 1)
@@ -138,6 +153,26 @@ run_setup_or_skip_steamcmd() {
     fi
     if grep -qE 'Failed to install app|No subscription|Missing configuration|No such file or directory|returned non-zero exit status|Error extracting download|Can.t download file' "$output_file"; then
       echo "Setup failed with known SteamCMD issue — skipping smoke test"
+      rm -f "$output_file"
+      exit 0
+    fi
+    rm -f "$output_file"
+    return $rc
+  fi
+  rm -f "$output_file"
+  return 0
+}
+
+run_alphagsm_or_skip_supported_prereq() {
+  local output_file
+  output_file="$(mktemp)"
+  set +e
+  run_alphagsm "$@" 2>&1 | tee "$output_file"
+  local rc=${PIPESTATUS[0]}
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    if is_supported_prerequisite_skip_output "$output_file"; then
+      echo "Command needs supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
       rm -f "$output_file"
       exit 0
     fi
