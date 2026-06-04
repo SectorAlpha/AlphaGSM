@@ -31,7 +31,7 @@ def test_ksp_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = kerbalspaceprogramserver.get_start_command(server)
 
-    assert cmd == ["LMPServer-linux-x64/Server", "--port", "8800"]
+    assert cmd == ["./LMPServer-linux-x64/Server", "--port", "8800"]
     assert cwd == server.data["dir"]
 
 

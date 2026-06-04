@@ -272,6 +272,8 @@ def get_start_command(server):
     if not current_mode & stat.S_IXUSR:
         os.chmod(exe_path, current_mode | stat.S_IXUSR)
     exe_name = os.path.relpath(exe_path, server.data["dir"])
+    if not exe_name.startswith("./"):
+        exe_name = "./" + exe_name
     return ([exe_name, "--port", str(server.data["port"])], server.data["dir"])
 
 

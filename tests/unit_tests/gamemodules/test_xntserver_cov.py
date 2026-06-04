@@ -95,15 +95,13 @@ def test_install_resolves_download(tmp_path):
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    launcher_dir = tmp_path / "server"
-    launcher_dir.mkdir()
-    (launcher_dir / "server_linux.sh").write_text("")
+    (tmp_path / "xonotic-linux-dedicated.sh").write_text("")
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./server/server_linux.sh"
+    assert cmd[0] == "./xonotic-linux-dedicated.sh"
     assert "+port" in cmd
     assert cwd == server.data["dir"]
 

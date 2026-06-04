@@ -124,6 +124,19 @@ def test_get_start_command(tmp_path):
     assert config["httpPort"] == 27018
 
 
+def test_sync_derived_ports_updates_defaults_when_base_port_changes():
+    server = DummyServer()
+    server.data["port"] = 4200
+    mod._sync_derived_ports(server)
+
+    server.data["port"] = 4300
+    mod._sync_derived_ports(server)
+
+    assert server.data["queryport"] == 4301
+    assert server.data["steamport"] == 4302
+    assert server.data["httpport"] == 4303
+
+
 def test_get_runtime_requirements_mounts_and_ports(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path)

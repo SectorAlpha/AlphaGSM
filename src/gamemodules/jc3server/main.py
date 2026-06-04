@@ -43,9 +43,21 @@ def _sync_derived_ports(server):
     if "port" not in server.data:
         return
     base_port = int(server.data["port"])
-    server.data.setdefault("queryport", base_port + 1)
-    server.data.setdefault("steamport", base_port + 2)
-    server.data.setdefault("httpport", base_port + 3)
+    previous_base_port = int(server.data.get("_derived_port_base", base_port))
+    derived_offsets = (
+        ("queryport", 1),
+        ("steamport", 2),
+        ("httpport", 3),
+    )
+    for key, offset in derived_offsets:
+        current_value = server.data.get(key)
+        previous_default = previous_base_port + offset
+        new_default = base_port + offset
+        if current_value in (None, "", previous_default, str(previous_default)):
+            server.data[key] = new_default
+        else:
+            server.data[key] = int(current_value)
+    server.data["_derived_port_base"] = base_port
 
 
 def _config_path(server):

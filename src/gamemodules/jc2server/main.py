@@ -36,6 +36,30 @@ def _default_config_path(server):
     return os.path.join(server.data["dir"], "default_config.lua")
 
 
+def _resolve_existing_path(server, relative_path):
+    """Return the first matching executable path within the install tree."""
+
+    install_dir = server.data["dir"]
+    direct_candidate = os.path.join(install_dir, relative_path)
+    if os.path.isfile(direct_candidate):
+        return direct_candidate
+
+    basename = os.path.basename(relative_path)
+    for root, _dirs, files in os.walk(install_dir):
+        if basename not in files:
+            continue
+        candidate = os.path.join(root, basename)
+        relpath = os.path.relpath(candidate, install_dir)
+        if relpath == relative_path:
+            return candidate
+
+    for root, _dirs, files in os.walk(install_dir):
+        if basename in files:
+            return os.path.join(root, basename)
+
+    return direct_candidate
+
+
 def _sync_default_scripts(server):
     default_scripts_dir = os.path.join(server.data["dir"], "default_scripts")
     scripts_dir = os.path.join(server.data["dir"], "scripts")
@@ -152,11 +176,12 @@ restart.__doc__ = "Restart the Just Cause 2 server."
 def get_start_command(server):
     """Build the command used to launch a Just Cause 2 dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    exe_path = _resolve_existing_path(server, server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     sync_server_config(server)
-    return (["./" + server.data["exe_name"]], server.data["dir"])
+    exe_name = os.path.relpath(exe_path, server.data["dir"])
+    return (["./" + exe_name], server.data["dir"])
 
 
 def get_query_address(server):

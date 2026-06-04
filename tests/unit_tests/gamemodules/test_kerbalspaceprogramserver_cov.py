@@ -75,7 +75,7 @@ def test_get_start_command(tmp_path):
     exe.write_text("")
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert cmd == ["LMPServer-linux-x64/Server", "--port", "27015"]
+    assert cmd == ["./LMPServer-linux-x64/Server", "--port", "27015"]
     assert cwd == server.data["dir"]
     assert os.access(exe, os.X_OK)
 
@@ -264,7 +264,7 @@ def test_container_spec_uses_native_start_command(tmp_path):
 
     spec = mod.get_container_spec(server)
 
-    assert spec["command"] == ["LMPServer-linux-x64/Server", "--port", "8800"]
+    assert spec["command"] == ["./LMPServer-linux-x64/Server", "--port", "8800"]
 
 def test_checkvalue_backup():
     server = DummyServer()

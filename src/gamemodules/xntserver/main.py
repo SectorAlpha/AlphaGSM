@@ -145,12 +145,24 @@ def prestart(server):
 def get_start_command(server):
     """Build the command used to launch a Xonotic dedicated server."""
 
-    launcher_path = os.path.join(server.data["dir"], "server", "server_linux.sh")
-    if not os.path.isfile(launcher_path):
+    candidate_paths = []
+    exe_name = server.data.get("exe_name")
+    if exe_name:
+        candidate_paths.append(os.path.join(server.data["dir"], exe_name))
+    candidate_paths.extend(
+        [
+            os.path.join(server.data["dir"], "xonotic-linux-dedicated.sh"),
+            os.path.join(server.data["dir"], "xonotic-linux64-dedicated"),
+            os.path.join(server.data["dir"], "server", "server_linux.sh"),
+        ]
+    )
+    launcher_path = next((path for path in candidate_paths if os.path.isfile(path)), None)
+    if launcher_path is None:
         raise ServerError("Dedicated launcher not found")
+    launcher_relpath = os.path.relpath(launcher_path, server.data["dir"])
     return (
         [
-            "./server/server_linux.sh",
+            "./" + launcher_relpath,
             "+sv_public",
             "1",
             "+port",

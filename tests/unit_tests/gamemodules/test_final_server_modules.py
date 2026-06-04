@@ -103,8 +103,7 @@ def test_xntserver_configure_sets_expected_defaults(tmp_path):
 
 def test_xntserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("xnt")
-    launcher = tmp_path / "server" / "server_linux.sh"
-    launcher.parent.mkdir(parents=True)
+    launcher = tmp_path / "xonotic-linux-dedicated.sh"
     launcher.write_text("")
     server.data.update(
         {
@@ -119,7 +118,7 @@ def test_xntserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = xntserver.get_start_command(server)
 
-    assert cmd[0] == "./server/server_linux.sh"
+    assert cmd[0] == "./xonotic-linux-dedicated.sh"
     assert "+port" in cmd
     assert cwd == server.data["dir"]
 
