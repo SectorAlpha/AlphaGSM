@@ -8,6 +8,10 @@ permissions:
   contents: read
   packages: read
 
+env:
+  ALPHAGSM_MINECRAFT_RELEASE_ID: "1.21.11"
+  ALPHAGSM_MINECRAFT_SERVER_URL: "https://piston-data.mojang.com/v1/objects/64bb6d763bed0a9f1d632ec347938594144943ed/server.jar"
+
 jobs:
   build:
     runs-on: ubuntu-latest

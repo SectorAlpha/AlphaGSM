@@ -23,17 +23,21 @@ is_supported_prerequisite_skip_output() {
 pick_free_port() {
   "${PYTHON_BIN:-python3}" - <<'PY'
 import socket, sys
+PROBE_HOSTS = ("127.0.0.1", "0.0.0.0")
 for _attempt in range(100):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
     ok = True
     for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-        try:
-            with socket.socket(socket.AF_INET, kind) as probe:
-                probe.bind(("127.0.0.1", port))
-        except OSError:
-            ok = False
+        for host in PROBE_HOSTS:
+            try:
+                with socket.socket(socket.AF_INET, kind) as probe:
+                    probe.bind((host, port))
+            except OSError:
+                ok = False
+                break
+        if not ok:
             break
     if ok:
         print(port)
@@ -52,6 +56,7 @@ import socket
 import sys
 
 count = int(sys.argv[1])
+PROBE_HOSTS = ("127.0.0.1", "0.0.0.0")
 
 for _attempt in range(200):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -60,11 +65,14 @@ for _attempt in range(200):
     ok = True
     for port in range(base, base + count):
         for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-            try:
-                with socket.socket(socket.AF_INET, kind) as probe:
-                    probe.bind(("127.0.0.1", port))
-            except OSError:
-                ok = False
+            for host in PROBE_HOSTS:
+                try:
+                    with socket.socket(socket.AF_INET, kind) as probe:
+                        probe.bind((host, port))
+                except OSError:
+                    ok = False
+                    break
+            if not ok:
                 break
         if not ok:
             break

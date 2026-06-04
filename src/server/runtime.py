@@ -1292,7 +1292,7 @@ def _inspect_container_network_value(container_name, field):
 
     for line in raw.splitlines():
         line = line.strip()
-        if line:
+        if line and line != "<no value>":
             return line
     return ""
 

@@ -23,6 +23,8 @@ ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 STATUS_HELPER = REPO_ROOT / "tests" / "smoke_tests" / "minecraft_status.py"
 
 BACKEND_TEST_TIMEOUT = 1200  # 20 minutes per test
+MINECRAFT_RELEASE_ID_ENV = "ALPHAGSM_MINECRAFT_RELEASE_ID"
+MINECRAFT_SERVER_URL_ENV = "ALPHAGSM_MINECRAFT_SERVER_URL"
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +89,11 @@ def _pick_free_tcp_port_group(count):
 
 
 def _latest_minecraft_release():
+    release_id = os.environ.get(MINECRAFT_RELEASE_ID_ENV, "").strip()
+    server_url = os.environ.get(MINECRAFT_SERVER_URL_ENV, "").strip()
+    if release_id and server_url:
+        return release_id, server_url
+
     result = subprocess.run(
         [sys.executable, str(STATUS_HELPER), "latest-release"],
         capture_output=True, text=True, check=True, timeout=60,

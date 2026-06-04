@@ -105,12 +105,14 @@ def _port_free_for_both(port):
     so that a port accepted here will also pass the port-manager pre-flight.
     Ports in TCP TIME_WAIT state or with any live listener will return False.
     """
+    probe_hosts = ("127.0.0.1", "0.0.0.0")
     for socktype in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-        with socket.socket(socket.AF_INET, socktype) as sock:
-            try:
-                sock.bind(("127.0.0.1", port))
-            except OSError:
-                return False
+        for host in probe_hosts:
+            with socket.socket(socket.AF_INET, socktype) as sock:
+                try:
+                    sock.bind((host, port))
+                except OSError:
+                    return False
     return True
 
 

@@ -1254,6 +1254,21 @@ def test_resolve_query_host_uses_container_ip_when_gateway_missing(monkeypatch):
     assert runtime_module.resolve_query_host(server) == "172.18.0.7"
 
 
+def test_resolve_query_host_ignores_docker_no_value_gateway(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    server = DummyServer(data={"runtime": "docker", "container_name": "alphagsm-alpha"})
+
+    def _fake_check_output(*args, **kwargs):
+        if "Gateway" in args[0][3]:
+            return "<no value>\n"
+        return "172.18.0.7\n"
+
+    monkeypatch.setattr(runtime_module, "_running_inside_container", lambda: True)
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    assert runtime_module.resolve_query_host(server) == "172.18.0.7"
+
+
 def test_resolve_query_host_uses_default_on_host_for_docker_runtime(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     server = DummyServer(data={"runtime": "docker", "container_name": "alphagsm-alpha"})

@@ -78,6 +78,24 @@ def test_load_server_data_reads_expected_json(tmp_path):
     assert backend_conftest._load_server_data(home_dir, "alpha") == expected
 
 
+def test_latest_minecraft_release_uses_env_override(monkeypatch):
+    monkeypatch.setenv("ALPHAGSM_MINECRAFT_RELEASE_ID", "1.21.11")
+    monkeypatch.setenv(
+        "ALPHAGSM_MINECRAFT_SERVER_URL",
+        "https://piston-data.mojang.com/v1/objects/example/server.jar",
+    )
+    monkeypatch.setattr(
+        backend_conftest.subprocess,
+        "run",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("status helper should not run")),
+    )
+
+    assert backend_conftest._latest_minecraft_release() == (
+        "1.21.11",
+        "https://piston-data.mojang.com/v1/objects/example/server.jar",
+    )
+
+
 def test_bind_tcp_listener_claims_requested_port(monkeypatch):
     events = []
 

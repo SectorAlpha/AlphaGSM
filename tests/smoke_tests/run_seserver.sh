@@ -94,8 +94,10 @@ wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
-wait_for_info_protocol "$SERVER_NAME" "udp" 60
-run_alphagsm "$SERVER_NAME" info --json
+if ! run_alphagsm "$SERVER_NAME" info --json; then
+  wait_for_info_protocol "$SERVER_NAME" "udp" 120
+  run_alphagsm "$SERVER_NAME" info --json
+fi
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 run_alphagsm "$SERVER_NAME" status
