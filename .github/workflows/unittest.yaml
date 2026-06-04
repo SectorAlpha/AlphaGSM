@@ -443,6 +443,11 @@ jobs:
           ALPHAGSM_RUN_INTEGRATION: "1"
           ALPHAGSM_RUN_STEAMCMD: "1"
         run: |
+          sock_gid="$(stat -c '%g' /var/run/docker.sock)"
+          if ! getent group "$sock_gid" >/dev/null; then
+            groupadd -g "$sock_gid" dockerhost
+          fi
+          usermod -aG "$sock_gid" gsmuser
           # Game servers that refuse to run as root (Insurgency: Sandstorm,
           # Mordhau, Squad, Palworld, Satisfactory, …) require a non-root uid.
           # Run the full pytest session as gsmuser (uid 1001) so every server

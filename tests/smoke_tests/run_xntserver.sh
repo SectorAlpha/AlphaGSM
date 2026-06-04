@@ -102,6 +102,7 @@ run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "quake" "$START_TIMEOUT_SECONDS"
+sleep 15
 run_alphagsm "$SERVER_NAME" query
 sleep 15
 run_alphagsm "$SERVER_NAME" info

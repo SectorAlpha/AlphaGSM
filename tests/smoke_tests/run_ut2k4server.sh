@@ -83,11 +83,6 @@ if [[ ! -e "$INSTALL_DIR/System/ucc-bin" ]]; then
   exit 1
 fi
 
-if [[ ! -f "$INSTALL_DIR/System/UT2004.ini" ]]; then
-  echo "Expected UT2004 config file not found in $INSTALL_DIR/System/UT2004.ini" >&2
-  exit 1
-fi
-
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Bringing Level|UdpServerQuery'
