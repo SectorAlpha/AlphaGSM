@@ -49,7 +49,7 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-palworld-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)" 
+PORT="$(pick_free_port_group 2)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]

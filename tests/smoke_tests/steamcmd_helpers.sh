@@ -43,6 +43,42 @@ sys.exit(1)
 PY
 }
 
+# pick_free_port_group COUNT
+# Return the first port in a consecutive TCP+UDP-free port range.
+pick_free_port_group() {
+  local count="$1"
+  "${PYTHON_BIN:-python3}" - "$count" <<'PY'
+import socket
+import sys
+
+count = int(sys.argv[1])
+
+for _attempt in range(200):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        base = s.getsockname()[1]
+    ok = True
+    for port in range(base, base + count):
+        for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
+            try:
+                with socket.socket(socket.AF_INET, kind) as probe:
+                    probe.bind(("127.0.0.1", port))
+            except OSError:
+                ok = False
+                break
+        if not ok:
+            break
+    if ok:
+        print(base)
+        sys.exit(0)
+
+sys.stderr.write(
+    f"Could not find a free consecutive TCP+UDP port group of size {count} after 200 attempts\n"
+)
+sys.exit(1)
+PY
+}
+
 # require_proton
 # Skip this smoke test gracefully if Wine (or Proton-GE) is not installed.
 # Windows-binary game servers need Wine at start time; when Wine is absent the

@@ -179,7 +179,7 @@ def test_port_manager_start_preflight_blocks_taken_port_then_lifecycle_recovers(
     config_path = tmp_path / ("alphagsm-" + runtime_backend + ".conf")
     install_dir = tmp_path / ("server-" + runtime_backend)
 
-    port = lifecycle.pick_free_tcp_port()
+    port = lifecycle.pick_free_tcp_port_group(3)
     lifecycle.write_config(
         config_path,
         home_dir,

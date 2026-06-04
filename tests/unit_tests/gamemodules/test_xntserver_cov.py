@@ -105,6 +105,21 @@ def test_get_start_command(tmp_path):
     assert "+port" in cmd
     assert cwd == server.data["dir"]
 
+
+def test_get_start_command_nested_archive_root(tmp_path):
+    server = DummyServer()
+    content_root = tmp_path / "Xonotic"
+    content_root.mkdir()
+    (content_root / "xonotic-linux-dedicated.sh").write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["gametype"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["userdir"] = "test"
+    cmd, cwd = mod.get_start_command(server)
+    assert cmd[0] == "./xonotic-linux-dedicated.sh"
+    assert cwd == str(content_root)
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -127,6 +142,22 @@ def test_prestart_refreshes_server_cfg(tmp_path):
 
     assert (tmp_path / "data" / "server.cfg").exists()
     assert (tmp_path / "server" / "data" / "server.cfg").exists()
+
+
+def test_prestart_refreshes_nested_archive_server_cfg(tmp_path):
+    server = DummyServer()
+    content_root = tmp_path / "Xonotic"
+    content_root.mkdir()
+    (content_root / "xonotic-linux64-dedicated").write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["hostname"] = "AlphaGSM Test"
+    server.data["gametype"] = "dm"
+    server.data["userdir"] = "server"
+
+    mod.prestart(server)
+
+    assert (content_root / "data" / "server.cfg").exists()
+    assert (content_root / "server" / "data" / "server.cfg").exists()
 
 def test_do_stop():
     server = DummyServer()

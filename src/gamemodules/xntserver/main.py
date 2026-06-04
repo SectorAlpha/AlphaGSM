@@ -28,11 +28,12 @@ max_stop_wait = 1
 def _get_managed_server_cfg_paths(server):
     """Return the candidate server.cfg paths Xonotic may require."""
 
-    install_root_cfg = os.path.join(server.data["dir"], "data", "server.cfg")
+    content_root = _resolve_content_root(server)
+    install_root_cfg = os.path.join(content_root, "data", "server.cfg")
     userdir = server.data.get("userdir", "")
     if userdir in ("", "."):
         return [install_root_cfg]
-    userdir_cfg = os.path.join(server.data["dir"], userdir, "data", "server.cfg")
+    userdir_cfg = os.path.join(content_root, userdir, "data", "server.cfg")
     if os.path.normpath(userdir_cfg) == os.path.normpath(install_root_cfg):
         return [install_root_cfg]
     return [install_root_cfg, userdir_cfg]
@@ -51,6 +52,38 @@ def _write_managed_server_cfg(server):
         os.makedirs(os.path.dirname(server_cfg), exist_ok=True)
         with open(server_cfg, "w", encoding="utf-8") as fh:
             fh.write(cfg_body)
+
+
+def _candidate_content_roots(server):
+    """Return plausible archive content roots for Xonotic."""
+
+    install_root = server.data["dir"]
+    candidates = [install_root]
+    try:
+        entries = sorted(os.listdir(install_root))
+    except FileNotFoundError:
+        return candidates
+    for entry in entries:
+        candidate = os.path.join(install_root, entry)
+        if os.path.isdir(candidate):
+            candidates.append(candidate)
+    return candidates
+
+
+def _resolve_content_root(server):
+    """Return the directory that actually contains the extracted Xonotic tree."""
+
+    marker_names = (
+        server.data.get("exe_name", ""),
+        "xonotic-linux-dedicated.sh",
+        "xonotic-linux64-dedicated",
+        os.path.join("data", "xonotic-20230620-data.pk3"),
+    )
+    for candidate in _candidate_content_roots(server):
+        for marker in marker_names:
+            if marker and os.path.exists(os.path.join(candidate, marker)):
+                return candidate
+    return server.data["dir"]
 
 
 def resolve_download(version=None):
@@ -145,21 +178,23 @@ def prestart(server):
 def get_start_command(server):
     """Build the command used to launch a Xonotic dedicated server."""
 
-    candidate_paths = []
+    content_root = _resolve_content_root(server)
     exe_name = server.data.get("exe_name")
-    if exe_name:
-        candidate_paths.append(os.path.join(server.data["dir"], exe_name))
-    candidate_paths.extend(
+    candidate_paths = list(
         [
-            os.path.join(server.data["dir"], "xonotic-linux-dedicated.sh"),
-            os.path.join(server.data["dir"], "xonotic-linux64-dedicated"),
-            os.path.join(server.data["dir"], "server", "server_linux.sh"),
+            os.path.join(content_root, "xonotic-linux-dedicated.sh"),
+            os.path.join(content_root, "xonotic-linux64-dedicated"),
+            os.path.join(content_root, "server", "server_linux.sh"),
         ]
     )
+    if exe_name:
+        exe_candidate = os.path.join(content_root, exe_name)
+        if exe_candidate not in candidate_paths:
+            candidate_paths.insert(0, exe_candidate)
     launcher_path = next((path for path in candidate_paths if os.path.isfile(path)), None)
     if launcher_path is None:
         raise ServerError("Dedicated launcher not found")
-    launcher_relpath = os.path.relpath(launcher_path, server.data["dir"])
+    launcher_relpath = os.path.relpath(launcher_path, content_root)
     return (
         [
             "./" + launcher_relpath,
@@ -172,7 +207,7 @@ def get_start_command(server):
             "+hostname",
             server.data["hostname"],
         ],
-        server.data["dir"],
+        content_root,
     )
 
 

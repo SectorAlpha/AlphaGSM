@@ -67,6 +67,25 @@ def _pick_free_tcp_port():
         return sock.getsockname()[1]
 
 
+def _pick_free_tcp_port_group(count):
+    for _attempt in range(200):
+        base = _pick_free_tcp_port()
+        ok = True
+        for port in range(base, base + count):
+            for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
+                try:
+                    with socket.socket(socket.AF_INET, kind) as probe:
+                        probe.bind(("127.0.0.1", port))
+                except OSError:
+                    ok = False
+                    break
+            if not ok:
+                break
+        if ok:
+            return base
+    raise RuntimeError(f"Could not find a free consecutive TCP+UDP port group of size {count}")
+
+
 def _latest_minecraft_release():
     result = subprocess.run(
         [sys.executable, str(STATUS_HELPER), "latest-release"],
@@ -270,6 +289,7 @@ class BackendLifecycle:
     require_backend_opt_in = staticmethod(_require_backend_opt_in)
     require_command = staticmethod(_require_command)
     pick_free_tcp_port = staticmethod(_pick_free_tcp_port)
+    pick_free_tcp_port_group = staticmethod(_pick_free_tcp_port_group)
     latest_minecraft_release = staticmethod(_latest_minecraft_release)
     write_config = staticmethod(_write_config)
     write_java_wrapper = staticmethod(_write_java_wrapper)

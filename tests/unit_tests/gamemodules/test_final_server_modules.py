@@ -123,6 +123,29 @@ def test_xntserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_xntserver_get_start_command_uses_nested_archive_root(tmp_path):
+    server = DummyServer("xnt")
+    content_root = tmp_path / "Xonotic"
+    content_root.mkdir()
+    launcher = content_root / "xonotic-linux-dedicated.sh"
+    launcher.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "xonotic-linux64-dedicated",
+            "userdir": "server",
+            "port": 26000,
+            "gametype": "dm",
+            "hostname": "AlphaGSM xnt",
+        }
+    )
+
+    cmd, cwd = xntserver.get_start_command(server)
+
+    assert cmd[0] == "./xonotic-linux-dedicated.sh"
+    assert cwd == str(content_root)
+
+
 def test_sol_and_wurm_update_downloads_and_optionally_restart(monkeypatch):
     sol_server = DummyServer("sol")
     sol_server.data["dir"] = "/srv/sol/"

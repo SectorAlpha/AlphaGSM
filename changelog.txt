@@ -375,3 +375,6 @@ Historical highlights
 - test: re-enabled `scumserver` on the Docker `wine-proton` lane after proving anonymous SteamCMD app `3792580` installs cleanly and the validated AlphaGSM health surface on Linux is generic TCP on the managed main port, not the old timeout/A2S assumption.
 - Tracker hygiene: move `iosserver` from `DISABLED` to `ENABLED (AUTH)` after fresh SteamCMD probes against the dedicated tool app `673990` proved the supported sdk2013 branches `iosoccer2025` / `beta` are branch-gated (`Failed to set beta`) for anonymous login, while the public branch still crashes on Linux.
 - Tracker hygiene: move `zpsserver` from `DISABLED` to `ENABLED (AUTH)` after fresh Docker probes matched the SteamDB launch contract (`hlds_run -game zp -steam -secure`) but still stopped at `SteamAPI_IsSteamRunning()` / `SteamAPI_Init() failed; create pipe failed`, matching the upstream guidance that the dedicated server needs a real Steam client session.
+2026-06-04:
+  - CI follow-up: fixed `xntserver` archive-root detection so Docker integration follows nested `Xonotic/` extracts instead of assuming a flat install root.
+  - CI follow-up: added consecutive claimed-port reservation helpers for smoke/backend coverage and updated Palworld smoke plus backend port-manager coverage to match current setup-time port-conflict enforcement.
