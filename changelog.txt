@@ -385,3 +385,4 @@ Historical highlights
   - CI follow-up: added consecutive claimed-port reservation helpers for smoke/backend coverage and updated Palworld smoke plus backend port-manager coverage to match current setup-time port-conflict enforcement.
 2026-06-05:
   - CI follow-up: fixed stale test/runtime contracts by teaching integration skips to honor `ENABLED (BYO)` / `ENABLED (AUTH)` prerequisite failures, moving Ready or Not query-port writes until after setup, hardening the SES smoke `info` retry, ignoring Docker `<no value>` host placeholders in query-host resolution, and preferring Citadel's nested Linux shipping binary over the brittle wrapper script inside Docker.
+  - CI follow-up: hardened `heatserver` startup by writing a baseline `Configuration/ServerSettings.cfg` from known dedicated-server defaults when the upstream first-launch bootstrap fails to generate it in CI before the real server process starts.

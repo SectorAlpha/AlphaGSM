@@ -33,6 +33,50 @@ command_functions = {}
 max_stop_wait = 1
 config_sync_keys = ("port", "queryport", "maxplayers", "startmap")
 _BOOTSTRAP_CONFIG_TIMEOUT_SECONDS = 120
+_DEFAULT_SERVER_SETTINGS_TEMPLATE = """version = '5'
+
+# -- Server --
+isPrivate = 'False'
+serverName = '{servername}'
+greeting = 'Welcome to {servername}!'
+maxPlayers = '{maxplayers}'
+bindIP = '0.0.0.0'
+portNumber = '{port}'
+password = ''
+restartInterval = '28800'
+restartHour = '-1'
+restartMessage = 'The server will restart in %timeLeft%.'
+Restart Warning Times {{
+- '3600'
+- '1800'
+- '600'
+- '300'
+- '30'
+}}
+enableCommands = 'True'
+connectionTimeout = '600'
+steamAuthTimeout = '600'
+steamAuthPort = '{queryport}'
+asyncPort = '{asyncport}'
+timeBetweenPlayerJoin = '10'
+targetFrameRate = '60'
+
+# -- Ping Limit --
+enablePingLimit = 'False'
+pingPort = '{pingport}'
+pingLimit = '250'
+pingGraphLength = '360'
+
+# -- World --
+saveLocation = 'Saves/'
+autoSaveInterval = '3600'
+worldSlot = '1'
+allowSaving = 'True'
+levelName = '{startmap}'
+
+# -- Backups --
+backupsEnabled = 'True'
+"""
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="Server.exe"):
@@ -93,6 +137,35 @@ def _server_settings_path(server):
     """Return the Heat server settings path."""
 
     return os.path.join(server.data["dir"], "Configuration", "ServerSettings.cfg")
+
+
+def _build_default_server_settings(server):
+    """Return a baseline Heat server config when bootstrap cannot generate one."""
+
+    port = int(server.data.get("port", 27015))
+    queryport = int(server.data.get("queryport", 27016))
+    maxplayers = int(server.data.get("maxplayers", 32))
+    startmap = str(server.data.get("startmap", "America"))
+    servername = str(server.data.get("servername", f"AlphaGSM {server.name}"))
+    return _DEFAULT_SERVER_SETTINGS_TEMPLATE.format(
+        servername=servername.replace("'", "\\'"),
+        maxplayers=maxplayers,
+        port=port,
+        queryport=queryport,
+        asyncport=port + 4,
+        pingport=port,
+        startmap=startmap.replace("'", "\\'"),
+    )
+
+
+def _write_default_server_settings(server):
+    """Write a baseline Heat server config when bootstrap cannot generate one."""
+
+    config_path = _server_settings_path(server)
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as fh:
+        fh.write(_build_default_server_settings(server))
+    return config_path
 
 
 def _replace_cfg_value(config_text, key, value):
@@ -166,10 +239,10 @@ def _bootstrap_server_settings_if_missing(server):
                 process.kill()
                 process.wait(timeout=10)
 
-    if not os.path.isfile(config_path):
-        raise ServerError(
-            "Heat did not generate Configuration/ServerSettings.cfg during bootstrap"
-        )
+    if os.path.isfile(config_path):
+        return
+
+    _write_default_server_settings(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(

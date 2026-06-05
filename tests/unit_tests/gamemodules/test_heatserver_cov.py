@@ -231,6 +231,64 @@ def test_sync_server_config_missing_key_raises(tmp_path):
         mod.sync_server_config(server)
 
 
+def test_build_default_server_settings_uses_current_server_values():
+    server = DummyServer("heat")
+    server.data.update(
+        {
+            "port": "28015",
+            "queryport": "28016",
+            "maxplayers": "24",
+            "startmap": "Smallville",
+            "servername": "AlphaGSM Heat Test",
+        }
+    )
+
+    config_text = mod._build_default_server_settings(server)
+
+    assert "serverName = 'AlphaGSM Heat Test'" in config_text
+    assert "maxPlayers = '24'" in config_text
+    assert "portNumber = '28015'" in config_text
+    assert "steamAuthPort = '28016'" in config_text
+    assert "asyncPort = '28019'" in config_text
+    assert "pingPort = '28015'" in config_text
+    assert "levelName = 'Smallville'" in config_text
+
+
+def test_bootstrap_server_settings_falls_back_to_default_template(tmp_path, monkeypatch):
+    server = DummyServer("heat")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Server.exe",
+            "port": "28015",
+            "queryport": "28016",
+            "maxplayers": "24",
+            "startmap": "Smallville",
+        }
+    )
+    (tmp_path / "Server.exe").write_text("", encoding="utf-8")
+
+    class _DummyProcess:
+        def poll(self):
+            return 1
+
+        def terminate(self):
+            return None
+
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(mod.subprocess, "Popen", lambda *args, **kwargs: _DummyProcess())
+
+    mod._bootstrap_server_settings_if_missing(server)
+
+    config_text = (tmp_path / "Configuration" / "ServerSettings.cfg").read_text(
+        encoding="utf-8"
+    )
+    assert "portNumber = '28015'" in config_text
+    assert "steamAuthPort = '28016'" in config_text
+
+
 def test_sync_server_config_noops_without_install_dir():
     server = DummyServer("heat")
     server.data["port"] = "28015"
