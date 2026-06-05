@@ -114,7 +114,7 @@ def test_outpostzero_runtime_requirements_use_wine_proton_family(tmp_path, monke
         {"host": 27015, "container": 27015, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "WindowsServer/SurvivalGameServer.exe"
+    assert spec["command"][0] == "./WindowsServer/SurvivalGameServer.exe"
 
 
 def test_reignofkings_get_start_command_builds_expected_args(tmp_path, monkeypatch):

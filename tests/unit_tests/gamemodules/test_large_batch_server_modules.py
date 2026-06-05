@@ -161,7 +161,7 @@ def test_sonsoftheforest_runtime_requirements_use_wine_proton_family(tmp_path, m
     assert spec["working_dir"] == "/srv/server"
     assert spec["env"]["ALPHAGSM_XVFB"] == "1"
     assert spec["command"] == [
-        "SonsOfTheForestDS.exe",
+        "./SonsOfTheForestDS.exe",
         "-userdatapath",
         "./user-data",
         "-batchmode",

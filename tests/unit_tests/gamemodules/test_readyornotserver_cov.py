@@ -255,7 +255,7 @@ def test_get_container_spec_maps_nested_workdir(tmp_path):
     spec = mod.get_container_spec(server)
 
     assert spec["working_dir"] == "/srv/server/Dedicated Server/ReadyOrNot/Binaries/Win64"
-    assert spec["command"][0] == "ReadyOrNotServer-Win64-Shipping.exe"
+    assert spec["command"][0] == "./ReadyOrNotServer-Win64-Shipping.exe"
 
 
 def test_get_start_command_missing_exe(tmp_path):

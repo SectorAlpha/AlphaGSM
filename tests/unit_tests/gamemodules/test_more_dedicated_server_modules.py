@@ -111,7 +111,7 @@ def test_askaserver_runtime_requirements_use_wine_proton_family(tmp_path, monkey
         {"host": 27016, "container": 27016, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "AskaServer.exe"
+    assert spec["command"][0] == "./AskaServer.exe"
 
 
 def test_astroneerserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
@@ -156,7 +156,7 @@ def test_astroneerserver_runtime_metadata_enables_xvfb_for_docker(tmp_path, monk
     assert requirements["env"]["WINEDLLOVERRIDES"] == ""
     assert spec["env"]["ALPHAGSM_XVFB"] == "1"
     assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
-    assert spec["command"][0] == "AstroServer.exe"
+    assert spec["command"][0] == "./AstroServer.exe"
 
 
 def test_atlasserver_get_start_command_builds_expected_args(tmp_path):
