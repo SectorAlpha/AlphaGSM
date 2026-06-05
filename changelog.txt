@@ -386,3 +386,4 @@ Historical highlights
 2026-06-05:
   - CI follow-up: fixed stale test/runtime contracts by teaching integration skips to honor `ENABLED (BYO)` / `ENABLED (AUTH)` prerequisite failures, moving Ready or Not query-port writes until after setup, hardening the SES smoke `info` retry, ignoring Docker `<no value>` host placeholders in query-host resolution, and preferring Citadel's nested Linux shipping binary over the brittle wrapper script inside Docker.
   - CI follow-up: hardened `heatserver` startup by writing a baseline `Configuration/ServerSettings.cfg` from known dedicated-server defaults when the upstream first-launch bootstrap fails to generate it in CI before the real server process starts.
+  - CI follow-up: fixed `palworld` install-layout detection for SteamCMD/Docker lanes by resolving the official nested `PalServer/` content root before looking for `PalServer.sh`, config files, or the Linux shipping binary.

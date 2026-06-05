@@ -3,7 +3,6 @@
 import os
 import shutil
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
@@ -14,6 +13,10 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 2394010
 steam_anonymous_login_possible = True
+ROOT_EXECUTABLES = (
+    "PalServer.sh",
+    os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping"),
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -73,11 +76,51 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PalServer.sh", publ
 def _settings_paths(server):
     """Return the default and active Palworld settings paths."""
 
-    base_dir = os.path.join(server.data["dir"], "Pal", "Saved", "Config", "LinuxServer")
+    root_dir = _resolve_install_root(server)
+    base_dir = os.path.join(root_dir, "Pal", "Saved", "Config", "LinuxServer")
     return (
-        os.path.join(server.data["dir"], "DefaultPalWorldSettings.ini"),
+        os.path.join(root_dir, "DefaultPalWorldSettings.ini"),
         os.path.join(base_dir, "PalWorldSettings.ini"),
     )
+
+
+def _resolve_install_root(server):
+    """Return the real Palworld content root for the current install tree."""
+
+    configured_dir = server.data["dir"]
+    candidates = [configured_dir]
+    for relative_dir in ("PalServer", os.path.join("steamapps", "common", "PalServer")):
+        candidate = os.path.join(configured_dir, relative_dir)
+        if candidate not in candidates:
+            candidates.append(candidate)
+
+    for candidate_dir in candidates:
+        for executable in ROOT_EXECUTABLES:
+            if os.path.isfile(os.path.join(candidate_dir, executable)):
+                return candidate_dir
+
+    return configured_dir
+
+
+def _resolve_executable(server):
+    """Return the Palworld launcher path relative to the resolved content root."""
+
+    configured = server.data.get("exe_name")
+    root_dir = _resolve_install_root(server)
+    candidates = []
+    if configured:
+        configured_base = os.path.basename(configured)
+        for executable in ROOT_EXECUTABLES:
+            if os.path.basename(executable) == configured_base and executable not in candidates:
+                candidates.append(executable)
+        if configured not in candidates:
+            candidates.append(configured)
+    candidates.extend(executable for executable in ROOT_EXECUTABLES if executable not in candidates)
+
+    for executable in candidates:
+        if os.path.isfile(os.path.join(root_dir, executable)):
+            return root_dir, executable
+    raise ServerError("Executable file not found")
 
 
 def _finalize_install_layout(server):
@@ -120,17 +163,15 @@ restart.__doc__ = "Restart the Palworld server."
 def get_start_command(server):
     """Build the command used to launch a Palworld dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    root_dir, executable = _resolve_executable(server)
     cmd = [
-        "./" + server.data["exe_name"],
+        "./" + executable,
         "-port=%s" % (server.data["port"],),
         "-queryport=%s" % (server.data["queryport"],),
     ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
-    return cmd, server.data["dir"]
+    return cmd, root_dir
 
 
 def get_query_address(server):
@@ -146,7 +187,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Send the standard shutdown command to Palworld."""
 
-    screen.send_to_server(server.name, "\nShutdown 1\n")
+    runtime_module.send_to_server(server, "\nShutdown 1\n")
 
 
 def status(server, verbose):

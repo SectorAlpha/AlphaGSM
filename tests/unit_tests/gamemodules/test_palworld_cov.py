@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.palworld', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.palworld as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -114,6 +115,40 @@ def test_get_start_command(tmp_path):
     server.data["publiclobby"] = True
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_nested_palserver_root(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "PalServer"
+    nested_root.mkdir()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PalServer.sh"
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
+    (nested_root / "PalServer.sh").write_text("")
+    server.data["publiclobby"] = True
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./PalServer.sh"
+    assert cwd == str(nested_root)
+
+
+def test_settings_paths_follow_nested_palserver_root(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "steamapps" / "common" / "PalServer"
+    nested_root.mkdir(parents=True)
+    (nested_root / "PalServer.sh").write_text("")
+    server.data["dir"] = str(tmp_path)
+    server.data["exe_name"] = "PalServer.sh"
+
+    default_settings, active_settings = mod._settings_paths(server)
+
+    assert default_settings == str(nested_root / "DefaultPalWorldSettings.ini")
+    assert active_settings == str(
+        nested_root / "Pal" / "Saved" / "Config" / "LinuxServer" / "PalWorldSettings.ini"
+    )
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -128,7 +163,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -194,4 +229,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
