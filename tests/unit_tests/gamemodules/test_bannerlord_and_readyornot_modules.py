@@ -123,7 +123,7 @@ def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch
     assert cmd[0] == "ReadyOrNotServer.exe"
     assert "-Port=7777" in cmd
     assert "-QueryPort=27015" in cmd
-    assert cwd == server.data["dir"]
+    assert cwd == str(tmp_path)
     assert observed == {"wineprefix": None, "prefer_proton": False}
 
 
