@@ -77,7 +77,6 @@ def test_readyornotserver_lifecycle(tmp_path):
 
     run_and_assert_ok(env, server_name, "create", "readyornotserver")
     run_and_assert_ok(env, server_name, "set", "image", image)
-    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
 
     _setup_result, port = run_setup_with_port_retry(
         env,
@@ -86,6 +85,7 @@ def test_readyornotserver_lifecycle(tmp_path):
         install_dir,
         timeout=SETUP_TIMEOUT,
     )
+    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
 
     run_and_assert_ok(env, server_name, "start")
 

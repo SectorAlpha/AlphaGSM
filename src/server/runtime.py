@@ -1319,7 +1319,7 @@ def resolve_query_host(server, default="127.0.0.1"):
         or server.data.get("bindaddress")
         or ""
     ).strip()
-    if explicit_host and explicit_host not in {"0.0.0.0", "::"}:
+    if explicit_host and explicit_host not in {"0.0.0.0", "::", "<no value>"}:
         return explicit_host
 
     if not hasattr(server, "name"):

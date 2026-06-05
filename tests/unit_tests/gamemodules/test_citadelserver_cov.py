@@ -157,6 +157,26 @@ def test_get_start_command_falls_back_to_nested_linux_binary(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_prefers_nested_linux_binary_over_wrapper(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CitadelServer.sh"
+    (tmp_path / "CitadelServer.sh").write_text("")
+    nested = tmp_path / "Citadel" / "Binaries" / "Linux"
+    nested.mkdir(parents=True)
+    (nested / "CitadelServer-Linux-Shipping").write_text("")
+    server.data["map"] = "rook"
+    server.data["maxplayers"] = 10
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+    server.data["servername"] = "fallback"
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./Citadel/Binaries/Linux/CitadelServer-Linux-Shipping"
+    assert cmd[1] == "Citadel"
+
+
 def test_get_runtime_requirements_mounts_server_and_steamcmd_dir(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path)
@@ -174,6 +194,9 @@ def test_get_container_spec_runs_as_non_root_with_steam_bootstrap(tmp_path):
     server.data["dir"] = str(tmp_path)
     server.data["exe_name"] = "CitadelServer.sh"
     (tmp_path / "CitadelServer.sh").write_text("")
+    nested = tmp_path / "Citadel" / "Binaries" / "Linux"
+    nested.mkdir(parents=True)
+    (nested / "CitadelServer-Linux-Shipping").write_text("")
     server.data["map"] = "rook"
     server.data["maxplayers"] = 50
     server.data["port"] = 7777
@@ -195,7 +218,10 @@ def test_get_container_spec_runs_as_non_root_with_steam_bootstrap(tmp_path):
     assert "mkdir -p /home/alphagsm/.steam/sdk64" in shell_command
     assert "ln -sfn /opt/alphagsm-steamcmd/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so" in shell_command
     assert "exec runuser -u alphagsm -- sh -lc" in shell_command
-    assert "./CitadelServer.sh rook -Port=7777 -QueryPort=27015 -MaxPlayers=50" in shell_command
+    assert (
+        "./Citadel/Binaries/Linux/CitadelServer-Linux-Shipping Citadel rook "
+        "-Port=7777 -QueryPort=27015 -MaxPlayers=50"
+    ) in shell_command
     assert "-ServerName=AlphaGSM Citadel" in shell_command
     assert shell_command.endswith(" -log'")
 

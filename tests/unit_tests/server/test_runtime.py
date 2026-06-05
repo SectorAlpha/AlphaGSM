@@ -1287,6 +1287,24 @@ def test_resolve_query_host_prefers_explicit_public_ip(monkeypatch):
     assert runtime_module.resolve_query_host(server) == "192.168.1.50"
 
 
+def test_resolve_query_host_ignores_explicit_docker_no_value(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    server = DummyServer(
+        data={"runtime": "docker", "publicip": "<no value>", "container_name": "alphagsm-alpha"},
+    )
+
+    monkeypatch.setattr(runtime_module, "_running_inside_container", lambda: True)
+
+    def _fake_check_output(*args, **kwargs):
+        if "Gateway" in args[0][3]:
+            return "172.17.0.1\n"
+        return "172.18.0.7\n"
+
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    assert runtime_module.resolve_query_host(server) == "172.17.0.1"
+
+
 def test_resolve_query_host_falls_back_for_server_stubs_without_name(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     server = SimpleNamespace(data={"runtime": "docker", "container_name": "alphagsm-alpha"})

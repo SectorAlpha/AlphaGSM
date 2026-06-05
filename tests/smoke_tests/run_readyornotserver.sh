@@ -103,8 +103,8 @@ echo "Using query port: $QUERYPORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create readyornotserver
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
-run_alphagsm "$SERVER_NAME" set queryport "$QUERYPORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_alphagsm "$SERVER_NAME" set queryport "$QUERYPORT"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

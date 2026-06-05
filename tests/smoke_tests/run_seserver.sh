@@ -93,7 +93,10 @@ SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
-run_alphagsm "$SERVER_NAME" info
+if ! run_alphagsm "$SERVER_NAME" info; then
+  wait_for_info_protocol "$SERVER_NAME" "udp" 120
+  run_alphagsm "$SERVER_NAME" info
+fi
 if ! run_alphagsm "$SERVER_NAME" info --json; then
   wait_for_info_protocol "$SERVER_NAME" "udp" 120
   run_alphagsm "$SERVER_NAME" info --json

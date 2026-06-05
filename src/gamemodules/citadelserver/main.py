@@ -86,6 +86,8 @@ def _resolve_executable_name(server):
     configured = server.data.get("exe_name")
     candidates = []
     if configured:
+        if configured in DEFAULT_EXECUTABLES:
+            candidates.extend(name for name in DEFAULT_EXECUTABLES if name != configured)
         candidates.append(configured)
     candidates.extend(name for name in DEFAULT_EXECUTABLES if name not in candidates)
 

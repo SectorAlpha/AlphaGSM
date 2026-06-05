@@ -905,6 +905,8 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
         "No subscription",
         "SteamCMD username required for this server",
         "is currently disabled",
+        "ENABLED (BYO):",
+        "ENABLED (AUTH):",
     )
     for marker in skip_markers:
         if marker in combined:

@@ -531,3 +531,17 @@ def test_skip_for_known_steamcmd_issue_does_not_skip_without_app_id():
     )
 
     helpers.skip_for_known_steamcmd_issue(result)
+
+
+@pytest.mark.parametrize("marker", ["ENABLED (BYO):", "ENABLED (AUTH):"])
+def test_skip_for_known_steamcmd_issue_skips_for_supported_prerequisite_states(marker):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = subprocess.CompletedProcess(
+        args=["steamcmd"],
+        returncode=1,
+        stdout="",
+        stderr=f"Error running Command\n{marker} prerequisite not available in CI\n",
+    )
+
+    with pytest.raises(pytest.skip.Exception, match="Setup skipped"):
+        helpers.skip_for_known_steamcmd_issue(result)
