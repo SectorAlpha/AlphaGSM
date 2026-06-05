@@ -134,8 +134,8 @@ def test_get_start_command_uses_nested_palserver_root(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
-    assert cwd == str(nested_root)
+    assert cmd[0] == "./PalServer/Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_prefers_linux_shipping_binary_over_wrapper(tmp_path):
@@ -169,8 +169,8 @@ def test_get_container_spec_maps_nested_palserver_workdir(tmp_path):
 
     spec = mod.get_container_spec(server)
 
-    assert spec["working_dir"] == "/srv/server/PalServer"
-    assert spec["command"][0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./PalServer/Pal/Binaries/Linux/PalServer-Linux-Shipping"
 
 
 def test_settings_paths_follow_nested_palserver_root(tmp_path):

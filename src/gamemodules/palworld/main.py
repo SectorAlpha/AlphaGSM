@@ -159,14 +159,17 @@ def get_start_command(server):
     """Build the command used to launch a Palworld dedicated server."""
 
     root_dir, executable = _resolve_executable(server)
+    install_root = server.data["dir"]
+    executable_path = os.path.join(root_dir, executable)
+    launcher_relpath = os.path.relpath(executable_path, install_root)
     cmd = [
-        "./" + executable,
+        "./" + launcher_relpath,
         "-port=%s" % (server.data["port"],),
         "-queryport=%s" % (server.data["queryport"],),
     ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
-    return cmd, root_dir
+    return cmd, install_root
 
 
 def get_query_address(server):

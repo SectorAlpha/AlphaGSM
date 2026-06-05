@@ -395,7 +395,7 @@ def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
     )
 
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"] == ["WindowsServer/SurvivalGameServer.exe", "-Port=7777"]
+    assert spec["command"] == ["./WindowsServer/SurvivalGameServer.exe", "-Port=7777"]
     assert spec["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/server/.alphagsm-wineprefix"
     assert spec["mounts"] == [
         {"source": "/srv/opz/", "target": "/srv/server", "mode": "rw"}
@@ -448,4 +448,4 @@ def test_get_container_spec_recovers_when_host_runtime_wrapper_is_unavailable():
         monkeypatch.undo()
 
     assert observed == ["called", "called"]
-    assert spec["command"] == ["WindowsServer/Server.exe", "-Port=7777"]
+    assert spec["command"] == ["./WindowsServer/Server.exe", "-Port=7777"]

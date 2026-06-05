@@ -401,12 +401,19 @@ def get_container_spec(
     mapped_cwd = _map_host_path_into_container(requirements.get("mounts", []), cwd)
     if mapped_cwd and working_dir == CONTAINER_SERVER_DIR:
         resolved_working_dir = mapped_cwd
+    native_command = unwrap_runtime_command(command)
+    if (
+        native_command
+        and not os.path.isabs(native_command[0])
+        and not native_command[0].startswith("./")
+    ):
+        native_command[0] = "./" + native_command[0].lstrip("./")
     return {
         "working_dir": resolved_working_dir,
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
         "env": requirements.get("env", {}),
-        "command": unwrap_runtime_command(command),
+        "command": native_command,
     }
 
 
