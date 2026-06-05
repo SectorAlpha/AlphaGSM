@@ -58,15 +58,16 @@ def _candidate_content_roots(server):
     """Return plausible archive content roots for Xonotic."""
 
     install_root = server.data["dir"]
-    candidates = [install_root]
+    candidates = []
     try:
         entries = sorted(os.listdir(install_root))
     except FileNotFoundError:
-        return candidates
+        return [install_root]
     for entry in entries:
         candidate = os.path.join(install_root, entry)
         if os.path.isdir(candidate):
             candidates.append(candidate)
+    candidates.append(install_root)
     return candidates
 
 
@@ -74,10 +75,10 @@ def _resolve_content_root(server):
     """Return the directory that actually contains the extracted Xonotic tree."""
 
     marker_names = (
-        server.data.get("exe_name", ""),
-        os.path.join("server", "server_linux.sh"),
-        "xonotic-linux-dedicated.sh",
         "xonotic-linux64-dedicated",
+        "xonotic-linux-dedicated.sh",
+        os.path.join("server", "server_linux.sh"),
+        server.data.get("exe_name", ""),
         os.path.join("data", "xonotic-20230620-data.pk3"),
     )
     for candidate in _candidate_content_roots(server):
@@ -195,9 +196,9 @@ def get_start_command(server):
     content_root = _resolve_content_root(server)
     exe_name = server.data.get("exe_name")
     candidate_paths = [
-        os.path.join(content_root, "server", "server_linux.sh"),
-        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
         os.path.join(content_root, "xonotic-linux64-dedicated"),
+        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
+        os.path.join(content_root, "server", "server_linux.sh"),
     ]
     if exe_name and exe_name not in {"server/server_linux.sh", "xonotic-linux-dedicated.sh", "xonotic-linux64-dedicated"}:
         exe_candidate = os.path.join(content_root, exe_name)

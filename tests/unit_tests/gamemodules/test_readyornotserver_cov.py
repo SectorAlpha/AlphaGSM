@@ -167,6 +167,31 @@ def test_get_start_command_uses_nested_dedicated_server_root(tmp_path, monkeypat
     assert cwd == str(nested_root / "ReadyOrNot" / "Binaries" / "Win64")
 
 
+def test_get_start_command_prefers_nested_dedicated_server_root_over_top_level_payload(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    nested_root = tmp_path / "Dedicated Server"
+    nested_exe = nested_root / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
+    nested_exe.parent.mkdir(parents=True, exist_ok=True)
+    nested_exe.write_text("")
+    top_level_exe = tmp_path / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
+    top_level_exe.parent.mkdir(parents=True, exist_ok=True)
+    top_level_exe.write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ReadyOrNotServer.exe"
+    server.data["maxplayers"] = 16
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "ReadyOrNotServer-Win64-Shipping.exe"
+    assert cwd == str(nested_exe.parent)
+
+
 def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     observed = {}

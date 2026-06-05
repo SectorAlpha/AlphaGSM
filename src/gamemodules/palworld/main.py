@@ -88,11 +88,17 @@ def _resolve_install_root(server):
     """Return the real Palworld content root for the current install tree."""
 
     configured_dir = server.data["dir"]
-    candidates = [configured_dir]
-    for relative_dir in ("PalServer", os.path.join("steamapps", "common", "PalServer")):
+    candidates = []
+    for relative_dir in (
+        "PalServer",
+        os.path.join("PalServer", "PalServer"),
+        os.path.join("steamapps", "common", "PalServer"),
+        os.path.join("steamapps", "common", "PalServer", "PalServer"),
+    ):
         candidate = os.path.join(configured_dir, relative_dir)
         if candidate not in candidates:
             candidates.append(candidate)
+    candidates.append(configured_dir)
 
     for candidate_dir in candidates:
         for executable in ROOT_EXECUTABLES:

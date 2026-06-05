@@ -138,6 +138,24 @@ def test_get_start_command_uses_nested_palserver_root(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_prefers_nested_palserver_root_over_top_level_wrapper(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "PalServer"
+    (nested_root / "Pal" / "Binaries" / "Linux").mkdir(parents=True)
+    (nested_root / "Pal" / "Binaries" / "Linux" / "PalServer-Linux-Shipping").write_text("")
+    (tmp_path / "PalServer.sh").write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PalServer.sh"
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
+    server.data["publiclobby"] = True
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./PalServer/Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == server.data["dir"]
+
+
 def test_get_start_command_prefers_linux_shipping_binary_over_wrapper(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

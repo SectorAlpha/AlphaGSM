@@ -84,11 +84,12 @@ def _resolve_install_root(server):
     """Return the real CryoFall content root for the current install tree."""
 
     configured_dir = server.data["dir"]
-    candidates = [configured_dir]
+    candidates = []
     for relative_dir in ROOT_DIR_CANDIDATES:
         candidate = os.path.join(configured_dir, relative_dir)
         if candidate not in candidates:
             candidates.append(candidate)
+    candidates.append(configured_dir)
 
     configured_executable = server.data.get("exe_name", DEFAULT_EXECUTABLE)
     executable_candidates = [configured_executable]
