@@ -75,9 +75,9 @@ def test_arksurvivalascended_get_start_command_builds_expected_args(tmp_path, mo
 
     cmd, cwd = arksurvivalascended.get_start_command(server)
 
-    assert cmd[0] == "ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
+    assert cmd[0] == "ArkAscendedServer.exe"
     assert "-server" in cmd
-    assert cwd == server.data["dir"]
+    assert cwd == str(exe_dir)
 
 
 def test_nightingale_get_start_command_builds_expected_args(tmp_path):

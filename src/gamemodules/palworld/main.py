@@ -107,15 +107,10 @@ def _resolve_executable(server):
 
     configured = server.data.get("exe_name")
     root_dir = _resolve_install_root(server)
-    candidates = []
-    if configured:
-        configured_base = os.path.basename(configured)
-        for executable in ROOT_EXECUTABLES:
-            if os.path.basename(executable) == configured_base and executable not in candidates:
-                candidates.append(executable)
-        if configured not in candidates:
-            candidates.append(configured)
-    candidates.extend(executable for executable in ROOT_EXECUTABLES if executable not in candidates)
+    known_basenames = {os.path.basename(executable) for executable in ROOT_EXECUTABLES}
+    candidates = list(ROOT_EXECUTABLES)
+    if configured and configured not in candidates and os.path.basename(configured) not in known_basenames:
+        candidates.insert(0, configured)
 
     for executable in candidates:
         if os.path.isfile(os.path.join(root_dir, executable)):

@@ -50,6 +50,23 @@ def test_enshrouded_get_start_command_builds_expected_args(tmp_path, monkeypatch
     assert cwd == server.data["dir"]
 
 
+def test_enshrouded_runtime_requirements_enable_xvfb_env():
+    server = DummyServer("ensh")
+    server.data.update(
+        {
+            "dir": "/srv/ensh/",
+            "exe_name": "enshrouded_server.exe",
+            "port": 15637,
+            "queryport": 15638,
+        }
+    )
+
+    requirements = enshrouded.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+
+
 def test_foundryserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("foundry")
     exe = tmp_path / "FoundryDedicatedServer"

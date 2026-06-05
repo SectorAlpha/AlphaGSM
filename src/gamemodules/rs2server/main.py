@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -197,6 +196,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    working_dir = os.path.dirname(exe_path) or server.data["dir"]
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -204,7 +204,7 @@ def get_start_command(server):
         value_transform=lambda _spec, current_value: str(current_value),
     )
     cmd = [
-            server.data["exe_name"],
+            os.path.basename(exe_path),
             "VNTE-CuChi?maxplayers=64",
             *dynamic_args,
             "-ConfigSubDir=PCServer",
@@ -215,13 +215,13 @@ def get_start_command(server):
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )
-    return cmd, server.data["dir"]
+    return cmd, working_dir
 
 
 def do_stop(server, j):
     """Stop Rising Storm 2 using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

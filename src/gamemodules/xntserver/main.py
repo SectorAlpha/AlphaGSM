@@ -75,6 +75,7 @@ def _resolve_content_root(server):
 
     marker_names = (
         server.data.get("exe_name", ""),
+        os.path.join("server", "server_linux.sh"),
         "xonotic-linux-dedicated.sh",
         "xonotic-linux64-dedicated",
         os.path.join("data", "xonotic-20230620-data.pk3"),
@@ -120,7 +121,7 @@ def configure(
     version=None,
     url=None,
     download_name=None,
-    exe_name="xonotic-linux64-dedicated",
+    exe_name="server/server_linux.sh",
 ):
     """Collect and store configuration values for a Xonotic server."""
 
@@ -192,11 +193,11 @@ def get_start_command(server):
     content_root = _resolve_content_root(server)
     exe_name = server.data.get("exe_name")
     candidate_paths = [
-        os.path.join(content_root, "xonotic-linux64-dedicated"),
-        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
         os.path.join(content_root, "server", "server_linux.sh"),
+        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
+        os.path.join(content_root, "xonotic-linux64-dedicated"),
     ]
-    if exe_name:
+    if exe_name and exe_name not in {"server/server_linux.sh", "xonotic-linux-dedicated.sh", "xonotic-linux64-dedicated"}:
         exe_candidate = os.path.join(content_root, exe_name)
         if exe_candidate not in candidate_paths:
             candidate_paths.insert(0, exe_candidate)

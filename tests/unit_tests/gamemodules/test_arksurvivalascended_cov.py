@@ -129,6 +129,8 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["sessionname"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[0] == "ArkAscendedServer.exe"
+    assert cwd == str(exe_path.parent)
 
 
 def test_get_start_command_missing_exe(tmp_path):

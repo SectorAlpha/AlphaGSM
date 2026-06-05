@@ -17,8 +17,8 @@ from utils.gamemodules import common as gamemodule_common
 steam_app_id = 950290
 steam_anonymous_login_possible = True
 DEFAULT_EXECUTABLES = (
-    "ReadyOrNotServer.exe",
     os.path.join("ReadyOrNot", "Binaries", "Win64", "ReadyOrNotServer-Win64-Shipping.exe"),
+    "ReadyOrNotServer.exe",
 )
 ROOT_DIR_CANDIDATES = (
     "Dedicated Server",
@@ -71,10 +71,7 @@ def _resolve_install_root(server):
         if candidate not in candidates:
             candidates.append(candidate)
 
-    executable_candidates = [server.data.get("exe_name", DEFAULT_EXECUTABLES[0])]
-    executable_candidates.extend(
-        executable for executable in DEFAULT_EXECUTABLES if executable not in executable_candidates
-    )
+    executable_candidates = _executable_candidates(server)
 
     for candidate_dir in candidates:
         for executable in executable_candidates:
@@ -87,15 +84,23 @@ def _resolve_install_root(server):
 def _resolve_executable(server):
     """Return ``(root_dir, executable)`` for the installed Ready or Not payload."""
 
-    executable_candidates = [server.data.get("exe_name", DEFAULT_EXECUTABLES[0])]
-    executable_candidates.extend(
-        executable for executable in DEFAULT_EXECUTABLES if executable not in executable_candidates
-    )
+    executable_candidates = _executable_candidates(server)
     root_dir = _resolve_install_root(server)
     for executable in executable_candidates:
         if os.path.isfile(os.path.join(root_dir, executable)):
             return root_dir, executable
     raise ServerError("Executable file not found")
+
+
+def _executable_candidates(server):
+    """Return preferred Ready or Not executables for the current install."""
+
+    configured = server.data.get("exe_name")
+    known_basenames = {os.path.basename(executable) for executable in DEFAULT_EXECUTABLES}
+    candidates = list(DEFAULT_EXECUTABLES)
+    if configured and configured not in candidates and os.path.basename(configured) not in known_basenames:
+        candidates.insert(0, configured)
+    return candidates
 
 
 def _config_path(server):

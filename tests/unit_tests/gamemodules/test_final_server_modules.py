@@ -105,7 +105,8 @@ def test_xntserver_configure_sets_expected_defaults(tmp_path):
 
 def test_xntserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("xnt")
-    launcher = tmp_path / "xonotic-linux-dedicated.sh"
+    launcher = tmp_path / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
     launcher.write_text("")
     server.data.update(
         {
@@ -120,7 +121,7 @@ def test_xntserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = xntserver.get_start_command(server)
 
-    assert cmd[0] == "./xonotic-linux-dedicated.sh"
+    assert cmd[0] == "./server/server_linux.sh"
     assert "+port" in cmd
     assert cwd == server.data["dir"]
 
@@ -129,7 +130,8 @@ def test_xntserver_get_start_command_uses_nested_archive_root(tmp_path):
     server = DummyServer("xnt")
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
-    launcher = content_root / "xonotic-linux-dedicated.sh"
+    launcher = content_root / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
     launcher.write_text("")
     server.data.update(
         {
@@ -144,7 +146,7 @@ def test_xntserver_get_start_command_uses_nested_archive_root(tmp_path):
 
     cmd, cwd = xntserver.get_start_command(server)
 
-    assert cmd[0] == "./xonotic-linux-dedicated.sh"
+    assert cmd[0] == "./server/server_linux.sh"
     assert cwd == str(content_root)
 
 
@@ -152,7 +154,8 @@ def test_xntserver_container_spec_uses_nested_archive_root(tmp_path):
     server = DummyServer("xnt")
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
-    launcher = content_root / "xonotic-linux-dedicated.sh"
+    launcher = content_root / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
     launcher.write_text("")
     server.data.update(
         {

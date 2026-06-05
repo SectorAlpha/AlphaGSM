@@ -131,6 +131,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    working_dir = os.path.dirname(exe_path) or server.data["dir"]
     map_args = (
         "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
         % (
@@ -144,14 +145,14 @@ def get_start_command(server):
     )
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
-    cmd = [server.data["exe_name"], map_args, "-server", "-log"]
+    cmd = [os.path.basename(exe_path), map_args, "-server", "-log"]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
-    return cmd, server.data["dir"]
+    return cmd, working_dir
 
 
 def do_stop(server, j):

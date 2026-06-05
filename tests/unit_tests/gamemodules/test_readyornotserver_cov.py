@@ -130,26 +130,28 @@ def test_get_start_command(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "ReadyOrNotServer.exe"
-    (tmp_path / "ReadyOrNotServer.exe").write_text("")
+    exe_dir = tmp_path / "ReadyOrNot" / "Binaries" / "Win64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "ReadyOrNotServer-Win64-Shipping.exe").write_text("")
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "ReadyOrNotServer.exe",
+        "ReadyOrNotServer-Win64-Shipping.exe",
         "-Port=27015",
         "-QueryPort=27015",
         "-MaxPlayers=27015",
         "-log",
         "-unattended",
     ]
-    assert cwd == str(tmp_path)
+    assert cwd == str(exe_dir)
 
 
 def test_get_start_command_uses_nested_dedicated_server_root(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
     nested_root = tmp_path / "Dedicated Server"
-    exe_path = nested_root / "ReadyOrNotServer.exe"
+    exe_path = nested_root / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
     server = DummyServer()
@@ -161,8 +163,8 @@ def test_get_start_command_uses_nested_dedicated_server_root(tmp_path, monkeypat
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "ReadyOrNotServer.exe"
-    assert cwd == str(nested_root)
+    assert cmd[0] == "ReadyOrNotServer-Win64-Shipping.exe"
+    assert cwd == str(nested_root / "ReadyOrNot" / "Binaries" / "Win64")
 
 
 def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monkeypatch):
@@ -179,7 +181,9 @@ def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monke
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "ReadyOrNotServer.exe"
-    (tmp_path / "ReadyOrNotServer.exe").write_text("")
+    exe_dir = tmp_path / "ReadyOrNot" / "Binaries" / "Win64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "ReadyOrNotServer-Win64-Shipping.exe").write_text("")
     server.data["maxplayers"] = 16
     server.data["port"] = 27015
     server.data["queryport"] = 27016
@@ -188,7 +192,7 @@ def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monke
 
     assert observed == {
         "command": [
-            "ReadyOrNotServer.exe",
+            "ReadyOrNotServer-Win64-Shipping.exe",
             "-Port=27015",
             "-QueryPort=27016",
             "-MaxPlayers=16",
@@ -199,14 +203,16 @@ def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monke
         "prefer_proton": False,
     }
     assert cmd[:2] == ["proton", "run"]
-    assert cwd == str(tmp_path)
+    assert cwd == str(exe_dir)
 
 
 def test_sync_server_config_uses_nested_dedicated_server_root(tmp_path):
     nested_root = tmp_path / "Dedicated Server"
     config_dir = nested_root / "ReadyOrNot" / "Config"
     config_dir.mkdir(parents=True)
-    (nested_root / "ReadyOrNotServer.exe").write_text("")
+    exe_dir = nested_root / "ReadyOrNot" / "Binaries" / "Win64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "ReadyOrNotServer-Win64-Shipping.exe").write_text("")
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["queryport"] = 7788
@@ -236,7 +242,7 @@ def test_query_and_info_address_use_resolved_query_host(monkeypatch):
 
 def test_get_container_spec_maps_nested_workdir(tmp_path):
     nested_root = tmp_path / "Dedicated Server"
-    exe_path = nested_root / "ReadyOrNotServer.exe"
+    exe_path = nested_root / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
     server = DummyServer("ready")
@@ -248,8 +254,8 @@ def test_get_container_spec_maps_nested_workdir(tmp_path):
 
     spec = mod.get_container_spec(server)
 
-    assert spec["working_dir"] == "/srv/server/Dedicated Server"
-    assert spec["command"][0] == "ReadyOrNotServer.exe"
+    assert spec["working_dir"] == "/srv/server/Dedicated Server/ReadyOrNot/Binaries/Win64"
+    assert spec["command"][0] == "ReadyOrNotServer-Win64-Shipping.exe"
 
 
 def test_get_start_command_missing_exe(tmp_path):

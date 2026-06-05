@@ -95,13 +95,15 @@ def test_install_resolves_download(tmp_path):
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    (tmp_path / "xonotic-linux64-dedicated").write_text("")
+    launcher = tmp_path / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./xonotic-linux64-dedicated"
+    assert cmd[0] == "./server/server_linux.sh"
     assert "+port" in cmd
     assert cwd == server.data["dir"]
 
@@ -110,14 +112,16 @@ def test_get_start_command_nested_archive_root(tmp_path):
     server = DummyServer()
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
-    (content_root / "xonotic-linux64-dedicated").write_text("")
+    launcher = content_root / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
     server.data["dir"] = str(tmp_path) + "/"
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./xonotic-linux64-dedicated"
+    assert cmd[0] == "./server/server_linux.sh"
     assert cwd == str(content_root)
 
 
@@ -125,7 +129,9 @@ def test_get_container_spec_uses_nested_archive_workdir(tmp_path):
     server = DummyServer()
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
-    (content_root / "xonotic-linux64-dedicated").write_text("")
+    launcher = content_root / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
     server.data["dir"] = str(tmp_path) + "/"
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
@@ -164,7 +170,9 @@ def test_prestart_refreshes_nested_archive_server_cfg(tmp_path):
     server = DummyServer()
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
-    (content_root / "xonotic-linux64-dedicated").write_text("")
+    launcher = content_root / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
     server.data["dir"] = str(tmp_path) + "/"
     server.data["hostname"] = "AlphaGSM Test"
     server.data["gametype"] = "dm"
