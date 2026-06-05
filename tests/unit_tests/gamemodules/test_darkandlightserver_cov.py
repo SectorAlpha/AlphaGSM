@@ -162,6 +162,35 @@ def test_get_start_command_uses_nested_dnl_install_root(tmp_path, monkeypatch):
     assert cwd == str(exe_path.parent)
 
 
+def test_get_start_command_prefers_nested_dnl_install_root_over_top_level_payload(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    nested_root = tmp_path / "DNL Dedicated Server"
+    nested_exe = nested_root / "DNL" / "Binaries" / "Win64" / "DNLServer.exe"
+    nested_exe.parent.mkdir(parents=True, exist_ok=True)
+    nested_exe.write_text("")
+    top_level_exe = tmp_path / "DNL" / "Binaries" / "Win64" / "DNLServer.exe"
+    top_level_exe.parent.mkdir(parents=True, exist_ok=True)
+    top_level_exe.write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["adminpassword"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    server.data["serverpassword"] = "test"
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "DNLServer.exe"
+    assert cwd == str(nested_exe.parent)
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
