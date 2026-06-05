@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -17,6 +16,14 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 950290
 steam_anonymous_login_possible = True
+DEFAULT_EXECUTABLES = (
+    "ReadyOrNotServer.exe",
+    os.path.join("ReadyOrNot", "Binaries", "Win64", "ReadyOrNotServer-Win64-Shipping.exe"),
+)
+ROOT_DIR_CANDIDATES = (
+    "Dedicated Server",
+    os.path.join("steamapps", "common", "Dedicated Server"),
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -54,10 +61,47 @@ setting_schema["maxplayers"] = SettingSpec(
 )
 
 
+def _resolve_install_root(server):
+    """Return the real Ready or Not content root for the current install tree."""
+
+    configured_dir = server.data["dir"]
+    candidates = [configured_dir]
+    for relative_dir in ROOT_DIR_CANDIDATES:
+        candidate = os.path.join(configured_dir, relative_dir)
+        if candidate not in candidates:
+            candidates.append(candidate)
+
+    executable_candidates = [server.data.get("exe_name", DEFAULT_EXECUTABLES[0])]
+    executable_candidates.extend(
+        executable for executable in DEFAULT_EXECUTABLES if executable not in executable_candidates
+    )
+
+    for candidate_dir in candidates:
+        for executable in executable_candidates:
+            if os.path.isfile(os.path.join(candidate_dir, executable)):
+                return candidate_dir
+
+    return configured_dir
+
+
+def _resolve_executable(server):
+    """Return ``(root_dir, executable)`` for the installed Ready or Not payload."""
+
+    executable_candidates = [server.data.get("exe_name", DEFAULT_EXECUTABLES[0])]
+    executable_candidates.extend(
+        executable for executable in DEFAULT_EXECUTABLES if executable not in executable_candidates
+    )
+    root_dir = _resolve_install_root(server)
+    for executable in executable_candidates:
+        if os.path.isfile(os.path.join(root_dir, executable)):
+            return root_dir, executable
+    raise ServerError("Executable file not found")
+
+
 def _config_path(server):
     """Return the managed Ready or Not config path."""
 
-    return os.path.join(server.data["dir"], "ReadyOrNot", "Config", "ServerConfig.ini")
+    return os.path.join(_resolve_install_root(server), "ReadyOrNot", "Config", "ServerConfig.ini")
 
 
 def sync_server_config(server):
@@ -78,7 +122,7 @@ def sync_server_config(server):
     rewrite_equals_config(config_path, config_values)
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="ReadyOrNotServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name=DEFAULT_EXECUTABLES[0]):
     """Collect and store configuration values for a Ready or Not server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -134,9 +178,9 @@ restart = gamemodule_common.make_restart_hook()
 def get_start_command(server):
     """Build the command used to launch a Ready or Not dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    root_dir, executable = _resolve_executable(server)
+    exe_path = os.path.join(root_dir, executable)
+    working_dir = os.path.dirname(exe_path) or root_dir
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -146,7 +190,7 @@ def get_start_command(server):
     # -unattended prevents UE4 from opening dialogs or spawning GUI windows
     # under Wine when the engine hits an error or requires user interaction.
     cmd = [
-        server.data["exe_name"],
+        os.path.basename(executable),
         *dynamic_args,
         "-log",
         "-unattended",
@@ -156,7 +200,7 @@ def get_start_command(server):
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )
-    return cmd, server.data["dir"]
+    return cmd, working_dir
 
 
 def get_query_address(server):
@@ -174,7 +218,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Ready or Not by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

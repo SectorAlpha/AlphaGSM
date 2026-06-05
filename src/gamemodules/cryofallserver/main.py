@@ -12,6 +12,11 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1061710
 steam_anonymous_login_possible = True
+DEFAULT_EXECUTABLE = "Binaries/Server/CryoFall_Server.dll"
+ROOT_DIR_CANDIDATES = (
+    "CryoFall Dedicated Server",
+    os.path.join("steamapps", "common", "CryoFall Dedicated Server"),
+)
 TEMPLATE_PATH = os.path.join(
     os.path.dirname(__file__), "settings_server_template.xml"
 )
@@ -36,7 +41,7 @@ def configure(
     port=None,
     dir=None,
     *,
-    exe_name="Binaries/Server/CryoFall_Server.dll",
+    exe_name=DEFAULT_EXECUTABLE,
 ):
     """Collect and store configuration values for a CryoFall server."""
 
@@ -75,6 +80,43 @@ def configure(
     return gamemodule_common.finalize_configure(server)
 
 
+def _resolve_install_root(server):
+    """Return the real CryoFall content root for the current install tree."""
+
+    configured_dir = server.data["dir"]
+    candidates = [configured_dir]
+    for relative_dir in ROOT_DIR_CANDIDATES:
+        candidate = os.path.join(configured_dir, relative_dir)
+        if candidate not in candidates:
+            candidates.append(candidate)
+
+    configured_executable = server.data.get("exe_name", DEFAULT_EXECUTABLE)
+    executable_candidates = [configured_executable]
+    if DEFAULT_EXECUTABLE not in executable_candidates:
+        executable_candidates.append(DEFAULT_EXECUTABLE)
+
+    for candidate_dir in candidates:
+        for executable in executable_candidates:
+            if os.path.isfile(os.path.join(candidate_dir, executable)):
+                return candidate_dir
+
+    return configured_dir
+
+
+def _resolve_executable(server):
+    """Return ``(root_dir, executable)`` for the installed CryoFall payload."""
+
+    configured_executable = server.data.get("exe_name", DEFAULT_EXECUTABLE)
+    candidates = [configured_executable]
+    if DEFAULT_EXECUTABLE not in candidates:
+        candidates.append(DEFAULT_EXECUTABLE)
+    root_dir = _resolve_install_root(server)
+    for executable in candidates:
+        if os.path.isfile(os.path.join(root_dir, executable)):
+            return root_dir, executable
+    raise ServerError("Executable file not found")
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
@@ -101,7 +143,7 @@ def sync_server_config(server):
     if not server.data.get("dir"):
         return
 
-    data_dir = os.path.join(server.data["dir"], "Data")
+    data_dir = os.path.join(_resolve_install_root(server), "Data")
     config_path = os.path.join(data_dir, "SettingsServer.xml")
     os.makedirs(data_dir, exist_ok=True)
     if not os.path.isfile(config_path):
@@ -156,14 +198,14 @@ def get_info_address(server):
 def get_start_command(server):
     """Build the command used to launch a CryoFall server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    root_dir, executable = _resolve_executable(server)
+    exe_path = os.path.join(root_dir, executable)
+    working_dir = os.path.dirname(exe_path) or root_dir
     return [
         server.data.get("dotnetpath", "dotnet"),
-        server.data["exe_name"],
+        os.path.basename(executable),
         "loadOrNew",
-    ], server.data["dir"]
+    ], working_dir
 
 
 def do_stop(server, j):

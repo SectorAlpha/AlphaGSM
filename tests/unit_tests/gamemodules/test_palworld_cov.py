@@ -135,6 +135,23 @@ def test_get_start_command_uses_nested_palserver_root(tmp_path):
     assert cwd == str(nested_root)
 
 
+def test_get_container_spec_maps_nested_palserver_workdir(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "PalServer"
+    nested_root.mkdir()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PalServer.sh"
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
+    server.data["runtime"] = "docker"
+    (nested_root / "PalServer.sh").write_text("")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server/PalServer"
+    assert spec["command"][0] == "./PalServer.sh"
+
+
 def test_settings_paths_follow_nested_palserver_root(tmp_path):
     server = DummyServer()
     nested_root = tmp_path / "steamapps" / "common" / "PalServer"

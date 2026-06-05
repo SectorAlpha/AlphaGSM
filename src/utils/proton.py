@@ -274,6 +274,31 @@ def _build_port_specs(server, port_definitions):
     return ports
 
 
+def _map_host_path_into_container(mounts, host_path):
+    """Return the container path for *host_path* when it is mounted."""
+
+    if not host_path:
+        return None
+
+    host_path_abs = os.path.abspath(host_path)
+    for mount in mounts or ():
+        source = mount.get("source")
+        target = mount.get("target")
+        if not source or not target:
+            continue
+        source_abs = os.path.abspath(source)
+        try:
+            if os.path.commonpath([source_abs, host_path_abs]) != source_abs:
+                continue
+        except ValueError:
+            continue
+        relative_path = os.path.relpath(host_path_abs, source_abs)
+        if relative_path == ".":
+            return str(target)
+        return os.path.join(str(target), relative_path).replace("\\", "/")
+    return None
+
+
 def _resolve_container_wineprefix(server):
     """Return ``(mounts, container_wineprefix)`` for a Docker-backed server."""
 
@@ -365,15 +390,19 @@ def get_container_spec(
 ):
     """Return the Docker launch spec for a Wine/Proton-backed server."""
 
-    command, _cwd = _get_container_start_command(server, get_start_command)
+    command, cwd = _get_container_start_command(server, get_start_command)
     requirements = get_runtime_requirements(
         server,
         port_definitions=port_definitions,
         prefer_proton=prefer_proton,
         extra_env=extra_env,
     )
+    resolved_working_dir = working_dir
+    mapped_cwd = _map_host_path_into_container(requirements.get("mounts", []), cwd)
+    if mapped_cwd and working_dir == CONTAINER_SERVER_DIR:
+        resolved_working_dir = mapped_cwd
     return {
-        "working_dir": working_dir,
+        "working_dir": resolved_working_dir,
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
         "env": requirements.get("env", {}),

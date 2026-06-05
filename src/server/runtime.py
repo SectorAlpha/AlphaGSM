@@ -938,7 +938,12 @@ def build_container_spec(
         command = ["java", *list(command[1:])]
     if working_dir is None:
         if requirements.get("mounts"):
-            working_dir = DEFAULT_CONTAINER_WORKDIR
+            working_dir = _map_host_path_into_container(
+                requirements.get("mounts", ()),
+                cwd,
+            )
+            if working_dir is None:
+                working_dir = DEFAULT_CONTAINER_WORKDIR
         else:
             working_dir = cwd
     spec = {
@@ -970,6 +975,35 @@ def _mount_covers_path(mount, path):
         ) == os.path.abspath(source)
     except ValueError:
         return False
+
+
+def _map_host_path_into_container(mounts, host_path):
+    """Return the container path for *host_path* when it is mounted."""
+
+    if not host_path:
+        return None
+
+    host_path_abs = os.path.abspath(host_path)
+    for mount in mounts or ():
+        if isinstance(mount, dict):
+            source = mount.get("source")
+            target = mount.get("target")
+        else:
+            source, _sep, remainder = str(mount).partition(":")
+            target, _sep, _mode = remainder.partition(":")
+        if not source or not target:
+            continue
+        source_abs = os.path.abspath(source)
+        try:
+            if os.path.commonpath([source_abs, host_path_abs]) != source_abs:
+                continue
+        except ValueError:
+            continue
+        relative_path = os.path.relpath(host_path_abs, source_abs)
+        if relative_path == ".":
+            return str(target)
+        return os.path.join(str(target), relative_path).replace("\\", "/")
+    return None
 
 
 def _add_external_executable_mounts(server, mounts):

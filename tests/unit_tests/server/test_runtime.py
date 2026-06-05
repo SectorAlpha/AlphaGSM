@@ -204,6 +204,29 @@ def test_build_container_spec_uses_get_start_command_and_shared_mounts(tmp_path)
     ]
 
 
+def test_build_container_spec_maps_nested_host_workdir_into_container(tmp_path):
+    nested_dir = tmp_path / "PalServer"
+    nested_dir.mkdir()
+    exe = nested_dir / "PalServer.sh"
+    exe.write_text("", encoding="utf-8")
+    server = DummyServer(
+        data={"dir": str(tmp_path) + "/", "exe_name": "PalServer.sh", "port": 8211}
+    )
+
+    spec = runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
+        get_start_command=lambda _current_server: (
+            ["./PalServer.sh", "-port=8211"],
+            str(nested_dir),
+        ),
+        port_definitions=(("port", "udp"),),
+    )
+
+    assert spec["working_dir"] == "/srv/server/PalServer"
+    assert spec["command"] == ["./PalServer.sh", "-port=8211"]
+
+
 def test_build_container_spec_normalizes_java_runtime_command_and_disables_tty(tmp_path):
     server_dir = tmp_path / "server"
     server_dir.mkdir()

@@ -16,6 +16,11 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 630230
 steam_anonymous_login_possible = True
+DEFAULT_EXECUTABLE = "DNL/Binaries/Win64/DNLServer.exe"
+ROOT_DIR_CANDIDATES = (
+    "DNL Dedicated Server",
+    os.path.join("steamapps", "common", "DNL Dedicated Server"),
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -56,7 +61,7 @@ def _container_runtime_env(_server):
     }
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="DNL/Binaries/Win64/DNLServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name=DEFAULT_EXECUTABLE):
     """Collect and store configuration values for a Dark and Light server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -95,6 +100,41 @@ def configure(server, ask, port=None, dir=None, *, exe_name="DNL/Binaries/Win64/
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
     return gamemodule_common.finalize_configure(server)
+
+
+def _resolve_install_root(server):
+    """Return the real Dark and Light content root for the current install tree."""
+
+    configured_dir = server.data["dir"]
+    candidates = [configured_dir]
+    for relative_dir in ROOT_DIR_CANDIDATES:
+        candidate = os.path.join(configured_dir, relative_dir)
+        if candidate not in candidates:
+            candidates.append(candidate)
+
+    executable_candidates = [server.data.get("exe_name", DEFAULT_EXECUTABLE)]
+    if DEFAULT_EXECUTABLE not in executable_candidates:
+        executable_candidates.append(DEFAULT_EXECUTABLE)
+
+    for candidate_dir in candidates:
+        for executable in executable_candidates:
+            if os.path.isfile(os.path.join(candidate_dir, executable)):
+                return candidate_dir
+
+    return configured_dir
+
+
+def _resolve_executable(server):
+    """Return ``(root_dir, executable)`` for the installed DNL payload."""
+
+    executable_candidates = [server.data.get("exe_name", DEFAULT_EXECUTABLE)]
+    if DEFAULT_EXECUTABLE not in executable_candidates:
+        executable_candidates.append(DEFAULT_EXECUTABLE)
+    root_dir = _resolve_install_root(server)
+    for executable in executable_candidates:
+        if os.path.isfile(os.path.join(root_dir, executable)):
+            return root_dir, executable
+    raise ServerError("Executable file not found")
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
@@ -144,9 +184,9 @@ def get_info_address(server):
 def get_start_command(server):
     """Build the command used to launch a Dark and Light dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    root_dir, executable = _resolve_executable(server)
+    exe_path = os.path.join(root_dir, executable)
+    working_dir = os.path.dirname(exe_path) or root_dir
     map_arg = (
         "%s?listen?SessionName=%s?ServerPassword=%s?ServerAdminPassword=%s?Port=%s?QueryPort=%s?MaxPlayers=%s"
         % (
@@ -160,7 +200,7 @@ def get_start_command(server):
         )
     )
     cmd = [
-        server.data["exe_name"],
+        os.path.basename(executable),
         map_arg,
         "-nullRHI",
         "-log",
@@ -172,7 +212,7 @@ def get_start_command(server):
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
-    return cmd, server.data["dir"]
+    return cmd, working_dir
 
 
 def _find_linux_server_pids(server):

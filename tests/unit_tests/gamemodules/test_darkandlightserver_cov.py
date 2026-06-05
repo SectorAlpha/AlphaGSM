@@ -130,13 +130,36 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "DNL/Binaries/Win64/DNLServer.exe",
+        "DNLServer.exe",
         "test?listen?SessionName=test?ServerPassword=test?ServerAdminPassword=test?Port=27015?QueryPort=27015?MaxPlayers=27015",
         "-nullRHI",
         "-log",
         "-unattended",
     ]
-    assert cwd == server.data["dir"]
+    assert cwd == str(exe_path.parent)
+
+
+def test_get_start_command_uses_nested_dnl_install_root(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    nested_root = tmp_path / "DNL Dedicated Server"
+    exe_path = nested_root / "DNL" / "Binaries" / "Win64" / "DNLServer.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["adminpassword"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    server.data["serverpassword"] = "test"
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "DNLServer.exe"
+    assert cwd == str(exe_path.parent)
 
 
 def test_get_start_command_missing_exe(tmp_path):

@@ -115,8 +115,24 @@ def test_get_start_command(tmp_path):
     exe.parent.mkdir(parents=True)
     exe.write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert cmd == ["/usr/bin/dotnet", "Binaries/Server/CryoFall_Server.dll", "loadOrNew"]
-    assert cwd == server.data["dir"]
+    assert cmd == ["/usr/bin/dotnet", "CryoFall_Server.dll", "loadOrNew"]
+    assert cwd == str(exe.parent)
+
+
+def test_get_start_command_uses_nested_cryofall_install_root(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "CryoFall Dedicated Server"
+    exe = nested_root / "Binaries" / "Server" / "CryoFall_Server.dll"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "Binaries/Server/CryoFall_Server.dll"
+    server.data["dotnetpath"] = "/usr/bin/dotnet"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["/usr/bin/dotnet", "CryoFall_Server.dll", "loadOrNew"]
+    assert cwd == str(exe.parent)
 
 
 def test_sync_server_config(tmp_path):
@@ -131,6 +147,22 @@ def test_sync_server_config(tmp_path):
     assert "<port>6123</port>" in text
     assert "<name>AlphaGSM Cryo</name>" in text
     assert "<players_max_count>42</players_max_count>" in text
+
+
+def test_sync_server_config_uses_nested_cryofall_install_root(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "CryoFall Dedicated Server"
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 6123
+    server.data["servername"] = "AlphaGSM Cryo"
+    server.data["maxplayers"] = 42
+    (nested_root / "Binaries" / "Server").mkdir(parents=True)
+    (nested_root / "Binaries" / "Server" / "CryoFall_Server.dll").write_text("")
+
+    mod.sync_server_config(server)
+
+    config_path = nested_root / "Data" / "SettingsServer.xml"
+    assert config_path.is_file()
 
 
 def test_sync_server_config_without_dir_is_noop():
