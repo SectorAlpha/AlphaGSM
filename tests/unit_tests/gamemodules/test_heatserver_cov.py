@@ -278,6 +278,11 @@ def test_bootstrap_server_settings_falls_back_to_default_template(tmp_path, monk
         def wait(self, timeout=None):
             return 0
 
+    monkeypatch.setattr(
+        mod,
+        "get_start_command",
+        lambda current: (["Server.exe"], current.data["dir"]),
+    )
     monkeypatch.setattr(mod.subprocess, "Popen", lambda *args, **kwargs: _DummyProcess())
 
     mod._bootstrap_server_settings_if_missing(server)
