@@ -146,8 +146,8 @@ def test_xntserver_get_start_command_uses_nested_archive_root(tmp_path):
 
     cmd, cwd = xntserver.get_start_command(server)
 
-    assert cmd[0] == "./server/server_linux.sh"
-    assert cwd == str(content_root)
+    assert cmd[0] == "./Xonotic/server/server_linux.sh"
+    assert cwd == server.data["dir"]
 
 
 def test_xntserver_container_spec_uses_nested_archive_root(tmp_path):
@@ -170,10 +170,7 @@ def test_xntserver_container_spec_uses_nested_archive_root(tmp_path):
 
     spec = xntserver.get_container_spec(server)
 
-    assert spec["working_dir"] == os.path.join(
-        xntserver.runtime_module.DEFAULT_CONTAINER_WORKDIR,
-        "Xonotic",
-    )
+    assert spec["working_dir"] == xntserver.runtime_module.DEFAULT_CONTAINER_WORKDIR
 
 
 def test_sol_and_wurm_update_downloads_and_optionally_restart(monkeypatch):

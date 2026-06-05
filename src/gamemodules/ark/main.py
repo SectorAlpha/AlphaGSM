@@ -120,7 +120,8 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    working_dir = os.path.dirname(exe_path) or server.data["dir"]
+    working_dir = server.data["dir"]
+    launcher_relpath = os.path.relpath(exe_path, working_dir)
     map_args = (
         "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
         % (
@@ -135,7 +136,7 @@ def get_start_command(server):
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
     return (
-        ["./" + os.path.basename(server.data["exe_name"]), map_args, "-server", "-log"],
+        ["./" + launcher_relpath, map_args, "-server", "-log"],
         working_dir,
     )
 
@@ -224,13 +225,8 @@ def get_container_spec(server):
     """Run ARK in Docker as the mounted server-directory owner."""
 
     requirements = get_runtime_requirements(server)
-    command, cwd = get_start_command(server)
+    command, _cwd = get_start_command(server)
     shell_command = " ".join(shlex.quote(part) for part in command)
-    relative_cwd = os.path.relpath(cwd, server.data["dir"])
-    container_cwd = "/srv/server"
-    if relative_cwd not in (".", ""):
-        container_cwd = "/srv/server/" + relative_cwd
-    user_shell_command = "cd " + shlex.quote(container_cwd) + " && " + shell_command
     return {
         "working_dir": "/srv/server",
         "stdin_open": True,
@@ -250,7 +246,7 @@ def get_container_spec(server):
                 + '/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
                 'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
                 "exec runuser -u alphagsm -- sh -lc "
-                + shlex.quote(user_shell_command)
+                + shlex.quote(shell_command)
             ),
         ],
     }

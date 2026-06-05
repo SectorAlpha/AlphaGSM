@@ -121,8 +121,8 @@ def test_get_start_command_nested_archive_root(tmp_path):
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./server/server_linux.sh"
-    assert cwd == str(content_root)
+    assert cmd[0] == "./Xonotic/server/server_linux.sh"
+    assert cwd == server.data["dir"]
 
 
 def test_get_container_spec_uses_nested_archive_workdir(tmp_path):
@@ -140,7 +140,7 @@ def test_get_container_spec_uses_nested_archive_workdir(tmp_path):
 
     spec = mod.get_container_spec(server)
 
-    assert spec["working_dir"] == os.path.join(mod.runtime_module.DEFAULT_CONTAINER_WORKDIR, "Xonotic")
+    assert spec["working_dir"] == mod.runtime_module.DEFAULT_CONTAINER_WORKDIR
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

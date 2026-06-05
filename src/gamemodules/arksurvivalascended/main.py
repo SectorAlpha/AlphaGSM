@@ -1,6 +1,7 @@
 """ARK: Survival Ascended dedicated server lifecycle helpers."""
 
 import os
+import shlex
 
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -53,6 +54,46 @@ def _container_runtime_env(_server):
         "WINEDLLOVERRIDES": "",
         "LIBGL_ALWAYS_SOFTWARE": "1",
     }
+
+
+def _launch_session_name(server):
+    """Return a launch-safe session name for ASA's URL-style map argument."""
+
+    return str(server.data["sessionname"]).replace(" ", "_")
+
+
+def _build_map_args(server):
+    """Build the ASA travel argument shared by process and Docker runtimes."""
+
+    map_args = (
+        "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
+        % (
+            server.data["map"],
+            _launch_session_name(server),
+            server.data["port"],
+            server.data["queryport"],
+            server.data["maxplayers"],
+            server.data["adminpassword"],
+        )
+    )
+    if server.data["serverpassword"]:
+        map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
+    return map_args
+
+
+def _container_command(server):
+    """Return a Docker-safe ASA command from the mounted install root."""
+
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if not os.path.isfile(exe_path):
+        raise ServerError("Executable file not found")
+    launcher_relpath = os.path.relpath(exe_path, server.data["dir"])
+    return [
+        "./" + launcher_relpath,
+        _build_map_args(server),
+        "-server",
+        "-log",
+    ]
 
 
 def configure(
@@ -132,20 +173,7 @@ def get_start_command(server):
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     working_dir = os.path.dirname(exe_path) or server.data["dir"]
-    map_args = (
-        "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
-        % (
-            server.data["map"],
-            server.data["sessionname"],
-            server.data["port"],
-            server.data["queryport"],
-            server.data["maxplayers"],
-            server.data["adminpassword"],
-        )
-    )
-    if server.data["serverpassword"]:
-        map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
-    cmd = [os.path.basename(exe_path), map_args, "-server", "-log"]
+    cmd = [os.path.basename(exe_path), _build_map_args(server), "-server", "-log"]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
@@ -193,8 +221,27 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
         extra_env=_container_runtime_env,
 )
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        extra_env=_container_runtime_env,
-)
+def get_container_spec(server):
+    """Return a Docker launch spec rooted at the mounted install directory."""
+
+    requirements = get_runtime_requirements(server)
+    shell_command = " ".join(shlex.quote(part) for part in _container_command(server))
+    return {
+        "working_dir": runtime_module.DEFAULT_CONTAINER_WORKDIR,
+        "stdin_open": True,
+        "tty": False,
+        "env": requirements.get("env", {}),
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "command": [
+            "sh",
+            "-lc",
+            (
+                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
+                'chmod -R a+rwX /srv/server /srv/wineprefix /home/alphagsm; '
+                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
+                "exec runuser -u alphagsm -- sh -lc "
+                + shlex.quote(shell_command)
+            ),
+        ],
+    }

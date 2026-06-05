@@ -126,8 +126,8 @@ def test_get_start_command(tmp_path):
     server.data["sessionname"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
-    assert cmd[0] == "./ShooterGameServer"
-    assert cwd == str(tmp_path / "ShooterGame" / "Binaries" / "Linux")
+    assert cmd[0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_sanitizes_sessionname_spaces(tmp_path):
@@ -221,7 +221,7 @@ def test_get_container_spec_uses_non_root_steam_bootstrap(tmp_path):
     assert "/home/alphagsm/.steam/sdk64/steamclient.so" in shell
     assert "/opt/alphagsm-steamcmd/linux64/steamclient.so" in shell
     assert "runuser -u alphagsm" in shell
-    assert "cd /srv/server/ShooterGame/Binaries/Linux" in shell
+    assert "./ShooterGame/Binaries/Linux/ShooterGameServer" in shell
 
 
 def test_status():

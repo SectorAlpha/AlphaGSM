@@ -67,7 +67,7 @@ LOG_PATH="$INSTALL_DIR/ShooterGame/Saved/Logs/ShooterGame.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)"
+PORT="$(pick_free_port_group 2)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -100,7 +100,7 @@ run_create_or_skip_disabled "$SERVER_NAME" create arksurvivalascended
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
-run_alphagsm "$SERVER_NAME" start
+run_start_with_port_retry "$SERVER_NAME"
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
