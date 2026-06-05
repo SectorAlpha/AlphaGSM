@@ -3,6 +3,7 @@
 # Source this after defining run_alphagsm().
 
 DEFAULT_WORK_ROOT="${DEFAULT_WORK_ROOT:-/tmp/alphagsm-work}"
+PORT_CONFLICT_MARKERS_REGEX='claimed ports are not free|Live listener already holds|Port conflicts detected'
 
 resolve_work_root() {
   local work_root="${ALPHAGSM_WORK_DIR:-$DEFAULT_WORK_ROOT}"
@@ -225,6 +226,55 @@ run_alphagsm_or_skip_supported_prereq() {
   fi
   rm -f "$output_file"
   return 0
+}
+
+run_start_with_port_retry() {
+  local server_name="$1"
+  local max_tries="${2:-3}"
+  local attempt=1
+  local output_file rc recommendation_line recommended_port
+
+  while (( attempt <= max_tries )); do
+    output_file="$(mktemp)"
+    set +e
+    run_alphagsm "$server_name" start 2>&1 | tee "$output_file"
+    rc=${PIPESTATUS[0]}
+    set -e
+    if [[ $rc -eq 0 ]]; then
+      rm -f "$output_file"
+      return 0
+    fi
+    if is_supported_prerequisite_skip_output "$output_file"; then
+      echo "Start needs supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
+      rm -f "$output_file"
+      exit 0
+    fi
+    if grep -qE "$PORT_CONFLICT_MARKERS_REGEX" "$output_file" && grep -q 'Recommended free port set:' "$output_file"; then
+      recommendation_line=$(grep 'Recommended free port set:' "$output_file" | tail -n 1)
+      recommended_port=$(sed -n 's/.*Recommended free port set:.*\<port=\([0-9][0-9]*\)\>.*/\1/p' <<<"$recommendation_line" | tail -n 1)
+      while IFS='=' read -r key value; do
+        case "$key" in
+          "")
+            ;;
+          *)
+            echo "Applying recommended claimed port override before start retry: $key=$value"
+            run_alphagsm "$server_name" set "$key" "$value"
+            ;;
+        esac
+      done < <(parse_recommended_port_overrides_line "$recommendation_line")
+      if [[ -n "$recommended_port" ]]; then
+        echo "Retrying start with recommended claimed port set rooted at: $recommended_port"
+      else
+        echo "Retrying start with recommended claimed port overrides"
+      fi
+      rm -f "$output_file"
+      ((attempt++))
+      continue
+    fi
+    rm -f "$output_file"
+    return $rc
+  done
+  return $rc
 }
 
 parse_recommended_port_overrides_line() {

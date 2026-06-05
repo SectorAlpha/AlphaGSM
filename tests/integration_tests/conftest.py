@@ -140,6 +140,19 @@ def pick_free_tcp_port(min_port=None, max_port=None):
     raise RuntimeError(f"No free TCP+UDP port found in range {min_port}-{max_port}")
 
 
+def pick_free_tcp_port_group(count):
+    """Return the first port in a free consecutive TCP+UDP port range."""
+
+    count = int(count)
+    for _attempt in range(200):
+        base = pick_free_tcp_port()
+        if all(_port_free_for_both(port) for port in range(base, base + count)):
+            return base
+    raise RuntimeError(
+        f"Could not find a free consecutive TCP+UDP port group of size {count}"
+    )
+
+
 def pick_free_udp_port():
     """Return an ephemeral UDP port on localhost.
 

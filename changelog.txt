@@ -7,6 +7,12 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-06-05
+- CI/contracts: teach the shared smoke helpers to retry `start` with AlphaGSM's own recommended claimed-port overrides after port-manager conflicts, so transient CI port races no longer turn otherwise healthy server smoke runs red.
+- CI/contracts: reserve derived query-port ranges explicitly in the BATTALION: Legacy, Barotrauma, and Valheim smoke/integration lanes instead of only picking a single free base port. Those tests now use a consecutive free port-group contract that matches the modules' real `port` plus `queryport` claim shape.
+- CI/contracts: align the slow Rust, Barotrauma, and Valheim integration readiness checks with AlphaGSM's declared manager-owned info surface. The tests now wait on `info --json` reporting the real `a2s` protocol rather than hardcoding raw socket polls that can drift from the module contract.
+- Runtime contract: Valheim now persists its derived `queryport`, accepts managed `queryport` overrides, and declares that query port in the shared Docker/runtime metadata so AlphaGSM, CI, and future container launches all agree on the same A2S surface.
+
 2026-06-03
 - CI/contracts: harden the remaining archive-backed Docker integration lanes against brittle wrapper launchers. `palworld` now prefers the real `Pal/Binaries/Linux/PalServer-Linux-Shipping` binary over the flaky top-level `PalServer.sh` wrapper when both are present, and `xntserver` now prefers `xonotic-linux64-dedicated` over the symlinked shell wrapper so nested archive-root container launches do not fail on missing wrapper paths in GitHub Actions.
 - CI/contracts: realign the remaining stale unit-test expectations after the nested Docker workdir/runtime-cwd fixes landed. The older Ready or Not, CryoFall, and Dark and Light unit coverage now asserts the basename-plus-real-working-directory launch contract that the modules and integration lanes already use, so GitHub Actions no longer fails the fast `unit-test` gate on pre-fix command-shape assumptions.

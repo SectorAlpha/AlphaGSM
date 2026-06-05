@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
@@ -63,6 +62,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="valheim_server.x86_
         default_port=2456,
         prompt="Please specify the port to use for this server:",
     )
+    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -124,7 +124,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Send an interrupt-style stop request to Valheim."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):
@@ -149,7 +149,7 @@ def get_query_address(server):
     Valheim's dedicated server exposes the Steam A2S query interface on
     game-port + 1 (e.g. game on UDP 2456, A2S on UDP 2457).
     """
-    return "127.0.0.1", server.data["port"] + 1, "a2s"
+    return "127.0.0.1", int(server.data.get("queryport", int(server.data["port"]) + 1)), "a2s"
 
 
 def get_info_address(server):
@@ -164,19 +164,19 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
+        int_keys=("port", "queryport"),
         str_keys=("servername", "worldname", "serverpassword", "public", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
         stdin_open=True,
 )

@@ -88,7 +88,7 @@ echo "Using image: $IMAGE"
 
 run_create_or_skip_disabled "$SERVER_NAME" create seserver
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
-run_alphagsm "$SERVER_NAME" start
+run_start_with_port_retry "$SERVER_NAME"
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status

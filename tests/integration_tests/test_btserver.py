@@ -6,7 +6,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -14,7 +14,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
-    wait_for_a2s_ready,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -40,7 +40,7 @@ def test_btserver_lifecycle(tmp_path):
 
     write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(2)
 
     # create
     run_and_assert_ok(env, server_name, "create", "btserver")
@@ -65,8 +65,8 @@ def test_btserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # Barotrauma's Steam query port is game port + 1, not the game port itself.
-        wait_for_a2s_ready("127.0.0.1", port + 1, 900, log_path=log_path)
+        # Wait on AlphaGSM's declared info surface rather than a raw guessed socket.
+        wait_for_info_protocol(env, server_name, "a2s", 900)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

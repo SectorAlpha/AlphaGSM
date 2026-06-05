@@ -35,6 +35,7 @@ def test_valheim_configure_sets_defaults(tmp_path):
     assert server.data["Steam_AppID"] == 896660
     assert server.data["worldname"] == "valheim"
     assert server.data["serverpassword"] == "alphagsm"
+    assert server.data["queryport"] == "2457"
     assert server.data["backupfiles"] == ["worlds", "start_server.sh"]
 
 
