@@ -95,13 +95,13 @@ def test_install_resolves_download(tmp_path):
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    (tmp_path / "xonotic-linux-dedicated.sh").write_text("")
+    (tmp_path / "xonotic-linux64-dedicated").write_text("")
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./xonotic-linux-dedicated.sh"
+    assert cmd[0] == "./xonotic-linux64-dedicated"
     assert "+port" in cmd
     assert cwd == server.data["dir"]
 
@@ -110,14 +110,14 @@ def test_get_start_command_nested_archive_root(tmp_path):
     server = DummyServer()
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
-    (content_root / "xonotic-linux-dedicated.sh").write_text("")
+    (content_root / "xonotic-linux64-dedicated").write_text("")
     server.data["dir"] = str(tmp_path) + "/"
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./xonotic-linux-dedicated.sh"
+    assert cmd[0] == "./xonotic-linux64-dedicated"
     assert cwd == str(content_root)
 
 
@@ -125,7 +125,7 @@ def test_get_container_spec_uses_nested_archive_workdir(tmp_path):
     server = DummyServer()
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
-    (content_root / "xonotic-linux-dedicated.sh").write_text("")
+    (content_root / "xonotic-linux64-dedicated").write_text("")
     server.data["dir"] = str(tmp_path) + "/"
     server.data["gametype"] = "test"
     server.data["hostname"] = "test"

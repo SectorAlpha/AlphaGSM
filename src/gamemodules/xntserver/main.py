@@ -191,13 +191,11 @@ def get_start_command(server):
 
     content_root = _resolve_content_root(server)
     exe_name = server.data.get("exe_name")
-    candidate_paths = list(
-        [
-            os.path.join(content_root, "xonotic-linux-dedicated.sh"),
-            os.path.join(content_root, "xonotic-linux64-dedicated"),
-            os.path.join(content_root, "server", "server_linux.sh"),
-        ]
-    )
+    candidate_paths = [
+        os.path.join(content_root, "xonotic-linux64-dedicated"),
+        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
+        os.path.join(content_root, "server", "server_linux.sh"),
+    ]
     if exe_name:
         exe_candidate = os.path.join(content_root, exe_name)
         if exe_candidate not in candidate_paths:

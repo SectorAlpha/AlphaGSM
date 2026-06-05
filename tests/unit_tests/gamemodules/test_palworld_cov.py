@@ -111,45 +111,48 @@ def test_get_start_command(tmp_path):
     server.data["exe_name"] = "PalServer.sh"
     server.data["port"] = 8211
     server.data["queryport"] = 27015
-    (tmp_path / "PalServer.sh").write_text("")
+    binary = tmp_path / "Pal" / "Binaries" / "Linux"
+    binary.mkdir(parents=True)
+    (binary / "PalServer-Linux-Shipping").write_text("")
     server.data["publiclobby"] = True
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
     assert cwd == server.data["dir"]
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
 
 
 def test_get_start_command_uses_nested_palserver_root(tmp_path):
     server = DummyServer()
     nested_root = tmp_path / "PalServer"
-    nested_root.mkdir()
+    (nested_root / "Pal" / "Binaries" / "Linux").mkdir(parents=True)
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "PalServer.sh"
     server.data["port"] = 8211
     server.data["queryport"] = 27015
-    (nested_root / "PalServer.sh").write_text("")
+    (nested_root / "Pal" / "Binaries" / "Linux" / "PalServer-Linux-Shipping").write_text("")
     server.data["publiclobby"] = True
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./PalServer.sh"
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
     assert cwd == str(nested_root)
 
 
 def test_get_container_spec_maps_nested_palserver_workdir(tmp_path):
     server = DummyServer()
     nested_root = tmp_path / "PalServer"
-    nested_root.mkdir()
+    (nested_root / "Pal" / "Binaries" / "Linux").mkdir(parents=True)
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "PalServer.sh"
     server.data["port"] = 8211
     server.data["queryport"] = 27015
     server.data["runtime"] = "docker"
-    (nested_root / "PalServer.sh").write_text("")
+    (nested_root / "Pal" / "Binaries" / "Linux" / "PalServer-Linux-Shipping").write_text("")
 
     spec = mod.get_container_spec(server)
 
     assert spec["working_dir"] == "/srv/server/PalServer"
-    assert spec["command"][0] == "./PalServer.sh"
+    assert spec["command"][0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
 
 
 def test_settings_paths_follow_nested_palserver_root(tmp_path):

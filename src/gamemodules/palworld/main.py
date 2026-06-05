@@ -14,8 +14,8 @@ from utils.gamemodules import common as gamemodule_common
 steam_app_id = 2394010
 steam_anonymous_login_possible = True
 ROOT_EXECUTABLES = (
-    "PalServer.sh",
     os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping"),
+    "PalServer.sh",
 )
 
 commands = ("update", "restart")
