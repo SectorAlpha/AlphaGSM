@@ -109,6 +109,9 @@ def test_backend_ci_workflow_explicitly_runs_docker_backend_tests():
 def test_summarize_tests_includes_backend_integration_results():
     text = WORKFLOW_PATH.read_text()
 
-    assert "needs: [smoke-test, integration-test, backend-integration-test]" in text
+    assert (
+        "needs: [smoke-test-standard, smoke-test-heavy, integration-test-standard, "
+        "integration-test-heavy, backend-integration-test]"
+    ) in text
     assert "backend-integration-results-" in text
     assert 'glob.glob("artifacts/backend-integration-results-*/*.xml")' in text
