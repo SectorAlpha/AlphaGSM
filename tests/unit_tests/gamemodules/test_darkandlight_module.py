@@ -55,12 +55,12 @@ def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypat
 
     cmd, cwd = darkandlightserver.get_start_command(server)
 
-    assert cmd[0] == "DNLServer.exe"
+    assert cmd[0] == "DNL/Binaries/Win64/DNLServer.exe"
     assert "DNL_ALL?listen?SessionName=AlphaGSM dnl" in cmd[1]
     assert "-nullRHI" in cmd
     assert "-log" in cmd
     assert "-unattended" in cmd
-    assert cwd == str(exe_dir)
+    assert cwd == str(tmp_path) + "/"
     assert wrap_calls == [{"wineprefix": None, "prefer_proton": True}]
 
 

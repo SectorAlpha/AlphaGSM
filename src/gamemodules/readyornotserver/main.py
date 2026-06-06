@@ -185,8 +185,9 @@ def get_start_command(server):
     """Build the command used to launch a Ready or Not dedicated server."""
 
     root_dir, executable = _resolve_executable(server)
+    install_root = server.data["dir"]
     exe_path = os.path.join(root_dir, executable)
-    working_dir = os.path.dirname(exe_path) or root_dir
+    launcher_relpath = os.path.relpath(exe_path, install_root)
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -196,7 +197,7 @@ def get_start_command(server):
     # -unattended prevents UE4 from opening dialogs or spawning GUI windows
     # under Wine when the engine hits an error or requires user interaction.
     cmd = [
-        os.path.basename(executable),
+        launcher_relpath,
         *dynamic_args,
         "-log",
         "-unattended",
@@ -206,7 +207,7 @@ def get_start_command(server):
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )
-    return cmd, working_dir
+    return cmd, install_root
 
 
 def get_query_address(server):

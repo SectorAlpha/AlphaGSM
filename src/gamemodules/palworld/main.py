@@ -100,10 +100,16 @@ def _resolve_install_root(server):
             candidates.append(candidate)
     candidates.append(configured_dir)
 
-    for candidate_dir in candidates:
-        for executable in ROOT_EXECUTABLES:
-            if os.path.isfile(os.path.join(candidate_dir, executable)):
-                return candidate_dir
+    best_match = None
+    for candidate_index, candidate_dir in enumerate(candidates):
+        for executable_index, executable in enumerate(ROOT_EXECUTABLES):
+            if not os.path.isfile(os.path.join(candidate_dir, executable)):
+                continue
+            match = ((executable_index, candidate_index), candidate_dir)
+            if best_match is None or match[0] < best_match[0]:
+                best_match = match
+    if best_match is not None:
+        return best_match[1]
 
     return configured_dir
 

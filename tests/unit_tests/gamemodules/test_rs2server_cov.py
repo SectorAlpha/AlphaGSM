@@ -120,14 +120,14 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "VNGame.exe",
+        "Binaries/Win64/VNGame.exe",
         "VNTE-CuChi?maxplayers=64",
         "-Port=27015",
         "-QueryPort=27015",
         "-ConfigSubDir=PCServer",
         "-log",
     ]
-    assert cwd == str(exe_path.parent)
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monkeypatch):
@@ -154,7 +154,7 @@ def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monke
 
     assert observed == {
         "command": [
-            "VNGame.exe",
+            "Binaries/Win64/VNGame.exe",
             "VNTE-CuChi?maxplayers=64",
             "-Port=27015",
             "-QueryPort=27016",
@@ -165,7 +165,7 @@ def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monke
         "prefer_proton": False,
     }
     assert cmd[:2] == ["proton", "run"]
-    assert cwd == str(exe_path.parent)
+    assert cwd == server.data["dir"]
 
 
 def test_query_and_info_address_use_queryport(monkeypatch):

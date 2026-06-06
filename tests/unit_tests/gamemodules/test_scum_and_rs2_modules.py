@@ -75,9 +75,9 @@ def test_rs2server_get_start_command_builds_expected_args(tmp_path, monkeypatch)
 
     cmd, cwd = rs2server.get_start_command(server)
 
-    assert cmd[0] == "VNGame.exe"
+    assert cmd[0] == "Binaries/Win64/VNGame.exe"
     assert "-Port=7777" in cmd
-    assert cwd == str(exe_dir)
+    assert cwd == str(tmp_path) + "/"
     assert observed == {"wineprefix": None, "prefer_proton": False}
 
 

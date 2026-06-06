@@ -65,14 +65,15 @@ def test_palworld_install_copies_default_settings(tmp_path, monkeypatch):
 
 def test_palworld_get_start_command_supports_community_flag(tmp_path):
     server = DummyServer("palalpha")
-    exe = tmp_path / "PalServer.sh"
+    exe = tmp_path / "Pal" / "Binaries" / "Linux" / "PalServer-Linux-Shipping"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "PalServer.sh",
                         "port": 8211, "queryport": 27015, "publiclobby": True})
 
     cmd, cwd = palworld.get_start_command(server)
 
-    assert cmd == ["./PalServer.sh", "-port=8211", "-queryport=27015", "-publiclobby"]
+    assert cmd == ["./Pal/Binaries/Linux/PalServer-Linux-Shipping", "-port=8211", "-queryport=27015", "-publiclobby"]
     assert cwd == server.data["dir"]
 
 

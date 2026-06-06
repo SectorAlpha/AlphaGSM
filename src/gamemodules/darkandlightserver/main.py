@@ -186,8 +186,9 @@ def get_start_command(server):
     """Build the command used to launch a Dark and Light dedicated server."""
 
     root_dir, executable = _resolve_executable(server)
+    install_root = server.data["dir"]
     exe_path = os.path.join(root_dir, executable)
-    working_dir = os.path.dirname(exe_path) or root_dir
+    launcher_relpath = os.path.relpath(exe_path, install_root)
     map_arg = (
         "%s?listen?SessionName=%s?ServerPassword=%s?ServerAdminPassword=%s?Port=%s?QueryPort=%s?MaxPlayers=%s"
         % (
@@ -201,7 +202,7 @@ def get_start_command(server):
         )
     )
     cmd = [
-        os.path.basename(executable),
+        launcher_relpath,
         map_arg,
         "-nullRHI",
         "-log",
@@ -213,7 +214,7 @@ def get_start_command(server):
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
-    return cmd, working_dir
+    return cmd, install_root
 
 
 def _find_linux_server_pids(server):
