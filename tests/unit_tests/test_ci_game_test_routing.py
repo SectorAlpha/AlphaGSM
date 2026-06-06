@@ -47,6 +47,27 @@ def test_module_only_changes_target_matching_linux_game_tests():
     ]
 
 
+def test_routing_outputs_split_heavy_and_standard_game_matrices():
+    routing = load_routing_module()
+
+    outputs = routing.build_outputs_for_changed_files(
+        [
+            "src/gamemodules/palworld/main.py",
+            "src/gamemodules/counterstrike2.py",
+        ],
+        repo_root=Path("."),
+    )
+
+    assert outputs["has_smoke_standard_tests"] == "true"
+    assert outputs["has_smoke_heavy_tests"] == "true"
+    assert outputs["has_integration_standard_tests"] == "true"
+    assert outputs["has_integration_heavy_tests"] == "true"
+    assert "run_counterstrike2.sh" in outputs["smoke_standard_matrix"]
+    assert "run_palworld.sh" in outputs["smoke_heavy_matrix"]
+    assert "test_counterstrike2.py" in outputs["integration_standard_matrix"]
+    assert "test_palworld.py" in outputs["integration_heavy_matrix"]
+
+
 def test_workflow_changes_force_full_linux_game_test_run():
     routing = load_routing_module()
 
@@ -69,10 +90,23 @@ def test_unittest_workflow_routes_linux_game_matrices_from_classifier_outputs():
 
     assert "scripts/ci_game_test_routing.py" in text
     assert "needs: [unit-test, lint, coverage, classify-changes]" in text
-    assert "needs.classify-changes.outputs.smoke_matrix" in text
-    assert "needs.classify-changes.outputs.integration_matrix" in text
-    assert "if: needs.discover-smoke-tests.outputs.has_tests == 'true'" in text
-    assert "if: needs.discover-integration-tests.outputs.has_tests == 'true'" in text
+    assert "needs.classify-changes.outputs.smoke_standard_matrix" in text
+    assert "needs.classify-changes.outputs.smoke_heavy_matrix" in text
+    assert "needs.classify-changes.outputs.integration_standard_matrix" in text
+    assert "needs.classify-changes.outputs.integration_heavy_matrix" in text
+    assert "if: needs.discover-smoke-tests.outputs.has_standard_tests == 'true'" in text
+    assert "if: needs.discover-smoke-tests.outputs.has_heavy_tests == 'true'" in text
+    assert "if: needs.discover-integration-tests.outputs.has_standard_tests == 'true'" in text
+    assert "if: needs.discover-integration-tests.outputs.has_heavy_tests == 'true'" in text
+
+
+def test_unittest_workflow_routes_heavy_game_jobs_to_configurable_runner_labels():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+    assert "vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON" in text
+    assert "runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '[\"ubuntu-latest\"]') }}" in text
+    assert "smoke-test-heavy:" in text
+    assert "integration-test-heavy:" in text
 
 
 def test_unittest_workflow_keeps_backend_and_cross_platform_jobs_unconditional():
