@@ -102,6 +102,14 @@ def test_wine_proton_entrypoint_defaults_to_ci_proton_path():
     assert '/opt/proton-ge/proton' in text
 
 
+def test_wine_proton_entrypoint_bootstraps_xdg_runtime_dir_for_xvfb_servers():
+    text = WINE_PROTON_ENTRYPOINT.read_text(encoding="utf-8")
+
+    assert 'ensure_xdg_runtime_dir()' in text
+    assert 'XDG_RUNTIME_DIR="/tmp/alphagsm-xdg-runtime"' in text
+    assert 'chmod 700 "${XDG_RUNTIME_DIR}"' in text
+
+
 def test_runtime_image_publish_workflow_passes_gh_token_for_proton_builds():
     text = BUILD_WORKFLOW.read_text(encoding="utf-8")
 

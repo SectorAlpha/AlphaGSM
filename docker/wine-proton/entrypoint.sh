@@ -11,6 +11,15 @@ XVFB_AUTH_DIR=""
 XVFB_AUTH_FILE=""
 XVFB_PID=""
 
+ensure_xdg_runtime_dir() {
+    if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "${XDG_RUNTIME_DIR:-}" ]]; then
+        export XDG_RUNTIME_DIR="/tmp/alphagsm-xdg-runtime"
+    fi
+
+    mkdir -p "${XDG_RUNTIME_DIR}"
+    chmod 700 "${XDG_RUNTIME_DIR}" >/dev/null 2>&1 || true
+}
+
 bootstrap_wineprefix() {
     if [[ ! -d "/opt/wine" ]]; then
         mkdir -p "${WINEPREFIX_PATH}"
@@ -34,6 +43,7 @@ bootstrap_wineprefix
 
 export DISPLAY="${DISPLAY:-}"
 export WINEDLLOVERRIDES="${WINEDLLOVERRIDES-winex11.drv=}"
+ensure_xdg_runtime_dir
 
 cleanup_xvfb() {
     if [[ -n "${XVFB_PID}" ]]; then
