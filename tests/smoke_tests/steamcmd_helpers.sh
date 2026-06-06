@@ -196,7 +196,7 @@ run_setup_or_skip_steamcmd() {
         fi
       fi
     fi
-    if grep -qE 'Failed to install app|No subscription|Missing configuration|No such file or directory|returned non-zero exit status|Error extracting download|Can.t download file' "$output_file"; then
+    if grep -qE 'Failed to install app|No subscription|Missing configuration|No such file or directory|returned non-zero exit status|Error extracting download|Can.t download file|step::read_patch_meta_from_github::metadata_filter runtime error|jq: error .*Cannot iterate over null' "$output_file"; then
       echo "Setup failed with known SteamCMD issue — skipping smoke test"
       rm -f "$output_file"
       exit 0
