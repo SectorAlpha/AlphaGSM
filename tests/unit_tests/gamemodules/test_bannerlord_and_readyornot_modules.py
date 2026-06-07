@@ -106,6 +106,7 @@ def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch
     monkeypatch.setattr(readyornotserver.proton, "wrap_command", fake_wrap_command)
     monkeypatch.setattr(readyornotserver, "IS_LINUX", True)
     server = DummyServer("ron")
+    (tmp_path / "ReadyOrNotServer.exe").write_text("")
     exe = tmp_path / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
     exe.parent.mkdir(parents=True)
     exe.write_text("")
@@ -121,7 +122,7 @@ def test_readyornot_get_start_command_builds_expected_args(tmp_path, monkeypatch
 
     cmd, cwd = readyornotserver.get_start_command(server)
 
-    assert cmd[0] == "ReadyOrNot/Binaries/Win64/ReadyOrNotServer-Win64-Shipping.exe"
+    assert cmd[0] == "ReadyOrNotServer.exe"
     assert "-Port=7777" in cmd
     assert "-QueryPort=27015" in cmd
     assert cwd == str(tmp_path) + "/"

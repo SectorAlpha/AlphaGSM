@@ -17,8 +17,8 @@ from utils.gamemodules import common as gamemodule_common
 steam_app_id = 950290
 steam_anonymous_login_possible = True
 DEFAULT_EXECUTABLES = (
-    os.path.join("ReadyOrNot", "Binaries", "Win64", "ReadyOrNotServer-Win64-Shipping.exe"),
     "ReadyOrNotServer.exe",
+    os.path.join("ReadyOrNot", "Binaries", "Win64", "ReadyOrNotServer-Win64-Shipping.exe"),
 )
 ROOT_DIR_CANDIDATES = (
     "Dedicated Server",
