@@ -17,6 +17,10 @@ ROOT_EXECUTABLES = (
     os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping"),
     "PalServer.sh",
 )
+START_EXECUTABLES = (
+    "PalServer.sh",
+    os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping"),
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -154,8 +158,8 @@ def _resolve_executable(server):
 
     configured = server.data.get("exe_name")
     root_dir = _resolve_install_root(server)
-    known_basenames = {os.path.basename(executable) for executable in ROOT_EXECUTABLES}
-    candidates = list(ROOT_EXECUTABLES)
+    known_basenames = {os.path.basename(executable) for executable in START_EXECUTABLES}
+    candidates = list(START_EXECUTABLES)
     if configured and configured not in candidates and os.path.basename(configured) not in known_basenames:
         candidates.insert(0, configured)
 
