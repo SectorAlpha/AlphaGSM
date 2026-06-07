@@ -200,13 +200,14 @@ def get_start_command(server):
     """Build the command used to launch a CryoFall server."""
 
     root_dir, executable = _resolve_executable(server)
-    exe_path = os.path.join(root_dir, executable)
-    working_dir = os.path.dirname(exe_path) or root_dir
+    install_root = server.data["dir"]
+    executable_path = os.path.join(root_dir, executable)
+    launcher_relpath = os.path.relpath(executable_path, install_root)
     return [
         server.data.get("dotnetpath", "dotnet"),
-        os.path.basename(executable),
+        "./" + launcher_relpath,
         "loadOrNew",
-    ], working_dir
+    ], install_root
 
 
 def do_stop(server, j):

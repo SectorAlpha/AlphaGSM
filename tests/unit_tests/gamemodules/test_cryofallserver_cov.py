@@ -115,8 +115,8 @@ def test_get_start_command(tmp_path):
     exe.parent.mkdir(parents=True)
     exe.write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert cmd == ["/usr/bin/dotnet", "CryoFall_Server.dll", "loadOrNew"]
-    assert cwd == str(exe.parent)
+    assert cmd == ["/usr/bin/dotnet", "./Binaries/Server/CryoFall_Server.dll", "loadOrNew"]
+    assert cwd == str(tmp_path) + "/"
 
 
 def test_get_start_command_uses_nested_cryofall_install_root(tmp_path):
@@ -131,8 +131,12 @@ def test_get_start_command_uses_nested_cryofall_install_root(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd == ["/usr/bin/dotnet", "CryoFall_Server.dll", "loadOrNew"]
-    assert cwd == str(exe.parent)
+    assert cmd == [
+        "/usr/bin/dotnet",
+        "./CryoFall Dedicated Server/Binaries/Server/CryoFall_Server.dll",
+        "loadOrNew",
+    ]
+    assert cwd == str(tmp_path) + "/"
 
 
 def test_get_start_command_prefers_nested_cryofall_install_root_over_top_level_file(tmp_path):
@@ -150,8 +154,12 @@ def test_get_start_command_prefers_nested_cryofall_install_root_over_top_level_f
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd == ["/usr/bin/dotnet", "CryoFall_Server.dll", "loadOrNew"]
-    assert cwd == str(nested_exe.parent)
+    assert cmd == [
+        "/usr/bin/dotnet",
+        "./CryoFall Dedicated Server/Binaries/Server/CryoFall_Server.dll",
+        "loadOrNew",
+    ]
+    assert cwd == str(tmp_path) + "/"
 
 
 def test_sync_server_config(tmp_path):

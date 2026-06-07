@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-06-05
+- CI/contracts: realign `cryofallserver` with its validated Docker runtime launch shape. The module now starts from the mounted install root with `dotnet ./Binaries/Server/CryoFall_Server.dll loadOrNew` instead of relying on an executable-directory basename lookup that drifted in CI, and the focused unit coverage now asserts the same root-relative command contract.
 - CI/contracts: teach the shared smoke helpers to retry `start` with AlphaGSM's own recommended claimed-port overrides after port-manager conflicts, so transient CI port races no longer turn otherwise healthy server smoke runs red.
 - CI/contracts: reserve derived query-port ranges explicitly in the BATTALION: Legacy, Barotrauma, and Valheim smoke/integration lanes instead of only picking a single free base port. Those tests now use a consecutive free port-group contract that matches the modules' real `port` plus `queryport` claim shape.
 - CI/contracts: align the slow Rust, Barotrauma, and Valheim integration readiness checks with AlphaGSM's declared manager-owned info surface. The tests now wait on `info --json` reporting the real `a2s` protocol rather than hardcoding raw socket polls that can drift from the module contract.
