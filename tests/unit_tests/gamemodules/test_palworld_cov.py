@@ -156,6 +156,23 @@ def test_get_start_command_prefers_nested_palserver_root_over_top_level_wrapper(
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_finds_recursive_nested_palserver_root(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "steamapps" / "common" / "PalServer Dedicated" / "PalServer"
+    (nested_root / "Pal" / "Binaries" / "Linux").mkdir(parents=True)
+    (nested_root / "Pal" / "Binaries" / "Linux" / "PalServer-Linux-Shipping").write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PalServer.sh"
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
+    server.data["publiclobby"] = True
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./steamapps/common/PalServer Dedicated/PalServer/Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == server.data["dir"]
+
+
 def test_get_start_command_prefers_linux_shipping_binary_over_wrapper(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

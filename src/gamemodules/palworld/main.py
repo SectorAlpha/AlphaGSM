@@ -113,6 +113,39 @@ def _resolve_install_root(server):
     if best_match_dir is not None:
         return best_match_dir
 
+    # Fall back to a shallow recursive search so Steam layout changes that add
+    # another wrapper directory still resolve to the real content root.
+    executable_parts = {
+        os.path.basename(executable): tuple(executable.split(os.sep))
+        for executable in ROOT_EXECUTABLES
+    }
+    recursive_match_key = None
+    recursive_match_dir = None
+    recursive_search_root = os.path.abspath(configured_dir)
+    for current_dir, _dirnames, filenames in os.walk(recursive_search_root):
+        for executable_index, executable in enumerate(ROOT_EXECUTABLES):
+            basename = os.path.basename(executable)
+            if basename not in filenames:
+                continue
+            found_path = os.path.join(current_dir, basename)
+            found_parts = tuple(os.path.normpath(found_path).split(os.sep))
+            expected_parts = executable_parts[basename]
+            if len(found_parts) >= len(expected_parts) and found_parts[-len(expected_parts):] == expected_parts:
+                candidate_dir = os.path.join(
+                    os.sep,
+                    *found_parts[:-len(expected_parts)],
+                )
+            else:
+                candidate_dir = current_dir
+            rel_dir = os.path.relpath(candidate_dir, recursive_search_root)
+            depth = 0 if rel_dir == "." else len(rel_dir.split(os.sep))
+            match_key = (executable_index, depth, rel_dir)
+            if recursive_match_key is None or match_key < recursive_match_key:
+                recursive_match_key = match_key
+                recursive_match_dir = candidate_dir
+    if recursive_match_dir is not None:
+        return recursive_match_dir
+
     return configured_dir
 
 
