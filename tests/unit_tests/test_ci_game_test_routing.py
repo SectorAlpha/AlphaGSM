@@ -68,6 +68,23 @@ def test_routing_outputs_split_heavy_and_standard_game_matrices():
     assert "test_palworld.py" in outputs["integration_heavy_matrix"]
 
 
+def test_long_container_integration_changes_route_to_heavy_matrix():
+    routing = load_routing_module()
+
+    outputs = routing.build_outputs_for_changed_files(
+        [
+            "src/gamemodules/sniperelite4server/main.py",
+            "src/gamemodules/sonsoftheforestserver/main.py",
+        ],
+        repo_root=Path("."),
+    )
+
+    assert outputs["has_integration_standard_tests"] == "false"
+    assert outputs["has_integration_heavy_tests"] == "true"
+    assert "test_sniperelite4server.py" in outputs["integration_heavy_matrix"]
+    assert "test_sonsoftheforestserver.py" in outputs["integration_heavy_matrix"]
+
+
 def test_workflow_changes_force_full_linux_game_test_run():
     routing = load_routing_module()
 

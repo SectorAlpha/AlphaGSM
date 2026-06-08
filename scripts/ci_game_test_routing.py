@@ -29,6 +29,8 @@ SLOW_TESTS = [
     "test_btserver.py",
     "test_enshrouded.py",
     "test_readyornotserver.py",
+    "test_sniperelite4server.py",
+    "test_sonsoftheforestserver.py",
     "test_valheim.py",
 ]
 HEAVY_SMOKE_TESTS = {

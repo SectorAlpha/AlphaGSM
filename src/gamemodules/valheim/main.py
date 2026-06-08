@@ -154,7 +154,7 @@ def get_query_address(server):
 
 def get_info_address(server):
     """Return the A2S info address for Valheim (same as query address)."""
-    return "127.0.0.1", server.data["port"] + 1, "a2s"
+    return get_query_address(server)
 
 
 def checkvalue(server, key, *value):

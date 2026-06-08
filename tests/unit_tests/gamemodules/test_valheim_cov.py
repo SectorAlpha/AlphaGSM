@@ -151,6 +151,15 @@ def test_message():
     mod.message(server, "hello")
 
 
+def test_get_info_address_matches_queryport_override():
+    server = DummyServer()
+    server.data["port"] = 2456
+    server.data["queryport"] = 3456
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 3456, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 3456, "a2s")
+
+
 def test_backup():
     server = DummyServer()
     server.data["dir"] = "/tmp/test/"

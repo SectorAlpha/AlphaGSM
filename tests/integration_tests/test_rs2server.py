@@ -67,7 +67,7 @@ def test_rs2server_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
+        runtime_backend="docker",
         module_name="rs2server",
     )
     env = alphagsm_env(config_path)

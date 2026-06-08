@@ -75,8 +75,13 @@ def test_palworld_get_start_command_supports_community_flag(tmp_path):
 
     cmd, cwd = palworld.get_start_command(server)
 
-    assert cmd == ["./PalServer.sh", "-port=8211", "-queryport=27015", "-publiclobby"]
-    assert cwd == server.data["dir"]
+    assert cmd == [
+        "./Pal/Binaries/Linux/PalServer-Linux-Shipping",
+        "-port=8211",
+        "-queryport=27015",
+        "-publiclobby",
+    ]
+    assert cwd == str(tmp_path)
 
 
 def test_palworld_update_downloads_and_optionally_restarts(monkeypatch):

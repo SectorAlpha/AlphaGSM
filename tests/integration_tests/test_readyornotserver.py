@@ -66,7 +66,7 @@ def test_readyornotserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
+        runtime_backend="docker",
         module_name="readyornotserver",
     )
     env = alphagsm_env(config_path)

@@ -69,7 +69,7 @@ def test_palworld_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
+        runtime_backend="docker",
         module_name="palworld",
     )
     env = alphagsm_env(config_path)

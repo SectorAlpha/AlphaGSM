@@ -18,8 +18,8 @@ ROOT_EXECUTABLES = (
     "PalServer.sh",
 )
 START_EXECUTABLES = (
-    "PalServer.sh",
     os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping"),
+    "PalServer.sh",
 )
 
 commands = ("update", "restart")
@@ -210,17 +210,14 @@ def get_start_command(server):
     """Build the command used to launch a Palworld dedicated server."""
 
     root_dir, executable = _resolve_executable(server)
-    install_root = server.data["dir"]
-    executable_path = os.path.join(root_dir, executable)
-    launcher_relpath = os.path.relpath(executable_path, install_root)
     cmd = [
-        "./" + launcher_relpath,
+        "./" + executable,
         "-port=%s" % (server.data["port"],),
         "-queryport=%s" % (server.data["queryport"],),
     ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
-    return cmd, install_root
+    return cmd, root_dir
 
 
 def get_query_address(server):

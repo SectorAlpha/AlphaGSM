@@ -118,8 +118,8 @@ def test_get_start_command(tmp_path):
     server.data["publiclobby"] = True
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
-    assert cwd == server.data["dir"]
-    assert cmd[0] == "./PalServer.sh"
+    assert cwd == str(tmp_path)
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
 
 
 def test_get_start_command_uses_nested_palserver_root(tmp_path):
@@ -137,8 +137,8 @@ def test_get_start_command_uses_nested_palserver_root(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./PalServer/PalServer.sh"
-    assert cwd == server.data["dir"]
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == str(nested_root)
 
 
 def test_get_start_command_prefers_nested_palserver_root_over_top_level_wrapper(tmp_path):
@@ -157,8 +157,8 @@ def test_get_start_command_prefers_nested_palserver_root_over_top_level_wrapper(
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./PalServer/PalServer.sh"
-    assert cwd == server.data["dir"]
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == str(nested_root)
 
 
 def test_get_start_command_finds_recursive_nested_palserver_root(tmp_path):
@@ -176,11 +176,11 @@ def test_get_start_command_finds_recursive_nested_palserver_root(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./steamapps/common/PalServer Dedicated/PalServer/PalServer.sh"
-    assert cwd == server.data["dir"]
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == str(nested_root)
 
 
-def test_get_start_command_prefers_wrapper_over_linux_shipping_binary(tmp_path):
+def test_get_start_command_prefers_linux_shipping_binary_over_wrapper(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "PalServer.sh"
@@ -194,8 +194,8 @@ def test_get_start_command_prefers_wrapper_over_linux_shipping_binary(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./PalServer.sh"
-    assert cwd == server.data["dir"]
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == str(tmp_path)
 
 
 def test_get_container_spec_maps_nested_palserver_workdir(tmp_path):
@@ -213,8 +213,8 @@ def test_get_container_spec_maps_nested_palserver_workdir(tmp_path):
 
     spec = mod.get_container_spec(server)
 
-    assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "./PalServer/PalServer.sh"
+    assert spec["working_dir"] == "/srv/server/PalServer"
+    assert spec["command"][0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
 
 
 def test_settings_paths_follow_nested_palserver_root(tmp_path):

@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-06-08
+- CI/contracts: realign `palworld` with the validated Docker launch path again. AlphaGSM now launches the native `Pal/Binaries/Linux/PalServer-Linux-Shipping` binary from the resolved install root instead of preferring the brittle top-level `PalServer.sh` wrapper, which matches the current GitHub Actions `stat ./PalServer.sh` failure class and keeps nested Steam layouts working in Docker.
+- CI/contracts: fix Valheim's managed A2S info surface so `info` and `info --json` honor an explicit `queryport` override instead of silently falling back to `port + 1`.
+- CI/workflow: pin the slow Docker-backed heavy integration lanes to explicit `runtime_backend="docker"` and route `sniperelite4server` plus `sonsoftheforestserver` into the heavy single-test matrix instead of the shared standard batch, which makes the container contract explicit and isolates two more 60-minute setup lanes in GitHub Actions.
+
 2026-06-05
 - CI/contracts: move `enshrouded` smoke and integration onto the module’s declared Docker `wine-proton` path instead of the stale host `screen` / local Proton contract. The checked-in tests now set the runtime image explicitly, manage `queryport` through AlphaGSM, and wait on the module-owned A2S info surface rather than host-only log markers.
 - CI/contracts: switch `readyornotserver` back to the dedicated-server launcher that the upstream tool metadata advertises. AlphaGSM now prefers `ReadyOrNotServer.exe` over the nested shipping binary once the content root is resolved, which is a better fit for the Docker `wine-proton` lane and removes another brittle direct-`Win64-Shipping.exe` assumption from CI.
