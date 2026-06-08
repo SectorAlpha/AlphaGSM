@@ -157,6 +157,10 @@ def _resolve_executable(server):
     """Return the Palworld launcher path relative to the resolved content root."""
 
     configured = server.data.get("exe_name")
+    install_dir = os.path.normpath(server.data["dir"])
+    if configured and os.path.isfile(os.path.join(install_dir, configured)):
+        return install_dir, configured
+
     root_dir = _resolve_install_root(server)
     known_basenames = {os.path.basename(executable) for executable in START_EXECUTABLES}
     candidates = list(START_EXECUTABLES)
@@ -165,7 +169,7 @@ def _resolve_executable(server):
 
     for executable in candidates:
         if os.path.isfile(os.path.join(root_dir, executable)):
-            return root_dir, executable
+            return os.path.normpath(root_dir), executable
     raise ServerError("Executable file not found")
 
 
@@ -217,7 +221,7 @@ def get_start_command(server):
     ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
-    return cmd, os.path.normpath(root_dir)
+    return cmd, root_dir
 
 
 def get_query_address(server):

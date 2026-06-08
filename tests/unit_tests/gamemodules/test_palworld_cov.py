@@ -119,7 +119,7 @@ def test_get_start_command(tmp_path):
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
     assert cwd == str(tmp_path)
-    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cmd[0] == "./PalServer.sh"
 
 
 def test_get_start_command_uses_nested_palserver_root(tmp_path):
@@ -141,7 +141,7 @@ def test_get_start_command_uses_nested_palserver_root(tmp_path):
     assert cwd == str(nested_root)
 
 
-def test_get_start_command_prefers_nested_palserver_root_over_top_level_wrapper(tmp_path):
+def test_get_start_command_prefers_install_root_wrapper_over_nested_root(tmp_path):
     server = DummyServer()
     nested_root = tmp_path / "PalServer"
     (nested_root / "PalServer.sh").parent.mkdir(parents=True, exist_ok=True)
@@ -157,8 +157,8 @@ def test_get_start_command_prefers_nested_palserver_root_over_top_level_wrapper(
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
-    assert cwd == str(nested_root)
+    assert cmd[0] == "./PalServer.sh"
+    assert cwd == str(tmp_path)
 
 
 def test_get_start_command_finds_recursive_nested_palserver_root(tmp_path):
@@ -180,7 +180,7 @@ def test_get_start_command_finds_recursive_nested_palserver_root(tmp_path):
     assert cwd == str(nested_root)
 
 
-def test_get_start_command_prefers_linux_shipping_binary_over_wrapper(tmp_path):
+def test_get_start_command_prefers_wrapper_over_linux_shipping_binary(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "PalServer.sh"
@@ -194,7 +194,23 @@ def test_get_start_command_prefers_linux_shipping_binary_over_wrapper(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cmd[0] == "./PalServer.sh"
+    assert cwd == str(tmp_path)
+
+
+def test_get_start_command_uses_custom_relative_executable_from_install_root(tmp_path):
+    server = DummyServer()
+    custom_wrapper = tmp_path / "scripts" / "PalServer.sh"
+    custom_wrapper.parent.mkdir(parents=True)
+    custom_wrapper.write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "scripts/PalServer.sh"
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./scripts/PalServer.sh"
     assert cwd == str(tmp_path)
 
 
