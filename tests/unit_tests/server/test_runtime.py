@@ -164,6 +164,31 @@ def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults():
     }
 
 
+def test_build_steamcmd_linux_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
+    steamcmd_root = tmp_path / "Steam"
+    linux64 = steamcmd_root / "linux64"
+    linux32 = steamcmd_root / "linux32"
+    linux64.mkdir(parents=True)
+    linux32.mkdir(parents=True)
+    (linux64 / "steamclient.so").write_text("64", encoding="utf-8")
+    (linux32 / "steamclient.so").write_text("32", encoding="utf-8")
+    monkeypatch.setattr(runtime_module.steamcmd_module, "STEAMCMD_DIR", str(steamcmd_root))
+
+    server = DummyServer(data={"dir": "/srv/game/", "port": 27015})
+
+    requirements = runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=(("port", "udp"),),
+    )
+
+    assert requirements["mounts"] == [
+        {"source": "/srv/game/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(linux64), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {"source": str(linux32), "target": "/root/.steam/sdk32", "mode": "ro"},
+    ]
+
+
 def test_infer_minecraft_java_major_supports_new_26_x_version_scheme():
     assert runtime_module.infer_minecraft_java_major("26.1.2") == 25
 

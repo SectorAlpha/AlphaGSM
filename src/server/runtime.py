@@ -23,6 +23,7 @@ import sys
 import screen
 from utils.settings import settings
 from utils import proton
+from utils import steamcmd as steamcmd_module
 from utils.platform_info import PLATFORM
 
 
@@ -308,6 +309,28 @@ def _build_port_specs(server, port_definitions):
     return ports
 
 
+def _steamcmd_sdk_mounts():
+    """Return Docker mounts for SteamCMD's sdk32/sdk64 client libraries."""
+
+    mounts = []
+    for src_subdir, target_dir in (
+        ("linux64", "/root/.steam/sdk64"),
+        ("linux32", "/root/.steam/sdk32"),
+    ):
+        source_dir = os.path.join(steamcmd_module.STEAMCMD_DIR, src_subdir)
+        source_file = os.path.join(source_dir, "steamclient.so")
+        if not os.path.isfile(source_file):
+            continue
+        mounts.append(
+            {
+                "source": source_dir,
+                "target": target_dir,
+                "mode": "ro",
+            }
+        )
+    return mounts
+
+
 def build_runtime_requirements(
     server,
     *,
@@ -332,6 +355,8 @@ def build_runtime_requirements(
                 "mode": "rw",
             }
         ]
+        if family == "steamcmd-linux":
+            mounts.extend(_steamcmd_sdk_mounts())
     if mounts:
         requirements["mounts"] = copy.deepcopy(list(mounts))
     ports = _build_port_specs(server, port_definitions)

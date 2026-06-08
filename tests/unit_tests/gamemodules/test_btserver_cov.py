@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.btserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.btserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -132,7 +133,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -143,6 +144,30 @@ def test_status():
 def test_message():
     server = DummyServer()
     mod.message(server, "hello")
+
+
+def test_get_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
+    steamcmd_root = tmp_path / "Steam"
+    linux64 = steamcmd_root / "linux64"
+    linux32 = steamcmd_root / "linux32"
+    linux64.mkdir(parents=True)
+    linux32.mkdir(parents=True)
+    (linux64 / "steamclient.so").write_text("64")
+    (linux32 / "steamclient.so").write_text("32")
+    monkeypatch.setattr(mod.runtime_module.steamcmd_module, "STEAMCMD_DIR", str(steamcmd_root))
+
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path / "server") + "/"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["mounts"] == [
+        {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"},
+        {"source": str(linux64), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {"source": str(linux32), "target": "/root/.steam/sdk32", "mode": "ro"},
+    ]
 
 
 def test_backup():
