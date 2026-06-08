@@ -143,7 +143,8 @@ def test_resolve_runtime_metadata_keeps_java_default_stop_mode_for_interactive_s
     assert metadata["stop_mode"] == "docker-stop"
 
 
-def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults():
+def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults(monkeypatch):
+    monkeypatch.setattr(runtime_module, "_steamcmd_sdk_mounts", lambda: [])
     server = DummyServer(data={"dir": "/srv/game/", "port": 27015})
 
     requirements = runtime_module.build_runtime_requirements(
@@ -1134,6 +1135,7 @@ def test_resolve_runtime_metadata_normalizes_legacy_family_aliases(monkeypatch):
 
 def test_ensure_runtime_hooks_adds_defaults_for_plain_module(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
+    monkeypatch.setattr(runtime_module, "_steamcmd_sdk_mounts", lambda: [])
     module = SimpleNamespace(
         __name__="gamemodules.plainserver",
         get_start_command=lambda server: (["./plainserver", "--port", "7777"], "/srv/plain"),
