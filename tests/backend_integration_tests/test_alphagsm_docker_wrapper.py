@@ -138,6 +138,46 @@ def _write_wrapper_probe_config(state_dir, lifecycle):
     )
 
 
+def _append_steamcmd_path_to_wrapper_config(state_dir, steamcmd_path):
+    config_path = state_dir / "alphagsm.conf"
+    with config_path.open("a", encoding="utf-8") as handle:
+        handle.write("\n[downloader.steamcmd]\n")
+        handle.write(f"steamcmd_path = {steamcmd_path}\n")
+
+
+def _prepare_fake_steamcmd_root(state_dir):
+    steamcmd_root = state_dir / "fake-steamcmd"
+    for sdk_dir in (steamcmd_root / "linux64", steamcmd_root / "linux32"):
+        sdk_dir.mkdir(parents=True, exist_ok=True)
+        (sdk_dir / "steamclient.so").write_text("steamclient", encoding="utf-8")
+    return steamcmd_root
+
+
+def _assert_steamcmd_sdk_mounts_present(lifecycle, container_name):
+    result = subprocess.run(
+        [
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-lc",
+            "test -f /root/.steam/sdk64/steamclient.so && "
+            "test -f /root/.steam/sdk32/steamclient.so && "
+            "ls -l /root/.steam/sdk64/steamclient.so /root/.steam/sdk32/steamclient.so",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    lifecycle.log_command_result(
+        "docker exec " + container_name + " check steamcmd sdk mounts",
+        result,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+
+
 def _assert_wrapper_query_and_info(lifecycle, env, server_name, port):
     query_result = _run_wrapper(lifecycle, env, server_name, "query", timeout=300)
     assert query_result.returncode == 0, query_result.stderr or query_result.stdout
@@ -374,8 +414,14 @@ def test_root_wrapper_probe_matrix_covers_all_docker_runtime_families(
     install_dir = state_dir / "servers" / server_name
     port = lifecycle.pick_free_tcp_port()
     image, pull_only = _wrapper_family_image(runtime_family)
+    steamcmd_root = None
+
+    if runtime_family == "steamcmd-linux":
+        steamcmd_root = _prepare_fake_steamcmd_root(state_dir)
 
     _write_wrapper_probe_config(state_dir, lifecycle)
+    if steamcmd_root is not None:
+        _append_steamcmd_path_to_wrapper_config(state_dir, steamcmd_root)
 
     env = os.environ.copy()
     env["ALPHAGSM_HOME"] = str(state_dir)
@@ -450,6 +496,9 @@ def test_root_wrapper_probe_matrix_covers_all_docker_runtime_families(
         assert start_result.returncode == 0, start_result.stderr or start_result.stdout
 
         lifecycle.wait_for_tcp_open("127.0.0.1", port, 180)
+
+        if runtime_family == "steamcmd-linux":
+            _assert_steamcmd_sdk_mounts_present(lifecycle, "alphagsm-" + server_name)
 
         status_result = _run_wrapper(lifecycle, env, server_name, "status", timeout=300)
         assert status_result.returncode == 0, status_result.stderr or status_result.stdout
