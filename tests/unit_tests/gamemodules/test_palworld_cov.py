@@ -161,6 +161,27 @@ def test_get_start_command_prefers_install_root_wrapper_over_nested_root(tmp_pat
     assert cwd == str(tmp_path)
 
 
+def test_get_start_command_uses_resolved_root_for_docker_runtime(tmp_path):
+    server = DummyServer()
+    nested_root = tmp_path / "PalServer"
+    (nested_root / "PalServer.sh").parent.mkdir(parents=True, exist_ok=True)
+    (nested_root / "PalServer.sh").write_text("")
+    (nested_root / "Pal" / "Binaries" / "Linux").mkdir(parents=True)
+    (nested_root / "Pal" / "Binaries" / "Linux" / "PalServer-Linux-Shipping").write_text("")
+    (tmp_path / "PalServer.sh").write_text("")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "PalServer.sh"
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
+    server.data["runtime"] = "docker"
+    server.data["publiclobby"] = True
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert cwd == str(nested_root)
+
+
 def test_get_start_command_finds_recursive_nested_palserver_root(tmp_path):
     server = DummyServer()
     nested_root = tmp_path / "steamapps" / "common" / "PalServer Dedicated" / "PalServer"

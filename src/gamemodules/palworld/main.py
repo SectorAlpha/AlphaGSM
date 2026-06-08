@@ -158,7 +158,11 @@ def _resolve_executable(server):
 
     configured = server.data.get("exe_name")
     install_dir = os.path.normpath(server.data["dir"])
-    if configured and os.path.isfile(os.path.join(install_dir, configured)):
+    if (
+        configured
+        and server.data.get("runtime") != "docker"
+        and os.path.isfile(os.path.join(install_dir, configured))
+    ):
         return install_dir, configured
 
     root_dir = _resolve_install_root(server)

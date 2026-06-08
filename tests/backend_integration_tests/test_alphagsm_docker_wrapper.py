@@ -138,15 +138,8 @@ def _write_wrapper_probe_config(state_dir, lifecycle):
     )
 
 
-def _append_steamcmd_path_to_wrapper_config(state_dir, steamcmd_path):
-    config_path = state_dir / "alphagsm.conf"
-    with config_path.open("a", encoding="utf-8") as handle:
-        handle.write("\n[downloader.steamcmd]\n")
-        handle.write(f"steamcmd_path = {steamcmd_path}\n")
-
-
 def _prepare_fake_steamcmd_root(state_dir):
-    steamcmd_root = state_dir / "fake-steamcmd"
+    steamcmd_root = state_dir / ".local" / "share" / "Steam"
     for sdk_dir in (steamcmd_root / "linux64", steamcmd_root / "linux32"):
         sdk_dir.mkdir(parents=True, exist_ok=True)
         (sdk_dir / "steamclient.so").write_text("steamclient", encoding="utf-8")
@@ -420,8 +413,6 @@ def test_root_wrapper_probe_matrix_covers_all_docker_runtime_families(
         steamcmd_root = _prepare_fake_steamcmd_root(state_dir)
 
     _write_wrapper_probe_config(state_dir, lifecycle)
-    if steamcmd_root is not None:
-        _append_steamcmd_path_to_wrapper_config(state_dir, steamcmd_root)
 
     env = os.environ.copy()
     env["ALPHAGSM_HOME"] = str(state_dir)
