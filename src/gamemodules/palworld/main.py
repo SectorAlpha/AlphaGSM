@@ -217,7 +217,7 @@ def get_start_command(server):
     ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
-    return cmd, root_dir
+    return cmd, os.path.normpath(root_dir)
 
 
 def get_query_address(server):

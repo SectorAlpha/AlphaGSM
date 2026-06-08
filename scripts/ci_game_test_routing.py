@@ -87,6 +87,8 @@ def is_module_candidate(path: str) -> bool:
 def module_key_from_path(path: str) -> str:
     posix_path = PurePosixPath(normalize_repo_path(path))
     rel_parts = posix_path.parts[2:]
+    if rel_parts and rel_parts[-1] == "main.py":
+        rel_parts = rel_parts[:-1]
     return "_".join(PurePosixPath(*rel_parts).with_suffix("").parts)
 
 
