@@ -68,7 +68,7 @@ def test_btserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = btserver.get_start_command(server)
 
     assert cmd == ["./DedicatedServer", "-name", "bt", "-port", "27015", "-queryport", "27016", "-gamemode", "Sandbox"]
-    assert cwd == server.data["dir"]
+    assert cwd == str(tmp_path)
 
 
 def test_btlserver_get_start_command_builds_expected_args(tmp_path):

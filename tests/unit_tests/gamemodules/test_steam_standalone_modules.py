@@ -61,7 +61,7 @@ def test_valheim_get_start_command_builds_expected_args(tmp_path):
     assert "-world" in cmd
     assert "myworld" in cmd
     assert "-savedir" in cmd
-    assert cwd == server.data["dir"]
+    assert cwd == str(tmp_path)
 
 
 def test_starbound_configure_sets_defaults(tmp_path):
