@@ -119,6 +119,25 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_prefers_symlink_target_within_install_tree(tmp_path):
+    server = DummyServer()
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    target = nested_dir / "DedicatedServer"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, tmp_path / "DedicatedServer")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DedicatedServer"
+    server.data["gamemode"] = "Sandbox"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./DedicatedServer"
+    assert cwd == str(nested_dir)
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

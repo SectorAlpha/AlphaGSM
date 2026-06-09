@@ -178,7 +178,7 @@ def test_get_start_command_uses_resolved_root_for_docker_runtime(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./PalServer.sh"
+    assert cmd[0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
     assert cwd == str(nested_root)
 
 
@@ -251,7 +251,7 @@ def test_get_container_spec_maps_nested_palserver_workdir(tmp_path):
     spec = mod.get_container_spec(server)
 
     assert spec["working_dir"] == "/srv/server/PalServer"
-    assert spec["command"][0] == "./PalServer.sh"
+    assert spec["command"][0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
 
 
 def test_settings_paths_follow_nested_palserver_root(tmp_path):

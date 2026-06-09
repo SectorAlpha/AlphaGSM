@@ -169,7 +169,7 @@ def _resolve_executable(server):
     root_dir = _resolve_install_root(server)
     known_basenames = {os.path.basename(executable) for executable in START_EXECUTABLES}
     if runtime_name == "docker":
-        candidates = ["PalServer.sh", os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping")]
+        candidates = [os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping"), "PalServer.sh"]
     else:
         candidates = list(START_EXECUTABLES)
     if configured and configured not in candidates and os.path.basename(configured) not in known_basenames:

@@ -122,6 +122,49 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_prefers_symlink_target_within_install_tree(tmp_path):
+    server = DummyServer()
+    nested_dir = tmp_path / "linux64"
+    nested_dir.mkdir()
+    target = nested_dir / "valheim_server.x86_64"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, tmp_path / "valheim_server.x86_64")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "valheim_server.x86_64"
+    server.data["port"] = 27015
+    server.data["public"] = True
+    server.data["servername"] = "test"
+    server.data["serverpassword"] = "test"
+    server.data["worldname"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./valheim_server.x86_64"
+    assert cwd == str(nested_dir)
+
+
+def test_get_start_command_uses_relative_savedir_for_docker_runtime(tmp_path):
+    server = DummyServer()
+    nested_dir = tmp_path / "linux64"
+    nested_dir.mkdir()
+    target = nested_dir / "valheim_server.x86_64"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, tmp_path / "valheim_server.x86_64")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "valheim_server.x86_64"
+    server.data["port"] = 27015
+    server.data["public"] = True
+    server.data["servername"] = "test"
+    server.data["serverpassword"] = "test"
+    server.data["worldname"] = "test"
+    server.data["runtime"] = "docker"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cwd == str(nested_dir)
+    assert cmd[cmd.index("-savedir") + 1] == "../worlds"
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
