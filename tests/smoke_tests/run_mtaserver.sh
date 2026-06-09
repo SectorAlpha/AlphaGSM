@@ -98,7 +98,7 @@ echo "Using http port: $HTTPPORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create mtaserver
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
-run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

@@ -8,7 +8,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_command,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -66,7 +66,7 @@ def test_mtaserver_lifecycle(tmp_path):
         module_name="mtaserver",
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(3)
     httpport = port + 2
 
     run_and_assert_ok(env, server_name, "create", "mtaserver")
