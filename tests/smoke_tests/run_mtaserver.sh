@@ -65,7 +65,7 @@ CONFIG_PATH="$WORK_DIR/alphagsm-mtaserver.conf"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)"
+PORT="$(pick_free_port_group 3)"
 HTTPPORT=$((PORT + 2))
 
 cat > "$CONFIG_PATH" <<EOF

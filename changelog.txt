@@ -8,7 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-06-10
-- CI/contracts: harden the `mtaserver` smoke and integration lanes against derived `httpport = port + 2` conflicts by using the shared port-conflict retry helper in smoke and reserving a consecutive free port group in integration, so MTA now retries cleanly when the HTTP listener would collide with an unmanaged host port.
+- CI/contracts: harden the `mtaserver` smoke and integration lanes against derived `httpport = port + 2` conflicts by reserving a consecutive free port group up front and keeping the shared port-conflict retry helper as a fallback, so MTA now avoids the unmanaged HTTP listener race instead of failing the first setup attempt.
 
 2026-06-09
 - Runtime contract: teach shared Docker launches to follow external symlinked parent directories inside a server executable path, so Steam installs like ARK-family and other `steamcmd-linux` payloads no longer fail in CI with `stat ... no such file or directory` when the mounted install tree links into shared cache content.
