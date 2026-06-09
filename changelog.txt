@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-06-09
+- Runtime contract: teach shared Docker launches to follow external symlinked parent directories inside a server executable path, so Steam installs like ARK-family and other `steamcmd-linux` payloads no longer fail in CI with `stat ... no such file or directory` when the mounted install tree links into shared cache content.
+
 2026-06-08
 - CI/contracts: realign `palworld` with the validated startup path again across process and Docker runtimes. AlphaGSM still honors the configured install-root `PalServer.sh` launcher for local/process starts when it exists there, but Docker now resolves the real nested content root first and launches the nested Linux shipping binary from there instead of short-circuiting to an install-root path that may not exist inside the mounted tree.
 - CI/contracts: make the Docker `btserver` and `valheim` launchers resolve install-tree symlink or nested executables more defensively, and keep Valheim's `-savedir` on a container-visible relative path instead of passing the host filesystem path straight into the shared `steamcmd-linux` runtime.

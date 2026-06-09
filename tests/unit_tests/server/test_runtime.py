@@ -253,6 +253,45 @@ def test_build_container_spec_maps_nested_host_workdir_into_container(tmp_path):
     assert spec["command"] == ["./PalServer.sh", "-port=8211"]
 
 
+def test_get_container_spec_mounts_external_symlinked_parent_for_executable(tmp_path, monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    install_root = tmp_path / "install"
+    install_root.mkdir()
+    external_root = tmp_path / "external"
+    target_dir = external_root / "ShooterGame" / "Binaries" / "Linux"
+    target_dir.mkdir(parents=True)
+    (target_dir / "ShooterGameServer").write_text("", encoding="utf-8")
+    os.symlink(external_root / "ShooterGame", install_root / "ShooterGame")
+
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda _server: {
+            "engine": "docker",
+            "family": "steamcmd-linux",
+            "mounts": [
+                {"source": str(install_root) + "/", "target": "/srv/server", "mode": "rw"}
+            ],
+        },
+        get_container_spec=lambda _server: {
+            "working_dir": "/srv/server",
+            "command": ["./ShooterGame/Binaries/Linux/ShooterGameServer"],
+        },
+    )
+    server = DummyServer(
+        module=module,
+        data={
+            "dir": str(install_root) + "/",
+            "exe_name": "ShooterGame/Binaries/Linux/ShooterGameServer",
+        },
+    )
+
+    spec = runtime_module.get_container_spec(server)
+
+    assert spec["mounts"] == [
+        {"source": str(install_root) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(external_root), "target": str(external_root), "mode": "ro"},
+    ]
+
+
 def test_build_container_spec_normalizes_java_runtime_command_and_disables_tty(tmp_path):
     server_dir = tmp_path / "server"
     server_dir.mkdir()

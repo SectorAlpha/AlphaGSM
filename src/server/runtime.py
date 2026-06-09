@@ -1037,7 +1037,9 @@ def _add_external_executable_mounts(server, mounts):
     AlphaGSM often symlinks downloaded payloads from the server directory into the
     shared download cache. Docker runtime mounts only the server directory by
     default, so those symlinks become broken inside the container unless the
-    target path is also mounted.
+    target path is also mounted. Some Steam installs place symlinks on parent
+    directories inside the executable path, so walk each path component instead
+    of only checking the executable leaf.
     """
 
     server_dir = server.data.get("dir")
@@ -1045,28 +1047,45 @@ def _add_external_executable_mounts(server, mounts):
     if not server_dir or not exe_name:
         return mounts
 
-    exe_path = os.path.join(server_dir, exe_name)
-    if not os.path.islink(exe_path):
-        return mounts
-
-    target_path = os.path.realpath(exe_path)
     server_root = os.path.abspath(server_dir)
+    exe_path = os.path.abspath(os.path.join(server_root, exe_name))
+    candidate_paths = []
+
     try:
-        if os.path.commonpath([server_root, target_path]) == server_root:
-            return mounts
+        if os.path.commonpath([server_root, exe_path]) == server_root:
+            relative_path = os.path.relpath(exe_path, server_root)
+            current_path = server_root
+            for part in relative_path.split(os.sep):
+                if part in ("", "."):
+                    continue
+                current_path = os.path.join(current_path, part)
+                candidate_paths.append(current_path)
+        else:
+            candidate_paths.append(exe_path)
     except ValueError:
-        return mounts
+        candidate_paths.append(exe_path)
 
-    if any(_mount_covers_path(mount, target_path) for mount in mounts):
-        return mounts
+    for candidate_path in candidate_paths:
+        if not os.path.islink(candidate_path):
+            continue
 
-    mounts.append(
-        {
-            "source": os.path.dirname(target_path),
-            "target": os.path.dirname(target_path),
-            "mode": "ro",
-        }
-    )
+        target_path = os.path.realpath(candidate_path)
+        try:
+            if os.path.commonpath([server_root, target_path]) == server_root:
+                continue
+        except ValueError:
+            pass
+
+        if any(_mount_covers_path(mount, target_path) for mount in mounts):
+            continue
+
+        mounts.append(
+            {
+                "source": os.path.dirname(target_path),
+                "target": os.path.dirname(target_path),
+                "mode": "ro",
+            }
+        )
     return mounts
 
 
