@@ -157,17 +157,21 @@ def _resolve_executable(server):
     """Return the Palworld launcher path relative to the resolved content root."""
 
     configured = server.data.get("exe_name")
+    runtime_name = server.data.get("runtime")
     install_dir = os.path.normpath(server.data["dir"])
     if (
         configured
-        and server.data.get("runtime") != "docker"
+        and runtime_name != "docker"
         and os.path.isfile(os.path.join(install_dir, configured))
     ):
         return install_dir, configured
 
     root_dir = _resolve_install_root(server)
     known_basenames = {os.path.basename(executable) for executable in START_EXECUTABLES}
-    candidates = list(START_EXECUTABLES)
+    if runtime_name == "docker":
+        candidates = ["PalServer.sh", os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping")]
+    else:
+        candidates = list(START_EXECUTABLES)
     if configured and configured not in candidates and os.path.basename(configured) not in known_basenames:
         candidates.insert(0, configured)
 
