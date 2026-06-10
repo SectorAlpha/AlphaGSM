@@ -825,4 +825,5 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'httpport', 'protocol': 'tcp'}),
         stdin_open=True,
+        working_dir=runtime_module.DEFAULT_CONTAINER_WORKDIR,
 )
