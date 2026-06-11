@@ -75,6 +75,10 @@ echo "Using port: $PORT"
 run_create_or_skip_disabled "$SERVER_NAME" create silicaserver
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
+PORT="$(pick_free_port)"
+echo "Refreshing port before start: $PORT"
+run_alphagsm "$SERVER_NAME" set port "$PORT"
+
 run_start_with_port_retry "$SERVER_NAME"
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"

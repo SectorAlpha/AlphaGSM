@@ -48,6 +48,9 @@ def test_silicaserver_lifecycle(tmp_path):
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
+    port = pick_free_tcp_port()
+    run_and_assert_ok(env, server_name, "set", "port", str(port))
+
     # start
     run_and_assert_ok(env, server_name, "start")
 
