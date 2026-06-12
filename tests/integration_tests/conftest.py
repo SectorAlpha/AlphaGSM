@@ -294,6 +294,41 @@ def _module_uses_explicit_docker_runtime(module_name, servermodulespackage="game
     )
 
 
+def effective_runtime_backend(
+    runtime_backend="process",
+    *,
+    module_name=None,
+    servermodulespackage="gamemodules.",
+):
+    """Return the effective runtime backend for an integration test config."""
+    if runtime_backend != "auto":
+        return runtime_backend
+    return (
+        "docker"
+        if _module_uses_explicit_docker_runtime(
+            module_name,
+            servermodulespackage=servermodulespackage,
+        )
+        else "process"
+    )
+
+
+def require_command_for_runtime(
+    name,
+    *,
+    runtime_backend="process",
+    module_name=None,
+    servermodulespackage="gamemodules.",
+):
+    """Require *name* only when the effective integration runtime is process."""
+    if effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+        servermodulespackage=servermodulespackage,
+    ) == "process":
+        require_command(name)
+
+
 def write_config(
     config_path,
     home_dir,
@@ -312,16 +347,11 @@ def write_config(
         download_root = Path(work_dir).expanduser() / "downloads"
     db_path = download_root / "downloads.txt"
     target_path = download_root / "downloads"
-    selected_runtime_backend = runtime_backend
-    if runtime_backend == "auto":
-        selected_runtime_backend = (
-            "docker"
-            if _module_uses_explicit_docker_runtime(
-                module_name,
-                servermodulespackage=servermodulespackage,
-            )
-            else "process"
-        )
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+        servermodulespackage=servermodulespackage,
+    )
     config_path.write_text(
         "\n".join([
             "[core]",

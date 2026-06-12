@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-06-12
+- CI/workflow: move the first clean shared Source integration batch (`cssserver`, `dodsserver`, `hl2dmserver`, `nmrihserver`) out of the Docker-enable backlog and into explicit process-plus-docker dual lanes, while making the shared integration test setup require `screen` only when the effective runtime backend is the host process path.
 - CI/workflow: lock down the Docker enablement backlog repo state with explicit routing coverage for the Source-family backlog bucket and a helper that keeps the dual-lane subset separate from the remaining enablement backlog.
 
 2026-06-10

@@ -54,7 +54,12 @@ MODULE_ALIASES = {
     "risingstorm2vietnam": ["rs2server"],
     "tf2server": ["teamfortress2"],
 }
-PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = ()
+PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
+    "tests/integration_tests/test_cssserver.py",
+    "tests/integration_tests/test_dodsserver.py",
+    "tests/integration_tests/test_hl2dmserver.py",
+    "tests/integration_tests/test_nmrihserver.py",
+)
 SOURCE_FAMILY_BACKLOG = {
     "tests/integration_tests/test_tf2.py",
     "tests/integration_tests/test_counterstrike2.py",
@@ -220,6 +225,35 @@ def _build_targeted_matrix(paths: list[str], prefix: str, stem_prefix: str) -> d
     return {"include": include}
 
 
+def _build_targeted_integration_matrix(paths: list[str]) -> dict[str, list[dict[str, str]]]:
+    include = []
+    dual_lane = set(PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS)
+
+    for path in sorted(paths):
+        base_label = PurePosixPath(path).stem.replace("test_", "")
+        if path in dual_lane:
+            for runtime_backend in ("process", "docker"):
+                include.append(
+                    {
+                        "batch": len(include) + 1,
+                        "files": path,
+                        "label": f"{base_label}-{runtime_backend}",
+                        "runtime_backend": runtime_backend,
+                    }
+                )
+            continue
+
+        include.append(
+            {
+                "batch": len(include) + 1,
+                "files": path,
+                "label": base_label,
+            }
+        )
+
+    return {"include": include}
+
+
 def classify_changed_files(changed_files: list[str], repo_root: Path | None = None) -> dict[str, object]:
     root = repo_root or REPO_ROOT
     normalized = dedupe([normalize_repo_path(path) for path in changed_files if path.strip()])
@@ -296,7 +330,7 @@ def build_integration_matrix(
     if selected_tests is not None:
         standard_tests, heavy_tests = partition_by_predicate(sorted(selected_tests), is_heavy_integration_test)
         selected = heavy_tests if heavy_only else standard_tests
-        return _build_targeted_matrix(selected, "files", "test_")
+        return _build_targeted_integration_matrix(selected)
 
     all_tests = sorted(
         path.name for path in (root / "tests" / "integration_tests").glob("test_*.py")

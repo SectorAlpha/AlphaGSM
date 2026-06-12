@@ -94,6 +94,85 @@ def test_source_family_backlog_contains_tf2_and_counterstrike2():
     assert "tests/integration_tests/test_counterstrike2.py" in backlog
 
 
+def test_source_shared_batch_moves_out_of_docker_enablement_backlog():
+    routing = load_routing_module()
+
+    backlog = set(routing.docker_enablement_backlog_tests(repo_root=Path(".")))
+
+    for test_path in (
+        "tests/integration_tests/test_cssserver.py",
+        "tests/integration_tests/test_dodsserver.py",
+        "tests/integration_tests/test_hl2dmserver.py",
+        "tests/integration_tests/test_nmrihserver.py",
+    ):
+        assert test_path not in backlog
+
+
+def test_source_shared_batch_builds_process_and_docker_dual_lanes():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        [
+            "tests/integration_tests/test_cssserver.py",
+            "tests/integration_tests/test_dodsserver.py",
+            "tests/integration_tests/test_hl2dmserver.py",
+            "tests/integration_tests/test_nmrihserver.py",
+        ],
+        repo_root=Path("."),
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_cssserver.py",
+            "label": "cssserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_cssserver.py",
+            "label": "cssserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 3,
+            "files": "tests/integration_tests/test_dodsserver.py",
+            "label": "dodsserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 4,
+            "files": "tests/integration_tests/test_dodsserver.py",
+            "label": "dodsserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 5,
+            "files": "tests/integration_tests/test_hl2dmserver.py",
+            "label": "hl2dmserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 6,
+            "files": "tests/integration_tests/test_hl2dmserver.py",
+            "label": "hl2dmserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 7,
+            "files": "tests/integration_tests/test_nmrihserver.py",
+            "label": "nmrihserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 8,
+            "files": "tests/integration_tests/test_nmrihserver.py",
+            "label": "nmrihserver-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
 def test_dual_lane_subset_stays_separate_from_enablement_backlog():
     routing = load_routing_module()
 
