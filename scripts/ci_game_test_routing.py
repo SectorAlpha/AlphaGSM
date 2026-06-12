@@ -62,6 +62,7 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
     "tests/integration_tests/test_dodserver.py",
     "tests/integration_tests/test_hldmserver.py",
     "tests/integration_tests/test_hldmsserver.py",
+    "tests/integration_tests/test_l4dserver.py",
     "tests/integration_tests/test_cssserver.py",
     "tests/integration_tests/test_dodsserver.py",
     "tests/integration_tests/test_hl2dmserver.py",

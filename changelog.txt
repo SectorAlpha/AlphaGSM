@@ -438,3 +438,4 @@ Historical highlights
 - CI: split Linux game smoke/integration routing into standard and heavy matrices so the large disk-hungry server lanes can run on a configurable dedicated runner label set via `ALPHAGSM_HEAVY_RUNNER_LABELS_JSON`, while the lighter matrix stays on `ubuntu-latest`.
 - CI follow-up: make Palworld resolve deeper nested Steam content roots before building its Docker launch path, and move Silica smoke onto the shared claimed-port start retry path so transient runner listeners do not fail the lane outright.
 - CI: add `csserver` to the GitHub dual-lane integration subset so CI now validates both process and Docker runtimes while preserving its existing claimed-port setup/start retry path.
+- CI: add `l4dserver` to the GitHub dual-lane integration subset so CI now validates both process and Docker runtimes while preserving its hibernation-sensitive console-to-A2S readiness flow.
