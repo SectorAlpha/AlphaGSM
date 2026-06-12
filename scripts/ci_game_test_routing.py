@@ -57,6 +57,7 @@ MODULE_ALIASES = {
 PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
     "tests/integration_tests/test_bdserver.py",
     "tests/integration_tests/test_csserver.py",
+    "tests/integration_tests/test_counterstrike2.py",
     "tests/integration_tests/test_csczserver.py",
     "tests/integration_tests/test_dmcserver.py",
     "tests/integration_tests/test_dodserver.py",
@@ -70,7 +71,6 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
 )
 SOURCE_FAMILY_BACKLOG = {
     "tests/integration_tests/test_tf2.py",
-    "tests/integration_tests/test_counterstrike2.py",
 }
 
 

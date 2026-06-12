@@ -91,7 +91,7 @@ def test_source_family_backlog_contains_tf2_and_counterstrike2():
     backlog = routing.docker_enablement_backlog_tests(repo_root=Path("."))
 
     assert "tests/integration_tests/test_tf2.py" in backlog
-    assert "tests/integration_tests/test_counterstrike2.py" in backlog
+    assert "tests/integration_tests/test_counterstrike2.py" not in backlog
 
 
 def test_source_shared_batch_moves_out_of_docker_enablement_backlog():
@@ -138,6 +138,14 @@ def test_l4dserver_moves_out_of_source_family_docker_enablement_backlog():
     backlog = set(routing.docker_backlog_for_family("source-family", repo_root=Path(".")))
 
     assert "tests/integration_tests/test_l4dserver.py" not in backlog
+
+
+def test_counterstrike2_moves_out_of_source_family_docker_enablement_backlog():
+    routing = load_routing_module()
+
+    backlog = set(routing.docker_backlog_for_family("source-family", repo_root=Path(".")))
+
+    assert "tests/integration_tests/test_counterstrike2.py" not in backlog
 
 
 def test_source_shared_batch_builds_process_and_docker_dual_lanes():
@@ -368,10 +376,35 @@ def test_l4dserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
     ]
 
 
+def test_counterstrike2_builds_process_and_docker_dual_lanes_as_a_single_slice():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        ["tests/integration_tests/test_counterstrike2.py"],
+        repo_root=Path("."),
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_counterstrike2.py",
+            "label": "counterstrike2-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_counterstrike2.py",
+            "label": "counterstrike2-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
 def test_dual_lane_files_keep_process_runtime_fallback():
     for path in (
         Path("tests/integration_tests/test_bdserver.py"),
         Path("tests/integration_tests/test_csserver.py"),
+        Path("tests/integration_tests/test_counterstrike2.py"),
         Path("tests/integration_tests/test_csczserver.py"),
         Path("tests/integration_tests/test_dmcserver.py"),
         Path("tests/integration_tests/test_dodserver.py"),

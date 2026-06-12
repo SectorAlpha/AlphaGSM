@@ -439,3 +439,4 @@ Historical highlights
 - CI follow-up: make Palworld resolve deeper nested Steam content roots before building its Docker launch path, and move Silica smoke onto the shared claimed-port start retry path so transient runner listeners do not fail the lane outright.
 - CI: add `csserver` to the GitHub dual-lane integration subset so CI now validates both process and Docker runtimes while preserving its existing claimed-port setup/start retry path.
 - CI: add `l4dserver` to the GitHub dual-lane integration subset so CI now validates both process and Docker runtimes while preserving its hibernation-sensitive console-to-A2S readiness flow.
+- CI: add `counterstrike2` to the GitHub dual-lane integration subset so CI now validates both process and Docker runtimes while preserving its hibernation-sensitive exact-`a2s` readiness flow.

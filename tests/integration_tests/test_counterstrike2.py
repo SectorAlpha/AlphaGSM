@@ -1,6 +1,7 @@
 """Integration test for counterstrike2."""
 
 import json
+import os
 import subprocess
 
 import pytest
@@ -8,7 +9,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -69,20 +70,28 @@ def _run_setup_with_retry(env, server_name, port, install_dir):
 def test_counterstrike2_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    require_command_for_runtime(runtime_backend)
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itcounterstrike2"
+    module_name = "counterstrike2"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
     query_host = detect_query_host()
 
-    run_and_assert_ok(env, server_name, "create", "counterstrike2")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     _run_setup_with_retry(env, server_name, port, install_dir)
 
