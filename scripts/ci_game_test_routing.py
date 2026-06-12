@@ -54,6 +54,11 @@ MODULE_ALIASES = {
     "risingstorm2vietnam": ["rs2server"],
     "tf2server": ["teamfortress2"],
 }
+PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = ()
+SOURCE_FAMILY_BACKLOG = {
+    "tests/integration_tests/test_tf2.py",
+    "tests/integration_tests/test_counterstrike2.py",
+}
 
 
 def normalize_repo_path(path: str) -> str:
@@ -143,6 +148,23 @@ def dedupe(items: list[str]) -> list[str]:
             seen.add(item)
             ordered.append(item)
     return ordered
+
+
+def docker_enablement_backlog_tests(repo_root: Path | None = None) -> list[str]:
+    root = repo_root or REPO_ROOT
+    dual_lane = set(PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS)
+    return sorted(
+        path.relative_to(root).as_posix()
+        for path in (root / "tests" / "integration_tests").glob("test_*.py")
+        if path.relative_to(root).as_posix() not in dual_lane
+    )
+
+
+def docker_backlog_for_family(family_name: str, repo_root: Path | None = None) -> list[str]:
+    backlog = set(docker_enablement_backlog_tests(repo_root=repo_root))
+    if family_name == "source-family":
+        return sorted(path for path in backlog if path in SOURCE_FAMILY_BACKLOG or "source" in path)
+    return sorted(backlog)
 
 
 def is_heavy_smoke_script(path: str) -> bool:

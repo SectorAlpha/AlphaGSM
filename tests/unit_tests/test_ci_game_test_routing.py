@@ -85,6 +85,24 @@ def test_long_container_integration_changes_route_to_heavy_matrix():
     assert "test_sonsoftheforestserver.py" in outputs["integration_heavy_matrix"]
 
 
+def test_source_family_backlog_contains_tf2_and_counterstrike2():
+    routing = load_routing_module()
+
+    backlog = routing.docker_enablement_backlog_tests(repo_root=Path("."))
+
+    assert "tests/integration_tests/test_tf2.py" in backlog
+    assert "tests/integration_tests/test_counterstrike2.py" in backlog
+
+
+def test_dual_lane_subset_stays_separate_from_enablement_backlog():
+    routing = load_routing_module()
+
+    backlog = set(routing.docker_enablement_backlog_tests(repo_root=Path(".")))
+    dual_lane = set(routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS)
+
+    assert backlog.isdisjoint(dual_lane)
+
+
 def test_workflow_changes_force_full_linux_game_test_run():
     routing = load_routing_module()
 
