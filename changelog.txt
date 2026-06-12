@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-06-12
+- CI/workflow: move `rust` into the GitHub process-plus-docker integration subset while preserving its existing readiness and exact `a2s` query assertions, keeping local runs process-backed by default, and making the known SteamCMD setup skip path reachable again.
 - CI/workflow: move `askaserver` into the GitHub process-plus-docker integration subset, keep local runs process-backed by default, and wire its Wine/Proton test to use the declared Docker runtime image path in CI without changing the readiness or A2S assertions.
 - CI/workflow: move `mumbleserver` into the GitHub process-plus-docker integration subset while keeping local runs process-backed by default and preserving its existing Mumble query/info lifecycle assertions.
 - CI/workflow: move `valheim` into the GitHub process-plus-docker integration subset while preserving its existing readiness and `a2s` query assertions, keeping local runs process-backed by default, and making the known SteamCMD setup skip path reachable again.

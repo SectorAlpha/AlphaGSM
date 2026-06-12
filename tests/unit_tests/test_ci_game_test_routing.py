@@ -481,6 +481,31 @@ def test_valheim_builds_process_and_docker_dual_lanes_as_a_single_slice():
     ]
 
 
+def test_rust_builds_process_and_docker_dual_lanes_as_a_single_slice():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        ["tests/integration_tests/test_rust.py"],
+        repo_root=Path("."),
+        heavy_only=True,
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_rust.py",
+            "label": "rust-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_rust.py",
+            "label": "rust-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
 def test_dual_lane_files_keep_process_runtime_fallback():
     for path in (
         Path("tests/integration_tests/test_askaserver.py"),
@@ -494,6 +519,7 @@ def test_dual_lane_files_keep_process_runtime_fallback():
         Path("tests/integration_tests/test_hldmsserver.py"),
         Path("tests/integration_tests/test_l4dserver.py"),
         Path("tests/integration_tests/test_mumbleserver.py"),
+        Path("tests/integration_tests/test_rust.py"),
         Path("tests/integration_tests/test_valheim.py"),
     ):
         text = path.read_text(encoding="utf-8")
