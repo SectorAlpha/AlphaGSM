@@ -115,6 +115,7 @@ def test_goldsrc_batch_moves_out_of_source_family_docker_enablement_backlog():
 
     for test_path in (
         "tests/integration_tests/test_bdserver.py",
+        "tests/integration_tests/test_csserver.py",
         "tests/integration_tests/test_csczserver.py",
         "tests/integration_tests/test_dmcserver.py",
         "tests/integration_tests/test_dodserver.py",
@@ -194,6 +195,7 @@ def test_goldsrc_batch_builds_process_and_docker_dual_lanes():
     matrix = routing.build_integration_matrix(
         [
             "tests/integration_tests/test_bdserver.py",
+            "tests/integration_tests/test_csserver.py",
             "tests/integration_tests/test_csczserver.py",
             "tests/integration_tests/test_dmcserver.py",
             "tests/integration_tests/test_dodserver.py",
@@ -229,38 +231,74 @@ def test_goldsrc_batch_builds_process_and_docker_dual_lanes():
         },
         {
             "batch": 5,
+            "files": "tests/integration_tests/test_csserver.py",
+            "label": "csserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 6,
+            "files": "tests/integration_tests/test_csserver.py",
+            "label": "csserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 7,
             "files": "tests/integration_tests/test_dmcserver.py",
             "label": "dmcserver-process",
             "runtime_backend": "process",
         },
         {
-            "batch": 6,
+            "batch": 8,
             "files": "tests/integration_tests/test_dmcserver.py",
             "label": "dmcserver-docker",
             "runtime_backend": "docker",
         },
         {
-            "batch": 7,
+            "batch": 9,
             "files": "tests/integration_tests/test_dodserver.py",
             "label": "dodserver-process",
             "runtime_backend": "process",
         },
         {
-            "batch": 8,
+            "batch": 10,
             "files": "tests/integration_tests/test_dodserver.py",
             "label": "dodserver-docker",
             "runtime_backend": "docker",
         },
         {
-            "batch": 9,
+            "batch": 11,
             "files": "tests/integration_tests/test_hldmserver.py",
             "label": "hldmserver-process",
             "runtime_backend": "process",
         },
         {
-            "batch": 10,
+            "batch": 12,
             "files": "tests/integration_tests/test_hldmserver.py",
             "label": "hldmserver-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
+def test_csserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        ["tests/integration_tests/test_csserver.py"],
+        repo_root=Path("."),
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_csserver.py",
+            "label": "csserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_csserver.py",
+            "label": "csserver-docker",
             "runtime_backend": "docker",
         },
     ]
@@ -269,6 +307,7 @@ def test_goldsrc_batch_builds_process_and_docker_dual_lanes():
 def test_goldsrc_dual_lane_files_keep_process_runtime_fallback():
     for path in (
         Path("tests/integration_tests/test_bdserver.py"),
+        Path("tests/integration_tests/test_csserver.py"),
         Path("tests/integration_tests/test_csczserver.py"),
         Path("tests/integration_tests/test_dmcserver.py"),
         Path("tests/integration_tests/test_dodserver.py"),

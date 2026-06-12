@@ -56,6 +56,7 @@ MODULE_ALIASES = {
 }
 PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
     "tests/integration_tests/test_bdserver.py",
+    "tests/integration_tests/test_csserver.py",
     "tests/integration_tests/test_csczserver.py",
     "tests/integration_tests/test_dmcserver.py",
     "tests/integration_tests/test_dodserver.py",
