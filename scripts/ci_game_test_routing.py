@@ -55,6 +55,7 @@ MODULE_ALIASES = {
     "tf2server": ["teamfortress2"],
 }
 PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
+    "tests/integration_tests/test_askaserver.py",
     "tests/integration_tests/test_bdserver.py",
     "tests/integration_tests/test_csserver.py",
     "tests/integration_tests/test_counterstrike2.py",
@@ -64,6 +65,9 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
     "tests/integration_tests/test_hldmserver.py",
     "tests/integration_tests/test_hldmsserver.py",
     "tests/integration_tests/test_l4dserver.py",
+    "tests/integration_tests/test_mumbleserver.py",
+    "tests/integration_tests/test_rust.py",
+    "tests/integration_tests/test_valheim.py",
     "tests/integration_tests/test_cssserver.py",
     "tests/integration_tests/test_dodsserver.py",
     "tests/integration_tests/test_hl2dmserver.py",

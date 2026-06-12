@@ -148,6 +148,14 @@ def test_counterstrike2_moves_out_of_source_family_docker_enablement_backlog():
     assert "tests/integration_tests/test_counterstrike2.py" not in backlog
 
 
+def test_askaserver_moves_out_of_docker_enablement_backlog():
+    routing = load_routing_module()
+
+    backlog = set(routing.docker_enablement_backlog_tests(repo_root=Path(".")))
+
+    assert "tests/integration_tests/test_askaserver.py" not in backlog
+
+
 def test_source_shared_batch_builds_process_and_docker_dual_lanes():
     routing = load_routing_module()
 
@@ -400,8 +408,82 @@ def test_counterstrike2_builds_process_and_docker_dual_lanes_as_a_single_slice()
     ]
 
 
+def test_mumbleserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        ["tests/integration_tests/test_mumbleserver.py"],
+        repo_root=Path("."),
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_mumbleserver.py",
+            "label": "mumbleserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_mumbleserver.py",
+            "label": "mumbleserver-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
+def test_askaserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        ["tests/integration_tests/test_askaserver.py"],
+        repo_root=Path("."),
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_askaserver.py",
+            "label": "askaserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_askaserver.py",
+            "label": "askaserver-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
+def test_valheim_builds_process_and_docker_dual_lanes_as_a_single_slice():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        ["tests/integration_tests/test_valheim.py"],
+        repo_root=Path("."),
+        heavy_only=True,
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_valheim.py",
+            "label": "valheim-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_valheim.py",
+            "label": "valheim-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
 def test_dual_lane_files_keep_process_runtime_fallback():
     for path in (
+        Path("tests/integration_tests/test_askaserver.py"),
         Path("tests/integration_tests/test_bdserver.py"),
         Path("tests/integration_tests/test_csserver.py"),
         Path("tests/integration_tests/test_counterstrike2.py"),
@@ -411,6 +493,8 @@ def test_dual_lane_files_keep_process_runtime_fallback():
         Path("tests/integration_tests/test_hldmserver.py"),
         Path("tests/integration_tests/test_hldmsserver.py"),
         Path("tests/integration_tests/test_l4dserver.py"),
+        Path("tests/integration_tests/test_mumbleserver.py"),
+        Path("tests/integration_tests/test_valheim.py"),
     ):
         text = path.read_text(encoding="utf-8")
         assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text

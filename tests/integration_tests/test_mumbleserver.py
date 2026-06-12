@@ -1,10 +1,12 @@
 """Integration test for mumbleserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -24,7 +26,12 @@ STOP_TIMEOUT = 90
 
 def test_mumbleserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("docker")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name="mumbleserver",
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -37,8 +44,7 @@ def test_mumbleserver_lifecycle(tmp_path):
         config_path,
         home_dir,
         session_tag="AlphaGSM-IT#",
-        backend="subprocess",
-        runtime_backend="auto",
+        runtime_backend=runtime_backend,
         module_name="mumbleserver",
     )
     env = alphagsm_env(config_path)
@@ -49,9 +55,15 @@ def test_mumbleserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result("alphagsm setup", result)
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+    assert result.returncode == 0, (
+        f"Unexpected mumbleserver setup failure: rc={result.returncode}\n"
+        f"stdout={result.stdout}\n"
+        f"stderr={result.stderr}"
+    )
 
     # start
     run_and_assert_ok(env, server_name, "start")
