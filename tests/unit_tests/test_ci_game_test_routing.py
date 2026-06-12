@@ -108,6 +108,21 @@ def test_source_shared_batch_moves_out_of_docker_enablement_backlog():
         assert test_path not in backlog
 
 
+def test_goldsrc_batch_moves_out_of_source_family_docker_enablement_backlog():
+    routing = load_routing_module()
+
+    backlog = set(routing.docker_backlog_for_family("source-family", repo_root=Path(".")))
+
+    for test_path in (
+        "tests/integration_tests/test_bdserver.py",
+        "tests/integration_tests/test_csczserver.py",
+        "tests/integration_tests/test_dmcserver.py",
+        "tests/integration_tests/test_dodserver.py",
+        "tests/integration_tests/test_hldmserver.py",
+    ):
+        assert test_path not in backlog
+
+
 def test_source_shared_batch_builds_process_and_docker_dual_lanes():
     routing = load_routing_module()
 
@@ -171,6 +186,96 @@ def test_source_shared_batch_builds_process_and_docker_dual_lanes():
             "runtime_backend": "docker",
         },
     ]
+
+
+def test_goldsrc_batch_builds_process_and_docker_dual_lanes():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(
+        [
+            "tests/integration_tests/test_bdserver.py",
+            "tests/integration_tests/test_csczserver.py",
+            "tests/integration_tests/test_dmcserver.py",
+            "tests/integration_tests/test_dodserver.py",
+            "tests/integration_tests/test_hldmserver.py",
+        ],
+        repo_root=Path("."),
+    )
+
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": "tests/integration_tests/test_bdserver.py",
+            "label": "bdserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 2,
+            "files": "tests/integration_tests/test_bdserver.py",
+            "label": "bdserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 3,
+            "files": "tests/integration_tests/test_csczserver.py",
+            "label": "csczserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 4,
+            "files": "tests/integration_tests/test_csczserver.py",
+            "label": "csczserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 5,
+            "files": "tests/integration_tests/test_dmcserver.py",
+            "label": "dmcserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 6,
+            "files": "tests/integration_tests/test_dmcserver.py",
+            "label": "dmcserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 7,
+            "files": "tests/integration_tests/test_dodserver.py",
+            "label": "dodserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 8,
+            "files": "tests/integration_tests/test_dodserver.py",
+            "label": "dodserver-docker",
+            "runtime_backend": "docker",
+        },
+        {
+            "batch": 9,
+            "files": "tests/integration_tests/test_hldmserver.py",
+            "label": "hldmserver-process",
+            "runtime_backend": "process",
+        },
+        {
+            "batch": 10,
+            "files": "tests/integration_tests/test_hldmserver.py",
+            "label": "hldmserver-docker",
+            "runtime_backend": "docker",
+        },
+    ]
+
+
+def test_goldsrc_dual_lane_files_keep_process_runtime_fallback():
+    for path in (
+        Path("tests/integration_tests/test_bdserver.py"),
+        Path("tests/integration_tests/test_csczserver.py"),
+        Path("tests/integration_tests/test_dmcserver.py"),
+        Path("tests/integration_tests/test_dodserver.py"),
+        Path("tests/integration_tests/test_hldmserver.py"),
+    ):
+        text = path.read_text(encoding="utf-8")
+        assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
 
 
 def test_dual_lane_subset_stays_separate_from_enablement_backlog():
