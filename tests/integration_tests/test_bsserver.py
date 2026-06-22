@@ -26,6 +26,7 @@ from conftest import (
     wait_for_tcp_closed,
     wait_for_udp_closed,
     wait_for_a2s_ready,
+    resolve_steamcmd_linux_runtime_image,
 )
 from gamemodules.bsserver import steam_app_id
 from utils.valve_server import detect_query_host
@@ -38,15 +39,6 @@ pytestmark = [
 ]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-
-
-def resolve_steamcmd_linux_runtime_image():
-    """Return the local steamcmd-linux runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
-    if configured_image:
-        return configured_image
-    return "alphagsm-steamcmd-linux-runtime:test"
 
 
 def test_bsserver_lifecycle(tmp_path):

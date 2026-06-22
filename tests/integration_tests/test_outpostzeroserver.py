@@ -2,7 +2,6 @@
 
 import json
 import os
-import subprocess
 import time
 
 import pytest
@@ -11,6 +10,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    resolve_runtime_image,
     require_command_for_runtime,
     require_proton,
     pick_free_tcp_port,
@@ -35,60 +35,6 @@ LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
 
-def resolve_wine_proton_runtime_image():
-    """Prefer a branch-local Wine/Proton runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_WINE_PROTON_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_WINE_PROTON_IMAGE
-
-    return PUBLISHED_WINE_PROTON_IMAGE
-
-
-def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds, *, expected_port=None):
-    """Poll ``info --json`` until the expected protocol is reported."""
-
-    deadline = time.time() + timeout_seconds
-    last_result = None
-    last_payload = None
-    while time.time() < deadline:
-        result = run_alphagsm(env, server_name, "info", "--json")
-        last_result = result
-        if result.returncode == 0:
-            try:
-                payload = json.loads(result.stdout.strip())
-            except json.JSONDecodeError:
-                payload = None
-            if payload is not None and payload.get("protocol") == expected_protocol:
-                if expected_port is None or payload.get("port") == expected_port:
-                    return payload
-                last_payload = payload
-            else:
-                last_payload = payload
-        time.sleep(5)
-    payload_summary = repr(last_payload) if last_payload is not None else None
-    stderr = "" if last_result is None else (last_result.stderr or last_result.stdout)
-    pytest.fail(
-        "info --json did not report protocol {!r} on port {!r} within {}s. "
-        "Last payload: {}. Last command output: {}".format(
-            expected_protocol,
-            expected_port,
-            timeout_seconds,
-            payload_summary,
-            stderr,
-        )
-    )
-
-
 @pytest.mark.timeout(TEST_TIMEOUT)
 def test_outpostzeroserver_lifecycle(tmp_path):
     require_integration_opt_in()
@@ -105,7 +51,11 @@ def test_outpostzeroserver_lifecycle(tmp_path):
         require_proton()
     else:
         require_command("docker")
-        image = resolve_wine_proton_runtime_image()
+        image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_WINE_PROTON_IMAGE,
+        PUBLISHED_WINE_PROTON_IMAGE,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

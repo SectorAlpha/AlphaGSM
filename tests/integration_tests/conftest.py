@@ -63,6 +63,45 @@ def require_command_or_skip(name, reason=None):
         pytest.skip(reason or f"Required command not available: {name}")
 
 
+def resolve_runtime_image(configured_env_var, local_image, published_image):
+    """Prefer a configured, local, then published Docker runtime image."""
+
+    configured_image = os.environ.get(configured_env_var)
+    if configured_image:
+        return configured_image
+
+    local_result = subprocess.run(
+        ["docker", "image", "inspect", local_image],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if local_result.returncode == 0:
+        return local_image
+
+    return published_image
+
+
+def resolve_steamcmd_linux_runtime_image():
+    """Prefer an explicit or local SteamCMD Linux runtime image when available."""
+
+    return resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX",
+        "alphagsm-steamcmd-linux-runtime:test",
+        "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest",
+    )
+
+
+def resolve_wine_proton_runtime_image():
+    """Prefer an explicit or local Wine/Proton runtime image when available."""
+
+    return resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        "alphagsm-wine-proton-runtime:test",
+        "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest",
+    )
+
+
 def require_proton():
     """Fail if neither Wine nor Proton-GE is available on the host system.
 
@@ -456,6 +495,9 @@ def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
     log_command_result("alphagsm " + " ".join(args), result)
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+        if len(args) >= 2 and args[1] == "start":
+            server_name = args[0]
+            _dump_alphagsm_runtime_logs(env, server_name)
     assert result.returncode == 0, result.stderr or result.stdout
     return result
 

@@ -1,7 +1,6 @@
 """Integration test for argoserver."""
 
 import os
-import subprocess
 
 import pytest
 
@@ -9,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
+    resolve_steamcmd_linux_runtime_image,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -32,25 +32,6 @@ LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
 runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
 module_name = "argoserver"
-
-
-def resolve_steamcmd_linux_runtime_image():
-    """Prefer an explicit or local SteamCMD Linux runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_DOCKER_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_DOCKER_IMAGE
-
-    return PUBLISHED_DOCKER_IMAGE
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)

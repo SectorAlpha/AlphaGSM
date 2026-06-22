@@ -1611,6 +1611,10 @@ def get_runtime_doctor_report(server):
         report["container_spec_error"] = str(ex)
         return report
 
+    report["working_dir"] = spec.get("working_dir", "")
+    report["command"] = list(spec.get("command", ()))
+    report["mounts"] = copy.deepcopy(spec.get("mounts", []))
+    report["ports"] = copy.deepcopy(spec.get("ports", []))
     report["mount_count"] = len(spec.get("mounts") or ())
     report["port_count"] = len(spec.get("ports") or ())
 
@@ -1705,6 +1709,38 @@ def print_runtime_doctor_report(server):
     print("Container name: " + report.get("container_name", ""))
     print("Network mode: " + report.get("network_mode", ""))
     print("Stop mode: " + report.get("stop_mode", ""))
+    working_dir = report.get("working_dir")
+    if working_dir:
+        print("Working dir: " + working_dir)
+    command = report.get("command") or []
+    if command:
+        print("Command: " + shlex.join(command))
+    mounts = report.get("mounts") or []
+    if mounts:
+        print("Mounts:")
+        for mount in mounts:
+            if isinstance(mount, dict):
+                mount_line = "{source} -> {target} [{mode}]".format(
+                    source=mount.get("source", ""),
+                    target=mount.get("target", ""),
+                    mode=mount.get("mode", "rw"),
+                )
+            else:
+                mount_line = str(mount)
+            print("  - " + mount_line)
+    ports = report.get("ports") or []
+    if ports:
+        print("Ports:")
+        for port in ports:
+            if isinstance(port, dict):
+                port_line = "{host}:{container}/{protocol}".format(
+                    host=port.get("host", ""),
+                    container=port.get("container", ""),
+                    protocol=port.get("protocol", "tcp"),
+                )
+            else:
+                port_line = str(port)
+            print("  - " + port_line)
     print("Mount entries: " + str(report.get("mount_count", 0)))
     print("Published ports: " + str(report.get("port_count", 0)))
 

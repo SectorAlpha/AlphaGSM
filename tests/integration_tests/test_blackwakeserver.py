@@ -1,7 +1,6 @@
 """Integration test for blackwakeserver."""
 
 import os
-import subprocess
 
 import pytest
 
@@ -10,6 +9,7 @@ from conftest import (
     pick_free_tcp_port,
     log_command_result,
     require_command_for_runtime,
+    resolve_runtime_image,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_alphagsm,
@@ -29,25 +29,6 @@ runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
 module_name = "blackwakeserver"
 
 
-def resolve_wine_proton_runtime_image():
-    """Prefer a branch-local Wine/Proton runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_WINE_PROTON_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_WINE_PROTON_IMAGE
-
-    return PUBLISHED_WINE_PROTON_IMAGE
-
-
 def test_blackwakeserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -62,7 +43,11 @@ def test_blackwakeserver_lifecycle(tmp_path):
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itbw" + tmp_path.name.replace("_", "")[-11:])[:15]
-    image = resolve_wine_proton_runtime_image()
+    image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_WINE_PROTON_IMAGE,
+        PUBLISHED_WINE_PROTON_IMAGE,
+    )
 
     write_config(
         config_path,

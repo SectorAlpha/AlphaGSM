@@ -2,7 +2,6 @@
 
 import json
 import os
-import subprocess
 import time
 from pathlib import Path
 
@@ -12,6 +11,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    resolve_runtime_image,
     require_command_for_runtime,
     require_proton,
     pick_free_tcp_port,
@@ -36,47 +36,6 @@ LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
 
-def resolve_wine_proton_runtime_image():
-    """Prefer a branch-local Wine/Proton runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_WINE_PROTON_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_WINE_PROTON_IMAGE
-
-    return PUBLISHED_WINE_PROTON_IMAGE
-
-
-def wait_for_status_json_running(status_json_path: Path, timeout_seconds: int):
-    """Poll Status.json until it reports the hosted session as running."""
-
-    deadline = time.time() + timeout_seconds
-    last_payload = None
-    while time.time() < deadline:
-        if status_json_path.is_file():
-            try:
-                payload = json.loads(status_json_path.read_text(encoding="utf-8-sig"))
-            except json.JSONDecodeError:
-                payload = None
-            if isinstance(payload, dict):
-                last_payload = payload
-                if payload.get("Status") == "running":
-                    return payload
-        time.sleep(5)
-    pytest.fail(
-        "Status.json did not report a running Return to Moria server within {}s. "
-        "Last payload: {!r}".format(timeout_seconds, last_payload)
-    )
-
-
 @pytest.mark.timeout(TEST_TIMEOUT)
 def test_returntomoriaserver_lifecycle(tmp_path):
     require_integration_opt_in()
@@ -93,7 +52,11 @@ def test_returntomoriaserver_lifecycle(tmp_path):
         require_proton()
     else:
         require_command("docker")
-        image = resolve_wine_proton_runtime_image()
+        image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_WINE_PROTON_IMAGE,
+        PUBLISHED_WINE_PROTON_IMAGE,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

@@ -9,6 +9,7 @@ from conftest import (
     log_command_result,
     pick_free_tcp_port,
     require_command_for_runtime,
+    resolve_runtime_image,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_and_assert_ok,
@@ -30,15 +31,6 @@ runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
 module_name = "scumserver"
 
 
-def resolve_wine_proton_runtime_image():
-    """Return the local wine-proton runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON")
-    if configured_image:
-        return configured_image
-    return "alphagsm-wine-proton-runtime:local"
-
-
 @pytest.mark.timeout(TEST_TIMEOUT)
 def test_scumserver_lifecycle(tmp_path):
     require_integration_opt_in()
@@ -52,7 +44,11 @@ def test_scumserver_lifecycle(tmp_path):
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itscumserver"
-    image = resolve_wine_proton_runtime_image()
+    image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        "alphagsm-wine-proton-runtime:local",
+        "alphagsm-wine-proton-runtime:local",
+    )
 
     write_config(
         config_path,

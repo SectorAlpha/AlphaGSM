@@ -1,7 +1,6 @@
 """Integration test for rwserver."""
 
 import os
-import subprocess
 
 import pytest
 
@@ -18,6 +17,7 @@ from conftest import (
     log_command_result,
     wait_for_info_protocol,
     wait_for_tcp_closed,
+    resolve_steamcmd_linux_runtime_image,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -30,25 +30,6 @@ runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
 module_name = "rwserver"
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
-
-
-def resolve_steamcmd_linux_runtime_image():
-    """Prefer an explicit or local SteamCMD Linux runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_DOCKER_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_DOCKER_IMAGE
-
-    return PUBLISHED_DOCKER_IMAGE
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)

@@ -1,7 +1,6 @@
 """Integration test for ecoserver."""
 
 import os
-import subprocess
 
 import pytest
 
@@ -20,6 +19,7 @@ from conftest import (
     wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
+    resolve_steamcmd_linux_runtime_image,
 )
 from gamemodules.ecoserver import steam_app_id
 
@@ -33,25 +33,6 @@ LOCAL_STEAMCMD_LINUX_IMAGE = "alphagsm-steamcmd-linux-runtime:eco-libgdiplus"
 PUBLISHED_STEAMCMD_LINUX_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
 runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
 module_name = "ecoserver"
-
-
-def resolve_steamcmd_linux_runtime_image():
-    """Prefer a branch-local Eco-capable SteamCMD runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_STEAMCMD_LINUX_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_STEAMCMD_LINUX_IMAGE
-
-    return PUBLISHED_STEAMCMD_LINUX_IMAGE
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)

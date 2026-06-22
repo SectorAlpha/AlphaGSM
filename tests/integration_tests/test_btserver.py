@@ -1,7 +1,6 @@
 """Integration test for btserver."""
 
 import os
-import subprocess
 
 import pytest
 
@@ -20,6 +19,7 @@ from conftest import (
     wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
+    resolve_steamcmd_linux_runtime_image,
 )
 from gamemodules.btserver import steam_app_id
 
@@ -29,25 +29,6 @@ START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
-
-
-def resolve_steamcmd_linux_runtime_image():
-    """Prefer an explicit or local SteamCMD Linux runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_DOCKER_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_DOCKER_IMAGE
-
-    return PUBLISHED_DOCKER_IMAGE
 
 
 @pytest.mark.timeout(3600)  # 60 min: SteamCMD download + slow SteamManager initialisation

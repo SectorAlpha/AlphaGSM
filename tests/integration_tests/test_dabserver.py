@@ -25,6 +25,7 @@ from conftest import (
     wait_for_log_marker,
     wait_for_udp_closed,
     write_config,
+    resolve_steamcmd_linux_runtime_image,
 )
 from gamemodules.dabserver import steam_app_id
 from utils.valve_server import detect_query_host
@@ -40,15 +41,6 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
 module_name = "dabserver"
-
-
-def resolve_steamcmd_linux_runtime_image():
-    """Return the local steamcmd-linux runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX")
-    if configured_image:
-        return configured_image
-    return "alphagsm-steamcmd-linux-runtime:test"
 
 
 def test_dabserver_lifecycle(tmp_path):

@@ -9,7 +9,6 @@ service.
 from __future__ import annotations
 
 import os
-import subprocess
 
 import pytest
 
@@ -20,6 +19,7 @@ from conftest import (
     log_command_result,
     pick_free_tcp_port,
     require_command,
+    resolve_runtime_image,
     require_command_for_runtime,
     require_integration_opt_in,
     require_proton,
@@ -50,25 +50,6 @@ def _docker_rm_force(name):
     )
 
 
-def resolve_wine_proton_runtime_image():
-    """Prefer a branch-local Wine/Proton runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_WINE_PROTON_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_WINE_PROTON_IMAGE
-
-    return PUBLISHED_WINE_PROTON_IMAGE
-
-
 def test_lifeisfeudalserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -84,7 +65,11 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
     if runtime_backend == "process":
         require_proton()
     else:
-        image = resolve_wine_proton_runtime_image()
+        image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_WINE_PROTON_IMAGE,
+        PUBLISHED_WINE_PROTON_IMAGE,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

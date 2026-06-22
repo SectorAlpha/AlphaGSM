@@ -1,7 +1,6 @@
 """Integration test for subsistenceserver."""
 
 import os
-import subprocess
 
 import pytest
 
@@ -9,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
+    resolve_runtime_image,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -30,25 +30,6 @@ runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
 module_name = "subsistenceserver"
 
 
-def resolve_wine_proton_runtime_image():
-    """Prefer a branch-local Wine/Proton runtime image when available."""
-
-    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON")
-    if configured_image:
-        return configured_image
-
-    local_image = subprocess.run(
-        ["docker", "image", "inspect", LOCAL_DOCKER_IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if local_image.returncode == 0:
-        return LOCAL_DOCKER_IMAGE
-
-    return PUBLISHED_DOCKER_IMAGE
-
-
 def test_subsistenceserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -61,7 +42,11 @@ def test_subsistenceserver_lifecycle(tmp_path):
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itsubsistences"
-    image = resolve_wine_proton_runtime_image()
+    image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_DOCKER_IMAGE,
+        PUBLISHED_DOCKER_IMAGE,
+    )
     queryport = pick_free_tcp_port()
 
     write_config(

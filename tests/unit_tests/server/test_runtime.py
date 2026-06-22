@@ -832,6 +832,10 @@ def test_runtime_doctor_report_includes_docker_runtime_health(monkeypatch):
     assert report["image_present"] is True
     assert report["container_state"] == "stopped"
     assert report["mount_path_identity"] == "ok"
+    assert report["working_dir"] == "/srv/server"
+    assert report["command"] == ["./server"]
+    assert report["mounts"] == [{"source": "/srv/host", "target": "/srv/server", "mode": "rw"}]
+    assert report["ports"] == [{"host": 25565, "container": 25565, "protocol": "tcp"}]
     assert report["mount_count"] == 1
     assert report["port_count"] == 1
 
