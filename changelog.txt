@@ -7,6 +7,10 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-06-22
+- CI/workflow: add a repository-local `scripts/ci_status.py` helper that polls `gh run view --json ...`, prints compact run status, and surfaces failed jobs plus filtered log excerpts for faster triage when GitHub Actions checks fail.
+- CI/workflow: move the `btserver` and `valheim` smoke runners onto the Docker SteamCMD pattern, matching the newer integration lanes with explicit runtime image selection, Docker backend config, and query/info readiness checks instead of the older host-process `screen` flow.
+
 2026-06-15
 - CI/workflow: centralize the shared SteamCMD and Wine/Proton runtime-image resolvers in the integration test fixture layer and make Docker start failures print the computed runtime doctor details, including the resolved command, working directory, mounts, and ports, so launch-path regressions are easier to diagnose in CI.
 - CI/workflow: move `starruptureserver`, `subnauticaserver`, `subsistenceserver`, `terraria.tshock`, `tiserver`, and `ut3server` into the GitHub process-plus-docker integration subset while preserving their existing lifecycle/query/info assertions and current Docker, SteamCMD, or auth behavior, keeping local runs process-backed by default, and reusing the shared runtime-aware harness so the game modules stay runtime-agnostic on the Ubuntu 24.04 CI baseline.
