@@ -6,18 +6,18 @@ import subprocess
 import pytest
 
 from conftest import (
+    alphagsm_env,
+    log_command_result,
+    pick_free_tcp_port,
+    require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
-    pick_free_tcp_port,
     run_setup_with_port_retry,
-    write_config,
-    alphagsm_env,
-    run_and_assert_ok,
     run_alphagsm,
-    log_command_result,
+    run_and_assert_ok,
     wait_for_info_protocol,
     wait_for_tcp_closed,
+    write_config,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -25,6 +25,8 @@ START_TIMEOUT = 900
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "groundbranchserver"
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
@@ -52,7 +54,9 @@ def resolve_wine_proton_runtime_image():
 def test_groundbranchserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -66,8 +70,8 @@ def test_groundbranchserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="groundbranchserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
@@ -75,7 +79,7 @@ def test_groundbranchserver_lifecycle(tmp_path):
     while queryport == port:
         queryport = pick_free_tcp_port()
 
-    run_and_assert_ok(env, server_name, "create", "groundbranchserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
 

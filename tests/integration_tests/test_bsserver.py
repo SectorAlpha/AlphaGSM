@@ -52,7 +52,13 @@ def resolve_steamcmd_linux_runtime_image():
 def test_bsserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "bsserver"
+    require_command_for_runtime(
+        "docker",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -66,8 +72,8 @@ def test_bsserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="bsserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
@@ -80,7 +86,7 @@ def test_bsserver_lifecycle(tmp_path):
     query_host = detect_query_host()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "bsserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "clientport", str(clientport))
     run_and_assert_ok(env, server_name, "set", "sourcetvport", str(sourcetvport))

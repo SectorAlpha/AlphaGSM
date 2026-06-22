@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import build_launch_arg_values
@@ -110,7 +109,7 @@ def get_query_address(server):
 def do_stop(server, j):
     """Send a shutdown request to Satisfactory."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

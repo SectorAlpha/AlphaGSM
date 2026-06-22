@@ -5,7 +5,6 @@ from pathlib import Path
 import re
 import shutil
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.modsupport.downloads import (
@@ -530,7 +529,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Send the standard shutdown command to 7 Days to Die."""
 
-    screen.send_to_server(server.name, "\nshutdown\n")
+    runtime_module.send_to_server(server, "\nshutdown\n")
 
 
 def status(server, verbose):

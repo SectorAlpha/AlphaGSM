@@ -1,17 +1,12 @@
 """Integration test for rtcwserver."""
 
-import pytest
+import os
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(
-        reason="ENABLED (BYO): requires original RTCW multiplayer assets (main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3) not available in CI"
-    ),
-]
+import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -21,16 +16,43 @@ from conftest import (
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
+
+pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+RTCW_REQUIRED_MULTIPLAYER_ASSETS = (
+    "mp_bin.pk3",
+    "mp_pak0.pk3",
+    "mp_pak1.pk3",
+    "mp_pak2.pk3",
+    "mp_pak3.pk3",
+    "mp_pak4.pk3",
+    "mp_pak5.pk3",
+    "mp_pakmaps0.pk3",
+    "mp_pakmaps1.pk3",
+    "mp_pakmaps2.pk3",
+    "mp_pakmaps3.pk3",
+    "mp_pakmaps4.pk3",
+    "mp_pakmaps5.pk3",
+    "mp_pakmaps6.pk3",
+)
+BYO_SKIP_REASON = (
+    "ENABLED (BYO): requires original RTCW multiplayer assets "
+    "(main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3)"
+)
 
 
 def test_rtcwserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "rtcwserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -38,17 +60,40 @@ def test_rtcwserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itrtcwserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "rtcwserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
+        result,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+    assert result.returncode == 0, result.stderr or result.stdout
+
+    main_dir = install_dir / "main"
+    missing_assets = [
+        asset_name
+        for asset_name in RTCW_REQUIRED_MULTIPLAYER_ASSETS
+        if not (main_dir / asset_name).is_file()
+    ]
+    if missing_assets:
+        pytest.skip(
+            f"{BYO_SKIP_REASON}; missing staged assets under {main_dir}: "
+            + ", ".join(missing_assets)
+        )
 
     # start
     run_and_assert_ok(env, server_name, "start")

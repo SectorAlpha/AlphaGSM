@@ -1,12 +1,14 @@
 """Integration test for warbandserver."""
 
+import os
+
 import pytest
 
 pytestmark = [pytest.mark.integration]
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     require_proton,
     pick_free_tcp_port,
     write_config,
@@ -22,11 +24,13 @@ from conftest import (
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "warbandserver"
 
 
 def test_warbandserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    require_command_for_runtime("screen", runtime_backend=runtime_backend, module_name=module_name)
     require_proton()
 
     home_dir = tmp_path / "home"
@@ -35,12 +39,18 @@ def test_warbandserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itwarbandserve"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "warbandserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))

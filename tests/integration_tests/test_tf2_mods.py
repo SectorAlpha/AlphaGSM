@@ -16,6 +16,7 @@ import threading
 import pytest
 
 from conftest import write_config
+from conftest import require_command_for_runtime
 from gamemodules.teamfortress2 import steam_app_id
 import gamemodules.teamfortress2 as tf2
 import gamemodules.teamfortress2.mods as tf2_mods
@@ -122,7 +123,13 @@ def _serve_directory(root: Path):
 def test_tf2_curated_mod_cli_flow(tmp_path):
     _require_integration_opt_in()
     _require_steamcmd_opt_in()
-    _require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "teamfortress2"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "alphagsm-home"
     install_dir = tmp_path / "tf2-server"
@@ -131,7 +138,13 @@ def test_tf2_curated_mod_cli_flow(tmp_path):
     port = _pick_free_port()
 
     home_dir.mkdir()
-    write_config(config_path, home_dir, session_tag="AlphaGSM-TF2-MODS#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-TF2-MODS#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     _build_curated_archive(tmp_path)
 
     with _serve_directory(tmp_path) as base_url:
@@ -159,7 +172,7 @@ def test_tf2_curated_mod_cli_flow(tmp_path):
         env = _alphagsm_env(config_path)
         env["ALPHAGSM_TF2_CURATED_REGISTRY_PATH"] = str(registry_path)
 
-        _run_and_assert_ok(env, server_name, "create", "teamfortress2")
+        _run_and_assert_ok(env, server_name, "create", module_name)
         setup_result = _run_alphagsm(
             env,
             server_name,
@@ -226,4 +239,3 @@ def test_curated_sourcemod_live_download_and_install(tmp_path):
     # SourceMod always places at least its plugins directory.
     addons_dir = install_dir / "tf" / "addons" / "sourcemod"
     assert addons_dir.exists(), f"tf/addons/sourcemod not found under {install_dir}"
-

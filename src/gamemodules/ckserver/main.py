@@ -3,7 +3,6 @@
 import os
 import re
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -153,7 +152,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Core Keeper by interrupting the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

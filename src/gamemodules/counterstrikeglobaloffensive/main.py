@@ -7,7 +7,6 @@ import time
 import datetime
 import subprocess as sp
 from server import ServerError
-import screen
 import downloader
 import utils.updatefs
 from utils import updatefs
@@ -202,7 +201,7 @@ def get_start_command(server):
 
 def do_stop(server, j):
     """Send the console command used to stop a running CS:GO server."""
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

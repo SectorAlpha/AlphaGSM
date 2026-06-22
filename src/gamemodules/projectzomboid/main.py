@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -127,7 +126,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Send the standard quit command to Project Zomboid."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

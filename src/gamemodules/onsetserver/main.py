@@ -260,7 +260,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Onset using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

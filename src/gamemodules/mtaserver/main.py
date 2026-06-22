@@ -10,7 +10,6 @@ import tempfile
 import urllib.request
 from urllib.parse import urljoin
 
-import screen
 from server import ServerError
 from server.modsupport.downloads import (
     download_to_cache,
@@ -756,7 +755,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop MTA using the standard shutdown command."""
 
-    screen.send_to_server(server.name, "\nshutdown\n")
+    runtime_module.send_to_server(server, "\nshutdown\n")
 
 
 def status(server, verbose):

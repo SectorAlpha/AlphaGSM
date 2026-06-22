@@ -1,11 +1,13 @@
 """Integration test for goldeneyesourceserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
-    pick_free_tcp_port,
+    require_command_for_runtime,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -13,7 +15,6 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
-    wait_for_tcp_closed,
     wait_for_udp_closed,
 )
 
@@ -23,10 +24,15 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Requires Source 2007 Dedicated Server (SteamCMD AppID 310) and ModDB redirect handling")
 def test_goldeneyesourceserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "goldeneyesourceserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -34,17 +40,28 @@ def test_goldeneyesourceserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itgoldeneyesou"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "goldeneyesourceserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
+        result,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+    assert result.returncode == 0, f"setup failed: {result.stderr or result.stdout}"
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -88,4 +105,4 @@ def test_goldeneyesourceserver_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

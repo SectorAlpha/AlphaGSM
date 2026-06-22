@@ -17,7 +17,6 @@
 
 .PHONY: all install python deps system-libs wine proton wine-proton config lint test coverage integration-test smoke-test help
 
-DEFAULT_INTEGRATION_WORK_DIR ?= /media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme
 
 # Read the pinned Python version from .python-version (e.g. 3.10.13)
 PYTHON_VERSION_FULL := $(shell cat .python-version 2>/dev/null | tr -d '[:space:]')

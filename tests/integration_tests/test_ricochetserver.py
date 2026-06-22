@@ -1,11 +1,13 @@
 """Integration test for ricochetserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -28,7 +30,13 @@ STOP_TIMEOUT = 90
 def test_ricochetserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "ricochetserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -36,17 +44,28 @@ def test_ricochetserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itricochetserv"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "ricochetserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
+        result,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, f"setup failed: {result.stderr or result.stdout}"
 
     # start
     run_and_assert_ok(env, server_name, "start")

@@ -8,6 +8,7 @@ import pytest
 
 from conftest import (
     require_command,
+    require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     pick_free_udp_port,
@@ -29,6 +30,8 @@ SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "hzserver"
 
 
 def resolve_wine_proton_runtime_image():
@@ -54,7 +57,9 @@ def resolve_wine_proton_runtime_image():
 def test_hzserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -68,8 +73,8 @@ def test_hzserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="hzserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
@@ -77,7 +82,7 @@ def test_hzserver_lifecycle(tmp_path):
     while queryport == port:
         queryport = pick_free_udp_port()
 
-    run_and_assert_ok(env, server_name, "create", "hzserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
     run_and_assert_ok(env, server_name, "set", "servername", "AlphaGSM HZ IT")

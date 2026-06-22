@@ -5,7 +5,6 @@ import os
 import re
 import urllib.request
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -155,7 +154,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Vintage Story using the standard shutdown command."""
 
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):

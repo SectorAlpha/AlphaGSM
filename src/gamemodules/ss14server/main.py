@@ -3,7 +3,6 @@
 import json
 import os
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
@@ -209,7 +208,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Space Station 14 using the standard shell interrupt."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

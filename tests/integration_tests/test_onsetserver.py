@@ -1,6 +1,7 @@
 """Integration test for onsetserver."""
 
 import json
+import os
 
 import pytest
 
@@ -8,7 +9,7 @@ from conftest import (
     alphagsm_env,
     log_command_result,
     pick_free_tcp_port,
-    require_command,
+    require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_alphagsm,
@@ -29,7 +30,13 @@ STOP_TIMEOUT = 90
 def test_onsetserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "onsetserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -37,11 +44,17 @@ def test_onsetserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itonsetserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-Onset-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-Onset-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port(min_port=7779)
 
-    run_and_assert_ok(env, server_name, "create", "onsetserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     setup_result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
     log_command_result(

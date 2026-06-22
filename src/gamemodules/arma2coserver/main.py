@@ -3,7 +3,6 @@
 import os
 
 import gamemodules.arma3server as arma3_base
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
@@ -109,7 +108,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Arma 2 Combined Operations by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

@@ -3,7 +3,6 @@
 import json
 import os
 
-import screen
 from server import ServerError
 from server.settable_keys import SettingSpec, build_native_config_values
 from utils.archive_install import detect_compression, install_archive
@@ -195,7 +194,7 @@ def list_setting_values(server, canonical_key):
 def do_stop(server, j):
     """Stop RimWorld Together by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

@@ -3,7 +3,6 @@
 import os
 import shutil
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
@@ -170,7 +169,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Wurm Unlimited using the standard shutdown command."""
 
-    screen.send_to_server(server.name, "\nshutdown\n")
+    runtime_module.send_to_server(server, "\nshutdown\n")
 
 
 def status(server, verbose):

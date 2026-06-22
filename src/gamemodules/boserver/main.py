@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -107,7 +106,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Ballistic Overkill by interrupting the foreground process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

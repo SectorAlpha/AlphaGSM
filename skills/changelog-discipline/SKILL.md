@@ -32,7 +32,6 @@ Example:
 ```
 2026-04-15
 - CI: add binary build smoke jobs for Linux, macOS, and Windows artifacts.
-- Integration tests: default local scratch root to /media/.../useme when available.
 - Server support: re-enable minecraft.bedrock after the official Linux download page exposed a direct archive URL again.
 ```
 

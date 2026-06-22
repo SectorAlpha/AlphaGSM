@@ -1,12 +1,14 @@
 """Integration test for ss14server."""
 
+import os
+
 from utils.valve_server import detect_query_host
 
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     require_command_or_skip,
     pick_free_tcp_port,
     write_config,
@@ -30,7 +32,13 @@ STOP_TIMEOUT = 90
 
 def test_ss14server_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "ss14server"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     require_command_or_skip("dotnet", "Space Station 14 requires the dotnet runtime")
 
     home_dir = tmp_path / "home"
@@ -39,12 +47,18 @@ def test_ss14server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itss14server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "ss14server")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))

@@ -536,3 +536,25 @@ def test_make_steamcmd_update_hook_skips_sync_when_install_root_missing(tmp_path
 
     assert downloads == [(str(missing_dir), 456, True, False, {})]
     assert synced == []
+
+
+def test_make_steamcmd_install_hook_passes_beta_branch(tmp_path):
+    install_dir = tmp_path / "server"
+    downloads = []
+    server = SimpleNamespace(data=DummyData(dir=str(install_dir)))
+    steamcmd_module = SimpleNamespace(
+        download=lambda path, app_id, anon, validate=True, **kwargs: downloads.append(
+            (path, app_id, anon, validate, kwargs)
+        )
+    )
+
+    install = gamemodule_common.make_steamcmd_install_hook(
+        steamcmd_module=steamcmd_module,
+        steam_app_id=654,
+        steam_anonymous_login_possible=True,
+        download_kwargs={"beta_branch": "linux_test"},
+    )
+
+    install(server)
+
+    assert downloads == [(str(install_dir), 654, True, False, {"beta_branch": "linux_test"})]

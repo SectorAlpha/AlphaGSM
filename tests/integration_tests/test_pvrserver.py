@@ -7,7 +7,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     run_setup_with_port_retry,
     write_config,
@@ -27,13 +27,17 @@ STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: Pavlov VR setup can exceed the old 10 min SteamCMD budget under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 STATUS_PORT_OFFSET = 400
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "pvrserver"
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)  # Allow the full SteamCMD setup budget plus server bring-up and shutdown
 def test_pvrserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -50,15 +54,15 @@ def test_pvrserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="pvrserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
     status_port = port + STATUS_PORT_OFFSET
 
     # create
-    run_and_assert_ok(env, server_name, "create", "pvrserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup

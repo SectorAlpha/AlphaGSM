@@ -4,7 +4,6 @@ import os
 import re
 import urllib.request
 
-import screen
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
 
@@ -146,7 +145,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop GoldenEye: Source using the standard shell interrupt."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

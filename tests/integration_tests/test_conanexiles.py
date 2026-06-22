@@ -10,7 +10,7 @@ from conftest import (
     alphagsm_env,
     log_command_result,
     pick_free_udp_port,
-    require_command,
+    require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_alphagsm,
@@ -29,6 +29,7 @@ START_TIMEOUT = 900
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
+module_name = "conanexiles"
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
@@ -56,7 +57,10 @@ def resolve_wine_proton_runtime_image():
 def test_conanexiles_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -70,8 +74,8 @@ def test_conanexiles_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="conanexiles",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
@@ -80,7 +84,7 @@ def test_conanexiles_lifecycle(tmp_path):
         queryport = pick_free_udp_port()
     query_host = detect_query_host()
 
-    run_and_assert_ok(env, server_name, "create", "conanexiles")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
     run_and_assert_ok(env, server_name, "set", "servername", "AlphaGSM Conan IT")

@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
@@ -130,7 +129,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Killing Floor 2 using the standard exit command."""
 
-    screen.send_to_server(server.name, "\nexit\n")
+    runtime_module.send_to_server(server, "\nexit\n")
 
 
 def status(server, verbose):

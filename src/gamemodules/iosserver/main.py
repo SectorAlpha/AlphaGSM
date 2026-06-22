@@ -4,7 +4,7 @@ from server.modsupport.source_addons import (
         build_source_addon_mod_support,
         load_shared_source_curated_registry,
 )
-from utils.valve_server import define_valve_server_module
+from utils.valve_server import define_valve_server_module, legacy_source_docker_mounts
 
 
 import server.runtime as runtime_module
@@ -63,12 +63,14 @@ checkvalue = MODULE.checkvalue
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
+        mounts=legacy_source_docker_mounts,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
+        mounts=legacy_source_docker_mounts,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
         stdin_open=True,
 )

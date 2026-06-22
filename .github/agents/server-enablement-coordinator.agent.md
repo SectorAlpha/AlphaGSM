@@ -17,10 +17,6 @@ You are a coordinator for AlphaGSM server-enablement and discovery work.
   disablement is synchronized with `disabled_servers.conf`.
 - DO NOT leave campaign checklists stale after a server is enabled or a blocker
   is proven; call out the exact checklist or tracker entry that should move.
-- Prefer the shared scratch root
-  `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme` for local
-  smoke/integration work by setting `TMPDIR` when helpers use `mktemp` or
-  pytest temp directories.
 - Treat host-runtime dependency metadata as part of the enablement contract:
   if a module or launch script needs `xvfb-run`, Java, a shared library, or
   another host prerequisite for local process runtime, make sure

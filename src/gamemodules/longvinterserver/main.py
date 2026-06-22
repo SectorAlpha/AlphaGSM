@@ -4,7 +4,6 @@ import os
 import shlex
 import shutil
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_launch_arg_values
@@ -179,7 +178,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Longvinter using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

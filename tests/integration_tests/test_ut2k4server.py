@@ -1,12 +1,14 @@
 """Integration test for ut2k4server."""
 
 import json
+import os
 
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_command,
+    require_command_for_runtime,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -33,7 +35,12 @@ READY_MARKERS = (
 @pytest.mark.timeout(TEST_TIMEOUT)
 def test_ut2k4server_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name="ut2k4server",
+    )
     require_command("7z")
 
     home_dir = tmp_path / "home"
@@ -42,7 +49,13 @@ def test_ut2k4server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itut2k4server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name="ut2k4server",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
 

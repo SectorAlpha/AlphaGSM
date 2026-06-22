@@ -13,9 +13,9 @@ import tarfile
 import urllib.request
 
 import downloader
-import screen
 from server import ServerError
 from server.settable_keys import SettingSpec
+import server.runtime as runtime_module
 from utils import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.gamemodules import common as gamemodule_common
@@ -282,7 +282,7 @@ def get_start_command(server):
 
 
 def do_stop(server, j):
-    screen.send_to_server(server.name, "\nexit\n")
+    runtime_module.send_to_server(server, "\nexit\n")
 
 
 def status(server, verbose):

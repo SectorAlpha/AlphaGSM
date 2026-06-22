@@ -3,11 +3,13 @@
 ENABLED (BYO): set a working archive url or stage bf1942_lnxded before setup/start
 """
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -22,21 +24,25 @@ from conftest import (
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(
-        reason=(
-            "ENABLED (BYO): set url to a working Battlefield 1942 dedicated-server "
-            "archive or stage bf1942_lnxded in <install_dir> before setup/start"
-        )
-    ),
 ]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+BYO_SKIP_REASON = (
+    "ENABLED (BYO): set url to a working Battlefield 1942 dedicated-server "
+    "archive or stage bf1942_lnxded in <install_dir> before setup/start"
+)
 
 
 def test_bf1942server_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "bf1942server"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -44,20 +50,37 @@ def test_bf1942server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itbf1942server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "bf1942server")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
+        result,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+        if not (install_dir / "bf1942_lnxded").is_file():
+            pytest.skip(BYO_SKIP_REASON)
+    assert result.returncode == 0, result.stderr or result.stdout
 
     # start
-    run_and_assert_ok(env, server_name, "start")
+    start_result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm " + " ".join((server_name, "start")), start_result)
+    if start_result.returncode != 0 and not (install_dir / "bf1942_lnxded").is_file():
+        pytest.skip(BYO_SKIP_REASON)
+    assert start_result.returncode == 0, start_result.stderr or start_result.stdout
 
     try:
         # wait for readiness

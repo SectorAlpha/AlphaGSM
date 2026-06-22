@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 from server import ServerError
 
 import server.runtime as runtime_module
@@ -111,7 +110,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Aloft by interrupting the foreground server process."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 from server import ServerError
 from utils.backups import backups as backup_utils
 
@@ -127,7 +126,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop SOF2 using the standard in-console quit command."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

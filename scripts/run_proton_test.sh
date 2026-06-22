@@ -5,7 +5,6 @@
 set -euo pipefail
 
 MODULE="${1:-theforestserver}"
-WORK_DIR="${ALPHAGSM_WORK_DIR:-/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme}"
 
 cd "$(git rev-parse --show-toplevel)"
 

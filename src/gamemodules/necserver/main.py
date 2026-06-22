@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -119,7 +118,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Necesse using the standard console command."""
 
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):

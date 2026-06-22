@@ -9,7 +9,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     run_setup_with_port_retry,
     write_config,
@@ -54,13 +54,19 @@ def resolve_wine_proton_runtime_image():
 def test_deadpolyserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itdeadpoly" + tmp_path.name.replace("_", "")[-8:])[:15]
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "deadpolyserver"
+    require_command_for_runtime(
+        "docker",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     image = resolve_wine_proton_runtime_image()
 
     write_config(
@@ -68,8 +74,8 @@ def test_deadpolyserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="deadpolyserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
@@ -77,7 +83,7 @@ def test_deadpolyserver_lifecycle(tmp_path):
     while queryport == port:
         queryport = pick_free_tcp_port()
 
-    run_and_assert_ok(env, server_name, "create", "deadpolyserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
     run_and_assert_ok(env, server_name, "set", "servername", "AlphaGSM DeadPoly IT")

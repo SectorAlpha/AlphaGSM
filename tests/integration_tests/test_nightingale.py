@@ -8,7 +8,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     run_setup_with_port_retry,
     write_config,
@@ -27,6 +27,8 @@ SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "nightingale"
 
 
 def resolve_steamcmd_linux_runtime_image():
@@ -52,7 +54,9 @@ def resolve_steamcmd_linux_runtime_image():
 def test_nightingale_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -66,14 +70,14 @@ def test_nightingale_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="nightingale",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "nightingale")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup

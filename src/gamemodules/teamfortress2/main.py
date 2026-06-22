@@ -4,7 +4,6 @@ import os
 import re
 import sys
 
-import screen
 import server.runtime as runtime_module
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from server.settable_keys import build_launch_arg_values, build_native_config_values
@@ -304,7 +303,7 @@ def get_start_command(server):
 
 def do_stop(server, j):
     """Send the console command used to stop a running TF2 server."""
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def _parse_bool_cvar(output, cvar_name):

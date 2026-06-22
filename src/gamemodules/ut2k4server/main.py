@@ -8,7 +8,6 @@ import subprocess as sp
 import tempfile
 
 import downloader
-import screen
 from server import ServerError
 from server.modsupport.downloads import (
     download_to_cache,
@@ -575,7 +574,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Unreal Tournament 2004 using the standard console command."""
 
-    screen.send_to_server(server.name, "\nexit\n")
+    runtime_module.send_to_server(server, "\nexit\n")
 
 
 def get_query_address(server):

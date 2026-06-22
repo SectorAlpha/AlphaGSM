@@ -121,7 +121,6 @@ Update these in order when relevant:
 - lint: `make lint` (or `bash ./lint.sh` directly) — must score `10.00/10`
 - unit tests: `make test` — keep green
 - integration tests: `make integration-test` — keep green
-  default local scratch root: `/media/cosmosquark/a55b079e-515f-4798-a120-b1e69dda0b22/useme`
 - smoke tests: `make smoke-test` (or `make smoke-test SMOKE_TEST=run_<name>.sh`) — keep accurate
 
 ## New Module Test Contract

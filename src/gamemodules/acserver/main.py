@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 
@@ -103,7 +102,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Assetto Corsa using the standard stop command."""
 
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):

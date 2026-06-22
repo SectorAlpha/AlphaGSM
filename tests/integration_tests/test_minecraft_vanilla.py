@@ -10,6 +10,8 @@ import time
 
 import pytest
 
+from conftest import effective_runtime_backend, require_command_for_runtime
+
 
 pytestmark = pytest.mark.integration
 
@@ -46,7 +48,21 @@ def _pick_free_port():
     raise RuntimeError("Could not find a free TCP+UDP port after 100 attempts")
 
 
-def _write_config(config_path, home_dir):
+def _write_config(
+    config_path,
+    home_dir,
+    *,
+    runtime_backend="process",
+    module_name=None,
+    servermodulespackage="gamemodules.",
+    backend="screen",
+    docker_backend="subprocess",
+):
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+        servermodulespackage=servermodulespackage,
+    )
     config_path.write_text(
         "\n".join(
             [
@@ -60,6 +76,16 @@ def _write_config(config_path, home_dir):
                 "",
                 "[server]",
                 f"datapath = {home_dir / 'conf'}",
+                f"servermodulespackage = {servermodulespackage}",
+                "",
+                "[runtime]",
+                f"backend = {selected_runtime_backend}",
+                "",
+                "[process]",
+                f"backend = {backend}",
+                "",
+                "[docker]",
+                f"backend = {docker_backend}",
                 "",
                 "[screen]",
                 f"screenlog_path = {home_dir / 'logs'}",
@@ -235,8 +261,14 @@ def _wait_for_port_to_close(host, port, timeout_seconds):
 
 def test_minecraft_vanilla_download_install_and_start(tmp_path):
     _require_integration_opt_in()
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "minecraft.vanilla"
     _require_command("java")
-    _require_command("screen")
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "alphagsm-home"
     install_dir = tmp_path / "minecraft-server"
@@ -246,12 +278,17 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
     port = _pick_free_port()
 
     home_dir.mkdir()
-    _write_config(config_path, home_dir)
+    _write_config(
+        config_path,
+        home_dir,
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     _write_java_wrapper(wrapper_path)
     release_id, server_url = _fetch_latest_release_server_url()
     env = _alphagsm_env(config_path)
 
-    _run_and_assert_ok(env, server_name, "create", "minecraft.vanilla")
+    _run_and_assert_ok(env, server_name, "create", module_name)
     _run_and_assert_ok(env, server_name, "set", "javapath", str(wrapper_path))
     _run_setup_with_download_retry(
         env,

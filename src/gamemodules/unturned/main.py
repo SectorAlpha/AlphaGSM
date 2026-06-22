@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
@@ -107,7 +106,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Send save and shutdown commands to Unturned."""
 
-    screen.send_to_server(server.name, "\nsave\nshutdown\n")
+    runtime_module.send_to_server(server, "\nsave\nshutdown\n")
 
 
 def status(server, verbose):

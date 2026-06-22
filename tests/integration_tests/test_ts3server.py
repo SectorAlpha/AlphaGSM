@@ -1,12 +1,13 @@
 """Integration test for ts3server."""
 
 import json as _info_json
+import os
 
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     wait_for_tcp_open,
     write_config,
@@ -28,7 +29,13 @@ STOP_TIMEOUT = 90
 
 def test_ts3server_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "ts3server"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -36,12 +43,26 @@ def test_ts3server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itts3server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    queryport = pick_free_tcp_port()
+    while queryport == port:
+        queryport = pick_free_tcp_port()
+    filetransferport = pick_free_tcp_port()
+    while filetransferport in {port, queryport}:
+        filetransferport = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "ts3server")
+    run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
+    run_and_assert_ok(env, server_name, "set", "filetransferport", str(filetransferport))
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -63,8 +84,8 @@ def test_ts3server_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # TS3 ServerQuery runs on TCP port 10011; wait until it is accepting connections
-        wait_for_tcp_open("127.0.0.1", 10011, 300, log_path=log_path)
+        # TS3 ServerQuery runs on the configured TCP query port; wait until it is accepting
+        wait_for_tcp_open("127.0.0.1", queryport, 300, log_path=log_path)
 
         # query — TS3 ServerQuery protocol
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -140,4 +161,6 @@ def test_ts3server_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", filetransferport, STOP_TIMEOUT)

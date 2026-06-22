@@ -1,11 +1,13 @@
 """Integration test for qlserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -23,19 +25,22 @@ pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-
-
-@pytest.mark.skip(
-    reason=(
-        "ENABLED (BYO): Quake Live installs qzeroded.x64, but anonymous SteamCMD startup still "
-        "exits immediately; this lane needs an owned/authenticated Quake Live "
-        "entitlement plus any required server auth/config"
-    )
+BYO_SKIP_REASON = (
+    "ENABLED (BYO): Quake Live installs qzeroded.x64, but anonymous SteamCMD startup still "
+    "exits immediately; this lane needs an owned/authenticated Quake Live "
+    "entitlement plus any required server auth/config"
 )
+
 def test_qlserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "qlserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -43,20 +48,37 @@ def test_qlserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itqlserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "qlserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result("alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))), result)
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, result.stderr or result.stdout
 
     # start
-    run_and_assert_ok(env, server_name, "start")
+    start_result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm " + " ".join((server_name, "start")), start_result)
+    if start_result.returncode != 0:
+        skip_for_known_steamcmd_issue(start_result, app_id=steam_app_id)
+        if (install_dir / "qzeroded.x64").is_file():
+            snippet = "\n".join(
+                part for part in (start_result.stdout, start_result.stderr) if part
+            )[:300].replace("\n", " | ")
+            pytest.skip(f"{BYO_SKIP_REASON}: {snippet}")
+    assert start_result.returncode == 0, start_result.stderr or start_result.stdout
 
     try:
         # wait for readiness

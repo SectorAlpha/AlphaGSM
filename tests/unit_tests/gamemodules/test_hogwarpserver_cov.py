@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.hogwarpserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.hogwarpserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 class DummyData(dict):
     def save(self):
@@ -98,7 +99,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()

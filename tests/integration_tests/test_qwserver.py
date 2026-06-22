@@ -1,10 +1,12 @@
 """Integration test for qwserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -14,6 +16,7 @@ from conftest import (
     skip_for_known_steamcmd_issue,
     wait_for_quakeworld_ready,
     wait_for_tcp_closed,
+    wait_for_udp_closed,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -24,7 +27,13 @@ STOP_TIMEOUT = 90
 
 def test_qwserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "qwserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -32,17 +41,25 @@ def test_qwserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itqwserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "qwserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result("alphagsm setup", result)
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+    assert result.returncode == 0, result.stderr or result.stdout
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -82,3 +99,4 @@ def test_qwserver_lifecycle(tmp_path):
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

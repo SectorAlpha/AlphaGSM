@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.ut99server', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.ut99server as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 class DummyData(dict):
     def save(self):
@@ -220,7 +221,7 @@ def test_get_container_spec_does_not_require_installed_executable(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_get_query_address_uses_udp_protocol():
     server = DummyServer()

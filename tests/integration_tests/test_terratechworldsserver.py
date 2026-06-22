@@ -1,11 +1,13 @@
 """Integration test for terratechworldsserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     require_proton,
     pick_free_tcp_port,
     write_config,
@@ -27,9 +29,13 @@ STOP_TIMEOUT = 90
 
 def test_terratechworldsserver_lifecycle(tmp_path):
     require_integration_opt_in()
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "terratechworldsserver"
     require_steamcmd_opt_in()
     require_proton()
-    require_command("screen")
+    require_command_for_runtime(
+        "screen", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -37,12 +43,18 @@ def test_terratechworldsserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itttw" + tmp_path.name.replace("_", "")[-10:])[:15]
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "terratechworldsserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))

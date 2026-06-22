@@ -1,100 +1,36 @@
-"""Integration test for Team Fortress 2.
-
-Requires SteamCMD — gated behind ALPHAGSM_RUN_STEAMCMD=1.
-App ID is read from gamemodules.teamfortress2.steam_app_id.
-"""
+"""Integration test for Team Fortress 2."""
 
 import json
 import os
 from pathlib import Path
-import shutil
-import socket
-import subprocess
-import sys
 import time
 
 import pytest
 
-from conftest import write_config
+from conftest import (
+    require_integration_opt_in,
+    require_steamcmd_opt_in,
+    require_command_for_runtime,
+    pick_free_udp_port,
+    write_config,
+    alphagsm_env,
+    run_and_assert_ok,
+    run_alphagsm,
+    log_command_result,
+    skip_for_known_steamcmd_issue,
+    wait_for_log_marker,
+    wait_for_udp_closed,
+)
 from gamemodules.teamfortress2 import steam_app_id
+from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 TEST_TIMEOUT_SECONDS = 1200
 START_TIMEOUT_SECONDS = 600
 STOP_TIMEOUT_SECONDS = 90
 READY_LOG_MARKERS = ("SV_ActivateServer: setting tickrate")
 HIBERNATION_MARKERS = ("Server is hibernating",)
-
-
-def _require_integration_opt_in():
-    if os.environ.get("ALPHAGSM_RUN_INTEGRATION") != "1":
-        pytest.skip("Set ALPHAGSM_RUN_INTEGRATION=1 to run integration tests")
-
-
-def _require_steamcmd_opt_in():
-    if os.environ.get("ALPHAGSM_RUN_STEAMCMD") != "1":
-        pytest.skip("Set ALPHAGSM_RUN_STEAMCMD=1 to run SteamCMD integration tests")
-
-
-def _require_command(name):
-    if shutil.which(name) is None:
-        pytest.skip(f"Required command not available: {name}")
-
-
-def _pick_free_port():
-    for _attempt in range(100):
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.bind(("127.0.0.1", 0))
-            port = sock.getsockname()[1]
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp_sock:
-            try:
-                tcp_sock.bind(("127.0.0.1", port))
-            except OSError:
-                continue
-        return port
-    raise RuntimeError("Could not find a free UDP+TCP port after 100 attempts")
-
-
-def _alphagsm_env(config_path):
-    env = os.environ.copy()
-    env["ALPHAGSM_CONFIG_LOCATION"] = str(config_path)
-    env["PYTHONPATH"] = str(REPO_ROOT / "src")
-    return env
-
-
-def _run_alphagsm(env, *args, timeout=TEST_TIMEOUT_SECONDS):
-    command = [sys.executable, str(ALPHAGSM_SCRIPT)] + list(args)
-    return subprocess.run(
-        command,
-        env=env,
-        cwd=str(REPO_ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
-
-
-def _log_command_result(name, result):
-    print(f"\n=== {name} ===")
-    print(f"returncode: {result.returncode}")
-    if result.stdout:
-        print("stdout:")
-        print(result.stdout.rstrip())
-    if result.stderr:
-        print("stderr:")
-        print(result.stderr.rstrip())
-
-
-def _run_and_assert_ok(env, *args, timeout=TEST_TIMEOUT_SECONDS):
-    result = _run_alphagsm(env, *args, timeout=timeout)
-    _log_command_result("alphagsm " + " ".join(args), result)
-    assert result.returncode == 0, result.stderr or result.stdout
-    return result
 
 
 def _skip_for_known_tf2_setup_issue(result):
@@ -109,39 +45,6 @@ def _skip_for_known_tf2_setup_issue(result):
             "TF2 setup currently fails in production during install/config creation "
             "(missing tf/cfg/server.cfg after SteamCMD setup)"
         )
-
-
-def _wait_for_closed(host, port, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    while time.time() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.settimeout(2)
-            try:
-                sock.connect((host, port))
-                sock.send(b"\xFF\xFF\xFF\xFFTSource Engine Query\x00")
-                sock.recv(4096)
-            except Exception:  # noqa: BLE001
-                return
-        time.sleep(2)
-    raise AssertionError("TF2 server still responds after stop timeout")
-
-
-def _wait_for_log_ready(log_path, timeout_seconds):
-    return _wait_for_log_marker(log_path, READY_LOG_MARKERS, timeout_seconds)
-
-
-def _wait_for_log_marker(log_path, markers, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    while time.time() < deadline:
-        if log_path.exists():
-            log_text = log_path.read_text(errors="replace")
-            if any(marker in log_text for marker in markers):
-                return log_text
-        time.sleep(2)
-    pytest.fail(
-        f"TF2 server log never showed markers {markers!r} within {timeout_seconds}s: {log_path}"
-    )
-
 
 def _assert_tf2_launcher_exists(install_dir):
     launchers = [install_dir / "srcds_run_64", install_dir / "srcds_run"]
@@ -200,23 +103,36 @@ def _assert_common_tf2_info(data, expected_map="cp_dustbowl"):
 
 
 def test_tf2_download_install_and_start(tmp_path):
-    _require_integration_opt_in()
-    _require_steamcmd_opt_in()
-    _require_command("screen")
+    require_integration_opt_in()
+    require_steamcmd_opt_in()
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    module_name = "teamfortress2"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "alphagsm-home"
     install_dir = tmp_path / "tf2-server"
     config_path = tmp_path / "alphagsm-tf2.conf"
-    port = _pick_free_port()
+    port = pick_free_udp_port()
     server_name = f"ittf2{port % 100000:05d}"
 
     home_dir.mkdir()
-    write_config(config_path, home_dir, session_tag="AlphaGSM-TF2-IT#")
-    env = _alphagsm_env(config_path)
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-TF2-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
+    env = alphagsm_env(config_path)
     log_path = home_dir / "logs" / f"AlphaGSM-TF2-IT#{server_name}.log"
+    query_host = detect_query_host()
 
-    _run_and_assert_ok(env, server_name, "create", "teamfortress2")
-    setup_result = _run_alphagsm(
+    run_and_assert_ok(env, server_name, "create", module_name)
+    setup_result = run_alphagsm(
         env,
         server_name,
         "setup",
@@ -225,10 +141,12 @@ def test_tf2_download_install_and_start(tmp_path):
         str(install_dir),
         timeout=TEST_TIMEOUT_SECONDS,
     )
-    _log_command_result(
+    log_command_result(
         "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
         setup_result,
     )
+    if setup_result.returncode != 0:
+        skip_for_known_steamcmd_issue(setup_result, app_id=steam_app_id)
     _skip_for_known_tf2_setup_issue(setup_result)
     assert setup_result.returncode == 0, setup_result.stderr or setup_result.stdout
 
@@ -242,25 +160,25 @@ def test_tf2_download_install_and_start(tmp_path):
     assert installed_maps, "Expected TF2 install to expose at least one installed map"
     selected_map = installed_maps[0]
 
-    describe_result = _run_and_assert_ok(env, server_name, "set", "gamemap", "--describe")
+    describe_result = run_and_assert_ok(env, server_name, "set", "gamemap", "--describe")
     assert "Canonical key: map" in describe_result.stdout
 
-    _run_and_assert_ok(env, server_name, "set", "gamemap", selected_map)
+    run_and_assert_ok(env, server_name, "set", "gamemap", selected_map)
     rcon_password = f"rcon-{port}"
-    _run_and_assert_ok(env, server_name, "set", "rconpassword", rcon_password)
+    run_and_assert_ok(env, server_name, "set", "rconpassword", rcon_password)
     config_text = server_cfg_path.read_text(encoding="utf-8")
     assert f'rcon_password "{rcon_password}"' in config_text
 
     try:
         _set_tf2_hibernation(server_cfg_path, enabled=True)
-        _run_and_assert_ok(env, server_name, "start", timeout=60)
-        _wait_for_log_ready(log_path, START_TIMEOUT_SECONDS)
-        status_cmd = _run_and_assert_ok(env, server_name, "status")
+        run_and_assert_ok(env, server_name, "start", timeout=60)
+        wait_for_log_marker(log_path, READY_LOG_MARKERS, START_TIMEOUT_SECONDS)
+        status_cmd = run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
 
-        _wait_for_log_marker(log_path, HIBERNATION_MARKERS, START_TIMEOUT_SECONDS)
+        wait_for_log_marker(log_path, HIBERNATION_MARKERS, START_TIMEOUT_SECONDS)
 
-        hibernating_info_result = _run_and_assert_ok(
+        hibernating_info_result = run_and_assert_ok(
             env, server_name, "info", "--json"
         )
         hibernating_info = json.loads(hibernating_info_result.stdout.strip())
@@ -282,7 +200,7 @@ def test_tf2_download_install_and_start(tmp_path):
         )
 
         # query
-        query_result = _run_and_assert_ok(env, server_name, "query")
+        query_result = run_and_assert_ok(env, server_name, "query")
         print("\n=== query ===")
         print(query_result.stdout.strip())
         assert "Server is responding" in query_result.stdout, (
@@ -290,7 +208,7 @@ def test_tf2_download_install_and_start(tmp_path):
         )
 
         # info
-        info_result = _run_and_assert_ok(env, server_name, "info")
+        info_result = run_and_assert_ok(env, server_name, "info")
         print("\n=== info (awake) ===")
         print(info_result.stdout.strip())
         assert "Server info (A2S" in info_result.stdout, (
@@ -298,7 +216,7 @@ def test_tf2_download_install_and_start(tmp_path):
         )
 
         # info --json — verify structured JSON output
-        info_json_result = _run_and_assert_ok(env, server_name, "info", "--json")
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol for TF2: {_info_data!r}"
@@ -308,10 +226,10 @@ def test_tf2_download_install_and_start(tmp_path):
             f"Expected 'Team Fortress' in game field: {_info_data!r}"
         )
     finally:
-        _log_command_result(
+        log_command_result(
             "alphagsm stop",
-            _run_alphagsm(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS),
+            run_alphagsm(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS),
         )
-        _wait_for_closed("127.0.0.1", port, STOP_TIMEOUT_SECONDS)
-        final_status = _run_and_assert_ok(env, server_name, "status")
+        wait_for_udp_closed(query_host, port, STOP_TIMEOUT_SECONDS)
+        final_status = run_and_assert_ok(env, server_name, "status")
         assert "isn't running" in final_status.stdout

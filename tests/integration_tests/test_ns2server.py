@@ -1,6 +1,7 @@
 """Integration test for ns2server."""
 
 import json
+import os
 
 import pytest
 
@@ -9,6 +10,7 @@ from conftest import (
     log_command_result,
     pick_free_tcp_port,
     require_command,
+    require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_alphagsm,
@@ -29,7 +31,13 @@ STOP_TIMEOUT = 90
 def test_ns2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    module_name = "ns2server"
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -37,11 +45,17 @@ def test_ns2server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itns2server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-NS2-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-NS2-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
-    run_and_assert_ok(env, server_name, "create", "ns2server")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     setup_result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
     log_command_result(

@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.ckserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.ckserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -187,7 +188,7 @@ def test_get_info_address():
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():

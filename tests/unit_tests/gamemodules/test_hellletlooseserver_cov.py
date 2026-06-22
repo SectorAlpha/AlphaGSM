@@ -12,6 +12,7 @@ _proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_prot
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.hellletlooseserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -130,7 +131,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():

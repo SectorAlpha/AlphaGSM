@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec, build_native_config_values
@@ -147,7 +146,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Teeworlds using the standard shutdown command."""
 
-    screen.send_to_server(server.name, "\nshutdown\n")
+    runtime_module.send_to_server(server, "\nshutdown\n")
 
 
 def status(server, verbose):

@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 import shutil
 
-import screen
 from server import ServerError
 from server.modsupport.downloads import (
     download_to_cache,
@@ -536,7 +535,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Call of Duty 2 using the standard quit command."""
 
-    screen.send_to_server(server.name, "\nquit\n")
+    runtime_module.send_to_server(server, "\nquit\n")
 
 
 def status(server, verbose):

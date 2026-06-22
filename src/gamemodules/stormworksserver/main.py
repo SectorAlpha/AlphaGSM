@@ -2,7 +2,6 @@
 
 import os
 
-import screen
 import utils.proton as proton
 from server import ServerError
 from utils.platform_info import IS_LINUX
@@ -116,7 +115,7 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop Stormworks using an interrupt signal."""
 
-    screen.send_to_server(server.name, "\003")
+    runtime_module.send_to_server(server, "\003")
 
 
 def status(server, verbose):

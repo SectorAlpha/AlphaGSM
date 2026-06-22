@@ -147,3 +147,21 @@ def test_rewrite_space_config_rewrites_existing_blank_managed_line(tmp_path):
         'rcon_password "secret"',
         "sv_cheats 0",
     ]
+
+
+def test_rewrite_space_config_preserves_line_boundaries_when_file_lacks_trailing_newline(tmp_path):
+    config_path = tmp_path / "server.cfg"
+    config_path.write_text(
+        'hostname "Old Name"',
+        encoding="utf-8",
+    )
+
+    rewrite_space_config(
+        str(config_path),
+        {"hostname": '"New Name"', "sv_hibernate_when_empty": "0"},
+    )
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname "New Name"',
+        "sv_hibernate_when_empty 0",
+    ]

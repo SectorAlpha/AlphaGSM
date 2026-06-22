@@ -1,13 +1,14 @@
 """Integration test for ahl2server."""
 
 import json
+import os
 
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -37,7 +38,12 @@ STOP_TIMEOUT = 90
 def test_ahl2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name="ahl2server",
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -45,7 +51,13 @@ def test_ahl2server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itahl2server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name="ahl2server",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
     query_host = detect_query_host()

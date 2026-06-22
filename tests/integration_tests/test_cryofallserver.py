@@ -10,7 +10,7 @@ from conftest import (
     alphagsm_env,
     log_command_result,
     pick_free_udp_port,
-    require_command,
+    require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_alphagsm,
@@ -29,6 +29,8 @@ SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "cryofallserver"
 
 
 def resolve_steamcmd_linux_runtime_image():
@@ -54,7 +56,9 @@ def resolve_steamcmd_linux_runtime_image():
 def test_cryofallserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -68,13 +72,13 @@ def test_cryofallserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="cryofallserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
 
-    run_and_assert_ok(env, server_name, "create", "cryofallserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "servername", "AlphaGSM Cryo IT")
     run_and_assert_ok(env, server_name, "set", "maxplayers", "32")

@@ -10,6 +10,7 @@ sys.modules.pop('gamemodules.gravserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.gravserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 class DummyData(dict):
@@ -101,7 +102,7 @@ def test_install_missing_owned_files_raises_byo(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():

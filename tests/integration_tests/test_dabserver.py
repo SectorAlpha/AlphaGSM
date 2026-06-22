@@ -6,26 +6,25 @@ import os
 import pytest
 
 from conftest import (
+    assert_source_server_empty,
+    alphagsm_env,
+    find_source_server_cfg,
+    log_command_result,
+    pick_free_udp_port,
+    require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
-    pick_free_udp_port,
-    write_config,
-    alphagsm_env,
+    read_info_json,
     run_and_assert_ok,
     run_setup_with_port_retry,
     run_alphagsm,
-    log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_info_protocol,
-    read_info_json,
-    find_source_server_cfg,
     set_source_hibernation,
-    assert_source_server_empty,
-    wait_for_log_marker,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
     wait_for_a2s_ready,
+    wait_for_info_protocol,
+    wait_for_log_marker,
+    wait_for_udp_closed,
+    write_config,
 )
 from gamemodules.dabserver import steam_app_id
 from utils.valve_server import detect_query_host
@@ -39,6 +38,8 @@ pytestmark = [
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "dabserver"
 
 
 def resolve_steamcmd_linux_runtime_image():
@@ -53,7 +54,9 @@ def resolve_steamcmd_linux_runtime_image():
 def test_dabserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -67,8 +70,8 @@ def test_dabserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
-        module_name="dabserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
@@ -81,7 +84,7 @@ def test_dabserver_lifecycle(tmp_path):
     query_host = detect_query_host()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "dabserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "clientport", str(clientport))
     run_and_assert_ok(env, server_name, "set", "sourcetvport", str(sourcetvport))

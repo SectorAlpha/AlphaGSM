@@ -9,7 +9,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     run_setup_with_port_retry,
     write_config,
@@ -30,6 +30,8 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: large SteamCMD payload under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
+runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+module_name = "sonsoftheforestserver"
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
@@ -57,7 +59,9 @@ def resolve_wine_proton_runtime_image():
 def test_sonsoftheforestserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -71,14 +75,14 @@ def test_sonsoftheforestserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="docker",
-        module_name="sonsoftheforestserver",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "sonsoftheforestserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "dir", str(install_dir))
     run_and_assert_ok(env, server_name, "set", "queryport", str(pick_free_tcp_port()))

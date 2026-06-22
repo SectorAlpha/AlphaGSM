@@ -24,11 +24,14 @@ def _rewrite_key_value_config(
             for line in handle:
                 match = pattern.match(line)
                 if match is not None and match.group(1) in config_values:
+                    line_ending = match.group(3)
+                    if "\n" not in line_ending and "\r" not in line_ending:
+                        line_ending += "\n"
                     lines.append(
                         match.group(1)
                         + separator
                         + str(config_values[match.group(1)])
-                        + match.group(3)
+                        + line_ending
                     )
                     del config_values[match.group(1)]
                 else:
