@@ -148,6 +148,52 @@ def configure_executable(server, *, exe_name):
     return server.data["exe_name"]
 
 
+def resolve_install_executable(server, *, exe_name=None, install_dir=None):
+    """Resolve an executable path within an install tree.
+
+    The helper prefers the configured filename when present, follows in-tree
+    symlinks safely, and falls back to a basename search through the install
+    tree when SteamCMD nests the real binary deeper than the configured path.
+    """
+
+    install_dir = os.path.abspath(install_dir or server.data["dir"])
+    configured_name = exe_name or server.data["exe_name"]
+    configured_path = os.path.join(install_dir, configured_name)
+
+    if os.path.islink(configured_path):
+        real_path = os.path.realpath(configured_path)
+        try:
+            if (
+                os.path.commonpath([install_dir, real_path]) == install_dir
+                and os.path.isfile(real_path)
+            ):
+                return real_path
+        except ValueError:
+            pass
+
+    if os.path.isfile(configured_path):
+        return configured_path
+
+    basename = os.path.basename(configured_name)
+    best_match = None
+    best_key = None
+    for current_dir, _dirnames, filenames in os.walk(install_dir):
+        if basename not in filenames:
+            continue
+        candidate = os.path.join(current_dir, basename)
+        rel_dir = os.path.relpath(current_dir, install_dir)
+        depth = 0 if rel_dir == "." else len(rel_dir.split(os.sep))
+        match_key = (depth, rel_dir)
+        if best_key is None or match_key < best_key:
+            best_key = match_key
+            best_match = candidate
+
+    if best_match is not None:
+        return best_match
+
+    raise ServerError("Executable file not found")
+
+
 def configure_download_source(
     server,
     ask,

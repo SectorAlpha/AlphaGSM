@@ -3,7 +3,6 @@
 import os
 
 import utils.steamcmd as steamcmd
-from server import ServerError
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
@@ -31,47 +30,6 @@ setting_schema = {
     ),
 }
 max_stop_wait = 1
-
-
-def _resolve_executable_path(server):
-    """Return the best Valheim executable path within the install tree."""
-
-    install_dir = os.path.abspath(server.data["dir"])
-    configured_name = server.data["exe_name"]
-    configured_path = os.path.join(install_dir, configured_name)
-
-    if os.path.islink(configured_path):
-        real_path = os.path.realpath(configured_path)
-        try:
-            if (
-                os.path.commonpath([install_dir, real_path]) == install_dir
-                and os.path.isfile(real_path)
-            ):
-                return real_path
-        except ValueError:
-            pass
-
-    if os.path.isfile(configured_path):
-        return configured_path
-
-    basename = os.path.basename(configured_name)
-    best_match = None
-    best_key = None
-    for current_dir, _dirnames, filenames in os.walk(install_dir):
-        if basename not in filenames:
-            continue
-        candidate = os.path.join(current_dir, basename)
-        rel_dir = os.path.relpath(current_dir, install_dir)
-        depth = 0 if rel_dir == "." else len(rel_dir.split(os.sep))
-        match_key = (depth, rel_dir)
-        if best_key is None or match_key < best_key:
-            best_key = match_key
-            best_match = candidate
-
-    if best_match is not None:
-        return best_match
-
-    raise ServerError("Executable file not found")
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="valheim_server.x86_64"):
@@ -138,7 +96,7 @@ def get_start_command(server):
     """Build the command used to launch a Valheim dedicated server."""
 
     install_dir = os.path.abspath(server.data["dir"])
-    exe_path = _resolve_executable_path(server)
+    exe_path = gamemodule_common.resolve_install_executable(server)
     working_dir = os.path.dirname(exe_path) or install_dir
     if server.data.get("runtime") == "docker":
         savedir = os.path.relpath(os.path.join(install_dir, "worlds"), working_dir)

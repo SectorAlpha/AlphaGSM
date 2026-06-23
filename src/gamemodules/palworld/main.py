@@ -176,8 +176,15 @@ def _resolve_executable(server):
         candidates.insert(0, configured)
 
     for executable in candidates:
-        if os.path.isfile(os.path.join(root_dir, executable)):
-            return os.path.normpath(root_dir), executable
+        try:
+            resolved_executable = gamemodule_common.resolve_install_executable(
+                server,
+                exe_name=executable,
+                install_dir=root_dir,
+            )
+        except ServerError:
+            continue
+        return os.path.normpath(root_dir), os.path.relpath(resolved_executable, root_dir)
     raise ServerError("Executable file not found")
 
 

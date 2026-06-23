@@ -1,3 +1,4 @@
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -252,6 +253,30 @@ def test_build_executable_path_setting_schema_reuses_standard_specs():
         "exe_name": gamemodule_common.STANDARD_EXE_NAME_SETTING,
         "dir": gamemodule_common.STANDARD_DIR_SETTING,
     }
+
+
+def test_resolve_install_executable_prefers_symlink_target_and_nested_matches(tmp_path):
+    server = make_server(dir=str(tmp_path) + "/", exe_name="DedicatedServer")
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    target = nested_dir / "DedicatedServer"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, tmp_path / "DedicatedServer")
+
+    assert (
+        gamemodule_common.resolve_install_executable(server)
+        == str(target)
+    )
+
+
+def test_resolve_install_executable_falls_back_to_nested_basename_match(tmp_path):
+    server = make_server(dir=str(tmp_path) + "/", exe_name="DedicatedServer")
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_target = nested_dir / "DedicatedServer"
+    nested_target.write_text("", encoding="utf-8")
+
+    assert gamemodule_common.resolve_install_executable(server) == str(nested_target)
 
 
 def test_format_byo_support_message_includes_actions_and_guide():

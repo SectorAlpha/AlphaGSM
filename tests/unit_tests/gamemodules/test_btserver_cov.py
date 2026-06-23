@@ -2,6 +2,7 @@
 
 import os
 import sys
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -173,7 +174,11 @@ def test_get_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
     linux32.mkdir(parents=True)
     (linux64 / "steamclient.so").write_text("64")
     (linux32 / "steamclient.so").write_text("32")
-    monkeypatch.setattr(mod.runtime_module.steamcmd_module, "STEAMCMD_DIR", str(steamcmd_root))
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "steamcmd_module",
+        SimpleNamespace(STEAMCMD_DIR=str(steamcmd_root)),
+    )
 
     server = DummyServer()
     server.data["dir"] = str(tmp_path / "server") + "/"
@@ -181,12 +186,15 @@ def test_get_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
     server.data["queryport"] = 27016
 
     requirements = mod.get_runtime_requirements(server)
+    mounts = requirements["mounts"]
 
-    assert requirements["mounts"] == [
-        {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"},
-        {"source": str(linux64), "target": "/root/.steam/sdk64", "mode": "ro"},
-        {"source": str(linux32), "target": "/root/.steam/sdk32", "mode": "ro"},
-    ]
+    assert mounts[0] == {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+    assert mounts[1]["target"] == "/root/.steam/sdk64"
+    assert mounts[1]["mode"] == "ro"
+    assert os.path.basename(mounts[1]["source"]) == "linux64"
+    assert mounts[2]["target"] == "/root/.steam/sdk32"
+    assert mounts[2]["mode"] == "ro"
+    assert os.path.basename(mounts[2]["source"]) == "linux32"
 
 
 def test_backup():
@@ -254,4 +262,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

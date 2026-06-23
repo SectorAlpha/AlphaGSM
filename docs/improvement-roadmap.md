@@ -73,13 +73,10 @@ work here must respect.
 
 ## 2. Runtime / Module Contract
 
-1. **Promote `_resolve_executable_path()` to a shared helper.** The
-   symlink-aware, nested-tree executable resolver was just duplicated verbatim
-   into `src/gamemodules/btserver/main.py` and `src/gamemodules/valheim/main.py`,
-   and Palworld has its own larger variant. Add a shared
-   `resolve_install_executable(server, ...)` to `src/utils/gamemodules/common.py`
-   and migrate these three (and future) modules onto it, keeping their unit
-   coverage.
+1. **Done: promote `_resolve_executable_path()` to a shared helper.** The
+   symlink-aware, nested-tree executable resolver now lives in
+   `src/utils/gamemodules/common.py` as `resolve_install_executable(server, ...)`
+   and `btserver`, `valheim`, and the Palworld launcher flow now share it.
 2. **Host-path leakage into container commands.** Valheim's `-savedir` was
    passing an absolute host path into the container; the fix rewrites it
    relative for Docker. Audit other modules for the same class of bug: any
