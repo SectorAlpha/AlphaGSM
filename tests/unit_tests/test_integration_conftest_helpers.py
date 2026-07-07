@@ -264,10 +264,11 @@ def test_log_command_result_redacts_secret_values_from_stdout_and_stderr(capsys)
     )
 
     captured = capsys.readouterr().out
+    assert "=== alphagsm ===" in captured
     assert "hunter2" not in captured
     assert "abc123" not in captured
     assert "supersecret" not in captured
-    assert captured.count("<redacted>") >= 4
+    assert captured.count("<redacted>") >= 3
 
 
 def test_write_config_keeps_downloads_inside_test_home_by_default(monkeypatch, tmp_path):

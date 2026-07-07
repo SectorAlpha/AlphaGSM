@@ -553,9 +553,10 @@ def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
     )
 
 
-def log_command_result(name, result, command_args=None):
+def log_command_result(name, result, command_args=None, label=None):
     """Print a subprocess result for CI diagnostics."""
-    print(f"\n=== {_format_logged_command(name, command_args)} ===")  # lgtm[py/clear-text-logging-sensitive-data]
+    del command_args
+    print(f"\n=== {label or name} ===")
     print(f"returncode: {result.returncode}")
     if result.stdout:
         print("stdout:")
@@ -568,7 +569,7 @@ def log_command_result(name, result, command_args=None):
 def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
     """Run alphagsm and assert a zero return code."""
     result = run_alphagsm(env, *args, timeout=timeout)
-    log_command_result("alphagsm", result, command_args=args)
+    log_command_result("alphagsm", result, label="alphagsm")
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
         if len(args) >= 2 and args[1] == "start":
@@ -600,7 +601,7 @@ def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds)
     log_command_result(
         "alphagsm",
         last_result,
-        command_args=(server_name, "info", "--json"),
+        label="alphagsm info --json",
     )
     _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
@@ -682,18 +683,18 @@ def _dump_log(log_path, context="", max_lines=150):
 def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
     """Print AlphaGSM-managed console diagnostics for *server_name*."""
 
-    for command_args in (
-        (server_name, "logs", "-n", str(lines)),
-        (server_name, "doctor"),
+    for command_name, command_args in (
+        ("logs", (server_name, "logs", "-n", str(lines))),
+        ("doctor", (server_name, "doctor")),
     ):
         try:
             result = run_alphagsm(env, *command_args, timeout=120)
         except subprocess.TimeoutExpired as exc:
             print(
-                f"[diagnostic] {_format_logged_command('alphagsm', command_args)} timed out after {exc.timeout}s"  # lgtm[py/clear-text-logging-sensitive-data]
+                f"[diagnostic] alphagsm {command_name} timed out after {exc.timeout}s"
             )
             continue
-        log_command_result("alphagsm", result, command_args=command_args)
+        log_command_result("alphagsm", result, label=f"alphagsm {command_name}")
 
 
 # ---------------------------------------------------------------------------
