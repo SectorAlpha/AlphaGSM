@@ -509,6 +509,35 @@ def _format_logged_command(name, command_args=None):
     return f"{name} {rendered_args}"
 
 
+def _redact_logged_text(text):
+    if not text:
+        return text
+
+    redacted = str(text)
+    sensitive_fragment = r"[\w.-]*(?:password|passwd|passphrase|token|secret|apikey|licensekey)[\w.-]*"
+    replacements = (
+        (
+            re.compile(rf'([\'"]?{sensitive_fragment}[\'"]?\s*[:=]\s*["\'])([^"\r\n]*)(["\'])', re.IGNORECASE),
+            r"\1<redacted>\3",
+        ),
+        (
+            re.compile(rf'([\'"]?{sensitive_fragment}[\'"]?\s*[:=]\s*)([^\s,"\']+)', re.IGNORECASE),
+            r"\1<redacted>",
+        ),
+        (
+            re.compile(rf'(\b{sensitive_fragment}\b\s+)([^\s]+)', re.IGNORECASE),
+            r"\1<redacted>",
+        ),
+        (
+            re.compile(rf'(--?[\w-]*(?:password|passwd|passphrase|token|secret|apikey|licensekey)[\w-]*=)([^\s]+)', re.IGNORECASE),
+            r"\1<redacted>",
+        ),
+    )
+    for pattern, replacement in replacements:
+        redacted = pattern.sub(replacement, redacted)
+    return redacted
+
+
 def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
     """Run the alphagsm script and return the CompletedProcess."""
     command = [sys.executable, str(ALPHAGSM_SCRIPT)] + list(args)
@@ -526,14 +555,14 @@ def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
 
 def log_command_result(name, result, command_args=None):
     """Print a subprocess result for CI diagnostics."""
-    print(f"\n=== {_format_logged_command(name, command_args)} ===")
+    print(f"\n=== {_format_logged_command(name, command_args)} ===")  # lgtm[py/clear-text-logging-sensitive-data]
     print(f"returncode: {result.returncode}")
     if result.stdout:
         print("stdout:")
-        print(result.stdout.rstrip())
+        print(_redact_logged_text(result.stdout).rstrip())
     if result.stderr:
         print("stderr:")
-        print(result.stderr.rstrip())
+        print(_redact_logged_text(result.stderr).rstrip())
 
 
 def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
@@ -569,8 +598,9 @@ def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds)
         time.sleep(5)
 
     log_command_result(
-        "alphagsm " + " ".join((server_name, "info", "--json")),
+        "alphagsm",
         last_result,
+        command_args=(server_name, "info", "--json"),
     )
     _dump_alphagsm_runtime_logs(env, server_name)
     pytest.fail(
@@ -660,7 +690,7 @@ def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
             result = run_alphagsm(env, *command_args, timeout=120)
         except subprocess.TimeoutExpired as exc:
             print(
-                f"[diagnostic] {_format_logged_command('alphagsm', command_args)} timed out after {exc.timeout}s"
+                f"[diagnostic] {_format_logged_command('alphagsm', command_args)} timed out after {exc.timeout}s"  # lgtm[py/clear-text-logging-sensitive-data]
             )
             continue
         log_command_result("alphagsm", result, command_args=command_args)

@@ -228,6 +228,48 @@ def test_format_logged_command_redacts_inline_secret_assignment_flags():
     assert rendered == "alphagsm ittestlif start --db-password=<redacted> token=<redacted>"
 
 
+def test_redact_logged_text_masks_secret_values_in_common_output_shapes():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    redacted = helpers._redact_logged_text(  # pylint: disable=protected-access
+        '\n'.join(
+            (
+                'db_password=hunter2',
+                '"token": "abc123"',
+                'rcon_password supersecret',
+                '--db-password=hunter2',
+            )
+        )
+    )
+
+    assert "hunter2" not in redacted
+    assert "abc123" not in redacted
+    assert "supersecret" not in redacted
+    assert redacted.count("<redacted>") >= 4
+
+
+def test_log_command_result_redacts_secret_values_from_stdout_and_stderr(capsys):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = subprocess.CompletedProcess(
+        args=["alphagsm"],
+        returncode=1,
+        stdout='db_password=hunter2\n"token": "abc123"\n',
+        stderr='rcon_password supersecret\n',
+    )
+
+    helpers.log_command_result(
+        "alphagsm",
+        result,
+        command_args=("ittestlif", "set", "db_password", "hunter2"),
+    )
+
+    captured = capsys.readouterr().out
+    assert "hunter2" not in captured
+    assert "abc123" not in captured
+    assert "supersecret" not in captured
+    assert captured.count("<redacted>") >= 4
+
+
 def test_write_config_keeps_downloads_inside_test_home_by_default(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     home_dir = tmp_path / "home"
