@@ -201,8 +201,9 @@ RUN pip3 install --break-system-packages -r /tmp/requirements.txt \
 # out workspace volume, so the integration-test step does not need a separate
 # `chown` pass over the repository tree.
 #
-# /opt/wine (the pre-built Wine prefix) is transferred to gsmuser so that Wine
-# and Proton processes spawned by AlphaGSM under that account can write lock
-# files and temporary state into the prefix without permission errors.
+# /opt/wine (the pre-built Wine prefix) and /opt/proton-ge (the baked Proton-GE
+# tool tree) are transferred to gsmuser so Wine/Proton launches under that
+# account can create their lock files and temporary state without permission
+# errors.
 RUN useradd --create-home --shell /bin/bash --uid 1001 gsmuser \
- && chown -R gsmuser:gsmuser /opt/wine
+ && chown -R gsmuser:gsmuser /opt/wine /opt/proton-ge

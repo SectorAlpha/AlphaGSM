@@ -10,6 +10,7 @@ WINE_PROTON_DOCKERFILE = Path("docker/wine-proton/Dockerfile")
 WINE_PROTON_ENTRYPOINT = Path("docker/wine-proton/entrypoint.sh")
 BUILD_WORKFLOW = Path(".github/workflows/build-runtime-family-images.yml")
 DOCKER_README = Path("docker/README.md")
+INTEGRATION_ENV_DOCKERFILE = Path(".github/docker/integration-env/Dockerfile")
 
 
 def test_java_runtime_image_keeps_bootstrap_tools_and_supported_temurin_jres():
@@ -137,3 +138,9 @@ def test_runtime_image_docs_default_to_latest_tags():
 
     assert "alphagsm-java-runtime:latest" in text
     assert "docker/image-version.txt" not in text
+
+
+def test_integration_image_gives_gsmuser_write_access_to_wine_and_proton_trees():
+    text = INTEGRATION_ENV_DOCKERFILE.read_text(encoding="utf-8")
+
+    assert "chown -R gsmuser:gsmuser /opt/wine /opt/proton-ge" in text

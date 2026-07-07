@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-06-27
+- CI/workflow: make the GitHub integration-test image hand `/opt/proton-ge` to the non-root `gsmuser` account alongside `/opt/wine`, so Proton-backed CI lanes can create their `dist.lock` state instead of failing immediately with permission errors.
 - CI/workflow: cancel superseded `AlphaGSM PR` workflow runs per pull request so stale long-running matrix jobs do not leave the newest commit queued behind older Docker/image builds.
 - CI/workflow: make the support-tracker check fail when `docs/TEST_STATUS.md` drifts from `disabled_servers.conf`, `enabled_byo_servers.conf`, or `enabled_auth_servers.conf`, including conflicting enabled-vs-disabled gate rows.
 - Docs/server support: reconcile the live support gate files with the documented ENABLED states, add the remaining disabled `abfserver` and `bobserver` rows to `docs/TEST_STATUS.md`, and remove the stale repo-root `future_plans` file.
