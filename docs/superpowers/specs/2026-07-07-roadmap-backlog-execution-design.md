@@ -23,6 +23,8 @@ The execution model should be:
 - use unit-test-first development for code changes
 - use integration and smoke coverage as confirmation, not as the first or only
   safety net
+- run integration-test validation only in the GitHub CI environment, not as a
+  local verification step
 
 This keeps the repo moving without bundling unrelated server enablement,
 runtime, CI, and docs work into one high-risk branch.
@@ -36,6 +38,9 @@ runtime, CI, and docs work into one high-risk branch.
   existing lifecycle contract.
 - Require unit-test-first changes for code edits wherever a unit-test seam is
   practical, so regressions are caught before expensive integration cycles.
+- Keep integration-test execution scoped to GitHub CI so local work stays fast,
+  reproducible, and aligned with the repository's intended validation path for
+  this campaign.
 - Use subagents to parallelize independent investigations while keeping each
   workstream tightly scoped.
 - Keep tracker, docs, smoke runners, and changelog aligned when support state
@@ -49,6 +54,7 @@ runtime, CI, and docs work into one high-risk branch.
   share the same broad roadmap document.
 - Do not rely on integration tests alone as the primary design feedback loop
   for code changes.
+- Do not run integration tests locally as part of this backlog campaign.
 - Do not migrate modules to Docker lanes by adding runtime-specific lifecycle
   branching to module code when the runtime layer can absorb the difference.
 - Do not force one-shot opportunistic refactors across untouched files merely
@@ -210,9 +216,28 @@ Integration tests still matter, but their role here is:
 - validate that AlphaGSM still performs the real lifecycle correctly
 - confirm Docker/process behavior through the public command flow
 - reveal gaps that unit tests did not model
+- run only in GitHub CI for this campaign
 
 They should not be the first place a predictable regression is expressed when a
 unit-test seam already exists.
+
+### Local Verification Boundary
+
+Local verification for this campaign should use:
+
+- unit tests
+- static tests
+- targeted non-integration commands such as lint or focused scripts
+
+It should not use:
+
+- `tests/integration_tests/*`
+- `tests/backend_integration_tests/*`
+- smoke or integration wrappers whose purpose is to exercise full server
+  lifecycle behavior
+
+The CI environment remains the place where full integration coverage proves the
+end-to-end contract.
 
 ### Acceptable Exceptions
 
