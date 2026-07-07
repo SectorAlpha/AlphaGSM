@@ -26,14 +26,12 @@ work here must respect.
 
 ### In-flight work (as of this writing)
 
-- CI run `27216122584` (commit `ed21dab`) was in progress: it carries the
-  btserver/valheim Docker integration switch, hardened native Docker launch
-  resolution for `btserver`/`valheim`/`palworld`, and repaired aggregate unit
-  expectations. If it failed, start there.
-- The local worktree contains a large set of uncommitted modifications
-  (~200 files: many `src/gamemodules/*/main.py`, matching `*_cov.py` tests,
-  shared utils, scripts). These appear to be a broad in-progress refactor —
-  do **not** discard or blanket-commit them; review what they change first.
+- The old PR queue pile-up is no longer an open infrastructure item:
+  `AlphaGSM PR` now cancels superseded pull-request runs, so newer commits do
+  not sit behind older in-flight matrix work by default.
+- The top-priority active work is now the broad red smoke/integration set on
+  the newest `release_v1` CI run. Treat that as the current backlog entry
+  before more support-state promotion work.
 - `tests/integration_tests/test_btserver.py` and `test_valheim.py` still wait
   on the `a2s` info protocol; whether A2S actually comes up under the Docker
   lane is unproven (todo: "Investigate btserver valheim A2S"). The readiness
@@ -486,8 +484,10 @@ touches credentials. Treat these as hard constraints, not suggestions.
    (fast gates first, then `slow-*` lanes, then batches).
 2. Resolve the btserver/valheim Docker A2S question (Section 2.3) and align
    smoke runners (Section 1.6) — this closes out the in-flight migration.
-3. Deduplicate the runtime-image resolvers (Section 1.1) and the executable
-   resolver (Section 2.1) while the patterns are fresh.
+3. Continue the remaining process→Docker lane audit (Section 1.2) once the
+   active red CI failures are classified, keeping the game modules runtime-
+   agnostic and pushing runtime-specific handling into shared helpers where
+   practical.
 4. Then pick either: more process→Docker lane migrations (Section 1.2) or
    BYO/AUTH promotions (Section 3) depending on appetite for long CI cycles.
 
