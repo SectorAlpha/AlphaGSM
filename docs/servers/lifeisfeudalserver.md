@@ -8,13 +8,16 @@ This guide covers the `lifeisfeudalserver` module in AlphaGSM.
 the server files, but `start` still requires an operator-provided
 MySQL/MariaDB service plus matching database details recorded during setup or
 via `set`. This checked-in support state is validated against the documented
-Ubuntu 24.04 Linux baseline, and the current GitHub integration lane still
+Ubuntu 24.04 Linux baseline. The current GitHub validation shape uses the
+Docker Wine/Proton path for smoke coverage, while the integration lane still
 exercises both process and Docker runtime selection around that external
 database prerequisite.
 
 ## Requirements
 
-- `screen`
+- `screen` for the host-process runtime path
+- a Docker engine plus the AlphaGSM Wine/Proton runtime image for the
+  Docker-backed runtime path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - a reachable MySQL or MariaDB service
 - Python packages from `requirements.txt`

@@ -11,6 +11,8 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 SERVER_NAME="${SERVER_NAME:-smokelifdb}"
 SERVER_STARTED=0
 DB_CONTAINER_NAME="alphagsm-lif-db-$SERVER_NAME"
+LOCAL_WINE_PROTON_IMAGE="${LOCAL_WINE_PROTON_IMAGE:-alphagsm-wine-proton-runtime:local}"
+PUBLISHED_WINE_PROTON_IMAGE="${PUBLISHED_WINE_PROTON_IMAGE:-ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest}"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -23,6 +25,18 @@ run_alphagsm() {
   echo
   echo "=== alphagsm $* ==="
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
+}
+
+resolve_runtime_image() {
+  if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON:-}" ]]; then
+    printf '%s\n' "$ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON"
+    return
+  fi
+  if docker image inspect "$LOCAL_WINE_PROTON_IMAGE" >/dev/null 2>&1; then
+    printf '%s\n' "$LOCAL_WINE_PROTON_IMAGE"
+    return
+  fi
+  printf '%s\n' "$PUBLISHED_WINE_PROTON_IMAGE"
 }
 
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
@@ -39,7 +53,6 @@ cleanup() {
 trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
-require_cmd screen
 require_cmd docker
 
 WORK_DIR="${TMPDIR:-/tmp}"
@@ -48,6 +61,7 @@ HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/lifeisfeudalserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-lifeisfeudalserver.conf"
 LOG_PATH="$HOME_DIR/logs/AlphaGSM-lifeisfeud-IT#$SERVER_NAME.log"
+IMAGE="$(resolve_runtime_image)"
 
 mkdir -p "$HOME_DIR"
 
@@ -66,6 +80,12 @@ target_path = $HOME_DIR/downloads/downloads
 [server]
 datapath = $HOME_DIR/conf
 
+[runtime]
+backend = docker
+
+[docker]
+image_wine_proton = $IMAGE
+
 [screen]
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-lifeisfeud-IT#
@@ -77,8 +97,10 @@ docker rm -f "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
 echo "Using install dir: $INSTALL_DIR"
 echo "Using game port: $PORT"
 echo "Using managed DB port: $DB_PORT"
+echo "Using image: $IMAGE"
 
 run_create_or_skip_disabled "$SERVER_NAME" create lifeisfeudalserver
+run_alphagsm "$SERVER_NAME" set image "$IMAGE"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" set db_mode docker
 run_alphagsm "$SERVER_NAME" set db_host 127.0.0.1
