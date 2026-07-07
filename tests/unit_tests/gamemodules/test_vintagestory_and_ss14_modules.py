@@ -88,6 +88,23 @@ def test_vintagestoryserver_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_vintagestoryserver_get_start_command_uses_relative_datapath_for_docker(tmp_path):
+    server = DummyServer("vs")
+    exe = tmp_path / "VintagestoryServer.dll"
+    exe.write_text("")
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "VintagestoryServer.dll",
+        "dotnetpath": "/usr/bin/dotnet",
+        "runtime": "docker",
+    })
+
+    cmd, cwd = vintagestoryserver.get_start_command(server)
+
+    assert cmd == ["/usr/bin/dotnet", "VintagestoryServer.dll", "--dataPath", "."]
+    assert cwd == server.data["dir"]
+
+
 def test_vintagestoryserver_runtime_requirements_declare_dotnet(tmp_path):
     server = DummyServer("vs")
     (tmp_path / "VintagestoryServer.dll").write_text("")

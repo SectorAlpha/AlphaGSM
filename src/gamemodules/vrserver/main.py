@@ -178,10 +178,11 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    runtime_dir = "." if server.data.get("runtime") == "docker" else server.data["dir"]
     cmd = [
         server.data["exe_name"],
         "-persistentDataPath",
-        os.path.join(server.data["dir"], "save-data"),
+        os.path.join(runtime_dir, "save-data"),
         "-serverPort",
         str(server.data["port"]),
         "-queryPort",

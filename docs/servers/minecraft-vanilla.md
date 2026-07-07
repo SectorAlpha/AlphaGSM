@@ -2,6 +2,12 @@
 
 This guide is for running a normal vanilla Minecraft server with AlphaGSM.
 
+`minecraft.vanilla` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection, and the validated Java-backed lifecycle
+stays aligned across both backends while local runs remain process-backed by
+default unless you opt into the Docker backend.
+
 ## What You Need
 
 - Java 21 or another compatible Java runtime

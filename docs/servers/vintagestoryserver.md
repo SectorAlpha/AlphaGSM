@@ -2,6 +2,12 @@
 
 This guide covers the `vintagestoryserver` module in AlphaGSM.
 
+`vintagestoryserver` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `steamcmd-linux` runtime, with
+`dotnet VintagestoryServer.dll --dataPath <install_dir>` answering generic
+`tcp` `query` / `info` on the managed game port.
+
 ## Requirements
 
 - `screen`

@@ -266,6 +266,8 @@ Notes:
 
 ## Not Currently Supported
 
+- [ ] abfserver
+- [ ] bobserver
 - [ ] counterstrikeglobaloffensive
 
 ## Waiting On Prerequisites Or Validation

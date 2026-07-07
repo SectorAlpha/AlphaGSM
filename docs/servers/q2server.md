@@ -2,6 +2,11 @@
 
 This guide covers the `q2server` module in AlphaGSM.
 
+`q2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server currently
+follows the native Linux direct-download and source-build Yamagi Quake II
+lifecycle, with demo `baseq2` content and Quake II `status` validation.
+
 ## Requirements
 
 - `gcc`

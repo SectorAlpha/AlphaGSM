@@ -2,6 +2,12 @@
 
 This guide covers the `pvrserver` module in AlphaGSM.
 
+`pvrserver` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The validated Linux lane uses the
+shared `steamcmd-linux` Docker runtime, and the current GitHub integration
+lane validates both process and Docker runtimes for this module while local
+runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - Docker for the primary validated runtime path

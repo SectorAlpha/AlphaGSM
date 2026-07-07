@@ -122,6 +122,22 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_uses_relative_configdir_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "server/accServer.exe"
+    server.data["configdir"] = "test"
+    server.data["runtime"] = "docker"
+    exe_path = tmp_path / "server/accServer.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["./server/accServer.exe", "./test"]
+    assert cwd == server.data["dir"]
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -230,4 +246,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

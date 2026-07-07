@@ -2,6 +2,11 @@
 
 This guide covers the `codserver` module in AlphaGSM.
 
+`codserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `steamcmd-linux` runtime because the legacy
+Linux dedicated binary still depends on `libstdc++.so.5`.
+
 ## Requirements
 
 - `docker` for the validated anonymous support path

@@ -2,6 +2,11 @@
 
 This guide covers the `ark` module in AlphaGSM.
 
+`ark` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline.
+The checked-in GitHub validation path for this server is Docker-first through
+the shared `steamcmd-linux` runtime, with the real Linux dedicated server
+answering A2S `query`, `info`, and `info --json` on the managed `queryport`.
+
 ## Requirements
 
 - Docker or another supported AlphaGSM runtime backend

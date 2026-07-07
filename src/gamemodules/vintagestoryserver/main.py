@@ -145,8 +145,9 @@ def get_start_command(server):
         command = [server.data.get("dotnetpath", "dotnet"), server.data["exe_name"]]
     else:
         command = ["./" + server.data["exe_name"]]
+    data_path = "." if server.data.get("runtime") == "docker" else server.data["dir"]
     return (
-        command + ["--dataPath", server.data["dir"]],
+        command + ["--dataPath", data_path],
         server.data["dir"],
     )
 

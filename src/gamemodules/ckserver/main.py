@@ -119,6 +119,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    datapath = "DedicatedServer" if server.data.get("runtime") == "docker" else os.path.join(server.data["dir"], "DedicatedServer")
     return (
         [
             "./" + server.data["exe_name"],
@@ -131,7 +132,7 @@ def get_start_command(server):
             "-maxplayers",
             str(server.data["maxplayers"]),
             "-datapath",
-            os.path.join(server.data["dir"], "DedicatedServer"),
+            datapath,
         ],
         server.data["dir"],
     )

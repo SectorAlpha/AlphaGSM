@@ -110,6 +110,19 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_uses_relative_ini_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "server"
+    server.data["runtime"] = "docker"
+    (tmp_path / "server").write_text("")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["server", "-fg", "-ini", "mumble-server.ini"]
+    assert cwd == server.data["dir"]
+
+
 def test_query_and_info_address_use_runtime_query_host():
     server = DummyServer()
     server.data["port"] = 64738

@@ -2,9 +2,11 @@
 
 import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.valheim', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
@@ -12,34 +14,15 @@ with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMoc
     from server import ServerError
     mod.runtime_module.send_to_server = MagicMock()
 
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
-
-
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=2456, dir=str(tmp_path))
     assert server.data['port'] == 2456
+    assert server.data["Steam_AppID"] == 896660
+    assert server.data["worldname"] == "testserver"
+    assert server.data["serverpassword"] == "alphagsm"
+    assert server.data["queryport"] == "2457"
+    assert server.data["backupfiles"] == ["worlds", "start_server.sh"]
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -77,7 +60,11 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 896660
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=True, restart=True)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 896660, True, validate=True
+    )
     assert server._stopped
     assert server._started
 
@@ -87,7 +74,11 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 896660
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=False, restart=False)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 896660, True, validate=False
+    )
     assert server._stopped
     assert not server._started
 
@@ -113,13 +104,16 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "valheim_server.x86_64"
     (tmp_path / "valheim_server.x86_64").write_text("")
-    server.data["port"] = 27015
-    server.data["public"] = True
-    server.data["servername"] = "test"
-    server.data["serverpassword"] = "test"
-    server.data["worldname"] = "test"
+    server.data["port"] = 2456
+    server.data["public"] = "0"
+    server.data["servername"] = "AlphaGSM valheim"
+    server.data["serverpassword"] = "alphagsm"
+    server.data["worldname"] = "myworld"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd[0] == "./valheim_server.x86_64"
+    assert "-world" in cmd and cmd[cmd.index("-world") + 1] == "myworld"
+    assert "-savedir" in cmd
+    assert cwd == str(tmp_path)
 
 
 def test_get_start_command_prefers_symlink_target_within_install_tree(tmp_path):

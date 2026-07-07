@@ -2,6 +2,8 @@
 
 This guide covers the `ccserver` module in AlphaGSM.
 
+`ccserver` is currently listed as `PASSED` in the checked-in support tracker on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection around this SteamCMD-backed lifecycle, but the checked-in integration test still carries an upstream install skip note and should be revalidated before treating that tracker row as freshly proven.
+
 ## Requirements
 
 - `screen`

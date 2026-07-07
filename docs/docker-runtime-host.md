@@ -1,6 +1,6 @@
 # Run Docker-Backed Servers From Host AlphaGSM
 
-This guide is for the direct host install.
+This guide is the primary direct-host path after the Docker-first migration.
 
 Use it when you want AlphaGSM itself to run on the machine normally, but you
 want individual game servers to run as Docker containers instead of screen-backed
@@ -8,6 +8,9 @@ host processes.
 
 This is not the same as [Run AlphaGSM In Docker](docker-manager.md), where the
 whole AlphaGSM manager runs inside a container.
+
+The documented runtime-validation baseline for this path is Ubuntu 24.04 or a
+newer Linux host.
 
 ## What This Mode Does
 
@@ -35,7 +38,8 @@ You need:
 - a game module that supports the Docker runtime hooks
 
 AlphaGSM can still use the normal process runtime for modules that are not set
-up for Docker.
+up for Docker, but that process path is the fallback rather than the preferred
+user-facing workflow.
 
 ## 1. Configure The Runtime Backend
 

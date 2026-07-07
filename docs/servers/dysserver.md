@@ -2,6 +2,8 @@
 
 This guide covers the `dysserver` module in AlphaGSM.
 
+`dysserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection around that provider-managed authentication prerequisite, while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - authenticated Steam or SteamCMD access to the Dystopia Beta Dedicated Server tool (`app 17595`)

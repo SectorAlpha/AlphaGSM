@@ -197,8 +197,9 @@ restart.__doc__ = "Restart the Arma Reforger server."
 def _build_start_command(server):
     """Build the Arma Reforger start command without install-state checks."""
 
-    config_path = os.path.join(server.data["dir"], server.data["configfile"])
-    profile_path = os.path.join(server.data["dir"], server.data["profilesdir"])
+    runtime_dir = "." if server.data.get("runtime") == "docker" else server.data["dir"]
+    config_path = os.path.join(runtime_dir, server.data["configfile"])
+    profile_path = os.path.join(runtime_dir, server.data["profilesdir"])
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,

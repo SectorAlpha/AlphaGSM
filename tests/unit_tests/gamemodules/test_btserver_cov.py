@@ -3,39 +3,17 @@
 import os
 import sys
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.btserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.btserver as mod
     from server import ServerError
     mod.runtime_module.send_to_server = MagicMock()
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
-
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -77,7 +55,11 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1026340
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=True, restart=True)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 1026340, True, validate=True
+    )
     assert server._stopped
     assert server._started
 
@@ -87,7 +69,11 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1026340
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=False, restart=False)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 1026340, True, validate=False
+    )
     assert server._stopped
     assert not server._started
 
@@ -113,11 +99,22 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "DedicatedServer"
     (tmp_path / "DedicatedServer").write_text("")
-    server.data["gamemode"] = "test"
+    server.data["gamemode"] = "Sandbox"
     server.data["port"] = 27015
-    server.data["queryport"] = 27015
+    server.data["queryport"] = 27016
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./DedicatedServer",
+        "-name",
+        "testserver",
+        "-port",
+        "27015",
+        "-queryport",
+        "27016",
+        "-gamemode",
+        "Sandbox",
+    ]
+    assert cwd == str(tmp_path)
 
 
 def test_get_start_command_prefers_symlink_target_within_install_tree(tmp_path):

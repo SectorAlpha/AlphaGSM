@@ -239,6 +239,7 @@ def get_vanilla_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    worldpath = "Worlds" if server.data.get("runtime") == "docker" else os.path.join(server.data["dir"], "Worlds")
     cmd = [
         "./" + server.data["exe_name"],
         "-port",
@@ -246,9 +247,10 @@ def get_vanilla_start_command(server):
         "-maxplayers",
         str(server.data["maxplayers"]),
         "-worldpath",
-        os.path.join(server.data["dir"], "Worlds"),
+        worldpath,
     ]
     world_path = get_world_path(server)
+    world_path = os.path.join("Worlds", server.data["world"]) if server.data.get("runtime") == "docker" else world_path
     if os.path.isfile(world_path):
         cmd.extend(["-world", world_path])
     else:

@@ -153,7 +153,7 @@ def get_start_command(server):
     if not exe_name.startswith("./"):
         exe_name = "./" + exe_name
 
-    support_dir = _ensure_support_dir(server)
+    support_dir = "tf" if server.data.get("runtime") == "docker" else _ensure_support_dir(server)
     command = [
         exe_name,
         "-game",

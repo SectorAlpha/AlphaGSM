@@ -2,6 +2,11 @@
 
 This guide covers the `soulmask` module in AlphaGSM.
 
+`soulmask` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `wine-proton` runtime, with generic `tcp`
+`query` / `info` on the managed main port.
+
 ## Requirements
 
 - `docker` for the validated Linux Wine/Proton path

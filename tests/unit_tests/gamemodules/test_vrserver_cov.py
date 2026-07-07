@@ -130,6 +130,32 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_uses_relative_save_path_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "VRisingServer.exe"
+    server.data["runtime"] = "docker"
+    (tmp_path / "VRisingServer.exe").write_text("")
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+    with patch.object(
+        mod.proton,
+        "wrap_command",
+        side_effect=lambda command, **_kwargs: command,
+    ):
+        cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "VRisingServer.exe",
+        "-persistentDataPath",
+        "./save-data",
+        "-serverPort",
+        "27015",
+        "-queryPort",
+        "27016",
+    ]
+    assert cwd == server.data["dir"]
+
+
 def test_sync_server_config(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

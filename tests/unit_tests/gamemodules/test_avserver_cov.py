@@ -1,10 +1,11 @@
 """Full coverage tests for avserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.avserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
@@ -12,34 +13,12 @@ with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMoc
     from server import ServerError
     mod.runtime_module.send_to_server = MagicMock()
 
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
-
-
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27000, dir=str(tmp_path))
     assert server.data['port'] == 27000
+    assert server.data["Steam_AppID"] == 565060
+    assert server.data["galaxy"] == "testserver"
     assert server.data['servername'] == 'AlphaGSM testserver'
     assert server.data['queryport'] == 27003
     assert server.data['steamqueryport'] == 27020
@@ -84,7 +63,11 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 565060
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=True, restart=True)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 565060, True, validate=True
+    )
     assert server._stopped
     assert server._started
 
@@ -94,7 +77,11 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 565060
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=False, restart=False)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 565060, True, validate=False
+    )
     assert server._stopped
     assert not server._started
 
@@ -305,4 +292,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

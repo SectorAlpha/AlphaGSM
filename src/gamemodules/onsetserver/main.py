@@ -247,11 +247,12 @@ def get_start_command(server):
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     sync_server_config(server)
+    config_path = "server_config.json" if server.data.get("runtime") == "docker" else _config_path(server)
     return (
         [
             "./" + server.data["exe_name"],
             "--config",
-            _config_path(server),
+            config_path,
         ],
         server.data["dir"],
     )

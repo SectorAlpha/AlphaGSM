@@ -4,10 +4,14 @@ This guide covers the `accserver` module in AlphaGSM.
 
 ## Status
 
-`accserver` is currently `ENABLED (AUTH)`.
+`accserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04
+Linux baseline.
 
 Before `setup`, authenticate Steam or SteamCMD with an account entitled to
-Assetto Corsa Competizione dedicated server app `1430110`.
+Assetto Corsa Competizione dedicated server app `1430110`. The current GitHub
+integration lane still validates both process and Docker runtime selection
+around that auth-gated prerequisite, while local runs remain process-backed by
+default unless you opt into the Docker backend.
 
 ## Requirements
 

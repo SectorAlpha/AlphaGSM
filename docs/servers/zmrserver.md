@@ -14,6 +14,9 @@ This guide covers the `zmrserver` module in AlphaGSM.
 `zmrserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the
 generic Source SDK Base 2013 Dedicated Server scaffold from anonymous SteamCMD,
 but the real `zombie_master_reborn/` payload still has to be staged locally.
+This checked-in support state is validated against the documented Ubuntu 24.04
+Linux baseline, and the current GitHub integration lane still exercises both
+process and Docker runtime selection around that BYO prerequisite.
 
 ## Quick Start
 

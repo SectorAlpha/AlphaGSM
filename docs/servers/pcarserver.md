@@ -2,6 +2,8 @@
 
 This guide covers the `pcarserver` module in AlphaGSM.
 
+`pcarserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`

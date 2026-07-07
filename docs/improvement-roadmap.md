@@ -1,6 +1,6 @@
 # AlphaGSM Improvement Roadmap
 
-Last updated: 2026-06-09
+Last updated: 2026-06-27
 
 This document is a handoff-oriented review of the whole repository. It lists
 concrete improvements a future agent or contributor can pick up, ordered by
@@ -11,9 +11,9 @@ work here must respect.
 ## Current State Snapshot
 
 - ~233 game modules under `src/gamemodules/`, package-backed layout.
-- Support tracker (`docs/TEST_STATUS.md`): 147 PASSED, 47 ENABLED (AUTH),
-  41 ENABLED (BYO), 1 DISABLED, 0 SKIPPED (last updated 2026-06-03 — see
-  "Tracker hygiene" below; the date and counts drift behind reality).
+- Support tracker (`docs/TEST_STATUS.md`): 146 PASSED, 47 ENABLED (AUTH),
+  41 ENABLED (BYO), 3 DISABLED, 0 SKIPPED (last updated 2026-06-27; CI now
+  enforces parity with the live enabled/disabled gate files).
 - Six shared Docker runtime families (`java`, `quake-linux`, `service-console`,
   `simple-tcp`, `steamcmd-linux`, `wine-proton`) with image scaffolds under
   `docker/` and defaults in `src/server/runtime.py`.
@@ -77,25 +77,25 @@ work here must respect.
    symlink-aware, nested-tree executable resolver now lives in
    `src/utils/gamemodules/common.py` as `resolve_install_executable(server, ...)`
    and `btserver`, `valheim`, and the Palworld launcher flow now share it.
-2. **Host-path leakage into container commands.** Valheim's `-savedir` was
-   passing an absolute host path into the container; the fix rewrites it
-   relative for Docker. Audit other modules for the same class of bug: any
-   `get_start_command` argument embedding `server.data["dir"]` as an absolute
-   path will break (or silently misbehave) under the mounted `/srv/server`
-   tree. A static check in `tests/unit_tests/test_runtime_contract_static.py`
-   could flag absolute install-dir paths in computed commands.
+2. **Done: host-path leakage into container commands.** Valheim's
+   `-savedir` was passing an absolute host path into the container; the fix
+   rewrites it relative for Docker. The follow-up audit also corrected
+   Vintage Story, Wolf ET, Quake Live, NS2, NS2: Combat, TF2C, Terraria,
+   ACC, Arma Reforger, Core Keeper, MOHAA, Mumble, Onset, and V Rising.
+   `tests/unit_tests/test_runtime_contract_static.py` now guards the Docker
+   command surface so install-dir leaks fail fast.
 3. **Verify the A2S surface for Docker btserver/valheim.** Both modules
    publish `queryport` udp+tcp, but the Docker lane has not yet proven A2S
    readiness. If A2S works through bridge networking, keep the `a2s` waits; if
    not, either fix port publication (`-public 1` is not required for A2S, but
    Valheim's Steam relay init may be) or honestly downgrade the test contract
    to the generic surface like other migrated lanes.
-4. **Config sync gaps.** AGENTS.md requires `sync_server_config` +
-   `config_sync_keys` for modules whose `set` values map to real game config.
-   `btserver` (Barotrauma `serversettings.xml`) was noted as having no config
-   sync at all earlier in this campaign. Audit modules with game-config-backed
-   `set` keys but no `config_sync_keys` (a script similar to
-   `scripts/list_missing_runtime_hooks.py` would do) and wire the missing ones.
+4. **Done: config sync gap audit.** AGENTS.md requires
+   `sync_server_config` + `config_sync_keys` for modules whose `set` values
+   map to real game config. The repo now has
+   `scripts/list_missing_config_sync_contracts.py` mirroring the static
+   contract heuristic, and the current tree reports zero modules managing real
+   server config without a declared config-sync contract.
 5. **Steam auth-profile flow.** The provider-requirement contract in AGENTS.md
    anticipates mapping SteamCMD-auth-gated installs (the 47 ENABLED (AUTH)
    rows) through a shared auth-profile mechanism instead of per-module fail-fast
@@ -109,56 +109,56 @@ work here must respect.
    (GitHub releases, vendor archives), wire real installs and promote to
    PASSED. Each one is a self-contained PR: module install path + smoke +
    integration + tracker row + changelog.
-2. **The 1 remaining DISABLED row** (`disabled_servers.conf` has 73 lines but
-   most are comments/legacy; tracker says 1 active). Re-verify its evidence
-   note is still current; disabled rows rot fast in this repo's history.
-3. **Tracker freshness automation.** `docs/TEST_STATUS.md` says "Last updated
-   2026-06-03" while substantial promotions landed since. The tracker is
-   generated/maintained partly by `scripts/generate_game_server_support_tracker.py`
-   — make CI fail when tracker counts disagree with
-   `enabled_*_servers.conf`/`disabled_servers.conf`, so the docs cannot drift
-   silently (this is also what the `server-support-tracker` skill polices).
+2. **The 3 remaining DISABLED rows** (`abfserver`, `bobserver`, and legacy
+   `counterstrikeglobaloffensive`). Re-verify each evidence note periodically;
+   disabled rows rot fast in this repo's history.
+3. **Done: tracker freshness automation.** CI now fails when
+   `docs/TEST_STATUS.md` drifts from `enabled_*_servers.conf` or
+   `disabled_servers.conf`, and it also rejects modules that appear in both
+   enabled and disabled gate files at once.
 
 ## 4. Code Health
 
-1. **`src/downloadermodules/steamcmd.py`** is acknowledged legacy
-   parser-broken code excluded from lint. Either rewrite it against the
-   current downloader interface or delete it if `utils/steamcmd.py` has fully
-   replaced it; carrying a known-broken module invites accidental imports.
-2. **Repo-root clutter.** Top-level artifacts like `log_slow_ron.txt`,
-   `run_details.txt`, `smoke_test_results.txt`, `lgsm_*` exports, and
-   `generate_full_coverage_tests.py` look like one-off captures. Move what is
-   still useful under `docs/` or `scripts/`, delete the rest (with user
-   confirmation), and gitignore the patterns.
-3. **`changelog.txt` format split.** Newer entries use `- ` bullets under date
-   headings; at least one earlier entry used an indented `*` style (one was
-   normalized this session). Pick one format in
-   `skills/changelog-discipline/SKILL.md` and sweep stragglers.
-4. **Unit-test boilerplate.** Every `test_<module>_cov.py` re-declares
-   `DummyData`/`DummyServer`. A shared fixture module under
-   `tests/unit_tests/gamemodules/` would cut thousands of duplicated lines;
-   do it opportunistically (only touch files you are already editing) to keep
-   diffs reviewable.
-5. **Aggregate vs. per-module unit tests.** Failures this session came from
-   *aggregate* files (`test_more_steam_dedicated_modules.py`,
-   `test_steam_standalone_modules.py`) duplicating expectations already
-   covered in per-module `*_cov.py` files. Decide on one home per assertion
-   (prefer per-module) and thin the aggregates down to what they uniquely
-   cover, so behaviour changes need exactly one test update.
+1. **Done: remove legacy `src/downloadermodules/steamcmd.py`.**
+   The repo now uses `src/utils/steamcmd.py` exclusively for Steam app
+   installation, so the dead parser-broken downloader module was deleted
+   instead of preserved behind special lint and coverage exclusions.
+2. **Done: repo-root clutter.** Legacy reference files now live under
+   `docs/archive/`, `docs/reference/lgsm/`, or `scripts/legacy_*`, while
+   one-off CI/smoke/test capture artifacts and the stray checked-in Warband
+   archive were removed from repo root. Recurring generated log filenames are
+   now ignored.
+3. **Done: `changelog.txt` format split.** Historical stragglers were
+   normalized to the current `- ` bullet format under date headings, matching
+   `skills/changelog-discipline/SKILL.md`.
+4. **Unit-test boilerplate.** A shared helper now exists at
+   `tests/unit_tests/gamemodules/helpers.py`, and the actively edited
+   Avorion, Beasts of Bermuda, Broken Arrow, Life is Feudal, Starbound, and
+   Valheim coverage suites already import it instead of re-declaring local
+   `DummyData` / `DummyServer` copies. Continue migrating touched files
+   opportunistically so the duplication shrinks without forcing a giant
+   one-shot sweep.
+5. **Done: aggregate vs. per-module unit tests.** The duplicate aggregate
+   files (`test_more_steam_dedicated_modules.py`,
+   `test_steam_standalone_modules.py`) were removed after migrating their
+   useful assertions into the affected per-module `*_cov.py` suites, so
+   module-specific behaviour now has one test home instead of two.
 
 ## 5. Documentation
 
-1. **`future_plans` is stale** (still lists 7 Days to Die support, which is
-   already a passing module). Its remaining ideas are folded into Section 6
-   below (items 8 and 13) — delete the file once confirmed.
-2. **README/docs/DEVELOPERS split.** Verify the docs split still matches
-   AGENTS.md guidance after the Docker-first migration: `docs/docker-manager.md`
-   and `docs/docker-runtime-host.md` should now be the primary path, with
-   host-process `screen` flows documented as the fallback, not the default.
-3. **Server guide status notes.** Several guides under `docs/servers/` carry
-   status sentences that predate recent promotions/migrations. When touching a
-   module, treat the guide note as part of the change (AGENTS.md already
-   requires this; it is the most commonly skipped step).
+1. **Done: remove stale `future_plans`.** Its surviving ideas were already
+   covered by the maintained roadmap themes here, so the duplicate file was
+   dropped instead of leaving another stale planning surface behind.
+2. **Done: README/docs/DEVELOPERS split.** The repo docs now lead with the
+   Docker-manager quick start and the direct-host Docker-runtime path, while
+   documenting host-process `screen` flows as the fallback path instead of the
+   default. The user-facing runtime baseline is now called out as Ubuntu 24.04
+   or newer Linux.
+3. **Done: server guide status notes.** The support-tracked guides under
+   `docs/servers/` now carry an explicit top-of-guide status note or a
+   matching near-top support-status block aligned to the checked-in tracker
+   state, including the Ubuntu 24.04 Linux baseline and the current
+   process-versus-Docker validation shape where that distinction matters.
 
 ## 6. Future Feature Ideas
 

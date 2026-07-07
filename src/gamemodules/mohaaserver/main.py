@@ -87,6 +87,7 @@ def get_start_command(server):
             ),
             docs_slug="mohaaserver",
         )
+    runtime_dir = "." if server.data.get("runtime") == "docker" else server.data["dir"]
     return (
         [
             "./" + server.data["exe_name"],
@@ -95,10 +96,10 @@ def get_start_command(server):
             "0",
             "+set",
             "fs_basepath",
-            server.data["dir"],
+            runtime_dir,
             "+set",
             "fs_outputpath",
-            os.path.join(server.data["dir"], "Logs"),
+            os.path.join(runtime_dir, "Logs"),
             "+set",
             "dedicated",
             "2",

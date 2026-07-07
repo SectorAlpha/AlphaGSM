@@ -97,6 +97,19 @@ def test_get_start_command_uses_config_flag_and_query_port(tmp_path):
     assert mod.get_info_address(server) == ("127.0.0.1", 7776, "a2s")
 
 
+def test_get_start_command_uses_relative_config_for_docker(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    server.data["runtime"] = "docker"
+    exe_path = tmp_path / "start_linux.sh"
+    exe_path.write_text("#!/bin/sh\n", encoding="utf-8")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["./start_linux.sh", "--config", "server_config.json"]
+    assert cwd == str(tmp_path) + "/"
+
+
 def test_checkvalue_recalculates_derived_ports(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))

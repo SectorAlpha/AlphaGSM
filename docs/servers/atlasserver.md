@@ -2,6 +2,13 @@
 
 This guide covers the `atlasserver` module in AlphaGSM.
 
+`atlasserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
+Linux baseline. The checked-in validation path is Docker-first because the
+shared `steamcmd-linux` runtime image carries the compatibility stack this
+server still expects, and the current GitHub integration lane exercises both
+process and Docker runtime selection around the staged server-grid export
+prerequisite.
+
 ## Requirements
 
 - `docker` for the checked-in smoke/integration validation path

@@ -664,8 +664,8 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
             full list of contributors.
 
             A command line tool to download, manage and maintain game servers
-            using simple and similar commands. See the README, future_plans and
-            changelog.txt for more details. Hosted and maintained on our
+            using simple and similar commands. See the README.md,
+            DEVELOPERS.md, and changelog.txt for more details. Hosted and maintained on our
             github page https://github.com/SectorAlpha/AlphaGSM. Raise any issues
             or ask any questions on our github page, or contact
             cosmosquark@sector-alpha.net. Additionally check out the project

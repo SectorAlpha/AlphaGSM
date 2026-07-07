@@ -169,6 +169,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    runtime_dir = "." if server.data.get("runtime") == "docker" else server.data["dir"]
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -182,9 +183,9 @@ def get_start_command(server):
         "-webdomain",
         "0.0.0.0",
         "-config_path",
-        _config_dir(server),
+        os.path.join(runtime_dir, server.name),
         "-modstorage",
-        _mod_storage_dir(server),
+        os.path.join(runtime_dir, server.name, "Workshop"),
     ]
     return command, server.data["dir"]
 

@@ -2,6 +2,11 @@
 
 This guide covers the `teamfortress2` module in AlphaGSM.
 
+The checked-in support tracker currently marks the canonical Team Fortress 2
+surface as `PASSED` on the documented Ubuntu 24.04 Linux baseline under the
+`tf2` module id. `teamfortress2` is the package-backed canonical import
+surface behind that validated TF2 server path.
+
 ## Requirements
 
 - `screen`

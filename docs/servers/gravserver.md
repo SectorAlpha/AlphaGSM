@@ -2,6 +2,12 @@
 
 This guide covers the `gravserver` module in AlphaGSM.
 
+`gravserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around that staged-server prerequisite,
+while local runs remain process-backed by default unless you opt into the
+Docker backend.
+
 ## Requirements
 
 - `screen`

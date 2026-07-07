@@ -2,6 +2,11 @@
 
 This guide covers the `nightingale` module in AlphaGSM.
 
+`nightingale` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `steamcmd-linux` runtime, with generic `tcp`
+`query` / `info` on the managed main port.
+
 ## Requirements
 
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`) for host-process installs

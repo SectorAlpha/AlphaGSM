@@ -81,6 +81,22 @@ def test_get_start_command(tmp_path):
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
     assert cmd[0] == "/usr/bin/dotnet"
+    assert cmd[-1] == str(tmp_path) + "/"
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_relative_datapath_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "VintagestoryServer.dll"
+    server.data["dotnetpath"] = "/usr/bin/dotnet"
+    server.data["runtime"] = "docker"
+    (tmp_path / "VintagestoryServer.dll").write_text("")
+    cmd, cwd = mod.get_start_command(server)
+    assert isinstance(cmd, list)
+    assert cmd[0] == "/usr/bin/dotnet"
+    assert cmd[-1] == "."
+    assert cwd == server.data["dir"]
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -167,4 +183,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

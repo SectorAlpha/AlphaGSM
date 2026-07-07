@@ -13,3 +13,9 @@ nohup.out
 docs/superpowers/*
 build/
 dist-binary/
+/run_details.txt
+/smoke_test_output.log
+/smoke_test_results.txt
+/test_output.log
+/test_trace.log
+/log_slow_*.txt

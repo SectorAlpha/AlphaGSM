@@ -2,6 +2,8 @@
 
 This guide covers the `arksurvivalascended` module in AlphaGSM.
 
+`arksurvivalascended` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The checked-in GitHub validation path for this server is Docker-backed, so the documented Linux lifecycle is proven through the module's container runtime contract first.
+
 ## Requirements
 
 - Docker

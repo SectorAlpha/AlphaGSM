@@ -72,6 +72,28 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_uses_relative_paths_for_docker(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "mohaa_lnxded",
+            "port": 12203,
+            "ip": "0.0.0.0",
+            "startmap": "dm/mohdm1",
+            "configfile": "main/mohaa.cfg",
+            "runtime": "docker",
+        }
+    )
+    (tmp_path / "mohaa_lnxded").write_text("", encoding="utf-8")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[6] == "."
+    assert cmd[9] == "./Logs"
+    assert cwd == server.data["dir"]
+
+
 def test_get_start_command_missing_executable(tmp_path):
     server = DummyServer()
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "mohaa_lnxded", "port": 12203})

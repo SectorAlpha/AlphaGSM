@@ -2,6 +2,12 @@
 
 This guide covers the `mumbleserver` module in AlphaGSM.
 
+`mumbleserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection, but the validated anonymous Linux path uses the
+shared `simple-tcp` Docker runtime while process mode still works when a host
+`mumble-server` or `murmurd` package is installed.
+
 ## Requirements
 
 - `docker` for the tested anonymous support path

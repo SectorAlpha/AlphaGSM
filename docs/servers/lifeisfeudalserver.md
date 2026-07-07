@@ -7,7 +7,10 @@ This guide covers the `lifeisfeudalserver` module in AlphaGSM.
 `lifeisfeudalserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can stage
 the server files, but `start` still requires an operator-provided
 MySQL/MariaDB service plus matching database details recorded during setup or
-via `set`.
+via `set`. This checked-in support state is validated against the documented
+Ubuntu 24.04 Linux baseline, and the current GitHub integration lane still
+exercises both process and Docker runtime selection around that external
+database prerequisite.
 
 ## Requirements
 

@@ -2,6 +2,11 @@
 
 This guide covers the `warbandserver` module in AlphaGSM.
 
+`warbandserver` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The validated Linux lane uses the
+Windows-only dedicated archive through Wine or Proton, and the current GitHub
+integration lane validates both process and Docker runtimes for this module.
+
 ## Requirements
 
 - `screen`

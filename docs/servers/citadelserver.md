@@ -2,6 +2,12 @@
 
 This guide covers the `citadelserver` module in AlphaGSM.
 
+`citadelserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `steamcmd-linux` runtime, with generic `tcp`
+`query` / `info` on the managed main port rather than an A2S `queryport`
+contract.
+
 ## Requirements
 
 - Docker

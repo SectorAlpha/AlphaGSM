@@ -2,6 +2,12 @@
 
 This guide covers the `bobserver` module in AlphaGSM.
 
+`bobserver` is currently `DISABLED` in the checked-in support tracker. The
+current blocker is CI/runtime practicality rather than a known permanent game
+bug: SteamCMD app `882430` still times out during the automated install flow,
+so AlphaGSM keeps the module hard-disabled until that large-download path is
+validated cleanly on the documented Ubuntu 24.04 Linux baseline.
+
 ## Requirements
 
 - `screen`

@@ -2,6 +2,12 @@
 
 This guide covers the `empyrionserver` module in AlphaGSM.
 
+`empyrionserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection, and the validated Linux path remains Wine/Proton-
+backed, with readiness from `Logs/alphagsm-dedicated.log` and TCP `query` /
+`info` on `port + 3`.
+
 ## Requirements
 
 - `screen`

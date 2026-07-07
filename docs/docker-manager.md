@@ -1,10 +1,14 @@
 # Running AlphaGSM In Docker
 
-This is an optional deployment mode.
+This is the recommended quickest-first-run deployment mode.
 
 AlphaGSM can still run directly on the host exactly as before. This guide is
 only for the case where you want AlphaGSM itself to run in a Docker container
 while still launching game-server containers through the host Docker daemon.
+
+This repository's runtime validation baseline assumes an Ubuntu 24.04 or newer
+Linux host. Older Linux hosts may still work, but they are not the documented
+target for the Docker-manager workflow.
 
 ## How This Works
 
@@ -29,8 +33,8 @@ daemon must also be able to see that exact path.
 ## What Stays The Same
 
 - direct host installs still work
-- the default configuration still uses the traditional process runtime unless
-  you choose otherwise
+- the host-process runtime remains a supported fallback path when you
+  intentionally run AlphaGSM outside the Docker-manager flow
 - this manager-container setup is separate from the runtime-family images under
   `docker/java/`, `docker/steamcmd-linux/`, and the other family directories
 

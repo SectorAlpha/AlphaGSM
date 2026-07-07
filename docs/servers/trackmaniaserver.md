@@ -2,6 +2,11 @@
 
 This guide covers the `trackmaniaserver` module in AlphaGSM.
 
+`trackmaniaserver` is currently `PASSED` in the checked-in support tracker on
+the documented Ubuntu 24.04 Linux baseline. The current GitHub integration
+lane validates both process and Docker runtimes for this module, while local
+runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`

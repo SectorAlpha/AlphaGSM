@@ -4,10 +4,14 @@ This guide covers the `twserver` module in AlphaGSM.
 
 ## Status
 
-`twserver` is currently `ENABLED (AUTH)`.
+`twserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04 Linux
+baseline.
 
 Before `setup`, authenticate Steam or SteamCMD with an account entitled to
-server app `380840`.
+server app `380840`. The current GitHub integration lane still validates both
+process and Docker runtime selection around that auth-gated prerequisite,
+while local runs remain process-backed by default unless you opt into the
+Docker backend.
 
 ## Requirements
 

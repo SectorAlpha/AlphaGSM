@@ -2,6 +2,11 @@
 
 This guide covers the `abfserver` module in AlphaGSM.
 
+`abfserver` is currently `DISABLED` in the checked-in support tracker. On the
+documented Ubuntu 24.04 Linux baseline, SteamCMD app `2857200` still returns
+`Invalid platform`, so AlphaGSM keeps the module blocked from `create` until
+that upstream Linux install path changes.
+
 ## Requirements
 
 - `screen`

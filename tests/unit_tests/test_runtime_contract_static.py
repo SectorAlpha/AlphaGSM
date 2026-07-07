@@ -239,7 +239,52 @@ def test_all_game_modules_resolve_valid_docker_manifests():
                 setattr(target, attribute_name, original)
             shutil.rmtree(server_root, ignore_errors=True)
 
-    assert offenders == []
+    if offenders:
+        raise AssertionError(offenders)
+
+
+def test_docker_runtime_commands_do_not_embed_the_host_install_dir():
+    offenders = []
+    for module_name in _game_module_names():
+        module = import_module("gamemodules." + module_name)
+        original_resolvers = _stub_download_resolution(module, module_name)
+        server_root = _runtime_contract_root(module_name)
+        server = _FakeServer("it-" + module_name.replace(".", "-"), server_root)
+        server.module = module
+        try:
+            configure = getattr(module, "configure", None)
+            if callable(configure):
+                try:
+                    configure(server, False)
+                except ValueError as exc:
+                    if str(exc) != "No Port":
+                        raise
+                    configure(server, False, port=_default_test_port(module_name))
+            _seed_install_state(server)
+            runtime_module.ensure_runtime_hooks(module)
+            requirements = runtime_module._get_module_hook(module, "get_runtime_requirements")(server)
+            if requirements.get("engine") != "docker":
+                continue
+            server.data["runtime"] = "docker"
+            try:
+                command, _cwd = runtime_module._get_module_hook(module, "get_start_command")(server)
+            except ServerError as exc:
+                if str(exc).startswith("ENABLED (BYO):") or str(exc).startswith("ENABLED (AUTH):"):
+                    continue
+                raise
+            install_dir = server.data.get("dir")
+            if install_dir and any(
+                isinstance(arg, str) and (arg == install_dir or arg.startswith(install_dir))
+                for arg in command
+            ):
+                offenders.append(module_name + ": embedded host install dir in Docker command")
+        finally:
+            for (target, attribute_name), original in original_resolvers.items():
+                setattr(target, attribute_name, original)
+            shutil.rmtree(server_root, ignore_errors=True)
+
+    if offenders:
+        raise AssertionError(offenders)
 
 
 def test_modules_using_xvfb_run_declare_the_host_dependency():

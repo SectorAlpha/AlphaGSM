@@ -2,6 +2,12 @@
 
 This guide covers the `fearthenightserver` module in AlphaGSM.
 
+`fearthenightserver` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection, and the validated Linux path remains
+Wine/Proton-backed, with generic `udp` `query` / `info` on the managed game
+port instead of A2S on `queryport`.
+
 ## Requirements
 
 - `screen`

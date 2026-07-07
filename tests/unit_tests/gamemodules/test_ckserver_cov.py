@@ -161,6 +161,23 @@ def test_get_start_command(tmp_path):
     assert cwd == str(tmp_path) + "/"
 
 
+def test_get_start_command_uses_relative_datapath_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "_launch.sh"
+    server.data["runtime"] = "docker"
+    (tmp_path / "_launch.sh").write_text("")
+    server.data["maxplayers"] = 8
+    server.data["port"] = 27015
+    server.data["world"] = "test"
+    server.data["worldindex"] = 0
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[-1] == "DedicatedServer"
+    assert cwd == str(tmp_path) + "/"
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -266,4 +283,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

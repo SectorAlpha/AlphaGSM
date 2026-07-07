@@ -2,6 +2,11 @@
 
 This guide covers the `qwserver` module in AlphaGSM.
 
+`qwserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server currently
+follows the native Linux nQuake and KTX bootstrap lifecycle, with QuakeWorld
+`status` validation on the managed server path.
+
 ## Requirements
 
 - `screen`

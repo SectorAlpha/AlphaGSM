@@ -240,7 +240,7 @@ def get_start_command(server):
             "1",
             "+set",
             "fs_homepath",
-            server.data["dir"],
+            "." if server.data.get("runtime") == "docker" else server.data["dir"],
             *launch_args,
         ],
         server.data["dir"],

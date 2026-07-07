@@ -13,7 +13,10 @@ This guide covers the `ndserver` module in AlphaGSM.
 
 `ndserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the
 anonymous dedicated-server scaffold, but the current public payload still lacks
-the full Nuclear Dawn game content needed for a working server.
+the full Nuclear Dawn game content needed for a working server. This checked-in
+support state is validated against the documented Ubuntu 24.04 Linux baseline,
+and the current GitHub integration lane still exercises both process and
+Docker runtime selection around that staged-content prerequisite.
 
 ## Quick Start
 

@@ -2,6 +2,12 @@
 
 This guide covers the `counterstrike2` module in AlphaGSM.
 
+`counterstrike2` is currently `PASSED` in the checked-in support tracker on
+the documented Ubuntu 24.04 Linux baseline. Use this module (or its
+`cs2server` alias) for the current CS2 dedicated-server flow; the legacy
+`counterstrikeglobaloffensive` / `csgo` surface remains a separate disabled
+app `740` path.
+
 ```bash
 alphagsm myserver create counterstrike2
 ```

@@ -2,6 +2,12 @@
 
 This guide covers the `minecraft.bedrock` module in AlphaGSM.
 
+`minecraft.bedrock` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection, but the validated anonymous Linux path
+remains Docker-first through the shared `service-console` runtime family while
+local process mode still depends on the host Bedrock libraries being present.
+
 ## Requirements
 
 - Docker is recommended on Linux; AlphaGSM can run Bedrock through the shared `service-console` runtime image.

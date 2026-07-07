@@ -2,6 +2,12 @@
 
 This guide covers the `valheim` module in AlphaGSM.
 
+`valheim` is currently `PASSED` in the checked-in support tracker. On the
+documented Ubuntu 24.04 Linux baseline, the current smoke and GitHub
+integration coverage runs through the shared `steamcmd-linux` Docker runtime,
+while local host-process flows remain the fallback path documented elsewhere
+in the repo.
+
 ## Requirements
 
 - `screen`

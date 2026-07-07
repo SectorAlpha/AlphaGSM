@@ -2,6 +2,11 @@
 
 This guide covers the `astroneerserver` module in AlphaGSM.
 
+`astroneerserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `wine-proton` runtime plus in-container Xvfb,
+with generic `tcp` `query` / `info` on the managed main port.
+
 ## Requirements
 
 - Docker recommended on Linux: branch-local or published `alphagsm-wine-proton-runtime`

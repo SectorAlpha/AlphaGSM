@@ -148,12 +148,13 @@ def get_start_command(server):
     """Build the command used to launch a Mumble server."""
 
     sync_server_config(server)
+    config_path = "mumble-server.ini" if server.data.get("runtime") == "docker" else _config_path(server)
     return (
         [
             server.data["exe_name"],
             "-fg",
             "-ini",
-            _config_path(server),
+            config_path,
         ],
         server.data["dir"],
     )

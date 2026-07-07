@@ -462,6 +462,53 @@ def tmp_path(request, tmp_path_factory):
 DEFAULT_TIMEOUT = 1200
 
 
+def _looks_sensitive_cli_key(value):
+    normalized = re.sub(r"[^a-z0-9]", "", str(value).lower())
+    if not normalized:
+        return False
+    sensitive_markers = (
+        "password",
+        "passwd",
+        "passphrase",
+        "token",
+        "secret",
+        "apikey",
+        "licensekey",
+    )
+    return any(marker in normalized for marker in sensitive_markers)
+
+
+def _redact_command_args(command_args):
+    redacted = []
+    mask_next = False
+    for arg in command_args:
+        text = str(arg)
+        if mask_next:
+            redacted.append("<redacted>")
+            mask_next = False
+            continue
+        if "=" in text:
+            key, value = text.split("=", 1)
+            if _looks_sensitive_cli_key(key):
+                redacted.append(f"{key}=<redacted>")
+                continue
+        if _looks_sensitive_cli_key(text):
+            redacted.append(text)
+            mask_next = True
+            continue
+        redacted.append(text)
+    return tuple(redacted)
+
+
+def _format_logged_command(name, command_args=None):
+    if command_args is None:
+        return name
+    rendered_args = " ".join(_redact_command_args(command_args))
+    if not rendered_args:
+        return name
+    return f"{name} {rendered_args}"
+
+
 def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
     """Run the alphagsm script and return the CompletedProcess."""
     command = [sys.executable, str(ALPHAGSM_SCRIPT)] + list(args)
@@ -477,9 +524,9 @@ def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
     )
 
 
-def log_command_result(name, result):
+def log_command_result(name, result, command_args=None):
     """Print a subprocess result for CI diagnostics."""
-    print(f"\n=== {name} ===")
+    print(f"\n=== {_format_logged_command(name, command_args)} ===")
     print(f"returncode: {result.returncode}")
     if result.stdout:
         print("stdout:")
@@ -492,7 +539,7 @@ def log_command_result(name, result):
 def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
     """Run alphagsm and assert a zero return code."""
     result = run_alphagsm(env, *args, timeout=timeout)
-    log_command_result("alphagsm " + " ".join(args), result)
+    log_command_result("alphagsm", result, command_args=args)
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
         if len(args) >= 2 and args[1] == "start":
@@ -613,10 +660,10 @@ def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
             result = run_alphagsm(env, *command_args, timeout=120)
         except subprocess.TimeoutExpired as exc:
             print(
-                f"[diagnostic] alphagsm {' '.join(command_args)} timed out after {exc.timeout}s"
+                f"[diagnostic] {_format_logged_command('alphagsm', command_args)} timed out after {exc.timeout}s"
             )
             continue
-        log_command_result("alphagsm " + " ".join(command_args), result)
+        log_command_result("alphagsm", result, command_args=command_args)
 
 
 # ---------------------------------------------------------------------------

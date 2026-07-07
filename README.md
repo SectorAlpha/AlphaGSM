@@ -47,9 +47,25 @@ See [Run AlphaGSM In Docker](docs/docker-manager.md).
 If you want a quick server-by-server support checklist, see
 [Game Server Support Tracker](docs/game-server-support.md).
 
-## What You Need
+## Recommended Paths
 
-You need:
+AlphaGSM now documents runtime usage in this order:
+
+- For the quickest first run, use [Run AlphaGSM In Docker](docs/docker-manager.md).
+- If you want AlphaGSM itself on the host but want game servers to run in
+  Docker, use
+  [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md).
+- Use the direct host process runtime as the fallback path when a module does
+  not have a validated Docker path yet or when you explicitly want local
+  process control.
+
+Runtime validation and dependency guidance in this repository assume an Ubuntu
+24.04 or newer Linux host. Older Linux distributions may still work, but they
+are not the documented baseline.
+
+## Host Install Requirements
+
+If you are installing AlphaGSM directly on the host, you need:
 
 - Python 3
 - `screen`
@@ -102,8 +118,9 @@ setup.
 ## Fast Start
 
 If you want the quickest first run, start with the Docker-manager path above.
-The host install below is still the right option when you want AlphaGSM running
-directly on the machine instead of through Docker.
+The host install below is the fallback path when you want AlphaGSM running
+directly on the machine instead of through Docker, or when you need a
+module/runtime combination that is not yet validated through the Docker path.
 
 If you want AlphaGSM on the host but want supported game servers to start as
 Docker containers, see [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md).
@@ -410,7 +427,6 @@ The GitHub wiki can also be updated automatically from these files when changes 
 Use:
 
 - [DEVELOPERS.md](DEVELOPERS.md)
-- [technical_introduction.txt](technical_introduction.txt)
 
 ## Community
 

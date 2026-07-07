@@ -136,6 +136,38 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_uses_container_paths_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "qzeroded.x64"
+    server.data["runtime"] = "docker"
+    (tmp_path / "qzeroded.x64").write_text("")
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["servercfg"] = "test"
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "./qzeroded.x64",
+        "+set",
+        "fs_homepath",
+        "/srv/server",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
 def test_get_container_spec_uses_container_homepath(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

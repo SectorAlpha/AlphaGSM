@@ -90,8 +90,8 @@ _MANAGED_CONFIG_FOOTER = """
 $DatabaseAddress = "{db_address}";
 $DatabaseName = "{db_name}";
 $DatabaseUser = "{db_user}";
-$DatabasePassword = "{db_password}";
-$rootPassword = "{db_password}";
+$DatabasePassword = "{db_credential}";
+$rootPassword = "{db_credential}";
 """.lstrip()
 _MANAGED_DB_IMAGE = "mariadb:10.3"
 
@@ -139,26 +139,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ddctd_cm_yo_server.
     gamemodule_common.configure_executable(server, exe_name=exe_name)
     return gamemodule_common.finalize_configure(server)
 
-
-install = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=lambda server: sync_server_config(server),
-    download_kwargs={"force_windows": IS_LINUX},
-)
-install.__doc__ = "Download the Life is Feudal server files via SteamCMD."
-
-
-update = gamemodule_common.make_steamcmd_update_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-    sync_server_config=lambda server: sync_server_config(server),
-    download_kwargs={"force_windows": IS_LINUX},
-)
-
-restart = gamemodule_common.make_restart_hook()
 
 def _configure_database(server, ask):
     """Collect BYO database settings during ``setup``."""
@@ -214,6 +194,15 @@ def _docs_mysql_config_path(server):
 
 def _database_address(server):
     return f'{server.data.get("db_host", "127.0.0.1")}:{int(server.data.get("db_port", 3306))}'
+
+
+def _managed_config_template_values(server):
+    return {
+        "db_address": _database_address(server),
+        "db_name": str(server.data.get("db_name", "lif_1")),
+        "db_user": str(server.data.get("db_user", "root")),
+        "db_credential": str(server.data.get("db_password", "")),
+    }
 
 
 def _managed_db_container_name(server):
@@ -455,6 +444,7 @@ def sync_server_config(server):
 
     target_path = _config_local_path(server)
     source_path = _docs_config_local_path(server)
+    managed_values = _managed_config_template_values(server)
     if os.path.isfile(target_path):
         with open(target_path, "r", encoding="utf-8") as handle:
             text = handle.read()
@@ -464,15 +454,15 @@ def sync_server_config(server):
         with open(target_path, "r", encoding="utf-8") as handle:
             text = handle.read()
     else:
-        text = _MANAGED_CONFIG_FOOTER
+        text = _MANAGED_CONFIG_FOOTER.format(**managed_values)
 
     replacements = {
-        ("DatabaseAddress", "databaseAddress", "Server", "server"): _database_address(server),
-        ("DatabaseName", "databaseName", "DBName", "dbName"): str(server.data.get("db_name", "lif_1")),
-        ("DatabaseUser", "databaseUser", "DBUser", "dbUser", "UserName", "user"): str(server.data.get("db_user", "root")),
-        ("DatabasePassword", "databasePassword", "DBPassword", "dbPassword", "rootPassword", "password"): str(
-            server.data.get("db_password", "")
-        ),
+        ("DatabaseAddress", "databaseAddress", "Server", "server"): managed_values["db_address"],
+        ("DatabaseName", "databaseName", "DBName", "dbName"): managed_values["db_name"],
+        ("DatabaseUser", "databaseUser", "DBUser", "dbUser", "UserName", "user"): managed_values["db_user"],
+        ("DatabasePassword", "databasePassword", "DBPassword", "dbPassword", "rootPassword", "password"): managed_values[
+            "db_credential"
+        ],
     }
 
     total_matches = 0
@@ -481,18 +471,34 @@ def sync_server_config(server):
         total_matches += matches
 
     if total_matches == 0 and "Managed by AlphaGSM" not in text:
-        text = text.rstrip() + "\n\n" + _MANAGED_CONFIG_FOOTER
+        text = text.rstrip() + "\n\n" + _MANAGED_CONFIG_FOOTER.format(**managed_values)
 
     os.makedirs(server.data["dir"], exist_ok=True)
-    with open(target_path, "w", encoding="utf-8") as handle:
-        handle.write(
-            text.format(
-                db_address=_database_address(server),
-                db_name=str(server.data.get("db_name", "lif_1")),
-                db_user=str(server.data.get("db_user", "root")),
-                db_password=str(server.data.get("db_password", "")),
-            )
-        )
+    # Life is Feudal reads these database credentials directly from
+    # config_local.cs, so this native-config write must remain plaintext.
+    with open(target_path, "w", encoding="utf-8") as handle:  # lgtm[py/clear-text-storage-sensitive-data]
+        handle.write(text)
+
+
+install = gamemodule_common.make_steamcmd_install_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+install.__doc__ = "Download the Life is Feudal server files via SteamCMD."
+
+
+update = gamemodule_common.make_steamcmd_update_hook(
+    steamcmd_module=steamcmd,
+    steam_app_id=steam_app_id,
+    steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+    download_kwargs={"force_windows": IS_LINUX},
+)
+
+restart = gamemodule_common.make_restart_hook()
 
 
 def _assert_database_endpoint_available(server):

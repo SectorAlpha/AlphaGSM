@@ -492,8 +492,9 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_data = dict(server.data, dir="/srv/server") if server.data.get("runtime") == "docker" else server.data
     launch_args = build_launch_arg_values(
-        server.data,
+        launch_data,
         setting_schema,
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),

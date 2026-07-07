@@ -2,6 +2,11 @@
 
 This guide covers the `mtaserver` module in AlphaGSM.
 
+`mtaserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `steamcmd-linux` runtime, with the built-in
+HTTP health surface on `httpport = port + 2` after AlphaGSM disables `ase`.
+
 ## Requirements
 
 - `docker` for the validated Linux lifecycle

@@ -2,9 +2,11 @@
 
 This guide covers the `xntserver` module in AlphaGSM.
 
-Current status: PASSED 2026-05-30. The validated lifecycle now covers the
+`xntserver` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The validated lifecycle covers the
 shared `quake-linux` Docker runtime as well as the module's Quake
-`query` / `info` surface.
+`query` / `info` surface, and the current GitHub integration lane validates
+both process and Docker runtimes for this module.
 
 ## Requirements
 

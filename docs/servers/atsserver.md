@@ -2,6 +2,11 @@
 
 This guide covers the `atsserver` module in AlphaGSM.
 
+`atsserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection around that exported-client prerequisite, while local
+runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)

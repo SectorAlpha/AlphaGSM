@@ -2,6 +2,11 @@
 
 This guide covers the `sonsoftheforestserver` module in AlphaGSM.
 
+`sonsoftheforestserver` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `wine-proton` runtime, with A2S `query` /
+`info` on the managed `queryport`.
+
 ## Requirements
 
 - Docker recommended on Linux (`alphagsm-wine-proton-runtime`)

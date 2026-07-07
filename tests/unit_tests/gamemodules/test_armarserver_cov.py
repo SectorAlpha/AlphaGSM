@@ -290,6 +290,24 @@ def test_get_start_command(tmp_path):
     assert cmd[4] == str(tmp_path / "profile")
 
 
+def test_get_start_command_uses_relative_paths_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ArmaReforgerServer"
+    server.data["configfile"] = "configs/server.json"
+    server.data["profilesdir"] = "profile"
+    server.data["runtime"] = "docker"
+    (tmp_path / "ArmaReforgerServer").write_text("")
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "configs" / "server.json").write_text("{}\n")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[2] == "./configs/server.json"
+    assert cmd[4] == "./profile"
+    assert cwd == server.data["dir"]
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

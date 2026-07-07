@@ -14,6 +14,20 @@ AlphaGSM is a Python CLI that normalises game-server lifecycle management across
 - a runtime layer that can launch either local screen-backed processes or Docker containers
 - dedicated test layers for unit, integration, and streamed smoke coverage
 
+## Documentation Split
+
+Keep repository docs split by audience and preferred operator path:
+
+- [README.md](README.md) should stay simple and lead users toward the Docker
+  manager quick-start first, then the host Docker-runtime path, with direct
+  host-process usage documented as the fallback.
+- [docs/](docs/) should hold the primary user-facing workflows and server
+  guides. After the Docker-first migration, [docs/docker-manager.md](docs/docker-manager.md)
+  and [docs/docker-runtime-host.md](docs/docker-runtime-host.md) are the main
+  runtime-entry docs.
+- [DEVELOPERS.md](DEVELOPERS.md) is for implementation details, contracts,
+  architecture, and contributor-facing guidance.
+
 At runtime, the user-facing call path is:
 
 1. `./alphagsm ...`
@@ -345,10 +359,6 @@ The download subsystem is split between:
 - [src/utils/steamcmd.py](src/utils/steamcmd.py)
   SteamCMD bootstrap and Steam app installation
 
-Known exception:
-
-- [src/downloadermodules/steamcmd.py](src/downloadermodules/steamcmd.py) is currently legacy parser-broken code and remains outside the maintained lint/doc verification surface
-
 ## Runtime Lifecycle
 
 AlphaGSM resolves a runtime per server:
@@ -457,7 +467,6 @@ Lint is driven by [lint.sh](lint.sh).
 Properties of the current lint pipeline:
 
 - enumerates maintained Python files under the primary source trees
-- excludes the parser-broken legacy `src/downloadermodules/steamcmd.py`
 - runs pylint through the selected interpreter
 - enforces `--fail-under=10`
 

@@ -88,6 +88,22 @@ def test_get_start_command_includes_tf_path(tmp_path):
     assert cwd == str(tmp_path) + "/"
 
 
+def test_get_start_command_uses_relative_tf_path_for_docker(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    server.data["runtime"] = "docker"
+    server.data["clientport"] = 27005
+    server.data["sourcetvport"] = 27020
+    (tmp_path / "srcds.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[:5] == ["./srcds.sh", "-game", "tf2classified", "-tf_path", "tf"]
+    assert "+map" in cmd
+    assert "4koth_frigid" in cmd
+    assert cwd == str(tmp_path) + "/"
+
+
 def test_checkvalue_supportdir_accepts_string():
     server = DummyServer()
 

@@ -156,6 +156,48 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_uses_relative_fs_homepath_for_docker(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "bin/Linux/x86/etded.x86",
+            "fs_game": "etmain",
+            "hostname": "AlphaGSM wet",
+            "port": 27960,
+            "configfile": "server.cfg",
+            "runtime": "docker",
+        }
+    )
+    exe_path = tmp_path / "bin" / "Linux" / "x86"
+    exe_path.mkdir(parents=True)
+    (exe_path / "etded.x86").write_text("", encoding="utf-8")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "./bin/Linux/x86/etded.x86",
+        "+set",
+        "net_strict",
+        "1",
+        "+set",
+        "fs_homepath",
+        ".",
+        "+set",
+        "fs_game",
+        "etmain",
+        "+set",
+        "net_port",
+        "27960",
+        "+set",
+        "sv_hostname",
+        "AlphaGSM wet",
+        "+exec",
+        "server.cfg",
+    ]
+    assert cwd == server.data["dir"]
+
+
 def test_get_start_command_missing_executable(tmp_path):
     server = DummyServer()
     server.data.update(

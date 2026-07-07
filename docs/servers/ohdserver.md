@@ -2,6 +2,11 @@
 
 This guide covers the `ohdserver` module in AlphaGSM.
 
+`ohdserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `steamcmd-linux` runtime, with A2S `query` /
+`info` on the managed `queryport`.
+
 ## Requirements
 
 - `docker` for the validated branch-local `steamcmd-linux` runtime path

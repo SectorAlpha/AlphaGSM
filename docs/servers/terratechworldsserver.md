@@ -2,6 +2,12 @@
 
 This guide covers the `terratechworldsserver` module in AlphaGSM.
 
+`terratechworldsserver` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection, and the validated Linux path remains
+Wine/Proton-backed with generic `udp` lifecycle checks on the managed game
+port.
+
 ## Requirements
 
 - `screen`

@@ -1,20 +1,20 @@
 # Integration Test Status
 
-Last updated: 2026-06-03
+Last updated: 2026-06-27
 
 ## Summary
 
-Tracker note: on 2026-05-15 the live `disabled_servers.conf` gate was reconciled
-with already-supported Wine/Proton modules that were still blocked from `create`.
-The status rows below already reflected those modules as active support surfaces;
-this pass aligned the runtime gate with that existing tracker state.
+Tracker note: on 2026-06-27 the live support gate files were reconciled with the
+documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
+`docs/TEST_STATUS.md`, `disabled_servers.conf`, `enabled_byo_servers.conf`, and
+`enabled_auth_servers.conf` stay in sync.
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 147      |
+| PASSED   | 146      |
 | ENABLED (AUTH) | 47 |
 | ENABLED (BYO) | 41 |
-| DISABLED | 1      |
+| DISABLED | 3      |
 | SKIPPED  | 0      |
 
 ## Status Key
@@ -30,7 +30,7 @@ this pass aligned the runtime gate with that existing tracker state.
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (147)
+## PASSED (146)
 
 | Test | Type |
 |------|------|
@@ -287,10 +287,12 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (1)
+## DISABLED (3)
 
 | Test | Reason |
 |------|--------|
+| abfserver | SteamCMD app 2857200 returns Invalid platform on Linux. |
+| bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing. |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 
 ## SKIPPED (0)

@@ -117,6 +117,50 @@ def test_get_start_command_builds_expected_linux_args(tmp_path):
     assert cwd == str(tmp_path) + "/"
 
 
+def test_get_start_command_uses_relative_paths_for_docker(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    server.data["runtime"] = "docker"
+    exe_path = tmp_path / "x64" / "server_linux"
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_text("#!/bin/sh\n", encoding="utf-8")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "./x64/server_linux",
+        "-name",
+        "AlphaGSM itns2server",
+        "-port",
+        "27015",
+        "-webuser",
+        "admin",
+        "-webpassword",
+        "CHANGE_ME",
+        "-webport",
+        "8080",
+        "-modserverport",
+        "27031",
+        "-map",
+        "ns2_summit",
+        "-limit",
+        "20",
+        "-speclimit",
+        "5",
+        "-webadmin",
+        "-webdomain",
+        "0.0.0.0",
+        "-startmodserver",
+        "-config_path",
+        "./itns2server",
+        "-logdir",
+        "./logs",
+        "-modstorage",
+        "./itns2server/Workshop",
+    ]
+    assert cwd == str(tmp_path) + "/"
+
+
 def test_query_and_info_use_a2s_on_game_port():
     server = DummyServer()
     server.data["port"] = 27015

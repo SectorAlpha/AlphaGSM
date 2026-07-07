@@ -2,6 +2,11 @@
 
 This guide covers the `terraria.tshock` module in AlphaGSM.
 
+`terraria.tshock` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `steamcmd-linux` runtime image with the
+required `.NET` runtimes already baked in.
+
 ## Requirements
 
 - `screen`

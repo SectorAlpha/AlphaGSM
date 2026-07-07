@@ -324,10 +324,6 @@ The wait helpers in `tests/integration_tests/conftest.py` print the last 150
 lines of the server log and the last query error before failing the test. Use
 that output to understand what actually happened.
 
-## Known Exception
-
-`src/downloadermodules/steamcmd.py` is legacy parser-broken code and is intentionally outside the active lint/docstring verification surface.
-
 ## Repo Skills
 
 See:

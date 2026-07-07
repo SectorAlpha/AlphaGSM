@@ -2,6 +2,11 @@
 
 This guide covers the `ss14server` module in AlphaGSM.
 
+`ss14server` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server currently
+follows the native host-`dotnet` `Robust.Server` lifecycle, with
+`robust_status` handling `query` and `info --json`.
+
 ## Requirements
 
 - `screen`

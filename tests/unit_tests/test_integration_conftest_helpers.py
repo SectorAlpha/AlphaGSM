@@ -206,6 +206,28 @@ def test_build_integration_tmp_path_uses_default_work_root(monkeypatch, tmp_path
     assert result.is_dir()
 
 
+def test_format_logged_command_redacts_secret_set_values():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    rendered = helpers._format_logged_command(  # pylint: disable=protected-access
+        "alphagsm",
+        ("ittestlif", "set", "db_password", "hunter2"),
+    )
+
+    assert rendered == "alphagsm ittestlif set db_password <redacted>"
+
+
+def test_format_logged_command_redacts_inline_secret_assignment_flags():
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+
+    rendered = helpers._format_logged_command(  # pylint: disable=protected-access
+        "alphagsm",
+        ("ittestlif", "start", "--db-password=hunter2", "token=abc123"),
+    )
+
+    assert rendered == "alphagsm ittestlif start --db-password=<redacted> token=<redacted>"
+
+
 def test_write_config_keeps_downloads_inside_test_home_by_default(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     home_dir = tmp_path / "home"

@@ -2,6 +2,12 @@
 
 This guide covers the `stormworksserver` module in AlphaGSM.
 
+`stormworksserver` is currently `ENABLED (BYO)` on the documented Ubuntu
+24.04 Linux baseline. The current GitHub integration lane still exercises
+both process and Docker runtime selection around that authenticated-install
+plus staged-tree prerequisite, while local runs remain process-backed by
+default unless you opt into the Docker backend.
+
 ## Support Status
 
 `stormworksserver` is supported in `ENABLED (BYO)` mode. The old standalone

@@ -203,6 +203,42 @@ def test_terraria_vanilla_start_command_autocreates_missing_world(tmp_path):
     assert cwd == str(tmp_path)
 
 
+def test_terraria_vanilla_start_command_uses_relative_paths_for_docker(tmp_path):
+    server = DummyServer("terra")
+    exe_path = tmp_path / "Linux" / "TerrariaServer.bin.x86_64"
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Linux/TerrariaServer.bin.x86_64",
+            "port": 7777,
+            "maxplayers": "8",
+            "worldname": "terra",
+            "world": "terra.wld",
+            "worldsize": "2",
+            "runtime": "docker",
+        }
+    )
+
+    cmd, cwd = vanilla.get_start_command(server)
+
+    assert cmd == [
+        "./Linux/TerrariaServer.bin.x86_64",
+        "-port",
+        "7777",
+        "-maxplayers",
+        "8",
+        "-worldpath",
+        "Worlds",
+        "-autocreate",
+        "2",
+        "-world",
+        "Worlds/terra.wld",
+    ]
+    assert cwd == str(tmp_path)
+
+
 def test_tshock_start_command_uses_native_binary(tmp_path):
     server = DummyServer("shock")
     binary_path = tmp_path / "TShock.Server"

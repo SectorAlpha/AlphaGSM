@@ -2,6 +2,12 @@
 
 This guide covers the `redmserver` module in AlphaGSM.
 
+`redmserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around the required txAdmin/server-data
+provisioning plus Cfx license-key flow, while local runs remain
+process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`

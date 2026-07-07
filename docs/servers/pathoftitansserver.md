@@ -2,6 +2,12 @@
 
 This guide covers the `pathoftitansserver` module in AlphaGSM.
 
+`pathoftitansserver` is currently `ENABLED (AUTH)` on the documented Ubuntu
+24.04 Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around the managed Alderon host-token
+path, while a staged archive override remains the supported escape hatch when
+you are not using the managed install flow.
+
 ## Requirements
 
 - `screen`

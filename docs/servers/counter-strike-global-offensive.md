@@ -3,6 +3,11 @@
 This is the legacy CS:GO guide for `counterstrikeglobaloffensive`.
 Use [`counterstrike2`](counterstrike2.md) for the current CS2 dedicated-server flow.
 
+`counterstrikeglobaloffensive` is currently `DISABLED` in the checked-in
+support tracker. On the documented Ubuntu 24.04 Linux baseline, SteamCMD app
+`740` installs legacy CS:GO build `1575`; the server reaches Steam, receives
+`MasterRequestRestart`, and shuts itself down while hibernating.
+
 ## Requirements
 
 - `screen`

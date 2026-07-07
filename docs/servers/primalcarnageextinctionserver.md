@@ -2,6 +2,12 @@
 
 This guide covers the `primalcarnageextinctionserver` module in AlphaGSM.
 
+`primalcarnageextinctionserver` is currently `PASSED` on the documented
+Ubuntu 24.04 Linux baseline. The current GitHub integration lane still
+exercises both process and Docker runtime selection, and the validated Linux
+path remains Wine/Proton-backed with the corrected direct map-URL launch
+contract feeding A2S `query` / `info` on the managed `queryport`.
+
 ## Requirements
 
 - `screen`

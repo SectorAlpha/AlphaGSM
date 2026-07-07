@@ -2,6 +2,12 @@
 
 This guide covers the `starbound` module in AlphaGSM.
 
+`starbound` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection around that staged-native-server-tree prerequisite,
+while local runs remain process-backed by default unless you opt into the
+Docker backend.
+
 ## Requirements
 
 - `screen`

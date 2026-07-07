@@ -15,6 +15,15 @@ SECTIONS = (
     ("SKIPPED", "Waiting On Prerequisites Or Validation", "[ ]"),
 )
 IGNORED_ENTRIES = {"archive_backed_installs"}
+GATE_FILE_SECTIONS = (
+    ("DISABLED", "disabled_servers.conf"),
+    ("ENABLED (BYO)", "enabled_byo_servers.conf"),
+    ("ENABLED (AUTH)", "enabled_auth_servers.conf"),
+)
+
+
+class SupportTrackerValidationError(RuntimeError):
+    """Raised when TEST_STATUS.md drifts from the live support gate files."""
 
 
 def parse_status_sections(status_text: str) -> dict[str, list[str]]:
@@ -41,6 +50,31 @@ def parse_status_sections(status_text: str) -> dict[str, list[str]]:
         rows[current_section].append(parts[0])
 
     return rows
+
+
+def parse_summary_counts(status_text: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    in_summary = False
+
+    for line in status_text.splitlines():
+        if line.startswith("## "):
+            in_summary = line.startswith("## Summary")
+            continue
+
+        if not in_summary or not line.startswith("|"):
+            continue
+        if "---" in line or "Status" in line:
+            continue
+
+        parts = [part.strip() for part in line.strip("|").split("|")]
+        if len(parts) < 2 or not parts[0] or not parts[1]:
+            continue
+        try:
+            counts[parts[0]] = int(parts[1])
+        except ValueError:
+            continue
+
+    return counts
 
 
 def render_support_tracker(rows: dict[str, list[str]]) -> str:
@@ -78,6 +112,75 @@ def render_support_tracker(rows: dict[str, list[str]]) -> str:
     return "\n".join(lines)
 
 
+def tracker_entry_for_module(module_name: str) -> str:
+    """Map a module id from gate files to the tracker/test-status row id."""
+
+    return str(module_name).strip().replace(".", "_")
+
+
+def _load_gate_modules(path: Path) -> list[str]:
+    modules = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        modules.append(line.split("\t", 1)[0].strip())
+    return modules
+
+
+def validate_support_tracker_state(repo_root: Path) -> None:
+    """Ensure docs/TEST_STATUS.md matches the live enabled/disabled gate files."""
+
+    status_path = repo_root / "docs" / "TEST_STATUS.md"
+    status_text = status_path.read_text(encoding="utf-8")
+    rows = parse_status_sections(status_text)
+    summary_counts = parse_summary_counts(status_text)
+    errors: list[str] = []
+
+    disabled_modules = set(_load_gate_modules(repo_root / "disabled_servers.conf"))
+    enabled_byo_modules = set(_load_gate_modules(repo_root / "enabled_byo_servers.conf"))
+    enabled_auth_modules = set(_load_gate_modules(repo_root / "enabled_auth_servers.conf"))
+
+    overlap = sorted(disabled_modules & (enabled_byo_modules | enabled_auth_modules))
+    if overlap:
+        errors.append(
+            "Modules listed in both disabled and enabled gate files: "
+            + ", ".join(overlap)
+        )
+
+    for section_name, row_names in rows.items():
+        expected = len(row_names)
+        actual = summary_counts.get(section_name)
+        if actual is None:
+            errors.append(f"Summary count missing for {section_name}")
+        elif actual != expected:
+            errors.append(
+                f"Summary count mismatch for {section_name}: summary says {actual}, rows say {expected}"
+            )
+
+    for section_name, filename in GATE_FILE_SECTIONS:
+        tracker_modules = {str(name).strip() for name in rows.get(section_name, [])}
+        gate_modules = {
+            tracker_entry_for_module(name) for name in _load_gate_modules(repo_root / filename)
+        }
+        if tracker_modules != gate_modules:
+            missing_from_tracker = sorted(gate_modules - tracker_modules)
+            missing_from_gate = sorted(tracker_modules - gate_modules)
+            details = []
+            if missing_from_tracker:
+                details.append(
+                    "missing from TEST_STATUS.md: " + ", ".join(missing_from_tracker)
+                )
+            if missing_from_gate:
+                details.append(
+                    "missing from " + filename + ": " + ", ".join(missing_from_gate)
+                )
+            errors.append(f"{section_name} mismatch ({'; '.join(details)})")
+
+    if errors:
+        raise SupportTrackerValidationError("\n".join(errors))
+
+
 def main(argv: list[str]) -> int:
     check_mode = "--check" in argv
     repo_root = Path(__file__).resolve().parents[1]
@@ -86,6 +189,11 @@ def main(argv: list[str]) -> int:
 
     rows = parse_status_sections(status_path.read_text(encoding="utf-8"))
     tracker_text = render_support_tracker(rows)
+    try:
+        validate_support_tracker_state(repo_root)
+    except SupportTrackerValidationError as exc:
+        print(f"Support tracker state is inconsistent:\n{exc}")
+        return 1
 
     if check_mode:
         current_text = tracker_path.read_text(encoding="utf-8") if tracker_path.exists() else ""
