@@ -555,8 +555,10 @@ def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
 
 def log_command_result(name, result, command_args=None, label=None):
     """Print a subprocess result for CI diagnostics."""
+    del name
+    del label
     del command_args
-    print(f"\n=== {label or name} ===")
+    print("\n=== alphagsm ===")
     print(f"returncode: {result.returncode}")
     if result.stdout:
         print("stdout:")
@@ -691,7 +693,7 @@ def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
             result = run_alphagsm(env, *command_args, timeout=120)
         except subprocess.TimeoutExpired as exc:
             print(
-                f"[diagnostic] alphagsm {command_name} timed out after {exc.timeout}s"
+                f"[diagnostic] alphagsm command timed out after {exc.timeout}s"
             )
             continue
         log_command_result("alphagsm", result, label=f"alphagsm {command_name}")
