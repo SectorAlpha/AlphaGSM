@@ -188,13 +188,20 @@ def test_message():
     mod.message(server, "hello")
 
 
-def test_get_info_address_matches_queryport_override():
+def test_get_info_address_matches_runtime_resolved_query_host():
     server = DummyServer()
     server.data["port"] = 2456
     server.data["queryport"] = 3456
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 3456, "a2s")
-    assert mod.get_info_address(server) == ("127.0.0.1", 3456, "a2s")
+    with patch.object(
+        mod.runtime_module,
+        "resolve_query_host",
+        side_effect=["172.18.0.7", "172.18.0.7"],
+    ) as resolve_query_host:
+        assert mod.get_query_address(server) == ("172.18.0.7", 3456, "a2s")
+        assert mod.get_info_address(server) == ("172.18.0.7", 3456, "a2s")
+
+    assert resolve_query_host.call_args_list == [((server,),), ((server,),)]
 
 
 def test_backup():

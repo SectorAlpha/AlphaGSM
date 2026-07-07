@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-from conftest import require_command_for_runtime
+from conftest import default_runtime_backend, require_command_for_runtime
 
 
 pytestmark = [
@@ -16,7 +16,9 @@ pytestmark = [
         reason="ENABLED (BYO): copy an owned SOF2 dedicated server tree into <install_dir>/ so sof2ded exists"
     ),
 ]
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "sof2server"
 
 

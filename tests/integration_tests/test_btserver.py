@@ -8,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
+    default_runtime_backend,
     pick_free_tcp_port_group,
     write_config,
     alphagsm_env,
@@ -35,7 +36,9 @@ PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:la
 def test_btserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "btserver"
     require_command_for_runtime(
         "docker",

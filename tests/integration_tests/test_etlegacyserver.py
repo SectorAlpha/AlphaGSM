@@ -6,6 +6,7 @@ import subprocess
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_command_for_runtime,
     pick_free_tcp_port,
@@ -27,7 +28,9 @@ pytestmark = [
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "etlegacyserver"
 LOCAL_DOCKER_IMAGE = "alphagsm-quake-linux-runtime:local"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:latest"

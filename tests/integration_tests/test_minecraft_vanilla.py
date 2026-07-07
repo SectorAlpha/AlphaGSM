@@ -10,7 +10,11 @@ import time
 
 import pytest
 
-from conftest import effective_runtime_backend, require_command_for_runtime
+from conftest import (
+    default_runtime_backend,
+    effective_runtime_backend,
+    require_command_for_runtime,
+)
 
 
 pytestmark = pytest.mark.integration
@@ -261,7 +265,9 @@ def _wait_for_port_to_close(host, port, timeout_seconds):
 
 def test_minecraft_vanilla_download_install_and_start(tmp_path):
     _require_integration_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "minecraft.vanilla"
     _require_command("java")
     require_command_for_runtime(

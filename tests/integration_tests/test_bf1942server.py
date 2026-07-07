@@ -10,6 +10,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_command_for_runtime,
+    default_runtime_backend,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -36,7 +37,9 @@ BYO_SKIP_REASON = (
 
 def test_bf1942server_lifecycle(tmp_path):
     require_integration_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "bf1942server"
     require_command_for_runtime(
         "screen",

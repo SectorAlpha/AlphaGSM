@@ -6,6 +6,20 @@ from pathlib import Path
 from tests.integration_tests.conftest import write_config
 
 
+def test_default_runtime_backend_stays_process_outside_github_actions(monkeypatch):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+
+    assert helpers.default_runtime_backend() == "process"
+
+
+def test_default_runtime_backend_uses_auto_on_github_actions(monkeypatch):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+
+    assert helpers.default_runtime_backend() == "auto"
+
+
 def test_write_config_uses_home_download_paths_by_default(tmp_path, monkeypatch):
     monkeypatch.delenv("ALPHAGSM_WORK_DIR", raising=False)
 

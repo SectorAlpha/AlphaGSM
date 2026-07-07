@@ -155,7 +155,11 @@ def get_query_address(server):
     Valheim's dedicated server exposes the Steam A2S query interface on
     game-port + 1 (e.g. game on UDP 2456, A2S on UDP 2457).
     """
-    return "127.0.0.1", int(server.data.get("queryport", int(server.data["port"]) + 1)), "a2s"
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data.get("queryport", int(server.data["port"]) + 1)),
+        "a2s",
+    )
 
 
 def get_info_address(server):

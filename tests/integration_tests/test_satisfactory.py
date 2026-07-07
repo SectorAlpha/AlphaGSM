@@ -8,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
+    default_runtime_backend,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -38,7 +39,9 @@ def test_satisfactory_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itsatisfactory"
     module_name = "satisfactoryserver"
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,

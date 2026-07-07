@@ -1,6 +1,6 @@
 # AlphaGSM Improvement Roadmap
 
-Last updated: 2026-06-27
+Last updated: 2026-07-07
 
 This document is a handoff-oriented review of the whole repository. It lists
 concrete improvements a future agent or contributor can pick up, ordered by
@@ -29,13 +29,24 @@ work here must respect.
 - The old PR queue pile-up is no longer an open infrastructure item:
   `AlphaGSM PR` now cancels superseded pull-request runs, so newer commits do
   not sit behind older in-flight matrix work by default.
+- The hardcoded process-default integration backlog has now been drained:
+  repository integration tests that still read
+  `ALPHAGSM_TEST_RUNTIME_BACKEND` now default through
+  `default_runtime_backend()`, which keeps local runs process-first while
+  letting GitHub Actions use module-aware `auto` selection.
 - The top-priority active work is now the broad red smoke/integration set on
-  the newest `release_v1` CI run. Treat that as the current backlog entry
-  before more support-state promotion work.
+  the newest `release_v1` GitHub CI run, plus proving the remaining Docker
+  protocol-sensitive lanes there rather than through local integration runs.
+- A first follow-up on that protocol-sensitive class is now in-tree: the
+  `medievalengineersserver`, `memoriesofmarsserver`, `silicaserver`, and
+  `solserver` integration tests wait on AlphaGSM's declared `info --json`
+  surface instead of raw localhost probes, so the remaining red CI lanes are
+  less likely to be test-harness address drift.
 - `tests/integration_tests/test_btserver.py` and `test_valheim.py` still wait
-  on the `a2s` info protocol; whether A2S actually comes up under the Docker
-  lane is unproven (todo: "Investigate btserver valheim A2S"). The readiness
-  protocol may need to drop to `tcp`/`udp` like other Docker-migrated lanes.
+  on the `a2s` info protocol, but the modules now use the shared
+  `runtime.resolve_query_host(...)` path locally. The remaining question is
+  GitHub CI proof: whether A2S actually comes up under the Docker lane or the
+  readiness contract needs to change honestly.
 
 ## 1. CI and Test Infrastructure
 
@@ -44,13 +55,11 @@ work here must respect.
    copy-pasted into 40+ files under `tests/integration_tests/`; it now lives
    in `tests/integration_tests/conftest.py`, which removes a large drift
    surface.
-2. **Audit remaining host-process integration lanes.** Several tests still use
-   `require_command("screen")` and `write_config(...)` without
-   `runtime_backend=`/`module_name=` while their module declares a Docker
-   family. The runtime doctor output in CI ("Configured backend: process /
-   Module runtime preference: docker") is the tell. Migrate them the same way
-   btserver/valheim were migrated, one lane per PR, and watch the resulting
-   launch-path failures.
+2. **Done: audit remaining host-process integration lanes.** Integration tests
+   that still read `ALPHAGSM_TEST_RUNTIME_BACKEND` now default through the
+   shared helper in `tests/integration_tests/conftest.py`, so local runs stay
+   process-first while GitHub CI can exercise Docker-capable modules through
+   `auto` without hardcoded `process` drift in the test files.
 3. **Done: make `start` failures self-diagnosing in CI.** The integration
    helper now dumps the computed runtime doctor details — command, working
    directory, mounts, and ports — when a start path fails.
@@ -58,12 +67,11 @@ work here must respect.
    polls `gh run view <id> --json status,conclusion,jobs`, prints a compact
    summary, and surfaces failed jobs plus useful log excerpts when a run ends
    red.
-5. **Triage the broad red integration batches.** Run `27191687264` showed many
-   `batch-N-of-40` failures beyond the touched lanes. Some greps for failure
-   signatures returned nothing, so the failure mode there is still
-   uncharacterized. Sample 2–3 batch logs end-to-end and classify: shared
-   regression vs. pre-existing flaky lanes vs. infra (runner image, port
-   collisions).
+5. **Triage the broad red integration batches.** With the hardcoded process
+   defaults removed, the remaining uncertainty is now squarely in GitHub CI:
+   sample 2–3 failing `batch-N-of-40` logs end-to-end and classify whether the
+   reds are shared regressions, pre-existing flaky lanes, or infra (runner
+   image, Docker/networking, port collisions).
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, so the smoke canonical lifecycle matches the
@@ -83,11 +91,12 @@ work here must respect.
    `tests/unit_tests/test_runtime_contract_static.py` now guards the Docker
    command surface so install-dir leaks fail fast.
 3. **Verify the A2S surface for Docker btserver/valheim.** Both modules
-   publish `queryport` udp+tcp, but the Docker lane has not yet proven A2S
-   readiness. If A2S works through bridge networking, keep the `a2s` waits; if
-   not, either fix port publication (`-public 1` is not required for A2S, but
-   Valheim's Steam relay init may be) or honestly downgrade the test contract
-   to the generic surface like other migrated lanes.
+   publish `queryport` udp+tcp, and the local wiring now uses explicit
+   Docker-aware query/info hosts via `runtime.resolve_query_host(...)`. The
+   remaining work is CI proof: if A2S works through bridge networking, keep the
+   `a2s` waits; if not, either fix publication/startup details or honestly
+   downgrade the test contract to the generic surface like other migrated
+   lanes.
 4. **Done: config sync gap audit.** AGENTS.md requires
    `sync_server_config` + `config_sync_keys` for modules whose `set` values
    map to real game config. The repo now has
@@ -131,11 +140,11 @@ work here must respect.
    `skills/changelog-discipline/SKILL.md`.
 4. **Unit-test boilerplate.** A shared helper now exists at
    `tests/unit_tests/gamemodules/helpers.py`, and the actively edited
-   Avorion, Beasts of Bermuda, Broken Arrow, Life is Feudal, Starbound, and
-   Valheim coverage suites already import it instead of re-declaring local
-   `DummyData` / `DummyServer` copies. Continue migrating touched files
-   opportunistically so the duplication shrinks without forcing a giant
-   one-shot sweep.
+   Avorion, Beasts of Bermuda, Broken Arrow, Life is Feudal, Starbound,
+   Valheim, Quake 3, Quake 4, QuakeWorld, and Quake Live coverage suites now
+   import it instead of re-declaring local `DummyData` / `DummyServer` copies.
+   Continue migrating touched files opportunistically so the duplication keeps
+   shrinking without forcing a giant one-shot sweep.
 5. **Done: aggregate vs. per-module unit tests.** The duplicate aggregate
    files (`test_more_steam_dedicated_modules.py`,
    `test_steam_standalone_modules.py`) were removed after migrating their

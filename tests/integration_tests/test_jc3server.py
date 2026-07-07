@@ -6,6 +6,7 @@ import pytest
 
 from conftest import (
     alphagsm_env,
+    default_runtime_backend,
     log_command_result,
     pick_free_tcp_port,
     require_command_for_runtime,
@@ -28,7 +29,9 @@ SETUP_TIMEOUT = 1800
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "jc3server"
 
 

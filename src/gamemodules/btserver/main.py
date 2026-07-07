@@ -126,6 +126,18 @@ def backup(server, profile=None):
     gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
+def get_query_address(server):
+    """Return the A2S query address for Barotrauma."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S info address for Barotrauma (same as query address)."""
+
+    return get_query_address(server)
+
+
 def checkvalue(server, key, *value):
     """Validate supported Barotrauma datastore edits."""
 

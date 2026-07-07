@@ -8,6 +8,7 @@ import pytest
 from conftest import (
     alphagsm_env,
     assert_source_server_empty,
+    default_runtime_backend,
     find_source_server_cfg,
     log_command_result,
     pick_free_udp_port,
@@ -32,7 +33,9 @@ pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "iosserver"
 
 

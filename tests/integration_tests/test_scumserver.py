@@ -6,6 +6,7 @@ import pytest
 
 from conftest import (
     alphagsm_env,
+    default_runtime_backend,
     log_command_result,
     pick_free_tcp_port,
     require_command_for_runtime,
@@ -27,7 +28,9 @@ SETUP_TIMEOUT = 3600
 START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "scumserver"
 
 

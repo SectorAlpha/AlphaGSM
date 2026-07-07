@@ -7,6 +7,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
+    default_runtime_backend,
     require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
@@ -33,7 +34,9 @@ STOP_TIMEOUT = 90
 def test_atsserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "atsserver"
     require_command_for_runtime(
         "screen",

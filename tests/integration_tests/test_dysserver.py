@@ -8,6 +8,7 @@ import pytest
 from conftest import (
     alphagsm_env,
     assert_source_server_empty,
+    default_runtime_backend,
     find_source_server_cfg,
     log_command_result,
     pick_free_udp_port,
@@ -46,7 +47,9 @@ STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 1800
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "dysserver"
 
 

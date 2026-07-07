@@ -7,6 +7,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_command_for_runtime,
+    default_runtime_backend,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -27,7 +28,9 @@ STOP_TIMEOUT = 90
 
 def test_codserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "codserver"
     require_command_for_runtime(
         "docker", runtime_backend=runtime_backend, module_name=module_name

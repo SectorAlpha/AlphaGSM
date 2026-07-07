@@ -7,6 +7,7 @@ import pytest
 
 from conftest import (
     require_integration_opt_in,
+    default_runtime_backend,
     require_command_for_runtime,
     pick_free_udp_port,
     write_config,
@@ -27,7 +28,9 @@ STOP_TIMEOUT = 90
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_DOCKER_IMAGE = "alphagsm-service-console-runtime:local"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-service-console-runtime:latest"
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "minecraft.bedrock"
 
 

@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from tests.helpers import load_module_from_repo
 
 
@@ -480,7 +482,316 @@ def test_bobserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
 def test_bobserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_bobserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_ohdserver.py",
+        "tests/integration_tests/test_palworld.py",
+        "tests/integration_tests/test_pvrserver.py",
+        "tests/integration_tests/test_readyornotserver.py",
+        "tests/integration_tests/test_rs2server.py",
+        "tests/integration_tests/test_rwserver.py",
+        "tests/integration_tests/test_starruptureserver.py",
+        "tests/integration_tests/test_subnauticaserver.py",
+        "tests/integration_tests/test_subsistenceserver.py",
+        "tests/integration_tests/test_terraria_tshock.py",
+        "tests/integration_tests/test_tiserver.py",
+        "tests/integration_tests/test_ut3server.py",
+    ],
+)
+def test_selected_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_abfserver.py",
+        "tests/integration_tests/test_accserver.py",
+        "tests/integration_tests/test_aloftserver.py",
+        "tests/integration_tests/test_arma2coserver.py",
+        "tests/integration_tests/test_arma3_altislife.py",
+        "tests/integration_tests/test_arma3_desolationredux.py",
+        "tests/integration_tests/test_arma3_epoch.py",
+        "tests/integration_tests/test_arma3_exile.py",
+        "tests/integration_tests/test_arma3_headless.py",
+        "tests/integration_tests/test_arma3_vanilla.py",
+        "tests/integration_tests/test_arma3_wasteland.py",
+        "tests/integration_tests/test_arma3altislifeserver.py",
+    ],
+)
+def test_next_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_arma3desolationreduxserver.py",
+        "tests/integration_tests/test_arma3epochserver.py",
+        "tests/integration_tests/test_arma3exileserver.py",
+        "tests/integration_tests/test_arma3headlessserver.py",
+        "tests/integration_tests/test_arma3server.py",
+        "tests/integration_tests/test_arma3wastelandserver.py",
+        "tests/integration_tests/test_atsserver.py",
+        "tests/integration_tests/test_battlebitserver.py",
+        "tests/integration_tests/test_battlecryoffreedomserver.py",
+        "tests/integration_tests/test_bb2server.py",
+        "tests/integration_tests/test_bbserver.py",
+        "tests/integration_tests/test_bdserver.py",
+    ],
+)
+def test_follow_on_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_bf1942server.py",
+        "tests/integration_tests/test_bobserver.py",
+        "tests/integration_tests/test_boserver.py",
+        "tests/integration_tests/test_brickadiaserver.py",
+        "tests/integration_tests/test_brokeprotocolserver.py",
+        "tests/integration_tests/test_btlserver.py",
+        "tests/integration_tests/test_ccserver.py",
+        "tests/integration_tests/test_chivalryserver.py",
+        "tests/integration_tests/test_citadelserver.py",
+        "tests/integration_tests/test_ckserver.py",
+        "tests/integration_tests/test_cod2server.py",
+        "tests/integration_tests/test_cod4server.py",
+    ],
+)
+def test_next_alphabetical_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_codserver.py",
+        "tests/integration_tests/test_counterstrike2.py",
+        "tests/integration_tests/test_counterstrikeglobaloffensive.py",
+        "tests/integration_tests/test_craftopiaserver.py",
+        "tests/integration_tests/test_csczserver.py",
+        "tests/integration_tests/test_csserver.py",
+        "tests/integration_tests/test_dayofdragonsserver.py",
+        "tests/integration_tests/test_dayzarma2epochserver.py",
+        "tests/integration_tests/test_deadmatterserver.py",
+        "tests/integration_tests/test_dmcserver.py",
+        "tests/integration_tests/test_dodserver.py",
+        "tests/integration_tests/test_dstserver.py",
+    ],
+)
+def test_following_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_scumserver.py",
+        "tests/integration_tests/test_seserver.py",
+        "tests/integration_tests/test_sniperelite4server.py",
+        "tests/integration_tests/test_sof2server.py",
+        "tests/integration_tests/test_sonsoftheforestserver.py",
+        "tests/integration_tests/test_soulmask.py",
+        "tests/integration_tests/test_svenserver.py",
+        "tests/integration_tests/test_ut2k4server.py",
+        "tests/integration_tests/test_vsserver.py",
+        "tests/integration_tests/test_warbandserver.py",
+        "tests/integration_tests/test_wurmserver.py",
+        "tests/integration_tests/test_zmrserver.py",
+    ],
+)
+def test_latest_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_ducksideserver.py",
+        "tests/integration_tests/test_empyrionserver.py",
+        "tests/integration_tests/test_exfilserver.py",
+        "tests/integration_tests/test_fearthenightserver.py",
+        "tests/integration_tests/test_fofserver.py",
+        "tests/integration_tests/test_foundryserver.py",
+        "tests/integration_tests/test_frozenflameserver.py",
+        "tests/integration_tests/test_goldeneyesourceserver.py",
+        "tests/integration_tests/test_gtafivemserver.py",
+        "tests/integration_tests/test_gravserver.py",
+        "tests/integration_tests/test_heatserver.py",
+        "tests/integration_tests/test_hcuserver.py",
+    ],
+)
+def test_newest_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_roserver.py",
+        "tests/integration_tests/test_ror2server.py",
+        "tests/integration_tests/test_rimworldtogetherserver.py",
+        "tests/integration_tests/test_ricochetserver.py",
+        "tests/integration_tests/test_returntomoriaserver.py",
+        "tests/integration_tests/test_remnantsserver.py",
+        "tests/integration_tests/test_reignofdwarfserver.py",
+        "tests/integration_tests/test_redmserver.py",
+        "tests/integration_tests/test_pvkiiserver.py",
+        "tests/integration_tests/test_projectzomboid.py",
+        "tests/integration_tests/test_primalcarnageextinctionserver.py",
+        "tests/integration_tests/test_port_manager_source_collision.py",
+    ],
+)
+def test_followup_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_police1013server.py",
+        "tests/integration_tests/test_pcarserver.py",
+        "tests/integration_tests/test_pcars2server.py",
+        "tests/integration_tests/test_pathoftitansserver.py",
+        "tests/integration_tests/test_outpostzeroserver.py",
+        "tests/integration_tests/test_onsetserver.py",
+        "tests/integration_tests/test_nsserver.py",
+        "tests/integration_tests/test_ns2server.py",
+        "tests/integration_tests/test_ns2cserver.py",
+        "tests/integration_tests/test_ndserver.py",
+        "tests/integration_tests/test_mythofempiresserver.py",
+        "tests/integration_tests/test_mw3server.py",
+    ],
+)
+def test_next_followup_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_mumbleserver.py",
+        "tests/integration_tests/test_motortownserver.py",
+        "tests/integration_tests/test_mordserver.py",
+        "tests/integration_tests/test_reignofkingsserver.py",
+        "tests/integration_tests/test_pixarkserver.py",
+        "tests/integration_tests/test_mxbikesserver.py",
+        "tests/integration_tests/test_memoriesofmarsserver.py",
+        "tests/integration_tests/test_minecraft_bedrock.py",
+        "tests/integration_tests/test_insserver.py",
+        "tests/integration_tests/test_hogwarpserver.py",
+        "tests/integration_tests/test_medievalengineersserver.py",
+        "tests/integration_tests/test_longvinterserver.py",
+    ],
+)
+def test_penultimate_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+@pytest.mark.parametrize(
+    "test_path",
+    [
+        "tests/integration_tests/test_ets2server.py",
+        "tests/integration_tests/test_lifeisfeudalserver.py",
+        "tests/integration_tests/test_lastoasisserver.py",
+        "tests/integration_tests/test_l4dserver.py",
+        "tests/integration_tests/test_hldmserver.py",
+        "tests/integration_tests/test_kfserver.py",
+        "tests/integration_tests/test_hldmsserver.py",
+        "tests/integration_tests/test_hellletlooseserver.py",
+        "tests/integration_tests/test_kf2server.py",
+        "tests/integration_tests/test_interstellarriftserver.py",
+        "tests/integration_tests/test_jc3server.py",
+        "tests/integration_tests/test_kerbalspaceprogramserver.py",
+    ],
+)
+def test_final_runtime_migration_batch_uses_ci_aware_default_runtime_backend(
+    test_path,
+):
+    text = Path(test_path).read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+def test_identityserver_uses_ci_aware_default_runtime_backend():
+    text = Path("tests/integration_tests/test_identityserver.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_accserver_builds_process_and_docker_dual_lanes():
@@ -991,13 +1302,17 @@ def test_hldmsserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
 def test_ahlserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_ahlserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_acserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_acserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_l4dserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
@@ -1973,67 +2288,89 @@ def test_goldeneyesourceserver_builds_process_and_docker_dual_lanes():
 def test_doiserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_doiserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_emserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_emserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_dayzserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_dayzserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_gmodserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_gmodserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_blackops3server_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_blackops3server.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_ts3server_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_ts3server.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_q2server_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_q2server.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_ut2k4server_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_ut2k4server.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_qlserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_qlserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_mordserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_mordserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_atsserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_atsserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_counterstrikeglobaloffensive_keeps_process_runtime_fallback():
@@ -2041,119 +2378,60 @@ def test_counterstrikeglobaloffensive_keeps_process_runtime_fallback():
         encoding="utf-8"
     )
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_inssserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_inssserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_jk2server_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_jk2server.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_avserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_avserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_bfvserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_bfvserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_bmdmserver_keeps_process_runtime_fallback():
     text = Path("tests/integration_tests/test_bmdmserver.py").read_text(encoding="utf-8")
 
-    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+    assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+    assert "default_runtime_backend()" in text
+    assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_dual_lane_files_keep_process_runtime_fallback():
+    assert True
+
+
+def test_dual_lane_ci_default_runtime_backend_files_use_helper():
     for path in (
-        Path("tests/integration_tests/test_ahl2server.py"),
         Path("tests/integration_tests/test_alienarenaserver.py"),
-        Path("tests/integration_tests/test_askaserver.py"),
-        Path("tests/integration_tests/test_avserver.py"),
-        Path("tests/integration_tests/test_argoserver.py"),
-        Path("tests/integration_tests/test_arma2coserver.py"),
-        Path("tests/integration_tests/test_arma3_altislife.py"),
-        Path("tests/integration_tests/test_arma3_desolationredux.py"),
-        Path("tests/integration_tests/test_arma3_epoch.py"),
-        Path("tests/integration_tests/test_arma3_exile.py"),
-        Path("tests/integration_tests/test_arma3_headless.py"),
-        Path("tests/integration_tests/test_arma3_vanilla.py"),
-        Path("tests/integration_tests/test_arma3_wasteland.py"),
-        Path("tests/integration_tests/test_arma3altislifeserver.py"),
-        Path("tests/integration_tests/test_arma3desolationreduxserver.py"),
-        Path("tests/integration_tests/test_arma3epochserver.py"),
-        Path("tests/integration_tests/test_arma3exileserver.py"),
-        Path("tests/integration_tests/test_arma3headlessserver.py"),
-        Path("tests/integration_tests/test_arma3server.py"),
-        Path("tests/integration_tests/test_arma3wastelandserver.py"),
         Path("tests/integration_tests/test_armarserver.py"),
-        Path("tests/integration_tests/test_bdserver.py"),
-        Path("tests/integration_tests/test_bf1942server.py"),
-        Path("tests/integration_tests/test_bfvserver.py"),
-        Path("tests/integration_tests/test_bb2server.py"),
-        Path("tests/integration_tests/test_bsserver.py"),
-        Path("tests/integration_tests/test_bobserver.py"),
-        Path("tests/integration_tests/test_boserver.py"),
-        Path("tests/integration_tests/test_blackwakeserver.py"),
-        Path("tests/integration_tests/test_cod2server.py"),
-        Path("tests/integration_tests/test_cod4server.py"),
-        Path("tests/integration_tests/test_codserver.py"),
-        Path("tests/integration_tests/test_coduoserver.py"),
-        Path("tests/integration_tests/test_codwawserver.py"),
-        Path("tests/integration_tests/test_brokeprotocolserver.py"),
-        Path("tests/integration_tests/test_btlserver.py"),
-        Path("tests/integration_tests/test_btserver.py"),
-        Path("tests/integration_tests/test_ccserver.py"),
-        Path("tests/integration_tests/test_ckserver.py"),
-        Path("tests/integration_tests/test_chivalryserver.py"),
-        Path("tests/integration_tests/test_craftopiaserver.py"),
-        Path("tests/integration_tests/test_csserver.py"),
-        Path("tests/integration_tests/test_counterstrike2.py"),
-        Path("tests/integration_tests/test_counterstrikeglobaloffensive.py"),
-        Path("tests/integration_tests/test_csczserver.py"),
-        Path("tests/integration_tests/test_dayofdragonsserver.py"),
-        Path("tests/integration_tests/test_deadmatterserver.py"),
-        Path("tests/integration_tests/test_citadelserver.py"),
-        Path("tests/integration_tests/test_darkandlightserver.py"),
-        Path("tests/integration_tests/test_deadpolyserver.py"),
-        Path("tests/integration_tests/test_doiserver.py"),
-        Path("tests/integration_tests/test_dmcserver.py"),
-        Path("tests/integration_tests/test_dayzserver.py"),
-        Path("tests/integration_tests/test_dayzarma2epochserver.py"),
-        Path("tests/integration_tests/test_dodserver.py"),
-        Path("tests/integration_tests/test_ducksideserver.py"),
-        Path("tests/integration_tests/test_dstserver.py"),
-        Path("tests/integration_tests/test_emserver.py"),
-        Path("tests/integration_tests/test_empyrionserver.py"),
-        Path("tests/integration_tests/test_ets2server.py"),
-        Path("tests/integration_tests/test_exfilserver.py"),
-        Path("tests/integration_tests/test_fearthenightserver.py"),
-        Path("tests/integration_tests/test_fofserver.py"),
-        Path("tests/integration_tests/test_foundryserver.py"),
-        Path("tests/integration_tests/test_frozenflameserver.py"),
-        Path("tests/integration_tests/test_goldeneyesourceserver.py"),
-        Path("tests/integration_tests/test_gtafivemserver.py"),
-        Path("tests/integration_tests/test_gravserver.py"),
-        Path("tests/integration_tests/test_heatserver.py"),
-        Path("tests/integration_tests/test_hcuserver.py"),
-        Path("tests/integration_tests/test_hellletlooseserver.py"),
-        Path("tests/integration_tests/test_hldmserver.py"),
-        Path("tests/integration_tests/test_hldmsserver.py"),
-        Path("tests/integration_tests/test_hogwarpserver.py"),
-        Path("tests/integration_tests/test_identityserver.py"),
-        Path("tests/integration_tests/test_l4dserver.py"),
-        Path("tests/integration_tests/test_l4d2server.py"),
-        Path("tests/integration_tests/test_lifeisfeudalserver.py"),
+        Path("tests/integration_tests/test_jk2server.py"),
         Path("tests/integration_tests/test_minecraft_bungeecord.py"),
         Path("tests/integration_tests/test_minecraft_custom.py"),
         Path("tests/integration_tests/test_minecraft_paper.py"),
@@ -2161,62 +2439,73 @@ def test_dual_lane_files_keep_process_runtime_fallback():
         Path("tests/integration_tests/test_minecraft_vanilla.py"),
         Path("tests/integration_tests/test_minecraft_velocity.py"),
         Path("tests/integration_tests/test_minecraft_waterfall.py"),
-        Path("tests/integration_tests/test_atsserver.py"),
-        Path("tests/integration_tests/test_interstellarriftserver.py"),
-        Path("tests/integration_tests/test_kf2server.py"),
-        Path("tests/integration_tests/test_kfserver.py"),
-        Path("tests/integration_tests/test_memoriesofmarsserver.py"),
-        Path("tests/integration_tests/test_motortownserver.py"),
-        Path("tests/integration_tests/test_mordserver.py"),
-        Path("tests/integration_tests/test_mumbleserver.py"),
-        Path("tests/integration_tests/test_mw3server.py"),
-        Path("tests/integration_tests/test_mxbikesserver.py"),
-        Path("tests/integration_tests/test_mythofempiresserver.py"),
         Path("tests/integration_tests/test_necserver.py"),
-        Path("tests/integration_tests/test_ndserver.py"),
-        Path("tests/integration_tests/test_ns2cserver.py"),
-        Path("tests/integration_tests/test_nsserver.py"),
-        Path("tests/integration_tests/test_ns2server.py"),
-        Path("tests/integration_tests/test_onsetserver.py"),
-        Path("tests/integration_tests/test_pathoftitansserver.py"),
-        Path("tests/integration_tests/test_abfserver.py"),
-        Path("tests/integration_tests/test_inssserver.py"),
-        Path("tests/integration_tests/test_jk2server.py"),
-        Path("tests/integration_tests/test_opforserver.py"),
-        Path("tests/integration_tests/test_outpostzeroserver.py"),
-        Path("tests/integration_tests/test_pcarserver.py"),
-        Path("tests/integration_tests/test_pcars2server.py"),
-        Path("tests/integration_tests/test_pixarkserver.py"),
-        Path("tests/integration_tests/test_police1013server.py"),
-        Path("tests/integration_tests/test_primalcarnageextinctionserver.py"),
-        Path("tests/integration_tests/test_projectzomboid.py"),
-        Path("tests/integration_tests/test_pvkiiserver.py"),
         Path("tests/integration_tests/test_q2server.py"),
         Path("tests/integration_tests/test_q3server.py"),
-        Path("tests/integration_tests/test_qlserver.py"),
         Path("tests/integration_tests/test_q4server.py"),
-        Path("tests/integration_tests/test_rtcwserver.py"),
+        Path("tests/integration_tests/test_qlserver.py"),
         Path("tests/integration_tests/test_qwserver.py"),
-        Path("tests/integration_tests/test_redmserver.py"),
-        Path("tests/integration_tests/test_reignofkingsserver.py"),
-        Path("tests/integration_tests/test_reignofdwarfserver.py"),
-        Path("tests/integration_tests/test_returntomoriaserver.py"),
-        Path("tests/integration_tests/test_ricochetserver.py"),
-        Path("tests/integration_tests/test_ror2server.py"),
-        Path("tests/integration_tests/test_roserver.py"),
-        Path("tests/integration_tests/test_remnantsserver.py"),
-        Path("tests/integration_tests/test_rimworldtogetherserver.py"),
-        Path("tests/integration_tests/test_port_manager_source_collision.py"),
-        Path("tests/integration_tests/test_scpslserver.py"),
-        Path("tests/integration_tests/test_sevendaystodie.py"),
+        Path("tests/integration_tests/test_rtcwserver.py"),
+        Path("tests/integration_tests/test_ts3server.py"),
+        Path("tests/integration_tests/test_ut99server.py"),
+        Path("tests/integration_tests/test_wetserver.py"),
+        Path("tests/integration_tests/test_wfserver.py"),
+    ):
+        text = path.read_text(encoding="utf-8")
+        assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+        assert "default_runtime_backend()" in text
+        assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+def test_dual_lane_ci_default_runtime_backend_additional_files_use_helper():
+    for path in (
+        Path("tests/integration_tests/test_argoserver.py"),
+        Path("tests/integration_tests/test_blackwakeserver.py"),
+        Path("tests/integration_tests/test_colserver.py"),
+        Path("tests/integration_tests/test_conanexiles.py"),
+        Path("tests/integration_tests/test_cryofallserver.py"),
+        Path("tests/integration_tests/test_dabserver.py"),
+        Path("tests/integration_tests/test_dysserver.py"),
+        Path("tests/integration_tests/test_ecoserver.py"),
+        Path("tests/integration_tests/test_enshrouded.py"),
+        Path("tests/integration_tests/test_etlegacyserver.py"),
+        Path("tests/integration_tests/test_groundbranchserver.py"),
+        Path("tests/integration_tests/test_hurtworldserver.py"),
+        Path("tests/integration_tests/test_hzserver.py"),
+        Path("tests/integration_tests/test_icarusserver.py"),
+        Path("tests/integration_tests/test_iosserver.py"),
+        Path("tests/integration_tests/test_jc2server.py"),
+        Path("tests/integration_tests/test_miscreatedserver.py"),
+        Path("tests/integration_tests/test_mohaaserver.py"),
+        Path("tests/integration_tests/test_mtaserver.py"),
+        Path("tests/integration_tests/test_nightingale.py"),
+        Path("tests/integration_tests/test_noonesurvivedserver.py"),
+        Path("tests/integration_tests/test_notdserver.py"),
+    ):
+        text = path.read_text(encoding="utf-8")
+        assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+        assert "default_runtime_backend()" in text
+        assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+def test_dual_lane_ci_default_runtime_backend_more_files_use_helper():
+    for path in (
+        Path("tests/integration_tests/test_coduoserver.py"),
+        Path("tests/integration_tests/test_codwawserver.py"),
+        Path("tests/integration_tests/test_darkandlightserver.py"),
+        Path("tests/integration_tests/test_deadpolyserver.py"),
+        Path("tests/integration_tests/test_bsserver.py"),
+        Path("tests/integration_tests/test_btserver.py"),
         Path("tests/integration_tests/test_saleblazersserver.py"),
         Path("tests/integration_tests/test_sampserver.py"),
         Path("tests/integration_tests/test_satisfactory.py"),
         Path("tests/integration_tests/test_sbotsserver.py"),
-        Path("tests/integration_tests/test_sfcserver.py"),
-        Path("tests/integration_tests/test_skyrimtogetherrebornserver.py"),
+        Path("tests/integration_tests/test_scpslserver.py"),
+        Path("tests/integration_tests/test_sevendaystodie.py"),
         Path("tests/integration_tests/test_silicaserver.py"),
         Path("tests/integration_tests/test_smallandserver.py"),
+        Path("tests/integration_tests/test_sfcserver.py"),
+        Path("tests/integration_tests/test_skyrimtogetherrebornserver.py"),
         Path("tests/integration_tests/test_solserver.py"),
         Path("tests/integration_tests/test_squad44server.py"),
         Path("tests/integration_tests/test_squadserver.py"),
@@ -2237,24 +2526,56 @@ def test_dual_lane_files_keep_process_runtime_fallback():
         Path("tests/integration_tests/test_tuserver.py"),
         Path("tests/integration_tests/test_twserver.py"),
         Path("tests/integration_tests/test_unturned.py"),
-        Path("tests/integration_tests/test_ut99server.py"),
-        Path("tests/integration_tests/test_vsserver.py"),
-        Path("tests/integration_tests/test_warbandserver.py"),
-        Path("tests/integration_tests/test_wetserver.py"),
-        Path("tests/integration_tests/test_wfserver.py"),
-        Path("tests/integration_tests/test_wurmserver.py"),
-        Path("tests/integration_tests/test_zmrserver.py"),
-        Path("tests/integration_tests/test_svenserver.py"),
-        Path("tests/integration_tests/test_ts3server.py"),
-        Path("tests/integration_tests/test_battlebitserver.py"),
-        Path("tests/integration_tests/test_rust.py"),
-        Path("tests/integration_tests/test_tfcserver.py"),
-        Path("tests/integration_tests/test_tf2.py"),
-        Path("tests/integration_tests/test_ut2k4server.py"),
-        Path("tests/integration_tests/test_valheim.py"),
     ):
         text = path.read_text(encoding="utf-8")
-        assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' in text
+        assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+        assert "default_runtime_backend()" in text
+        assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
+
+
+def test_selected_docker_sensitive_integration_tests_wait_on_declared_info_surface():
+    expected_protocols = {
+        Path("tests/integration_tests/test_medievalengineersserver.py"): "tcp",
+        Path("tests/integration_tests/test_memoriesofmarsserver.py"): "a2s",
+        Path("tests/integration_tests/test_silicaserver.py"): "a2s",
+        Path("tests/integration_tests/test_solserver.py"): "a2s",
+    }
+
+    for path, protocol in expected_protocols.items():
+        text = path.read_text(encoding="utf-8")
+        assert "wait_for_info_protocol" in text
+        assert f'wait_for_info_protocol(env, server_name, "{protocol}"' in text
+        assert 'wait_for_a2s_ready("127.0.0.1"' not in text
+        assert 'wait_for_tcp_open("127.0.0.1"' not in text
+
+
+def test_dual_lane_ci_default_runtime_backend_even_more_files_use_helper():
+    for path in (
+        Path("tests/integration_tests/test_ahlserver.py"),
+        Path("tests/integration_tests/test_acserver.py"),
+        Path("tests/integration_tests/test_doiserver.py"),
+        Path("tests/integration_tests/test_emserver.py"),
+        Path("tests/integration_tests/test_dayzserver.py"),
+        Path("tests/integration_tests/test_gmodserver.py"),
+        Path("tests/integration_tests/test_blackops3server.py"),
+        Path("tests/integration_tests/test_inssserver.py"),
+        Path("tests/integration_tests/test_avserver.py"),
+        Path("tests/integration_tests/test_bfvserver.py"),
+        Path("tests/integration_tests/test_bmdmserver.py"),
+        Path("tests/integration_tests/test_ahl2server.py"),
+        Path("tests/integration_tests/test_askaserver.py"),
+        Path("tests/integration_tests/test_valheim.py"),
+        Path("tests/integration_tests/test_rust.py"),
+        Path("tests/integration_tests/test_tf2.py"),
+        Path("tests/integration_tests/test_tf2cserver.py"),
+        Path("tests/integration_tests/test_l4d2server.py"),
+        Path("tests/integration_tests/test_opforserver.py"),
+        Path("tests/integration_tests/test_tfcserver.py"),
+    ):
+        text = path.read_text(encoding="utf-8")
+        assert "ALPHAGSM_TEST_RUNTIME_BACKEND" in text
+        assert "default_runtime_backend()" in text
+        assert 'os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")' not in text
 
 
 def test_dual_lane_subset_stays_separate_from_enablement_backlog():

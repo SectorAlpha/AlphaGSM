@@ -8,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
+    default_runtime_backend,
     resolve_runtime_image,
     pick_free_tcp_port,
     run_setup_with_port_retry,
@@ -30,7 +31,9 @@ PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:
 def test_darkandlightserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "darkandlightserver"
     require_command_for_runtime(
         "docker", runtime_backend=runtime_backend, module_name=module_name

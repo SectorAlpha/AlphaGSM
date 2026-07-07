@@ -5,6 +5,7 @@ import os
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
@@ -16,9 +17,8 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
-    wait_for_a2s_ready,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.solserver import steam_app_id
 
@@ -31,7 +31,9 @@ STOP_TIMEOUT = 90
 def test_solserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "solserver"
     require_command_for_runtime(
         "screen",
@@ -78,7 +80,7 @@ def test_solserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_a2s_ready("127.0.0.1", port, 900, log_path=log_path)
+        wait_for_info_protocol(env, server_name, "a2s", 900)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

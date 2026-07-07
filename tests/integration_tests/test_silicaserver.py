@@ -5,6 +5,7 @@ import os
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
@@ -15,9 +16,9 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
+    wait_for_info_protocol,
     wait_for_log_marker,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.silicaserver import steam_app_id
 
@@ -30,7 +31,9 @@ STOP_TIMEOUT = 90
 def test_silicaserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "silicaserver"
     require_command_for_runtime(
         "screen",
@@ -79,6 +82,9 @@ def test_silicaserver_lifecycle(tmp_path):
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        # Wait on AlphaGSM's declared info surface before issuing direct query/info commands.
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

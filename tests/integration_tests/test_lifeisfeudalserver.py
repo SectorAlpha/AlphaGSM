@@ -16,6 +16,7 @@ pytestmark = [pytest.mark.integration]
 
 from conftest import (
     alphagsm_env,
+    default_runtime_backend,
     log_command_result,
     pick_free_tcp_port,
     require_command,
@@ -53,7 +54,9 @@ def _docker_rm_force(name):
 def test_lifeisfeudalserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "lifeisfeudalserver"
     require_command_for_runtime(
         "screen",
@@ -66,10 +69,10 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
         require_proton()
     else:
         image = resolve_runtime_image(
-        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
-        LOCAL_WINE_PROTON_IMAGE,
-        PUBLISHED_WINE_PROTON_IMAGE,
-    )
+            "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+            LOCAL_WINE_PROTON_IMAGE,
+            PUBLISHED_WINE_PROTON_IMAGE,
+        )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

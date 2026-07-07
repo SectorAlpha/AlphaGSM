@@ -8,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
+    default_runtime_backend,
     pick_free_tcp_port,
     run_setup_with_port_retry,
     write_config,
@@ -27,7 +28,9 @@ STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: Pavlov VR setup can exceed the old 10 min SteamCMD budget under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 STATUS_PORT_OFFSET = 400
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "pvrserver"
 
 

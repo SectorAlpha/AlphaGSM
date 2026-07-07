@@ -163,6 +163,22 @@ def test_message():
     mod.message(server, "hello")
 
 
+def test_get_query_and_info_address_use_runtime_resolved_host():
+    server = DummyServer()
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    with patch.object(
+        mod.runtime_module,
+        "resolve_query_host",
+        side_effect=["172.18.0.7", "172.18.0.7"],
+    ) as resolve_query_host:
+        assert mod.get_query_address(server) == ("172.18.0.7", 27016, "a2s")
+        assert mod.get_info_address(server) == ("172.18.0.7", 27016, "a2s")
+
+    assert resolve_query_host.call_args_list == [((server,),), ((server,),)]
+
+
 def test_get_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
     steamcmd_root = tmp_path / "Steam"
     linux64 = steamcmd_root / "linux64"

@@ -7,6 +7,7 @@ import time
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
@@ -85,7 +86,7 @@ def _assert_common_l4d2_info(data):
 def test_l4d2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
     module_name = "l4d2server"
     require_command_for_runtime(
         "screen",

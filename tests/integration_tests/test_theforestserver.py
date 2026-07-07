@@ -6,6 +6,7 @@ import pytest
 
 from conftest import (
     alphagsm_env,
+    default_runtime_backend,
     log_command_result,
     pick_free_tcp_port,
     require_command_for_runtime,
@@ -31,7 +32,9 @@ def test_theforestserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     require_proton()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "theforestserver"
     require_command_for_runtime(
         "screen",

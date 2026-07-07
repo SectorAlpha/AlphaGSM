@@ -8,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
+    default_runtime_backend,
     pick_free_tcp_port,
     run_setup_with_port_retry,
     write_config,
@@ -26,7 +27,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 1800
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "rwserver"
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"

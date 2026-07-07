@@ -9,6 +9,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
+    default_runtime_backend,
     require_command_for_runtime,
     pick_free_udp_port,
     write_config,
@@ -95,7 +96,9 @@ def _assert_common_l4d_info(data):
 def test_l4dserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     require_command_for_runtime(runtime_backend)
 
     home_dir = tmp_path / "home"

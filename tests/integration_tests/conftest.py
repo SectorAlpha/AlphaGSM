@@ -333,6 +333,18 @@ def _module_uses_explicit_docker_runtime(module_name, servermodulespackage="game
     )
 
 
+def default_runtime_backend():
+    """Return the default runtime backend for integration tests.
+
+    Local runs stay process-first to preserve the traditional developer
+    workflow. GitHub Actions uses ``auto`` so Docker-capable modules exercise
+    their declared runtime contract during CI without each test hardcoding a
+    Docker-only default.
+    """
+
+    return "auto" if os.environ.get("GITHUB_ACTIONS") == "true" else "process"
+
+
 def effective_runtime_backend(
     runtime_backend="process",
     *,

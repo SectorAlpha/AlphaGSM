@@ -5,6 +5,7 @@ import os
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
@@ -72,7 +73,9 @@ def _run_setup_with_start_retry(env, server_name, install_dir, initial_port):
 def test_csserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,

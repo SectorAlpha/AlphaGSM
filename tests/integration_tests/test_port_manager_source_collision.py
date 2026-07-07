@@ -8,6 +8,7 @@ import pytest
 
 from conftest import (
     require_command_for_runtime,
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     pick_free_tcp_port,
@@ -137,7 +138,9 @@ def test_source_servers_only_both_run_after_one_changes_port(tmp_path):
 
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "port_manager_source_collision"
     require_command_for_runtime(
         "screen",

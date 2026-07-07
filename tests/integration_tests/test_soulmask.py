@@ -5,6 +5,7 @@ import os
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
@@ -28,7 +29,9 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "soulmask"
 LOCAL_DOCKER_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"

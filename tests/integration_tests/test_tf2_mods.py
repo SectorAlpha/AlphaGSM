@@ -15,8 +15,9 @@ import threading
 
 import pytest
 
-from conftest import write_config
+from conftest import default_runtime_backend
 from conftest import require_command_for_runtime
+from conftest import write_config
 from gamemodules.teamfortress2 import steam_app_id
 import gamemodules.teamfortress2 as tf2
 import gamemodules.teamfortress2.mods as tf2_mods
@@ -123,7 +124,9 @@ def _serve_directory(root: Path):
 def test_tf2_curated_mod_cli_flow(tmp_path):
     _require_integration_opt_in()
     _require_steamcmd_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "teamfortress2"
     require_command_for_runtime(
         "screen",

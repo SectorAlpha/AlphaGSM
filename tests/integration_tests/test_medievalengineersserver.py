@@ -7,6 +7,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
+    default_runtime_backend,
     require_command_for_runtime,
     resolve_runtime_image,
     pick_free_tcp_port,
@@ -17,7 +18,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_tcp_open,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
 )
 from gamemodules.medievalengineersserver import steam_app_id
@@ -31,7 +32,9 @@ SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_DOCKER_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "medievalengineersserver"
 
 
@@ -84,14 +87,14 @@ def test_medievalengineersserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for the managed TCP surface to come up
-        wait_for_tcp_open("127.0.0.1", port, 300)
+        # Wait on AlphaGSM's declared info surface rather than a raw localhost probe.
+        wait_for_info_protocol(env, server_name, "tcp", 300)
 
         # Give ME time to stabilise — it can answer one TCP probe then crash
-        # if Proton/Wine is still loading runtime DLLs.  A second check after a
+        # if Proton/Wine is still loading runtime DLLs.  A second info-surface check after a
         # brief pause confirms the process is still alive before we query.
         time.sleep(10)
-        wait_for_tcp_open("127.0.0.1", port, 30)
+        wait_for_info_protocol(env, server_name, "tcp", 30)
 
         # status
         run_and_assert_ok(env, server_name, "status")

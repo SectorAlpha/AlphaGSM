@@ -9,6 +9,7 @@ import os
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_command_for_runtime,
     pick_free_tcp_port,
@@ -35,7 +36,9 @@ STOP_TIMEOUT = 90
 )
 def test_arma3_headless_lifecycle(tmp_path):
     require_integration_opt_in()
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
     module_name = "arma3_headless"
     require_command_for_runtime(
         "screen",

@@ -8,6 +8,7 @@ import pytest
 from conftest import (
     assert_source_server_empty,
     alphagsm_env,
+    default_runtime_backend,
     find_source_server_cfg,
     log_command_result,
     pick_free_udp_port,
@@ -39,7 +40,9 @@ pytestmark = [
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", "process")
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
 module_name = "dabserver"
 
 
