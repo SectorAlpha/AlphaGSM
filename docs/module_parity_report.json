@@ -16,8 +16,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -42,8 +42,8 @@
     "canonical_id": "ahlserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -52,8 +52,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -102,8 +102,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -168,8 +168,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -178,8 +178,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -188,8 +188,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -198,8 +198,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -208,8 +208,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -218,8 +218,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -228,8 +228,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -334,8 +334,8 @@
     "canonical_id": "bbserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -352,8 +352,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -362,8 +362,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -410,8 +410,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -430,8 +430,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -676,8 +676,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -686,8 +686,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -696,8 +696,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -864,8 +864,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1096,8 +1096,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1126,8 +1126,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1240,8 +1240,8 @@
     "canonical_id": "minecraft.tekkit",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [
@@ -1446,8 +1446,8 @@
     "canonical_id": "nsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1518,8 +1518,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [
@@ -1550,8 +1550,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1620,8 +1620,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -1738,8 +1738,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [
@@ -1800,8 +1800,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [
@@ -1896,8 +1896,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -2000,8 +2000,8 @@
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -2209,8 +2209,8 @@
     "canonical_id": "tsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
@@ -2325,8 +2325,8 @@
     "canonical_id": "vsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": false,
-    "support_state": "disabled"
+    "runtime_verified": true,
+    "support_state": "active"
   },
   {
     "aliases": [],
