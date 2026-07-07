@@ -2595,6 +2595,14 @@ def test_unittest_workflow_declares_classify_changes_job():
     assert "classify-changes:" in text
 
 
+def test_unittest_workflow_cancels_superseded_pr_runs():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+    assert "concurrency:" in text
+    assert "group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}" in text
+    assert "cancel-in-progress: true" in text
+
+
 def test_unittest_workflow_routes_linux_game_matrices_from_classifier_outputs():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
