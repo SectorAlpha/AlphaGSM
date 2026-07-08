@@ -1,6 +1,6 @@
 # AlphaGSM Improvement Roadmap
 
-Last updated: 2026-07-07
+Last updated: 2026-07-08
 
 This document is a handoff-oriented review of the whole repository. It lists
 concrete improvements a future agent or contributor can pick up, ordered by
@@ -34,6 +34,11 @@ work here must respect.
   `ALPHAGSM_TEST_RUNTIME_BACKEND` now default through
   `default_runtime_backend()`, which keeps local runs process-first while
   letting GitHub Actions use module-aware `auto` selection.
+- The next GitHub CI triage pass found a workflow-layer gap rather than more
+  test-file drift: the `su - gsmuser` shell running pytest was not inheriting
+  `GITHUB_ACTIONS` or the optional runtime-backend matrix override, so the
+  CI-aware helper could still fall back to process defaults. The workflow now
+  forwards those variables explicitly; the next run is the real proof point.
 - The top-priority active work is now the broad red smoke/integration set on
   the newest `release_v1` GitHub CI run, plus proving the remaining Docker
   protocol-sensitive lanes there rather than through local integration runs.
