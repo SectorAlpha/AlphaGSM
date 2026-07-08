@@ -825,8 +825,8 @@ def assert_host_install_requirements(server, phase="run"):
     )
 
 
-def _current_container_identity_mount_roots():
-    """Return same-path bind-mount roots when AlphaGSM runs inside Docker."""
+def _current_container_bind_mounts():
+    """Return bind-mount source/destination pairs for the current container."""
 
     if not os.path.exists("/.dockerenv"):
         return []
@@ -850,7 +850,7 @@ def _current_container_identity_mount_roots():
     except ValueError:
         return []
 
-    roots = []
+    bind_mounts = []
     for mount in mounts:
         if mount.get("Type") != "bind":
             continue
@@ -858,17 +858,73 @@ def _current_container_identity_mount_roots():
         destination = str(mount.get("Destination") or "").rstrip(os.sep)
         if not source or not destination:
             continue
+        bind_mounts.append(
+            {
+                "source": source or os.sep,
+                "destination": destination or os.sep,
+            }
+        )
+    return bind_mounts
+
+
+def _current_container_identity_mount_roots():
+    """Return same-path bind-mount roots when AlphaGSM runs inside Docker."""
+
+    roots = []
+    for mount in _current_container_bind_mounts():
+        source = mount["source"]
+        destination = mount["destination"]
         if source != destination:
             continue
         roots.append(destination or os.sep)
     return roots
 
 
+def _translate_manager_container_path_to_host(path):
+    """Return the host-visible path for *path* when AlphaGSM runs in Docker."""
+
+    if not path:
+        return None
+
+    bind_mounts = _current_container_bind_mounts()
+    absolute_path = os.path.abspath(str(path))
+    if not bind_mounts:
+        identity_roots = _current_container_identity_mount_roots()
+        if not identity_roots:
+            return absolute_path
+        if any(
+            absolute_path == root or absolute_path.startswith(root.rstrip(os.sep) + os.sep)
+            for root in identity_roots
+        ):
+            return absolute_path
+        return None
+
+    best_match = None
+    best_destination = None
+    for mount in bind_mounts:
+        destination = os.path.abspath(str(mount["destination"]))
+        source = os.path.abspath(str(mount["source"]))
+        try:
+            if os.path.commonpath([destination, absolute_path]) != destination:
+                continue
+        except ValueError:
+            continue
+        relative_path = os.path.relpath(absolute_path, destination)
+        translated = source if relative_path == "." else os.path.join(source, relative_path)
+        if best_destination is None or len(destination) > len(best_destination):
+            best_match = translated
+            best_destination = destination
+    return best_match
+
+
 def validate_mount_path_identity(mounts):
     """Reject bind mounts that are not host-visible in manager-container mode."""
 
-    identity_roots = _current_container_identity_mount_roots()
-    if not identity_roots:
+    bind_mounts = _current_container_bind_mounts()
+    identity_roots = []
+    if not bind_mounts:
+        identity_roots = _current_container_identity_mount_roots()
+    if not bind_mounts and not identity_roots:
         return
 
     for mount in mounts or ():
@@ -879,16 +935,37 @@ def validate_mount_path_identity(mounts):
         if not source:
             continue
         source = os.path.abspath(str(source))
-        if any(
-            source == root or source.startswith(root.rstrip(os.sep) + os.sep)
-            for root in identity_roots
-        ):
+        if _translate_manager_container_path_to_host(source) is not None:
             continue
         raise RuntimeError(
-            "Docker-backed server paths must live under a same-path host mount "
+            "Docker-backed server paths must live under a host-visible bind mount "
             "when AlphaGSM runs inside Docker. Path not visible to the host "
             "daemon: %s. Use a path under ALPHAGSM_HOME instead." % (source,)
         )
+
+
+def _host_visible_mount_source(source):
+    """Return the Docker-daemon-visible version of *source*."""
+
+    translated = _translate_manager_container_path_to_host(source)
+    if translated is None:
+        return source
+    return translated
+
+
+def _host_visible_mount_spec(mount):
+    """Return *mount* with its source rewritten for the host Docker daemon."""
+
+    if isinstance(mount, dict):
+        rewritten = dict(mount)
+        if rewritten.get("source"):
+            rewritten["source"] = _host_visible_mount_source(rewritten["source"])
+        return rewritten
+
+    source, sep, remainder = str(mount).partition(":")
+    if not sep or not source:
+        return mount
+    return _host_visible_mount_source(source) + sep + remainder
 
 
 def default_install_dir(server):
@@ -1979,6 +2056,7 @@ class ContainerRuntime(BaseRuntime):
         for key, value in sorted((spec.get("env") or {}).items()):
             command.extend(["-e", f"{key}={value}"])
         for mount in spec.get("mounts", ()):
+            mount = _host_visible_mount_spec(mount)
             if isinstance(mount, dict):
                 mode = mount.get("mode", "rw")
                 mount = f"{mount['source']}:{mount['target']}:{mode}"

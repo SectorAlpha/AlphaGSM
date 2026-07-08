@@ -1045,6 +1045,124 @@ def test_current_container_identity_mount_roots_inspects_docker_without_tty_kwar
     }
 
 
+def test_current_container_bind_mounts_exposes_source_destination_pairs(monkeypatch):
+    observed = {}
+
+    def _fake_check_output(cmd, **kwargs):
+        observed["cmd"] = cmd
+        observed["kwargs"] = kwargs
+        return (
+            '[{"Type":"bind","Source":"/home/runner/work","Destination":"/__w"},'
+            '{"Type":"volume","Source":"ignored","Destination":"/data"},'
+            '{"Type":"bind","Source":"/shared","Destination":"/shared"}]'
+        )
+
+    monkeypatch.setenv("HOSTNAME", "alphagsm-manager")
+    monkeypatch.setattr(runtime_module.os.path, "exists", lambda path: path == "/.dockerenv")
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    mounts = runtime_module._current_container_bind_mounts()
+
+    assert mounts == [
+        {"source": "/home/runner/work", "destination": "/__w"},
+        {"source": "/shared", "destination": "/shared"},
+    ]
+    assert observed["cmd"] == ["docker", "inspect", "-f", "{{json .Mounts}}", "alphagsm-manager"]
+    assert observed["kwargs"] == {
+        "stderr": runtime_module.sp.STDOUT,
+        "shell": False,
+        "text": True,
+    }
+
+
+def test_translate_manager_container_path_to_host_uses_longest_bind_mount(monkeypatch):
+    monkeypatch.setattr(
+        runtime_module,
+        "_current_container_bind_mounts",
+        lambda: [
+            {"source": "/home/runner/work", "destination": "/__w"},
+            {"source": "/home/runner/work/_temp", "destination": "/__w/_temp"},
+        ],
+    )
+
+    translated = runtime_module._translate_manager_container_path_to_host(
+        "/__w/_temp/alphagsm-work/server"
+    )
+
+    assert translated == "/home/runner/work/_temp/alphagsm-work/server"
+
+
+def test_validate_mount_path_identity_allows_paths_under_non_identity_bind_mounts(monkeypatch):
+    monkeypatch.setattr(
+        runtime_module,
+        "_current_container_bind_mounts",
+        lambda: [{"source": "/home/runner/work", "destination": "/__w"}],
+    )
+
+    runtime_module.validate_mount_path_identity(
+        [{"source": "/__w/_temp/alphagsm-work/server", "target": "/srv/server", "mode": "rw"}]
+    )
+
+
+def test_container_runtime_rewrites_manager_container_mount_sources_to_host_paths(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(
+        get_container_spec=lambda server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "stdin_open": False,
+            "env": {},
+            "mounts": [
+                {
+                    "source": "/__w/_temp/alphagsm-work/server",
+                    "target": "/srv/server",
+                    "mode": "rw",
+                },
+            ],
+            "ports": [],
+            "command": ["./LocalAdmin", "7777"],
+        }
+    )
+    server = DummyServer(module=module, data={"runtime": "docker"})
+    runtime = runtime_module.ContainerRuntime()
+
+    observed = []
+
+    def _fake_check_output(cmd, stderr=None, shell=False, text=False):
+        observed.append(cmd)
+        if cmd[:3] == ["docker", "image", "inspect"]:
+            return "existing-image\n" if text else b"existing-image\n"
+        return "ok\n" if text else b"ok\n"
+
+    monkeypatch.setattr(
+        runtime_module,
+        "_current_container_bind_mounts",
+        lambda: [{"source": "/home/runner/work", "destination": "/__w"}],
+    )
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    runtime.start(server)
+
+    assert observed[-1] == [
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        "alphagsm-alpha",
+        "--network",
+        "bridge",
+        "-w",
+        "/srv/server",
+        "-v",
+        "/home/runner/work/_temp/alphagsm-work/server:/srv/server:rw",
+        STEAMCMD_RUNTIME_IMAGE,
+        "./LocalAdmin",
+        "7777",
+    ]
+
+
 def test_default_install_dir_uses_home_on_normal_host(monkeypatch):
     server = DummyServer(name="scp")
 

@@ -566,6 +566,7 @@ jobs:
             export ALPHAGSM_RUN_STEAMCMD=1
             export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
+            export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
             export WINEPREFIX=/opt/wine
@@ -624,6 +625,7 @@ jobs:
             export ALPHAGSM_RUN_STEAMCMD=1
             export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
+            export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
             export WINEPREFIX=/opt/wine

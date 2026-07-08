@@ -141,6 +141,7 @@ def test_workflow_forwards_ci_runtime_env_into_gsmuser_shell():
         "export ALPHAGSM_TEST_RUNTIME_BACKEND="
         "'${{ matrix.runtime_backend || 'auto' }}'"
     ) in text
+    assert "export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'" in text
 
 
 def test_main_retries_only_failed_collection_target(tmp_path, monkeypatch):
