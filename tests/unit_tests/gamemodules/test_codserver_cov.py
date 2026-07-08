@@ -1,6 +1,5 @@
 """Full coverage tests for codserver."""
 
-import os
 import sys
 from unittest.mock import patch, MagicMock
 
@@ -91,6 +90,26 @@ def test_get_start_command(tmp_path):
         "test",
     ]
     assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "cod_lnxded"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "cod_lnxded"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "cod_lnxded").symlink_to(nested_exe)
+    server.data["hostname"] = "test"
+    server.data["moddir"] = "test"
+    server.data["port"] = 27015
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./cod_lnxded"
+    assert cwd == str(nested_dir)
 
 
 def test_setting_schema_exposes_cod_launch_tokens():
@@ -216,4 +235,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

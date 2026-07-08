@@ -119,6 +119,26 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "VeinServer.sh"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "VeinServer.sh"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "VeinServer.sh").symlink_to(nested_exe)
+    server.data["port"] = 27015
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "./VeinServer.sh",
+        "-Port=27015",
+    ]
+    assert cwd == str(nested_dir)
+
+
 def test_setting_schema_exposes_vein_launch_formats():
     assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
 

@@ -123,6 +123,23 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DedicatedServerCmd"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "DedicatedServerCmd"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "DedicatedServerCmd").symlink_to(nested_exe)
+    server.data["configfile"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["./DedicatedServerCmd"]
+    assert cwd == str(nested_dir)
+
+
 def test_query_and_info_address_use_default_query_port(monkeypatch):
     server = DummyServer("pcars2")
     server.data["port"] = "27015"
@@ -233,4 +250,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -1,6 +1,7 @@
 """Focused unit coverage for onsetserver."""
 
 import json
+import os
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -108,6 +109,22 @@ def test_get_start_command_uses_relative_config_for_docker(tmp_path):
 
     assert cmd == ["./start_linux.sh", "--config", "server_config.json"]
     assert cwd == str(tmp_path) + "/"
+
+
+def test_get_start_command_prefers_resolved_nested_launcher_for_docker(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    server.data["runtime"] = "docker"
+    nested_dir = tmp_path / "bin"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "start_linux.sh"
+    nested_exe.write_text("#!/bin/sh\n", encoding="utf-8")
+    os.symlink(nested_exe, tmp_path / "start_linux.sh")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["./start_linux.sh", "--config", "../server_config.json"]
+    assert cwd == str(nested_dir)
 
 
 def test_checkvalue_recalculates_derived_ports(tmp_path):

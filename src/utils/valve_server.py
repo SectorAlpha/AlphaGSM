@@ -744,13 +744,10 @@ def define_valve_server_module(
                     server.data["exe_name"] = candidate
                     _save_data_store(server)
                     break
-        if not os.path.isfile(os.path.join(server.data["dir"], exe_name)):
-            _raise_server_error("Executable file not found")
-        if not exe_name.startswith("./"):
-            exe_name = "./" + exe_name
+        _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server, exe_name=exe_name)
 
         cmd = [
-            exe_name,
+            launcher,
             "-game",
             game_dir,
             "-strictportbind",
@@ -773,7 +770,7 @@ def define_valve_server_module(
                 str(server.data["maxplayers"]),
             ]
         )
-        return cmd, server.data["dir"]
+        return cmd, working_dir
 
     def get_runtime_requirements(server):
         """Return Docker runtime metadata for Valve-engine Linux servers."""

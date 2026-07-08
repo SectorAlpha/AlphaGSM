@@ -41,6 +41,23 @@ def test_source_module_configure_and_start_command(tmp_path):
     assert server.data["backupfiles"] == ["cstrike", "cstrike/cfg/server.cfg"]
 
 
+def test_source_module_start_command_prefers_nested_resolved_launcher(tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    module.configure(server, False, 28015, str(tmp_path / "css"))
+    install_dir = tmp_path / "css"
+    nested_dir = install_dir / "bin"
+    nested_dir.mkdir(parents=True)
+    (nested_dir / "srcds_run").write_text("", encoding="utf-8")
+    (install_dir / "srcds_run").symlink_to(nested_dir / "srcds_run")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
+    assert cwd == str(nested_dir)
+
+
 def test_goldsrc_module_update_uses_mod_aware_steamcmd(monkeypatch, tmp_path):
     module = importlib.import_module("gamemodules.csserver")
     steamcmd_module = importlib.import_module("utils.steamcmd")

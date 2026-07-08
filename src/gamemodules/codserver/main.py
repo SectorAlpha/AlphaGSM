@@ -480,9 +480,7 @@ def sync_server_config(server):
 def get_start_command(server):
     """Build the command used to launch a Call of Duty dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -492,8 +490,8 @@ def get_start_command(server):
     if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
         launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
     return (
-        ["./" + server.data["exe_name"], *launch_args],
-        server.data["dir"],
+        [launcher, *launch_args],
+        working_dir,
     )
 
 

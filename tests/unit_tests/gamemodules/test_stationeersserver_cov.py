@@ -1,6 +1,5 @@
 """Full coverage tests for stationeersserver."""
 
-import os
 import sys
 from unittest.mock import patch, MagicMock
 
@@ -176,6 +175,32 @@ def test_get_start_command(tmp_path):
         "-nographics",
     ]
     assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "rocketstation_DedicatedServer.x86_64"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "rocketstation_DedicatedServer.x86_64"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "rocketstation_DedicatedServer.x86_64").symlink_to(nested_exe)
+    server.data["autosave"] = "true"
+    server.data["maxplayers"] = 10
+    server.data["port"] = 27016
+    server.data["saveinterval"] = 300
+    server.data["savename"] = "alpha"
+    server.data["servername"] = "AlphaGSM alpha"
+    server.data["serverpassword"] = ""
+    server.data["updateport"] = 27015
+    server.data["upnp"] = "false"
+    server.data["worldname"] = "Lunar"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./rocketstation_DedicatedServer.x86_64"
+    assert cwd == str(nested_dir)
 
 
 def test_get_query_address():

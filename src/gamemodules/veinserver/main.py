@@ -86,16 +86,14 @@ restart.__doc__ = "Restart the VEIN server."
 def get_start_command(server):
     """Build the command used to launch a VEIN server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
-    return ["./" + server.data["exe_name"], *dynamic_args], server.data["dir"]
+    return [launcher, *dynamic_args], working_dir
 
 
 def do_stop(server, j):

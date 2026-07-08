@@ -194,6 +194,18 @@ def resolve_install_executable(server, *, exe_name=None, install_dir=None):
     raise ServerError("Executable file not found")
 
 
+def resolve_install_launcher(server, *, exe_name=None, install_dir=None):
+    """Resolve an install-tree launcher into a stable cwd-relative command."""
+
+    install_dir = os.path.abspath(install_dir or server.data["dir"])
+    exe_path = resolve_install_executable(server, exe_name=exe_name, install_dir=install_dir)
+    working_dir = os.path.dirname(exe_path) or install_dir
+    if os.path.normpath(working_dir) == os.path.normpath(install_dir):
+        working_dir = os.path.join(install_dir, "")
+    launcher = "./" + os.path.basename(exe_path)
+    return exe_path, launcher, working_dir
+
+
 def configure_download_source(
     server,
     ask,

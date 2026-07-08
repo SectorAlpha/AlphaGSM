@@ -243,18 +243,20 @@ def get_info_address(server):
 def get_start_command(server):
     """Build the command used to launch an Onset dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     sync_server_config(server)
-    config_path = "server_config.json" if server.data.get("runtime") == "docker" else _config_path(server)
+    config_path = _config_path(server)
+    if server.data.get("runtime") == "docker":
+        config_path = os.path.relpath(config_path, working_dir).replace("\\", "/")
+        if not config_path.startswith(".") and "/" in config_path:
+            config_path = "./" + config_path
     return (
         [
-            "./" + server.data["exe_name"],
+            launcher,
             "--config",
             config_path,
         ],
-        server.data["dir"],
+        working_dir,
     )
 
 

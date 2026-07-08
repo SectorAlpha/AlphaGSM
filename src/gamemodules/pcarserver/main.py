@@ -142,14 +142,12 @@ def get_info_address(server):
 def get_start_command(server):
     """Build the command used to launch a Project CARS dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     return (
         [
-            "./" + server.data["exe_name"],
+            launcher,
         ],
-        server.data["dir"],
+        working_dir,
     )
 
 
