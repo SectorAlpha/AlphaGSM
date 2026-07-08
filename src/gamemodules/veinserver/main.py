@@ -167,15 +167,23 @@ def get_container_spec(server):
     """Run the native Linux server as the mounted server-directory owner."""
 
     requirements = get_runtime_requirements(server)
-    command, _cwd = get_start_command(server)
+    command, cwd = get_start_command(server)
+    command, working_dir, mounts = runtime_module.resolve_container_launch_context(
+        server,
+        mounts=requirements.get("mounts"),
+        command=command,
+        cwd=cwd,
+    )
+    if working_dir is None:
+        working_dir = runtime_module.DEFAULT_CONTAINER_WORKDIR
     shell_command = " ".join(shlex.quote(part) for part in command)
-    user_shell_command = "cd /srv/server && " + shell_command
+    user_shell_command = "cd " + shlex.quote(working_dir) + " && " + shell_command
     return {
-        "working_dir": "/srv/server",
+        "working_dir": working_dir,
         "stdin_open": True,
         "tty": False,
         "env": requirements.get("env", {}),
-        "mounts": requirements.get("mounts", []),
+        "mounts": mounts,
         "ports": requirements.get("ports", []),
         "command": [
             "sh",

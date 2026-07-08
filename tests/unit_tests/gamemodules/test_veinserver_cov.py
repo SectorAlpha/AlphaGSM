@@ -208,6 +208,39 @@ def test_get_container_spec_runs_as_non_root(tmp_path):
     ) in shell_command
 
 
+def test_get_container_spec_rewrites_external_launcher_cwd(tmp_path):
+    server = DummyServer()
+    external_dir = tmp_path.parent / f"{tmp_path.name}-external-cache" / "vein"
+    external_dir.mkdir(parents=True)
+    external_launcher = external_dir / "VeinServer.sh"
+    external_launcher.write_text("", encoding="utf-8")
+    (tmp_path / "VeinServer.sh").symlink_to(external_launcher)
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "VeinServer.sh",
+            "port": 27015,
+            "queryport": 27016,
+        }
+    )
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == str(external_dir)
+    assert any(
+        mount["source"] == str(external_dir)
+        and mount["target"] == str(external_dir)
+        and mount["mode"] == "ro"
+        for mount in spec["mounts"]
+    )
+    shell_command = " ".join(spec["command"])
+    assert (
+        "exec runuser -u alphagsm -- sh -lc "
+        f"'cd {external_dir} && ./VeinServer.sh -Port=27015 -QueryPort=27016'"
+    ) in shell_command
+    assert "'cd /srv/server && ./VeinServer.sh -Port=27015 -QueryPort=27016'" not in shell_command
+
+
 def test_status():
     server = DummyServer()
     mod.status(server, verbose=True)

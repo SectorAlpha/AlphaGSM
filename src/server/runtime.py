@@ -1034,30 +1034,21 @@ def build_container_spec(
         env=env,
         mounts=mounts,
     )
-    resolved_mounts = _add_external_executable_mounts(
-        server,
-        list(requirements.get("mounts") or []),
-    )
-    validate_mount_path_identity(resolved_mounts)
+    validate_mount_path_identity(list(requirements.get("mounts") or []))
     command, cwd = get_start_command(server)
-    command, cwd = _rewrite_external_launcher_context(
+    command, mapped_cwd, resolved_mounts = resolve_container_launch_context(
         server,
-        resolved_mounts,
-        command,
-        cwd,
+        mounts=requirements.get("mounts"),
+        command=command,
+        cwd=cwd,
     )
     if family == "java" and command:
         command = ["java", *list(command[1:])]
     if working_dir is None:
         if resolved_mounts:
-            working_dir = _map_host_path_into_container(
-                resolved_mounts,
-                cwd,
-            )
-            if working_dir is None:
-                working_dir = DEFAULT_CONTAINER_WORKDIR
+            working_dir = mapped_cwd or DEFAULT_CONTAINER_WORKDIR
         else:
-            working_dir = cwd
+            working_dir = mapped_cwd
     spec = {
         "working_dir": working_dir,
         "stdin_open": stdin_open,
@@ -1116,6 +1107,26 @@ def _map_host_path_into_container(mounts, host_path):
             return str(target)
         return os.path.join(str(target), relative_path).replace("\\", "/")
     return None
+
+
+def resolve_container_launch_context(server, *, mounts=None, command=None, cwd=None):
+    """Normalize Docker launch context for commands that may escape the server root."""
+
+    resolved_mounts = _add_external_executable_mounts(
+        server,
+        list(mounts or []),
+    )
+    validate_mount_path_identity(resolved_mounts)
+    resolved_command, resolved_cwd = _rewrite_external_launcher_context(
+        server,
+        resolved_mounts,
+        command,
+        cwd,
+    )
+    container_cwd = resolved_cwd
+    if resolved_mounts:
+        container_cwd = _map_host_path_into_container(resolved_mounts, resolved_cwd)
+    return list(resolved_command or []), container_cwd, resolved_mounts
 
 
 def _add_external_executable_mounts(server, mounts):
