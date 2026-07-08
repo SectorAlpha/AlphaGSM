@@ -17,6 +17,7 @@ pytestmark = [pytest.mark.integration]
 from conftest import (
     alphagsm_env,
     default_runtime_backend,
+    effective_runtime_backend,
     log_command_result,
     pick_free_tcp_port,
     require_command,
@@ -58,6 +59,10 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
     module_name = "lifeisfeudalserver"
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+    )
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,
@@ -65,7 +70,7 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
     )
     require_command("docker")
     image = None
-    if runtime_backend == "process":
+    if selected_runtime_backend == "process":
         require_proton()
     else:
         image = resolve_runtime_image(

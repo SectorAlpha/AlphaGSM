@@ -6,6 +6,7 @@ import pytest
 
 from conftest import (
     default_runtime_backend,
+    effective_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -41,12 +42,16 @@ def test_askaserver_lifecycle(tmp_path):
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
     module_name = "askaserver"
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+    )
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,
         module_name=module_name,
     )
-    if runtime_backend == "process":
+    if selected_runtime_backend == "process":
         require_proton()
     else:
         require_command("docker")
@@ -62,7 +67,7 @@ def test_askaserver_lifecycle(tmp_path):
             LOCAL_WINE_PROTON_IMAGE,
             PUBLISHED_WINE_PROTON_IMAGE,
         )
-        if runtime_backend == "docker"
+        if selected_runtime_backend == "docker"
         else None
     )
 

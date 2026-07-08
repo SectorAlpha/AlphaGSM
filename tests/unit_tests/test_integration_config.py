@@ -2,6 +2,7 @@
 
 import importlib
 from pathlib import Path
+import re
 
 from tests.integration_tests.conftest import write_config
 
@@ -125,3 +126,22 @@ def test_write_config_auto_falls_back_to_process_for_non_container_modules(
     assert "backend = process" in text
     assert "[process]" in text
     assert "[docker]" in text
+
+
+def test_integration_tests_branch_on_effective_runtime_backend():
+    integration_root = Path(__file__).resolve().parents[1] / "integration_tests"
+    forbidden_pattern = re.compile(
+        r"\bruntime_backend\s*==\s*[\"'](?:docker|process)[\"']"
+    )
+
+    offenders = []
+    for path in sorted(integration_root.glob("test_*.py")):
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if forbidden_pattern.search(line):
+                offenders.append(f"{path.relative_to(integration_root.parent)}:{lineno}")
+
+    assert offenders == [], (
+        "Integration tests must branch on effective_runtime_backend(...) "
+        "rather than the raw ALPHAGSM_TEST_RUNTIME_BACKEND value: "
+        + ", ".join(offenders)
+    )

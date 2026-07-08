@@ -6,6 +6,7 @@ import pytest
 
 from conftest import (
     default_runtime_backend,
+    effective_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
@@ -46,13 +47,17 @@ def test_valheim_lifecycle(tmp_path):
     runtime_backend = os.environ.get(
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+    )
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,
         module_name=module_name,
     )
     image = None
-    if runtime_backend == "docker":
+    if selected_runtime_backend == "docker":
         require_command("docker")
         image = resolve_steamcmd_linux_runtime_image()
 

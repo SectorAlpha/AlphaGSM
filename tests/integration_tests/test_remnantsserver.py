@@ -8,6 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     default_runtime_backend,
+    effective_runtime_backend,
     require_command,
     resolve_runtime_image,
     require_command_for_runtime,
@@ -40,13 +41,17 @@ def test_remnantsserver_lifecycle(tmp_path):
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
     module_name = "remnantsserver"
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+    )
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,
         module_name=module_name,
     )
     image = None
-    if runtime_backend == "process":
+    if selected_runtime_backend == "process":
         require_proton()
     else:
         require_command("docker")
