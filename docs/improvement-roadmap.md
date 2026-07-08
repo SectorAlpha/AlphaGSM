@@ -39,6 +39,13 @@ work here must respect.
   `GITHUB_ACTIONS` or the optional runtime-backend matrix override, so the
   CI-aware helper could still fall back to process defaults. The workflow now
   forwards those variables explicitly; the next run is the real proof point.
+- That first workflow fix exposed a second, narrower gap: the jobs were still
+  exporting `ALPHAGSM_TEST_RUNTIME_BACKEND=''` when no matrix override was
+  selected, and many tests read that environment variable with
+  `os.environ.get(..., default_runtime_backend())`. Because the key existed,
+  the empty string still bypassed the fallback and left Docker-capable modules
+  on the process path. The workflow now leaves that variable unset unless the
+  matrix really requested an override.
 - The top-priority active work is now the broad red smoke/integration set on
   the newest `release_v1` GitHub CI run, plus proving the remaining Docker
   protocol-sensitive lanes there rather than through local integration runs.

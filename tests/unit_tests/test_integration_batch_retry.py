@@ -137,7 +137,9 @@ def test_workflow_forwards_ci_runtime_env_into_gsmuser_shell():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
     assert "export GITHUB_ACTIONS='${GITHUB_ACTIONS}'" in text
+    assert 'if [ -n "${{ matrix.runtime_backend || \'\' }}" ]; then' in text
     assert "export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || '' }}'" in text
+    assert "unset ALPHAGSM_TEST_RUNTIME_BACKEND" in text
 
 
 def test_main_retries_only_failed_collection_target(tmp_path, monkeypatch):
