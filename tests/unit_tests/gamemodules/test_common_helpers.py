@@ -279,6 +279,19 @@ def test_resolve_install_executable_falls_back_to_nested_basename_match(tmp_path
     assert gamemodule_common.resolve_install_executable(server) == str(nested_target)
 
 
+def test_resolve_install_executable_follows_external_symlink_target(tmp_path):
+    server = make_server(dir=str(tmp_path / "install") + "/", exe_name="DedicatedServer")
+    install_root = tmp_path / "install"
+    install_root.mkdir()
+    external_dir = tmp_path / "downloads" / "cache"
+    external_dir.mkdir(parents=True)
+    target = external_dir / "DedicatedServer"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, install_root / "DedicatedServer")
+
+    assert gamemodule_common.resolve_install_executable(server) == str(target)
+
+
 def test_format_byo_support_message_includes_actions_and_guide():
     message = gamemodule_common.format_byo_support_message(
         "cod2server",

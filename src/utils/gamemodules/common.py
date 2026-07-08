@@ -162,14 +162,8 @@ def resolve_install_executable(server, *, exe_name=None, install_dir=None):
 
     if os.path.islink(configured_path):
         real_path = os.path.realpath(configured_path)
-        try:
-            if (
-                os.path.commonpath([install_dir, real_path]) == install_dir
-                and os.path.isfile(real_path)
-            ):
-                return real_path
-        except ValueError:
-            pass
+        if os.path.isfile(real_path):
+            return real_path
 
     if os.path.isfile(configured_path):
         return configured_path

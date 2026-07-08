@@ -12,6 +12,7 @@ from typing import NoReturn
 import screen
 from server.errors import ServerError
 from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
+import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.fileutils import make_empty_file
 from utils.simple_kv_config import rewrite_space_config, rewrite_single_token_space_config
@@ -804,15 +805,19 @@ def define_valve_server_module(
     def get_container_spec(server):
         """Return the Docker launch spec for this Valve-engine server."""
 
-        cmd, _cwd = get_start_command(server)
-        requirements = get_runtime_requirements(server)
-        return {
-            "working_dir": "/srv/server",
-            "stdin_open": True,
-            "mounts": requirements.get("mounts", []),
-            "ports": requirements.get("ports", []),
-            "command": cmd,
-        }
+        return runtime_module.build_container_spec(
+            server,
+            family="steamcmd-linux",
+            get_start_command=get_start_command,
+            port_definitions=(
+                {"key": "port", "protocol": "udp"},
+                {"key": "clientport", "protocol": "udp"},
+                {"key": "sourcetvport", "protocol": "udp"},
+                {"key": "steamport", "protocol": "udp"},
+            ),
+            mounts=get_runtime_requirements(server).get("mounts", []),
+            stdin_open=True,
+        )
 
     def do_stop(server, j):
         """Send the generic Valve-engine shutdown command."""

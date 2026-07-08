@@ -1034,14 +1034,24 @@ def build_container_spec(
         env=env,
         mounts=mounts,
     )
-    validate_mount_path_identity(requirements.get("mounts", []))
+    resolved_mounts = _add_external_executable_mounts(
+        server,
+        list(requirements.get("mounts") or []),
+    )
+    validate_mount_path_identity(resolved_mounts)
     command, cwd = get_start_command(server)
+    command, cwd = _rewrite_external_launcher_context(
+        server,
+        resolved_mounts,
+        command,
+        cwd,
+    )
     if family == "java" and command:
         command = ["java", *list(command[1:])]
     if working_dir is None:
-        if requirements.get("mounts"):
+        if resolved_mounts:
             working_dir = _map_host_path_into_container(
-                requirements.get("mounts", ()),
+                resolved_mounts,
                 cwd,
             )
             if working_dir is None:
@@ -1053,7 +1063,7 @@ def build_container_spec(
         "stdin_open": stdin_open,
         "tty": tty,
         "env": requirements.get("env", {}),
-        "mounts": requirements.get("mounts", []),
+        "mounts": resolved_mounts,
         "ports": requirements.get("ports", []),
         "command": list(command),
     }
@@ -1164,6 +1174,55 @@ def _add_external_executable_mounts(server, mounts):
             }
         )
     return mounts
+
+
+def _configured_external_executable_path(server):
+    """Return the resolved executable path when it escapes the server root."""
+
+    server_dir = server.data.get("dir")
+    exe_name = server.data.get("exe_name")
+    if not server_dir or not exe_name:
+        return None
+
+    server_root = os.path.abspath(server_dir)
+    configured_path = os.path.abspath(os.path.join(server_root, exe_name))
+    real_path = os.path.realpath(configured_path)
+    if not os.path.isfile(real_path):
+        return None
+
+    try:
+        if os.path.commonpath([server_root, real_path]) == server_root:
+            return None
+    except ValueError:
+        return real_path
+    return real_path
+
+
+def _rewrite_external_launcher_context(server, mounts, command, cwd):
+    """Rewrite launcher context when the configured executable escapes the mount root."""
+
+    real_path = _configured_external_executable_path(server)
+    if real_path is None:
+        return command, cwd
+
+    mapped_cwd = _map_host_path_into_container(mounts, os.path.dirname(real_path))
+    if mapped_cwd is None:
+        mapped_cwd = os.path.dirname(real_path)
+
+    rewritten_command = list(command or [])
+    if rewritten_command:
+        exe_name = os.path.basename(str(server.data.get("exe_name", "")))
+        command_index = 0
+        if rewritten_command[0] == "env":
+            command_index = 1
+            while command_index < len(rewritten_command) and "=" in rewritten_command[command_index]:
+                command_index += 1
+        if command_index < len(rewritten_command):
+            current_executable = str(rewritten_command[command_index])
+            if os.path.basename(current_executable) == exe_name:
+                rewritten_command[command_index] = "./" + os.path.basename(real_path)
+
+    return rewritten_command, mapped_cwd
 
 
 def infer_runtime_requirements(server, module=None):
@@ -1612,6 +1671,12 @@ def get_container_spec(server, *args, **kwargs):
             merged["stop_mode"] = "exec-console"
     merged["mounts"] = _add_external_executable_mounts(
         server, list(merged.get("mounts") or [])
+    )
+    merged["command"], merged["working_dir"] = _rewrite_external_launcher_context(
+        server,
+        merged["mounts"],
+        merged.get("command"),
+        merged.get("working_dir"),
     )
     return merged
 

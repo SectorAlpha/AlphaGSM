@@ -253,6 +253,37 @@ def test_build_container_spec_maps_nested_host_workdir_into_container(tmp_path):
     assert spec["command"] == ["./PalServer.sh", "-port=8211"]
 
 
+def test_build_container_spec_maps_external_launcher_workdir_into_added_mount(tmp_path, monkeypatch):
+    monkeypatch.setattr(runtime_module, "_steamcmd_sdk_mounts", lambda: [])
+    server_root = tmp_path / "server"
+    cache_root = tmp_path / "downloads" / "cache"
+    server_root.mkdir(parents=True)
+    cache_root.mkdir(parents=True)
+    target = cache_root / "DedicatedServerCmd"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, server_root / "DedicatedServerCmd")
+    server = DummyServer(
+        data={"dir": str(server_root) + "/", "exe_name": "DedicatedServerCmd", "port": 27015}
+    )
+
+    spec = runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
+        get_start_command=lambda _current_server: (
+            ["./DedicatedServerCmd"],
+            str(cache_root),
+        ),
+        port_definitions=(("port", "udp"),),
+    )
+
+    assert spec["working_dir"] == str(cache_root)
+    assert spec["mounts"] == [
+        {"source": str(server_root) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(cache_root), "target": str(cache_root), "mode": "ro"},
+    ]
+    assert spec["command"] == ["./DedicatedServerCmd"]
+
+
 def test_get_container_spec_mounts_external_symlinked_parent_for_executable(tmp_path, monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     install_root = tmp_path / "install"
@@ -1371,6 +1402,51 @@ def test_get_container_spec_mounts_external_symlink_target(monkeypatch, tmp_path
         {"source": str(server_root) + "/", "target": "/srv/server", "mode": "rw"},
         {"source": str(cache_root), "target": str(cache_root), "mode": "ro"},
     ]
+
+
+def test_get_container_spec_rewrites_external_launcher_cwd_from_install_root(monkeypatch, tmp_path):
+    _set_runtime_backend(monkeypatch, "docker")
+    server_root = tmp_path / "server"
+    cache_root = tmp_path / "downloads" / "cache"
+    server_root.mkdir(parents=True)
+    cache_root.mkdir(parents=True)
+    target = cache_root / "DedicatedServerCmd"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, server_root / "DedicatedServerCmd")
+
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "steamcmd-linux",
+        },
+        get_container_spec=lambda server: {
+            "working_dir": "/srv/server",
+            "stdin_open": True,
+            "env": {},
+            "mounts": [
+                {
+                    "source": str(server_root) + "/",
+                    "target": "/srv/server",
+                    "mode": "rw",
+                }
+            ],
+            "ports": [],
+            "command": ["./DedicatedServerCmd"],
+        },
+    )
+    server = DummyServer(
+        module=module,
+        data={"dir": str(server_root) + "/", "exe_name": "DedicatedServerCmd"},
+    )
+
+    spec = runtime_module.get_container_spec(server)
+
+    assert spec["working_dir"] == str(cache_root)
+    assert spec["mounts"] == [
+        {"source": str(server_root) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(cache_root), "target": str(cache_root), "mode": "ro"},
+    ]
+    assert spec["command"] == ["./DedicatedServerCmd"]
 
 
 def test_get_container_spec_promotes_interactive_java_to_exec_console(monkeypatch):
