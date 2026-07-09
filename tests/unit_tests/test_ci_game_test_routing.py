@@ -2961,3 +2961,11 @@ def test_unittest_workflow_keeps_backend_and_cross_platform_jobs_unconditional()
         "build-java-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]"
     ) in text
     assert "needs: [unit-test, lint, coverage]" in text
+
+
+def test_unittest_workflow_frees_runner_disk_before_linux_smoke_batches():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+    assert "Free runner disk space for large Docker smoke coverage" in text
+    assert "sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/share/swift" in text
+    assert "df -h /" in text
