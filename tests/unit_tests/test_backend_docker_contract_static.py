@@ -106,6 +106,23 @@ def test_backend_ci_workflow_explicitly_runs_docker_backend_tests():
     assert 'ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"' in text
 
 
+def test_backend_ci_workflow_uses_branch_local_java_runtime_image_for_java_cases():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+    assert "build-java-runtime:" in text
+    assert "ALPHAGSM_BACKEND_DOCKER_IMAGE: ${{ needs.build-java-runtime.outputs.image }}" in text
+    assert (
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}"
+        in text
+    )
+    assert "ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-java-runtime.outputs.image }}" in text
+    assert (
+        'export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="${{ needs.build-java-runtime.outputs.image }}"'
+        in text
+    )
+    assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}" not in text
+
+
 def test_summarize_tests_includes_backend_integration_results():
     text = WORKFLOW_PATH.read_text()
 

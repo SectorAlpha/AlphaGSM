@@ -471,6 +471,52 @@ jobs:
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
 
+  build-java-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute java runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(
+            sha256sum \
+              docker/java/Dockerfile \
+              docker/java/entrypoint.sh \
+            | sha256sum | cut -c1-12
+          )
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-java-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push java runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/java/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
   build-wine-proton-runtime:
     runs-on: ubuntu-latest
     needs: [unit-test, lint, coverage]
@@ -523,7 +569,7 @@ jobs:
   integration-test-standard:
     runs-on: ubuntu-latest
     if: needs.discover-integration-tests.outputs.has_standard_tests == 'true'
-    needs: [discover-integration-tests, build-integration-image, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.standard_matrix) }}
@@ -533,6 +579,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
       PYTHONPATH: .:src
@@ -567,6 +614,7 @@ jobs:
             export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
             export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
             export WINEPREFIX=/opt/wine
@@ -589,7 +637,7 @@ jobs:
   integration-test-heavy:
     runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') }}
     if: needs.discover-integration-tests.outputs.has_heavy_tests == 'true'
-    needs: [discover-integration-tests, build-integration-image, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.heavy_matrix) }}
@@ -599,6 +647,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
       PYTHONPATH: .:src
@@ -626,6 +675,7 @@ jobs:
             export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
             export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
             export WINEPREFIX=/opt/wine
@@ -647,10 +697,10 @@ jobs:
 
   backend-smoke-test:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage, build-integration-image]
+    needs: [unit-test, lint, coverage, build-java-runtime]
     env:
       PYTHONPATH: .:src
-      ALPHAGSM_BACKEND_DOCKER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE: ${{ needs.build-java-runtime.outputs.image }}
     name: backend-smoke-test
     steps:
       - name: Checkout AlphaGSM code
@@ -703,8 +753,9 @@ jobs:
 
   backend-integration-test:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage, build-integration-image, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [unit-test, lint, coverage, build-integration-image, build-java-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
       PYTHONPATH: .:src
@@ -756,12 +807,12 @@ jobs:
         if: always()
         env:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
-          ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
           ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
-          ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+          ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-java-runtime.outputs.image }}
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="ghcr.io/${owner}/alphagsm-java-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="${{ needs.build-java-runtime.outputs.image }}"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="ghcr.io/${owner}/alphagsm-quake-linux-runtime:latest"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE="ghcr.io/${owner}/alphagsm-service-console-runtime:latest"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="ghcr.io/${owner}/alphagsm-simple-tcp-runtime:latest"
