@@ -2966,6 +2966,16 @@ def test_unittest_workflow_keeps_backend_and_cross_platform_jobs_unconditional()
 def test_unittest_workflow_frees_runner_disk_before_linux_smoke_batches():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-    assert "Free runner disk space for large Docker smoke coverage" in text
-    assert "sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/share/swift" in text
-    assert "df -h /" in text
+    smoke_standard_section = text.split("  smoke-test-standard:")[1].split("  smoke-test-heavy:")[0]
+    smoke_heavy_section = text.split("  smoke-test-heavy:")[1].split("  build-steamcmd-linux-runtime:")[0]
+    lint_section = text.split("  lint:")[1].split("  unit-test:")[0]
+    unit_test_section = text.split("  unit-test:")[1].split("  coverage:")[0]
+
+    for section in (smoke_standard_section, smoke_heavy_section):
+        assert "Free runner disk space for large Docker smoke coverage" in section
+        assert "sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/share/swift" in section
+        assert "sudo docker system prune -af || true" in section
+        assert "df -h /" in section
+
+    assert "Free runner disk space for large Docker smoke coverage" not in lint_section
+    assert "Free runner disk space for large Docker smoke coverage" not in unit_test_section
