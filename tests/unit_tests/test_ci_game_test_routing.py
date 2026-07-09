@@ -2955,5 +2955,9 @@ def test_unittest_workflow_keeps_backend_and_cross_platform_jobs_unconditional()
     assert "backend-integration-test:" in text
     assert "windows-minecraft-integration:" in text
     assert "macos-minecraft-integration:" in text
-    assert "needs: [unit-test, lint, coverage, build-integration-image]" in text
+    assert "needs: [unit-test, lint, coverage, build-java-runtime]" in text
+    assert (
+        "needs: [unit-test, lint, coverage, build-integration-image, "
+        "build-java-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]"
+    ) in text
     assert "needs: [unit-test, lint, coverage]" in text
