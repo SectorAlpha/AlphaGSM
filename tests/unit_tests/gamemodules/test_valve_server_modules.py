@@ -58,6 +58,42 @@ def test_source_module_start_command_prefers_nested_resolved_launcher(tmp_path):
     assert cwd == str(nested_dir)
 
 
+def test_source_module_start_command_prefers_install_tree_srcds_linux64(tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    module.configure(server, False, 28015, str(tmp_path / "css"))
+    install_dir = tmp_path / "css"
+    bin_dir = install_dir / "bin"
+    bin_dir.mkdir(parents=True)
+    (install_dir / "srcds_run").write_text("", encoding="utf-8")
+    (bin_dir / "srcds_linux64").write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[:4] == ["./srcds_linux64", "-game", "cstrike", "-strictportbind"]
+    assert cwd == str(bin_dir)
+    assert server.data["exe_name"] == "srcds_linux64"
+
+
+def test_goldsrc_module_start_command_prefers_install_tree_hlds_linux(tmp_path):
+    module = importlib.import_module("gamemodules.csserver")
+    server = SimpleNamespace(name="csalpha", data={})
+
+    module.configure(server, False, 27015, str(tmp_path / "cs"))
+    install_dir = tmp_path / "cs"
+    bin_dir = install_dir / "bin"
+    bin_dir.mkdir(parents=True)
+    (install_dir / "hlds_run").write_text("", encoding="utf-8")
+    (bin_dir / "hlds_linux").write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[:4] == ["./hlds_linux", "-game", "cstrike", "-strictportbind"]
+    assert cwd == str(bin_dir)
+    assert server.data["exe_name"] == "hlds_linux"
+
+
 def test_goldsrc_module_update_uses_mod_aware_steamcmd(monkeypatch, tmp_path):
     module = importlib.import_module("gamemodules.csserver")
     steamcmd_module = importlib.import_module("utils.steamcmd")
@@ -148,6 +184,22 @@ def test_valve_module_install_updates_server_cfg_from_settings(monkeypatch, tmp_
     cfg_text = cfg_path.read_text()
     assert 'hostname "Configured CSS"' in cfg_text
     assert "sv_pure 1" in cfg_text
+
+
+def test_goldsrc_install_normalizes_hlds_run_line_endings(monkeypatch, tmp_path):
+    module = importlib.import_module("gamemodules.csserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    monkeypatch.setattr(valve_server.steamcmd, "download", lambda *args, **kwargs: None)
+    launcher_path = tmp_path / "hlds_run"
+    launcher_path.write_bytes(b"#!/bin/sh\r\necho hi\r\n")
+    server = SimpleNamespace(
+        name="csalpha",
+        data={"dir": str(tmp_path) + "/", "exe_name": "hlds_run", "server_cfg": "server.cfg"},
+    )
+
+    module.install(server)
+
+    assert launcher_path.read_bytes() == b"#!/bin/sh\necho hi\n"
 
 
 def test_valve_module_exposes_schema_and_sync_helpers():

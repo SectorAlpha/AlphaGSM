@@ -466,6 +466,35 @@ def _get_int_setting(module_settings, key, default):
     return int(value)
 
 
+def _valve_launcher_candidates(*, engine, default_executable, configured_executable):
+    """Return preferred launcher candidates for shared Valve-engine modules."""
+
+    candidates = []
+    if configured_executable and configured_executable != default_executable:
+        candidates.append(configured_executable)
+
+    if engine == "source" and default_executable == "srcds_run":
+        candidates.extend(("srcds_linux64", "srcds_run_64", "srcds_run"))
+    elif engine == "goldsrc" and default_executable == "hlds_run":
+        candidates.extend(("hlds_linux", "hlds_run"))
+    elif default_executable:
+        candidates.append(default_executable)
+
+    if configured_executable and configured_executable not in candidates:
+        candidates.append(configured_executable)
+    if default_executable and default_executable not in candidates:
+        candidates.append(default_executable)
+
+    ordered = []
+    seen = set()
+    for candidate in candidates:
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        ordered.append(candidate)
+    return ordered
+
+
 def define_valve_server_module(
     *,
     game_name,
@@ -506,6 +535,29 @@ def define_valve_server_module(
         if config_subdir:
             cfg_dir = os.path.join(cfg_dir, config_subdir)
         return cfg_dir, os.path.join(cfg_dir, server.data["server_cfg"])
+
+    def _resolve_preferred_launcher(server):
+        """Resolve the best available Valve launcher from the install tree."""
+
+        configured_executable = server.data.get("exe_name")
+        last_error = None
+        for candidate in _valve_launcher_candidates(
+            engine=engine,
+            default_executable=executable,
+            configured_executable=configured_executable,
+        ):
+            try:
+                exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(
+                    server,
+                    exe_name=candidate,
+                )
+            except ServerError as exc:
+                last_error = exc
+                continue
+            return candidate, exe_path, launcher, working_dir
+        if last_error is not None:
+            raise last_error
+        raise ServerError("Executable file not found")
 
     def _quote_config_value(value):
         """Return a Source-style quoted config value."""
@@ -637,14 +689,25 @@ def define_valve_server_module(
         module_settings = _get_module_settings(module_name)
 
         doinstall(server)
-        if server.data["exe_name"] == "srcds_run" and os.path.isfile(server.data["dir"] + "srcds_run_64"):
-            server.data["exe_name"] = "srcds_run_64"
+        try:
+            selected_executable, _exe_path, _launcher, _working_dir = _resolve_preferred_launcher(
+                server
+            )
+        except ServerError:
+            selected_executable = None
+        if selected_executable is not None and server.data.get("exe_name") != selected_executable:
+            server.data["exe_name"] = selected_executable
         _write_runtime_steam_appid(server, runtime_app_id)
 
         # Strip Windows CRLF line endings from srcds startup scripts.  Some
         # older games (e.g. Insurgency) ship srcds_run with \r\n endings which
         # prevents the kernel from executing the script on Linux.
-        for _script in ("srcds_run", "srcds_run.sh", os.path.join("bin", "srcds_run.sh")):
+        for _script in (
+            "srcds_run",
+            "srcds_run.sh",
+            os.path.join("bin", "srcds_run.sh"),
+            "hlds_run",
+        ):
             _path = os.path.join(server.data["dir"], _script)
             if os.path.isfile(_path):
                 with open(_path, "rb") as _fh:
@@ -737,15 +800,10 @@ def define_valve_server_module(
     def get_start_command(server):
         """Build the start command for this Valve-engine server."""
 
-        exe_name = server.data["exe_name"]
-        if exe_name == "srcds_run":
-            for candidate in ("srcds_run_64", "srcds_run"):
-                if os.path.isfile(server.data["dir"] + candidate):
-                    exe_name = candidate
-                    server.data["exe_name"] = candidate
-                    _save_data_store(server)
-                    break
-        _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server, exe_name=exe_name)
+        exe_name, _exe_path, launcher, working_dir = _resolve_preferred_launcher(server)
+        if server.data.get("exe_name") != exe_name:
+            server.data["exe_name"] = exe_name
+            _save_data_store(server)
 
         cmd = [
             launcher,
