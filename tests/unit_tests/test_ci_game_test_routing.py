@@ -2970,6 +2970,7 @@ def test_unittest_workflow_frees_runner_disk_before_linux_smoke_batches():
     smoke_heavy_section = text.split("  smoke-test-heavy:")[1].split("  build-steamcmd-linux-runtime:")[0]
     lint_section = text.split("  lint:")[1].split("  unit-test:")[0]
     unit_test_section = text.split("  unit-test:")[1].split("  coverage:")[0]
+    coverage_section = text.split("  coverage:")[1].split("  binary-build-smoke:")[0]
 
     for section in (smoke_standard_section, smoke_heavy_section):
         assert "Free runner disk space for large Docker smoke coverage" in section
@@ -2979,3 +2980,4 @@ def test_unittest_workflow_frees_runner_disk_before_linux_smoke_batches():
 
     assert "Free runner disk space for large Docker smoke coverage" not in lint_section
     assert "Free runner disk space for large Docker smoke coverage" not in unit_test_section
+    assert "Free runner disk space for large Docker smoke coverage" not in coverage_section

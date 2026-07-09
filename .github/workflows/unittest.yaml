@@ -86,12 +86,6 @@ jobs:
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
-      - name: Free runner disk space for large Docker smoke coverage
-        run: |
-          df -h /
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/share/swift
-          sudo docker system prune -af || true
-          df -h /
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
