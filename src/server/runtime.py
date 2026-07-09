@@ -1376,6 +1376,19 @@ def _get_configured_runtime_name():
     return configured
 
 
+def _ci_runtime_image_override(family):
+    """Return the GitHub CI runtime-image override for *family*, if any."""
+
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return ""
+
+    family_key = "ALPHAGSM_BACKEND_DOCKER_IMAGE_" + str(family or "").upper().replace("-", "_")
+    return (
+        os.environ.get(family_key, "").strip()
+        or os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE", "").strip()
+    )
+
+
 def resolve_runtime_metadata(server):
     """Resolve the effective runtime metadata for *server*."""
 
@@ -1419,6 +1432,11 @@ def resolve_runtime_metadata(server):
     metadata.setdefault("env", {})
     metadata.setdefault("mounts", [])
     metadata.setdefault("ports", [])
+
+    default_image = defaults.get("image", "")
+    override_image = _ci_runtime_image_override(metadata.get("runtime_family"))
+    if override_image and metadata.get("image", "") in ("", default_image):
+        metadata["image"] = override_image
 
     if (
         metadata.get("runtime_family") == "java"

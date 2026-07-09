@@ -64,6 +64,55 @@ def test_resolve_runtime_metadata_uses_family_defaults_and_java_alias(monkeypatc
     assert metadata["ports"] == []
 
 
+@pytest.mark.parametrize(
+    ("family", "override_env", "override_image"),
+    (
+        ("steamcmd-linux", "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX", "ghcr.io/example/steamcmd:ci"),
+        ("java", "ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA", "ghcr.io/example/java:ci"),
+    ),
+)
+def test_resolve_runtime_metadata_uses_ci_family_image_override_when_image_is_default(
+    monkeypatch, family, override_env, override_image
+):
+    _set_runtime_backend(monkeypatch, "docker")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv(override_env, override_image)
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": family,
+        }
+    )
+    server = DummyServer(module=module)
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+
+    assert metadata["image"] == override_image
+
+
+def test_resolve_runtime_metadata_keeps_explicit_image_over_ci_family_override(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX",
+        "ghcr.io/example/steamcmd:ci",
+    )
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda server: {
+            "engine": "docker",
+            "family": "steamcmd-linux",
+        }
+    )
+    server = DummyServer(
+        module=module,
+        data={"image": "ghcr.io/example/steamcmd:explicit"},
+    )
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+
+    assert metadata["image"] == "ghcr.io/example/steamcmd:explicit"
+
+
 def test_resolve_runtime_metadata_preserves_explicit_container_name(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     module = SimpleNamespace(
