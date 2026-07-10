@@ -54,6 +54,8 @@ def test_write_config_keeps_downloads_under_home_when_work_dir_is_set(tmp_path, 
     assert "backend = process" in text
     assert "[process]" in text
     assert "[docker]" in text
+    assert "[downloader.steamcmd]" in text
+    assert f"steamcmd_path = {shared_root / 'steamcmd'}" in text
 
 
 def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypatch):
@@ -73,6 +75,8 @@ def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypa
     assert "backend = process" in text
     assert "[process]" in text
     assert "[docker]" in text
+    assert "[downloader.steamcmd]" in text
+    assert f"steamcmd_path = {shared_root / 'steamcmd'}" in text
 
 
 def test_write_config_auto_prefers_docker_for_explicit_container_modules(

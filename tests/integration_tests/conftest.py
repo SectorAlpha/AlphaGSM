@@ -403,16 +403,26 @@ def write_config(
         module_name=module_name,
         servermodulespackage=servermodulespackage,
     )
-    config_path.write_text(
-        "\n".join([
-            "[core]",
-            f"alphagsm_path = {home_dir}",
-            f"userconf = {home_dir}",
-            "",
-            "[downloader]",
-            f"db_path = {db_path}",
-            f"target_path = {target_path}",
-            "",
+    config_lines = [
+        "[core]",
+        f"alphagsm_path = {home_dir}",
+        f"userconf = {home_dir}",
+        "",
+        "[downloader]",
+        f"db_path = {db_path}",
+        f"target_path = {target_path}",
+        "",
+    ]
+    if work_dir:
+        config_lines.extend(
+            [
+                "[downloader.steamcmd]",
+                f"steamcmd_path = {Path(work_dir).expanduser() / 'steamcmd'}",
+                "",
+            ]
+        )
+    config_lines.extend(
+        [
             "[server]",
             f"datapath = {home_dir / 'conf'}",
             f"servermodulespackage = {servermodulespackage}",
@@ -431,8 +441,9 @@ def write_config(
             f"sessiontag = {session_tag}",
             "keeplogs = 1",
             "",
-        ]) + "\n"
+        ]
     )
+    config_path.write_text("\n".join(config_lines) + "\n")
 
 
 def alphagsm_env(config_path):

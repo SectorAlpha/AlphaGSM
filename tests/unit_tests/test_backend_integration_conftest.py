@@ -68,6 +68,27 @@ def test_alphagsm_env_includes_repo_root_and_src(tmp_path):
     assert str(backend_conftest.REPO_ROOT / "src") in pythonpath_entries
 
 
+def test_build_backend_tmp_path_uses_work_dir_override(monkeypatch, tmp_path_factory, tmp_path):
+    work_dir = tmp_path / "work-root"
+    monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(work_dir))
+
+    path = backend_conftest.build_backend_tmp_path("docker-case", tmp_path_factory)
+
+    assert path.parent == work_dir / "pytest-backend-integration"
+    assert path.name.startswith("docker-case-")
+    assert path.is_dir()
+
+
+def test_build_backend_tmp_path_defaults_to_shared_tmp_root(monkeypatch, tmp_path_factory):
+    monkeypatch.delenv("ALPHAGSM_WORK_DIR", raising=False)
+
+    path = backend_conftest.build_backend_tmp_path("docker-case", tmp_path_factory)
+
+    assert path.parent == backend_conftest.DEFAULT_BACKEND_WORK_DIR / "pytest-backend-integration"
+    assert path.name.startswith("docker-case-")
+    assert path.is_dir()
+
+
 def test_load_server_data_reads_expected_json(tmp_path):
     home_dir = tmp_path / "home"
     conf_dir = home_dir / "conf"

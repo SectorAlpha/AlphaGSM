@@ -14,6 +14,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 import pytest
@@ -21,6 +22,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 STATUS_HELPER = REPO_ROOT / "tests" / "smoke_tests" / "minecraft_status.py"
+DEFAULT_BACKEND_WORK_DIR = Path("/tmp/alphagsm-work")
 
 BACKEND_TEST_TIMEOUT = 1200  # 20 minutes per test
 MINECRAFT_RELEASE_ID_ENV = "ALPHAGSM_MINECRAFT_RELEASE_ID"
@@ -147,6 +149,33 @@ def _alphagsm_env(config_path):
         ]
     )
     return env
+
+
+def build_backend_tmp_path(test_name, _tmp_path_factory):
+    """Return a host-visible temp directory root for a backend integration test."""
+
+    del _tmp_path_factory
+    work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
+    root = (
+        Path(work_dir).expanduser()
+        if work_dir
+        else DEFAULT_BACKEND_WORK_DIR
+    ) / "pytest-backend-integration"
+    root.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix=f"{test_name}-", dir=str(root)))
+
+
+@pytest.fixture
+def tmp_path(request, tmp_path_factory):
+    """Create and clean backend temp dirs under the shared work root."""
+
+    path = build_backend_tmp_path(request.node.name, tmp_path_factory)
+    try:
+        yield path
+    finally:
+        if os.environ.get("ALPHAGSM_KEEP_BACKEND_TMP") == "1":
+            return
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def _write_java_wrapper(wrapper_path, *java_args):
