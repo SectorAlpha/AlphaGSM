@@ -30,13 +30,15 @@ class DummyServer:
 
 def test_abfserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("abf")
-    exe = tmp_path / "AbioticFactorServer.sh"
+    exe = tmp_path / "AbioticFactor/Binaries/Win64/AbioticFactorServer-Win64-Shipping.exe"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "AbioticFactorServer.sh", "world": "abf", "port": 7777, "queryport": "27016"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "AbioticFactor/Binaries/Win64/AbioticFactorServer-Win64-Shipping.exe", "world": "abf", "port": 7777, "queryport": "27016"})
 
-    cmd, cwd = abfserver.get_start_command(server)
+    with patch.object(abfserver, "IS_LINUX", False):
+        cmd, cwd = abfserver.get_start_command(server)
 
-    assert cmd == ["./AbioticFactorServer.sh", "abf", "-Port=7777", "-QueryPort=27016"]
+    assert cmd == ["AbioticFactor/Binaries/Win64/AbioticFactorServer-Win64-Shipping.exe", "-log", "-newconsole", "-useperfthreads", "-NoAsyncLoadingThread", "-WorldSaveName=abf", "-Port=7777", "-QueryPort=27016"]
     assert cwd == server.data["dir"]
 
 
@@ -106,7 +108,7 @@ def test_recent_modules_update_downloads_and_optionally_restart(monkeypatch):
     vrserver.update(vr, validate=False, restart=False)
     seserver.update(se, validate=False, restart=False)
 
-    assert ("/srv/abf/", 2857200, True, True, {}) in calls
+    assert ("/srv/abf/", 2857200, True, True, {"force_windows": True}) in calls
     assert ("/srv/vr/", 1829350, True, False, {"force_windows": True}) in calls
     assert ("/srv/se/", 298740, True, False, {"force_windows": True}) in calls
     assert abf.start_calls == 1

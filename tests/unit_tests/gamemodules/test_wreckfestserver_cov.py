@@ -21,32 +21,7 @@ with patch.dict(
     mod.runtime_module.send_to_server = MagicMock()
 
 
-class DummyData(dict):
-    """Minimal datastore stub for module tests."""
-
-    def save(self):
-        return None
-
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-
-
-class DummyServer:
-    """Minimal server stub for module tests."""
-
-    def __init__(self, name="testwreck"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-
-    def stop(self):
-        self._stopped = True
-
-    def start(self):
-        self._started = True
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 
 def test_configure_sets_wreckfest_defaults(tmp_path):

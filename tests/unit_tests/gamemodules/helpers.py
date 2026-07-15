@@ -2,8 +2,12 @@
 
 
 class DummyData(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.saved = 0
+
     def save(self):
-        pass
+        self.saved += 1
 
     def setdefault(self, key, value=None):
         if key not in self:

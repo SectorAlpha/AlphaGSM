@@ -204,6 +204,38 @@ def test_get_info_address_matches_runtime_resolved_query_host():
     assert resolve_query_host.call_args_list == [((server,),), ((server,),)]
 
 
+def test_get_container_spec_publishes_game_and_a2s_ports(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "steamcmd_module",
+        type("SteamCmd", (), {"STEAMCMD_DIR": str(tmp_path / "Steam")}),
+    )
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "valheim_server.x86_64",
+            "port": 2456,
+            "queryport": 2457,
+            "servername": "AlphaGSM valheim",
+            "serverpassword": "alphagsm",
+            "worldname": "testworld",
+            "public": "0",
+        }
+    )
+    (tmp_path / "valheim_server.x86_64").write_text("", encoding="utf-8")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert {(port["host"], port["container"], port["protocol"]) for port in spec["ports"]} == {
+        (2456, 2456, "udp"),
+        (2456, 2456, "tcp"),
+        (2457, 2457, "udp"),
+        (2457, 2457, "tcp"),
+    }
+
+
 def test_backup():
     server = DummyServer()
     server.data["dir"] = "/tmp/test/"

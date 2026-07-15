@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 LIFE_IS_FEUDAL_SMOKE = Path("tests/smoke_tests/run_lifeisfeudalserver.sh")
+PALWORLD_SMOKE = Path("tests/smoke_tests/run_palworld.sh")
 SCUM_SMOKE = Path("tests/smoke_tests/run_scumserver.sh")
 
 
@@ -28,5 +29,12 @@ def test_scum_smoke_uses_shared_work_root_and_start_retry_contract():
 
     assert 'WORK_ROOT="$(resolve_work_root)"' in text
     assert 'WORK_DIR="$(mktemp -d -p "$WORK_ROOT" scumserver-smoke.XXXXXX)"' in text
+    assert 'run_start_with_port_retry "$SERVER_NAME"' in text
+    assert 'run_alphagsm "$SERVER_NAME" start' not in text
+
+
+def test_palworld_smoke_uses_shared_start_retry_contract():
+    text = PALWORLD_SMOKE.read_text(encoding="utf-8")
+
     assert 'run_start_with_port_retry "$SERVER_NAME"' in text
     assert 'run_alphagsm "$SERVER_NAME" start' not in text

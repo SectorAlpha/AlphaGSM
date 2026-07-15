@@ -6,17 +6,7 @@ import pytest
 
 import gamemodules.ut3server as mod
 from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-
-
-class DummyServer:
-    def __init__(self, name="ut3test"):
-        self.name = name
-        self.data = DummyData()
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 
 def test_configure_basic(tmp_path):

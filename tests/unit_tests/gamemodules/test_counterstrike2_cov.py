@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from utils.simple_kv_config import rewrite_space_config
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys_modules_patch = {
     "downloader": MagicMock(),
@@ -15,21 +16,6 @@ sys_modules_patch = {
 
 with patch.dict("sys.modules", sys_modules_patch):
     import gamemodules.counterstrike2 as mod
-
-
-class DummyData(dict):
-    def __init__(self):
-        super().__init__()
-        self.saved = 0
-
-    def save(self):
-        self.saved += 1
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
 
 
 def test_configure_sets_expected_defaults(tmp_path):

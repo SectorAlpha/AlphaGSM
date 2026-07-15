@@ -36,6 +36,9 @@ either:
 - stage `q4ded.x86` and the rest of the Quake 4 server files inside your
   chosen `<install_dir>/`
 
+The historical default archive URL is no longer available. Use a verified
+operator-supplied archive URL or stage the server tree and required game data.
+
 Start it:
 
 ```bash

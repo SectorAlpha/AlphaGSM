@@ -6,21 +6,11 @@ import pytest
 
 import gamemodules.sof2server as mod
 from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-
-
-class DummyServer:
-    def __init__(self, name="sof2"):
-        self.name = name
-        self.data = DummyData()
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 
 def test_configure_basic(tmp_path):
-    server = DummyServer()
+    server = DummyServer("sof2")
     mod.configure(server, ask=False, port=20100, dir=str(tmp_path))
     assert server.data["port"] == 20100
     assert server.data["exe_name"] == "sof2ded"

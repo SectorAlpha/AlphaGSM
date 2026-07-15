@@ -302,6 +302,56 @@ def test_build_container_spec_maps_nested_host_workdir_into_container(tmp_path):
     assert spec["command"] == ["./PalServer.sh", "-port=8211"]
 
 
+def test_build_container_spec_recovers_nested_executable_from_install_root(tmp_path):
+    install_root = tmp_path / "valheim"
+    nested_dir = install_root / "linux64"
+    nested_dir.mkdir(parents=True)
+    exe = nested_dir / "valheim_server.x86_64"
+    exe.write_text("", encoding="utf-8")
+    server = DummyServer(
+        data={"dir": str(install_root) + "/", "exe_name": "valheim_server.x86_64", "port": 2456}
+    )
+
+    spec = runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
+        get_start_command=lambda _current_server: (
+            ["./valheim_server.x86_64", "-port", "2456"],
+            str(install_root),
+        ),
+        port_definitions=(("port", "udp"),),
+    )
+
+    assert spec["working_dir"] == "/srv/server/linux64"
+    assert spec["command"] == ["./valheim_server.x86_64", "-port", "2456"]
+
+
+def test_build_container_spec_prefers_shallowest_nested_executable_match(tmp_path):
+    install_root = tmp_path / "valheim"
+    nested_dir = install_root / "linux64"
+    deeper_dir = install_root / "debug" / "linux64"
+    nested_dir.mkdir(parents=True)
+    deeper_dir.mkdir(parents=True)
+    (nested_dir / "valheim_server.x86_64").write_text("", encoding="utf-8")
+    (deeper_dir / "valheim_server.x86_64").write_text("", encoding="utf-8")
+    server = DummyServer(
+        data={"dir": str(install_root) + "/", "exe_name": "valheim_server.x86_64", "port": 2456}
+    )
+
+    spec = runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
+        get_start_command=lambda _current_server: (
+            ["./valheim_server.x86_64", "-port", "2456"],
+            str(install_root),
+        ),
+        port_definitions=(("port", "udp"),),
+    )
+
+    assert spec["working_dir"] == "/srv/server/linux64"
+    assert spec["command"] == ["./valheim_server.x86_64", "-port", "2456"]
+
+
 def test_build_container_spec_maps_external_launcher_workdir_into_added_mount(tmp_path, monkeypatch):
     monkeypatch.setattr(runtime_module, "_steamcmd_sdk_mounts", lambda: [])
     server_root = tmp_path / "server"
@@ -331,6 +381,40 @@ def test_build_container_spec_maps_external_launcher_workdir_into_added_mount(tm
         {"source": str(cache_root), "target": str(cache_root), "mode": "ro"},
     ]
     assert spec["command"] == ["./DedicatedServerCmd"]
+
+
+def test_get_container_spec_remaps_recovered_host_workdir_back_into_container(monkeypatch, tmp_path):
+    _set_runtime_backend(monkeypatch, "docker")
+    install_root = tmp_path / "valheim"
+    nested_dir = install_root / "linux64"
+    nested_dir.mkdir(parents=True)
+    (nested_dir / "valheim_server.x86_64").write_text("", encoding="utf-8")
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda _server: {
+            "engine": "docker",
+            "family": "steamcmd-linux",
+            "mounts": [
+                {"source": str(install_root) + "/", "target": "/srv/server", "mode": "rw"}
+            ],
+        },
+        get_container_spec=lambda _server: {
+            "working_dir": "/srv/server",
+            "mounts": [
+                {"source": str(install_root) + "/", "target": "/srv/server", "mode": "rw"}
+            ],
+            "ports": [],
+            "command": ["./valheim_server.x86_64", "-port", "2456"],
+        },
+    )
+    server = DummyServer(
+        module=module,
+        data={"dir": str(install_root) + "/", "exe_name": "valheim_server.x86_64", "port": 2456},
+    )
+
+    spec = runtime_module.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server/linux64"
+    assert spec["command"] == ["./valheim_server.x86_64", "-port", "2456"]
 
 
 def test_get_container_spec_mounts_external_symlinked_parent_for_executable(tmp_path, monkeypatch):

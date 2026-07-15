@@ -20,8 +20,10 @@ import shutil
 import subprocess as sp
 import sys
 
+from server import ServerError
 import screen
 from utils.settings import settings
+from utils.gamemodules import common as gamemodule_common
 from utils import proton
 from utils import steamcmd as steamcmd_module
 from utils.platform_info import PLATFORM
@@ -1109,6 +1111,36 @@ def _map_host_path_into_container(mounts, host_path):
     return None
 
 
+def _map_container_path_to_host(mounts, container_path):
+    """Return the host path for *container_path* when it is mounted."""
+
+    if not container_path:
+        return None
+
+    container_path_abs = os.path.abspath(container_path)
+    for mount in mounts or ():
+        if isinstance(mount, dict):
+            source = mount.get("source")
+            target = mount.get("target")
+        else:
+            source, _sep, remainder = str(mount).partition(":")
+            target, _sep, _mode = remainder.partition(":")
+        if not source or not target:
+            continue
+        target_abs = os.path.abspath(str(target))
+        try:
+            if os.path.commonpath([target_abs, container_path_abs]) != target_abs:
+                continue
+        except ValueError:
+            continue
+        relative_path = os.path.relpath(container_path_abs, target_abs)
+        source_abs = os.path.abspath(source)
+        if relative_path == ".":
+            return source_abs
+        return os.path.join(source_abs, relative_path)
+    return None
+
+
 def resolve_container_launch_context(server, *, mounts=None, command=None, cwd=None):
     """Normalize Docker launch context for commands that may escape the server root."""
 
@@ -1209,16 +1241,56 @@ def _configured_external_executable_path(server):
     return real_path
 
 
+def _recover_mounted_install_executable_path(server, mounts, command, cwd):
+    """Return a nested install-tree executable path when cwd/command miss it."""
+
+    server_dir = server.data.get("dir")
+    exe_name = os.path.basename(str(server.data.get("exe_name", "")))
+    if not server_dir or not exe_name or not command:
+        return None
+
+    command_index = 0
+    while command_index < len(command) and str(command[command_index]) == "env":
+        command_index += 1
+        while command_index < len(command) and "=" in str(command[command_index]):
+            command_index += 1
+    if command_index >= len(command):
+        return None
+
+    current_executable = str(command[command_index])
+    if os.path.basename(current_executable) != exe_name:
+        return None
+    normalized_executable = current_executable.replace("\\", "/")
+    if normalized_executable not in {exe_name, "./" + exe_name}:
+        return None
+
+    host_cwd = _map_container_path_to_host(mounts, cwd) or cwd or server_dir
+    candidate_path = os.path.abspath(os.path.join(host_cwd, current_executable))
+    if os.path.isfile(candidate_path):
+        return None
+
+    try:
+        return os.path.abspath(
+            gamemodule_common.resolve_install_executable(
+                server,
+                exe_name=exe_name,
+                install_dir=server_dir,
+            )
+        )
+    except ServerError:  # pragma: no cover - shared helper normalizes the miss path.
+        return None
+
+
 def _rewrite_external_launcher_context(server, mounts, command, cwd):
     """Rewrite launcher context when the configured executable escapes the mount root."""
 
     real_path = _configured_external_executable_path(server)
     if real_path is None:
+        real_path = _recover_mounted_install_executable_path(server, mounts, command, cwd)
+    if real_path is None:
         return command, cwd
 
-    mapped_cwd = _map_host_path_into_container(mounts, os.path.dirname(real_path))
-    if mapped_cwd is None:
-        mapped_cwd = os.path.dirname(real_path)
+    mapped_cwd = os.path.dirname(real_path)
 
     rewritten_command = list(command or [])
     if rewritten_command:
@@ -1707,6 +1779,11 @@ def get_container_spec(server, *args, **kwargs):
         merged.get("command"),
         merged.get("working_dir"),
     )
+    mapped_working_dir = _map_host_path_into_container(
+        merged["mounts"], merged.get("working_dir")
+    )
+    if mapped_working_dir is not None:
+        merged["working_dir"] = mapped_working_dir
     return merged
 
 

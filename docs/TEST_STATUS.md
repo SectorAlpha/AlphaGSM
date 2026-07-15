@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-06-27
+Last updated: 2026-07-15
 
 ## Summary
 
@@ -291,8 +291,8 @@ URLs.
 
 | Test | Reason |
 |------|--------|
-| abfserver | SteamCMD app 2857200 returns Invalid platform on Linux. |
-| bobserver | SteamCMD app 882430 download timeout; likely too large for automated CI testing. |
+| abfserver | Windows-only SteamCMD app 2857200 is now staged with the forced-Windows payload and shared Wine/Proton runtime; remains disabled pending fresh GitHub Docker lifecycle validation. |
+| bobserver | Prior CI runs timed out while downloading SteamCMD app 882430; the integration test now allows 30 minutes, uses the documented `LinuxServer/BeastsOfBermudaServer.sh` launcher path and arguments, and no longer permanently skips the failure, but the module remains disabled pending fresh GitHub CI validation. |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 
 ## SKIPPED (0)

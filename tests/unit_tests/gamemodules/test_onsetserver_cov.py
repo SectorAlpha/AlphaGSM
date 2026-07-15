@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
 
 sys.modules.pop("gamemodules.onsetserver", None)
 sys.modules.pop("gamemodules.onsetserver.main", None)
@@ -24,33 +26,8 @@ with patch.dict(
     from server import ServerError
 
 
-class DummyData(dict):
-    def save(self):
-        pass
-
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="itonsetserver"):
-        self.name = name
-        self.data = DummyData()
-
-    def stop(self):
-        return None
-
-    def start(self):
-        return None
-
-
 def test_configure_sets_expected_defaults(tmp_path):
-    server = DummyServer()
+    server = DummyServer("itonsetserver")
 
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
 

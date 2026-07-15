@@ -2,11 +2,11 @@
 
 This guide covers the `bobserver` module in AlphaGSM.
 
-`bobserver` is currently `DISABLED` in the checked-in support tracker. The
-current blocker is CI/runtime practicality rather than a known permanent game
-bug: SteamCMD app `882430` still times out during the automated install flow,
-so AlphaGSM keeps the module hard-disabled until that large-download path is
-validated cleanly on the documented Ubuntu 24.04 Linux baseline.
+`bobserver` is currently `DISABLED` in the checked-in support tracker. Prior
+CI runs timed out during the large SteamCMD app `882430` download; the
+integration test now allows 30 minutes and leaves that failure visible rather
+than permanently skipping it. AlphaGSM keeps the module hard-disabled until a
+fresh GitHub CI run validates the install and lifecycle on Ubuntu 24.04.
 
 ## Requirements
 
@@ -50,7 +50,9 @@ alphagsm mybobserve stop
 
 Setup configures:
 
-- the game port (default 7778)
+- the game port (default 7777)
+- the query port (default 27015)
+- the `Test_Performance` map by default
 - the install directory
 - SteamCMD downloads the server files
 
@@ -64,16 +66,20 @@ alphagsm mybobserve backup
 ## Notes
 
 - Module name: `bobserver`
-- Default port: 7778
+- Default game port: 7777
+- Default query port: 27015
 
 ## Developer Notes
 
 ### Run File
 
 - **Executable**: `BeastsOfBermudaServer.sh`
-- **Location**: `<install_dir>/BeastsOfBermudaServer.sh`
+- **Location**: `<install_dir>/LinuxServer/BeastsOfBermudaServer.sh`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `882430`
+
+The launcher receives the documented `-Port=`, `-QueryPort=`, `-SessionName`,
+`-MapName`, and optional `-ServerPassword` arguments.
 
 ### Server Configuration
 

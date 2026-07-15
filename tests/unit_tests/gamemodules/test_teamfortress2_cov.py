@@ -1,12 +1,12 @@
 """Full coverage tests for teamfortress2."""
 
 import importlib
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
 from utils.simple_kv_config import rewrite_space_config
 
 sys.modules.pop('gamemodules.teamfortress2', None)
@@ -15,29 +15,6 @@ with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock()
     import gamemodules.teamfortress2 as mod
     from server import ServerError
     mod.runtime_module.send_to_server = MagicMock()
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def _tf2_package_root():

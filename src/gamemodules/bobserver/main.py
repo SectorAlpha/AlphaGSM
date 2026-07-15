@@ -33,8 +33,19 @@ setting_schema = {
 max_stop_wait = 1
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="BeastsOfBermudaServer.sh"):
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    exe_name="LinuxServer/BeastsOfBermudaServer.sh",
+):
     """Collect and store configuration values for a Beasts of Bermuda server."""
+
+    # Migrate the old stock basename, but preserve any operator-selected path.
+    if server.data.get("exe_name") == "BeastsOfBermudaServer.sh":
+        server.data["exe_name"] = exe_name
 
     gamemodule_common.set_steam_install_metadata(
         server,
@@ -44,9 +55,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="BeastsOfBermudaServ
     gamemodule_common.set_server_defaults(
         server,
         {
-            "queryport": "7778",
+            "queryport": "27015",
             "servername": "AlphaGSM %s" % (server.name,),
-            "worldname": server.name,
+            "worldname": "Test_Performance",
             "password": "",
         },
     )
@@ -101,17 +112,16 @@ def get_start_command(server):
     command = [
         "./" + server.data["exe_name"],
         "-log",
-        "-port",
-        str(server.data["port"]),
-        "-queryport",
-        str(server.data["queryport"]),
-        "-servername",
-        server.data["servername"],
-        "-world",
-        server.data["worldname"],
+        "-NoVerifyGC",
+        "-Port=" + str(server.data["port"]),
+        "-QueryPort=" + str(server.data["queryport"]),
+        "-SessionName",
+        str(server.data["servername"]).replace(" ", "_"),
+        "-MapName",
+        str(server.data["worldname"]),
     ]
     if server.data["password"]:
-        command.extend(["-password", server.data["password"]])
+        command.extend(["-ServerPassword", server.data["password"]])
     return (command, server.data["dir"])
 
 

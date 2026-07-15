@@ -299,6 +299,14 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
     "tests/integration_tests/test_nmrihserver.py",
 )
 SOURCE_FAMILY_BACKLOG = set()
+DOCKER_DEFAULT_RUNTIME_TESTS = {
+    "tests/integration_tests/test_archive_backed_installs.py",
+    "tests/integration_tests/test_ark.py",
+    "tests/integration_tests/test_arksurvivalascended.py",
+    "tests/integration_tests/test_astroneerserver.py",
+    "tests/integration_tests/test_atlasserver.py",
+    "tests/integration_tests/test_bannerlordserver.py",
+}
 
 
 def normalize_repo_path(path: str) -> str:
@@ -397,6 +405,7 @@ def docker_enablement_backlog_tests(repo_root: Path | None = None) -> list[str]:
         path.relative_to(root).as_posix()
         for path in (root / "tests" / "integration_tests").glob("test_*.py")
         if path.relative_to(root).as_posix() not in dual_lane
+        and path.relative_to(root).as_posix() not in DOCKER_DEFAULT_RUNTIME_TESTS
     )
 
 
@@ -444,6 +453,31 @@ def _build_batched_matrix(paths: list[str], prefix: str, root: Path) -> dict[str
                 prefix: " ".join(chunk),
             }
         )
+    return {"include": include}
+
+
+def _build_full_integration_matrix(paths: list[str], root: Path) -> dict[str, list[dict[str, str]]]:
+    """Build the full matrix with explicit process and Docker dual lanes."""
+
+    dual_lane = set(PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS)
+    default_paths = [path for path in paths if path not in dual_lane]
+    dual_paths = [path for path in paths if path in dual_lane]
+    include: list[dict[str, str]] = []
+
+    for runtime_backend, lane_paths in (
+        (None, default_paths),
+        ("process", dual_paths),
+        ("docker", dual_paths),
+    ):
+        lane = _build_batched_matrix(lane_paths, "files", root)
+        for entry in lane["include"]:
+            entry = dict(entry)
+            entry["batch"] = len(include) + 1
+            if runtime_backend is not None:
+                entry["runtime_backend"] = runtime_backend
+                entry["label"] = f"{entry['label']}-{runtime_backend}"
+            include.append(entry)
+
     return {"include": include}
 
 
@@ -574,20 +608,14 @@ def build_integration_matrix(
     regular_tests = [test_name for test_name in all_tests if test_name not in slow_set]
 
     if heavy_only:
-        include = []
+        slow_paths = []
         for test_name in SLOW_TESTS:
             if test_name in all_tests:
-                include.append(
-                    {
-                        "batch": len(include) + 1,
-                        "files": f"tests/integration_tests/{test_name}",
-                        "label": f"slow-{test_name[5:-3]}",
-                    }
-                )
-        return {"include": include}
+                slow_paths.append(f"tests/integration_tests/{test_name}")
+        return _build_full_integration_matrix(slow_paths, root)
 
     regular_paths = [f"tests/integration_tests/{name}" for name in regular_tests]
-    return _build_batched_matrix(regular_paths, "files", root)
+    return _build_full_integration_matrix(regular_paths, root)
 
 
 def git_changed_files(base_sha: str, head_sha: str, repo_root: Path | None = None) -> list[str]:

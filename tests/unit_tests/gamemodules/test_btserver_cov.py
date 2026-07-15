@@ -210,6 +210,35 @@ def test_get_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
     assert os.path.basename(mounts[2]["source"]) == "linux32"
 
 
+def test_get_container_spec_publishes_game_and_a2s_ports(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "steamcmd_module",
+        SimpleNamespace(STEAMCMD_DIR=str(tmp_path / "Steam")),
+    )
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "DedicatedServer",
+            "gamemode": "Sandbox",
+            "port": 27015,
+            "queryport": 27016,
+        }
+    )
+    (tmp_path / "DedicatedServer").write_text("", encoding="utf-8")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert {(port["host"], port["container"], port["protocol"]) for port in spec["ports"]} == {
+        (27015, 27015, "udp"),
+        (27015, 27015, "tcp"),
+        (27016, 27016, "udp"),
+        (27016, 27016, "tcp"),
+    }
+
+
 def test_backup():
     server = DummyServer()
     server.data["dir"] = "/tmp/test/"

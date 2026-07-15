@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from server.settable_keys import resolve_requested_key
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop("gamemodules.battlebitserver", None)
 with patch.dict(
@@ -24,33 +25,6 @@ with patch.dict(
     mod.proton = types.SimpleNamespace(
         wrap_command=MagicMock(side_effect=lambda cmd, **_: ["wrapped"] + list(cmd))
     )
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-
-    def stop(self):
-        self._stopped = True
-
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):

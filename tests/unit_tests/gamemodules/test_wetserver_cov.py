@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
 sys.modules.pop("gamemodules.wetserver", None)
 with patch.dict(
     "sys.modules",
@@ -17,25 +19,6 @@ with patch.dict(
 ):
     import gamemodules.wetserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="wettest"):
-        self.name = name
-        self.data = DummyData()
 
 
 def test_configure_basic(tmp_path):

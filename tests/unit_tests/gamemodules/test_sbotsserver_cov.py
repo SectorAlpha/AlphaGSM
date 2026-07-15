@@ -4,20 +4,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 import gamemodules.sbotsserver as mod
 from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-
-
-class DummyServer:
-    def __init__(self, name="sbotstest"):
-        self.name = name
-        self.data = DummyData()
 
 
 def test_configure_basic(tmp_path):

@@ -5,6 +5,7 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.bobserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
@@ -13,33 +14,22 @@ with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMoc
     mod.runtime_module.send_to_server = MagicMock()
 
 
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
-
-
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['queryport'] == '27015'
+    assert server.data['worldname'] == 'Test_Performance'
+    assert server.data['exe_name'] == "LinuxServer/BeastsOfBermudaServer.sh"
+
+
+def test_configure_migrates_legacy_default_executable(tmp_path):
+    server = DummyServer()
+    server.data["exe_name"] = "BeastsOfBermudaServer.sh"
+
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+
+    assert server.data["exe_name"] == "LinuxServer/BeastsOfBermudaServer.sh"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -66,7 +56,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "BeastsOfBermudaServer.sh"
+    server.data["exe_name"] = "LinuxServer/BeastsOfBermudaServer.sh"
     server.data["Steam_AppID"] = 882430
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -111,15 +101,30 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "BeastsOfBermudaServer.sh"
-    (tmp_path / "BeastsOfBermudaServer.sh").write_text("")
+    server.data["exe_name"] = "LinuxServer/BeastsOfBermudaServer.sh"
+    exe_path = tmp_path / server.data["exe_name"]
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_text("")
     server.data["password"] = "test"
     server.data["port"] = 27015
     server.data["queryport"] = 27015
-    server.data["servername"] = "test"
+    server.data["servername"] = "AlphaGSM test server"
     server.data["worldname"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./LinuxServer/BeastsOfBermudaServer.sh",
+        "-log",
+        "-NoVerifyGC",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-SessionName",
+        "AlphaGSM_test_server",
+        "-MapName",
+        "test",
+        "-ServerPassword",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -222,4 +227,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

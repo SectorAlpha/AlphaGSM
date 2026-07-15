@@ -3,24 +3,14 @@
 from unittest.mock import patch
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 import gamemodules.mohaaserver as mod
 from server import ServerError
 
 
-class DummyData(dict):
-    def save(self):
-        pass
-
-
-class DummyServer:
-    def __init__(self, name="mohaa"):
-        self.name = name
-        self.data = DummyData()
-
-
 def test_configure_basic(tmp_path):
-    server = DummyServer()
+    server = DummyServer("mohaa")
     mod.configure(server, ask=False, port=12203, dir=str(tmp_path))
     assert server.data["port"] == 12203
     assert server.data["exe_name"] == "mohaa_lnxded"
@@ -29,7 +19,7 @@ def test_configure_basic(tmp_path):
 
 
 def test_get_start_command(tmp_path):
-    server = DummyServer()
+    server = DummyServer("mohaa")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -73,7 +63,7 @@ def test_get_start_command(tmp_path):
 
 
 def test_get_start_command_uses_relative_paths_for_docker(tmp_path):
-    server = DummyServer()
+    server = DummyServer("mohaa")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -95,21 +85,21 @@ def test_get_start_command_uses_relative_paths_for_docker(tmp_path):
 
 
 def test_get_start_command_missing_executable(tmp_path):
-    server = DummyServer()
+    server = DummyServer("mohaa")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "mohaa_lnxded", "port": 12203})
     with pytest.raises(ServerError):
         mod.get_start_command(server)
 
 
 def test_install_missing_owned_files_raises_byo(tmp_path):
-    server = DummyServer()
+    server = DummyServer("mohaa")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "mohaa_lnxded"})
     with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
         mod.install(server)
 
 
 def test_query_and_info_addresses_use_udp():
-    server = DummyServer()
+    server = DummyServer("mohaa")
     server.data["port"] = 12203
     with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
         assert mod.get_query_address(server) == ("127.0.0.1", 12203, "udp")
@@ -117,12 +107,12 @@ def test_query_and_info_addresses_use_udp():
 
 
 def test_runtime_requirements_family():
-    server = DummyServer()
+    server = DummyServer("mohaa")
     server.data.update({"dir": "/tmp/mohaa/", "port": 12203})
     req = mod.get_runtime_requirements(server)
     assert req["family"] == "quake-linux"
 
 
 def test_checkvalue_port():
-    server = DummyServer()
+    server = DummyServer("mohaa")
     assert mod.checkvalue(server, ("port",), "12203") == 12203

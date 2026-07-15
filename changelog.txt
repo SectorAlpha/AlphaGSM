@@ -7,7 +7,19 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-07-15
+- CI/integration: full GitHub validation now keeps the normal auto-runtime batches and adds explicit process and Docker lanes for the process-passed dual-runtime server set.
+- CI/integration: remove the permanent Beasts of Bermuda download-timeout skip, give its CI lifecycle 30 minutes for the large SteamCMD install, and add a static guard so download or timeout failures remain visible.
+- Runtime/support: wire Abiotic Factor's Windows-only dedicated payload through forced-Windows SteamCMD installation and the shared Wine/Proton Docker runtime, with unit coverage; keep the server disabled pending fresh GitHub lifecycle validation.
+- Docs/support: record the refreshed disabled-server evidence and the Quake 4 BYO audit; stale or asset-dependent archives are not promoted to anonymous automation without a complete install tree.
+- Runtime/support: correct Beasts of Bermuda's SteamCMD Linux launcher path to `LinuxServer/BeastsOfBermudaServer.sh`, migrate the old stock basename during reconfiguration, align its documented port/session/map/password arguments and defaults, and cover the contract in unit tests; retain the disabled gate until GitHub CI validates the full lifecycle.
+
+2026-07-14
+- CI/routing: exclude Docker-default and non-runtime integration checks from the process-to-Docker enablement backlog, so the GitHub matrix reports only tests that still need an additional Docker lane.
+
 2026-07-08
+- CI/runtime: recover Docker launch working directories through the shared install-tree executable resolver when SteamCMD payloads keep the real binary deeper than the module's initial cwd, so steamcmd-linux servers such as Valheim can keep their game-module launch commands runtime-agnostic while Docker still starts the right nested binary on Ubuntu 24.04 CI.
+- CI/smoke: move the Palworld smoke runner onto the shared SteamCMD start-retry helper so transient claimed-port conflicts on GitHub Actions retry through the existing resilient path instead of failing on a raw `start`.
 - CI/runtime: make backend integration tests stage their temp installs under the same host-visible `${ALPHAGSM_WORK_DIR}` root used by the main integration suite, so Docker-backed backend lifecycle checks mount real server payloads into sibling runtime containers on GitHub Actions instead of container-private `/tmp/pytest-*` paths.
 - CI/runtime: make the shared integration-test config pin SteamCMD under `${ALPHAGSM_WORK_DIR}/steamcmd` whenever CI exports a host-visible work root, so steamcmd-linux Docker lanes mount the real `linux32/` and `linux64/` SDK payloads into sibling runtime containers instead of pointing at `/home/gsmuser/Steam` inside the job container.
 - CI/runtime: translate Docker bind-mount source paths back to host-visible locations when AlphaGSM itself runs inside a container, and make the GitHub integration shards stage `ALPHAGSM_WORK_DIR` under `${RUNNER_TEMP}` instead of container-local `/tmp`, so Docker-capable server tests mount their real installed payloads into sibling runtime containers rather than empty host directories.

@@ -1,36 +1,16 @@
 """Full coverage tests for xntserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.xntserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.xntserver as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 def test_configure_basic(tmp_path):
     server = DummyServer()

@@ -2,10 +2,11 @@
 
 This guide covers the `abfserver` module in AlphaGSM.
 
-`abfserver` is currently `DISABLED` in the checked-in support tracker. On the
-documented Ubuntu 24.04 Linux baseline, SteamCMD app `2857200` still returns
-`Invalid platform`, so AlphaGSM keeps the module blocked from `create` until
-that upstream Linux install path changes.
+`abfserver` is currently `DISABLED` in the checked-in support tracker. The
+dedicated-server tool is Windows-only, so AlphaGSM now stages its Windows
+payload with SteamCMD's forced-platform option and uses the shared Wine/Proton
+runtime on Linux. The end-to-end Docker lifecycle still needs fresh GitHub CI
+validation before this module can be enabled.
 
 ## Requirements
 
@@ -49,7 +50,8 @@ alphagsm myabfserve stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 7777)
+- the query port (default 27016)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -63,15 +65,16 @@ alphagsm myabfserve backup
 ## Notes
 
 - Module name: `abfserver`
-- Default port: 27016
+- Default game port: 7777
+- Default query port: 27016
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `AbioticFactorServer.sh`
-- **Location**: `<install_dir>/AbioticFactorServer.sh`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `AbioticFactorServer-Win64-Shipping.exe`
+- **Location**: `<install_dir>/AbioticFactor/Binaries/Win64/AbioticFactorServer-Win64-Shipping.exe`
+- **Engine**: Unreal Engine (SteamCMD, Wine/Proton on Linux)
 - **SteamCMD App ID**: `2857200`
 
 ### Server Configuration

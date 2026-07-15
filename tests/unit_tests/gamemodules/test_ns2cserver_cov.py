@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
 
 sys.modules.pop("gamemodules.ns2cserver", None)
 sys.modules.pop("gamemodules.ns2cserver.main", None)
@@ -20,31 +22,6 @@ with patch.dict(
 ):
     import gamemodules.ns2cserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="itns2cserver"):
-        self.name = name
-        self.data = DummyData()
-
-    def stop(self):
-        return None
-
-    def start(self):
-        return None
 
 
 def test_configure_sets_expected_defaults(tmp_path):
@@ -73,7 +50,7 @@ def test_install_downloads_and_creates_instance_dirs(tmp_path):
 
 
 def test_get_start_command_builds_expected_linux_args(tmp_path):
-    server = DummyServer()
+    server = DummyServer("itns2cserver")
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
     exe_path = tmp_path / "ia32" / "ns2combatserver_linux32"
     exe_path.parent.mkdir(parents=True)
@@ -109,7 +86,7 @@ def test_get_start_command_builds_expected_linux_args(tmp_path):
 
 
 def test_get_start_command_uses_relative_paths_for_docker(tmp_path):
-    server = DummyServer()
+    server = DummyServer("itns2cserver")
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
     server.data["runtime"] = "docker"
     exe_path = tmp_path / "ia32" / "ns2combatserver_linux32"

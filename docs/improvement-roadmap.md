@@ -1,6 +1,6 @@
 # AlphaGSM Improvement Roadmap
 
-Last updated: 2026-07-08
+Last updated: 2026-07-15
 
 This document is a handoff-oriented review of the whole repository. It lists
 concrete improvements a future agent or contributor can pick up, ordered by
@@ -11,9 +11,9 @@ work here must respect.
 ## Current State Snapshot
 
 - ~233 game modules under `src/gamemodules/`, package-backed layout.
-- Support tracker (`docs/TEST_STATUS.md`): 146 PASSED, 47 ENABLED (AUTH),
-  41 ENABLED (BYO), 3 DISABLED, 0 SKIPPED (last updated 2026-06-27; CI now
-  enforces parity with the live enabled/disabled gate files).
+- Support tracker (`docs/TEST_STATUS.md`, last updated 2026-07-15): 146 PASSED, 47 ENABLED (AUTH),
+  41 ENABLED (BYO), 3 DISABLED, 0 SKIPPED; CI now enforces parity with the
+  live enabled/disabled gate files.
 - Six shared Docker runtime families (`java`, `quake-linux`, `service-console`,
   `simple-tcp`, `steamcmd-linux`, `wine-proton`) with image scaffolds under
   `docker/` and defaults in `src/server/runtime.py`.
@@ -44,11 +44,15 @@ work here must respect.
   selected, and many tests read that environment variable with
   `os.environ.get(..., default_runtime_backend())`. Because the key existed,
   the empty string still bypassed the fallback and left Docker-capable modules
-  on the process path. The workflow now leaves that variable unset unless the
-  matrix really requested an override.
+  on the process path. The workflow now supplies `auto` when no explicit lane
+  override is present.
 - The top-priority active work is now the broad red smoke/integration set on
   the newest `release_v1` GitHub CI run, plus proving the remaining Docker
   protocol-sensitive lanes there rather than through local integration runs.
+- Full GitHub integration validation now preserves the normal `auto` batches
+  and adds explicit `process` and `docker` batches for the declared
+  process-passed dual-runtime set, so full validation does not silently replace
+  the native lane with Docker.
 - A first follow-up on that protocol-sensitive class is now in-tree: the
   `medievalengineersserver`, `memoriesofmarsserver`, `silicaserver`, and
   `solserver` integration tests wait on AlphaGSM's declared `info --json`
@@ -84,6 +88,10 @@ work here must respect.
    sample 2–3 failing `batch-N-of-40` logs end-to-end and classify whether the
    reds are shared regressions, pre-existing flaky lanes, or infra (runner
    image, Docker/networking, port collisions).
+   The routing helper now excludes Docker-default and non-runtime integration
+   checks from the Docker enablement backlog; the computed backlog is empty,
+   leaving CI failure classification as the remaining work rather than lane
+   discovery.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, so the smoke canonical lifecycle matches the
@@ -105,10 +113,11 @@ work here must respect.
 3. **Verify the A2S surface for Docker btserver/valheim.** Both modules
    publish `queryport` udp+tcp, and the local wiring now uses explicit
    Docker-aware query/info hosts via `runtime.resolve_query_host(...)`. The
-   remaining work is CI proof: if A2S works through bridge networking, keep the
-   `a2s` waits; if not, either fix publication/startup details or honestly
-   downgrade the test contract to the generic surface like other migrated
-   lanes.
+   unit suites now also assert the full Docker spec publishes both game and
+   A2S ports. The remaining work is CI proof: if A2S works through bridge
+   networking, keep the `a2s` waits; if not, either fix publication/startup
+   details or honestly downgrade the test contract to the generic surface
+   like other migrated lanes.
 4. **Done: config sync gap audit.** AGENTS.md requires
    `sync_server_config` + `config_sync_keys` for modules whose `set` values
    map to real game config. The repo now has
@@ -127,10 +136,18 @@ work here must respect.
    assets. For the subset where an authoritative direct download exists
    (GitHub releases, vendor archives), wire real installs and promote to
    PASSED. Each one is a self-contained PR: module install path + smoke +
-   integration + tracker row + changelog.
+   integration + tracker row + changelog. The current Quake 4 audit found its
+   checked-in archive URL returning `404`, while the available server payload
+   still expects proprietary game data, so `q4server` remains correctly BYO.
 2. **The 3 remaining DISABLED rows** (`abfserver`, `bobserver`, and legacy
    `counterstrikeglobaloffensive`). Re-verify each evidence note periodically;
-   disabled rows rot fast in this repo's history.
+   disabled rows rot fast in this repo's history. `abfserver` now has a shared
+   Wine/Proton install and Docker launch contract for its Windows-only payload,
+   but remains disabled pending fresh GitHub lifecycle validation. The
+   `bobserver` timeout skip has now been removed, its CI allowance raised, and
+   its documented `LinuxServer/BeastsOfBermudaServer.sh` payload path and
+   launch arguments wired; its disabled status likewise awaits fresh GitHub
+   validation rather than being silently bypassed.
 3. **Done: tracker freshness automation.** CI now fails when
    `docs/TEST_STATUS.md` drifts from `enabled_*_servers.conf` or
    `disabled_servers.conf`, and it also rejects modules that appear in both
@@ -153,10 +170,28 @@ work here must respect.
 4. **Unit-test boilerplate.** A shared helper now exists at
    `tests/unit_tests/gamemodules/helpers.py`, and the actively edited
    Avorion, Beasts of Bermuda, Broken Arrow, Life is Feudal, Starbound,
-   Valheim, Quake 3, Quake 4, QuakeWorld, and Quake Live coverage suites now
-   import it instead of re-declaring local `DummyData` / `DummyServer` copies.
-   Continue migrating touched files opportunistically so the duplication keeps
-   shrinking without forcing a giant one-shot sweep.
+   Valheim, Quake 3, Quake 4, QuakeWorld, Quake Live, Unreal Tournament 3,
+   Unreal Tournament 2004, Unturned, Teeworlds, ARK, Necesse, Mumble, and No
+   One Survived, Tower Unite, RedM, Natural Selection 2 Classic, and Natural
+   Selection 2, OHD, Onset, Outpost Zero, and Path of Titans coverage suites
+   now import it instead of re-declaring local `DummyData` / `DummyServer`
+   copies. PCARS 2, Project CARS, PixARK, Police 10-13, Project Zomboid, PVR,
+   Quake 2, Ready or Not, Reign of Dwarf, Reign of Kings, Remnants, and Return
+   to Moria, RimWorld Together, Risk of Rain 2, RO, and Rising Storm 2 are
+   included in that migration. Rust, RW, Sale Blazers, and SA-MP are included
+   as well. Satisfactory, SCP: Secret Laboratory, SCUM, and Space Engineers
+   are included in this migration batch. 7 Days to Die, Silica, Skyrim Together
+   Reborn, Smalland, Sniper Elite 4, Soldier of Fortune 2, Soldat, and Sons of
+   the Forest, Squad 44, Squad, SS14, Star Rapture, Stationeers, Staxel,
+   Stormworks, STN, Subnautica, Subsistence, Sunkenland, Team Fortress 2,
+   TerraTech Worlds, TF2 Classic, The Forest, and The Front are included as
+   well. TIServer, Trackmania, and TeamSpeak 3 are included in this migration
+   batch. UT99, Vein, Vintage Story, and VR are included in this migration
+   batch. Warband, WET, Wreckfest, Wurm, and XNT are included in this
+   migration batch. The migration is now complete across the remaining
+   game-module coverage suites as well: the static helper contract covers all
+   migrated suites, and no `*_cov.py` suite still defines a local
+   `DummyData`/`DummyServer` pair.
 5. **Done: aggregate vs. per-module unit tests.** The duplicate aggregate
    files (`test_more_steam_dedicated_modules.py`,
    `test_steam_standalone_modules.py`) were removed after migrating their

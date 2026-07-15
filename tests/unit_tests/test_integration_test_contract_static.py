@@ -1,5 +1,6 @@
 """Static contract tests for integration test files."""
 
+import re
 from pathlib import Path
 
 
@@ -77,6 +78,18 @@ def test_a2s_integration_tests_do_not_accept_hibernation_as_success():
     for path in _integration_test_files():
         text = path.read_text()
         if "wait_for_a2s_ready" in text and "Server is hibernating" in text:
+            offenders.append(str(path))
+
+    assert offenders == []
+
+
+def test_integration_tests_do_not_permanently_skip_download_or_timeout_failures():
+    """Download and timeout failures must remain visible to CI."""
+
+    offenders = []
+    for path in _integration_test_files():
+        text = path.read_text()
+        if re.search(r"pytest\.mark\.skip[^\n]*(download|timeout)", text, re.IGNORECASE):
             offenders.append(str(path))
 
     assert offenders == []

@@ -9,6 +9,8 @@ import zipfile
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
 
 sys.modules.pop("gamemodules.ut2k4server", None)
 with patch.dict(
@@ -25,23 +27,10 @@ with patch.dict(
     from server import ServerError
 
 
-class DummyData(dict):
-    def save(self):
-        pass
-
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, server_dir):
-        self.name = "ut2k4mods"
-        self.data = DummyData({"dir": str(server_dir)})
+def _server(server_dir):
+    server = DummyServer("ut2k4mods")
+    server.data["dir"] = str(server_dir)
+    return server
 
 
 def _write_zip(archive_path, members):
@@ -62,7 +51,7 @@ def _fake_download_factory(source_path):
 
 
 def test_ut2k4_mod_state_seeds_defaults(tmp_path):
-    server = DummyServer(tmp_path / "server")
+    server = _server(tmp_path / "server")
 
     mods = mod.ensure_mod_state(server)
 
@@ -73,7 +62,7 @@ def test_ut2k4_mod_state_seeds_defaults(tmp_path):
 
 
 def test_ut2k4_mod_add_url_records_desired_state(tmp_path):
-    server = DummyServer(tmp_path / "server")
+    server = _server(tmp_path / "server")
 
     mod.ut2k4_mod_command(
         server,
@@ -89,7 +78,7 @@ def test_ut2k4_mod_add_url_records_desired_state(tmp_path):
 def test_ut2k4_mod_apply_installs_archive_content(tmp_path, monkeypatch):
     server_root = tmp_path / "server"
     server_root.mkdir()
-    server = DummyServer(server_root)
+    server = _server(server_root)
     archive_path = tmp_path / "payload.zip"
     _write_zip(
         archive_path,
@@ -117,7 +106,7 @@ def test_ut2k4_mod_apply_installs_archive_content(tmp_path, monkeypatch):
 def test_ut2k4_mod_apply_rejects_system_payload(tmp_path, monkeypatch):
     server_root = tmp_path / "server"
     server_root.mkdir()
-    server = DummyServer(server_root)
+    server = _server(server_root)
     archive_path = tmp_path / "bad.zip"
     _write_zip(archive_path, {"System/BadPackage.u": "bad"})
     monkeypatch.setattr(mod._main, "download_to_cache", _fake_download_factory(archive_path))
@@ -134,7 +123,7 @@ def test_ut2k4_mod_apply_rejects_system_payload(tmp_path, monkeypatch):
 def test_ut2k4_mod_cleanup_removes_only_owned_files(tmp_path, monkeypatch):
     server_root = tmp_path / "server"
     server_root.mkdir()
-    server = DummyServer(server_root)
+    server = _server(server_root)
     archive_path = tmp_path / "payload.zip"
     _write_zip(archive_path, {"Maps/DM-Owned.ut2": "owned-map"})
     monkeypatch.setattr(mod._main, "download_to_cache", _fake_download_factory(archive_path))

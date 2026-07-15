@@ -57,12 +57,13 @@ def test_argoserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_bobserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("bob")
-    exe = tmp_path / "BeastsOfBermudaServer.sh"
+    exe = tmp_path / "LinuxServer/BeastsOfBermudaServer.sh"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "BeastsOfBermudaServer.sh",
+            "exe_name": "LinuxServer/BeastsOfBermudaServer.sh",
             "port": 7777,
             "queryport": 7778,
             "servername": "AlphaGSM bob",
@@ -74,15 +75,14 @@ def test_bobserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = bobserver.get_start_command(server)
 
     assert cmd == [
-        "./BeastsOfBermudaServer.sh",
+        "./LinuxServer/BeastsOfBermudaServer.sh",
         "-log",
-        "-port",
-        "7777",
-        "-queryport",
-        "7778",
-        "-servername",
-        "AlphaGSM bob",
-        "-world",
+        "-NoVerifyGC",
+        "-Port=7777",
+        "-QueryPort=7778",
+        "-SessionName",
+        "AlphaGSM_bob",
+        "-MapName",
         "bob",
     ]
     assert cwd == server.data["dir"]

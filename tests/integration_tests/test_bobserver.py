@@ -23,11 +23,10 @@ from gamemodules.bobserver import steam_app_id
 
 pytestmark = pytest.mark.integration
 
-START_TIMEOUT = 600
+START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="SteamCMD app 882430 download timeout; likely too large for automated CI testing")
 def test_bobserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

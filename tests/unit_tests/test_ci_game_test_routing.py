@@ -70,6 +70,49 @@ def test_routing_outputs_split_heavy_and_standard_game_matrices():
     assert "test_palworld.py" in outputs["integration_heavy_matrix"]
 
 
+def test_full_standard_integration_matrix_keeps_dual_runtime_lanes():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(repo_root=Path("."))
+    entries = matrix["include"]
+
+    dual_entries = [
+        entry
+        for entry in entries
+        if "tests/integration_tests/test_bf1942server.py" in entry["files"]
+    ]
+    assert {entry["runtime_backend"] for entry in dual_entries} == {
+        "process",
+        "docker",
+    }
+    assert all(entry["label"].endswith(("-process", "-docker")) for entry in dual_entries)
+
+    archive_entries = [
+        entry
+        for entry in entries
+        if "tests/integration_tests/test_archive_backed_installs.py" in entry["files"]
+    ]
+    assert archive_entries
+    assert all("runtime_backend" not in entry for entry in archive_entries)
+
+
+def test_full_heavy_integration_matrix_keeps_dual_runtime_lanes():
+    routing = load_routing_module()
+
+    matrix = routing.build_integration_matrix(repo_root=Path("."), heavy_only=True)
+    entries = matrix["include"]
+
+    dual_entries = [
+        entry
+        for entry in entries
+        if "tests/integration_tests/test_btserver.py" in entry["files"]
+    ]
+    assert {entry["runtime_backend"] for entry in dual_entries} == {
+        "process",
+        "docker",
+    }
+
+
 def test_long_container_integration_changes_route_to_heavy_matrix():
     routing = load_routing_module()
 
@@ -94,6 +137,14 @@ def test_source_family_backlog_no_longer_contains_tf2_or_counterstrike2():
 
     assert "tests/integration_tests/test_tf2.py" not in backlog
     assert "tests/integration_tests/test_counterstrike2.py" not in backlog
+
+
+def test_docker_backlog_ignores_docker_default_and_non_runtime_tests():
+    routing = load_routing_module()
+
+    backlog = set(routing.docker_enablement_backlog_tests(repo_root=Path(".")))
+
+    assert backlog == set()
 
 
 def test_source_shared_batch_moves_out_of_docker_enablement_backlog():
