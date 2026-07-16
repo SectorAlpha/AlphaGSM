@@ -98,7 +98,7 @@ def test_blackops3server_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            "Server port is open (UDP ping on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info

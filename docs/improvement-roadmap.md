@@ -115,6 +115,19 @@ work here must respect.
   `set queryport` still ran before setup had assigned `dir`. Config sync now
   defers that disk write until the install directory exists, with a focused
   unit regression test; replacement GitHub CI remains the proof point.
+- The next replacement integration failure was runner storage rather than an
+  ARK: Survival Ascended lifecycle defect: its 12.8 GB SteamCMD payload
+  installed successfully, then Docker ran out of space unpacking a second
+  independent Wine/Proton stack. The integration job image now extends the
+  exact branch-local `wine-proton` image so those large layers are already
+  pinned and reusable before game setup; replacement GitHub CI remains the
+  proof point.
+- The same run confirmed that Enshrouded's bulk-added process lane was not
+  evidence-backed: the server answered A2S but outlived the killed `screen`
+  session, while the repository's explicit validation history is Docker-only.
+  Enshrouded now keeps one Docker-default heavy lane. Black Ops III also
+  reached its ready marker and answered generic UDP; its stale A2S-style query
+  wording assertion now matches the module's declared UDP output.
 
 ## 1. CI and Test Infrastructure
 
@@ -155,8 +168,14 @@ work here must respect.
    The replacement run's fast unit gate also exposed and fixed an older
    subprocess-multiplexer test race by waiting for the multiplexer to reap its
    registered process after output EOF. Its next smoke pass exposed and fixed
-   Enshrouded's pre-setup config-sync ordering assumption. Fresh GitHub
-   validation is still required before this item can be marked done.
+   Enshrouded's pre-setup config-sync ordering assumption. The following
+   integration pass exposed duplicate Wine/Proton image layers exhausting disk
+   after ARK: Survival Ascended's large install, so the integration image now
+   shares the exact branch-local runtime base. That run also removed
+   Enshrouded's unproven forced process lane after its child outlived `screen`,
+   and corrected Black Ops III's assertion to expect its actual generic UDP
+   query output. Fresh GitHub validation is still required before this item can
+   be marked done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, and `run_readyornotserver.sh` now follows the

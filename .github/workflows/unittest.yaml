@@ -403,7 +403,7 @@ jobs:
 
   build-integration-image:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage]
+    needs: [unit-test, lint, coverage, build-wine-proton-runtime]
     permissions:
       contents: read
       packages: write
@@ -416,7 +416,13 @@ jobs:
       - name: Compute image tags from content hash
         id: meta
         run: |
-          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh scripts/select_proton_asset.py requirements.txt | sha256sum | cut -c1-12)
+          wine_proton_image='${{ needs.build-wine-proton-runtime.outputs.image }}'
+          hash=$(
+            {
+              printf '%s\n' "$wine_proton_image"
+              cat .github/docker/integration-env/Dockerfile requirements.txt
+            } | sha256sum | cut -c1-12
+          )
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           repo="ghcr.io/${owner}/alphagsm-integration-test"
           echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
@@ -438,11 +444,11 @@ jobs:
           context: .
           file: .github/docker/integration-env/Dockerfile
           push: true
+          build-args: |
+            WINE_PROTON_IMAGE=${{ needs.build-wine-proton-runtime.outputs.image }}
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
-          secrets: |
-            gh_token=${{ secrets.GITHUB_TOKEN }}
 
   build-steamcmd-linux-runtime:
     runs-on: ubuntu-latest

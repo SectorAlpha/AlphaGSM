@@ -1,52 +1,46 @@
-FROM ubuntu:24.04
+ARG WINE_PROTON_IMAGE=ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest
+FROM ${WINE_PROTON_IMAGE}
 
 # Prevent apt from asking questions
 ARG DEBIAN_FRONTEND=noninteractive
 
+# The integration image extends the same Wine/Proton runtime image that
+# AlphaGSM launches for Docker-backed Windows servers. This lets Docker reuse
+# those large layers on CI runners instead of storing a second Wine, prefix,
+# Mono, and Proton stack beside large SteamCMD payloads.
+#
 # All system packages the integration tests need, baked into the image so each
 # test runner starts ready to go without a per-job apt-get install.
 #
-#   wine64 / wine32:i386 / winetricks  — run Windows-only game server binaries
 #   screen                              — AlphaGSM's process supervisor
-#   xvfb xauth                          — headless X server wrapper required by
-#                                         Core Keeper's launcher (xvfb-run);
-#                                         xauth is needed by xvfb-run itself
-#   lib32gcc-s1 lib32stdc++6           — 32-bit runtime (Source engine servers)
 #   p7zip-full                          — .7z archive support
 #   unzip bzip2 xz-utils                — archive formats used by some servers
-#   libatomic1                          — GCC atomics used by UE4 / Unity servers
 #   libc++1                             — LLVM C++ runtime used by newer native
 #                                         Linux dedicated servers such as Pavlov VR
-#   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
-#   libpulse0 / libpulse-dev            — PulseAudio runtime/development surface;
-#                                         Valheim requires both on Linux
+#   libpulse-dev                         — PulseAudio development surface required
+#                                         by Valheim on Linux
 #   libcurl3t64-gnutls                  — GnuTLS-flavoured libcurl; Mordhau (and
 #                                         similar CryEngine servers) link against
 #                                         libcurl-gnutls.so.4 specifically
 #                                         (Ubuntu 24.04 renamed this package from
 #                                         libcurl3-gnutls to libcurl3t64-gnutls)
-#   curl python3 wget ca-certificates  — used by install_proton.sh fallback path
 #   jq                                 — required by the UT99 installer script
 #   docker.io                          — Docker CLI used by Docker-backed
 #                                         integration-test lanes inside the
 #                                         integration container
 #   gcc make                           — build tools used by q2server's source
 #                                         compile path during integration
-RUN dpkg --add-architecture i386 \
- && apt-get update -qq \
+RUN apt-get update -qq \
  && apt-get install -y --no-install-recommends \
-        wine64 wine32:i386 winetricks \
-       screen \
-       xvfb xauth \
-        lib32gcc-s1 lib32stdc++6 \
+        screen \
         p7zip-full \
         unzip bzip2 xz-utils \
-                             libatomic1 libc++1 libsdl2-2.0-0 \
-        libpulse0 libpulse-dev \
+        libc++1 \
+        libpulse-dev \
         libcurl3t64-gnutls \
-       curl jq python3 python3-pip python3-venv wget ca-certificates \
-       docker.io \
-       gcc make \
+        jq python3-pip python3-venv \
+        docker.io \
+        gcc make \
  && rm -rf /var/lib/apt/lists/*
 
 # screen stores its session sockets in /run/screen.  Ubuntu's tmpfiles.d
@@ -133,57 +127,12 @@ RUN wget -q \
  && rm -f /tmp/dotnet-install.sh \
  && rm -rf /var/lib/apt/lists/*
 
-# Put the Wine prefix at a fixed, HOME-agnostic path.  GitHub Actions sets HOME
-# to /github/home or /root depending on the container user; using /opt/wine
-# avoids any ambiguity.  Integration-test jobs inherit WINEPREFIX from this ENV
-# so Wine always finds the pre-built prefix regardless of runner user.
-ENV WINEPREFIX=/opt/wine
-ENV DISPLAY=""
-ENV WINEDLLOVERRIDES="winex11.drv="
-ENV WINEDEBUG=-all
 # UE4 / Unity dedicated-server binaries call SDL2 at startup even in headless
 # mode.  Setting SDL_VIDEODRIVER=offscreen tells SDL2 to use a null video driver
 # so the process doesn't crash trying to open an X11 display.  Wine/Proton are
 # unaffected because their display path goes through winex11.drv / WINE vars.
 ENV SDL_VIDEODRIVER=offscreen
 ENV SDL_AUDIODRIVER=dummy
-
-# Initialise the Wine prefix and install common Windows runtimes.
-# wineserver --kill ensures the background wineserver exits cleanly before
-# Docker commits the layer; || true keeps it non-fatal if none is running.
-RUN wineboot --init \
- && winetricks -q win10 \
- && (winetricks -q --force vcrun2019 || true) \
- && (winetricks -q --force vcrun2022 || true) \
- && (wineserver --kill || true) \
- && rm -rf /tmp/wine-*
-
-# Wine Mono (.NET/CLR runtime required by .NET-based game servers such as
-# Medieval Engineers and Space Engineers).
-RUN wget -q \
-        "https://dl.winehq.org/wine/wine-mono/8.1.0/wine-mono-8.1.0-x86.msi" \
-        -O /tmp/wine-mono.msi \
- && wine msiexec /i /tmp/wine-mono.msi /qn \
- && (wineserver --kill || true) \
- && rm -f /tmp/wine-mono.msi \
- && rm -rf /tmp/wine-*
-
-# Install Proton-GE into /opt/proton-ge, which is already listed in the
-# _PROTON_SEARCH_DIRS tuple in src/utils/proton.py so all game modules find it
-# automatically without any additional configuration.
-#
-# GH_TOKEN is injected as a BuildKit secret so it never lands in any image
-# layer.  install_proton.sh uses it via the curl+python fallback when gh CLI is
-# not present; the fallback adds "Authorization: Bearer $GITHUB_TOKEN" to the
-# GitHub API request, raising the rate limit from 60 to 5000 req/h.
-COPY scripts/install_proton.sh /tmp/install_proton.sh
-COPY scripts/select_proton_asset.py /tmp/select_proton_asset.py
-RUN --mount=type=secret,id=gh_token \
-    GH_TOKEN=$(cat /run/secrets/gh_token 2>/dev/null || true) \
-    GITHUB_TOKEN=${GH_TOKEN} \
-    PROTON_GE_DIR=/opt/proton-ge \
-    bash /tmp/install_proton.sh proton \
- && rm -f /tmp/install_proton.sh /tmp/select_proton_asset.py
 
 # Install Python test dependencies (pytest, pylint, coverage, etc.) so that
 # integration-test runners can use them without a per-job pip install.
@@ -208,3 +157,8 @@ RUN pip3 install --break-system-packages -r /tmp/requirements.txt \
 # errors.
 RUN useradd --create-home --shell /bin/bash --uid 1001 gsmuser \
  && chown -R gsmuser:gsmuser /opt/wine /opt/proton-ge
+
+# This is a generic CI tool image, not a game-runtime image.
+WORKDIR /
+ENTRYPOINT []
+CMD ["bash"]

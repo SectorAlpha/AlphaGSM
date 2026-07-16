@@ -1,7 +1,7 @@
 name: Build Integration Test Image
 
 # Manually triggered by code owners whenever the Docker image needs to be
-# rebuilt (e.g. after changes to the Dockerfile or Proton installer helpers).
+# rebuilt (e.g. after changes to the Dockerfile or Wine/Proton runtime).
 #
 # The built image is pushed to GHCR under two tags:
 #   ghcr.io/sectoralpha/alphagsm-integration-test:<content-hash>
@@ -27,9 +27,26 @@ jobs:
       - name: Compute image tags from content hash
         id: meta
         run: |
-          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh scripts/select_proton_asset.py | sha256sum | cut -c1-12)
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          wine_hash=$(
+            sha256sum \
+              docker/wine-proton/Dockerfile \
+              docker/wine-proton/entrypoint.sh \
+              scripts/install_proton.sh \
+              scripts/select_proton_asset.py \
+            | sha256sum | cut -c1-12
+          )
+          wine_repo="ghcr.io/${owner}/alphagsm-wine-proton-runtime"
+          wine_image="${wine_repo}:${wine_hash}"
           repo="ghcr.io/${owner}/alphagsm-integration-test"
+          hash=$(
+            {
+              printf '%s\n' "$wine_image"
+              cat .github/docker/integration-env/Dockerfile requirements.txt
+            } | sha256sum | cut -c1-12
+          )
+          echo "wine_image=${wine_image}" >> "$GITHUB_OUTPUT"
+          echo "wine_latest=${wine_repo}:latest" >> "$GITHUB_OUTPUT"
           echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
           echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
           echo "Building: ${repo}:${hash} and ${repo}:latest"
@@ -44,14 +61,26 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Build and push wine-proton runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/wine-proton/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.wine_image }}
+            ${{ steps.meta.outputs.wine_latest }}
+          secrets: |
+            gh_token=${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push integration test image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: .github/docker/integration-env/Dockerfile
           push: true
+          build-args: |
+            WINE_PROTON_IMAGE=${{ steps.meta.outputs.wine_image }}
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
-          secrets: |
-            gh_token=${{ secrets.GITHUB_TOKEN }}

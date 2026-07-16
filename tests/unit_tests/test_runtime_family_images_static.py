@@ -58,8 +58,13 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
     assert missing == []
 
 
-def test_integration_image_keeps_official_valheim_linux_packages():
-    text = INTEGRATION_ENV_DOCKERFILE.read_text(encoding="utf-8")
+def test_integration_image_keeps_official_valheim_linux_packages_across_layers():
+    text = "\n".join(
+        (
+            WINE_PROTON_DOCKERFILE.read_text(encoding="utf-8"),
+            INTEGRATION_ENV_DOCKERFILE.read_text(encoding="utf-8"),
+        )
+    )
 
     required_snippets = ("libatomic1", "libpulse0", "libpulse-dev")
     missing = [snippet for snippet in required_snippets if snippet not in text]
@@ -112,13 +117,25 @@ def test_wine_proton_runtime_image_keeps_ci_wine_and_proton_stack():
 
 
 def test_proton_images_copy_architecture_asset_selector():
-    for dockerfile in (WINE_PROTON_DOCKERFILE, INTEGRATION_ENV_DOCKERFILE):
-        text = dockerfile.read_text(encoding="utf-8")
+    text = WINE_PROTON_DOCKERFILE.read_text(encoding="utf-8")
 
-        assert (
-            "COPY scripts/select_proton_asset.py /tmp/select_proton_asset.py"
-            in text
-        )
+    assert (
+        "COPY scripts/select_proton_asset.py /tmp/select_proton_asset.py"
+        in text
+    )
+
+
+def test_integration_image_reuses_wine_proton_runtime_layers():
+    text = INTEGRATION_ENV_DOCKERFILE.read_text(encoding="utf-8")
+
+    assert text.startswith(
+        "ARG WINE_PROTON_IMAGE="
+        "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest\n"
+        "FROM ${WINE_PROTON_IMAGE}\n"
+    )
+    assert "COPY scripts/install_proton.sh" not in text
+    assert "wineboot --init" not in text
+    assert "wine-mono-8.1.0-x86.msi" not in text
 
 
 def test_proton_image_cache_keys_include_architecture_asset_selector():
@@ -186,3 +203,31 @@ def test_integration_image_gives_gsmuser_write_access_to_wine_and_proton_trees()
     text = INTEGRATION_ENV_DOCKERFILE.read_text(encoding="utf-8")
 
     assert "chown -R gsmuser:gsmuser /opt/wine /opt/proton-ge" in text
+
+
+def test_pr_integration_image_build_uses_branch_local_wine_proton_base():
+    text = PR_WORKFLOW.read_text(encoding="utf-8")
+    section = text.split("  build-integration-image:")[1].split(
+        "  build-steamcmd-linux-runtime:"
+    )[0]
+
+    assert (
+        "needs: [unit-test, lint, coverage, build-wine-proton-runtime]"
+        in section
+    )
+    assert (
+        "WINE_PROTON_IMAGE=${{ needs.build-wine-proton-runtime.outputs.image }}"
+        in section
+    )
+    assert (
+        "wine_proton_image='${{ needs.build-wine-proton-runtime.outputs.image }}'"
+        in section
+    )
+
+
+def test_manual_integration_image_build_builds_and_reuses_wine_proton_base():
+    text = MANUAL_INTEGRATION_BUILD_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "Build and push wine-proton runtime image" in text
+    assert "file: docker/wine-proton/Dockerfile" in text
+    assert "WINE_PROTON_IMAGE=${{ steps.meta.outputs.wine_image }}" in text

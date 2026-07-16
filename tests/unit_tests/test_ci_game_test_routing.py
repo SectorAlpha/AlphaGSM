@@ -155,6 +155,27 @@ def test_rs2_uses_one_docker_default_heavy_lane():
     ]
 
 
+def test_enshrouded_uses_one_docker_default_heavy_lane():
+    routing = load_routing_module()
+    test_path = "tests/integration_tests/test_enshrouded.py"
+
+    matrix = routing.build_integration_matrix(
+        [test_path],
+        repo_root=Path("."),
+        heavy_only=True,
+    )
+
+    assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+    assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": test_path,
+            "label": "enshrouded",
+        }
+    ]
+
+
 def test_scum_uses_one_docker_default_heavy_lane():
     routing = load_routing_module()
     test_path = "tests/integration_tests/test_scumserver.py"

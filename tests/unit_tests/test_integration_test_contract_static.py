@@ -120,6 +120,15 @@ def test_runtime_aware_integration_tests_use_alphagsm_info_surface_only():
     assert offenders == []
 
 
+def test_blackops3_generic_udp_query_assertion_matches_alphagsm_output():
+    text = (INTEGRATION_TEST_DIR / "test_blackops3server.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"Server port is open (UDP ping on port" in query_result.stdout' in text
+    assert '"Server is responding" in query_result.stdout' not in text
+
+
 def test_rust_does_not_require_a_host_screen_log_for_docker_readiness():
     text = (INTEGRATION_TEST_DIR / "test_rust.py").read_text(encoding="utf-8")
 

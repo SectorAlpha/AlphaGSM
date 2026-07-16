@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-16
+- CI/integration: keep Enshrouded on its proven Docker-default heavy lifecycle instead of forcing an unproven host Wine/Proton process lane, and align Black Ops III's query assertion with its declared generic UDP output.
+- CI/runtime images: build the integration test image from the exact branch-local Wine/Proton runtime image, so Docker-backed Windows server tests reuse the job container's Wine, prefix, Mono, and Proton layers instead of exhausting hosted-runner disk while unpacking a duplicate stack after large SteamCMD installs.
 - Enshrouded: allow managed query-port and server-name values to be set before setup assigns an install directory, deferring `enshrouded_server.json` synchronization until the directory exists.
 - CI/unit tests: drive real subprocess multiplexer tests until the multiplexer has reaped its process registry, removing a race where closed output streams could be observed one scheduling edge before `Popen.poll()` reported termination.
 - Runtime/query: reject non-IP placeholders from Docker network inspection and route shared Valve-family query hooks through the runtime host resolver, so sibling game containers are queried by a reachable address.

@@ -560,6 +560,13 @@ large SteamCMD payloads and branch-local runtime images can coexist on the
 hosted runner disk. Keep that cleanup scoped to the integration jobs; build,
 lint, unit, and coverage jobs may still need the tool cache.
 
+The integration job image is built from the exact branch-local
+`wine-proton` runtime image selected by the same workflow. Keep that base-image
+dependency and build argument intact: Docker can then reuse the running job
+container's Wine, prefix, Mono, and Proton layers when AlphaGSM launches a
+Windows game-server container. Building those stacks independently can exhaust
+the hosted runner after large SteamCMD installs.
+
 ## Documentation Contract
 
 Documentation is now deliberately split by audience:
