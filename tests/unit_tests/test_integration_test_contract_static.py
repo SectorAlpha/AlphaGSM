@@ -7,6 +7,7 @@ from pathlib import Path
 INTEGRATION_TEST_DIR = Path("tests/integration_tests")
 DISABLED_SERVERS_PATH = Path("disabled_servers.conf")
 SPECIAL_CASES = {"test_archive_backed_installs.py"}
+SS14_INTEGRATION_TEST = INTEGRATION_TEST_DIR / "test_ss14server.py"
 
 
 def _integration_test_files():
@@ -93,3 +94,12 @@ def test_integration_tests_do_not_permanently_skip_download_or_timeout_failures(
             offenders.append(str(path))
 
     assert offenders == []
+
+
+def test_ss14_integration_supports_byo_archive_url_without_hiding_download_failures():
+    text = SS14_INTEGRATION_TEST.read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_SS14_SERVER_URL" in text
+    assert "BYO_SKIP_REASON" in text
+    assert "skip_for_known_steamcmd_issue(result)" in text
+    assert 'pytest.mark.skip' not in text

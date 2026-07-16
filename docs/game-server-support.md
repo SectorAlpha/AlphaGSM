@@ -114,7 +114,6 @@ Notes:
 - [x] rust
 - [x] satisfactory
 - [x] saleblazersserver
-- [x] ss14server
 - [x] silicaserver
 - [x] scpslserver
 - [x] scumserver
@@ -253,6 +252,7 @@ Notes:
 - [x] sampserver
 - [x] sfcserver
 - [x] skyrimtogetherrebornserver
+- [x] ss14server
 - [x] mohaaserver
 - [x] sof2server
 - [x] stormworksserver

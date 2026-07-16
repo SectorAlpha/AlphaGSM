@@ -238,6 +238,42 @@ def _log_command_result(label, result):
         print("stderr:", result.stderr.rstrip())
 
 
+def _dump_docker_container(container_name):
+    """Print container state and logs without masking the original test failure."""
+
+    commands = (
+        (
+            "docker inspect " + container_name,
+            [
+                "docker",
+                "inspect",
+                container_name,
+                "--format",
+                "{{json .State}}\n{{json .Config}}\n{{json .Mounts}}",
+            ],
+        ),
+        (
+            "docker logs " + container_name,
+            ["docker", "logs", "--tail", "200", container_name],
+        ),
+    )
+    for label, command in commands:
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            print(f"\n=== {label} ===")
+            print("diagnostic command failed:", exc)
+            continue
+        _log_command_result(label, result)
+
+
 def _bind_tcp_listener(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -253,7 +289,7 @@ def _run_and_assert_ok(env, *args, timeout=BACKEND_TEST_TIMEOUT):
     return result
 
 
-def _wait_for_status(host, port, timeout_seconds):
+def _wait_for_status(host, port, timeout_seconds, container_name=None):
     result = subprocess.run(
         [
             sys.executable, str(STATUS_HELPER),
@@ -263,6 +299,8 @@ def _wait_for_status(host, port, timeout_seconds):
     )
     if result.returncode != 0:
         _log_command_result("wait-for-status", result)
+        if container_name:
+            _dump_docker_container(container_name)
         pytest.fail(
             f"Minecraft status did not respond within {timeout_seconds}s"
         )
@@ -320,6 +358,7 @@ class BackendLifecycle:
     run_and_assert_ok = staticmethod(_run_and_assert_ok)
     ensure_docker_image = staticmethod(_ensure_docker_image)
     log_command_result = staticmethod(_log_command_result)
+    dump_docker_container = staticmethod(_dump_docker_container)
     bind_tcp_listener = staticmethod(_bind_tcp_listener)
     wait_for_status = staticmethod(_wait_for_status)
     wait_for_closed = staticmethod(_wait_for_closed)

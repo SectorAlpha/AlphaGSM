@@ -43,6 +43,70 @@ def test_backend_wait_for_closed_fails_when_port_never_closes(monkeypatch):
         backend_conftest._wait_for_closed("127.0.0.1", 25565, 10)
 
 
+def test_backend_wait_for_status_dumps_docker_diagnostics_on_timeout(monkeypatch):
+    result = SimpleNamespace(
+        returncode=1,
+        stdout="",
+        stderr="connection refused",
+    )
+    diagnostics = []
+
+    monkeypatch.setattr(backend_conftest.subprocess, "run", lambda *args, **kwargs: result)
+    monkeypatch.setattr(backend_conftest, "_log_command_result", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        backend_conftest,
+        "_dump_docker_container",
+        lambda container_name: diagnostics.append(container_name),
+    )
+
+    with pytest.raises(pytest.fail.Exception):
+        backend_conftest._wait_for_status(
+            "127.0.0.1",
+            25565,
+            10,
+            container_name="alphagsm-demo",
+        )
+
+    assert diagnostics == ["alphagsm-demo"]
+
+
+def test_dump_docker_container_logs_state_and_output(monkeypatch):
+    calls = []
+    logged = []
+    results = iter(
+        [
+            SimpleNamespace(returncode=0, stdout='{"Running":false}', stderr=""),
+            SimpleNamespace(returncode=0, stdout="Unable to access jarfile", stderr=""),
+        ]
+    )
+
+    def _fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        return next(results)
+
+    monkeypatch.setattr(backend_conftest.subprocess, "run", _fake_run)
+    monkeypatch.setattr(
+        backend_conftest,
+        "_log_command_result",
+        lambda label, result: logged.append((label, result.stdout)),
+    )
+
+    backend_conftest._dump_docker_container("alphagsm-demo")
+
+    assert calls[0][0] == [
+        "docker",
+        "inspect",
+        "alphagsm-demo",
+        "--format",
+        "{{json .State}}\n{{json .Config}}\n{{json .Mounts}}",
+    ]
+    assert calls[1][0] == ["docker", "logs", "--tail", "200", "alphagsm-demo"]
+    assert logged == [
+        ("docker inspect alphagsm-demo", '{"Running":false}'),
+        ("docker logs alphagsm-demo", "Unable to access jarfile"),
+    ]
+
+
 def test_write_config_can_override_server_module_package(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     home_dir = tmp_path / "home"

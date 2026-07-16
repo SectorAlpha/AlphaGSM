@@ -1,4 +1,8 @@
-"""Integration test for ss14server."""
+"""Integration test for ss14server.
+
+ENABLED (BYO): supply a direct Linux x64 server archive while the official
+Wizard's Den build feed publishes no server builds.
+"""
 
 import os
 
@@ -10,7 +14,6 @@ from conftest import (
     default_runtime_backend,
     require_integration_opt_in,
     require_command_for_runtime,
-    require_command_or_skip,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -29,6 +32,11 @@ pytestmark = [
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+BYO_SKIP_REASON = (
+    "ENABLED (BYO): set ALPHAGSM_SS14_SERVER_URL to a direct Linux x64 "
+    "Space Station 14 server archive while the Wizard's Den build feed "
+    "publishes no server builds"
+)
 
 
 def test_ss14server_lifecycle(tmp_path):
@@ -42,7 +50,11 @@ def test_ss14server_lifecycle(tmp_path):
         runtime_backend=runtime_backend,
         module_name=module_name,
     )
-    require_command_or_skip("dotnet", "Space Station 14 requires the dotnet runtime")
+    require_command_for_runtime(
+        "dotnet",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -64,9 +76,20 @@ def test_ss14server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    setup_args = [server_name, "setup", "-n", str(port), str(install_dir)]
+    server_url = os.environ.get("ALPHAGSM_SS14_SERVER_URL", "").strip()
+    if server_url:
+        setup_args.extend(["-u", server_url])
+    result = run_alphagsm(env, *setup_args)
+    log_command_result("alphagsm " + " ".join(setup_args), result)
     if result.returncode != 0:
+        combined_output = "\n".join(
+            part for part in (result.stdout, result.stderr) if part
+        )
+        if not server_url and "ENABLED (BYO):" in combined_output:
+            pytest.skip(BYO_SKIP_REASON)
         skip_for_known_steamcmd_issue(result)
+    assert result.returncode == 0, result.stderr or result.stdout
 
     # start
     run_and_assert_ok(env, server_name, "start")

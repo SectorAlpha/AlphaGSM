@@ -336,7 +336,12 @@ def test_root_wrapper_runs_docker_minecraft_info_lifecycle(tmp_path, lifecycle):
         )
         assert start_result.returncode == 0, start_result.stderr or start_result.stdout
 
-        lifecycle.wait_for_status("127.0.0.1", port, 180)
+        lifecycle.wait_for_status(
+            "127.0.0.1",
+            port,
+            180,
+            container_name="alphagsm-" + SERVER_NAME,
+        )
 
         status_result = _run_wrapper(lifecycle, env, SERVER_NAME, "status", timeout=300)
         assert status_result.returncode == 0, status_result.stderr or status_result.stdout

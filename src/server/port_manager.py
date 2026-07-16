@@ -251,6 +251,8 @@ def _runtime_port_endpoints(server, module, payload, allow_stale_saved_ports):
         data=payload,
         module=module,
     )
+    if runtime_module.resolve_runtime_metadata(temp_server).get("runtime", "process") != "docker":
+        return []
     try:
         spec = runtime_module.get_container_spec(temp_server)
     except (

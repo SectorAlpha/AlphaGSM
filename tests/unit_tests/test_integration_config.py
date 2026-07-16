@@ -2,8 +2,12 @@
 
 import ast
 import importlib
+import json
+import os
 from pathlib import Path
 import re
+import subprocess
+import sys
 
 from tests.integration_tests.conftest import write_config
 
@@ -78,6 +82,40 @@ def test_write_config_uses_shared_download_root_when_opted_in(tmp_path, monkeypa
     assert "[docker]" in text
     assert "[downloader.steamcmd]" in text
     assert f"steamcmd_path = {shared_root / 'steamcmd'}" in text
+
+
+def test_write_config_steamcmd_path_loads_in_fresh_process(tmp_path, monkeypatch):
+    shared_root = tmp_path / "shared-download-root"
+    monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(shared_root))
+
+    config_path = tmp_path / "alphagsm.conf"
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+    write_config(config_path, home_dir)
+
+    env = os.environ.copy()
+    env["ALPHAGSM_CONFIG_LOCATION"] = str(config_path)
+    env["PYTHONPATH"] = str(Path.cwd() / "src")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import json; import utils.steamcmd as steamcmd; "
+                "print(json.dumps([steamcmd.STEAMCMD_DIR, steamcmd.STEAMCMD_EXE]))"
+            ),
+        ],
+        cwd=Path.cwd(),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    steamcmd_dir, steamcmd_exe = json.loads(result.stdout)
+    assert steamcmd_dir == str(shared_root / "steamcmd")
+    assert steamcmd_exe == str(shared_root / "steamcmd" / "steamcmd.sh")
 
 
 def test_write_config_auto_prefers_docker_for_explicit_container_modules(

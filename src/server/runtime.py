@@ -1293,22 +1293,25 @@ def _rewrite_external_launcher_context(server, mounts, command, cwd):
     if real_path is None:
         return command, cwd
 
-    mapped_cwd = os.path.dirname(real_path)
-
     rewritten_command = list(command or [])
-    if rewritten_command:
-        exe_name = os.path.basename(str(server.data.get("exe_name", "")))
-        command_index = 0
-        if rewritten_command[0] == "env":
-            command_index = 1
-            while command_index < len(rewritten_command) and "=" in rewritten_command[command_index]:
-                command_index += 1
-        if command_index < len(rewritten_command):
-            current_executable = str(rewritten_command[command_index])
-            if os.path.basename(current_executable) == exe_name:
-                rewritten_command[command_index] = "./" + os.path.basename(real_path)
+    if not rewritten_command:
+        return rewritten_command, cwd
 
-    return rewritten_command, mapped_cwd
+    exe_name = os.path.basename(str(server.data.get("exe_name", "")))
+    command_index = 0
+    if rewritten_command[0] == "env":
+        command_index = 1
+        while command_index < len(rewritten_command) and "=" in rewritten_command[command_index]:
+            command_index += 1
+    if command_index >= len(rewritten_command):
+        return rewritten_command, cwd
+
+    current_executable = str(rewritten_command[command_index])
+    if os.path.basename(current_executable) != exe_name:
+        return rewritten_command, cwd
+
+    rewritten_command[command_index] = "./" + os.path.basename(real_path)
+    return rewritten_command, os.path.dirname(real_path)
 
 
 def infer_runtime_requirements(server, module=None):

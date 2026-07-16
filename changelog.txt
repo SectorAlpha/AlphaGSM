@@ -8,6 +8,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-16
+- Runtime/Docker: keep the configured server working directory when an interpreter such as Java launches a symlinked payload from the shared download cache, so Minecraft Docker lifecycles read their managed EULA and server configuration from the same install tree as process runtime.
+- CI/backend: print Docker container state, configuration, mounts, and recent logs before backend readiness timeouts fail, preserving the evidence needed to debug child-container exits.
+- CI/SteamCMD: honor an explicit `steamcmd_path` even when the default local Steam directory is absent, and build the executable path safely when the configured directory has no trailing slash.
+- Runtime/ports: avoid building Docker container specs while collecting process-runtime port claims, so process setup does not validate or mount Docker-only paths.
+- Server support: move `ss14server` to `ENABLED (BYO)` while the official Wizard's Den feed publishes no server builds; direct Linux x64 archives remain supported through both process and Docker lifecycle tests.
 - Server support: make Argo SteamCMD install and update select the upstream `server` beta branch required to retrieve app `563930`'s dedicated payload.
 - Minecraft: stop launching a temporary Java server during setup; AlphaGSM now writes `eula.txt` and `server.properties` directly so setup cannot leave a JVM holding the managed port before the real start lifecycle.
 - CI/downloads: authenticate GitHub release metadata requests with the read-only Actions token in smoke and integration jobs, avoiding anonymous API rate-limit failures during QuakeWorld and other release-backed setup paths.

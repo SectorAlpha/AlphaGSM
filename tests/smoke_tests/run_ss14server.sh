@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# ENABLED (BYO): supply a direct Linux x64 Space Station 14 server archive
+# while the official Wizard's Den build feed publishes no server builds.
+
 set -Eeuo pipefail
 set -x
 
@@ -11,6 +14,7 @@ ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itss14server}"
+SS14_SERVER_URL="${ALPHAGSM_SS14_SERVER_URL:-}"
 SERVER_STARTED=0
 
 require_cmd() {
@@ -75,7 +79,11 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create ss14server
-run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+setup_args=("$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR")
+if [[ -n "$SS14_SERVER_URL" ]]; then
+  setup_args+=("-u" "$SS14_SERVER_URL")
+fi
+run_setup_or_skip_steamcmd "${setup_args[@]}"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

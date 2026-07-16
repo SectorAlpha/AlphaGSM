@@ -1571,6 +1571,8 @@ def test_get_container_spec_mounts_external_symlink_target(monkeypatch, tmp_path
 
     spec = runtime_module.get_container_spec(server)
 
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"] == ["java", "-jar", "minecraft_server.jar"]
     assert spec["mounts"] == [
         {"source": str(server_root) + "/", "target": "/srv/server", "mode": "rw"},
         {"source": str(cache_root), "target": str(cache_root), "mode": "ro"},

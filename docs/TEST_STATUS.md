@@ -11,9 +11,9 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 146      |
+| PASSED   | 145      |
 | ENABLED (AUTH) | 47 |
-| ENABLED (BYO) | 41 |
+| ENABLED (BYO) | 42 |
 | DISABLED | 3      |
 | SKIPPED  | 0      |
 
@@ -30,7 +30,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (146)
+## PASSED (145)
 
 | Test | Type |
 |------|------|
@@ -126,7 +126,6 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | rust | SteamCMD |
 | satisfactory | SteamCMD |
 | saleblazersserver | Wine/Proton — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the Linux/Wine dedicated path once AlphaGSM syncs `DedicatedServerConfig.json`, launches with the upstream `-config ./DedicatedServerConfig.json` contract under `xvfb-run` plus SDL `x11`/dummy audio/software GL, and treats the live helper surface as generic `udp` on `port + 1` instead of the older stale A2S `queryport` assumption |
-| ss14server | Direct download — PASSED 2026-05-25; smoke and integration both reach the managed `server_config.toml` status surface, and `query` / `info --json` now pass through the live `robust_status` endpoint on the supported host-`dotnet` path |
 | silicaserver | SteamCMD |
 | scpslserver | SteamCMD |
 | scumserver | Wine/Proton — PASSED 2026-06-02; fresh Docker-backed integration now proves the old timeout-only skip was stale: anonymous SteamCMD setup for app `3792580` installs the real Windows dedicated payload, AlphaGSM launches `SCUM/Binaries/Win64/SCUMServer.exe` under the shared `wine-proton` runtime, and the validated Linux health surface is generic `tcp` on the managed main game port instead of the older A2S/queryport assumption |
@@ -237,7 +236,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
 | zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |
 
-## ENABLED (BYO) (41)
+## ENABLED (BYO) (42)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -276,6 +275,7 @@ URLs.
 | sampserver | direct archive URL or staged SA-MP Linux dedicated server tree |
 | sfcserver | official SourceForts Classic ModDB full-version tree staged under `sfclassic/` |
 | skyrimtogetherrebornserver | direct archive URL or staged Skyrim Together Reborn server tree |
+| ss14server | direct Linux x64 server archive while the official Wizard's Den build feed publishes no server builds; the managed `server_config.toml`, `robust_status`, process runtime, and Docker runtime lifecycle remain supported when an archive is supplied |
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |

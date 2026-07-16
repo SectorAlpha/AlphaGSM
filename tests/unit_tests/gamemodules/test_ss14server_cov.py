@@ -1,6 +1,7 @@
 """Full coverage tests for ss14server."""
 
 import sys
+from urllib.error import HTTPError
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -78,6 +79,41 @@ def test_resolve_download_uses_requested_manifest_version():
 
     assert version == "wanted"
     assert url == "https://example.com/wanted.zip"
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_is_unavailable():
+    error = HTTPError(mod.SS14_MANIFEST_URL, 404, "Not Found", None, None)
+    with patch.object(mod, "read_json", side_effect=error):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_preserves_transient_network_errors():
+    with patch.object(mod, "read_json", side_effect=OSError("network unreachable")):
+        with pytest.raises(OSError, match="network unreachable"):
+            mod.resolve_download()
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_has_no_builds():
+    with patch.object(mod, "read_json", return_value={"builds": {}}):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_is_malformed():
+    with patch.object(mod, "read_json", return_value=None):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
 
 def test_resolve_download_rejects_missing_linux_x64_build():
     mod.read_json.return_value = {

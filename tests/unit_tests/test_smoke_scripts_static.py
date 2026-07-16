@@ -6,6 +6,7 @@ from pathlib import Path
 LIFE_IS_FEUDAL_SMOKE = Path("tests/smoke_tests/run_lifeisfeudalserver.sh")
 PALWORLD_SMOKE = Path("tests/smoke_tests/run_palworld.sh")
 SCUM_SMOKE = Path("tests/smoke_tests/run_scumserver.sh")
+SS14_SMOKE = Path("tests/smoke_tests/run_ss14server.sh")
 
 
 def test_life_is_feudal_smoke_uses_docker_runtime_backend():
@@ -38,3 +39,11 @@ def test_palworld_smoke_uses_shared_start_retry_contract():
 
     assert 'run_start_with_port_retry "$SERVER_NAME"' in text
     assert 'run_alphagsm "$SERVER_NAME" start' not in text
+
+
+def test_ss14_smoke_supports_byo_archive_url_and_standard_prerequisite_skip():
+    text = SS14_SMOKE.read_text(encoding="utf-8")
+
+    assert "ENABLED (BYO)" in text
+    assert "ALPHAGSM_SS14_SERVER_URL" in text
+    assert 'run_setup_or_skip_steamcmd "${setup_args[@]}"' in text

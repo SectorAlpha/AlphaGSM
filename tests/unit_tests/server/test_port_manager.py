@@ -106,7 +106,7 @@ def test_collect_claim_set_ignores_module_declared_port_keys():
     assert ("queryport", 27016) not in ports_by_source
 
 
-def test_collect_claim_set_rebuilds_runtime_ports_from_overrides():
+def test_collect_claim_set_rebuilds_runtime_ports_from_overrides(monkeypatch):
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "ports": [
@@ -127,6 +127,11 @@ def test_collect_claim_set_rebuilds_runtime_ports_from_overrides():
         },
         module=module,
     )
+    monkeypatch.setattr(
+        runtime_module,
+        "resolve_runtime_metadata",
+        lambda _server: {"runtime": "docker"},
+    )
 
     claim_set = port_manager.collect_claim_set(server, overrides={"port": 27030})
 
@@ -138,6 +143,52 @@ def test_collect_claim_set_rebuilds_runtime_ports_from_overrides():
 
     assert runtime_ports == [27031]
     assert 27016 not in runtime_ports
+
+
+def test_runtime_port_endpoints_skip_container_spec_for_process_runtime(monkeypatch):
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda _server: {
+            "engine": "docker",
+            "family": "steamcmd-linux",
+        },
+    )
+    server = make_server(
+        "alpha",
+        {
+            "module": "palworld",
+            "port": 8211,
+            "ports": [{"host": 8212, "container": 8212, "protocol": "udp"}],
+        },
+        module=module,
+    )
+
+    monkeypatch.setattr(
+        runtime_module,
+        "resolve_runtime_metadata",
+        lambda _server: {"runtime": "process"},
+    )
+
+    def _unexpected_container_spec(_server):
+        raise AssertionError("process runtime must not build a Docker container spec")
+
+    monkeypatch.setattr(
+        runtime_module,
+        "get_container_spec",
+        _unexpected_container_spec,
+    )
+
+    endpoints = port_manager._runtime_port_endpoints(
+        server,
+        module,
+        {
+            "external_ip": "0.0.0.0",
+            "port": 8211,
+            "ports": [{"host": 8212, "container": 8212, "protocol": "udp"}],
+        },
+        allow_stale_saved_ports=True,
+    )
+
+    assert endpoints == []
 
 
 def test_runtime_port_endpoints_ignores_preinstall_server_errors(monkeypatch):

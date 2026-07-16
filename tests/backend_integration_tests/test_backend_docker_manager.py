@@ -145,7 +145,12 @@ def test_manager_container_launches_docker_minecraft(tmp_path, lifecycle):
         assert (install_dir / "server.properties").exists()
 
         _run_manager_alphagsm(lifecycle, container_name, SERVER_NAME, "start")
-        lifecycle.wait_for_status("127.0.0.1", port, START_TIMEOUT)
+        lifecycle.wait_for_status(
+            "127.0.0.1",
+            port,
+            START_TIMEOUT,
+            container_name=minecraft_container_name,
+        )
 
         inspect_result = _run_command(
             lifecycle,

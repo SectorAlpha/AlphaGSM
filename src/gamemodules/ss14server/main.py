@@ -2,6 +2,7 @@
 
 import json
 import os
+import urllib.error
 
 from server import ServerError
 from utils.archive_install import detect_compression, install_archive
@@ -27,13 +28,32 @@ max_stop_wait = 1
 config_sync_keys = ("port",)
 
 
+def _raise_byo_archive_requirement():
+    gamemodule_common.raise_byo_requirement(
+        "ss14server",
+        "direct Linux x64 Space Station 14 server archive",
+        actions=(
+            "Run setup with --url <archive-url> using a direct Linux x64 server archive",
+            "Retry normal setup when the Wizard's Den build feed publishes server builds again",
+        ),
+        docs_slug="ss14server",
+    )
+
+
 def resolve_download(version=None):
     """Resolve the latest or a specific Space Station 14 Linux x64 build."""
 
-    manifest = read_json(SS14_MANIFEST_URL)
+    try:
+        manifest = read_json(SS14_MANIFEST_URL)
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            raise
+        _raise_byo_archive_requirement()
+    if not isinstance(manifest, dict):
+        _raise_byo_archive_requirement()
     builds = manifest.get("builds")
     if not isinstance(builds, dict) or not builds:
-        raise ServerError("Unable to locate Space Station 14 server builds")
+        _raise_byo_archive_requirement()
 
     if version not in (None, "", "latest"):
         resolved_version = str(version)
