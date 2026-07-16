@@ -211,6 +211,7 @@ jobs:
     env:
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
     name: smoke-test (${{ matrix.label }})
     steps:
@@ -302,6 +303,7 @@ jobs:
     env:
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
     name: smoke-test (${{ matrix.label }})
     steps:
@@ -594,6 +596,7 @@ jobs:
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
       WINEPREFIX: /opt/wine
     name: integration-test (${{ matrix.label }})
@@ -624,6 +627,7 @@ jobs:
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
             export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
+            export ALPHAGSM_GITHUB_TOKEN='${ALPHAGSM_GITHUB_TOKEN}'
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
             export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
@@ -662,6 +666,7 @@ jobs:
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
       WINEPREFIX: /opt/wine
     name: integration-test (${{ matrix.label }})
@@ -685,6 +690,7 @@ jobs:
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
             export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
+            export ALPHAGSM_GITHUB_TOKEN='${ALPHAGSM_GITHUB_TOKEN}'
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
             export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'

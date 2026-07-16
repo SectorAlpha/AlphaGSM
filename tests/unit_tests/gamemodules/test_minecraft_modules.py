@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import subprocess
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -92,33 +94,46 @@ def test_custom_install_updates_generated_config_files(tmp_path, monkeypatch):
     server.data.update({"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565})
     (tmp_path / "minecraft_server.jar").write_text("")
     update_calls = []
+    check_call = MagicMock()
 
     monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: update_calls.append((filename, settings)))
-    monkeypatch.setattr(custom.sp, "check_call", lambda *args, **kwargs: 0)
+    monkeypatch.setattr(subprocess, "check_call", check_call)
 
     custom.install(server, eula=True)
 
-    assert update_calls[0][0].endswith("server.properties")
-    assert update_calls[0][1] == {
-        "server-port": "25565",
-        "gamemode": "survival",
-        "difficulty": "easy",
-        "level-name": "alpha",
-        "max-players": "20",
-        "motd": "AlphaGSM alpha",
-    }
-    assert update_calls[1][0].endswith("server.properties")
-    assert update_calls[1][1] == {
-        "server-port": "25565",
-        "gamemode": "survival",
-        "difficulty": "easy",
-        "level-name": "alpha",
-        "max-players": "20",
-        "motd": "AlphaGSM alpha",
-    }
-    assert update_calls[2][0].endswith("eula.txt")
-    assert update_calls[2][1] == {"eula": "true"}
+    assert update_calls == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "25565",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "alpha",
+                "max-players": "20",
+                "motd": "AlphaGSM alpha",
+            },
+        ),
+        (str(tmp_path / "eula.txt"), {"eula": "true"}),
+    ]
+    check_call.assert_not_called()
     assert server.data.saved == 1
+
+
+def test_custom_install_does_not_boot_server_to_generate_settings(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update(
+        {"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565}
+    )
+    (tmp_path / "minecraft_server.jar").write_text("")
+    check_call = MagicMock()
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: None)
+    monkeypatch.setattr(subprocess, "check_call", check_call)
+
+    custom.install(server, eula=True)
+
+    assert (tmp_path / "eula.txt").read_text(encoding="utf-8") == "eula=true\n"
+    check_call.assert_not_called()
 
 
 def test_custom_exposes_schema_metadata_for_native_properties():
@@ -224,28 +239,6 @@ def test_custom_doset_gamemap_updates_levelname_and_server_properties(monkeypatc
             },
         )
     ]
-
-
-def test_custom_install_writes_eula_before_first_boot(tmp_path, monkeypatch):
-    server = DummyServer()
-    server.data.update({"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565})
-    (tmp_path / "minecraft_server.jar").write_text("")
-
-    observed = {}
-
-    def fake_check_call(*args, **kwargs):
-        eula_path = tmp_path / "eula.txt"
-        observed["exists"] = eula_path.exists()
-        observed["content"] = eula_path.read_text(encoding="utf-8") if eula_path.exists() else ""
-        (tmp_path / "server.properties").write_text("server-port=25565\n", encoding="utf-8")
-        return 0
-
-    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: None)
-    monkeypatch.setattr(custom.sp, "check_call", fake_check_call)
-
-    custom.install(server, eula=True)
-
-    assert observed == {"exists": True, "content": "eula=true\n"}
 
 
 def test_custom_install_requires_existing_server_jar(tmp_path):

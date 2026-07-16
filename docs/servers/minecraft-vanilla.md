@@ -54,6 +54,11 @@ alphagsm mymc stop
 - where to install the server
 - where Java is installed
 
+Setup downloads the jar and writes the managed `server.properties` plus
+`eula.txt` when the EULA is accepted, without launching a temporary Java
+server. The first JVM is started by `alphagsm <name> start`, so setup cannot
+leave the game port occupied.
+
 ## Useful Commands
 
 ```bash

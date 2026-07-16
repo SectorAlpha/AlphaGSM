@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-07-16
+- Server support: make Argo SteamCMD install and update select the upstream `server` beta branch required to retrieve app `563930`'s dedicated payload.
+- Minecraft: stop launching a temporary Java server during setup; AlphaGSM now writes `eula.txt` and `server.properties` directly so setup cannot leave a JVM holding the managed port before the real start lifecycle.
+- CI/downloads: authenticate GitHub release metadata requests with the read-only Actions token in smoke and integration jobs, avoiding anonymous API rate-limit failures during QuakeWorld and other release-backed setup paths.
+
 2026-07-15
 - CI/integration: full GitHub validation now keeps the normal auto-runtime batches and adds explicit process and Docker lanes for the process-passed dual-runtime server set.
 - CI/integration: remove the permanent Beasts of Bermuda download-timeout skip, give its CI lifecycle 30 minutes for the large SteamCMD install, and add a static guard so download or timeout failures remain visible.

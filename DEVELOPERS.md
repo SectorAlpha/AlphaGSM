@@ -515,9 +515,13 @@ Important environment variables:
 - `ALPHAGSM_CONFIG_LOCATION`
 - `ALPHAGSM_USERCONFIG_LOCATION`
 - `ALPHAGSM_RUN_INTEGRATION`
+- `ALPHAGSM_GITHUB_TOKEN` for authenticated GitHub release metadata requests
 - `ALPHAGSM_DEBUG`
 
 The smoke tests rely on temporary config files and `ALPHAGSM_CONFIG_LOCATION` to isolate state per run.
+GitHub Actions supplies `ALPHAGSM_GITHUB_TOKEN` to smoke and integration jobs
+using the workflow's read-only `GITHUB_TOKEN`; local runs can omit it unless
+they encounter GitHub's anonymous API rate limit.
 
 ## Documentation Contract
 

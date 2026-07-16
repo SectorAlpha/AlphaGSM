@@ -12,6 +12,9 @@ follows the native Linux nQuake and KTX bootstrap lifecycle, with QuakeWorld
 - `screen`
 - Python packages from `requirements.txt`
 - no Steam login is required; AlphaGSM bootstraps the public nQuake shareware and KTX runtime assets during setup
+- an optional `ALPHAGSM_GITHUB_TOKEN` avoids anonymous GitHub API rate limits
+  when resolving current MVDSV release metadata; GitHub Actions supplies its
+  read-only job token automatically
 
 ## Quick Start
 

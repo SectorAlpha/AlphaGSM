@@ -42,7 +42,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     mod.configure(server, ask=True)
 
 
-def test_install(tmp_path):
+def test_install(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "argoserver"
@@ -50,7 +50,18 @@ def test_install(tmp_path):
     server.data["Steam_anonymous_login_possible"] = True
     server.data["configfile"] = "server.cfg"
     server.data["servername"] = "AlphaGSM Test"
+    download = MagicMock()
+    monkeypatch.setattr(mod.steamcmd, "download", download)
+
     mod.install(server)
+
+    download.assert_called_once_with(
+        str(tmp_path) + "/",
+        563930,
+        True,
+        validate=False,
+        beta_branch="server",
+    )
     assert (tmp_path / "server.cfg").read_text() == 'hostname = "AlphaGSM Test";\n'
 
 
@@ -80,12 +91,23 @@ def test_setting_schema_resolves_hostname_alias():
     assert resolved.storage_key == "servername"
 
 
-def test_update_with_restart(tmp_path):
+def test_update_with_restart(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 563930
     server.data["Steam_anonymous_login_possible"] = True
+    download = MagicMock()
+    monkeypatch.setattr(mod.steamcmd, "download", download)
+
     mod.update(server, validate=True, restart=True)
+
+    download.assert_called_once_with(
+        str(tmp_path) + "/",
+        563930,
+        True,
+        validate=True,
+        beta_branch="server",
+    )
     assert server._stopped
     assert server._started
 

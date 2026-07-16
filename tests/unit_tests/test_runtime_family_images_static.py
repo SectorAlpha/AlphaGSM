@@ -11,6 +11,7 @@ WINE_PROTON_ENTRYPOINT = Path("docker/wine-proton/entrypoint.sh")
 BUILD_WORKFLOW = Path(".github/workflows/build-runtime-family-images.yml")
 DOCKER_README = Path("docker/README.md")
 INTEGRATION_ENV_DOCKERFILE = Path(".github/docker/integration-env/Dockerfile")
+PR_WORKFLOW = Path(".github/workflows/unittest.yaml")
 
 
 def test_java_runtime_image_keeps_bootstrap_tools_and_supported_temurin_jres():
@@ -116,6 +117,17 @@ def test_runtime_image_publish_workflow_passes_gh_token_for_proton_builds():
 
     assert 'secrets:' in text
     assert 'gh_token=${{ secrets.GITHUB_TOKEN }}' in text
+
+
+def test_pr_workflow_passes_github_token_to_download_validation_jobs():
+    text = PR_WORKFLOW.read_text(encoding="utf-8")
+
+    assert text.count(
+        "ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
+    ) >= 4
+    assert text.count(
+        "export ALPHAGSM_GITHUB_TOKEN='${ALPHAGSM_GITHUB_TOKEN}'"
+    ) >= 2
 
 
 def test_runtime_image_publish_workflow_links_packages_back_to_repo():

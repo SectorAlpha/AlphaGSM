@@ -1,6 +1,7 @@
 """Helpers for resolving downloadable assets from GitHub releases."""
 
 import json
+import os
 import urllib.parse
 import urllib.request
 
@@ -12,7 +13,16 @@ HTTP_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 def read_json(url):
     """Fetch and parse JSON from a URL using AlphaGSM's user agent."""
 
-    request = urllib.request.Request(url, headers={"User-Agent": HTTP_USER_AGENT})
+    headers = {"User-Agent": HTTP_USER_AGENT}
+    if urllib.parse.urlparse(url).hostname == "api.github.com":
+        token = (
+            os.environ.get("ALPHAGSM_GITHUB_TOKEN")
+            or os.environ.get("GITHUB_TOKEN")
+            or os.environ.get("GH_TOKEN")
+        )
+        if token:
+            headers["Authorization"] = "Bearer " + token
+    request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request) as response:
         return json.loads(response.read().decode("utf-8"))
 

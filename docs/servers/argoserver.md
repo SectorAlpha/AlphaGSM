@@ -8,7 +8,7 @@ This guide covers the `argoserver` module in AlphaGSM.
 
 The validated path is:
 
-- anonymous SteamCMD install from app `563930`
+- anonymous SteamCMD install from app `563930` on the upstream `server` beta
 - the shared Docker-backed `steamcmd-linux` runtime
 - the real native binary `argoserver`
 
@@ -59,7 +59,8 @@ Setup configures:
 
 - the game port (default 2302)
 - the install directory
-- SteamCMD downloads the server files anonymously from app `563930`
+- SteamCMD downloads the server files anonymously from app `563930` using
+  `-beta server`
 - AlphaGSM writes `server.cfg`
 
 ## Useful Commands
@@ -84,6 +85,7 @@ alphagsm myargoserv backup
 - **Location**: `<install_dir>/argoserver`
 - **Engine**: Arma/Bohemia native Linux dedicated server
 - **SteamCMD App ID**: `563930`
+- **SteamCMD branch**: `server`
 
 ### Server Configuration
 

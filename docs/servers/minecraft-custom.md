@@ -57,6 +57,10 @@ Setup configures:
 custom server binary you want by default, so `setup` only succeeds after you
 provide the jar yourself.
 
+Setup writes the managed `server.properties` values and, when `-l` / `--eula`
+is supplied, `eula.txt`. It does not start the jar; the first Java process is
+owned by the normal `start` lifecycle.
+
 Supported operator workflow:
 
 1. create the server

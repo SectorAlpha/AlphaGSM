@@ -4,7 +4,6 @@ import os
 import urllib.request
 import time
 import datetime
-import subprocess as sp
 from server import ServerError
 import server.runtime as runtime_module
 import downloader
@@ -241,29 +240,11 @@ def install(server, *, eula=False):
     server.data.save()
 
     eulafile = os.path.join(server.data["dir"], "eula.txt")
-    configfile = os.path.join(server.data["dir"], "server.properties")
-    javapath = server.data.get("javapath", "java")
-    had_configfile = os.path.isfile(configfile)
-    had_eulafile = os.path.isfile(eulafile)
     if eula and not os.path.isfile(eulafile):
         with open(eulafile, "w", encoding="utf-8") as handle:
             handle.write("eula=true\n")
-    # Seed server.properties before first boot so new Minecraft releases bind the
-    # requested port even when the bundler starts without an existing config.
-    sync_server_config(server)
-    if not had_configfile or (eula and not had_eulafile):
-        print("Starting server to create settings")
-        try:
-            sp.check_call(
-                [javapath, "-jar", server.data["exe_name"], "nogui"],
-                cwd=server.data["dir"],
-                shell=False,
-                timeout=20,
-            )
-        except sp.CalledProcessError as ex:
-            print("Error running server. Java returned status: " + str(ex.returncode))
-        except sp.TimeoutExpired:
-            print("Error running server. Process didn't complete in time")
+    # AlphaGSM owns these first-run files; the normal start lifecycle generates
+    # the remaining Minecraft state without leaving a setup JVM behind.
     sync_server_config(server)
     if eula:
         updateconfig(eulafile, {"eula": "true"})

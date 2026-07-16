@@ -98,12 +98,14 @@ def test_argo_and_bob_updates_download_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         argoserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, **kwargs: calls.append(
+            (path, app_id, anon, validate, kwargs)
+        ),
     )
 
     argoserver.update(argo, validate=True, restart=True)
     bobserver.update(bob, validate=False, restart=False)
 
-    assert ("/srv/argo/", 563930, True, True) in calls
-    assert ("/srv/bob/", 882430, True, False) in calls
+    assert ("/srv/argo/", 563930, True, True, {"beta_branch": "server"}) in calls
+    assert ("/srv/bob/", 882430, True, False, {}) in calls
     assert argo.start_calls == 1

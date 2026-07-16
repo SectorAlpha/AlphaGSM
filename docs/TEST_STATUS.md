@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 ## Summary
 
@@ -36,7 +36,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 |------|------|
 | acserver | SteamCMD |
 | ahl2server | SteamCMD (Source) |
-| argoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration and smoke now prove the old missing-executable disabled note was stale: anonymous SteamCMD setup for app `563930` installs the real native Linux dedicated payload, AlphaGSM launches the shipped `argoserver` binary inside the shared `steamcmd-linux` runtime, syncs `server.cfg` from the managed `servername`, and validates `query`, `info`, and `info --json` on Argo's current generic `tcp` health surface at the managed main game port |
+| argoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; anonymous SteamCMD setup for app `563930` selects the upstream `server` beta required for the native Linux dedicated payload, AlphaGSM launches the shipped `argoserver` binary inside the shared `steamcmd-linux` runtime, syncs `server.cfg` from the managed `servername`, and validates `query`, `info`, and `info --json` on Argo's current generic `tcp` health surface at the managed main game port |
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
 | arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; fresh smoke and integration now both pass on the branch-local `wine-proton` runtime image with anonymous SteamCMD install for app `2430930`, and the validated Linux health surface is generic `tcp` on the managed main game port instead of the older stale log-marker and A2S assumptions |
 | armarserver | SteamCMD |
@@ -93,7 +93,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | minecraft_bedrock | Docker runtime (service-console) — PASSED 2026-05-30; fresh focused integration now passes on the rebuilt branch-local `service-console` runtime image after AlphaGSM switches Bedrock setup from the stale JavaScript-page assumption to a direct browser-header archive fetch, keeps Docker-first lifecycle coverage on the shared runtime family, and uses Docker-stop for the container-backed stop path because Bedrock echoes console `stop` input without exiting cleanly under the shared exec-console path |
 | minecraft_paper | Direct download |
 | minecraft_bungeecord | Direct download — PASSED 2026-05-30; fresh focused integration now proves the tracker row was stale: AlphaGSM resolves the latest successful upstream BungeeCord Jenkins build automatically during `setup`, generates `config.yml`, and passes `query`, `info`, `info --json`, `status`, and clean shutdown on the managed SLP/TCP proxy port without requiring a bring-your-own jar URL |
-| minecraft_vanilla | Direct download — PASSED 2026-05-16; local integration helper now selects the newest release compatible with the installed Java runtime |
+| minecraft_vanilla | Direct download — PASSED 2026-05-16; the integration helper selects the newest release compatible with the installed Java runtime, and setup seeds managed properties plus the accepted-EULA file without leaving a bootstrap JVM alive before the real start lifecycle |
 | minecraft_velocity | Direct download |
 | minecraft_waterfall | Direct download |
 | medievalengineersserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; fresh formal integration and smoke now prove the old immediate Proton-crash note was stale: anonymous SteamCMD setup for app `367970` completes, AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, launches `DedicatedServer64/MedievalEngineersDedicated.exe` inside the shared `wine-proton` runtime with the rebuilt Wine prefix bootstrap, and validates `query`, `info`, and `info --json` on the current generic `tcp` health surface at the managed main game port instead of the older stale A2S expectation. |
@@ -117,7 +117,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | pcarserver | PASSED 2026-05-23; standard smoke and focused integration now both pass, with readiness driven by `info --json` protocol `a2s` on the derived query port (`port + 1`) |
 | projectzomboid | SteamCMD |
 | q2server | Direct download — PASSED 2026-05-18; setup now builds Yamagi Quake II from source, stages the official demo `baseq2` data for anonymous installs, defaults fresh servers to `demo1`, and query/info use the dedicated Quake II `status` protocol |
-| qwserver | Direct download — PASSED 2026-05-18; setup now stages the public nQuake shareware, KTX runtime, configs, and core maps needed for anonymous MVDSV installs, launches with `-game ktx`, and query/info use the dedicated QuakeWorld `status` protocol |
+| qwserver | Direct download — PASSED 2026-05-18; setup stages the public nQuake shareware, KTX runtime, configs, and core maps needed for anonymous MVDSV installs, GitHub CI authenticates release metadata resolution to avoid anonymous API rate limits, launch uses `-game ktx`, and query/info use the dedicated QuakeWorld `status` protocol |
 | pvkiiserver | SteamCMD (Source) |
 | pvrserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image, and AlphaGSM `query`, `info`, and `info --json` correctly use Pavlov VR's helper UDP status port (`port + 400`) instead of the older stale A2S expectation |
 | vrserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh smoke and focused integration now both prove the old missing-binary disabled note was stale: anonymous SteamCMD setup for app `1829350` installs the real Windows dedicated payload, AlphaGSM stages `Settings/ServerHostSettings.json` from the managed template, launches `VRisingServer.exe` under the shared Wine/Proton runtime with `-persistentDataPath`, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed `queryport` |
@@ -264,7 +264,7 @@ URLs.
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
 | jk2server | direct archive URL or staged Jedi Outcast Linux dedicated server tree |
-| minecraft_custom | user-supplied server jar |
+| minecraft_custom | user-supplied server jar; setup seeds managed properties plus the accepted-EULA file without launching the BYO jar |
 | minecraft_tekkit | direct Tekkit archive URL or staged Tekkit.jar |
 | mxbikesserver | user-supplied dedicated archive URL |
 | ndserver | staged Nuclear Dawn content tree |

@@ -1,6 +1,6 @@
 # AlphaGSM Improvement Roadmap
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 This document is a handoff-oriented review of the whole repository. It lists
 concrete improvements a future agent or contributor can pick up, ordered by
@@ -49,6 +49,11 @@ work here must respect.
 - The top-priority active work is now the broad red smoke/integration set on
   the newest `release_v1` GitHub CI run, plus proving the remaining Docker
   protocol-sensitive lanes there rather than through local integration runs.
+- The first systemic failures from that full run now have focused fixes:
+  Argo selects SteamCMD's required `server` beta, Minecraft setup no longer
+  leaves a bootstrap JVM behind, and release-backed CI setup receives an
+  authenticated GitHub API token. The next GitHub run is the validation point
+  before triaging the remaining module-specific failures.
 - Full GitHub integration validation now preserves the normal `auto` batches
   and adds explicit `process` and `docker` batches for the declared
   process-passed dual-runtime set, so full validation does not silently replace
