@@ -1,5 +1,6 @@
 """Full coverage tests for enshrouded."""
 
+import json
 import os
 import sys
 from unittest.mock import patch, MagicMock
@@ -26,6 +27,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=15637, dir=str(tmp_path))
     assert server.data['port'] == 15637
+    assert server.data['queryport'] == "15637"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -55,6 +57,28 @@ def test_install(tmp_path):
     server.data["Steam_AppID"] = 2278520
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
+
+
+def test_sync_server_config_writes_authoritative_query_port(tmp_path):
+    server = DummyServer("ensh")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "queryport": 25637,
+            "servername": "AlphaGSM Enshrouded",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    config = json.loads(
+        (tmp_path / "enshrouded_server.json").read_text(encoding="utf-8")
+    )
+    assert config["name"] == "AlphaGSM Enshrouded"
+    assert config["queryPort"] == 25637
+    assert config["ip"] == "0.0.0.0"
+    assert config["saveDirectory"] == "./savegame"
+    assert mod.config_sync_keys == ("queryport", "servername")
 
 
 def test_update_with_restart(tmp_path):

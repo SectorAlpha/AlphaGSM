@@ -16,7 +16,8 @@ Provides query strategies:
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook
+``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``,
+``"http_status"``, ``"udp"``, or ``"tcp"``.  When that hook
 is absent the caller falls back to a TCP ping on the main port.
 """
 

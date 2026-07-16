@@ -58,7 +58,9 @@ Setup configures:
 - anonymous SteamCMD download for app `3792580`
 
 On Linux, AlphaGSM uses the shared `wine-proton` Docker runtime for the
-supported path.
+supported path. GitHub CI runs one Docker-default heavy lifecycle rather than
+also forcing a host-process Wine lane that currently stays alive without
+opening the managed health port.
 
 ## Runtime Contract
 

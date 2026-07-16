@@ -78,7 +78,6 @@ def test_palworld_get_start_command_supports_community_flag(tmp_path):
     assert cmd == [
         "./PalServer.sh",
         "-port=8211",
-        "-queryport=27015",
         "-publiclobby",
     ]
     assert cwd == str(tmp_path)

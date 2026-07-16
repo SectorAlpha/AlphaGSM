@@ -63,6 +63,8 @@ alphagsm myricochet backup
 
 - Module name: `ricochetserver`
 - Default port: 27015
+- Process and Docker integration readiness use AlphaGSM `info --json` protocol
+  `a2s`; Docker does not require a host `screen` log.
 
 ## Developer Notes
 
@@ -73,6 +75,8 @@ alphagsm myricochet backup
 - **Engine**: GoldSrc (HLDS)
 - **SteamCMD App ID**: `90`
 - **Mod App ID**: `ricochet`
+- **Launcher resolution**: the shared GoldSrc launcher prefers `hlds_run`
+  before falling back to lower-level binaries
 
 ### Server Configuration
 

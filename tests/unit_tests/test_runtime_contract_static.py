@@ -137,6 +137,19 @@ def _stub_download_resolution(module, module_name):
 
 
 def _seed_install_state(server):
+    next_port = 27015
+    for key, value in list(server.data.items()):
+        if not str(key).lower().endswith("port"):
+            continue
+        try:
+            port = int(value)
+        except (TypeError, ValueError):
+            continue
+        if port > 0:
+            continue
+        server.data[key] = next_port
+        next_port += 1
+
     root = Path(server.data["dir"])
     root.mkdir(parents=True, exist_ok=True)
 

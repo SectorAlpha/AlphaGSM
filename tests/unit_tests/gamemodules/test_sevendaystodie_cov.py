@@ -125,6 +125,33 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_runtime_contract_publishes_required_port_range(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.runtime_module, "_steamcmd_sdk_mounts", lambda: [])
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "startserver.sh",
+            "configfile": "serverconfig.xml",
+            "port": 26900,
+        }
+    )
+    (tmp_path / "startserver.sh").write_text("", encoding="utf-8")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    expected_ports = [
+        {"host": 26900, "container": 26900, "protocol": "tcp"},
+        {"host": 26900, "container": 26900, "protocol": "udp"},
+        {"host": 26901, "container": 26901, "protocol": "udp"},
+        {"host": 26902, "container": 26902, "protocol": "udp"},
+        {"host": 26903, "container": 26903, "protocol": "udp"},
+    ]
+    assert requirements["ports"] == expected_ports
+    assert spec["ports"] == expected_ports
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

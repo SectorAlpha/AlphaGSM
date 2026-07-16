@@ -150,20 +150,14 @@ def backup(server, profile=None):
 
 
 def get_query_address(server):
-    """Return the A2S query address for Valheim.
+    """Return Valheim's documented primary UDP health surface."""
 
-    Valheim's dedicated server exposes the Steam A2S query interface on
-    game-port + 1 (e.g. game on UDP 2456, A2S on UDP 2457).
-    """
-    return (
-        runtime_module.resolve_query_host(server),
-        int(server.data.get("queryport", int(server.data["port"]) + 1)),
-        "a2s",
-    )
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
-    """Return the A2S info address for Valheim (same as query address)."""
+    """Return the same UDP health surface used by the info command."""
+
     return get_query_address(server)
 
 

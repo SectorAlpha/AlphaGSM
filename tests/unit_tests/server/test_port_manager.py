@@ -106,6 +106,44 @@ def test_collect_claim_set_ignores_module_declared_port_keys():
     assert ("queryport", 27016) not in ports_by_source
 
 
+def test_collect_claim_set_includes_module_derived_port_definitions_for_process_runtime():
+    module = SimpleNamespace(
+        port_claim_definitions=(
+            {"key": "port", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "udp", "offset": 1},
+            {"key": "port", "protocol": "udp", "offset": 2},
+            {"key": "port", "protocol": "udp", "offset": 3},
+        ),
+    )
+    server = make_server(
+        "alpha",
+        {
+            "module": "sevendaystodie",
+            "port": 26900,
+            "runtime": "process",
+        },
+        module=module,
+    )
+
+    claim_set = port_manager.collect_claim_set(server)
+    shifted_claim_set = port_manager.collect_claim_set(
+        server,
+        overrides={"port": 27000},
+    )
+
+    assert {
+        endpoint.port
+        for endpoint in claim_set.endpoints
+        if endpoint.scope == "internal"
+    } == {26900, 26901, 26902, 26903}
+    assert {
+        endpoint.port
+        for endpoint in shifted_claim_set.endpoints
+        if endpoint.scope == "internal"
+    } == {27000, 27001, 27002, 27003}
+
+
 def test_collect_claim_set_rebuilds_runtime_ports_from_overrides(monkeypatch):
     module = SimpleNamespace(
         get_container_spec=lambda server: {

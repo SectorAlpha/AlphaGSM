@@ -47,6 +47,8 @@ alphagsm mysevenday stop
 Setup configures:
 
 - the game port (default 26900)
+- the complete server network range: base TCP+UDP and UDP on `port + 1`,
+  `port + 2`, and `port + 3`
 - the install directory
 - SteamCMD downloads the server files
 
@@ -85,6 +87,8 @@ alphagsm mysevenday mod cleanup
 - Default port: 26900
 - AlphaGSM readiness for 7DTD follows the game's real `output_log__*.txt` file in the install root rather than the screen log.
 - `query`, `info`, and `info --json` now validate against 7DTD's live A2S listener on the managed main port.
+- AlphaGSM claims the full derived port set before either process or Docker
+  launch and publishes the same set in Docker.
 - On very long SteamCMD setups, refreshing the claimed port just before `start` avoids a stale free-port selection from the earlier setup step.
 
 ## Developer Notes

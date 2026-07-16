@@ -2,11 +2,11 @@
 
 import os
 
-import screen
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from utils.backups import backups as backup_utils
+from utils.simple_kv_config import rewrite_equals_config
 
 from utils.platform_info import IS_LINUX
 
@@ -27,6 +27,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "publicip", "ownername")
 
 
 def _container_runtime_env(_server):
@@ -81,11 +82,74 @@ def configure(server, ask, port=None, dir=None, *, exe_name="AstroServer.exe"):
     return gamemodule_common.finalize_configure(server)
 
 
+def _config_dir(server):
+    """Return Astroneer's authoritative WindowsServer config directory."""
+
+    return os.path.join(
+        server.data["dir"],
+        "Astro",
+        "Saved",
+        "Config",
+        "WindowsServer",
+    )
+
+
+def _sync_engine_port(config_path, port):
+    """Keep the URL port in Engine.ini while preserving unrelated settings."""
+
+    lines = []
+    section_found = False
+    port_written = False
+    in_url_section = False
+    if os.path.isfile(config_path):
+        with open(config_path, "r", encoding="utf-8") as handle:
+            for line in handle:
+                stripped = line.strip()
+                if stripped.startswith("[") and stripped.endswith("]"):
+                    if in_url_section and not port_written:
+                        lines.append("Port=%s\n" % (port,))
+                        port_written = True
+                    in_url_section = stripped.lower() == "[url]"
+                    section_found = section_found or in_url_section
+                if in_url_section and stripped.lower().startswith("port="):
+                    line = "Port=%s\n" % (port,)
+                    port_written = True
+                lines.append(line)
+    if not section_found:
+        if lines and lines[-1].strip():
+            lines.append("\n")
+        lines.append("[URL]\n")
+    if not port_written:
+        lines.append("Port=%s\n" % (port,))
+    with open(config_path, "w", encoding="utf-8") as handle:
+        handle.write("".join(lines))
+
+
+def sync_server_config(server):
+    """Write the official Astroneer connection and ownership settings."""
+
+    config_dir = _config_dir(server)
+    os.makedirs(config_dir, exist_ok=True)
+    _sync_engine_port(
+        os.path.join(config_dir, "Engine.ini"),
+        int(server.data.get("port", 8777)),
+    )
+    rewrite_equals_config(
+        os.path.join(config_dir, "AstroServerSettings.ini"),
+        {
+            "PublicIP": server.data.get("publicip", "127.0.0.1"),
+            "OwnerName": server.data.get("ownername", "AlphaGSM"),
+            "OwnerGuid": 0,
+        },
+    )
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the ASTRONEER server files via SteamCMD."
 
@@ -94,12 +158,19 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the ASTRONEER server files and optionally restart the server."
 
 
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the ASTRONEER server."
+
+
+def prestart(server):
+    """Refresh Astroneer's authoritative INI settings before launch."""
+
+    sync_server_config(server)
 
 
 def get_query_address(server):

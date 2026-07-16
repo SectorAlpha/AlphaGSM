@@ -2,11 +2,13 @@
 
 This guide covers the `reignofdwarfserver` module in AlphaGSM.
 
-`reignofdwarfserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`reignofdwarfserver` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. GitHub keeps one Docker-default `wine-proton` lifecycle because
+the forced host-Proton process exited before readiness.
 
 ## Requirements
 
-- `screen`
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -61,6 +63,8 @@ alphagsm myreignofd backup
 
 - Module name: `reignofdwarfserver`
 - Default port: 27015
+- Integration readiness uses AlphaGSM `info --json` protocol `a2s` rather than
+  a host `screen` log.
 
 ## Developer Notes
 

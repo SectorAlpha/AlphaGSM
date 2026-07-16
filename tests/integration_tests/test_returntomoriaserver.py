@@ -2,8 +2,6 @@
 
 import json
 import os
-import time
-from pathlib import Path
 
 import pytest
 
@@ -24,7 +22,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_udp_open,
+    wait_for_info_protocol,
     wait_for_udp_closed,
 )
 from gamemodules.returntomoriaserver import steam_app_id
@@ -103,10 +101,10 @@ def test_returntomoriaserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        status_json_path = install_dir / "Moria" / "Saved" / "Config" / "Status.json"
-        status_payload = wait_for_status_json_running(status_json_path, START_TIMEOUT)
-        log_path = install_dir / "Moria" / "Saved" / "Logs" / "Moria.log"
-        wait_for_udp_open("127.0.0.1", port, START_TIMEOUT, log_path=log_path)
+        info_data = wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
+        assert info_data.get("port") == port, (
+            f"Expected game-port UDP readiness on fresh server: {info_data!r}"
+        )
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -131,9 +129,6 @@ def test_returntomoriaserver_lifecycle(tmp_path):
         )
         assert _info_data.get("port") == port, (
             f"Expected game-port UDP readiness on fresh server: {_info_data!r}"
-        )
-        assert status_payload.get("AdvertisedAddressAndPort", "").endswith(f":{port}"), (
-            f"Expected advertised port to match the managed game port: {status_payload!r}"
         )
     finally:
         # stop

@@ -18,6 +18,26 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['queryport'] == 7778
+
+
+def test_configure_moves_default_owned_status_port_with_game_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+
+    mod.configure(server, ask=False, port=8000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 8001
+
+
+def test_configure_preserves_explicit_status_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    server.data["queryport"] = 9000
+
+    mod.configure(server, ask=False, port=8000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 9000
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -87,9 +107,19 @@ def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "NWXServer.sh"
+    server.data["port"] = 7777
+    server.data["queryport"] = 7778
     (tmp_path / "NWXServer.sh").write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert cmd == ["./NWXServer.sh"]
+    assert cmd == [
+        "./NWXServer.sh",
+        "-port=7777",
+        "-statusPort=7778",
+        (
+            "-ini:Engine:[HTTPServer.Listeners]:"
+            "+ListenerOverrides=(Port=7778,BindAddress=0.0.0.0)"
+        ),
+    ]
     assert cwd == server.data["dir"]
 
 
@@ -148,6 +178,12 @@ def test_checkvalue_port():
     assert result == 12345
 
 
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12345")
+    assert result == 12345
+
+
 def test_checkvalue_savegame():
     server = DummyServer()
     result = mod.checkvalue(server, ("savegame",), "/test/value")
@@ -186,6 +222,7 @@ def test_get_container_spec_runs_as_non_root(tmp_path):
     server.data["dir"] = str(tmp_path)
     server.data["exe_name"] = "NWXServer.sh"
     server.data["port"] = 7777
+    server.data["queryport"] = 7778
     (tmp_path / "NWXServer.sh").write_text("")
 
     spec = mod.get_container_spec(server)
@@ -212,4 +249,32 @@ def test_get_container_spec_runs_as_non_root(tmp_path):
         "/home/alphagsm/.steam/sdk64/steamclient.so;"
     ) in shell_command
     assert "export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm;" in shell_command
-    assert "exec runuser -u alphagsm -- sh -lc 'cd /srv/server && ./NWXServer.sh'" in shell_command
+    assert "exec runuser -u alphagsm -- sh -lc" in shell_command
+    assert "./NWXServer.sh -port=7777 -statusPort=7778" in shell_command
+    assert "BindAddress=0.0.0.0" in shell_command
+
+
+def test_runtime_requirements_publish_game_udp_and_status_tcp():
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 7778})
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7778, "container": 7778, "protocol": "tcp"},
+    ]
+
+
+def test_query_hooks_use_runtime_resolved_status_endpoint(monkeypatch):
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 7778})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.10",
+    )
+
+    expected = ("172.18.0.10", 7778, "http_status")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected

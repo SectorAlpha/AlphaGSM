@@ -2,7 +2,9 @@
 
 This guide covers the `bdserver` module in AlphaGSM.
 
-`bdserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`bdserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub continues to exercise process and Docker lanes; both use the
+same shared Valve A2S query hook.
 
 ## Requirements
 
@@ -62,6 +64,9 @@ alphagsm mybdserver backup
 ## Notes
 
 - Module name: `bdserver`
+- Docker readiness uses AlphaGSM `info --json` with the runtime-resolved A2S
+  host rather than a host-only `screen` log.
+- Replacement GitHub CI validation of this shared query-host correction is pending.
 - Default port: 27015
 
 ## Developer Notes

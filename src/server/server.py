@@ -290,6 +290,17 @@ def _query_robust_status_payload(query_utils, host, port):
     return used_host, merged
 
 
+def _query_http_status_payload(query_utils, host, port):
+    """Return a generic JSON status payload from ``/status``."""
+
+    return _query_http_json_candidates(
+        query_utils,
+        host,
+        port,
+        "/status",
+    )
+
+
 def _get_module_hook(module, hook_name):
     """Return a callable hook from a module or its shared MODULE namespace."""
 
@@ -1023,7 +1034,7 @@ class Server(object):
         ``"quakeworld"`` (QuakeWorld UDP), ``"quake2"`` (Quake II UDP), ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"bedrock"`` (Minecraft Bedrock RakNet UDP ping),
         ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"udp"`` (generic UDP reachability),
-        or ``"tcp"``.
+        ``"http_status"`` (JSON ``/status`` endpoint), or ``"tcp"``.
         """
         from utils import query as query_utils
 
@@ -1108,6 +1119,27 @@ class Server(object):
                 host = "127.0.0.1"
                 port = self.data["port"]
                 protocol = "tcp"
+
+        if protocol == "http_status":
+            try:
+                _, status_payload = _query_http_status_payload(
+                    query_utils,
+                    host,
+                    port,
+                )
+                print(
+                    "Server is responding (HTTP status API on port {port}): "
+                    "status={status!r}  players={players}".format(
+                        port=port,
+                        status=status_payload.get("status", ""),
+                        players=status_payload.get("player_count", "?"),
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
 
         if protocol == "robust_status":
             try:
@@ -1258,7 +1290,8 @@ class Server(object):
         (Quake3/QFusion UDP getstatus), ``"quakeworld"`` (QuakeWorld UDP status), ``"quake2"`` (Quake II UDP status),
         ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
-        ``"udp"`` (generic UDP reachability), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
+        ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
+        ``/status`` endpoint), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
 
         When *as_json* is ``True`` the result is printed as a JSON object
@@ -1457,6 +1490,34 @@ class Server(object):
                     "  Map        : {map}\n"
                     "  Players    : {players}/{max_players}".format(port=port, **parsed)
                 )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "http_status":
+            try:
+                _, result = _query_http_status_payload(
+                    query_utils,
+                    host,
+                    port,
+                )
+                if as_json:
+                    print(json.dumps({"protocol": "http_status", "port": port, **result}))
+                    return
+
+                lines = [
+                    "Server info (HTTP status API on port {}):".format(port),
+                    "  Status      : {}".format(result.get("status", "")),
+                    "  Players     : {}".format(result.get("player_count", "?")),
+                ]
+                player_names = result.get("player_names")
+                if isinstance(player_names, list) and player_names:
+                    lines.append(
+                        "  Online      : {}".format(
+                            ", ".join(str(name) for name in player_names)
+                        )
+                    )
+                print("\n".join(lines))
                 return
             except query_utils.QueryError as exc:
                 raise ServerError("Info query failed: " + str(exc))

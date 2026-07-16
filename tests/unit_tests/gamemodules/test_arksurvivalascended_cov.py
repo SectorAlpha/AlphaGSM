@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 from tests.unit_tests.gamemodules.helpers import DummyServer
+import utils.proton as proton_module
 
 sys.modules.pop('gamemodules.arksurvivalascended', None)
 _proton_mock = MagicMock()
@@ -111,27 +112,6 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == str(exe_path.parent)
 
 
-def test_container_command_uses_install_root_relative_executable(tmp_path):
-    server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
-    exe_path = tmp_path / "ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
-    exe_path.parent.mkdir(parents=True, exist_ok=True)
-    exe_path.write_text("")
-    server.data["adminpassword"] = "test"
-    server.data["map"] = "TheIsland_WP"
-    server.data["maxplayers"] = 70
-    server.data["port"] = 7777
-    server.data["queryport"] = 27015
-    server.data["serverpassword"] = ""
-    server.data["sessionname"] = "AlphaGSM asa server"
-
-    command = mod._container_command(server)
-
-    assert command[0] == "./ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
-    assert "SessionName=AlphaGSM_asa_server" in command[1]
-
-
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -167,7 +147,7 @@ def test_runtime_requirements_enable_xvfb_container_env():
     assert requirements["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
-def test_get_container_spec_runs_from_install_root(tmp_path):
+def test_get_container_spec_delegates_windows_executable_to_proton_runtime(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
@@ -184,10 +164,14 @@ def test_get_container_spec_runs_from_install_root(tmp_path):
 
     spec = mod.get_container_spec(server)
 
-    assert spec["working_dir"] == mod.runtime_module.DEFAULT_CONTAINER_WORKDIR
-    shell = spec["command"][-1]
-    assert "./ShooterGame/Binaries/Win64/ArkAscendedServer.exe" in shell
-    assert "runuser -u alphagsm" in shell
+    assert spec["working_dir"] == (
+        proton_module.CONTAINER_SERVER_DIR + "/ShooterGame/Binaries/Win64"
+    )
+    assert spec["command"][0] == "./ArkAscendedServer.exe"
+    assert spec["env"]["ALPHAGSM_WINEPREFIX"] == (
+        proton_module.CONTAINER_SERVER_DIR + "/.alphagsm-wineprefix"
+    )
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
 
 
 def test_status():

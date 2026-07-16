@@ -309,6 +309,46 @@ def _runtime_port_endpoints(server, module, payload, allow_stale_saved_ports):
     return endpoints
 
 
+def _module_port_endpoints(server, module, payload, existing_endpoints):
+    """Return game-declared derived port claims for every runtime."""
+
+    definitions = _get_module_attr(module, "port_claim_definitions", ()) or ()
+    if not definitions:
+        return []
+
+    temp_server = SimpleNamespace(
+        name=getattr(server, "name", "<unknown>"),
+        data=payload,
+        module=module,
+    )
+    try:
+        port_specs = runtime_module.build_port_specs(temp_server, definitions)
+    except (KeyError, RuntimeError, TypeError, ValueError):
+        return []
+
+    endpoints = []
+    for entry in port_specs:
+        host_port = _normalize_port_value(entry.get("host"))
+        if host_port is None:
+            continue
+        for scope, ip in (
+            ("internal", payload["internal_ip"]),
+            ("external", payload["external_ip"]),
+        ):
+            candidate = PortEndpoint(
+                scope,
+                ip,
+                host_port,
+                "module:port_claim_definitions",
+                derived=True,
+                shiftable=False,
+            )
+            if _endpoint_is_covered([*existing_endpoints, *endpoints], candidate):
+                continue
+            _add_endpoint(endpoints, candidate)
+    return endpoints
+
+
 def collect_claim_set(server, overrides=None):
     """Collect the claim set for *server*, applying optional overrides first."""
 
@@ -353,6 +393,9 @@ def collect_claim_set(server, overrides=None):
             endpoints,
             PortEndpoint("external", external_ip, port, key_name),
         )
+
+    for endpoint in _module_port_endpoints(server, module, payload, endpoints):
+        _add_endpoint(endpoints, endpoint)
 
     for endpoint in _runtime_port_endpoints(
         server,

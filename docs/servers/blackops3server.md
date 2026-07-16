@@ -2,11 +2,13 @@
 
 This guide covers the `blackops3server` module in AlphaGSM.
 
-`blackops3server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`blackops3server` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub validates the Windows server through the shared
+`wine-proton` Docker runtime in the heavy test partition.
 
 ## Requirements
 
-- `screen`
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -47,6 +49,8 @@ alphagsm myblackops stop
 Setup configures:
 
 - the game port (default 27015)
+- a consecutive managed three-port group mapped to container ports
+  `27015`, `27016`, and `27017`
 - the install directory
 - SteamCMD downloads the server files
 
@@ -61,14 +65,19 @@ alphagsm myblackops backup
 
 - Module name: `blackops3server`
 - Default port: 27015
+- The launch follows the shipped unranked-server command without an ineffective
+  custom `-port` switch.
+- Readiness combines `CreateDedicatedModsLobby: ready!` with AlphaGSM generic
+  UDP `query` / `info` on the managed base port.
+- The active Docker smoke and integration correction is pending replacement CI.
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `UnrankedServer/Launch_Server.bat`
-- **Location**: `<install_dir>/UnrankedServer/Launch_Server.bat`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `UnrankedServer/BlackOps3_UnrankedDedicatedServer.exe`
+- **Location**: `<install_dir>/UnrankedServer/BlackOps3_UnrankedDedicatedServer.exe`
+- **Engine**: Windows dedicated server through Wine/Proton
 - **SteamCMD App ID**: `545990`
 
 ### Server Configuration

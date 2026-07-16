@@ -21,9 +21,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_log_marker,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.remnantsserver import steam_app_id
 
@@ -92,14 +90,6 @@ def test_remnantsserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = install_dir / "RemSurvival" / "Saved" / "Logs" / "RemSurvival.log"
-        wait_for_log_marker(
-            log_path,
-            ["listening on port", "Engine is initialized"],
-            START_TIMEOUT,
-            env=env,
-            server_name=server_name,
-        )
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status

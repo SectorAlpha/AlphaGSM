@@ -240,13 +240,14 @@ def test_setting_schema_exposes_readyornot_launch_formats():
     assert mod.setting_schema["maxplayers"].native_config_key == "maxplayers"
 
 
-def test_query_and_info_address_use_resolved_query_host(monkeypatch):
+def test_query_and_info_address_use_resolved_game_udp_port(monkeypatch):
     server = DummyServer("ready")
+    server.data["port"] = "27015"
     server.data["queryport"] = "27016"
     monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
 
-    assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
-    assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert mod.get_query_address(server) == ("10.0.0.10", 27015, "udp")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27015, "udp")
 
 
 def test_get_container_spec_maps_nested_workdir(tmp_path):

@@ -48,6 +48,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="NWXServer.sh"):
         default_port=7777,
         prompt="Please specify the game port to use for this server:",
     )
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -81,11 +82,20 @@ restart.__doc__ = "Restart the Nightingale server."
 def get_start_command(server):
     """Build the command used to launch a Nightingale dedicated server."""
 
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     return (
-        ["./" + server.data["exe_name"]],
+        [
+            "./" + server.data["exe_name"],
+            "-port={}".format(server.data["port"]),
+            "-statusPort={}".format(server.data["queryport"]),
+            (
+                "-ini:Engine:[HTTPServer.Listeners]:"
+                "+ListenerOverrides=(Port={},BindAddress=0.0.0.0)"
+            ).format(server.data["queryport"]),
+        ],
         server.data["dir"],
     )
 
@@ -112,6 +122,23 @@ def backup(server, profile=None):
     gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
+def get_query_address(server):
+    """Return the official Nightingale HTTP status endpoint."""
+
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "http_status",
+    )
+
+
+def get_info_address(server):
+    """Return the Nightingale info endpoint."""
+
+    return get_query_address(server)
+
+
 def checkvalue(server, key, *value):
     """Validate supported Nightingale datastore edits."""
 
@@ -119,7 +146,7 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
+        int_keys=("port", "queryport"),
         str_keys=("savegame", "exe_name", "dir"),
         backup_module=backup_utils,
     )
@@ -127,6 +154,7 @@ def checkvalue(server, key, *value):
 def get_runtime_requirements(server):
     """Return Nightingale's native Linux Docker runtime contract."""
 
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
     mounts = None
     if "dir" in server.data:
         mounts = [
@@ -147,7 +175,7 @@ def get_runtime_requirements(server):
         family="steamcmd-linux",
         port_definitions=(
             {"key": "port", "protocol": "udp"},
-            {"key": "port", "protocol": "tcp"},
+            {"key": "queryport", "protocol": "tcp"},
         ),
         mounts=mounts,
     )

@@ -51,8 +51,11 @@ alphagsm myastronee stop
 Setup configures:
 
 - the game port (default 8777)
+- the public IP and owner identity
 - the install directory
 - SteamCMD downloads the server files
+- AlphaGSM syncs the port into `WindowsServer/Engine.ini` and the ownership
+  values into `WindowsServer/AstroServerSettings.ini`
 
 ## Useful Commands
 
@@ -81,6 +84,9 @@ alphagsm myastronee backup
 ### Server Configuration
 
 - **Config file**: See game module source
+- **Managed files**: `Astro/Saved/Config/WindowsServer/Engine.ini` and
+  `AstroServerSettings.ini`
+- **Managed keys**: `port`, `publicip`, `ownername`
 - **Template**: See [server-templates/astroneerserver/](../server-templates/astroneerserver/) if available
 
 ### Maps and Mods

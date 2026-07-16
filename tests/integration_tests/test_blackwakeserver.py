@@ -7,8 +7,10 @@ import pytest
 from conftest import (
     alphagsm_env,
     default_runtime_backend,
+    effective_runtime_backend,
     pick_free_tcp_port,
     log_command_result,
+    require_command,
     require_command_for_runtime,
     resolve_runtime_image,
     require_integration_opt_in,
@@ -35,11 +37,17 @@ module_name = "blackwakeserver"
 def test_blackwakeserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+    )
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,
         module_name=module_name,
     )
+    if selected_runtime_backend == "docker":
+        require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

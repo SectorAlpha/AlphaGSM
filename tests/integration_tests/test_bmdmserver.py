@@ -18,17 +18,12 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    read_info_json,
     find_source_server_cfg,
     set_source_hibernation,
     assert_source_server_empty,
-    wait_for_log_marker,
-    wait_for_a2s_ready,
-    wait_for_tcp_closed,
     wait_for_udp_closed,
 )
 from gamemodules.bmdmserver import steam_app_id
-from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
@@ -64,7 +59,6 @@ def test_bmdmserver_lifecycle(tmp_path):
     )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
-    query_host = detect_query_host()
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
@@ -81,28 +75,11 @@ def test_bmdmserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["SV_ActivateServer", "Connection to Steam servers successful", "VAC secure mode"],
-            START_TIMEOUT,
-        )
+        info_data = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        assert_source_server_empty(info_data)
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        hibernating_info = read_info_json(env, server_name)
-        assert hibernating_info["protocol"] in {"console", "a2s"}, (
-            f"Expected console or a2s info after startup: {hibernating_info!r}"
-        )
-        assert_source_server_empty(hibernating_info)
-
-        if hibernating_info["protocol"] != "a2s":
-            awake_info = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
-            assert_source_server_empty(awake_info)
-
-        wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -127,4 +104,4 @@ def test_bmdmserver_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_udp_closed(query_host, port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

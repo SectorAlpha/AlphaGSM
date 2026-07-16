@@ -1,7 +1,6 @@
 """ARK: Survival Ascended dedicated server lifecycle helpers."""
 
 import os
-import shlex
 
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -79,21 +78,6 @@ def _build_map_args(server):
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
     return map_args
-
-
-def _container_command(server):
-    """Return a Docker-safe ASA command from the mounted install root."""
-
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
-    launcher_relpath = os.path.relpath(exe_path, server.data["dir"])
-    return [
-        "./" + launcher_relpath,
-        _build_map_args(server),
-        "-server",
-        "-log",
-    ]
 
 
 def configure(
@@ -216,32 +200,22 @@ def checkvalue(server, key, *value):
         str_keys=("map", "sessionname", "adminpassword", "serverpassword", "exe_name", "dir"),
     )
 
-get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        extra_env=_container_runtime_env,
+port_claim_definitions = (
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "queryport", "protocol": "tcp"},
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
 )
 
-def get_container_spec(server):
-    """Return a Docker launch spec rooted at the mounted install directory."""
+get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+    port_definitions=port_claim_definitions,
+    prefer_proton=True,
+    extra_env=_container_runtime_env,
+)
 
-    requirements = get_runtime_requirements(server)
-    shell_command = " ".join(shlex.quote(part) for part in _container_command(server))
-    return {
-        "working_dir": runtime_module.DEFAULT_CONTAINER_WORKDIR,
-        "stdin_open": True,
-        "tty": False,
-        "env": requirements.get("env", {}),
-        "mounts": requirements.get("mounts", []),
-        "ports": requirements.get("ports", []),
-        "command": [
-            "sh",
-            "-lc",
-            (
-                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
-                'chmod -R a+rwX /srv/server /srv/wineprefix /home/alphagsm; '
-                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
-                "exec runuser -u alphagsm -- sh -lc "
-                + shlex.quote(shell_command)
-            ),
-        ],
-    }
+get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=get_start_command,
+    port_definitions=port_claim_definitions,
+    prefer_proton=True,
+    extra_env=_container_runtime_env,
+)

@@ -48,7 +48,9 @@ alphagsm mysniperel stop
 Setup configures:
 
 - the game port (default 7777)
-- the query port (default 27015)
+- the authentication port (`game port + 1`)
+- the update port (`game port + 2`)
+- the lobby port (`game port + 3`)
 - the install directory
 - SteamCMD downloads the Windows dedicated server files
 
@@ -63,14 +65,12 @@ alphagsm mysniperel backup
 
 - Module name: `sniperelite4server`
 - Default game port: 7777
-- Default query port: 27015
-- Current validation status: PASSED 2026-05-30 on the Docker-backed
-  `wine-proton` runtime. Fresh AlphaGSM integration and smoke now both pass
-  through `create`, `setup`, `start`, `status`, `query`, `info`,
-  `info --json`, `stop`, and post-stop verification when the server runs in
-  the shared container image. On this validated Linux lane, `query` and
-  `info` currently use the stable generic `tcp` health surface on the managed
-  main port instead of the older stale host-log and A2S assumptions.
+- Port layout: game UDP, auth UDP, update UDP, lobby TCP
+- `query`, `info`, and `info --json` use generic UDP health on the managed
+  game port
+- Current validation status: historically `PASSED` on the Docker-backed
+  `wine-proton` runtime; the corrected four-port/config contract is pending
+  the replacement GitHub CI run
 
 ## Developer Notes
 
@@ -90,6 +90,9 @@ alphagsm mysniperel backup
   session. AlphaGSM stages `default.cfg` in the install root before launch,
   copying the shipped `Docs/ExampleConfigs/Example1.cfg` when available so the
   dedicated server no longer aborts immediately on `default.cfg` lookup.
+- **Managed directives**: `Server.Name`, `Server.GamePort`,
+  `Server.AuthPort`, `Server.UpdatePort`, `Server.LobbyPort`,
+  `Settings.MaxPlayers`, and `Server.Host`
 - **Template**: See [server-templates/sniperelite4server/](../server-templates/sniperelite4server/) if available
 
 ### Maps and Mods

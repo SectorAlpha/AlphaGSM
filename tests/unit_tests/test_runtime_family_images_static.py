@@ -43,6 +43,7 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
         "libatomic1",
         "libsdl2-2.0-0",
         "libpulse0",
+        "libpulse-dev",
         "libssl1.1_1.1.1f-1ubuntu2_amd64.deb",
         "libssl1.0.0_1.0.2n-1ubuntu5_amd64.deb",
         "packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb",
@@ -52,6 +53,15 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
         "--install-dir /usr/lib/dotnet",
     )
 
+    missing = [snippet for snippet in required_snippets if snippet not in text]
+
+    assert missing == []
+
+
+def test_integration_image_keeps_official_valheim_linux_packages():
+    text = INTEGRATION_ENV_DOCKERFILE.read_text(encoding="utf-8")
+
+    required_snippets = ("libatomic1", "libpulse0", "libpulse-dev")
     missing = [snippet for snippet in required_snippets if snippet not in text]
 
     assert missing == []

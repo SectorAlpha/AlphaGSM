@@ -2,7 +2,9 @@
 
 This guide covers the `rust` module in AlphaGSM.
 
-`rust` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`rust` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline.
+GitHub integration exercises process and Docker using the same module launch
+contract and AlphaGSM-resolved A2S readiness surface.
 
 ## Requirements
 
@@ -46,7 +48,9 @@ alphagsm myrust stop
 
 Setup configures:
 
-- the game port (default 28016)
+- the game port (default 28015/UDP)
+- the RCON port (default 28016/TCP)
+- the Steam query port (default 28017/UDP)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -60,7 +64,10 @@ alphagsm myrust backup
 ## Notes
 
 - Module name: `rust`
-- Default port: 28016
+- Default game port: 28015/UDP
+- Default RCON port: 28016/TCP
+- Default query port: 28017/UDP
+- `query`, `info`, and `info --json` use A2S on `server.queryport`
 
 ## Developer Notes
 
@@ -70,6 +77,8 @@ alphagsm myrust backup
 - **Location**: `<install_dir>/RustDedicated`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `258550`
+- **Launch ports**: `+server.port`, `+server.queryport`, and
+  `+rcon.port`
 
 ### Server Configuration
 

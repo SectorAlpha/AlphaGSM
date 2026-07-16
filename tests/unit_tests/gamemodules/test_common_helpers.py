@@ -44,6 +44,40 @@ def test_ensure_backup_defaults_preserves_existing_backup_config():
     assert server.data["backup"]["schedule"] == [("custom", 1, "days")]
 
 
+def test_sync_derived_port_tracks_default_owned_value_and_preserves_override():
+    server = make_server(port=7777)
+
+    assert (
+        gamemodule_common.sync_derived_port(
+            server,
+            "queryport",
+            offset=1,
+        )
+        == 7778
+    )
+
+    server.data["port"] = 8000
+    assert (
+        gamemodule_common.sync_derived_port(
+            server,
+            "queryport",
+            offset=1,
+        )
+        == 8001
+    )
+
+    server.data["queryport"] = 9000
+    server.data["port"] = 8100
+    assert (
+        gamemodule_common.sync_derived_port(
+            server,
+            "queryport",
+            offset=1,
+        )
+        == 9000
+    )
+
+
 def test_handle_basic_checkvalue_supports_int_string_and_custom_keys():
     server = make_server(backup={})
 

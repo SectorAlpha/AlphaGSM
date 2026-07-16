@@ -11,8 +11,8 @@ work here must respect.
 ## Current State Snapshot
 
 - ~233 game modules under `src/gamemodules/`, package-backed layout.
-- Support tracker (`docs/TEST_STATUS.md`, last updated 2026-07-15): 146 PASSED, 47 ENABLED (AUTH),
-  41 ENABLED (BYO), 3 DISABLED, 0 SKIPPED; CI now enforces parity with the
+- Support tracker (`docs/TEST_STATUS.md`, last updated 2026-07-16): 145 PASSED, 47 ENABLED (AUTH),
+  42 ENABLED (BYO), 3 DISABLED, 0 SKIPPED; CI now enforces parity with the
   live enabled/disabled gate files.
 - Six shared Docker runtime families (`java`, `quake-linux`, `service-console`,
   `simple-tcp`, `steamcmd-linux`, `wine-proton`) with image scaffolds under
@@ -50,10 +50,10 @@ work here must respect.
   the newest `release_v1` GitHub CI run, plus proving the remaining Docker
   protocol-sensitive lanes there rather than through local integration runs.
 - The first systemic failures from that full run now have focused fixes:
-  Argo selects SteamCMD's required `server` beta, Minecraft setup no longer
-  leaves a bootstrap JVM behind, and release-backed CI setup receives an
-  authenticated GitHub API token. The next GitHub run is the validation point
-  before triaging the remaining module-specific failures.
+  Argo no longer forces the removed `server` beta that current SteamCMD
+  rejected, Minecraft setup no longer leaves a bootstrap JVM behind, and
+  release-backed CI setup receives an authenticated GitHub API token. The
+  next GitHub run is the validation point.
 - The next sampled failures also resolved to shared infrastructure rather than
   game-module runtime branches: the Proton installer selected the first
   upstream archive and therefore installed `aarch64` Proton on x86_64 CI, and
@@ -86,11 +86,30 @@ work here must respect.
   `solserver` integration tests wait on AlphaGSM's declared `info --json`
   surface instead of raw localhost probes, so the remaining red CI lanes are
   less likely to be test-harness address drift.
-- `tests/integration_tests/test_btserver.py` and `test_valheim.py` still wait
-  on the `a2s` info protocol, but the modules now use the shared
-  `runtime.resolve_query_host(...)` path locally. The remaining question is
-  GitHub CI proof: whether A2S actually comes up under the Docker lane or the
-  readiness contract needs to change honestly.
+- The current broad run also classified the module-specific failures rather
+  than hiding them: 7 Days to Die and Sniper Elite 4 now declare their full
+  derived port sets; Palworld, Barotrauma, Valheim, and Rust use their current
+  protocol/port contracts; Rust no longer waits for a host-only log in Docker;
+  RS2, SCUM, and Sons of the Forest use one Docker-default heavy lane instead
+  of duplicating unsupported or currently stalled host Wine lanes; and
+  Citadel, Dark and Light, Eco, Empyrion, IOS, Just Cause 2, Last Oasis,
+  Miscreated, Mumble, Ready or Not, Reign of Dwarf, Remnants, and Return to
+  Moria now use their supported Docker-default path where GitHub's host process
+  environment is missing required libraries, cannot launch the Windows
+  payload, or leaves it alive without opening the managed health surface.
+  Black Mesa Deathmatch, Empyrion, Reign of Dwarf, Remnants, Return to Moria,
+  Ricochet, and Ready or Not also use runtime-neutral log/protocol readiness
+  instead of assuming a host `screen` session. Fresh GitHub CI remains the
+  proof point for these changes.
+- The next sampled Docker failures are also addressed in-tree: Docker inspect
+  network values are now IP-validated before query routing; shared Valve
+  modules use the runtime host resolver; `bdserver` and Myth of Empires no
+  longer wait on host-only logs; Nightingale uses its official HTTP `/status`
+  endpoint; Xonotic is restored to the upstream wrapper/content-root launch
+  contract; and Blackwake, Black Ops III, Myth of Empires, and Xonotic now use
+  Docker-default CI lanes rather than forcing unproven process paths. Black
+  Ops III and Myth of Empires are also classified as heavy tests. Replacement
+  GitHub CI remains the proof point.
 
 ## 1. CI and Test Infrastructure
 
@@ -119,17 +138,24 @@ work here must respect.
    The routing helper now excludes Docker-default and non-runtime integration
    checks from the Docker enablement backlog; the computed backlog is empty,
    leaving CI failure classification as the remaining work rather than lane
-   discovery. Current samples have identified and fixed five shared classes:
+   discovery. Current samples have identified and fixed these shared classes:
    wrong-architecture Proton asset selection, lost host-path translation after
    a login-shell environment reset, integration tests passing a runtime name
-   where a process command name was required, hosted-runner disk exhaustion
-   before large Docker integration starts, and kernel-ephemeral port reuse
-   between SteamCMD setup and start. Fresh GitHub validation is still required
-   before this item can be marked done.
+   where a process command name was required, hosted-runner disk exhaustion,
+   kernel-ephemeral port reuse, incomplete derived-port publication, stale
+   protocol assumptions, Docker tests waiting on host-only logs, and forced
+   process lanes for Docker-supported Wine servers. A routing-driven static
+   guard now also requires every Docker-default lifecycle test to check the
+   Docker command directly instead of passing it to the process-only helper.
+   Fresh GitHub validation is still required before this item can be marked
+   done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
-   host-process `screen` flow, so the smoke canonical lifecycle matches the
-   newer integration lanes again.
+   host-process `screen` flow, and `run_readyornotserver.sh` now follows the
+   game-owned log plus primary UDP contract instead of stale A2S assumptions,
+   while Nightingale, Myth of Empires, and Black Ops III now mirror their
+   current Docker protocol and image contracts. The smoke canonical lifecycle
+   therefore matches the newer integration lanes again.
 
 ## 2. Runtime / Module Contract
 
@@ -144,20 +170,20 @@ work here must respect.
    ACC, Arma Reforger, Core Keeper, MOHAA, Mumble, Onset, and V Rising.
    `tests/unit_tests/test_runtime_contract_static.py` now guards the Docker
    command surface so install-dir leaks fail fast.
-3. **Verify the A2S surface for Docker btserver/valheim.** Both modules
-   publish `queryport` udp+tcp, and the local wiring now uses explicit
-   Docker-aware query/info hosts via `runtime.resolve_query_host(...)`. The
-   unit suites now also assert the full Docker spec publishes both game and
-   A2S ports. The remaining work is CI proof: if A2S works through bridge
-   networking, keep the `a2s` waits; if not, either fix publication/startup
-   details or honestly downgrade the test contract to the generic surface
-   like other migrated lanes.
+3. **Done: resolve the btserver/valheim protocol surface.** Barotrauma's
+   current dedicated server exposes its reliable Lidgren health surface on
+   the primary UDP game port, and Valheim exposes its reliable health surface
+   on the primary UDP game port while still publishing the adjacent server
+   port. Their module hooks, smoke runners, integration tests, and unit
+   contracts now agree instead of requiring stale A2S responses.
 4. **Done: config sync gap audit.** AGENTS.md requires
    `sync_server_config` + `config_sync_keys` for modules whose `set` values
    map to real game config. The repo now has
    `scripts/list_missing_config_sync_contracts.py` mirroring the static
    contract heuristic, and the current tree reports zero modules managing real
-   server config without a declared config-sync contract.
+   server config without a declared config-sync contract. The follow-up CI
+   audit also corrected Astroneer's official dedicated-server INI writer and
+   Enshrouded's JSON-backed `queryPort` contract.
 5. **Steam auth-profile flow.** The provider-requirement contract in AGENTS.md
    anticipates mapping SteamCMD-auth-gated installs (the 47 ENABLED (AUTH)
    rows) through a shared auth-profile mechanism instead of per-module fail-fast
@@ -166,7 +192,7 @@ work here must respect.
 
 ## 3. Support-State Backlog
 
-1. **ENABLED (BYO) automation.** 41 modules fail fast pending operator-staged
+1. **ENABLED (BYO) automation.** 42 modules fail fast pending operator-staged
    assets. For the subset where an authoritative direct download exists
    (GitHub releases, vendor archives), wire real installs and promote to
    PASSED. Each one is a self-contained PR: module install path + smoke +
@@ -572,13 +598,12 @@ touches credentials. Treat these as hard constraints, not suggestions.
 
 1. Check the latest `release_v1` CI run; fix whatever the newest red gate is
    (fast gates first, then `slow-*` lanes, then batches).
-2. Resolve the btserver/valheim Docker A2S question (Section 2.3) and align
-   smoke runners (Section 1.6) — this closes out the in-flight migration.
-3. Continue the remaining process→Docker lane audit (Section 1.2) once the
-   active red CI failures are classified, keeping the game modules runtime-
-   agnostic and pushing runtime-specific handling into shared helpers where
-   practical.
-4. Then pick either: more process→Docker lane migrations (Section 1.2) or
+2. Triage only failures from the replacement run; the current red batches
+   already have evidence-backed fixes or Docker-default routing.
+3. Keep any follow-up game-module contracts runtime-agnostic and push
+   process-versus-Docker handling into shared helpers where practical.
+4. Then pick either: additional runtime coverage on other Linux
+   distributions, macOS, and Windows, or
    BYO/AUTH promotions (Section 3) depending on appetite for long CI cycles.
 
 Keep every change scoped: one lane/module per commit, tracker + guide +

@@ -66,7 +66,7 @@ CONFIG_PATH="$WORK_DIR/alphagsm-nightingale.conf"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)"
+PORT="$(pick_free_port_group 2)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -105,7 +105,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "http_status" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json

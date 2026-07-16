@@ -101,11 +101,11 @@ def test_get_start_command_nested_archive_root(tmp_path):
     server.data["port"] = 27015
     server.data["userdir"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert cmd[0] == "./Xonotic/server/server_linux.sh"
-    assert cwd == server.data["dir"]
+    assert cmd[0] == "./server/server_linux.sh"
+    assert cwd == str(content_root)
 
 
-def test_get_start_command_prefers_native_binary_from_nested_archive_root(tmp_path):
+def test_get_start_command_prefers_upstream_wrapper_from_nested_archive_root(tmp_path):
     server = DummyServer()
     content_root = tmp_path / "Xonotic"
     content_root.mkdir()
@@ -122,8 +122,8 @@ def test_get_start_command_prefers_native_binary_from_nested_archive_root(tmp_pa
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./Xonotic/xonotic-linux64-dedicated"
-    assert cwd == server.data["dir"]
+    assert cmd[0] == "./server/server_linux.sh"
+    assert cwd == str(content_root)
 
 
 def test_get_container_spec_uses_nested_archive_workdir(tmp_path):
@@ -141,7 +141,21 @@ def test_get_container_spec_uses_nested_archive_workdir(tmp_path):
 
     spec = mod.get_container_spec(server)
 
-    assert spec["working_dir"] == mod.runtime_module.DEFAULT_CONTAINER_WORKDIR
+    assert spec["working_dir"] == "/srv/server/Xonotic"
+
+
+def test_query_hooks_use_runtime_resolved_host(monkeypatch):
+    server = DummyServer()
+    server.data["port"] = 26000
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.12",
+    )
+
+    expected = ("172.18.0.12", 26000, "quake")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

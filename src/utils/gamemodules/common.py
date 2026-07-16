@@ -128,6 +128,32 @@ def configure_port(server, ask, port, *, default_port, prompt):
     return server.data["port"]
 
 
+def sync_derived_port(
+    server,
+    key,
+    *,
+    base_key="port",
+    offset=0,
+    marker_key=None,
+):
+    """Keep a default-owned side port aligned with its base port."""
+
+    if base_key not in server.data:
+        return None
+
+    base_port = int(server.data[base_key])
+    marker_key = marker_key or "_derived_{}_base".format(key)
+    previous_base = int(server.data.get(marker_key, base_port))
+    previous_default = previous_base + int(offset)
+    current_value = server.data.get(key)
+    if current_value in (None, "", previous_default, str(previous_default)):
+        server.data[key] = base_port + int(offset)
+    else:
+        server.data[key] = int(current_value)
+    server.data[marker_key] = base_port
+    return server.data[key]
+
+
 def configure_install_dir(server, ask, dir, *, prompt):
     """Resolve and persist the install directory with AlphaGSM's trailing slash style."""
 

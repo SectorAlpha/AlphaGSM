@@ -98,6 +98,8 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
     assert cwd == str(tmp_path)
     assert cmd[0] == "./PalServer.sh"
+    assert "-port=8211" in cmd
+    assert all(not arg.startswith("-queryport=") for arg in cmd)
 
 
 def test_get_start_command_uses_nested_palserver_root(tmp_path):
@@ -230,6 +232,25 @@ def test_get_container_spec_maps_nested_palserver_workdir(tmp_path):
 
     assert spec["working_dir"] == "/srv/server/PalServer"
     assert spec["command"][0] == "./Pal/Binaries/Linux/PalServer-Linux-Shipping"
+    assert spec["ports"] == [
+        {"host": 8211, "container": 8211, "protocol": "udp"},
+    ]
+
+
+def test_query_and_info_use_runtime_resolved_main_udp_port():
+    server = DummyServer()
+    server.data["port"] = 8211
+    server.data["queryport"] = 27015
+
+    with patch.object(
+        mod.runtime_module,
+        "resolve_query_host",
+        side_effect=["172.18.0.9", "172.18.0.9"],
+    ) as resolve_query_host:
+        assert mod.get_query_address(server) == ("172.18.0.9", 8211, "udp")
+        assert mod.get_info_address(server) == ("172.18.0.9", 8211, "udp")
+
+    assert resolve_query_host.call_args_list == [((server,),), ((server,),)]
 
 
 def test_settings_paths_follow_nested_palserver_root(tmp_path):

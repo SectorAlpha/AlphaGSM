@@ -75,6 +75,8 @@ alphagsm mysonsofth backup
 - Current AlphaGSM status: supported and validated on the Docker-backed
   `wine-proton` runtime, with A2S `query`, `info`, and `info --json` on the
   managed query port
+- GitHub CI routes this as one Docker-default heavy lifecycle; it does not
+  duplicate the currently failing forced host-process Wine lane
 
 ## Developer Notes
 

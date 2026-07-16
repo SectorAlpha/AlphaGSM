@@ -3,11 +3,11 @@
 This guide covers the `returntomoriaserver` module in AlphaGSM.
 
 Status: PASSED on 2026-05-29
+The validated Ubuntu 24.04 path is one Docker-default `wine-proton` lifecycle.
 
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -52,7 +52,7 @@ Setup configures:
 - SteamCMD downloads the server files
 - AlphaGSM writes `MoriaServerConfig.ini` before first launch and keeps `ListenPort`,
   `AdvertiseAddress`, and the world name aligned with the managed datastore
-- readiness is tracked through `Moria/Saved/Config/Status.json`
+- readiness is tracked through AlphaGSM `info --json` protocol `udp`
 
 ## Useful Commands
 
@@ -81,7 +81,8 @@ alphagsm myreturnto backup
 ### Server Configuration
 
 - **Config files**: `MoriaServerConfig.ini`
-- **Runtime status file**: `Moria/Saved/Config/Status.json`
+- **Runtime status file**: `Moria/Saved/Config/Status.json` remains available
+  for operator diagnostics, but CI readiness is runtime-neutral
 - **Template**: See [server-templates/returntomoriaserver/](../server-templates/returntomoriaserver/) if available
 
 ### Maps and Mods

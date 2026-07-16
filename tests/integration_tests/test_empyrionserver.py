@@ -22,7 +22,6 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_log_marker,
     wait_for_tcp_closed,
 )
 from gamemodules.empyrionserver import steam_app_id
@@ -98,14 +97,6 @@ def test_empyrionserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = install_dir / "Logs" / "alphagsm-dedicated.log"
-        wait_for_log_marker(
-            log_path,
-            ["Loading file", "Started a new game", "Started process"],
-            START_TIMEOUT,
-            env=env,
-            server_name=server_name,
-        )
         _info_data = wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
         assert _info_data["port"] == status_port, (
             f"Expected Empyrion info port {status_port}: {_info_data!r}"

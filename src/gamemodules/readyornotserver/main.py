@@ -211,13 +211,13 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return A2S query address for Ready or Not (queryport, not game port)."""
+    """Return the current generic UDP health surface on the game port."""
 
-    return runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s"
+    return runtime_module.resolve_query_host(server), int(server.data["port"]), "udp"
 
 
 def get_info_address(server):
-    """Return A2S info address for Ready or Not (same as query address)."""
+    """Return the same generic UDP health surface used by query."""
 
     return get_query_address(server)
 

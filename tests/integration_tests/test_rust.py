@@ -9,24 +9,20 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.rust import steam_app_id
 
 pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 1800  # Rust generates a new world on first start; CI runners (2 CPU / 7 GB) can take up to 25 min
-STOP_TIMEOUT = 90
 
 
 @pytest.mark.timeout(4800)  # 80 min: download (~2 GB) + world generation on first start on slow CI runners
@@ -55,10 +51,14 @@ def test_rust_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(3)
+    rconport = port + 1
+    queryport = port + 2
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "rconport", str(rconport))
+    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
 
     # setup
     result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -78,19 +78,11 @@ def test_rust_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["Server startup complete", "startup complete", "SteamServer Connected"],
-            START_TIMEOUT,
-        )
+        # AlphaGSM resolves the correct host and port for both runtime backends.
+        info_data = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        # Wait on AlphaGSM's declared info surface rather than a raw guessed socket.
-        wait_for_info_protocol(env, server_name, "a2s", 900)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -105,18 +97,19 @@ def test_rust_lifecycle(tmp_path):
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
-        import json as _info_json
-        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+        assert info_data.get("players") == 0, (
+            f"Expected 0 players on fresh server: {info_data!r}"
+        )
+        assert info_data["port"] == queryport, (
+            f"Expected reported query port {queryport}: {info_data!r}"
         )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    status_result = run_and_assert_ok(env, server_name, "status")
+    assert "Server isn't running as" in status_result.stdout

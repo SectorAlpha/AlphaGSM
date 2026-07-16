@@ -4,8 +4,9 @@ This guide covers the `nightingale` module in AlphaGSM.
 
 `nightingale` is currently `PASSED` on the documented Ubuntu 24.04 Linux
 baseline. The checked-in GitHub validation path for this server is
-Docker-first through the shared `steamcmd-linux` runtime, with generic `tcp`
-`query` / `info` on the managed main port.
+Docker-first through the shared `steamcmd-linux` runtime. The current branch
+uses Nightingale's official HTTP `/status` endpoint for `query` / `info` on
+the managed status port.
 
 ## Requirements
 
@@ -50,6 +51,7 @@ alphagsm mynighting stop
 Setup configures:
 
 - the game port (default 7777)
+- the HTTP status port (default 7778)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -61,8 +63,9 @@ proves:
 - runtime launch through `NWXServer.sh`
 - non-root container execution with the Steam bootstrap mounted into
   `~/.steam/sdk64/steamclient.so`
-- `query`, `info`, and `info --json` on generic `tcp` at the managed main
-  game port
+- `NWXServer.sh -port=<port> -statusPort=<queryport>`
+- an HTTP listener bound to `0.0.0.0` for container reachability
+- `query`, `info`, and `info --json` through JSON `/status` on `queryport`
 
 ## Useful Commands
 
@@ -75,6 +78,8 @@ alphagsm mynighting backup
 
 - Module name: `nightingale`
 - Default port: 7777
+- Default status/query port: 7778
+- The updated HTTP status contract is pending replacement GitHub CI validation.
 
 ## Developer Notes
 

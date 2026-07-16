@@ -7,7 +7,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$_SCRIPT_DIR/../.
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 
-START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
+START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-1800}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itrust}"
 SERVER_STARTED=0
@@ -49,7 +49,9 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-rust-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)" 
+PORT="$(pick_free_port_group 3)"
+RCON_PORT="$((PORT + 1))"
+QUERY_PORT="$((PORT + 2))"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -71,14 +73,26 @@ EOF
 
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
+echo "Using RCON port: $RCON_PORT"
+echo "Using query port: $QUERY_PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create rust
+run_alphagsm "$SERVER_NAME" set rconport "$RCON_PORT"
+run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
+run_alphagsm "$SERVER_NAME" set worldsize 1000
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready \
+  "$LOG_PATH" \
+  "$START_TIMEOUT_SECONDS" \
+  "Server startup complete|SteamServer Connected"
 run_alphagsm "$SERVER_NAME" status
+wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

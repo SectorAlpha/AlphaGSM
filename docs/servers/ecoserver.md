@@ -3,10 +3,11 @@
 This guide covers the `ecoserver` module in AlphaGSM.
 
 Status: PASSED on 2026-05-29 via the shared `steamcmd-linux` Docker runtime.
+GitHub CI keeps one Docker-default lifecycle because a stock Ubuntu 24.04
+process host without `libgdiplus` correctly fails the runtime preflight.
 
 ## Requirements
 
-- `screen`
 - `docker` for the validated Linux runtime path
 - For local process launches on Linux, install `libgdiplus` plus the usual SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`

@@ -22,6 +22,25 @@ def test_configure_basic(tmp_path):
     assert server.data['port'] == 12888
 
 
+def test_configure_moves_default_owned_query_port_with_game_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=12888, dir=str(tmp_path))
+
+    mod.configure(server, ask=False, port=14000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 14001
+
+
+def test_configure_preserves_explicit_query_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=12888, dir=str(tmp_path))
+    server.data["queryport"] = 15000
+
+    mod.configure(server, ask=False, port=14000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 15000
+
+
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
     server = DummyServer()
@@ -116,6 +135,20 @@ def test_setting_schema_exposes_mythofempires_launch_formats():
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
     assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
     assert mod.setting_schema["servername"].launch_arg_format == "-ServerName={value}"
+
+
+def test_query_hooks_use_runtime_resolved_host(monkeypatch):
+    server = DummyServer()
+    server.data.update({"port": 12888, "queryport": 12889})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.11",
+    )
+
+    expected = ("172.18.0.11", 12889, "a2s")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_missing_exe(tmp_path):

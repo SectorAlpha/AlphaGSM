@@ -101,20 +101,38 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
-def test_query_and_info_address_use_queryport_for_process_runtime():
+def test_query_and_info_address_do_not_branch_on_runtime(monkeypatch):
     server = DummyServer(name="blackwake-it")
-    server.data.update({"queryport": 27016, "runtime": "process"})
+    server.data.update(
+        {
+            "port": 34238,
+            "queryport": 27016,
+            "runtime": "process",
+        }
+    )
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.14",
+    )
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 27016, "a2s")
-    assert mod.get_info_address(server) == ("127.0.0.1", 27016, "a2s")
+    expected = ("172.18.0.14", 34238, "tcp")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
 
 
-def test_query_and_info_address_use_tcp_main_port_for_docker_runtime():
+def test_query_and_info_address_use_same_surface_for_docker_runtime(monkeypatch):
     server = DummyServer(name="blackwake-it")
     server.data.update({"port": 34238, "queryport": 27016, "runtime": "docker"})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.14",
+    )
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 34238, "tcp")
-    assert mod.get_info_address(server) == ("127.0.0.1", 34238, "tcp")
+    expected = ("172.18.0.14", 34238, "tcp")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
 
 
 def test_sync_server_config_updates_server_cfg(tmp_path):

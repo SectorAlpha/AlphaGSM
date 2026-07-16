@@ -2,7 +2,9 @@
 
 This guide covers the `palworld` module in AlphaGSM.
 
-`palworld` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`palworld` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub integration keeps process and Docker coverage, while the game
+module exposes the same launch and health contract to both runtimes.
 
 ## Requirements
 
@@ -49,6 +51,8 @@ Setup configures:
 - the game port (default 8211)
 - the install directory
 - SteamCMD downloads the server files
+- AlphaGSM passes only Palworld's documented `-port=<port>` network argument;
+  there is no separate managed query-port argument
 
 ## Useful Commands
 
@@ -61,6 +65,8 @@ alphagsm mypalworld backup
 
 - Module name: `palworld`
 - Default port: 8211
+- Network protocol: UDP
+- `query`, `info`, and `info --json` use generic UDP health on the game port
 
 ## Developer Notes
 

@@ -9,23 +9,18 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     default_runtime_backend,
-    effective_runtime_backend,
     resolve_runtime_image,
-    require_command_for_runtime,
-    require_proton,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
+    run_setup_with_port_retry,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_a2s_ready,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
-from gamemodules.mythofempiresserver import steam_app_id
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
@@ -39,21 +34,8 @@ def test_mythofempiresserver_lifecycle(tmp_path):
     require_steamcmd_opt_in()
     runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
     module_name = "mythofempiresserver"
-    selected_runtime_backend = effective_runtime_backend(
-        runtime_backend,
-        module_name=module_name,
-    )
-    require_command_for_runtime(
-        "screen",
-        runtime_backend=runtime_backend,
-        module_name=module_name,
-    )
-    image = None
-    if selected_runtime_backend == "process":
-        require_proton()
-    else:
-        require_command("docker")
-        image = resolve_runtime_image(
+    require_command("docker")
+    image = resolve_runtime_image(
         "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
         LOCAL_WINE_PROTON_IMAGE,
         PUBLISHED_WINE_PROTON_IMAGE,
@@ -73,35 +55,28 @@ def test_mythofempiresserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(2)
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
-    if image is not None:
-        run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    _setup_result, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+    )
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = install_dir / "MOE" / "Saved" / "Logs" / "MOE.log"
-        wait_for_log_marker(
-            log_path,
-            ["listening on port", "Engine is initialized"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        # MoE exposes A2S on queryport (game port + 1), not the game port
-        wait_for_a2s_ready("127.0.0.1", port + 1, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -131,3 +106,4 @@ def test_mythofempiresserver_lifecycle(tmp_path):
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

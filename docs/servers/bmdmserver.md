@@ -63,6 +63,8 @@ alphagsm mybmdmserv backup
 
 - Module name: `bmdmserver`
 - Default port: 27015
+- Process and Docker integration readiness use AlphaGSM `info --json` protocol
+  `a2s`; Docker does not depend on a host `screen` log.
 
 ## Developer Notes
 

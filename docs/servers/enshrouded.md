@@ -2,7 +2,9 @@
 
 This guide covers the `enshrouded` module in AlphaGSM.
 
-`enshrouded` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`enshrouded` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The validated Linux path is Docker-backed through the shared
+`wine-proton` runtime.
 
 ## Requirements
 
@@ -47,6 +49,8 @@ alphagsm myenshroud stop
 Setup configures:
 
 - the game port (default 15637)
+- the query port in `enshrouded_server.json` (default 15637)
+- the server name in `enshrouded_server.json`
 - the install directory
 - SteamCMD downloads the server files
 
@@ -61,7 +65,7 @@ alphagsm myenshroud backup
 
 - Module name: `enshrouded`
 - Default game port: `15637`
-- Default query port: `15638`
+- Default query port: `15637`
 
 ## Developer Notes
 
@@ -75,7 +79,10 @@ alphagsm myenshroud backup
 ### Server Configuration
 
 - **Config file**: `enshrouded_server.json`
-- **Notes**: `queryPort` and the JSON settings live in `enshrouded_server.json`; AlphaGSM still supplies the separate game port and save-name via launch arguments
+- **Managed keys**: `queryport`, `servername`
+- **Notes**: `enshrouded_server.json` is authoritative for `queryPort` and
+  `name`. AlphaGSM preserves unrelated generated settings and still supplies
+  the save-name launch argument.
 - **Template**: See [server-templates/enshrouded/](../server-templates/enshrouded/) if available
 
 ### Maps and Mods

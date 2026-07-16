@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import copy
 import ctypes
+import ipaddress
 import json
 import os
 import re
@@ -279,8 +280,8 @@ def infer_port_definitions(server, family=None):
     return _infer_port_definitions(server, family)
 
 
-def _build_port_specs(server, port_definitions):
-    """Return Docker port mappings for the requested server data keys."""
+def build_port_specs(server, port_definitions):
+    """Return normalized port mappings for the requested server data keys."""
 
     ports = []
     for definition in port_definitions or ():
@@ -288,10 +289,24 @@ def _build_port_specs(server, port_definitions):
             key = definition.get("key")
             if key not in server.data or server.data[key] is None:
                 continue
+            base_port = int(server.data[key])
+            offset = int(definition.get("offset", 0))
+            host_port = base_port + offset
+            container_port = int(definition.get("container", host_port))
+            for label, port in (("host", host_port), ("container", container_port)):
+                if port < 1 or port > 65535:
+                    raise RuntimeError(
+                        "Invalid {} port {} derived from {} for server {}".format(
+                            label,
+                            port,
+                            key,
+                            getattr(server, "name", "<unknown>"),
+                        )
+                    )
             ports.append(
                 {
-                    "host": int(server.data[key]),
-                    "container": int(definition.get("container", server.data[key])),
+                    "host": host_port,
+                    "container": container_port,
                     "protocol": definition.get("protocol", "udp"),
                 }
             )
@@ -362,7 +377,7 @@ def build_runtime_requirements(
             mounts.extend(_steamcmd_sdk_mounts())
     if mounts:
         requirements["mounts"] = copy.deepcopy(list(mounts))
-    ports = _build_port_specs(server, port_definitions)
+    ports = build_port_specs(server, port_definitions)
     if ports:
         requirements["ports"] = ports
     if env:
@@ -1593,7 +1608,7 @@ def _running_inside_container():
 
 
 def _inspect_container_network_value(container_name, field):
-    """Return the first non-empty network *field* from ``docker inspect``."""
+    """Return the first valid network IP from a Docker inspect *field*."""
 
     try:
         raw = sp.check_output(
@@ -1613,8 +1628,13 @@ def _inspect_container_network_value(container_name, field):
 
     for line in raw.splitlines():
         line = line.strip()
-        if line and line != "<no value>":
-            return line
+        if not line or line == "<no value>":
+            continue
+        try:
+            ipaddress.ip_address(line)
+        except ValueError:
+            continue
+        return line
     return ""
 
 

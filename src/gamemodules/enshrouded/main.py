@@ -1,5 +1,6 @@
 """Enshrouded dedicated server lifecycle helpers."""
 
+import json
 import os
 
 import utils.proton as proton
@@ -25,6 +26,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("queryport", "servername")
 
 
 def _container_runtime_env(_server):
@@ -68,7 +70,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="enshrouded_server.e
         default_port=15637,
         prompt="Please specify the game port to use for this server:",
     )
-    server.data.setdefault("queryport", str(int(resolved_port) + 1))
+    server.data.setdefault("queryport", str(int(resolved_port)))
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -79,11 +81,61 @@ def configure(server, ask, port=None, dir=None, *, exe_name="enshrouded_server.e
     return gamemodule_common.finalize_configure(server)
 
 
+def _server_config_path(server):
+    """Return Enshrouded's authoritative JSON config path."""
+
+    return os.path.join(server.data["dir"], "enshrouded_server.json")
+
+
+def sync_server_config(server):
+    """Keep enshrouded_server.json aligned with AlphaGSM-managed values."""
+
+    config_path = _server_config_path(server)
+    payload = {}
+    if os.path.isfile(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as handle:
+                loaded = json.load(handle)
+            if isinstance(loaded, dict):
+                payload = loaded
+        except (json.JSONDecodeError, OSError):
+            payload = {}
+
+    payload.update(
+        {
+            "name": str(
+                server.data.get("servername")
+                or ("AlphaGSM %s" % (server.name,))
+            ),
+            "saveDirectory": payload.get("saveDirectory", "./savegame"),
+            "logDirectory": payload.get("logDirectory", "./logs"),
+            "ip": payload.get("ip", "0.0.0.0"),
+            "queryPort": int(
+                server.data.get(
+                    "queryport",
+                    server.data.get("port", 15637),
+                )
+            ),
+            "slotCount": int(payload.get("slotCount", 16)),
+            "voiceChatMode": payload.get("voiceChatMode", "Proximity"),
+            "enableVoiceChat": bool(payload.get("enableVoiceChat", False)),
+            "enableTextChat": bool(payload.get("enableTextChat", False)),
+            "gameSettingsPreset": payload.get("gameSettingsPreset", "Default"),
+        }
+    )
+
+    os.makedirs(server.data["dir"], exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Enshrouded server files via SteamCMD."
 
@@ -93,10 +145,17 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 
 
 restart = gamemodule_common.make_restart_hook()
+
+
+def prestart(server):
+    """Refresh Enshrouded's authoritative JSON settings before launch."""
+
+    sync_server_config(server)
 
 
 def get_query_address(server):

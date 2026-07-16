@@ -2,11 +2,13 @@
 
 This guide covers the `mythofempiresserver` module in AlphaGSM.
 
-`mythofempiresserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`mythofempiresserver` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. GitHub validates it through the shared `wine-proton` Docker
+runtime; the forced host-Proton lane did not reach its health surface.
 
 ## Requirements
 
-- `screen`
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -46,9 +48,14 @@ alphagsm mymythofem stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 12888)
+- the A2S query port (default 12889)
 - the install directory
 - SteamCMD downloads the server files
+
+The Docker lifecycle uses AlphaGSM's runtime-resolved A2S `info --json`
+surface instead of waiting for an install-tree `MOE.log` that is not a valid
+manager-container readiness signal.
 
 ## Useful Commands
 
@@ -60,7 +67,9 @@ alphagsm mymythofem backup
 ## Notes
 
 - Module name: `mythofempiresserver`
-- Default port: 27015
+- Default game port: 12888
+- Default query port: 12889
+- The Docker-default heavy lane correction is pending replacement GitHub CI validation.
 
 ## Developer Notes
 
@@ -68,7 +77,7 @@ alphagsm mymythofem backup
 
 - **Executable**: `MOE/Binaries/Win64/MOEServer.exe`
 - **Location**: `<install_dir>/MOE/Binaries/Win64/MOEServer.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Windows dedicated server through Wine/Proton
 - **SteamCMD App ID**: `1794810`
 
 ### Server Configuration

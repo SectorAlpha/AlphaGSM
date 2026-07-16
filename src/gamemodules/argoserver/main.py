@@ -12,7 +12,6 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 563930
 steam_anonymous_login_possible = True
-steam_download_kwargs = {"beta_branch": "server"}
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -99,7 +98,6 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     sync_server_config=sync_server_config,
-    download_kwargs=steam_download_kwargs,
 )
 install.__doc__ = "Download the Argo server files via SteamCMD."
 
@@ -109,7 +107,6 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     sync_server_config=sync_server_config,
-    download_kwargs=steam_download_kwargs,
 )
 update.__doc__ = "Update the Argo server files and optionally restart the server."
 

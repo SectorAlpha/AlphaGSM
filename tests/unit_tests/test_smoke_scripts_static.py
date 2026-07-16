@@ -7,6 +7,9 @@ LIFE_IS_FEUDAL_SMOKE = Path("tests/smoke_tests/run_lifeisfeudalserver.sh")
 PALWORLD_SMOKE = Path("tests/smoke_tests/run_palworld.sh")
 SCUM_SMOKE = Path("tests/smoke_tests/run_scumserver.sh")
 SS14_SMOKE = Path("tests/smoke_tests/run_ss14server.sh")
+NIGHTINGALE_SMOKE = Path("tests/smoke_tests/run_nightingale.sh")
+MYTH_OF_EMPIRES_SMOKE = Path("tests/smoke_tests/run_mythofempiresserver.sh")
+BLACK_OPS_3_SMOKE = Path("tests/smoke_tests/run_blackops3server.sh")
 
 
 def test_life_is_feudal_smoke_uses_docker_runtime_backend():
@@ -47,3 +50,33 @@ def test_ss14_smoke_supports_byo_archive_url_and_standard_prerequisite_skip():
     assert "ENABLED (BYO)" in text
     assert "ALPHAGSM_SS14_SERVER_URL" in text
     assert 'run_setup_or_skip_steamcmd "${setup_args[@]}"' in text
+
+
+def test_nightingale_smoke_uses_official_http_status_surface():
+    text = NIGHTINGALE_SMOKE.read_text(encoding="utf-8")
+
+    assert 'PORT="$(pick_free_port_group 2)"' in text
+    assert 'wait_for_info_protocol "$SERVER_NAME" "http_status"' in text
+    assert 'wait_for_info_protocol "$SERVER_NAME" "tcp"' not in text
+
+
+def test_myth_of_empires_smoke_uses_docker_runtime_and_a2s_info():
+    text = MYTH_OF_EMPIRES_SMOKE.read_text(encoding="utf-8")
+
+    assert "backend = docker" in text
+    assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON" in text
+    assert 'run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"' in text
+    assert 'wait_for_info_protocol "$SERVER_NAME" "a2s"' in text
+    assert "require_proton" not in text
+    assert "require_cmd screen" not in text
+
+
+def test_black_ops_3_smoke_is_active_on_docker_udp_health_surface():
+    text = BLACK_OPS_3_SMOKE.read_text(encoding="utf-8")
+
+    assert "Smoke test for blackops3server is disabled" not in text
+    assert "backend = docker" in text
+    assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON" in text
+    assert 'PORT="$(pick_free_port_group 3)"' in text
+    assert "CreateDedicatedModsLobby: ready!" in text
+    assert 'wait_for_info_protocol "$SERVER_NAME" "udp"' in text

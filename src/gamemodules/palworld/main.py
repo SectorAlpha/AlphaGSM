@@ -66,7 +66,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PalServer.sh", publ
         default_port=8211,
         prompt="Please specify the port to use for this server:",
     )
-    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -232,7 +231,6 @@ def get_start_command(server):
     cmd = [
         "./" + executable,
         "-port=%s" % (server.data["port"],),
-        "-queryport=%s" % (server.data["queryport"],),
     ]
     if server.data.get("publiclobby"):
         cmd.append("-publiclobby")
@@ -240,13 +238,15 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Palworld uses Steam A2S on the dedicated queryport."""
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    """Return Palworld's documented UDP game-port health surface."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
-    """Return the A2S address used by the info command."""
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    """Return the same UDP health surface used by the info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -290,19 +290,19 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port",),
-        str_keys=("exe_name", "dir", "queryport"),
+        str_keys=("exe_name", "dir"),
         custom_handlers={"publiclobby": _parse_bool_setting},
         backup_module=backup_utils,
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+    family="steamcmd-linux",
+    port_definitions=({"key": "port", "protocol": "udp"},),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
-        stdin_open=True,
+    family="steamcmd-linux",
+    get_start_command=get_start_command,
+    port_definitions=({"key": "port", "protocol": "udp"},),
+    stdin_open=True,
 )

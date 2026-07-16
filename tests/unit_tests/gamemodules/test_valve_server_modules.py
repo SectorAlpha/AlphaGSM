@@ -76,7 +76,7 @@ def test_source_module_start_command_prefers_install_tree_srcds_linux64(tmp_path
     assert server.data["exe_name"] == "srcds_linux64"
 
 
-def test_goldsrc_module_start_command_prefers_install_tree_hlds_linux(tmp_path):
+def test_goldsrc_module_start_command_prefers_runtime_wrapper(tmp_path):
     module = importlib.import_module("gamemodules.csserver")
     server = SimpleNamespace(name="csalpha", data={})
 
@@ -89,9 +89,9 @@ def test_goldsrc_module_start_command_prefers_install_tree_hlds_linux(tmp_path):
 
     cmd, cwd = module.get_start_command(server)
 
-    assert cmd[:4] == ["./hlds_linux", "-game", "cstrike", "-strictportbind"]
-    assert cwd == str(bin_dir)
-    assert server.data["exe_name"] == "hlds_linux"
+    assert cmd[:4] == ["./hlds_run", "-game", "cstrike", "-strictportbind"]
+    assert cwd == server.data["dir"]
+    assert server.data["exe_name"] == "hlds_run"
 
 
 def test_goldsrc_module_update_uses_mod_aware_steamcmd(monkeypatch, tmp_path):
@@ -422,6 +422,24 @@ def test_valve_source_module_exposes_source_info_hooks():
     assert callable(module.MODULE.get_hibernating_console_info)
     assert callable(module.MODULE.get_runtime_requirements)
     assert callable(module.MODULE.get_container_spec)
+
+
+def test_valve_source_query_hooks_use_runtime_resolved_host(monkeypatch):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={"port": 27015, "queryport": 27016},
+    )
+
+    monkeypatch.setattr(
+        valve_server.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.9",
+    )
+
+    assert module.MODULE.get_query_address(server) == ("172.18.0.9", 27016, "a2s")
+    assert module.MODULE.get_info_address(server) == ("172.18.0.9", 27016, "a2s")
 
 
 def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):

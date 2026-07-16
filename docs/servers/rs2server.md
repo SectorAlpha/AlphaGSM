@@ -2,12 +2,16 @@
 
 This guide covers the `rs2server` module in AlphaGSM.
 
-`rs2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`rs2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. Its supported Linux CI path is Docker-first through the shared
+`wine-proton` runtime. A current forced host-process Wine run stalled without
+reaching A2S, while the matching Docker lifecycle passed, so CI no longer
+duplicates the unsupported host lane.
 
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux hosts
+- Docker with the shared `wine-proton` runtime
+- For experimental host/process mode: `screen` and Wine or Proton-GE
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -80,9 +84,9 @@ AlphaGSM launches the server with `-log`, tracks readiness through
 protocol `a2s` before smoke and integration treat the server as query-ready.
 The current smoke and integration checks allow up to 20 minutes for this
 Wine/Proton bring-up because RS2 has historically stalled beyond the old
-600 second startup window in CI. Focused host integration passed again on
-2026-05-28, including `query`, `info`, `info --json`, and shutdown
-verification on the managed `queryport`.
+600 second startup window in CI. The Docker lifecycle passed on 2026-07-16
+with `query`, `info`, `info --json`, and shutdown verification on the managed
+`queryport`; the same run's forced host-process lane never reached A2S.
 
 ### Server Configuration
 

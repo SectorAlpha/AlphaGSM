@@ -8,7 +8,7 @@ from conftest import (
     alphagsm_env,
     default_runtime_backend,
     log_command_result,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
     require_command_for_runtime,
     resolve_runtime_image,
     require_integration_opt_in,
@@ -17,13 +17,11 @@ from conftest import (
     run_and_assert_ok,
     run_setup_with_port_retry,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
     write_config,
 )
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
-STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: large SteamCMD payload under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 runtime_backend = os.environ.get(
@@ -62,7 +60,7 @@ def test_sniperelite4server_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(4)
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
@@ -82,12 +80,12 @@ def test_sniperelite4server_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        _info_data = wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        _info_data = wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("port") == port, (
-            f"Expected managed game-port TCP readiness on fresh server: {_info_data!r}"
+            f"Expected managed game-port UDP readiness on fresh server: {_info_data!r}"
         )
 
         # status
@@ -96,7 +94,7 @@ def test_sniperelite4server_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "TCP ping on port" in query_result.stdout
+            "UDP ping on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
@@ -109,15 +107,14 @@ def test_sniperelite4server_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("port") == port, (
-            f"Expected managed game-port TCP readiness on fresh server: {_info_data!r}"
+            f"Expected managed game-port UDP readiness on fresh server: {_info_data!r}"
         )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
-
-    # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+        final_status = run_and_assert_ok(env, server_name, "status")
+        assert "isn't running" in final_status.stdout

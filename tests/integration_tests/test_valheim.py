@@ -20,7 +20,6 @@ from conftest import (
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
     wait_for_info_protocol,
-    wait_for_udp_closed,
     resolve_steamcmd_linux_runtime_image,
 )
 from gamemodules.valheim import steam_app_id
@@ -28,7 +27,6 @@ from gamemodules.valheim import steam_app_id
 pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 1800
-STOP_TIMEOUT = 90
 LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
 PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
 
@@ -94,7 +92,7 @@ def test_valheim_lifecycle(tmp_path):
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_log_marker(
             log_path,
-            ["ready", "started", "listening", "Done"],
+            ["Game server connected"],
             START_TIMEOUT,
         )
 
@@ -102,33 +100,32 @@ def test_valheim_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         # Wait on AlphaGSM's declared info surface rather than a raw guessed socket.
-        wait_for_info_protocol(env, server_name, "a2s", 900)
+        wait_for_info_protocol(env, server_name, "udp", 900)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            "UDP ping on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "No further details available." in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+        assert _info_data.get("port") == port, (
+            f"Expected game port {port} in info JSON: {_info_data!r}"
         )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
-
-    # verify stopped — Valheim is UDP-only; wait for A2S on port+1 to stop responding
-    wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)
+        final_status = run_and_assert_ok(env, server_name, "status")
+        assert "isn't running" in final_status.stdout

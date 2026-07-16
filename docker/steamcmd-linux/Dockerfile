@@ -17,6 +17,7 @@ RUN dpkg --add-architecture i386 \
         libgdiplus \
         libsdl2-2.0-0 \
         libpulse0 \
+        libpulse-dev \
         python3 \
         wget \
  && rm -rf /var/lib/apt/lists/*

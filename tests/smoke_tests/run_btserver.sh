@@ -109,7 +109,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_start_with_port_retry "$SERVER_NAME"
 SERVER_STARTED=1
 run_alphagsm "$SERVER_NAME" status
-wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json

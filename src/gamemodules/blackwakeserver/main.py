@@ -187,18 +187,12 @@ def prestart(server):
 
 
 def get_query_address(server):
-    """Return the Steam query endpoint for Blackwake."""
+    """Return Blackwake's stable managed health endpoint."""
 
-    if server.data.get("runtime") == "docker":
-        return (
-            runtime_module.resolve_query_host(server),
-            int(server.data["port"]),
-            "tcp",
-        )
     return (
         runtime_module.resolve_query_host(server),
-        int(server.data["queryport"]),
-        "a2s",
+        int(server.data["port"]),
+        "tcp",
     )
 
 

@@ -8,12 +8,17 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-16
+- Runtime/query: reject non-IP placeholders from Docker network inspection and route shared Valve-family query hooks through the runtime host resolver, so sibling game containers are queried by a reachable address.
+- Server support: configure Nightingale's official HTTP `/status` listener on `queryport`, publish it alongside the UDP game port, and use that JSON surface for `query`, `info`, smoke, and integration readiness.
+- CI/routing: make Blackwake, Black Ops III, Myth of Empires, and Xonotic Docker-default validation lanes; keep the large Black Ops III and Myth of Empires installs in the heavy partitions instead of forcing unproven host Wine/Proton runs.
+- Server support: restore Xonotic's upstream wrapper and nested content-root launch contract, keep Blackwake's health surface runtime-agnostic, and align Black Ops III with its fixed container ports `27015..27017` plus managed UDP health checks.
+- CI/integration: replace host-only readiness in `bdserver` and Myth of Empires with AlphaGSM `info --json`, preserving process-plus-Docker coverage for GoldSrc while validating Myth of Empires through its supported Docker path.
 - Runtime/Docker: keep the configured server working directory when an interpreter such as Java launches a symlinked payload from the shared download cache, so Minecraft Docker lifecycles read their managed EULA and server configuration from the same install tree as process runtime.
 - CI/backend: print Docker container state, configuration, mounts, and recent logs before backend readiness timeouts fail, preserving the evidence needed to debug child-container exits.
 - CI/SteamCMD: honor an explicit `steamcmd_path` even when the default local Steam directory is absent, and build the executable path safely when the configured directory has no trailing slash.
 - Runtime/ports: avoid building Docker container specs while collecting process-runtime port claims, so process setup does not validate or mount Docker-only paths.
 - Server support: move `ss14server` to `ENABLED (BYO)` while the official Wizard's Den feed publishes no server builds; direct Linux x64 archives remain supported through both process and Docker lifecycle tests.
-- Server support: make Argo SteamCMD install and update select the upstream `server` beta branch required to retrieve app `563930`'s dedicated payload.
+- Server support: stop forcing Argo's removed `server` beta after current SteamCMD rejected it, restoring anonymous install/update to the public app `563930` branch that previously passed validation.
 - Minecraft: stop launching a temporary Java server during setup; AlphaGSM now writes `eula.txt` and `server.properties` directly so setup cannot leave a JVM holding the managed port before the real start lifecycle.
 - CI/downloads: authenticate GitHub release metadata requests with the read-only Actions token in smoke and integration jobs, avoiding anonymous API rate-limit failures during QuakeWorld and other release-backed setup paths.
 - CI/runtime: select Proton-GE release archives by host architecture instead of upstream asset ordering, and include the selector in branch-local Wine/Proton and integration-image cache keys so x86_64 CI cannot install the `aarch64` build.
@@ -21,6 +26,19 @@ high-level milestones.
 - CI/integration: fix Rust, Counter-Strike 2, Left 4 Dead, and Half-Life Deathmatch: Source process lanes to require `screen` rather than accidentally treating the runtime name as a command.
 - CI/integration: clear the GitHub host tool cache exposed at `/__t` and prune unused Docker data before standard and heavy integration shards, leaving room for large SteamCMD installs plus branch-local runtime images.
 - CI/tests: allocate smoke, integration, and backend lifecycle ports outside Ubuntu's configured ephemeral range so SteamCMD traffic cannot reclaim a selected game port before AlphaGSM's start preflight.
+- Runtime/ports: let game modules declare one `port_claim_definitions` contract for both process ownership checks and Docker publication, including validated derived `offset` ports, so modules do not branch on the selected runtime.
+- Server support: align 7 Days to Die with its complete base TCP/UDP plus `port + 1..3` UDP range, and align Sniper Elite 4 with its config-driven game/auth/update/lobby port set.
+- Server support: align Palworld with its documented UDP game port without an invented query-port argument, and align Barotrauma and Valheim query/info checks with their live primary UDP health surfaces.
+- Server support: give Rust an explicit UDP `server.queryport` and A2S query/info contract while keeping its game UDP and RCON TCP claims exact across process and Docker.
+- Runtime/images: add the PulseAudio development surface needed by current Valheim startup to both the integration image and shared `steamcmd-linux` runtime image.
+- CI/routing: make Rising Storm 2, SCUM, and Sons of the Forest Docker-default heavy lanes after current forced host Wine/Proton runs stalled while their supported Linux contracts remain Docker-backed.
+- CI/integration: make Rust readiness use AlphaGSM's runtime-resolved A2S surface instead of waiting for a host `screen` log that is absent for Docker containers.
+- CI/routing: make Citadel, Dark and Light, Eco, Empyrion, IOS, Just Cause 2, Last Oasis, Miscreated, Mumble, Ready or Not, Reign of Dwarf, Remnants, and Return to Moria Docker-default lanes where current host dependencies or Windows launch paths are not supported in GitHub CI; keep Empyrion in the heavy lane and require the Docker command directly in every Docker-default lifecycle test.
+- CI/integration: make Black Mesa Deathmatch, Empyrion, Reign of Dwarf, Remnants, Return to Moria, and Ricochet readiness use AlphaGSM's runtime-resolved protocol surface instead of host-only process logs.
+- Server support: validate Ready or Not from its current game-owned startup log and primary UDP health surface after its EOS-backed dedicated server stopped exposing the old A2S contract.
+- Server configuration: write Astroneer's official dedicated-server INI settings and align Enshrouded's managed JSON template and query contract with its documented `queryPort`.
+- Runtime/Proton: route ARK: Survival Ascended through the shared Wine/Proton container builder and normalize Valve's `hlds_run` launcher for Ubuntu 24.04 runtime images.
+- Server support: keep IOS explicitly `ENABLED (AUTH)` when its public branch crashes and its usable Steam branch remains authentication-gated.
 
 2026-07-15
 - CI/integration: full GitHub validation now keeps the normal auto-runtime batches and adds explicit process and Docker lanes for the process-passed dual-runtime server set.

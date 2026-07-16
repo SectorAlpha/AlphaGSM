@@ -23,6 +23,11 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+port_claim_definitions = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "rconport", "protocol": "tcp"},
+)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="RustDedicated"):
@@ -42,6 +47,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="RustDedicated"):
             "maxplayers": "50",
             "seed": "12345",
             "rconport": "28016",
+            "queryport": "28017",
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -83,6 +89,22 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def get_query_address(server):
+    """Return Rust's dedicated Steam query endpoint."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
+
+
+def get_info_address(server):
+    """Return the A2S endpoint used by the info command."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Rust dedicated server."""
 
@@ -97,6 +119,8 @@ def get_start_command(server):
             "0.0.0.0",
             "+server.port",
             str(server.data["port"]),
+            "+server.queryport",
+            str(server.data["queryport"]),
             "+server.hostname",
             server.data["hostname"],
             "+server.level",
@@ -152,18 +176,25 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port", "worldsize", "maxplayers", "seed", "rconport"),
+        int_keys=(
+            "port",
+            "queryport",
+            "worldsize",
+            "maxplayers",
+            "seed",
+            "rconport",
+        ),
         str_keys=("hostname", "level", "exe_name", "dir"),
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    family="steamcmd-linux",
+    port_definitions=port_claim_definitions,
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
+    family="steamcmd-linux",
+    get_start_command=get_start_command,
+    port_definitions=port_claim_definitions,
+    stdin_open=True,
 )

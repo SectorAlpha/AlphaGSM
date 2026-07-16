@@ -379,6 +379,19 @@ Core helpers:
 - [src/screen/tail.py](src/screen/tail.py)
 - [src/utils/proton.py](src/utils/proton.py)
 
+Modules with derived or protocol-specific port layouts should expose one
+module-scope `port_claim_definitions` tuple and reuse it when building
+`get_runtime_requirements(server)` and `get_container_spec(server)`. Each
+definition uses `key` and `protocol`, with an optional integer `offset` from
+the datastore value named by `key`; for example, `{"key": "port", "offset":
+1, "protocol": "udp"}` describes `port + 1`. The shared
+`server.runtime.build_port_specs(...)` helper validates the derived host and
+container ports are within `1..65535`, and the port manager consumes the same
+definitions for process and Docker ownership checks. Keep runtime selection
+out of this game-module contract: a module declares what the server needs,
+while the shared runtime layer decides how those ports are launched and
+published.
+
 Container image scaffolding currently lives under:
 
 - [docker/README.md](docker/README.md)
@@ -402,10 +415,11 @@ Lifecycle model:
  ALPHAGSM_RUN_INTEGRATION=1 pytest tests/integration_tests
 1. build command line
 2. resolve runtime metadata from the datastore and module hooks
-3. for `process`, write `screenrc` if needed and start a detached session
-4. for `docker`, assemble `docker run` args from the container spec
-5. inject console commands through the selected runtime
-6. use `doctor` to print the effective runtime decision and local runtime-health checks for a server
+3. claim the module's complete port set before runtime-specific launch work
+4. for `process`, write `screenrc` if needed and start a detached session
+5. for `docker`, assemble `docker run` args from the container spec
+6. inject console commands through the selected runtime
+7. use `doctor` to print the effective runtime decision and local runtime-health checks for a server
 
  [tests/smoke_tests](tests/smoke_tests)
  bash ./tests/smoke_tests/run_minecraft_vanilla.sh

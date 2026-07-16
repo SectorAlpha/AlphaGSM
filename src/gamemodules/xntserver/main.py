@@ -191,14 +191,12 @@ def prestart(server):
 def get_start_command(server):
     """Build the command used to launch a Xonotic dedicated server."""
 
-    install_root = server.data["dir"]
-    install_root_norm = os.path.normpath(install_root)
     content_root = _resolve_content_root(server)
     exe_name = server.data.get("exe_name")
     candidate_paths = [
-        os.path.join(content_root, "xonotic-linux64-dedicated"),
-        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
         os.path.join(content_root, "server", "server_linux.sh"),
+        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
+        os.path.join(content_root, "xonotic-linux64-dedicated"),
     ]
     if exe_name and exe_name not in {"server/server_linux.sh", "xonotic-linux-dedicated.sh", "xonotic-linux64-dedicated"}:
         exe_candidate = os.path.join(content_root, exe_name)
@@ -207,7 +205,7 @@ def get_start_command(server):
     launcher_path = next((path for path in candidate_paths if os.path.isfile(path)), None)
     if launcher_path is None:
         raise ServerError("Dedicated launcher not found")
-    launcher_relpath = os.path.relpath(launcher_path, install_root_norm)
+    launcher_relpath = os.path.relpath(launcher_path, content_root)
     return (
         [
             "./" + launcher_relpath,
@@ -220,7 +218,7 @@ def get_start_command(server):
             "+hostname",
             server.data["hostname"],
         ],
-        install_root,
+        content_root,
     )
 
 
@@ -274,12 +272,12 @@ def get_query_address(server):
     Xonotic uses the Quake III / DarkPlaces getstatus UDP protocol,
     not the Source Engine A2S protocol.
     """
-    return "127.0.0.1", server.data["port"], "quake"
+    return runtime_module.resolve_query_host(server), server.data["port"], "quake"
 
 
 def get_info_address(server):
     """Return the Quake UDP info address for Xonotic (same as query address)."""
-    return "127.0.0.1", server.data["port"], "quake"
+    return get_query_address(server)
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='quake-linux',
@@ -287,7 +285,7 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
 )
 
 def get_container_spec(server):
-    """Build a Docker spec that launches from the mounted install root."""
+    """Build a Docker spec that preserves nested extracted Xonotic roots."""
 
     return runtime_module.build_container_spec(
         server,
@@ -295,5 +293,5 @@ def get_container_spec(server):
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-        working_dir=runtime_module.DEFAULT_CONTAINER_WORKDIR,
+        working_dir=_resolve_container_working_dir(server),
     )

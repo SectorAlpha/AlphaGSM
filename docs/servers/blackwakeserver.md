@@ -2,7 +2,10 @@
 
 This guide covers the `blackwakeserver` module in AlphaGSM.
 
-`blackwakeserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`blackwakeserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub keeps the proven shared `wine-proton` Docker lifecycle; the
+game module exposes the same managed health contract without branching on the
+selected runtime.
 
 ## Requirements
 
@@ -64,7 +67,11 @@ alphagsm myblackwak backup
 - Module name: `blackwakeserver`
 - Default game port: 7777
 - Default query port: 27015
-- Current validation status: PASSED 2026-05-30 on the Docker-backed `wine-proton` runtime. Fresh AlphaGSM integration and smoke now pass end to end through `create`, `setup`, `start`, `status`, `query`, `info`, `info --json`, `stop`, and post-stop verification when the server runs in the shared container image. On this validated runtime lane, `query` and `info` currently use the stable generic `tcp` health surface on the managed main port instead of the older stale A2S-on-`queryport` assumption.
+- Current validation status: PASSED 2026-05-30 on the Docker-backed
+  `wine-proton` runtime. `query` and `info` use the stable generic `tcp`
+  health surface on the managed main port for every runtime instead of
+  embedding process-versus-Docker behavior in the game module. The shared
+  Docker host-resolution correction is pending replacement CI.
 
 ## Developer Notes
 

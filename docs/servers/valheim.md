@@ -6,12 +6,15 @@ This guide covers the `valheim` module in AlphaGSM.
 documented Ubuntu 24.04 Linux baseline, the current smoke and GitHub
 integration coverage runs through the shared `steamcmd-linux` Docker runtime,
 while local host-process flows remain the fallback path documented elsewhere
-in the repo.
+in the repo. Query/info use the live primary UDP game-port surface rather than
+requiring a stale A2S response.
 
 ## Requirements
 
-- `screen`
+- Docker for the validated Linux runtime path
+- For process mode: `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Runtime libraries `libatomic1`, `libpulse0`, and `libpulse-dev`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -51,6 +54,7 @@ alphagsm myvalheim stop
 Setup configures:
 
 - the game port (default 2456)
+- the adjacent server port (default 2457)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -65,6 +69,10 @@ alphagsm myvalheim backup
 
 - Module name: `valheim`
 - Default port: 2456
+- Network protocol: UDP; Docker publishes the primary and adjacent ports
+- Readiness marker: `Game server connected`
+- `query`, `info`, and `info --json` use generic UDP health on the primary
+  game port
 
 ## Developer Notes
 

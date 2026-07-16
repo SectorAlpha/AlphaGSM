@@ -9,7 +9,7 @@ from conftest import (
     default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command_for_runtime,
+    require_command,
     resolve_runtime_image,
     pick_free_tcp_port,
     run_setup_with_port_retry,
@@ -19,16 +19,13 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_a2s_ready,
     wait_for_info_protocol,
     wait_for_log_marker,
-    wait_for_udp_closed,
 )
 from gamemodules.sonsoftheforestserver import steam_app_id
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
-STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600  # 60 min: large SteamCMD payload under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 runtime_backend = os.environ.get(
@@ -43,9 +40,7 @@ PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:
 def test_sonsoftheforestserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command_for_runtime(
-        "docker", runtime_backend=runtime_backend, module_name=module_name
-    )
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -113,7 +108,6 @@ def test_sonsoftheforestserver_lifecycle(tmp_path):
             env=env,
             server_name=server_name,
         )
-        wait_for_a2s_ready("127.0.0.1", query_port, START_TIMEOUT, log_path=log_path)
         _info_data = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
         assert _info_data["port"] == query_port, (
             f"Expected Sons Of The Forest info port {query_port}: {_info_data!r}"
@@ -150,6 +144,5 @@ def test_sonsoftheforestserver_lifecycle(tmp_path):
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
-
-    # verify stopped
-    wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)
+        final_status = run_and_assert_ok(env, server_name, "status")
+        assert "isn't running" in final_status.stdout

@@ -5,8 +5,9 @@ This guide covers the `xntserver` module in AlphaGSM.
 `xntserver` is currently `PASSED` in the checked-in support tracker on the
 documented Ubuntu 24.04 Linux baseline. The validated lifecycle covers the
 shared `quake-linux` Docker runtime as well as the module's Quake
-`query` / `info` surface, and the current GitHub integration lane validates
-both process and Docker runtimes for this module.
+`query` / `info` surface. GitHub keeps one Docker-default lifecycle for this
+module rather than duplicating the same archive install in an unproven process
+lane.
 
 ## Requirements
 
@@ -71,8 +72,14 @@ alphagsm myxntserve backup
 
 - **Launcher**: `server/server_linux.sh`
 - **Runtime binary**: `xonotic-linux64-dedicated`
-- **Location**: `<install_dir>/server/server_linux.sh`
+- **Location**: `<detected_content_root>/server/server_linux.sh`
 - **Engine**: Custom
+
+AlphaGSM detects nested archive roots such as `<install_dir>/Xonotic`, launches
+the wrapper from that content root, and maps the equivalent Docker working
+directory. Quake readiness is checked through AlphaGSM rather than raw
+localhost probes, with spacing for DarkPlaces' rate limit. Replacement GitHub
+CI validation is pending.
 
 ### Server Configuration
 

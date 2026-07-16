@@ -127,13 +127,13 @@ def backup(server, profile=None):
 
 
 def get_query_address(server):
-    """Return the A2S query address for Barotrauma."""
+    """Return the current Lidgren UDP game-port health surface."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
-    """Return the A2S info address for Barotrauma (same as query address)."""
+    """Return the same UDP health surface used by the info command."""
 
     return get_query_address(server)
 

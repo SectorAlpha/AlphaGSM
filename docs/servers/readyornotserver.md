@@ -2,12 +2,13 @@
 
 This guide covers the `readyornotserver` module in AlphaGSM.
 
-`readyornotserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`readyornotserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The supported GitHub path is one Docker-default `wine-proton`
+lifecycle.
 
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux hosts
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -76,8 +77,10 @@ alphagsm myreadyorn backup
 - **SteamCMD App ID**: `950290`
 
 AlphaGSM launches the server with `-log -unattended`, waits for
-`ReadyOrNot/Saved/Logs/ReadyOrNot.log`, and then queries A2S on `queryport`
-through the resolved local query host instead of the game port.
+`ReadyOrNot/Saved/Logs/ReadyOrNot.log`, and then validates generic UDP
+`query`, `info`, and `info --json` on the managed game port. The current
+EOS-backed tool remained supervised in the 2026-07-16 Docker run but did not
+answer the older A2S query-port contract.
 
 ### Server Configuration
 

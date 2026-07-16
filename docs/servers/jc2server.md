@@ -4,7 +4,8 @@ This guide covers the `jc2server` module in AlphaGSM.
 
 Status: supported on Linux. The validated branch path uses AlphaGSM's shared
 `steamcmd-linux` Docker runtime with the native Linux dedicated server from
-Steam app `261140`.
+Steam app `261140`. GitHub keeps one Docker-default lifecycle because the
+forced process lane did not expose the managed TCP health surface.
 
 ## Quick Start
 

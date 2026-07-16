@@ -214,6 +214,48 @@ def test_build_steamcmd_linux_runtime_requirements_uses_shared_defaults(monkeypa
     }
 
 
+def test_build_runtime_requirements_supports_derived_port_offsets(monkeypatch):
+    monkeypatch.setattr(runtime_module, "_steamcmd_sdk_mounts", lambda: [])
+    server = DummyServer(data={"dir": "/srv/game/", "port": 26900})
+
+    requirements = runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=(
+            {"key": "port", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "udp", "offset": 1},
+            {"key": "port", "protocol": "udp", "offset": 2},
+            {"key": "port", "protocol": "udp", "offset": 3},
+        ),
+    )
+
+    assert requirements["ports"] == [
+        {"host": 26900, "container": 26900, "protocol": "tcp"},
+        {"host": 26900, "container": 26900, "protocol": "udp"},
+        {"host": 26901, "container": 26901, "protocol": "udp"},
+        {"host": 26902, "container": 26902, "protocol": "udp"},
+        {"host": 26903, "container": 26903, "protocol": "udp"},
+    ]
+
+
+def test_build_port_specs_is_the_public_derived_port_api():
+    server = DummyServer(data={"port": 26900})
+
+    ports = runtime_module.build_port_specs(
+        server,
+        (
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "offset": 3, "protocol": "tcp"},
+        ),
+    )
+
+    assert ports == [
+        {"host": 26900, "container": 26900, "protocol": "udp"},
+        {"host": 26903, "container": 26903, "protocol": "tcp"},
+    ]
+
+
 def test_build_steamcmd_linux_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
     steamcmd_root = tmp_path / "Steam"
     linux64 = steamcmd_root / "linux64"
@@ -1723,6 +1765,21 @@ def test_resolve_query_host_ignores_docker_no_value_gateway(monkeypatch):
     def _fake_check_output(*args, **kwargs):
         if "Gateway" in args[0][3]:
             return "<no value>\n"
+        return "172.18.0.7\n"
+
+    monkeypatch.setattr(runtime_module, "_running_inside_container", lambda: True)
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    assert runtime_module.resolve_query_host(server) == "172.18.0.7"
+
+
+def test_resolve_query_host_ignores_non_ip_docker_network_values(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    server = DummyServer(data={"runtime": "docker", "container_name": "alphagsm-alpha"})
+
+    def _fake_check_output(*args, **kwargs):
+        if "Gateway" in args[0][3]:
+            return "map[]\n"
         return "172.18.0.7\n"
 
     monkeypatch.setattr(runtime_module, "_running_inside_container", lambda: True)

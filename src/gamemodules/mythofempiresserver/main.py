@@ -63,7 +63,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="MOE/Binaries/Win64/
         default_port=12888,
         prompt="Please specify the game port to use for this server:",
     )
-    server.data.setdefault("queryport", str(int(server.data["port"]) + 1))
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -96,6 +96,7 @@ restart = gamemodule_common.make_restart_hook()
 def get_start_command(server):
     """Build the command used to launch a Myth of Empires dedicated server."""
 
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
@@ -143,12 +144,17 @@ def backup(server, profile=None):
 
 def get_query_address(server):
     """Return A2S query address for Myth of Empires (queryport, not game port)."""
-    return "127.0.0.1", int(server.data["queryport"]), "a2s"
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
 
 
 def get_info_address(server):
     """Return A2S info address for Myth of Empires (same as query address)."""
-    return "127.0.0.1", int(server.data["queryport"]), "a2s"
+    return get_query_address(server)
 
 
 def checkvalue(server, key, *value):
@@ -164,11 +170,27 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+_base_get_runtime_requirements = (
+    gamemodule_common.make_proton_runtime_requirements_builder(
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+    )
+)
+
+_base_get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+        get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
 )
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
-)
+
+def get_runtime_requirements(server):
+    """Return the Wine/Proton runtime contract with aligned side ports."""
+
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+    return _base_get_runtime_requirements(server)
+
+
+def get_container_spec(server):
+    """Return the Wine/Proton container spec with aligned side ports."""
+
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+    return _base_get_container_spec(server)

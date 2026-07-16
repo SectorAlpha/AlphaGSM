@@ -6,7 +6,7 @@ import shutil
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
-from server.settable_keys import SettingSpec, build_launch_arg_values
+from server.settable_keys import SettingSpec
 
 from utils.platform_info import IS_LINUX
 
@@ -28,33 +28,40 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "maxplayers")
 setting_schema = {
     "port": SettingSpec(
         canonical_key="port",
         value_type="integer",
         description="The game port for the server.",
-        apply_to=("datastore", "launch_args"),
-        launch_arg_tokens=("-port",),
-    ),
-    "queryport": SettingSpec(
-        canonical_key="queryport",
-        value_type="integer",
-        description="The query port for the server.",
-        apply_to=("datastore", "launch_args"),
-        launch_arg_tokens=("-queryport",),
+        apply_to=("datastore", "config"),
     ),
     "maxplayers": SettingSpec(
         canonical_key="maxplayers",
         value_type="integer",
         description="The maximum number of players.",
-        apply_to=("datastore", "launch_args"),
-        launch_arg_tokens=("-maxplayers",),
+        apply_to=("datastore", "config"),
     ),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
 
 DEFAULT_CFG_PATH = "default.cfg"
 EXAMPLE_DEFAULT_CFG_PATH = os.path.join("Docs", "ExampleConfigs", "Example1.cfg")
+MANAGED_CONFIG_DIRECTIVES = (
+    "Server.Name",
+    "Server.AuthPort",
+    "Server.GamePort",
+    "Server.UpdatePort",
+    "Server.LobbyPort",
+    "Settings.MaxPlayers",
+    "Server.Host",
+)
+port_claim_definitions = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "port", "offset": 2, "protocol": "udp"},
+    {"key": "port", "offset": 3, "protocol": "tcp"},
+)
 
 
 def _container_runtime_env(_server):
@@ -82,7 +89,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="bin/SniperElite4_De
     gamemodule_common.set_server_defaults(
         server,
         {
-            "queryport": "27015",
             "maxplayers": "12",
         },
     )
@@ -124,10 +130,44 @@ def _ensure_default_cfg(server):
         cfg_file.write("// AlphaGSM generated default.cfg\n")
 
 
+def sync_server_config(server):
+    """Write AlphaGSM-owned settings into Sniper Elite 4's default.cfg."""
+
+    _ensure_default_cfg(server)
+    default_cfg_path = os.path.join(server.data["dir"], DEFAULT_CFG_PATH)
+    with open(default_cfg_path, "r", encoding="utf-8") as cfg_file:
+        lines = cfg_file.read().splitlines()
+
+    preserved_lines = []
+    for line in lines:
+        directive = line.strip().split(None, 1)[0] if line.strip() else ""
+        if directive in MANAGED_CONFIG_DIRECTIVES:
+            continue
+        preserved_lines.append(line)
+
+    port = int(server.data.get("port", 7777))
+    maxplayers = int(server.data.get("maxplayers", 12))
+    managed_lines = [
+        "Server.Name {}".format(server.name),
+        "Server.GamePort {}".format(port),
+        "Server.AuthPort {}".format(port + 1),
+        "Server.UpdatePort {}".format(port + 2),
+        "Server.LobbyPort {}".format(port + 3),
+        "Settings.MaxPlayers {}".format(maxplayers),
+        "Server.Host",
+    ]
+    while preserved_lines and not preserved_lines[-1].strip():
+        preserved_lines.pop()
+    output_lines = preserved_lines + [""] + managed_lines
+    with open(default_cfg_path, "w", encoding="utf-8") as cfg_file:
+        cfg_file.write("\n".join(output_lines).lstrip("\n") + "\n")
+
+
 _base_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 _base_install.__doc__ = "Download the Sniper Elite 4 server files via SteamCMD."
@@ -136,6 +176,7 @@ _base_update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 
@@ -164,16 +205,11 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    dynamic_args = build_launch_arg_values(
-        server.data,
-        setting_schema,
-        require_explicit_tokens=True,
-        value_transform=lambda _spec, current_value: str(current_value),
-    )
     cmd = [
-            server.data["exe_name"],
-            *dynamic_args,
-        ]
+        server.data["exe_name"],
+        "exec",
+        DEFAULT_CFG_PATH,
+    ]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
@@ -186,7 +222,7 @@ def get_start_command(server):
 def prestart(server):
     """Ensure the install-root default.cfg exists before launch."""
 
-    _ensure_default_cfg(server)
+    sync_server_config(server)
 
 
 def do_stop(server, j):
@@ -211,6 +247,18 @@ def backup(server, profile=None):
     gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
+def get_query_address(server):
+    """Return Sniper Elite 4's configured UDP game-port health surface."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the same UDP health surface used by the info command."""
+
+    return get_query_address(server)
+
+
 def checkvalue(server, key, *value):
     """Validate supported Sniper Elite 4 datastore edits."""
 
@@ -219,18 +267,18 @@ def checkvalue(server, key, *value):
         key,
         *value,
         setting_schema=setting_schema,
-        resolved_int_keys=("port", "queryport", "maxplayers"),
+        resolved_int_keys=("port", "maxplayers"),
         resolved_str_keys=("exe_name", "dir"),
         backup_module=backup_utils,
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        extra_env=_container_runtime_env,
+    port_definitions=port_claim_definitions,
+    extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        extra_env=_container_runtime_env,
+    port_definitions=port_claim_definitions,
+    extra_env=_container_runtime_env,
 )

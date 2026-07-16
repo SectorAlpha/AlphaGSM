@@ -1895,6 +1895,33 @@ def test_query_uses_explicit_ut3_protocol(monkeypatch, capsys):
     assert "UT3/GameSpy4" in capsys.readouterr().out
 
 
+def test_query_uses_explicit_http_status_protocol(monkeypatch, capsys):
+    module = DummyModule()
+    module.get_query_address = lambda server: ("10.0.0.4", 7788, "http_status")
+    srv = make_server(module=module, data=DummyData({"port": 7777, "queryport": 7788}))
+
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    calls = []
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+
+    def fake_http_json(host, port, path, timeout=5.0):
+        calls.append((host, port, path, timeout))
+        return {"status": "ready", "player_count": 0, "player_names": []}
+
+    fake_q.http_json = fake_http_json
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert calls == [("10.0.0.4", 7788, "/status", 10.0)]
+    assert "HTTP status API" in capsys.readouterr().out
+
+
 def test_query_retries_a2s_after_wake_hook(monkeypatch, capsys):
     import utils.query as _ensure_imported  # noqa: F401
     import utils
@@ -2138,6 +2165,38 @@ def test_info_uses_explicit_ut3_protocol(monkeypatch, capsys):
     data = _json.loads(capsys.readouterr().out.strip())
     assert data["protocol"] == "ut3"
     assert data["port"] == 6500
+
+
+def test_info_uses_explicit_http_status_protocol(monkeypatch, capsys):
+    import json as _json
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    module = DummyModule()
+    module.get_info_address = lambda server: ("10.0.0.4", 7788, "http_status")
+    srv = make_server(module=module, data=DummyData({"port": 7777, "queryport": 7788}))
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.http_json = lambda host, port, path, timeout=5.0: {
+        "status": "ready",
+        "player_count": 0,
+        "player_names": [],
+    }
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    data = _json.loads(capsys.readouterr().out.strip())
+    assert data == {
+        "protocol": "http_status",
+        "port": 7788,
+        "status": "ready",
+        "player_count": 0,
+        "player_names": [],
+    }
 
 
 def test_info_uses_module_namespace_wake_hook(monkeypatch, capsys):

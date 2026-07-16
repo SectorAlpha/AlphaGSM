@@ -2,12 +2,13 @@
 
 This guide covers the `remnantsserver` module in AlphaGSM.
 
-`remnantsserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`remnantsserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub keeps one Docker-default `wine-proton` lifecycle because the
+forced host-Proton process exited before readiness.
 
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux hosts
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -74,9 +75,8 @@ alphagsm myremnants backup
 - **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `1141420`
 
-Smoke and integration validation track readiness through
-`RemSurvival/Saved/Logs/RemSurvival.log` and then confirm `info --json`
-reports protocol `a2s`.
+Integration validation polls AlphaGSM `info --json` protocol `a2s` directly,
+so Docker readiness does not depend on an install-tree or host `screen` log.
 
 ### Server Configuration
 

@@ -6,11 +6,14 @@ This guide covers the `btserver` module in AlphaGSM.
 documented Ubuntu 24.04 Linux baseline, the current smoke and GitHub
 integration coverage runs through the shared `steamcmd-linux` Docker runtime,
 while local host-process flows remain the fallback path documented elsewhere
-in the repo.
+in the repo. AlphaGSM checks Barotrauma through the live Lidgren UDP surface
+on the primary game port rather than assuming the adjacent Steam query port
+provides A2S.
 
 ## Requirements
 
-- `screen`
+- Docker for the validated Linux runtime path
+- For process mode: `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -50,7 +53,8 @@ alphagsm mybtserver stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the adjacent query port (default 27016)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -64,7 +68,10 @@ alphagsm mybtserver backup
 ## Notes
 
 - Module name: `btserver`
-- Default port: 27016
+- Default game port: 27015
+- Default query port: 27016
+- `query`, `info`, and `info --json` use generic UDP health on the managed
+  game port for both process and Docker.
 
 ## Developer Notes
 

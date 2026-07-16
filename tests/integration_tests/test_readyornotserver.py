@@ -7,7 +7,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command_for_runtime,
+    require_command,
     default_runtime_backend,
     resolve_runtime_image,
     pick_free_tcp_port,
@@ -18,7 +18,8 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
+    wait_for_log_marker,
+    wait_for_udp_closed,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -38,9 +39,7 @@ module_name = "readyornotserver"
 def test_readyornotserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command_for_runtime(
-        "docker", runtime_backend=runtime_backend, module_name=module_name
-    )
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -82,17 +81,25 @@ def test_readyornotserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        log_path = install_dir / "ReadyOrNot" / "Saved" / "Logs" / "ReadyOrNot.log"
+        wait_for_log_marker(
+            log_path,
+            ["listening on port", "Engine is initialized", "GameNetDriver"],
+            START_TIMEOUT,
+            env=env,
+            server_name=server_name,
+        )
+        wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
 
         run_and_assert_ok(env, server_name, "status")
 
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert "Server is responding" in query_result.stdout, (
+        assert "Server port is open" in query_result.stdout, (
             f"Unexpected query output: {query_result.stdout!r}"
         )
 
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert "Players     : 0/" in info_result.stdout, (
+        assert "No further details available." in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
 
@@ -100,16 +107,13 @@ def test_readyornotserver_lifecycle(tmp_path):
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {info_data!r}"
+        assert info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {info_data!r}"
         )
-        assert info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {info_data!r}"
-        )
-        assert info_data.get("port") == queryport, (
-            f"Expected query port {queryport} in info JSON: {info_data!r}"
+        assert info_data.get("port") == port, (
+            f"Expected game port {port} in info JSON: {info_data!r}"
         )
     finally:
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

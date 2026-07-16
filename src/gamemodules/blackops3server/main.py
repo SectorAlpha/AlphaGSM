@@ -32,9 +32,8 @@ setting_schema = {
         canonical_key="port",
         description="The game port for the server.",
         value_type="integer",
-        apply_to=("datastore", "launch_args"),
-        launch_arg_tokens=("-port",),
-        examples=("28960",),
+        apply_to=("datastore",),
+        examples=("27015",),
     ),
     "maxplayers": SettingSpec(
         canonical_key="maxplayers",
@@ -66,7 +65,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="UnrankedServer/Blac
         server,
         ask,
         port,
-        default_port=28960,
+        default_port=27015,
         prompt="Please specify the game port to use for this server:",
     )
     gamemodule_common.configure_install_dir(
@@ -132,13 +131,19 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return A2S query address for Black Ops III (IW engine uses game port)."""
-    return "127.0.0.1", int(server.data["port"]), "a2s"
+    """Return the managed Black Ops III UDP health endpoint."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["port"]),
+        "udp",
+    )
 
 
 def get_info_address(server):
-    """Return A2S info address for Black Ops III (IW engine uses game port)."""
-    return "127.0.0.1", int(server.data["port"]), "a2s"
+    """Return the Black Ops III info endpoint."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):
@@ -183,11 +188,20 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
+port_claim_definitions = (
+    {"key": "port", "container": 27015, "protocol": "udp"},
+    {"key": "port", "container": 27015, "protocol": "tcp"},
+    {"key": "port", "offset": 1, "container": 27016, "protocol": "udp"},
+    {"key": "port", "offset": 1, "container": 27016, "protocol": "tcp"},
+    {"key": "port", "offset": 2, "container": 27017, "protocol": "udp"},
+    {"key": "port", "offset": 2, "container": 27017, "protocol": "tcp"},
+)
+
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=port_claim_definitions,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=port_claim_definitions,
 )

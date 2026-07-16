@@ -2,7 +2,7 @@
 
 This guide covers the `darkandlightserver` module in AlphaGSM.
 
-`darkandlightserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`darkandlightserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The validated Linux lifecycle uses the shared Docker `wine-proton` runtime. Current host-process Proton starts stay alive without opening the managed UDP health surface, so GitHub CI does not claim process-runtime support for this module.
 
 ## Requirements
 

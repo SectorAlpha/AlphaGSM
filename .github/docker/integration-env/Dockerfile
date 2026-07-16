@@ -18,8 +18,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 #   libc++1                             — LLVM C++ runtime used by newer native
 #                                         Linux dedicated servers such as Pavlov VR
 #   libsdl2-2.0-0                       — SDL2 runtime loaded by UE4/Unity servers
-#   libpulse0                           — PulseAudio client; Unity loads it dynamically
-#                                         even in -batchmode, crashes if not present
+#   libpulse0 / libpulse-dev            — PulseAudio runtime/development surface;
+#                                         Valheim requires both on Linux
 #   libcurl3t64-gnutls                  — GnuTLS-flavoured libcurl; Mordhau (and
 #                                         similar CryEngine servers) link against
 #                                         libcurl-gnutls.so.4 specifically
@@ -42,7 +42,7 @@ RUN dpkg --add-architecture i386 \
         p7zip-full \
         unzip bzip2 xz-utils \
                              libatomic1 libc++1 libsdl2-2.0-0 \
-        libpulse0 \
+        libpulse0 libpulse-dev \
         libcurl3t64-gnutls \
        curl jq python3 python3-pip python3-venv wget ca-certificates \
        docker.io \

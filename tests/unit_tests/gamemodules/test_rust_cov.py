@@ -18,6 +18,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=28015, dir=str(tmp_path))
     assert server.data['port'] == 28015
+    assert server.data["queryport"] == "28017"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -30,6 +31,7 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
     server.data["hostname"] = "test"
     server.data["level"] = "test"
     server.data["maxplayers"] = 27015
+    server.data["queryport"] = 27017
     server.data["rconport"] = 27015
     server.data["seed"] = "test"
     server.data["worldsize"] = "test"
@@ -97,11 +99,14 @@ def test_get_start_command(tmp_path):
     server.data["level"] = "test"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
+    server.data["queryport"] = 27017
     server.data["rconport"] = 27015
     server.data["seed"] = "test"
     server.data["worldsize"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert "+server.queryport" in cmd
+    assert cmd[cmd.index("+server.queryport") + 1] == "27017"
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -112,6 +117,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["level"] = "test"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
+    server.data["queryport"] = 27017
     server.data["rconport"] = 27015
     server.data["seed"] = "test"
     server.data["worldsize"] = "test"
@@ -188,6 +194,36 @@ def test_checkvalue_rconport():
     server = DummyServer()
     result = mod.checkvalue(server, ("rconport",), "12345")
     assert result == 12345
+
+
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12345")
+    assert result == 12345
+
+
+def test_query_info_and_runtime_ports_use_explicit_queryport(monkeypatch):
+    server = DummyServer("rust")
+    server.data.update(
+        {
+            "port": 28015,
+            "rconport": 28016,
+            "queryport": 28017,
+        }
+    )
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda current: "10.0.0.7",
+    )
+
+    assert mod.get_query_address(server) == ("10.0.0.7", 28017, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.7", 28017, "a2s")
+    assert mod.get_runtime_requirements(server)["ports"] == [
+        {"host": 28015, "container": 28015, "protocol": "udp"},
+        {"host": 28017, "container": 28017, "protocol": "udp"},
+        {"host": 28016, "container": 28016, "protocol": "tcp"},
+    ]
 
 
 def test_checkvalue_hostname():

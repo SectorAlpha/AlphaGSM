@@ -13,7 +13,7 @@ from conftest import (
     log_command_result,
     pick_free_udp_port,
     read_info_json,
-    require_command_for_runtime,
+    require_command,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_alphagsm,
@@ -29,7 +29,16 @@ from conftest import (
 from gamemodules.iosserver import steam_app_id
 from utils.valve_server import detect_query_host
 
-pytestmark = [pytest.mark.integration]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (AUTH): authenticate Steam or SteamCMD with an account that "
+            "can access IOSoccer Dedicated Server app 673990 branch iosoccer2025 "
+            "or beta before setup/start"
+        )
+    ),
+]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
@@ -42,9 +51,7 @@ module_name = "iosserver"
 def test_iosserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command_for_runtime(
-        "docker", runtime_backend=runtime_backend, module_name=module_name
-    )
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

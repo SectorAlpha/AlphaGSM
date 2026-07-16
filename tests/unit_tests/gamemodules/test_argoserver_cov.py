@@ -60,7 +60,6 @@ def test_install(tmp_path, monkeypatch):
         563930,
         True,
         validate=False,
-        beta_branch="server",
     )
     assert (tmp_path / "server.cfg").read_text() == 'hostname = "AlphaGSM Test";\n'
 
@@ -106,7 +105,6 @@ def test_update_with_restart(tmp_path, monkeypatch):
         563930,
         True,
         validate=True,
-        beta_branch="server",
     )
     assert server._stopped
     assert server._started

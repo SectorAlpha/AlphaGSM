@@ -250,10 +250,22 @@ def _build_port_specs(server, port_definitions):
             key = definition.get("key")
             if key not in server.data or server.data[key] is None:
                 continue
+            base_port = int(server.data[key])
+            offset = int(definition.get("offset", 0))
+            host_port = base_port + offset
+            container_port = int(definition.get("container", host_port))
+            for port in (host_port, container_port):
+                if port < 1 or port > 65535:
+                    raise ValueError(
+                        "Invalid derived port {} for server {}".format(
+                            port,
+                            getattr(server, "name", "<unknown>"),
+                        )
+                    )
             ports.append(
                 {
-                    "host": int(server.data[key]),
-                    "container": int(definition.get("container", server.data[key])),
+                    "host": host_port,
+                    "container": container_port,
                     "protocol": definition.get("protocol", "udp"),
                 }
             )

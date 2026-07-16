@@ -284,7 +284,11 @@ def detect_query_host(default="127.0.0.1"):
 def source_query_address(server):
     """Return the preferred host/port/protocol tuple for Source A2S queries."""
 
-    return detect_query_host(), int(server.data.get("queryport", server.data["port"])), "a2s"
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data.get("queryport", server.data["port"])),
+        "a2s",
+    )
 
 
 def parse_source_bool_cvar(output, cvar_name):
@@ -476,7 +480,7 @@ def _valve_launcher_candidates(*, engine, default_executable, configured_executa
     if engine == "source" and default_executable == "srcds_run":
         candidates.extend(("srcds_linux64", "srcds_run_64", "srcds_run"))
     elif engine == "goldsrc" and default_executable == "hlds_run":
-        candidates.extend(("hlds_linux", "hlds_run"))
+        candidates.extend(("hlds_run", "hlds_linux"))
     elif default_executable:
         candidates.append(default_executable)
 

@@ -70,8 +70,11 @@ def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypat
 
     cmd, cwd = sniperelite4server.get_start_command(server)
 
-    assert cmd[0] == "SniperElite4_DedicatedServer.exe"
-    assert "-queryport" in cmd
+    assert cmd == [
+        "SniperElite4_DedicatedServer.exe",
+        "exec",
+        "default.cfg",
+    ]
     assert cwd == server.data["dir"]
     assert wrap_calls == [True]
 

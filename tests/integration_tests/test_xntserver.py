@@ -16,7 +16,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_quake_ready,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -106,15 +106,14 @@ def test_xntserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # Xonotic uses the Quake UDP getstatus protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 300)
+        # Xonotic uses the Quake UDP getstatus protocol, not A2S.
+        wait_for_info_protocol(env, server_name, "quake", START_TIMEOUT)
 
         # Give the server additional time to stabilise — it can respond to one
         # Quake probe then crash if a runtime library loads lazily and fails.
-        # Use a full 300s window: Xonotic spends significant time loading
-        # configs and assets, during which it may be temporarily non-responsive.
-        time.sleep(10)
-        wait_for_quake_ready("127.0.0.1", port, 300)
+        # Recheck through AlphaGSM after the DarkPlaces rate-limit window.
+        time.sleep(15)
+        wait_for_info_protocol(env, server_name, "quake", START_TIMEOUT)
 
         # DarkPlaces (Xonotic's engine) rate-limits getstatus responses by
         # source IP.  Wait long enough for the rate-limit window to expire

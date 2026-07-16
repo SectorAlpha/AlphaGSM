@@ -50,6 +50,34 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_sync_server_config_writes_official_astroneer_ini_files(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "203.0.113.10",
+            "ownername": "AlphaOwner",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    config_dir = tmp_path / "Astro" / "Saved" / "Config" / "WindowsServer"
+    assert (config_dir / "Engine.ini").read_text(encoding="utf-8") == (
+        "[URL]\n"
+        "Port=28777\n"
+    )
+    assert (config_dir / "AstroServerSettings.ini").read_text(
+        encoding="utf-8"
+    ) == (
+        "PublicIP=203.0.113.10\n"
+        "OwnerName=AlphaOwner\n"
+        "OwnerGuid=0\n"
+    )
+    assert mod.config_sync_keys == ("port", "publicip", "ownername")
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

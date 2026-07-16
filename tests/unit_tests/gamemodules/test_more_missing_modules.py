@@ -84,11 +84,19 @@ def test_nightingale_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("night")
     exe = tmp_path / "NWXServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "NWXServer.sh"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "NWXServer.sh",
+            "port": 7777,
+            "queryport": 7778,
+        }
+    )
 
     cmd, cwd = nightingale.get_start_command(server)
 
-    assert cmd == ["./NWXServer.sh"]
+    assert cmd[:3] == ["./NWXServer.sh", "-port=7777", "-statusPort=7778"]
+    assert "BindAddress=0.0.0.0" in cmd[3]
     assert cwd == server.data["dir"]
 
 

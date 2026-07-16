@@ -3,15 +3,14 @@
 This guide covers the `empyrionserver` module in AlphaGSM.
 
 `empyrionserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
-baseline. The current GitHub integration lane still exercises both process and
-Docker runtime selection, and the validated Linux path remains Wine/Proton-
-backed, with readiness from `Logs/alphagsm-dedicated.log` and TCP `query` /
-`info` on `port + 3`.
+baseline. The validated GitHub path is the shared Docker `wine-proton` runtime,
+with TCP `query` / `info` on `port + 3`. CI no longer forces the host-Proton
+lane that exited before readiness in the full 2026-07-16 run.
 
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux hosts
+- Docker for the validated Linux runtime
+- Wine or Proton-GE plus `screen` only for an operator-selected process runtime
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -83,18 +82,14 @@ alphagsm myempyrion backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `530870`
 
-Current Linux host validation no longer uses `EmpyrionLauncher.exe`, because the
+Current Linux validation no longer uses `EmpyrionLauncher.exe`, because the
 launcher exits after spawning the real dedicated child and tears down the
-temporary `xvfb-run` display with it. AlphaGSM keeps the direct dedicated
-binary as the intended host Wine/Proton contract, and the module now syncs
+temporary display with it. AlphaGSM keeps the direct dedicated binary as the
+runtime-neutral module contract, and the module syncs
 `ServerConfig.Srv_Port` in `dedicated.yaml` from the AlphaGSM-owned `port`
-value and pins the Linux dedicated log to `Logs/alphagsm-dedicated.log` so
-smoke/integration read the actual server-owned runtime log instead of only the
-wrapper screen log. Focused Linux host validation on 2026-05-29 proved the live
-runtime/query surface:
+value. Focused Linux validation on 2026-05-29 proved the live runtime/query
+surface:
 
-- the direct dedicated process reaches `Started a new game` under the managed
-  Wine/Proton launch path
 - AlphaGSM syncs `ServerConfig.Srv_Port` from the owned game port into
   `dedicated.yaml`
 - the live AlphaGSM readiness/query/info surface is the generic TCP STCP
@@ -102,11 +97,13 @@ runtime/query surface:
   PfServers on port <port + 3>`
 - `query`, `info`, and `info --json` now use that derived TCP listener instead
   of the older stale fixed-`30004` / A2S assumption
+- integration readiness polls that AlphaGSM info surface directly, so Docker
+  validation does not depend on a host-owned log file
 
 `EmpyrionLauncher.exe -startDedi` remains intentionally unused on Linux because
 the launcher exits after spawning a detached child and tears down the temporary
-display with it. The supervised direct dedicated binary remains the supported
-AlphaGSM contract.
+display with it. The supervised direct dedicated binary in Docker remains the
+supported AlphaGSM contract.
 
 ### Server Configuration
 

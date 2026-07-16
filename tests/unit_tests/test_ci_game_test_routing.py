@@ -113,6 +113,191 @@ def test_full_heavy_integration_matrix_keeps_dual_runtime_lanes():
     }
 
 
+def test_sonsoftheforest_uses_one_docker_default_heavy_lane():
+    routing = load_routing_module()
+    test_path = "tests/integration_tests/test_sonsoftheforestserver.py"
+
+    matrix = routing.build_integration_matrix(
+        [test_path],
+        repo_root=Path("."),
+        heavy_only=True,
+    )
+
+    assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+    assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": test_path,
+            "label": "sonsoftheforestserver",
+        }
+    ]
+
+
+def test_rs2_uses_one_docker_default_heavy_lane():
+    routing = load_routing_module()
+    test_path = "tests/integration_tests/test_rs2server.py"
+
+    matrix = routing.build_integration_matrix(
+        [test_path],
+        repo_root=Path("."),
+        heavy_only=True,
+    )
+
+    assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+    assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": test_path,
+            "label": "rs2server",
+        }
+    ]
+
+
+def test_scum_uses_one_docker_default_heavy_lane():
+    routing = load_routing_module()
+    test_path = "tests/integration_tests/test_scumserver.py"
+
+    matrix = routing.build_integration_matrix(
+        [test_path],
+        repo_root=Path("."),
+        heavy_only=True,
+    )
+
+    assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+    assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": test_path,
+            "label": "scumserver",
+        }
+    ]
+
+
+def test_miscreated_and_mumble_use_one_docker_default_lane_each():
+    routing = load_routing_module()
+
+    for test_path in (
+        "tests/integration_tests/test_miscreatedserver.py",
+        "tests/integration_tests/test_mumbleserver.py",
+    ):
+        matrix = routing.build_integration_matrix(
+            [test_path],
+            repo_root=Path("."),
+        )
+
+        assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+        assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+        assert matrix["include"] == [
+            {
+                "batch": 1,
+                "files": test_path,
+                "label": Path(test_path).stem.removeprefix("test_"),
+            }
+        ]
+
+
+def test_ios_and_jc2_use_one_docker_default_lane_each():
+    routing = load_routing_module()
+
+    for test_path in (
+        "tests/integration_tests/test_iosserver.py",
+        "tests/integration_tests/test_jc2server.py",
+    ):
+        matrix = routing.build_integration_matrix(
+            [test_path],
+            repo_root=Path("."),
+        )
+
+        assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+        assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+        assert matrix["include"] == [
+            {
+                "batch": 1,
+                "files": test_path,
+                "label": Path(test_path).stem.removeprefix("test_"),
+            }
+        ]
+
+
+def test_docker_proven_servers_do_not_keep_forced_process_lanes():
+    routing = load_routing_module()
+
+    for test_path in (
+        "tests/integration_tests/test_readyornotserver.py",
+        "tests/integration_tests/test_citadelserver.py",
+        "tests/integration_tests/test_darkandlightserver.py",
+        "tests/integration_tests/test_ecoserver.py",
+        "tests/integration_tests/test_empyrionserver.py",
+        "tests/integration_tests/test_lastoasisserver.py",
+        "tests/integration_tests/test_reignofdwarfserver.py",
+        "tests/integration_tests/test_remnantsserver.py",
+        "tests/integration_tests/test_returntomoriaserver.py",
+    ):
+        matrix = routing.build_integration_matrix(
+            [test_path],
+            repo_root=Path("."),
+            heavy_only=Path(test_path).name in routing.SLOW_TESTS,
+        )
+
+        assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+        assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+        assert matrix["include"] == [
+            {
+                "batch": 1,
+                "files": test_path,
+                "label": Path(test_path).stem.removeprefix("test_"),
+            }
+        ]
+
+
+def test_empyrion_uses_the_heavy_integration_and_smoke_partitions():
+    routing = load_routing_module()
+
+    assert "test_empyrionserver.py" in routing.SLOW_TESTS
+    assert "run_empyrionserver.sh" in routing.HEAVY_SMOKE_TESTS
+
+
+def test_docker_only_validation_servers_do_not_keep_forced_process_lanes():
+    routing = load_routing_module()
+
+    for test_path in (
+        "tests/integration_tests/test_blackops3server.py",
+        "tests/integration_tests/test_blackwakeserver.py",
+        "tests/integration_tests/test_mythofempiresserver.py",
+        "tests/integration_tests/test_xntserver.py",
+    ):
+        matrix = routing.build_integration_matrix(
+            [test_path],
+            repo_root=Path("."),
+            heavy_only=Path(test_path).name in routing.SLOW_TESTS,
+        )
+
+        assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+        assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+        assert matrix["include"] == [
+            {
+                "batch": 1,
+                "files": test_path,
+                "label": Path(test_path).stem.removeprefix("test_"),
+            }
+        ]
+
+
+def test_large_wine_server_validation_uses_heavy_partitions():
+    routing = load_routing_module()
+
+    for test_name in ("test_blackops3server.py", "test_mythofempiresserver.py"):
+        assert test_name in routing.SLOW_TESTS
+    for smoke_name in (
+        "run_blackops3server.sh",
+        "run_mythofempiresserver.sh",
+    ):
+        assert smoke_name in routing.HEAVY_SMOKE_TESTS
+
+
 def test_long_container_integration_changes_route_to_heavy_matrix():
     routing = load_routing_module()
 
@@ -989,26 +1174,20 @@ def test_battlecryoffreedomserver_builds_process_and_docker_dual_lanes():
     ]
 
 
-def test_blackops3server_builds_process_and_docker_dual_lanes():
+def test_blackops3server_builds_one_heavy_docker_default_lane():
     routing = load_routing_module()
 
     matrix = routing.build_integration_matrix(
         ["tests/integration_tests/test_blackops3server.py"],
         repo_root=Path("."),
+        heavy_only=True,
     )
 
     assert matrix["include"] == [
         {
             "batch": 1,
             "files": "tests/integration_tests/test_blackops3server.py",
-            "label": "blackops3server-process",
-            "runtime_backend": "process",
-        },
-        {
-            "batch": 2,
-            "files": "tests/integration_tests/test_blackops3server.py",
-            "label": "blackops3server-docker",
-            "runtime_backend": "docker",
+            "label": "blackops3server",
         },
     ]
 
@@ -1505,30 +1684,6 @@ def test_dayzserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
             "batch": 2,
             "files": "tests/integration_tests/test_dayzserver.py",
             "label": "dayzserver-docker",
-            "runtime_backend": "docker",
-        },
-    ]
-
-
-def test_mumbleserver_builds_process_and_docker_dual_lanes_as_a_single_slice():
-    routing = load_routing_module()
-
-    matrix = routing.build_integration_matrix(
-        ["tests/integration_tests/test_mumbleserver.py"],
-        repo_root=Path("."),
-    )
-
-    assert matrix["include"] == [
-        {
-            "batch": 1,
-            "files": "tests/integration_tests/test_mumbleserver.py",
-            "label": "mumbleserver-process",
-            "runtime_backend": "process",
-        },
-        {
-            "batch": 2,
-            "files": "tests/integration_tests/test_mumbleserver.py",
-            "label": "mumbleserver-docker",
             "runtime_backend": "docker",
         },
     ]

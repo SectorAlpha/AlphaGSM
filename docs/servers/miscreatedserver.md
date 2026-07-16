@@ -3,6 +3,8 @@
 This guide covers the `miscreatedserver` module in AlphaGSM.
 
 Status: PASSED on 2026-05-29
+The validated Ubuntu 24.04 path is one Docker-default `wine-proton` lifecycle;
+CI does not duplicate an unproven host-Proton lane.
 
 ## Requirements
 

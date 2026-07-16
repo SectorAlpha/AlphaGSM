@@ -2,7 +2,9 @@
 
 This guide covers the `iosserver` module in AlphaGSM.
 
-`iosserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection around that provider-managed authentication prerequisite, while local runs remain process-backed by default unless you opt into the Docker backend.
+`iosserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04 Linux
+baseline. GitHub keeps one Docker-default auth-gated lifecycle entry; it does
+not attempt the known-crashing public branch as a process test.
 
 ## Requirements
 

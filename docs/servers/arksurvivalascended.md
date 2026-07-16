@@ -80,7 +80,10 @@ The validated Linux path now runs through AlphaGSM's Docker-backed
 SteamCMD setup for app `2430930` succeeds on the current branch, and the live
 server answers `query`, `info`, and `info --json` as generic `tcp` on the
 managed main port. The older `ShooterGame.log` readiness marker and A2S-style
-info assumptions are no longer part of the supported Linux path.
+info assumptions are no longer part of the supported Linux path. The module
+delegates its Docker launch to the shared Proton runtime builder, so the
+container entrypoint runs `ArkAscendedServer.exe` through Proton rather than
+executing the Windows binary directly.
 
 ### Server Configuration
 
