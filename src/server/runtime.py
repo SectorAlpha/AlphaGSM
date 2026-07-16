@@ -17,6 +17,7 @@ import os
 import re
 import shlex
 import shutil
+import socket
 import subprocess as sp
 import sys
 
@@ -834,6 +835,8 @@ def _current_container_bind_mounts():
         return []
 
     container_name = os.environ.get("HOSTNAME", "").strip()
+    if not container_name:
+        container_name = socket.gethostname().strip()
     if not container_name:
         return []
 

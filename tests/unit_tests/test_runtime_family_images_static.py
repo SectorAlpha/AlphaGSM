@@ -9,6 +9,9 @@ STEAMCMD_LINUX_DOCKERFILE = Path("docker/steamcmd-linux/Dockerfile")
 WINE_PROTON_DOCKERFILE = Path("docker/wine-proton/Dockerfile")
 WINE_PROTON_ENTRYPOINT = Path("docker/wine-proton/entrypoint.sh")
 BUILD_WORKFLOW = Path(".github/workflows/build-runtime-family-images.yml")
+MANUAL_INTEGRATION_BUILD_WORKFLOW = Path(
+    ".github/workflows/build-integration-image.yml"
+)
 DOCKER_README = Path("docker/README.md")
 INTEGRATION_ENV_DOCKERFILE = Path(".github/docker/integration-env/Dockerfile")
 PR_WORKFLOW = Path(".github/workflows/unittest.yaml")
@@ -96,6 +99,23 @@ def test_wine_proton_runtime_image_keeps_ci_wine_and_proton_stack():
     missing = [snippet for snippet in required_snippets if snippet not in text]
 
     assert missing == []
+
+
+def test_proton_images_copy_architecture_asset_selector():
+    for dockerfile in (WINE_PROTON_DOCKERFILE, INTEGRATION_ENV_DOCKERFILE):
+        text = dockerfile.read_text(encoding="utf-8")
+
+        assert (
+            "COPY scripts/select_proton_asset.py /tmp/select_proton_asset.py"
+            in text
+        )
+
+
+def test_proton_image_cache_keys_include_architecture_asset_selector():
+    for workflow in (PR_WORKFLOW, MANUAL_INTEGRATION_BUILD_WORKFLOW):
+        text = workflow.read_text(encoding="utf-8")
+
+        assert "scripts/select_proton_asset.py" in text
 
 
 def test_wine_proton_entrypoint_defaults_to_ci_proton_path():

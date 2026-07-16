@@ -1,7 +1,7 @@
 name: Build Integration Test Image
 
 # Manually triggered by code owners whenever the Docker image needs to be
-# rebuilt (e.g. after changes to the Dockerfile or install_proton.sh).
+# rebuilt (e.g. after changes to the Dockerfile or Proton installer helpers).
 #
 # The built image is pushed to GHCR under two tags:
 #   ghcr.io/sectoralpha/alphagsm-integration-test:<content-hash>
@@ -27,7 +27,7 @@ jobs:
       - name: Compute image tags from content hash
         id: meta
         run: |
-          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh | sha256sum | cut -c1-12)
+          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh scripts/select_proton_asset.py | sha256sum | cut -c1-12)
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           repo="ghcr.io/${owner}/alphagsm-integration-test"
           echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"

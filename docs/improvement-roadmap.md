@@ -54,6 +54,23 @@ work here must respect.
   leaves a bootstrap JVM behind, and release-backed CI setup receives an
   authenticated GitHub API token. The next GitHub run is the validation point
   before triaging the remaining module-specific failures.
+- The next sampled failures also resolved to shared infrastructure rather than
+  game-module runtime branches: the Proton installer selected the first
+  upstream archive and therefore installed `aarch64` Proton on x86_64 CI, and
+  the `su - gsmuser` login shell dropped `HOSTNAME` so sibling Docker launches
+  skipped job-container bind-mount translation. Architecture-aware release
+  selection and kernel-hostname fallback now have focused unit coverage.
+- The Rust process lane exposed a separate integration-helper call-site typo:
+  four tests passed `process` as the required executable name. Rust,
+  Counter-Strike 2, Left 4 Dead, and Half-Life Deathmatch: Source now require
+  `screen` only when their effective runtime is process, with an AST-based
+  regression guard across the whole integration suite.
+- Rust's Docker lane then exposed hosted-runner disk exhaustion while pulling
+  the branch-local `steamcmd-linux` image after the game install. Standard and
+  heavy integration shards now clear the host Actions tool cache mounted at
+  `/__t` and prune unused Docker data before the matrix starts, matching the
+  intent of the existing host-side smoke cleanup without deleting tools from
+  lint, unit, coverage, or build jobs.
 - Full GitHub integration validation now preserves the normal `auto` batches
   and adds explicit `process` and `docker` batches for the declared
   process-passed dual-runtime set, so full validation does not silently replace
@@ -96,7 +113,12 @@ work here must respect.
    The routing helper now excludes Docker-default and non-runtime integration
    checks from the Docker enablement backlog; the computed backlog is empty,
    leaving CI failure classification as the remaining work rather than lane
-   discovery.
+   discovery. Current samples have identified and fixed four shared classes:
+   wrong-architecture Proton asset selection, lost host-path translation after
+   a login-shell environment reset, integration tests passing a runtime name
+   where a process command name was required, and hosted-runner disk exhaustion
+   before large Docker integration starts. Fresh GitHub validation is still
+   required before this item can be marked done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, so the smoke canonical lifecycle matches the

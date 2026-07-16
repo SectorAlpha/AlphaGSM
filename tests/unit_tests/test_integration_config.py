@@ -1,5 +1,6 @@
 """Tests for shared integration-test config generation."""
 
+import ast
 import importlib
 from pathlib import Path
 import re
@@ -147,5 +148,29 @@ def test_integration_tests_branch_on_effective_runtime_backend():
     assert offenders == [], (
         "Integration tests must branch on effective_runtime_backend(...) "
         "rather than the raw ALPHAGSM_TEST_RUNTIME_BACKEND value: "
+        + ", ".join(offenders)
+    )
+
+
+def test_integration_tests_do_not_pass_runtime_name_as_required_command():
+    integration_root = Path(__file__).resolve().parents[1] / "integration_tests"
+    offenders = []
+
+    for path in sorted(integration_root.glob("test_*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            if not isinstance(node.func, ast.Name):
+                continue
+            if node.func.id != "require_command_for_runtime":
+                continue
+            if isinstance(node.args[0], ast.Name) and node.args[0].id == "runtime_backend":
+                offenders.append(
+                    f"{path.relative_to(integration_root.parent)}:{node.lineno}"
+                )
+
+    assert offenders == [], (
+        "Pass a command name first and runtime_backend as a keyword: "
         + ", ".join(offenders)
     )

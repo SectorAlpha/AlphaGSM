@@ -523,6 +523,20 @@ GitHub Actions supplies `ALPHAGSM_GITHUB_TOKEN` to smoke and integration jobs
 using the workflow's read-only `GITHUB_TOKEN`; local runs can omit it unless
 they encounter GitHub's anonymous API rate limit.
 
+Linux integration jobs run AlphaGSM inside a GitHub job container and launch
+game-server containers through the mounted host Docker socket. The shared
+runtime inspects the current container's bind mounts and rewrites source paths
+back to host-visible locations before `docker run`. Container detection uses
+the exported `HOSTNAME` when available and falls back to
+`socket.gethostname()` because the non-root `su - gsmuser` login shell may
+reset the environment variable.
+
+The same job container exposes the host Actions tool cache at `/__t`.
+Integration shards clear that unused cache before running the game matrix so
+large SteamCMD payloads and branch-local runtime images can coexist on the
+hosted runner disk. Keep that cleanup scoped to the integration jobs; build,
+lint, unit, and coverage jobs may still need the tool cache.
+
 ## Documentation Contract
 
 Documentation is now deliberately split by audience:

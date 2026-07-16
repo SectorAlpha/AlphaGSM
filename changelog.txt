@@ -11,6 +11,10 @@ high-level milestones.
 - Server support: make Argo SteamCMD install and update select the upstream `server` beta branch required to retrieve app `563930`'s dedicated payload.
 - Minecraft: stop launching a temporary Java server during setup; AlphaGSM now writes `eula.txt` and `server.properties` directly so setup cannot leave a JVM holding the managed port before the real start lifecycle.
 - CI/downloads: authenticate GitHub release metadata requests with the read-only Actions token in smoke and integration jobs, avoiding anonymous API rate-limit failures during QuakeWorld and other release-backed setup paths.
+- CI/runtime: select Proton-GE release archives by host architecture instead of upstream asset ordering, and include the selector in branch-local Wine/Proton and integration-image cache keys so x86_64 CI cannot install the `aarch64` build.
+- CI/runtime: recover the current container identity from the kernel hostname when login shells reset `HOSTNAME`, preserving host-visible bind-mount translation for Docker-backed servers launched from GitHub job containers.
+- CI/integration: fix Rust, Counter-Strike 2, Left 4 Dead, and Half-Life Deathmatch: Source process lanes to require `screen` rather than accidentally treating the runtime name as a command.
+- CI/integration: clear the GitHub host tool cache exposed at `/__t` and prune unused Docker data before standard and heavy integration shards, leaving room for large SteamCMD installs plus branch-local runtime images.
 
 2026-07-15
 - CI/integration: full GitHub validation now keeps the normal auto-runtime batches and adds explicit process and Docker lanes for the process-passed dual-runtime server set.

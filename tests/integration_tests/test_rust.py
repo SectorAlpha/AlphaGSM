@@ -34,14 +34,18 @@ def test_rust_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
-    require_command_for_runtime(runtime_backend)
+    module_name = "rust"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itrust"
-    module_name = "rust"
 
     write_config(
         config_path,

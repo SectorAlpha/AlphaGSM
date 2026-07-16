@@ -416,7 +416,7 @@ jobs:
       - name: Compute image tags from content hash
         id: meta
         run: |
-          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh requirements.txt | sha256sum | cut -c1-12)
+          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh scripts/select_proton_asset.py requirements.txt | sha256sum | cut -c1-12)
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           repo="ghcr.io/${owner}/alphagsm-integration-test"
           echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
@@ -551,6 +551,7 @@ jobs:
               docker/wine-proton/Dockerfile \
               docker/wine-proton/entrypoint.sh \
               scripts/install_proton.sh \
+              scripts/select_proton_asset.py \
             | sha256sum | cut -c1-12
           )
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
@@ -603,6 +604,12 @@ jobs:
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
+      - name: Free runner disk space for large Docker integration coverage
+        run: |
+          df -h /
+          rm -rf /__t/*
+          docker system prune -af || true
+          df -h /
       - name: AlphaGSM Pytest Integration Tests
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
@@ -673,6 +680,12 @@ jobs:
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
+      - name: Free runner disk space for large Docker integration coverage
+        run: |
+          df -h /
+          rm -rf /__t/*
+          docker system prune -af || true
+          df -h /
       - name: AlphaGSM Pytest Integration Tests
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"

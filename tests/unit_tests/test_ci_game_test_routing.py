@@ -3032,3 +3032,20 @@ def test_unittest_workflow_frees_runner_disk_before_linux_smoke_batches():
     assert "Free runner disk space for large Docker smoke coverage" not in lint_section
     assert "Free runner disk space for large Docker smoke coverage" not in unit_test_section
     assert "Free runner disk space for large Docker smoke coverage" not in coverage_section
+
+
+def test_unittest_workflow_frees_host_toolcache_before_linux_integration_batches():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+    integration_standard_section = text.split("  integration-test-standard:")[1].split(
+        "  integration-test-heavy:"
+    )[0]
+    integration_heavy_section = text.split("  integration-test-heavy:")[1].split(
+        "  backend-smoke-test:"
+    )[0]
+
+    for section in (integration_standard_section, integration_heavy_section):
+        assert "Free runner disk space for large Docker integration coverage" in section
+        assert "rm -rf /__t/*" in section
+        assert "docker system prune -af || true" in section
+        assert "df -h /" in section

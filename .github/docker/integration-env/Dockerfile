@@ -177,12 +177,13 @@ RUN wget -q \
 # not present; the fallback adds "Authorization: Bearer $GITHUB_TOKEN" to the
 # GitHub API request, raising the rate limit from 60 to 5000 req/h.
 COPY scripts/install_proton.sh /tmp/install_proton.sh
+COPY scripts/select_proton_asset.py /tmp/select_proton_asset.py
 RUN --mount=type=secret,id=gh_token \
     GH_TOKEN=$(cat /run/secrets/gh_token 2>/dev/null || true) \
     GITHUB_TOKEN=${GH_TOKEN} \
     PROTON_GE_DIR=/opt/proton-ge \
     bash /tmp/install_proton.sh proton \
- && rm -f /tmp/install_proton.sh
+ && rm -f /tmp/install_proton.sh /tmp/select_proton_asset.py
 
 # Install Python test dependencies (pytest, pylint, coverage, etc.) so that
 # integration-test runners can use them without a per-job pip install.

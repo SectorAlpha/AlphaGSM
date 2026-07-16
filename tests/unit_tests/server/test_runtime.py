@@ -1239,6 +1239,46 @@ def test_current_container_bind_mounts_exposes_source_destination_pairs(monkeypa
     }
 
 
+def test_current_container_bind_mounts_uses_kernel_hostname_when_env_is_reset(
+    monkeypatch,
+):
+    observed = {}
+
+    def _fake_check_output(cmd, **kwargs):
+        observed["cmd"] = cmd
+        observed["kwargs"] = kwargs
+        return (
+            '[{"Type":"bind","Source":"/home/runner/work/_temp",'
+            '"Destination":"/__w/_temp"}]'
+        )
+
+    monkeypatch.delenv("HOSTNAME", raising=False)
+    monkeypatch.setattr(runtime_module.os.path, "exists", lambda path: path == "/.dockerenv")
+    monkeypatch.setattr(
+        runtime_module,
+        "socket",
+        SimpleNamespace(gethostname=lambda: "github-job-container"),
+        raising=False,
+    )
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    mounts = runtime_module._current_container_bind_mounts()
+
+    assert mounts == [
+        {
+            "source": "/home/runner/work/_temp",
+            "destination": "/__w/_temp",
+        }
+    ]
+    assert observed["cmd"] == [
+        "docker",
+        "inspect",
+        "-f",
+        "{{json .Mounts}}",
+        "github-job-container",
+    ]
+
+
 def test_translate_manager_container_path_to_host_uses_longest_bind_mount(monkeypatch):
     monkeypatch.setattr(
         runtime_module,
