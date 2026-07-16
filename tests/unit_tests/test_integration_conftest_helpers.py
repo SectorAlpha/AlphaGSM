@@ -175,6 +175,38 @@ def test_wait_for_glob_log_marker_dumps_runtime_logs_when_context_provided(monke
     assert dumped_runtime == [({"ALPHAGSM_CONFIG_LOCATION": "dummy"}, "itglobserver", 200)]
 
 
+def test_run_and_assert_ok_dumps_runtime_logs_for_failed_lifecycle_command(monkeypatch):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    failure = subprocess.CompletedProcess(
+        args=["alphagsm", "itreturntomo", "query"],
+        returncode=1,
+        stdout="",
+        stderr="Server does not appear to be responding",
+    )
+    env = {"ALPHAGSM_CONFIG_LOCATION": "dummy"}
+    dumped_runtime = []
+
+    monkeypatch.setattr(helpers, "run_alphagsm", lambda *args, **kwargs: failure)
+    monkeypatch.setattr(helpers, "log_command_result", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        helpers,
+        "skip_for_known_steamcmd_issue",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        helpers,
+        "_dump_alphagsm_runtime_logs",
+        lambda actual_env, server_name, lines=200: dumped_runtime.append(
+            (actual_env, server_name, lines)
+        ),
+    )
+
+    with pytest.raises(AssertionError, match="does not appear to be responding"):
+        helpers.run_and_assert_ok(env, "itreturntomo", "query")
+
+    assert dumped_runtime == [(env, "itreturntomo", 200)]
+
+
 def test_build_integration_tmp_path_uses_work_dir(monkeypatch, tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     monkeypatch.setenv("ALPHAGSM_WORK_DIR", str(tmp_path))
@@ -468,6 +500,35 @@ def test_run_setup_with_port_retry_applies_recommended_nonprimary_claims(monkeyp
         ("itblackwake", "set", "queryport", "27016"),
         ("itblackwake", "setup", "-n", "42270", str(tmp_path / "server")),
     ]
+
+
+def test_run_setup_with_port_retry_forwards_known_steamcmd_flake_app_id(
+    monkeypatch,
+    tmp_path,
+):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    setup_failure = subprocess.CompletedProcess(
+        args=["alphagsm"],
+        returncode=3,
+        stdout="Error! App '294420' state is 0x202 after update job.\n",
+        stderr="",
+    )
+
+    monkeypatch.setattr(
+        helpers,
+        "run_alphagsm",
+        lambda env, *command_parts, timeout=None: setup_failure,
+    )
+    monkeypatch.setattr(helpers, "log_command_result", lambda *args, **kwargs: None)
+
+    with pytest.raises(pytest.skip.Exception, match=r"app 294420"):
+        helpers.run_setup_with_port_retry(
+            {"ALPHAGSM_CONFIG_LOCATION": str(tmp_path / "alphagsm.conf")},
+            "it7dtd",
+            26900,
+            tmp_path / "server",
+            steam_app_id=294420,
+        )
 
 
 def test_backend_write_java_wrapper_prefers_java_home(monkeypatch, tmp_path):

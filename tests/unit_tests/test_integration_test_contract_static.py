@@ -219,11 +219,16 @@ def test_readyornot_uses_game_log_and_current_udp_health_surface():
     assert '"a2s"' not in smoke_text
 
 
-def test_returntomoria_uses_alphagsm_info_instead_of_raw_udp_readiness():
+def test_returntomoria_uses_status_json_before_alphagsm_info_readiness():
     text = (INTEGRATION_TEST_DIR / "test_returntomoriaserver.py").read_text(
         encoding="utf-8"
     )
 
+    status_wait = text.index("status_payload = wait_for_status_json_running(")
+    info_wait = text.index("info_data = wait_for_info_protocol(")
+
+    assert status_wait < info_wait
+    assert 'payload.get("Status") == "running"' in text
     assert "wait_for_info_protocol" in text
     assert "wait_for_udp_open" not in text
 

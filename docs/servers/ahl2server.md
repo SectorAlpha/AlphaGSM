@@ -2,7 +2,7 @@
 
 This guide covers the `ahl2server` module in AlphaGSM.
 
-`ahl2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`ahl2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend. Hibernating startup uses the shared Source console-info hook before the lifecycle wakes the server and requires real A2S for final `query`, `info`, and `info --json` checks.
 
 ## Requirements
 

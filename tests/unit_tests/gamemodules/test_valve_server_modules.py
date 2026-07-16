@@ -424,6 +424,15 @@ def test_valve_source_module_exposes_source_info_hooks():
     assert callable(module.MODULE.get_container_spec)
 
 
+def test_valve_source_module_exports_info_hooks_on_canonical_surface():
+    module = importlib.import_module("gamemodules.ahl2server")
+
+    assert callable(module.wake_a2s_query)
+    assert callable(module.get_query_address)
+    assert callable(module.get_info_address)
+    assert callable(module.get_hibernating_console_info)
+
+
 def test_valve_source_query_hooks_use_runtime_resolved_host(monkeypatch):
     module = importlib.import_module("gamemodules.cssserver")
     valve_server = importlib.import_module("utils.valve_server")

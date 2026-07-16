@@ -219,7 +219,7 @@ def _parse_recommended_port_overrides(output):
 
 
 def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
-                               timeout=None, max_tries=3):
+                               timeout=None, max_tries=3, steam_app_id=None):
     """Run ``setup -n <port> <install_dir>`` and retry with a new port on conflict.
 
     If setup fails because the port is already in use (AlphaGSM port-manager
@@ -228,6 +228,9 @@ def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
 
     Returns ``(result, final_port)`` where *final_port* is the port that was
     ultimately accepted (which may differ from the original *port*).
+
+    ``steam_app_id`` keeps known SteamCMD flake classification explicit when
+    setup never reaches the port-conflict retry path.
     """
     if timeout is None:
         timeout = DEFAULT_TIMEOUT
@@ -269,7 +272,10 @@ def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
         else:
             continue
         break
-    skip_for_known_steamcmd_issue(last_result)
+    if steam_app_id is None:
+        skip_for_known_steamcmd_issue(last_result)
+    else:
+        skip_for_known_steamcmd_issue(last_result, app_id=steam_app_id)
     assert last_result.returncode == 0, last_result.stderr or last_result.stdout
     return last_result, current_port  # unreachable after assert
 
@@ -582,7 +588,14 @@ def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
     log_command_result("alphagsm", result, label="alphagsm")
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
-        if len(args) >= 2 and args[1] == "start":
+        if len(args) >= 2 and args[1] in {
+            "start",
+            "status",
+            "query",
+            "info",
+            "stop",
+            "restart",
+        }:
             server_name = args[0]
             _dump_alphagsm_runtime_logs(env, server_name)
     assert result.returncode == 0, result.stderr or result.stdout

@@ -24,6 +24,8 @@ from conftest import (
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
+from gamemodules.sevendaystodie import steam_app_id
+
 pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 900  # 7DTD generates a game world on first start, which takes several minutes
@@ -71,6 +73,7 @@ def test_sevendaystodie_lifecycle(tmp_path):
         port,
         install_dir,
         timeout=SETUP_TIMEOUT,
+        steam_app_id=steam_app_id,
     )
 
     # Setup can take a long time, so refresh the claimed port just before start.

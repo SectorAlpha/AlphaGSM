@@ -990,4 +990,9 @@ def define_valve_server_module(
     caller_globals["sync_server_config"] = sync_server_config
     caller_globals["setting_schema"] = setting_schema
     caller_globals["list_setting_values"] = list_setting_values
+    if engine == "source":
+        caller_globals["wake_a2s_query"] = wake_source_server_for_a2s
+        caller_globals["get_query_address"] = source_query_address
+        caller_globals["get_info_address"] = source_query_address
+        caller_globals["get_hibernating_console_info"] = hibernating_source_console_info
     return exported_namespace

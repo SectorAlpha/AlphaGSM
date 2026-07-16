@@ -2,6 +2,8 @@
 
 import json
 import os
+import time
+from pathlib import Path
 
 import pytest
 
@@ -34,6 +36,28 @@ SETUP_TIMEOUT = 3600  # 60 min: large SteamCMD payload under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
+
+
+def wait_for_status_json_running(status_json_path: Path, timeout_seconds: int):
+    """Poll Status.json until it reports the hosted session as running."""
+
+    deadline = time.time() + timeout_seconds
+    last_payload = None
+    while time.time() < deadline:
+        if status_json_path.is_file():
+            try:
+                payload = json.loads(status_json_path.read_text(encoding="utf-8-sig"))
+            except json.JSONDecodeError:
+                payload = None
+            if isinstance(payload, dict):
+                last_payload = payload
+                if payload.get("Status") == "running":
+                    return payload
+        time.sleep(5)
+    pytest.fail(
+        "Status.json did not report a running Return to Moria server within {}s. "
+        "Last payload: {!r}".format(timeout_seconds, last_payload)
+    )
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)
@@ -92,6 +116,7 @@ def test_returntomoriaserver_lifecycle(tmp_path):
         port,
         install_dir,
         timeout=SETUP_TIMEOUT,
+        steam_app_id=steam_app_id,
     )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
@@ -101,6 +126,8 @@ def test_returntomoriaserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
+        status_json_path = install_dir / "Moria" / "Saved" / "Config" / "Status.json"
+        status_payload = wait_for_status_json_running(status_json_path, START_TIMEOUT)
         info_data = wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
         assert info_data.get("port") == port, (
             f"Expected game-port UDP readiness on fresh server: {info_data!r}"
@@ -129,6 +156,9 @@ def test_returntomoriaserver_lifecycle(tmp_path):
         )
         assert _info_data.get("port") == port, (
             f"Expected game-port UDP readiness on fresh server: {_info_data!r}"
+        )
+        assert status_payload.get("AdvertisedAddressAndPort", "").endswith(f":{port}"), (
+            f"Expected advertised port to match the managed game port: {status_payload!r}"
         )
     finally:
         # stop

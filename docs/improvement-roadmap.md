@@ -128,6 +128,23 @@ work here must respect.
   Enshrouded now keeps one Docker-default heavy lane. Black Ops III also
   reached its ready marker and answered generic UDP; its stale A2S-style query
   wording assertion now matches the module's declared UDP output.
+- The replacement Docker lane for 7 Days to Die then exhausted SteamCMD's
+  built-in retries on app `294420`'s already-documented bare state `0x202`.
+  The shared setup-with-port-retry helper had dropped the explicit app id
+  before the known-flake classifier ran; it now forwards that id without
+  weakening unknown SteamCMD failures.
+- Return to Moria's Docker lane exposed a separate readiness regression: a
+  single generic UDP probe could pass before the server reached its
+  game-owned running state, then the immediate `query` failed. The integration
+  lifecycle now follows the canonical smoke runner by waiting for
+  `Status.json` to report `running` before AlphaGSM `info --json`, and failed
+  post-start commands now dump managed logs plus runtime doctor details.
+- AHL2's process lane then proved the generated Valve package surface was
+  incomplete: the shared factory created Source query, wake, and
+  hibernating-console hooks only on the internal `MODULE` namespace, so the
+  canonical game module fell back to generic TCP while hibernating. The
+  factory now exports those hooks to every Source module package; AHL2 still
+  requires real A2S before final query/info assertions.
 
 ## 1. CI and Test Infrastructure
 
@@ -141,9 +158,10 @@ work here must respect.
    shared helper in `tests/integration_tests/conftest.py`, so local runs stay
    process-first while GitHub CI can exercise Docker-capable modules through
    `auto` without hardcoded `process` drift in the test files.
-3. **Done: make `start` failures self-diagnosing in CI.** The integration
-   helper now dumps the computed runtime doctor details — command, working
-   directory, mounts, and ports — when a start path fails.
+3. **Done: make lifecycle failures self-diagnosing in CI.** The integration
+   helper now dumps managed logs and computed runtime doctor details — command,
+   working directory, mounts, and ports — when `start`, `status`, `query`,
+   `info`, `stop`, or `restart` fails.
 4. **Done: stabilize CI monitoring tooling.** `scripts/ci_status.py` now
    polls `gh run view <id> --json status,conclusion,jobs`, prints a compact
    summary, and surfaces failed jobs plus useful log excerpts when a run ends
@@ -174,8 +192,17 @@ work here must respect.
    shares the exact branch-local runtime base. That run also removed
    Enshrouded's unproven forced process lane after its child outlived `screen`,
    and corrected Black Ops III's assertion to expect its actual generic UDP
-   query output. Fresh GitHub validation is still required before this item can
-   be marked done.
+   query output. The next Docker batch exposed and fixed a shared setup-helper
+   data-flow gap that prevented 7 Days to Die's known app-`294420` bare
+   `0x202` state from reaching the existing transient classifier. Return to
+   Moria then exposed a UDP-only readiness false positive, so its integration
+   lifecycle again waits for the same `Status.json` running state as the smoke
+   runner before checking AlphaGSM's runtime-resolved UDP surface. AHL2's
+   process lane additionally exposed missing canonical exports for the shared
+   Valve Source query/wake/hibernation hooks; the factory now exports them for
+   every package-backed Source module while preserving final A2S validation.
+   Fresh GitHub validation is still required before this item can be marked
+   done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, and `run_readyornotserver.sh` now follows the

@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-16
+- Valve/Source modules: export the shared query, wake, and hibernating-console hooks on each canonical game-module surface, so process and Docker lifecycles use hibernation-safe console data before requiring real A2S instead of falling back to generic TCP.
+- CI/integration: restore Return to Moria's game-owned `Status.json` running state as the readiness gate before AlphaGSM's runtime-resolved UDP validation, and dump managed logs plus runtime doctor details for failed post-start lifecycle commands instead of diagnosing only `start`.
+- CI/SteamCMD: preserve explicit app ids through the shared setup-with-port-retry helper, so 7 Days to Die's known repeated bare `0x202` SteamCMD state is classified consistently instead of turning its Docker lane red after the downloader's own retries are exhausted.
 - CI/integration: keep Enshrouded on its proven Docker-default heavy lifecycle instead of forcing an unproven host Wine/Proton process lane, and align Black Ops III's query assertion with its declared generic UDP output.
 - CI/runtime images: build the integration test image from the exact branch-local Wine/Proton runtime image, so Docker-backed Windows server tests reuse the job container's Wine, prefix, Mono, and Proton layers instead of exhausting hosted-runner disk while unpacking a duplicate stack after large SteamCMD installs.
 - Enshrouded: allow managed query-port and server-name values to be set before setup assigns an install directory, deferring `enshrouded_server.json` synchronization until the directory exists.
