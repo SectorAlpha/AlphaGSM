@@ -71,6 +71,12 @@ work here must respect.
   `/__t` and prune unused Docker data before the matrix starts, matching the
   intent of the existing host-side smoke cleanup without deleting tools from
   lint, unit, coverage, or build jobs.
+- Barotrauma smoke then exposed a shared port-allocation race: the old helpers
+  asked the kernel for an ephemeral port before a network-heavy SteamCMD setup,
+  allowing later setup traffic to reclaim that source port before AlphaGSM's
+  strict start preflight. Smoke, integration, and backend lifecycle helpers now
+  share `scripts/select_test_port.py`, which excludes Ubuntu's configured
+  ephemeral range and verifies the full TCP+UDP port group.
 - Full GitHub integration validation now preserves the normal `auto` batches
   and adds explicit `process` and `docker` batches for the declared
   process-passed dual-runtime set, so full validation does not silently replace
@@ -113,12 +119,13 @@ work here must respect.
    The routing helper now excludes Docker-default and non-runtime integration
    checks from the Docker enablement backlog; the computed backlog is empty,
    leaving CI failure classification as the remaining work rather than lane
-   discovery. Current samples have identified and fixed four shared classes:
+   discovery. Current samples have identified and fixed five shared classes:
    wrong-architecture Proton asset selection, lost host-path translation after
    a login-shell environment reset, integration tests passing a runtime name
-   where a process command name was required, and hosted-runner disk exhaustion
-   before large Docker integration starts. Fresh GitHub validation is still
-   required before this item can be marked done.
+   where a process command name was required, hosted-runner disk exhaustion
+   before large Docker integration starts, and kernel-ephemeral port reuse
+   between SteamCMD setup and start. Fresh GitHub validation is still required
+   before this item can be marked done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, so the smoke canonical lifecycle matches the

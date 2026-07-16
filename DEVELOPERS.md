@@ -523,6 +523,15 @@ GitHub Actions supplies `ALPHAGSM_GITHUB_TOKEN` to smoke and integration jobs
 using the workflow's read-only `GITHUB_TOKEN`; local runs can omit it unless
 they encounter GitHub's anonymous API rate limit.
 
+Smoke, integration, and backend lifecycle tests must allocate game-port groups
+through `scripts/select_test_port.py`. On Ubuntu 24.04 it reads
+`/proc/sys/net/ipv4/ip_local_port_range` and excludes that whole range before
+probing TCP and UDP availability inside the default `10000-29999` test pool.
+Do not replace this with `bind(..., 0)`:
+SteamCMD and other network-heavy setup commands can consume a kernel-selected
+ephemeral source port between setup and start, causing a false live-listener
+collision at AlphaGSM's strict port preflight.
+
 Linux integration jobs run AlphaGSM inside a GitHub job container and launch
 game-server containers through the mounted host Docker socket. The shared
 runtime inspects the current container's bind mounts and rewrites source paths

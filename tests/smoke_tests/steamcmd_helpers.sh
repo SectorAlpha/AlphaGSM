@@ -17,75 +17,18 @@ is_supported_prerequisite_skip_output() {
 }
 
 # pick_free_port
-# Return an ephemeral port that is free on both TCP and UDP.
-# The dual-protocol check mirrors AlphaGSM's port-manager pre-flight
-# (probe_live_listener), which tests both protocols; a port in TCP
-# TIME_WAIT state would otherwise cause "Live listener already holds" failures.
+# Return a non-ephemeral port that is free on both TCP and UDP.
+# Avoiding the OS ephemeral range prevents network-heavy setup tools such as
+# SteamCMD from consuming the selected game port before the later start check.
 pick_free_port() {
-  "${PYTHON_BIN:-python3}" - <<'PY'
-import socket, sys
-PROBE_HOSTS = ("127.0.0.1", "0.0.0.0")
-for _attempt in range(100):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        port = s.getsockname()[1]
-    ok = True
-    for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-        for host in PROBE_HOSTS:
-            try:
-                with socket.socket(socket.AF_INET, kind) as probe:
-                    probe.bind((host, port))
-            except OSError:
-                ok = False
-                break
-        if not ok:
-            break
-    if ok:
-        print(port)
-        sys.exit(0)
-sys.stderr.write("Could not find a free TCP+UDP port after 100 attempts\n")
-sys.exit(1)
-PY
+  pick_free_port_group 1
 }
 
 # pick_free_port_group COUNT
-# Return the first port in a consecutive TCP+UDP-free port range.
+# Return the first port in a non-ephemeral consecutive TCP+UDP-free range.
 pick_free_port_group() {
   local count="$1"
-  "${PYTHON_BIN:-python3}" - "$count" <<'PY'
-import socket
-import sys
-
-count = int(sys.argv[1])
-PROBE_HOSTS = ("127.0.0.1", "0.0.0.0")
-
-for _attempt in range(200):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        base = s.getsockname()[1]
-    ok = True
-    for port in range(base, base + count):
-        for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-            for host in PROBE_HOSTS:
-                try:
-                    with socket.socket(socket.AF_INET, kind) as probe:
-                        probe.bind((host, port))
-                except OSError:
-                    ok = False
-                    break
-            if not ok:
-                break
-        if not ok:
-            break
-    if ok:
-        print(base)
-        sys.exit(0)
-
-sys.stderr.write(
-    f"Could not find a free consecutive TCP+UDP port group of size {count} after 200 attempts\n"
-)
-sys.exit(1)
-PY
+  "${PYTHON_BIN:-python3}" "$REPO_ROOT/scripts/select_test_port.py" "$count"
 }
 
 # require_proton

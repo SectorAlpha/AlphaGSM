@@ -13,6 +13,7 @@ import tempfile
 import time
 
 import pytest
+from scripts import select_test_port
 from utils.steamcmd import _steamcmd_state_202_flake
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -162,51 +163,35 @@ def pick_free_tcp_port(min_port=None, max_port=None):
     SO_REUSEADDR) so that AlphaGSM's port-manager pre-flight check, which
     probes both protocols, will not reject it.
     """
-    if min_port is None and max_port is None:
-        for _attempt in range(100):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.bind(("127.0.0.1", 0))
-                port = sock.getsockname()[1]
-            if _port_free_for_both(port):
-                return port
-        raise RuntimeError("Could not find a free TCP+UDP port after 100 attempts")
-
-    min_port = 1024 if min_port is None else int(min_port)
-    max_port = 65535 if max_port is None else int(max_port)
-    for port in range(min_port, max_port + 1):
-        if _port_free_for_both(port):
-            return port
-    raise RuntimeError(f"No free TCP+UDP port found in range {min_port}-{max_port}")
+    selector_options = {"port_is_free": _port_free_for_both}
+    if min_port is not None:
+        selector_options["min_port"] = int(min_port)
+    if max_port is not None:
+        selector_options["max_port"] = int(max_port)
+    return select_test_port.pick_free_port_group(1, **selector_options)
 
 
 def pick_free_tcp_port_group(count):
     """Return the first port in a free consecutive TCP+UDP port range."""
 
-    count = int(count)
-    for _attempt in range(200):
-        base = pick_free_tcp_port()
-        if all(_port_free_for_both(port) for port in range(base, base + count)):
-            return base
-    raise RuntimeError(
-        f"Could not find a free consecutive TCP+UDP port group of size {count}"
+    return select_test_port.pick_free_port_group(
+        count,
+        port_is_free=_port_free_for_both,
     )
 
 
 def pick_free_udp_port():
-    """Return an ephemeral UDP port on localhost.
+    """Return a non-ephemeral UDP port on localhost.
 
     The chosen port is verified to be bindable on both UDP and TCP (without
     SO_REUSEADDR) so that AlphaGSM's port-manager pre-flight check, which
     probes both protocols, will not reject it.  This catches ports in TCP
     TIME_WAIT state that the OS would otherwise return as 'free for UDP'.
     """
-    for _attempt in range(100):
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.bind(("127.0.0.1", 0))
-            port = sock.getsockname()[1]
-        if _port_free_for_both(port):
-            return port
-    raise RuntimeError("Could not find a free UDP+TCP port after 100 attempts")
+    return select_test_port.pick_free_port_group(
+        1,
+        port_is_free=_port_free_for_both,
+    )
 
 
 _PORT_CONFLICT_MARKERS = (

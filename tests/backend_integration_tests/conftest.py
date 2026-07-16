@@ -18,6 +18,7 @@ import tempfile
 import time
 
 import pytest
+from scripts import select_test_port
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
@@ -66,28 +67,11 @@ def _require_command(name):
 
 
 def _pick_free_tcp_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
+    return select_test_port.pick_free_port_group(1)
 
 
 def _pick_free_tcp_port_group(count):
-    for _attempt in range(200):
-        base = _pick_free_tcp_port()
-        ok = True
-        for port in range(base, base + count):
-            for kind in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-                try:
-                    with socket.socket(socket.AF_INET, kind) as probe:
-                        probe.bind(("127.0.0.1", port))
-                except OSError:
-                    ok = False
-                    break
-            if not ok:
-                break
-        if ok:
-            return base
-    raise RuntimeError(f"Could not find a free consecutive TCP+UDP port group of size {count}")
+    return select_test_port.pick_free_port_group(count)
 
 
 def _latest_minecraft_release():
