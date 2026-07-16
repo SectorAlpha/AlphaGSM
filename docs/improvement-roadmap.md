@@ -147,8 +147,10 @@ work here must respect.
    process lanes for Docker-supported Wine servers. A routing-driven static
    guard now also requires every Docker-default lifecycle test to check the
    Docker command directly instead of passing it to the process-only helper.
-   Fresh GitHub validation is still required before this item can be marked
-   done.
+   The replacement run's fast unit gate also exposed and fixed an older
+   subprocess-multiplexer test race by waiting for the multiplexer to reap its
+   registered process after output EOF. Fresh GitHub validation is still
+   required before this item can be marked done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, and `run_readyornotserver.sh` now follows the

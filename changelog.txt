@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-16
+- CI/unit tests: drive real subprocess multiplexer tests until the multiplexer has reaped its process registry, removing a race where closed output streams could be observed one scheduling edge before `Popen.poll()` reported termination.
 - Runtime/query: reject non-IP placeholders from Docker network inspection and route shared Valve-family query hooks through the runtime host resolver, so sibling game containers are queried by a reachable address.
 - Server support: configure Nightingale's official HTTP `/status` listener on `queryport`, publish it alongside the UDP game port, and use that JSON surface for `query`, `info`, smoke, and integration readiness.
 - CI/routing: make Blackwake, Black Ops III, Myth of Empires, and Xonotic Docker-default validation lanes; keep the large Black Ops III and Myth of Empires installs in the heavy partitions instead of forcing unproven host Wine/Proton runs.
