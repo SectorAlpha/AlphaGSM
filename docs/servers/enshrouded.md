@@ -82,7 +82,8 @@ alphagsm myenshroud backup
 - **Managed keys**: `queryport`, `servername`
 - **Notes**: `enshrouded_server.json` is authoritative for `queryPort` and
   `name`. AlphaGSM preserves unrelated generated settings and still supplies
-  the save-name launch argument.
+  the save-name launch argument. Managed values may be set before setup;
+  AlphaGSM writes them to the JSON file once the install directory exists.
 - **Template**: See [server-templates/enshrouded/](../server-templates/enshrouded/) if available
 
 ### Maps and Mods

@@ -81,6 +81,18 @@ def test_sync_server_config_writes_authoritative_query_port(tmp_path):
     assert mod.config_sync_keys == ("queryport", "servername")
 
 
+def test_sync_server_config_without_install_dir_is_noop():
+    server = DummyServer("ensh")
+    server.data.update(
+        {
+            "queryport": 25637,
+            "servername": "AlphaGSM Enshrouded",
+        }
+    )
+
+    assert mod.sync_server_config(server) is None
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

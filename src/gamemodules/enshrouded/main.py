@@ -90,6 +90,10 @@ def _server_config_path(server):
 def sync_server_config(server):
     """Keep enshrouded_server.json aligned with AlphaGSM-managed values."""
 
+    server_dir = server.data.get("dir")
+    if not server_dir:
+        return
+
     config_path = _server_config_path(server)
     payload = {}
     if os.path.isfile(config_path):
@@ -124,7 +128,7 @@ def sync_server_config(server):
         }
     )
 
-    os.makedirs(server.data["dir"], exist_ok=True)
+    os.makedirs(server_dir, exist_ok=True)
     with open(config_path, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
         handle.write("\n")

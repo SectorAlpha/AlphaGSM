@@ -110,6 +110,11 @@ work here must respect.
   Docker-default CI lanes rather than forcing unproven process paths. Black
   Ops III and Myth of Empires are also classified as heavy tests. Replacement
   GitHub CI remains the proof point.
+- The replacement smoke run exposed one setup-order regression rather than a
+  runtime split: Enshrouded tried to write its managed JSON config while
+  `set queryport` still ran before setup had assigned `dir`. Config sync now
+  defers that disk write until the install directory exists, with a focused
+  unit regression test; replacement GitHub CI remains the proof point.
 
 ## 1. CI and Test Infrastructure
 
@@ -149,8 +154,9 @@ work here must respect.
    Docker command directly instead of passing it to the process-only helper.
    The replacement run's fast unit gate also exposed and fixed an older
    subprocess-multiplexer test race by waiting for the multiplexer to reap its
-   registered process after output EOF. Fresh GitHub validation is still
-   required before this item can be marked done.
+   registered process after output EOF. Its next smoke pass exposed and fixed
+   Enshrouded's pre-setup config-sync ordering assumption. Fresh GitHub
+   validation is still required before this item can be marked done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
    `run_valheim.sh` now follow the Docker SteamCMD pattern instead of the
    host-process `screen` flow, and `run_readyornotserver.sh` now follows the
