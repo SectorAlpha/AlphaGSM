@@ -97,6 +97,36 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_prefers_proton_on_linux(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "MoriaServer.exe",
+            "wineprefix": "/srv/return-to-moria-prefix",
+        }
+    )
+    (tmp_path / "MoriaServer.exe").write_text("")
+
+    with (
+        patch.object(mod, "IS_LINUX", True),
+        patch.object(
+            mod.proton,
+            "wrap_command",
+            return_value=["proton", "run", "MoriaServer.exe"],
+        ) as wrap_command,
+    ):
+        cmd, cwd = mod.get_start_command(server)
+
+    wrap_command.assert_called_once_with(
+        ["MoriaServer.exe"],
+        wineprefix="/srv/return-to-moria-prefix",
+        prefer_proton=True,
+    )
+    assert cmd == ["proton", "run", "MoriaServer.exe"]
+    assert cwd == server.data["dir"]
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -229,6 +259,40 @@ def test_query_and_info_addresses_use_game_udp_port():
     with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
         assert mod.get_query_address(server) == ("127.0.0.1", 35389, "udp")
         assert mod.get_info_address(server) == ("127.0.0.1", 35389, "udp")
+
+
+def test_runtime_requirements_prefer_proton_and_publish_udp_port():
+    server = DummyServer()
+    server.data.update({"dir": "/srv/return-to-moria/", "port": 35389})
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["family"] == "wine-proton"
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["ports"] == [
+        {"host": 35389, "container": 35389, "protocol": "udp"}
+    ]
+
+
+def test_container_spec_prefers_proton_and_preserves_launch_contract(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "MoriaServer.exe",
+            "port": 35389,
+        }
+    )
+    (tmp_path / "MoriaServer.exe").write_text("")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert spec["command"] == ["./MoriaServer.exe"]
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["ports"] == [
+        {"host": 35389, "container": 35389, "protocol": "udp"}
+    ]
 
 
 def test_find_linux_server_pids_matches_install_marker():

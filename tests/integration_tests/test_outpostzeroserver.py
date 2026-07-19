@@ -23,6 +23,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
+    wait_for_info_protocol,
     wait_for_log_marker,
     wait_for_udp_closed,
 )

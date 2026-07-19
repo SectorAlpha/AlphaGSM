@@ -47,25 +47,25 @@ At runtime, the user-facing call path is:
   Internal helper used for multi-server and delegated execution paths.
 - [alphagsm-downloads](alphagsm-downloads)
   Download-user helper for shared artifact retrieval.
-- [core](core)
+- [core](src/core)
   CLI dispatch, command routing, subprocess orchestration, multiplexer logic.
-- [server](server)
+- [server](src/server)
   `Server` abstraction, datastore integration, default command set, runtime selection, module loading.
-- [gamemodules](gamemodules)
+- [gamemodules](src/gamemodules)
   Game-specific implementations.
-- [downloader](downloader)
+- [downloader](src/downloader)
   Shared artifact cache and download ownership flow.
-- [downloadermodules](downloadermodules)
+- [downloadermodules](src/downloadermodules)
   Backend-specific download implementations.
-- [screen](screen)
+- [screen](src/screen)
   GNU screen orchestration and log helpers.
-- [utils](utils)
+- [utils](src/utils)
   Settings, backup scheduling, SteamCMD helpers, command parsing, filesystem update helpers.
-- [tests](tests)
+- [tests/unit_tests](tests/unit_tests)
   Unit tests.
-- [integration_tests](integration_tests)
+- [tests/integration_tests](tests/integration_tests)
   Pytest-driven end-to-end tests.
-- [smoke_tests](smoke_tests)
+- [tests/smoke_tests](tests/smoke_tests)
   Shell-driven streamed lifecycle runners used by CI and documentation.
 - [docs](docs)
   User-facing documentation.
@@ -253,6 +253,10 @@ python3 scripts/list_missing_start_commands.py
 - when a process-runtime launch depends on a host-installed command, Java runtime, or shared library, prefer declaring it in `host_dependencies` through the module's `get_runtime_requirements(...)` output instead of raising an ad hoc `prestart(...)` error; the shared runtime gate now blocks `screen`, `tmux`, and subprocess launches before start, renders platform-aware install guidance for Linux/macOS/Windows when provided, and recommends the Docker runtime as the fallback path
 - scope host dependencies with `platforms` when they only apply on one OS. For example, Linux-only headless wrappers that invoke `xvfb-run` should declare an `xvfb-run` dependency with `platforms=("linux",)` so Windows/macOS local launches do not get a false Wine/Xvfb requirement
 - keep Linux headless wrapper metadata aligned with the real launcher surface. If a module or launch script invokes `xvfb-run`, declare it in `host_dependencies`; `tests/unit_tests/test_runtime_contract_static.py` now audits that contract repo-wide
+- Linux-native containers that cannot run as root may opt into `run_as_host_user` through both runtime wrappers. Keep the game command unchanged: the shared Docker runtime adds `--user <effective UID>:<effective GID>`, sets the declared absolute `container_home`, and mounts a per-server HOME from `<manager-root>/runtime/<server>/home`.
+- `run_as_host_user` is deliberately opt-in and rejects an effective UID of `0`. Do not add module-specific `useradd`, `chown`, `chmod`, HOME-directory creation, or process-versus-Docker command branches; declare the requirement and let `server.runtime` enforce it.
+- The `alphagsm-docker` wrapper derives the manager UID from Bash's read-only effective-process identity and the primary GID through a trusted absolute system `id` executable, then reads the Docker supplementary GID from the socket. It does not trust caller `PATH` or identity variables. It reuses a running manager only when Docker reports that exact identity/group tuple and exactly one matching Docker socket mount source. Before recreating an old root, stale-group, or stale-socket manager through the active mode, it walks existing state without following symlinks and fails before mutation if that state is not writable/traversable by the new non-root identity.
+- Host-user HOME state must remain outside the writable game-content mount. The runtime normalizes mount targets, rejects duplicate or read-only HOME mounts, validates existing manager-state components without following symlinks, and creates missing components with directory-relative no-follow operations. `doctor` uses the same non-mutating validation and reports whether first-run state is safely creatable.
 - `set` now preflights any claim-affecting datastore change before persistence, including top-level `port` / `*port` keys, hosted-IP keys (`bindaddress`, `publicip`, `externalip`, `hostip`), and nested runtime `ports` edits
 - `setup(...)` now resolves port ownership before `install(...)`; it may auto-shift the whole claimed port group only for default-owned claims, and must preserve earlier explicit user intent across later setup runs
 - `start(...)` now performs a strict port-manager preflight before `prestart(...)` and runtime launch
@@ -411,8 +415,7 @@ host requirement for process-backed users, document the matching install step
 in [README.md](README.md) and the affected server guide under `docs/servers/`.
 
 Lifecycle model:
- [tests/integration_tests](tests/integration_tests)
- ALPHAGSM_RUN_INTEGRATION=1 pytest tests/integration_tests
+
 1. build command line
 2. resolve runtime metadata from the datastore and module hooks
 3. claim the module's complete port set before runtime-specific launch work
@@ -421,58 +424,50 @@ Lifecycle model:
 6. inject console commands through the selected runtime
 7. use `doctor` to print the effective runtime decision and local runtime-health checks for a server
 
- [tests/smoke_tests](tests/smoke_tests)
- bash ./tests/smoke_tests/run_minecraft_vanilla.sh
- bash ./tests/smoke_tests/run_tf2.sh
-The smoke runners are the best repository examples of the real lifecycle a user should follow:
+### Integration tests
 
-- [smoke_tests/run_minecraft_vanilla.sh](smoke_tests/run_minecraft_vanilla.sh)
-- [smoke_tests/run_tf2.sh](smoke_tests/run_tf2.sh)
+Integration tests live under [tests/integration_tests](tests/integration_tests).
+Run the repository target with:
 
-`gmodserver` install behaviour:
-- download common mountable Source content into `<install_dir>/_gmod_content/` instead of the server root
-- write `garrysmod/cfg/mount.cfg` entries for `cstrike`, `hl2mp`, and `tf`
-- seed `garrysmod/cfg/mountdepots.txt` with Facepunch's default depot list
+```bash
+make integration-test
+```
 
- [tests/smoke_tests/run_minecraft_vanilla.sh](tests/smoke_tests/run_minecraft_vanilla.sh)
- [tests/smoke_tests/run_tf2.sh](tests/smoke_tests/run_tf2.sh)
+### Smoke tests
+
+Smoke tests live under [tests/smoke_tests](tests/smoke_tests). Run all smoke
+tests with:
+
+```bash
+make smoke-test
+```
+
+The canonical smoke runners are:
+
+- [tests/smoke_tests/run_minecraft_vanilla.sh](tests/smoke_tests/run_minecraft_vanilla.sh)
+- [tests/smoke_tests/run_tf2.sh](tests/smoke_tests/run_tf2.sh)
+
+Run one runner through the Make target with, for example:
+
+```bash
+make smoke-test SMOKE_TEST=run_minecraft_vanilla.sh
+```
+
+The smoke runners are the best repository examples of the real lifecycle a
+user should follow. They:
+
 - create isolated temporary configs
 - show the exact command sequence a real operator would use
 - stream command output directly into CI logs
 - verify readiness and shutdown using server-aware checks
 
+`gmodserver` install behaviour:
+
+- download common mountable Source content into `<install_dir>/_gmod_content/` instead of the server root
+- write `garrysmod/cfg/mount.cfg` entries for `cstrike`, `hl2mp`, and `tf`
+- seed `garrysmod/cfg/mountdepots.txt` with Facepunch's default depot list
+
 For documentation changes, prefer the smoke tests over hand-written examples.
-
-pytest tests
-```
-
-  --cov=core \
-  --cov=downloader \
-  --cov=downloadermodules \
-  --cov=gamemodules \
-  --cov=screen \
-  --cov=server \
-  --cov=utils \
-  --cov-report=xml
-
-
-Location:
-
-- [integration_tests](integration_tests)
-Command:
-
-```bash
-ALPHAGSM_RUN_INTEGRATION=1 pytest integration_tests
-```
-
-### Smoke tests
-
-Command:
-
-```bash
-bash ./smoke_tests/run_minecraft_vanilla.sh
-bash ./smoke_tests/run_tf2.sh
-```
 
 ## Linting
 
@@ -494,23 +489,21 @@ bash ./lint.sh
 
 The GitHub Actions workflow is [`.github/workflows/unittest.yaml`](.github/workflows/unittest.yaml).
 
-Current job layout:
+The workflow runs for pull requests targeting `master`. Its current gates are:
 
-1. `build`
-2. `lint`
-3. `unit-test`
-4. matrix `smoke-test`
-5. matrix `integration-test`
+- dependency/build setup, lint, unit tests, coverage, and standalone binary
+  build smoke on Ubuntu, Windows, and macOS
+- change-classified, partitioned Linux game smoke and integration matrices,
+  with separate standard and heavy lanes
+- branch-local integration, Java, SteamCMD Linux, and Wine/Proton image builds
+  used by the relevant lifecycle jobs
+- backend process smoke/integration coverage plus backend Docker integration
+- representative Minecraft backend integration on Windows and macOS
 
-Triggers:
-
-- push to `master`
-- pull request targeting `master`
-
-Current matrix targets:
-
-- Minecraft vanilla
-- TF2
+Ubuntu 24.04 is the full game-server lifecycle baseline. The Windows and macOS
+jobs currently validate representative Minecraft backend paths only; broader
+game-server lifecycle coverage on those platforms and on newer or other Linux
+distributions remains future work.
 
 There is also a documentation publishing workflow:
 

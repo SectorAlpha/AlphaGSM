@@ -4,6 +4,11 @@ This guide covers the `returntomoriaserver` module in AlphaGSM.
 
 Status: PASSED on 2026-05-29
 The validated Ubuntu 24.04 path is one Docker-default `wine-proton` lifecycle.
+The current Proton preference, readiness, and redacted-diagnostics correction
+is pending replacement GitHub CI and does not record a new pass.
+Both the process command wrapper and Docker container specification prefer the
+same Proton launch policy, so the game module does not choose a different
+Windows compatibility path based on the selected runtime.
 
 ## Requirements
 
@@ -53,7 +58,8 @@ Setup configures:
 - AlphaGSM writes `MoriaServerConfig.ini` before first launch and keeps `ListenPort`,
   `AdvertiseAddress`, and the world name aligned with the managed datastore
 - readiness first follows `Moria/Saved/Config/Status.json` reporting `running`,
-  then AlphaGSM validates the runtime-resolved `udp` surface through `info --json`
+  then AlphaGSM validates the exact managed runtime-resolved `udp` port through
+  `info --json`
 
 ## Useful Commands
 
@@ -69,6 +75,8 @@ alphagsm myreturnto backup
 - `query`, `info`, and `info --json` use generic UDP reachability on the managed game port
 - the default `AdvertiseAddress` is `local`; for internet-hosted servers set it to `auto`
   or your public IP before sharing the server externally
+- readiness failures print redacted managed-runtime diagnostics. Invite and
+  join codes from `Status.json` are not retained in failure state or output.
 
 ## Developer Notes
 

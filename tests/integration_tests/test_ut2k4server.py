@@ -16,7 +16,7 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_udp_closed,
     wait_for_udp_open,
 )
@@ -82,8 +82,9 @@ def test_ut2k4server_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             READY_MARKERS,
             START_TIMEOUT,
         )

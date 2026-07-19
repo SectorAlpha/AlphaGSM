@@ -16,7 +16,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_tcp_open,
     wait_for_tcp_closed,
 )
@@ -67,8 +67,9 @@ def test_wurmserver_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             [
                 "The Wurm Server is listening on ip 127.0.0.1 and port",
                 "End of game server initialisation",

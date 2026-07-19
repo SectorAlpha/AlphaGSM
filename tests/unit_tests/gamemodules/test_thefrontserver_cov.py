@@ -1,5 +1,6 @@
 """Full coverage tests for thefrontserver."""
 
+import importlib
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -142,6 +143,94 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["queryport"] = 27015
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_runtime_wrappers_opt_into_host_user_identity(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.runtime_module, "_steamcmd_sdk_mounts", lambda *args, **kwargs: [])
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "ProjectWar/Binaries/Linux/TheFrontServer",
+            "port": 7777,
+            "queryport": 7779,
+        }
+    )
+    executable = tmp_path / server.data["exe_name"]
+    executable.parent.mkdir(parents=True)
+    executable.write_text("", encoding="utf-8")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert requirements["env"]["HOME"] == "/home/alphagsm"
+    assert spec["run_as_host_user"] is True
+    assert spec["container_home"] == "/home/alphagsm"
+    assert spec["env"]["HOME"] == "/home/alphagsm"
+    assert spec["command"][0] == "./ProjectWar/Binaries/Linux/TheFrontServer"
+
+
+def test_runtime_start_reuses_one_manager_mount_snapshot(tmp_path, monkeypatch):
+    manager_root = tmp_path / "manager"
+    manager_root.mkdir(mode=0o700)
+    install_dir = manager_root / "servers" / "front"
+    executable = install_dir / "ProjectWar/Binaries/Linux/TheFrontServer"
+    executable.parent.mkdir(parents=True)
+    executable.write_text("", encoding="utf-8")
+    monkeypatch.setenv("ALPHAGSM_HOME", str(manager_root))
+
+    server = DummyServer(name="front")
+    server.module = mod
+    server.data.update(
+        {
+            "runtime": "docker",
+            "dir": str(install_dir),
+            "exe_name": "ProjectWar/Binaries/Linux/TheFrontServer",
+            "port": 7777,
+            "queryport": 7779,
+            "maxplayers": 32,
+            "servername": "AlphaGSM Front",
+        }
+    )
+    discovery_calls = []
+
+    def _discover_mounts():
+        discovery_calls.append(True)
+        if len(discovery_calls) == 1:
+            return [
+                {
+                    "source": "/host/alphagsm",
+                    "destination": str(manager_root),
+                },
+                {
+                    "source": "/host/steam",
+                    "destination": "/home/cosmosquark/Steam",
+                },
+            ]
+        return []
+
+    runtime_module = importlib.import_module("server.runtime")
+    runtime = runtime_module.ContainerRuntime()
+    observed = []
+    monkeypatch.setattr(runtime_module, "_get_configured_runtime_name", lambda: "docker")
+    monkeypatch.setattr(runtime_module, "_running_inside_container", lambda: True)
+    monkeypatch.setattr(runtime_module, "_current_container_bind_mounts", _discover_mounts)
+    monkeypatch.setattr(runtime, "_ensure_runtime_image_available", lambda spec: None)
+    monkeypatch.setattr(runtime, "_container_running_state", lambda name: None)
+    monkeypatch.setattr(
+        runtime,
+        "_run_check_output",
+        lambda command, text=False: observed.append(command) or "ok",
+    )
+
+    runtime.start(server)
+
+    assert discovery_calls == [True]
+    docker_command = observed[-1]
+    assert "/host/alphagsm/servers/front:/srv/server:rw" in docker_command
+    assert "/host/alphagsm/runtime/front/home:/home/alphagsm:rw" in docker_command
 
 
 def test_do_stop():

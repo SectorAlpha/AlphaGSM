@@ -168,7 +168,7 @@ def test_collect_claim_set_rebuilds_runtime_ports_from_overrides(monkeypatch):
     monkeypatch.setattr(
         runtime_module,
         "resolve_runtime_metadata",
-        lambda _server: {"runtime": "docker"},
+        lambda _server, requirements=None: {"runtime": "docker"},
     )
 
     claim_set = port_manager.collect_claim_set(server, overrides={"port": 27030})

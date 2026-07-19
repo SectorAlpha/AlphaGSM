@@ -17,9 +17,9 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     run_setup_with_port_retry,
+    wait_for_glob_log_marker,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
+    wait_for_generic_udp_closed,
 )
 from gamemodules.astroneerserver import steam_app_id
 
@@ -80,9 +80,20 @@ def test_astroneerserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        _info_data = wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
-        assert _info_data["port"] == port, (
-            f"Expected Astroneer info on port {port}: {_info_data!r}"
+        wait_for_glob_log_marker(
+            install_dir / "Astro" / "Saved" / "Logs",
+            "*.log",
+            (f"IpNetDriver listening on port {port}",),
+            START_TIMEOUT,
+            env=env,
+            server_name=server_name,
+        )
+        info_data = wait_for_info_protocol(
+            env,
+            server_name,
+            "udp",
+            START_TIMEOUT,
+            expected_port=port,
         )
 
         # status
@@ -90,30 +101,33 @@ def test_astroneerserver_lifecycle(tmp_path):
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "TCP ping on port" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        assert f"Server port is open (UDP ping on port {port} -" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "TCP ping on port" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
+        assert f"Server port is open (UDP ping on port {port} -" in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        info_json = _info_json.loads(info_json_result.stdout.strip())
+        assert info_json["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {info_json!r}"
         )
-        assert _info_data["port"] == port, (
-            f"Expected info port {port} in info JSON: {_info_data!r}"
+        assert info_json["port"] == port, (
+            f"Expected info port {port} in info JSON: {info_json!r}"
         )
+        assert info_data["protocol"] == info_json["protocol"]
+        assert info_data["port"] == info_json["port"]
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = run_alphagsm(env, server_name, "stop")
+        log_command_result("alphagsm stop", stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
-    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
+    wait_for_generic_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

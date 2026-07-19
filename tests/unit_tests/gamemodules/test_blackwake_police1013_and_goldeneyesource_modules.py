@@ -72,7 +72,15 @@ def test_police1013_get_start_command_builds_expected_args(tmp_path):
 def test_goldeneyesource_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("ges")
     exe = tmp_path / "srcds_run"
-    exe.write_text("")
+    exe.write_text("#!/bin/sh\n", encoding="utf-8")
+    exe.chmod(0o755)
+    (tmp_path / "steam_appid.txt").write_text("310\n", encoding="utf-8")
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "hl2").mkdir()
+    maps_dir = tmp_path / "gesource" / "maps"
+    maps_dir.mkdir(parents=True)
+    (tmp_path / "gesource" / "gameinfo.txt").write_text("", encoding="utf-8")
+    (maps_dir / "ge_archives.bsp").write_text("", encoding="utf-8")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",

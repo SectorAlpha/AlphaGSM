@@ -20,6 +20,7 @@ steam_app_id = 3349480
 steam_anonymous_login_possible = True
 DEFAULT_PORT = 7777
 DEFAULT_WORLD_NAME = "Dedicated Server World"
+PREFER_PROTON = True
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -191,7 +192,7 @@ def get_start_command(server):
         cmd = proton.wrap_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
+            prefer_proton=PREFER_PROTON,
         )
     return cmd, server.data["dir"]
 
@@ -276,10 +277,12 @@ def checkvalue(server, key, *value):
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'port', 'protocol': 'udp'},),
+    port_definitions=({"key": "port", "protocol": "udp"},),
+    prefer_proton=PREFER_PROTON,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'},),
+    port_definitions=({"key": "port", "protocol": "udp"},),
+    prefer_proton=PREFER_PROTON,
 )

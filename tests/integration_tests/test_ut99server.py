@@ -16,7 +16,7 @@ from conftest import (
     run_alphagsm,
     run_and_assert_ok,
     log_command_result,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_udp_open,
     wait_for_udp_closed,
 )
@@ -80,7 +80,7 @@ def test_ut99server_lifecycle(tmp_path):
 
     try:
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(log_path, READY_MARKERS, START_TIMEOUT)
+        wait_for_runtime_log_marker(env, server_name, READY_MARKERS, START_TIMEOUT)
         wait_for_udp_open("127.0.0.1", port, START_TIMEOUT, log_path=log_path)
 
         status_result = run_and_assert_ok(env, server_name, "status")

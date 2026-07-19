@@ -2,11 +2,17 @@
 
 This guide covers the `thefrontserver` module in AlphaGSM.
 
-`thefrontserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`thefrontserver` retains its historical `PASSED` status on the documented
+Ubuntu 24.04 Linux baseline. The current non-root Docker correction is pending
+replacement GitHub CI across the process and Docker lifecycle lanes and does
+not record a new pass. The game command remains aligned across both backends,
+while local runs stay process-backed by default unless you opt into Docker.
 
 ## Requirements
 
-- `screen`
+- a non-root AlphaGSM user
+- `screen` for the process runtime
+- Docker for the Docker runtime
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -65,6 +71,15 @@ alphagsm mythefront backup
 - Default beacon port: `7778`
 - Default query port: `7779`
 - Default shutdown-service port: `7780`
+- The Docker runtime launches the server as AlphaGSM's effective host UID/GID.
+  Running AlphaGSM itself as root is rejected for this module's Docker path.
+- When using `alphagsm-docker`, the wrapper derives that identity from the
+  invoking process, propagates the Docker socket group, and recreates an old
+  root or stale-group manager before The Front starts.
+- Docker HOME state is kept under AlphaGSM's manager-owned
+  `runtime/<server>/home` directory, outside the writable game installation.
+  `alphagsm mythefront doctor` reports identity, HOME-mount, ownership, mode,
+  and first-run creatability problems before launch.
 
 ## Developer Notes
 

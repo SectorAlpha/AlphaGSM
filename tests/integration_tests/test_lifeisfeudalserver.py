@@ -9,6 +9,7 @@ service.
 from __future__ import annotations
 
 import os
+import subprocess
 
 import pytest
 
@@ -30,7 +31,7 @@ from conftest import (
     run_and_assert_ok,
     run_setup_with_port_retry,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_tcp_closed,
     write_config,
 )
@@ -129,9 +130,9 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )

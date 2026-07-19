@@ -11,6 +11,8 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WRAPPER = REPO_ROOT / "alphagsm-docker"
+HOST_UID = str(os.geteuid())
+HOST_GID = str(os.getegid())
 
 
 def _write_server_config(state_dir, server_name, payload):
@@ -41,12 +43,14 @@ def _write_fake_docker(bin_dir):
                 "    containers = json.loads(containers_json) if containers_json else {}",
                 "except json.JSONDecodeError:",
                 "    containers = {}",
-                "entry = {'argv': sys.argv[1:], 'alphagsm_home': os.environ.get('ALPHAGSM_HOME', ''), 'pull_runtime_images': os.environ.get('ALPHAGSM_PULL_RUNTIME_IMAGES', ''), 'manager_image': os.environ.get('ALPHAGSM_MANAGER_IMAGE', '')}",
+                "entry = {'argv': sys.argv[1:], 'alphagsm_home': os.environ.get('ALPHAGSM_HOME', ''), 'pull_runtime_images': os.environ.get('ALPHAGSM_PULL_RUNTIME_IMAGES', ''), 'manager_image': os.environ.get('ALPHAGSM_MANAGER_IMAGE', ''), 'host_uid': os.environ.get('ALPHAGSM_HOST_UID', ''), 'host_gid': os.environ.get('ALPHAGSM_HOST_GID', ''), 'docker_gid': os.environ.get('ALPHAGSM_DOCKER_GID', ''), 'docker_socket': os.environ.get('ALPHAGSM_DOCKER_SOCKET', '')}",
                 "with log_path.open('a', encoding='utf-8') as handle:",
                 "    handle.write(json.dumps(entry) + '\\n')",
                 "args = sys.argv[1:]",
                 "state = state_path.read_text(encoding='utf-8').strip() if state_path.exists() else ''",
                 "image_state = image_path.read_text(encoding='utf-8').strip() if image_path.exists() else ''",
+                "manager_identity = os.environ.get('FAKE_MANAGER_INSPECT_IDENTITY', '1234:2345|[\"3456\"]')",
+                "manager_socket_source = os.environ.get('FAKE_MANAGER_INSPECT_SOCKET_SOURCE', '/var/run/docker.sock')",
                 "container_name = None",
                 "if args[:1] in (['inspect'], ['port'], ['attach'], ['logs']) and len(args) > 1:",
                 "    container_name = args[-1]",
@@ -90,7 +94,16 @@ def _write_fake_docker(bin_dir):
                 "    if state == '':",
                 "        sys.exit(1)",
                 "    if '-f' in args:",
-                "        sys.stdout.write('true\\n' if state == 'running' else 'false\\n')",
+                "        fmt = args[args.index('-f') + 1] if args.index('-f') + 1 < len(args) else ''",
+                "        if fmt == '{{.State.Running}}':",
+                "            sys.stdout.write('true\\n' if state == 'running' else 'false\\n')",
+                "        elif fmt == '{{.Config.User}}|{{json .HostConfig.GroupAdd}}':",
+                "            sys.stdout.write(manager_identity + '\\n')",
+                "        elif fmt == '{{range .Mounts}}{{if eq .Destination \"/var/run/docker.sock\"}}{{println .Source}}{{end}}{{end}}':",
+                "            if manager_socket_source:",
+                "                sys.stdout.write(manager_socket_source + '\\n')",
+                "        else:",
+                "            sys.stdout.write('{}\\n')",
                 "    else:",
                 "        sys.stdout.write('{}\\n')",
                 "    sys.exit(0)",
@@ -145,6 +158,59 @@ def _write_fake_docker(bin_dir):
     fake_docker.chmod(0o755)
 
 
+def _write_fake_identity_tools(bin_dir):
+    fake_id = bin_dir / "id"
+    fake_id.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-}" in
+    -u) printf '%s\n' "${FAKE_HOST_UID:-1234}" ;;
+    -g) printf '%s\n' "${FAKE_HOST_GID:-2345}" ;;
+    *) exit 2 ;;
+esac
+""",
+        encoding="utf-8",
+    )
+    fake_id.chmod(0o755)
+
+    fake_stat = bin_dir / "stat"
+    fake_stat.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "-c" && "${2:-}" == "%g" ]]; then
+    printf '%s\n' "${FAKE_DOCKER_GID:-3456}"
+    exit 0
+fi
+if [[ "${1:-}" == "-c" && "${2:-}" == "%u|%g|%a|%F" ]]; then
+    path="${3:-}"
+    if [[ -L "$path" ]]; then
+        file_type="symbolic link"
+    elif [[ -d "$path" ]]; then
+        file_type="directory"
+    elif [[ -f "$path" ]]; then
+        file_type="regular file"
+    else
+        file_type="other"
+    fi
+    mode="$(/usr/bin/stat -c '%a' -- "$path")"
+    printf '%s|%s|%s|%s\n' \
+        "${FAKE_STATE_UID:-1234}" \
+        "${FAKE_STATE_GID:-2345}" \
+        "$mode" \
+        "$file_type"
+    exit 0
+fi
+if [[ "${1:-}" == "-f" && "${2:-}" == "%g" ]]; then
+    printf '%s\n' "${FAKE_DOCKER_GID:-3456}"
+    exit 0
+fi
+exit 2
+""",
+        encoding="utf-8",
+    )
+    fake_stat.chmod(0o755)
+
+
 def _write_fake_docker_compose(bin_dir):
     fake_docker_compose = bin_dir / "docker-compose"
     fake_docker_compose.write_text(
@@ -158,7 +224,7 @@ def _write_fake_docker_compose(bin_dir):
                 "",
                 "log_path = Path(os.environ['FAKE_DOCKER_LOG'])",
                 "state_path = Path(os.environ['FAKE_DOCKER_STATE'])",
-                "entry = {'argv': sys.argv[1:], 'tool': 'docker-compose', 'alphagsm_home': os.environ.get('ALPHAGSM_HOME', '')}",
+                "entry = {'argv': sys.argv[1:], 'tool': 'docker-compose', 'alphagsm_home': os.environ.get('ALPHAGSM_HOME', ''), 'host_uid': os.environ.get('ALPHAGSM_HOST_UID', ''), 'host_gid': os.environ.get('ALPHAGSM_HOST_GID', ''), 'docker_gid': os.environ.get('ALPHAGSM_DOCKER_GID', ''), 'docker_socket': os.environ.get('ALPHAGSM_DOCKER_SOCKET', '')}",
                 "with log_path.open('a', encoding='utf-8') as handle:",
                 "    handle.write(json.dumps(entry) + '\\n')",
                 "args = sys.argv[1:]",
@@ -232,6 +298,7 @@ def _run_wrapper(
     fake_containers=None,
     host_python3_missing=False,
     extra_env=None,
+    wrapper_path=None,
 ):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
@@ -240,6 +307,7 @@ def _run_wrapper(
     image_state_path = tmp_path / "docker.image"
     state_dir = tmp_path / "state"
     _write_fake_docker(bin_dir)
+    _write_fake_identity_tools(bin_dir)
     if host_python3_missing:
         _write_failing_python3(bin_dir)
     if install_standalone_compose:
@@ -254,6 +322,9 @@ def _run_wrapper(
     env["FAKE_DOCKER_IMAGE_STATE"] = str(image_state_path)
     env["ALPHAGSM_HOME"] = str(state_dir)
     env["FAKE_DOCKER_COMPOSE_AVAILABLE"] = "1" if docker_compose_available else "0"
+    env["FAKE_MANAGER_INSPECT_IDENTITY"] = f'{HOST_UID}:{HOST_GID}|["3456"]'
+    env["FAKE_STATE_UID"] = HOST_UID
+    env["FAKE_STATE_GID"] = HOST_GID
     if port_output is not None:
         env["FAKE_DOCKER_PORT_OUTPUT"] = port_output
     if fake_containers is not None:
@@ -262,7 +333,7 @@ def _run_wrapper(
         env.update(extra_env)
 
     result = subprocess.run(
-        ["bash", str(WRAPPER), *args],
+        ["bash", str(wrapper_path or WRAPPER), *args],
         cwd=str(REPO_ROOT),
         env=env,
         stdout=subprocess.PIPE,
@@ -278,6 +349,19 @@ def _run_wrapper(
     return result, state_dir, log_entries
 
 
+def _write_root_identity_wrapper(tmp_path):
+    source = WRAPPER.read_text(encoding="utf-8")
+    trusted_identity = 'MANAGER_HOST_UID="$EUID"'
+    assert source.count(trusted_identity) == 1
+    wrapper_path = tmp_path / "alphagsm-docker-root-test"
+    wrapper_path.write_text(
+        source.replace(trusted_identity, 'MANAGER_HOST_UID="0"', 1),
+        encoding="utf-8",
+    )
+    wrapper_path.chmod(0o755)
+    return wrapper_path
+
+
 def test_wrapper_bootstraps_config_before_compose_command(tmp_path):
     result, state_dir, log_entries = _run_wrapper(tmp_path, "compose", "config")
 
@@ -287,7 +371,458 @@ def test_wrapper_bootstraps_config_before_compose_command(tmp_path):
     assert f"alphagsm_path = {state_dir}/home" in config_text
     assert any(entry["argv"][:2] == ["compose", "version"] for entry in log_entries)
     assert any("config" in entry["argv"] for entry in log_entries)
-    assert all(entry["pull_runtime_images"] == "0" for entry in log_entries)
+    compose_entries = [
+        entry
+        for entry in log_entries
+        if entry["argv"][:2] == ["compose", "version"]
+        or "config" in entry["argv"]
+    ]
+    assert all(entry["pull_runtime_images"] == "0" for entry in compose_entries)
+
+
+@pytest.mark.parametrize(
+    ("docker_compose_available", "install_standalone_compose"),
+    ((True, False), (False, True)),
+)
+def test_wrapper_passes_non_root_host_identity_and_socket_group_to_compose(
+    tmp_path,
+    docker_compose_available,
+    install_standalone_compose,
+):
+    socket_path = tmp_path / "docker.sock"
+    socket_path.touch()
+
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "compose",
+        "config",
+        docker_compose_available=docker_compose_available,
+        install_standalone_compose=install_standalone_compose,
+        extra_env={
+            "ALPHAGSM_DOCKER_SOCKET": str(socket_path),
+            "ALPHAGSM_HOST_UID": "7777",
+            "ALPHAGSM_HOST_GID": "8888",
+            "ALPHAGSM_DOCKER_GID": "9999",
+            "FAKE_HOST_UID": "0",
+            "FAKE_HOST_GID": "0",
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    compose_entries = [
+        entry
+        for entry in log_entries
+        if "config" in entry["argv"]
+    ]
+    assert compose_entries
+    assert all(entry["host_uid"] == HOST_UID for entry in compose_entries)
+    assert all(entry["host_gid"] == HOST_GID for entry in compose_entries)
+    assert all(entry["docker_gid"] == "3456" for entry in compose_entries)
+    assert all(
+        entry["docker_socket"] == str(socket_path)
+        for entry in compose_entries
+    )
+
+
+def test_wrapper_raw_compose_exec_recreates_stale_manager_identity(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "compose",
+        "exec",
+        "alphagsm",
+        "bash",
+        initial_state="running",
+        extra_env={"FAKE_MANAGER_INSPECT_IDENTITY": '0:0|["0"]'},
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert any(
+        entry["argv"][:3]
+        == [
+            "inspect",
+            "-f",
+            "{{.Config.User}}|{{json .HostConfig.GroupAdd}}",
+        ]
+        for entry in log_entries
+    )
+    recreate_entries = [
+        entry
+        for entry in log_entries
+        if "up" in entry["argv"] and "--force-recreate" in entry["argv"]
+    ]
+    assert recreate_entries
+    assert all(entry["host_uid"] == HOST_UID for entry in recreate_entries)
+    assert all(entry["host_gid"] == HOST_GID for entry in recreate_entries)
+    assert all(entry["docker_gid"] == "3456" for entry in recreate_entries)
+    assert any("exec" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_raw_compose_up_recreates_stale_manager_identity(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "compose",
+        "up",
+        "-d",
+        initial_state="running",
+        extra_env={
+            "FAKE_MANAGER_INSPECT_IDENTITY": f'{HOST_UID}:{HOST_GID}|["4567"]',
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    up_entries = [entry for entry in log_entries if "up" in entry["argv"]]
+    assert len(up_entries) == 2
+    assert "--force-recreate" in up_entries[0]["argv"]
+    assert "--force-recreate" not in up_entries[1]["argv"]
+    assert all(entry["docker_gid"] == "3456" for entry in up_entries)
+
+
+def test_wrapper_raw_compose_reuses_matching_manager_identity(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "compose",
+        "exec",
+        "alphagsm",
+        "bash",
+        initial_state="running",
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert any(
+        entry["argv"][:3]
+        == [
+            "inspect",
+            "-f",
+            "{{.Config.User}}|{{json .HostConfig.GroupAdd}}",
+        ]
+        for entry in log_entries
+    )
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert any("exec" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_raw_compose_config_without_manager_does_not_start(tmp_path):
+    result, _, log_entries = _run_wrapper(tmp_path, "compose", "config")
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert any(
+        entry["argv"] == ["inspect", "alphagsm-manager"]
+        for entry in log_entries
+    )
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert any("config" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_raw_compose_up_without_manager_uses_trusted_identity(tmp_path):
+    result, _, log_entries = _run_wrapper(tmp_path, "compose", "up", "-d")
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert any(
+        entry["argv"] == ["inspect", "alphagsm-manager"]
+        for entry in log_entries
+    )
+    up_entries = [entry for entry in log_entries if "up" in entry["argv"]]
+    assert len(up_entries) == 1
+    assert "--force-recreate" not in up_entries[0]["argv"]
+    assert up_entries[0]["host_uid"] == HOST_UID
+    assert up_entries[0]["host_gid"] == HOST_GID
+    assert up_entries[0]["docker_gid"] == "3456"
+
+
+def test_wrapper_rejects_root_manager_identity_before_compose(tmp_path):
+    root_wrapper = _write_root_identity_wrapper(tmp_path)
+    result, state_dir, log_entries = _run_wrapper(
+        tmp_path,
+        "compose",
+        "config",
+        wrapper_path=root_wrapper,
+    )
+
+    assert result.returncode != 0
+    assert "refuses to run the manager container as UID 0" in result.stderr
+    assert not state_dir.exists()
+    assert not (state_dir / "alphagsm.conf").exists()
+    assert not (state_dir / ".manager-mode").exists()
+    assert log_entries == []
+
+
+@pytest.mark.parametrize("command", ("start", "up"))
+def test_wrapper_rejects_root_before_start_state_mutation(tmp_path, command):
+    root_wrapper = _write_root_identity_wrapper(tmp_path)
+    result, state_dir, log_entries = _run_wrapper(
+        tmp_path,
+        command,
+        "--develop",
+        wrapper_path=root_wrapper,
+    )
+
+    assert result.returncode != 0
+    assert "refuses to run the manager container as UID 0" in result.stderr
+    assert not state_dir.exists()
+    assert not (state_dir / "alphagsm.conf").exists()
+    assert not (state_dir / ".manager-mode").exists()
+    assert log_entries == []
+
+
+def test_wrapper_rejects_root_before_manager_reuse_or_pull(tmp_path):
+    root_wrapper = _write_root_identity_wrapper(tmp_path)
+    result, state_dir, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        wrapper_path=root_wrapper,
+    )
+
+    assert result.returncode != 0
+    assert "refuses to run the manager container as UID 0" in result.stderr
+    assert not state_dir.exists()
+    assert not (state_dir / "alphagsm.conf").exists()
+    assert not (state_dir / ".manager-mode").exists()
+    assert log_entries == []
+
+
+def test_wrapper_reuses_running_manager_with_matching_identity(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert any(
+        entry["argv"][:3]
+        == [
+            "inspect",
+            "-f",
+            "{{.Config.User}}|{{json .HostConfig.GroupAdd}}",
+        ]
+        for entry in log_entries
+    )
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert any("exec" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_recreates_running_root_manager(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+        extra_env={"FAKE_MANAGER_INSPECT_IDENTITY": '0:0|["0"]'},
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    recreate_entries = [
+        entry
+        for entry in log_entries
+        if "up" in entry["argv"]
+    ]
+    assert recreate_entries
+    assert all("--force-recreate" in entry["argv"] for entry in recreate_entries)
+    assert all(entry["host_uid"] == HOST_UID for entry in recreate_entries)
+    assert all(entry["host_gid"] == HOST_GID for entry in recreate_entries)
+
+
+def test_wrapper_recreates_running_manager_with_mismatched_docker_group(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+        extra_env={
+            "FAKE_MANAGER_INSPECT_IDENTITY": f'{HOST_UID}:{HOST_GID}|["4567"]',
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    recreate_entries = [
+        entry
+        for entry in log_entries
+        if "up" in entry["argv"]
+    ]
+    assert recreate_entries
+    assert all("--force-recreate" in entry["argv"] for entry in recreate_entries)
+    assert all(entry["docker_gid"] == "3456" for entry in recreate_entries)
+
+
+def test_wrapper_preserves_root_owned_state_before_stale_identity_recreation(
+    tmp_path,
+):
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    config_path = state_dir / "alphagsm.conf"
+    mode_path = state_dir / ".manager-mode"
+    config_path.write_text("preserve-this-config\n", encoding="utf-8")
+    mode_path.write_text("release\n", encoding="utf-8")
+
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+        extra_env={
+            "ALPHAGSM_HOST_UID": "0",
+            "ALPHAGSM_HOST_GID": "0",
+            "FAKE_MANAGER_INSPECT_IDENTITY": '0:0|["0"]',
+            "FAKE_STATE_UID": "0",
+            "FAKE_STATE_GID": "0",
+        },
+    )
+
+    assert result.returncode != 0
+    assert str(state_dir) in result.stderr
+    assert f"sudo chown -R {HOST_UID}:{HOST_GID}" in result.stderr
+    assert config_path.read_text(encoding="utf-8") == "preserve-this-config\n"
+    assert mode_path.read_text(encoding="utf-8") == "release\n"
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_rejects_state_tree_symlink_before_stale_identity_recreation(
+    tmp_path,
+):
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    (state_dir / "alphagsm.conf").write_text("preserve\n", encoding="utf-8")
+    target_dir = tmp_path / "outside-state"
+    target_dir.mkdir()
+    target_file = target_dir / "sentinel"
+    target_file.write_text("untouched\n", encoding="utf-8")
+    (state_dir / "linked-state").symlink_to(target_dir, target_is_directory=True)
+
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+        extra_env={"FAKE_MANAGER_INSPECT_IDENTITY": '0:0|["0"]'},
+    )
+
+    assert result.returncode != 0
+    assert str(state_dir / "linked-state") in result.stderr
+    assert "symbolic link" in result.stderr
+    assert target_file.read_text(encoding="utf-8") == "untouched\n"
+    assert not any(entry["argv"][:1] == ["pull"] for entry in log_entries)
+    assert not any("up" in entry["argv"] for entry in log_entries)
+
+
+@pytest.mark.parametrize("socket_selector", ("explicit", "docker-host"))
+def test_wrapper_recreates_manager_when_docker_socket_source_changes(
+    tmp_path,
+    socket_selector,
+):
+    old_socket = tmp_path / "old-docker.sock"
+    new_socket = tmp_path / "new-docker.sock"
+    old_socket.touch()
+    new_socket.touch()
+    extra_env = {
+        "FAKE_MANAGER_INSPECT_SOCKET_SOURCE": str(old_socket),
+    }
+    if socket_selector == "explicit":
+        extra_env["ALPHAGSM_DOCKER_SOCKET"] = str(new_socket)
+    else:
+        extra_env["DOCKER_HOST"] = f"unix://{new_socket}"
+
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+        extra_env=extra_env,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert any(
+        entry["argv"][:3]
+        == [
+            "inspect",
+            "-f",
+            '{{range .Mounts}}{{if eq .Destination "/var/run/docker.sock"}}'
+            "{{println .Source}}{{end}}{{end}}",
+        ]
+        for entry in log_entries
+    )
+    recreate_entries = [
+        entry
+        for entry in log_entries
+        if "up" in entry["argv"] and "--force-recreate" in entry["argv"]
+    ]
+    assert recreate_entries
+    assert all(entry["docker_gid"] == "3456" for entry in recreate_entries)
+    assert all(
+        entry["docker_socket"] == str(new_socket)
+        for entry in recreate_entries
+    )
+
+
+@pytest.mark.parametrize("inspected_source", ("", "/one.sock\n/two.sock"))
+def test_wrapper_recreates_manager_when_socket_mount_inspection_is_not_unique(
+    tmp_path,
+    inspected_source,
+):
+    socket_path = tmp_path / "docker.sock"
+    socket_path.touch()
+
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+        extra_env={
+            "ALPHAGSM_DOCKER_SOCKET": str(socket_path),
+            "FAKE_MANAGER_INSPECT_SOCKET_SOURCE": inspected_source,
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    recreate_entries = [
+        entry
+        for entry in log_entries
+        if "up" in entry["argv"] and "--force-recreate" in entry["argv"]
+    ]
+    assert recreate_entries
+
+
+def test_wrapper_normalizes_expected_socket_source_before_manager_reuse(tmp_path):
+    socket_dir = tmp_path / "sockets"
+    socket_dir.mkdir()
+    socket_path = socket_dir / "docker.sock"
+    socket_path.touch()
+    unnormalized_socket = socket_dir / ".." / "sockets" / "docker.sock"
+
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "demo",
+        "status",
+        initial_state="running",
+        extra_env={
+            "ALPHAGSM_DOCKER_SOCKET": str(unnormalized_socket),
+            "FAKE_MANAGER_INSPECT_SOCKET_SOURCE": str(socket_path),
+        },
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert any(
+        entry["argv"][:3]
+        == [
+            "inspect",
+            "-f",
+            '{{range .Mounts}}{{if eq .Destination "/var/run/docker.sock"}}'
+            "{{println .Source}}{{end}}{{end}}",
+        ]
+        for entry in log_entries
+    )
+    assert not any("up" in entry["argv"] for entry in log_entries)
+    exec_entries = [entry for entry in log_entries if "exec" in entry["argv"]]
+    assert exec_entries
+    assert all(
+        entry["docker_socket"] == str(socket_path)
+        for entry in exec_entries
+    )
 
 
 def test_wrapper_help_includes_ps_usage(tmp_path):
@@ -701,6 +1236,7 @@ def test_wrapper_builds_locally_when_remote_pull_fails(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
     _write_fake_docker(bin_dir)
+    _write_fake_identity_tools(bin_dir)
     log_path = tmp_path / "docker.log"
     state_path = tmp_path / "docker.state"
     image_state_path = tmp_path / "docker.image"

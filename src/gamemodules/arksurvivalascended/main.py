@@ -64,20 +64,16 @@ def _launch_session_name(server):
 def _build_map_args(server):
     """Build the ASA travel argument shared by process and Docker runtimes."""
 
-    map_args = (
-        "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
-        % (
-            server.data["map"],
-            _launch_session_name(server),
-            server.data["port"],
-            server.data["queryport"],
-            server.data["maxplayers"],
-            server.data["adminpassword"],
-        )
-    )
+    options = [
+        "listen",
+        "SessionName=%s" % (_launch_session_name(server),),
+        "QueryPort=%s" % (server.data["queryport"],),
+        "MaxPlayers=%s" % (server.data["maxplayers"],),
+    ]
     if server.data["serverpassword"]:
-        map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
-    return map_args
+        options.append("ServerPassword=%s" % (server.data["serverpassword"],))
+    options.append("ServerAdminPassword=%s" % (server.data["adminpassword"],))
+    return "%s?%s" % (server.data["map"], "?".join(options))
 
 
 def configure(
@@ -150,6 +146,22 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the ARK: Survival Ascended server."
 
 
+def get_query_address(server):
+    """Return ASA's Steam A2S query address."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch an ARK: Survival Ascended dedicated server."""
 
@@ -157,7 +169,13 @@ def get_start_command(server):
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     working_dir = os.path.dirname(exe_path) or server.data["dir"]
-    cmd = [os.path.basename(exe_path), _build_map_args(server), "-server", "-log"]
+    cmd = [
+        os.path.basename(exe_path),
+        _build_map_args(server),
+        "-port=%s" % (server.data["port"],),
+        "-server",
+        "-log",
+    ]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
@@ -201,10 +219,9 @@ def checkvalue(server, key, *value):
     )
 
 port_claim_definitions = (
-    {"key": "queryport", "protocol": "udp"},
-    {"key": "queryport", "protocol": "tcp"},
     {"key": "port", "protocol": "udp"},
-    {"key": "port", "protocol": "tcp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "queryport", "protocol": "udp"},
 )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(

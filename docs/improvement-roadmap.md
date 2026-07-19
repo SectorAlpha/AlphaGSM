@@ -1,6 +1,6 @@
 # AlphaGSM Improvement Roadmap
 
-Last updated: 2026-07-16
+Last updated: 2026-07-19
 
 This document is a handoff-oriented review of the whole repository. It lists
 concrete improvements a future agent or contributor can pick up, ordered by
@@ -11,18 +11,22 @@ work here must respect.
 ## Current State Snapshot
 
 - ~233 game modules under `src/gamemodules/`, package-backed layout.
-- Support tracker (`docs/TEST_STATUS.md`, last updated 2026-07-16): 145 PASSED, 47 ENABLED (AUTH),
-  42 ENABLED (BYO), 3 DISABLED, 0 SKIPPED; CI now enforces parity with the
+- Support tracker (`docs/TEST_STATUS.md`, last updated 2026-07-19): 144 PASSED, 47 ENABLED (AUTH),
+  43 ENABLED (BYO), 3 DISABLED, 0 SKIPPED; CI now enforces parity with the
   live enabled/disabled gate files.
 - Six shared Docker runtime families (`java`, `quake-linux`, `service-console`,
   `simple-tcp`, `steamcmd-linux`, `wine-proton`) with image scaffolds under
   `docker/` and defaults in `src/server/runtime.py`.
 - CI: GitHub Actions on `release_v1` runs lint, unit, coverage, binary build
-  smoke (3 OS), ~39 smoke batches, ~40 integration batches, plus dedicated
-  `slow-*` single-test heavy lanes and backend Docker tests.
-- Active campaign: migrating stale host-process (`screen`) integration/smoke
-  lanes onto the modules' declared Docker runtime families, then fixing the
-  launch-path drift that surfaces.
+  smoke (3 OS), backend Docker tests, and change-classified Linux game coverage
+  split into generated standard/heavy smoke and integration matrices. Full
+  integration routing also adds explicit process and Docker lanes for declared
+  dual-runtime tests, so matrix counts follow current discovery rather than a
+  fixed batch total.
+- Active campaign: adding Docker integration/smoke coverage alongside passing
+  host-process (`screen`) coverage, then fixing any runtime-neutral launch-path
+  drift that surfaces. Docker-default-only lanes remain appropriate where the
+  process runtime is unsupported.
 
 ### In-flight work (as of this writing)
 
@@ -145,6 +149,30 @@ work here must respect.
   canonical game module fell back to generic TCP while hibernating. The
   factory now exports those hooks to every Source module package; AHL2 still
   requires real A2S before final query/info assertions.
+- The latest failed run then isolated the remaining readiness and launch
+  mismatches. AlphaGSM-managed log waits now use `alphagsm logs`, strict
+  Source-family lifecycles disable hibernation before exact A2S validation,
+  ASA and Astroneer use their real A2S/UDP endpoints and port claims, and NS2
+  plus NS2: Combat use runtime-neutral argv, required working directories,
+  relative data paths, and A2S on `port + 1`. These corrections remain pending
+  replacement GitHub validation.
+- The same correction pass now keeps readiness diagnostics best-effort and
+  redacted, preserves original lifecycle failures during stop cleanup, and
+  removes secret-bearing Return to Moria status fields from retained test
+  state. Return to Moria also uses one Proton preference in both process and
+  Docker builders. The Front's native Linux container opts into shared
+  non-root host identity with manager-owned, no-follow HOME state rather than
+  adding a runtime branch to its game command. The Docker-manager wrapper now
+  derives that identity and the socket group from the invoking host, and
+  recreates old root, stale-group, or stale-socket managers instead of reusing
+  them. Legacy state is checked without following symlinks and preserved with
+  remediation guidance when the new non-root identity cannot safely use it.
+  GoldenEye: Source is explicitly
+  `ENABLED (BYO)` because its official redirect currently yields HTML while
+  the authoritative release endpoints are automation-gated; setup now
+  validates a complete staged AppID 310 plus `gesource` tree instead of
+  downloading an invalid artifact. Replacement GitHub validation remains the
+  proof point for executable lifecycle behavior.
 
 ## 1. CI and Test Infrastructure
 
@@ -168,9 +196,9 @@ work here must respect.
    red.
 5. **Triage the broad red integration batches.** With the hardcoded process
    defaults removed, the remaining uncertainty is now squarely in GitHub CI:
-   sample 2–3 failing `batch-N-of-40` logs end-to-end and classify whether the
-   reds are shared regressions, pre-existing flaky lanes, or infra (runner
-   image, Docker/networking, port collisions).
+   sample 2–3 failing jobs across the standard and heavy integration partitions
+   end-to-end and classify whether the reds are shared regressions, pre-existing
+   flaky lanes, or infra (runner image, Docker/networking, port collisions).
    The routing helper now excludes Docker-default and non-runtime integration
    checks from the Docker enablement backlog; the computed backlog is empty,
    leaving CI failure classification as the remaining work rather than lane
@@ -201,6 +229,11 @@ work here must respect.
    process lane additionally exposed missing canonical exports for the shared
    Valve Source query/wake/hibernation hooks; the factory now exports them for
    every package-backed Source module while preserving final A2S validation.
+   The latest failed run also classified direct host `screen`-log readiness,
+   weak Source hibernation fallbacks, ASA/Astroneer protocol drift, and
+   NS2/NS2: Combat working-directory plus adjacent-A2S drift. The in-tree
+   corrections now use AlphaGSM-managed logs, exact runtime-resolved protocol
+   endpoints and port sets, and runtime-neutral relative launch paths.
    Fresh GitHub validation is still required before this item can be marked
    done.
 6. **Done: smoke runner drift.** `tests/smoke_tests/run_btserver.sh` and
@@ -246,7 +279,7 @@ work here must respect.
 
 ## 3. Support-State Backlog
 
-1. **ENABLED (BYO) automation.** 42 modules fail fast pending operator-staged
+1. **ENABLED (BYO) automation.** 43 modules fail fast pending operator-staged
    assets. For the subset where an authoritative direct download exists
    (GitHub releases, vendor archives), wire real installs and promote to
    PASSED. Each one is a self-contained PR: module install path + smoke +
@@ -320,8 +353,9 @@ work here must respect.
 2. **Done: README/docs/DEVELOPERS split.** The repo docs now lead with the
    Docker-manager quick start and the direct-host Docker-runtime path, while
    documenting host-process `screen` flows as the fallback path instead of the
-   default. The user-facing runtime baseline is now called out as Ubuntu 24.04
-   or newer Linux.
+   default. The user-facing full-runtime baseline is now called out as Ubuntu
+   24.04; broader validation on newer and other Linux distributions, macOS,
+   and Windows remains future work.
 3. **Done: server guide status notes.** The support-tracked guides under
    `docs/servers/` now carry an explicit top-of-guide status note or a
    matching near-top support-status block aligned to the checked-in tracker
@@ -651,7 +685,7 @@ touches credentials. Treat these as hard constraints, not suggestions.
 ## 9. Suggested Pick-Up Order for a Future Agent
 
 1. Check the latest `release_v1` CI run; fix whatever the newest red gate is
-   (fast gates first, then `slow-*` lanes, then batches).
+   (fast gates first, then standard game-test partitions, then heavy partitions).
 2. Triage only failures from the replacement run; the current red batches
    already have evidence-backed fixes or Docker-default routing.
 3. Keep any follow-up game-module contracts runtime-agnostic and push

@@ -107,9 +107,40 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["serverpassword"] = "test"
     server.data["sessionname"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
-    assert cmd[0] == "ArkAscendedServer.exe"
+    assert cmd == [
+        "ArkAscendedServer.exe",
+        (
+            "test?listen?SessionName=test?QueryPort=27015?MaxPlayers=27015"
+            "?ServerPassword=test?ServerAdminPassword=test"
+        ),
+        "-port=27015",
+        "-server",
+        "-log",
+    ]
     assert cwd == str(exe_path.parent)
+
+
+def test_query_info_and_runtime_ports_use_udp_game_pair_and_a2s_query(monkeypatch):
+    server = DummyServer("asa")
+    server.data.update({"port": 7777, "queryport": 27015})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda current: "10.0.0.9",
+    )
+
+    assert mod.get_query_address(server) == ("10.0.0.9", 27015, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.9", 27015, "a2s")
+    assert mod.port_claim_definitions == (
+        {"key": "port", "protocol": "udp"},
+        {"key": "port", "offset": 1, "protocol": "udp"},
+        {"key": "queryport", "protocol": "udp"},
+    )
+    assert mod.get_runtime_requirements(server)["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7778, "container": 7778, "protocol": "udp"},
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -168,6 +199,21 @@ def test_get_container_spec_delegates_windows_executable_to_proton_runtime(tmp_p
         proton_module.CONTAINER_SERVER_DIR + "/ShooterGame/Binaries/Win64"
     )
     assert spec["command"][0] == "./ArkAscendedServer.exe"
+    assert spec["command"] == [
+        "./ArkAscendedServer.exe",
+        (
+            "TheIsland_WP?listen?SessionName=AlphaGSM_asa?QueryPort=27015"
+            "?MaxPlayers=70?ServerAdminPassword=test"
+        ),
+        "-port=7777",
+        "-server",
+        "-log",
+    ]
+    assert spec["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7778, "container": 7778, "protocol": "udp"},
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+    ]
     assert spec["env"]["ALPHAGSM_WINEPREFIX"] == (
         proton_module.CONTAINER_SERVER_DIR + "/.alphagsm-wineprefix"
     )

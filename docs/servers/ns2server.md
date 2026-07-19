@@ -2,9 +2,15 @@
 
 This guide covers the `ns2server` module in AlphaGSM.
 
+The checked-in Natural Selection 2 lifecycle is wired for both process and
+Docker runtimes on the documented Ubuntu 24.04 Linux baseline. Its corrected
+launch/A2S contract is pending replacement GitHub validation, so no new
+`PASSED` tracker result is recorded for this change.
+
 ## Requirements
 
-- `screen`
+- Process runtime: `screen`
+- Docker runtime: Docker and the shared `steamcmd-linux` runtime image
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -52,6 +58,8 @@ Setup configures:
 - a per-instance config directory at `<install_dir>/<server_name>/`
 - a workshop storage directory at `<install_dir>/<server_name>/Workshop`
 - a managed log directory at `<install_dir>/logs`
+- managed claims for game UDP, `game + 1` UDP, web-admin TCP, and mod-server
+  TCP
 
 ## Useful Commands
 
@@ -68,9 +76,12 @@ alphagsm myns2 backup
 - SteamCMD App ID: `4940`
 - Executable: `<install_dir>/x64/server_linux`
 - Default map: `ns2_summit`
-- AlphaGSM probes `query` and `info` over A2S on the main game port
+- Process and Docker launch identical game argv as `./x64/server_linux` from
+  the install root, with relative config, log, and workshop paths
+- AlphaGSM probes exact runtime-resolved A2S on `game port + 1`
 - Web admin is enabled by default on `httpport` `8080`
 - Mod server is enabled by default on `modserverport` `27031`
+- Current correction status: replacement GitHub validation pending
 
 ## Developer Notes
 
@@ -78,6 +89,8 @@ alphagsm myns2 backup
 
 - **Executable**: `x64/server_linux`
 - **Location**: `<install_dir>/x64/server_linux`
+- **Working directory**: `<install_dir>`
+- **Launch path**: `./x64/server_linux`
 - **Engine**: Spark
 - **SteamCMD App ID**: `4940`
 
@@ -86,6 +99,8 @@ alphagsm myns2 backup
 - **Config path**: `<install_dir>/<server_name>/`
 - **Workshop storage**: `<install_dir>/<server_name>/Workshop`
 - **Log directory**: `<install_dir>/logs`
+- **Runtime argv paths**: `./<server_name>`, `./logs`, and
+  `./<server_name>/Workshop`
 - **Key settings**:
   - `port` — Game port (default: `27015`)
   - `httpport` — Web admin port (default: `8080`)

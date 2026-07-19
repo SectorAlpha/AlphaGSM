@@ -2,10 +2,11 @@
 
 This guide covers the `astroneerserver` module in AlphaGSM.
 
-`astroneerserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
-baseline. The checked-in GitHub validation path for this server is
-Docker-first through the shared `wine-proton` runtime plus in-container Xvfb,
-with generic `tcp` `query` / `info` on the managed main port.
+`astroneerserver` retains its prior `PASSED` status from 2026-05-29 on the
+documented Ubuntu 24.04 Linux baseline. The current protocol/readiness
+correction is pending replacement GitHub validation and does not record a new
+pass. The checked-in Linux validation path is Docker-first through the shared
+`wine-proton` runtime plus in-container Xvfb.
 
 ## Requirements
 
@@ -69,7 +70,12 @@ alphagsm myastronee backup
 - Module name: `astroneerserver`
 - Default port: 8777
 - Current supported validation lane: Docker runtime on Linux
-- `query`, `info`, and `info --json` use a generic `tcp` probe on the main port
+- Readiness first requires `IpNetDriver listening on port <managed port>` in
+  the game-owned `Astro/Saved/Logs/*.log`
+- `query`, `info`, and `info --json` then use the exact runtime-resolved generic
+  UDP endpoint on the managed main port
+- The runtime claims and publishes only the managed UDP game port
+- Current correction status: replacement GitHub validation pending
 
 ## Developer Notes
 
@@ -80,6 +86,11 @@ alphagsm myastronee backup
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `728470`
 - **Docker runtime note**: the shared `wine-proton` entrypoint now starts Xvfb for this module so the bundled UE4 prerequisite bootstrap can complete instead of aborting on `Failed to create window`
+
+The readiness marker comes from ASTRONEER's own log rather than a host
+`screen` log. After that marker names the managed port, AlphaGSM resolves the
+selected runtime host and performs generic UDP query/info checks on that exact
+main-port endpoint.
 
 ### Server Configuration
 

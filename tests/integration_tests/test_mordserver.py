@@ -16,7 +16,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_info_protocol,
     wait_for_generic_udp_closed,
 )
@@ -70,9 +70,9 @@ def test_mordserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )

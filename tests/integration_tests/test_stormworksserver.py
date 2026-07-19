@@ -29,7 +29,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -82,9 +82,9 @@ def test_stormworksserver_lifecycle(tmp_path):
         # ("dedicated server has been moved") and exits; the real server ships
         # with the purchased game.  Detect that message early so the test skips
         # in seconds rather than waiting out the full START_TIMEOUT.
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        log_text = wait_for_log_marker(
-            log_path,
+        log_text = wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done", "has been moved"],
             START_TIMEOUT,
         )

@@ -10,6 +10,9 @@ SS14_SMOKE = Path("tests/smoke_tests/run_ss14server.sh")
 NIGHTINGALE_SMOKE = Path("tests/smoke_tests/run_nightingale.sh")
 MYTH_OF_EMPIRES_SMOKE = Path("tests/smoke_tests/run_mythofempiresserver.sh")
 BLACK_OPS_3_SMOKE = Path("tests/smoke_tests/run_blackops3server.sh")
+ASA_SMOKE = Path("tests/smoke_tests/run_arksurvivalascended.sh")
+ASTRONEER_SMOKE = Path("tests/smoke_tests/run_astroneerserver.sh")
+STEAMCMD_HELPERS = Path("tests/smoke_tests/steamcmd_helpers.sh")
 
 
 def test_life_is_feudal_smoke_uses_docker_runtime_backend():
@@ -80,3 +83,43 @@ def test_black_ops_3_smoke_is_active_on_docker_udp_health_surface():
     assert 'PORT="$(pick_free_port_group 3)"' in text
     assert "CreateDedicatedModsLobby: ready!" in text
     assert 'wait_for_info_protocol "$SERVER_NAME" "udp"' in text
+
+
+def test_asa_smoke_uses_distinct_udp_game_pair_and_a2s_query_port():
+    text = ASA_SMOKE.read_text(encoding="utf-8")
+
+    assert "backend = docker" in text
+    assert 'PORT="$(pick_free_port_group 2)"' in text
+    assert 'QUERYPORT="$(pick_free_port)"' in text
+    assert 'while [[ "$QUERYPORT" -eq "$PORT" || "$QUERYPORT" -eq "$((PORT + 1))" ]]' in text
+    set_queryport = 'run_alphagsm "$SERVER_NAME" set queryport "$QUERYPORT"'
+    setup = 'run_setup_or_skip_steamcmd "$SERVER_NAME" setup'
+    assert set_queryport in text
+    assert text.index(set_queryport) < text.index(setup)
+    assert 'wait_for_info_protocol "$SERVER_NAME" "a2s"' in text
+    assert 'wait_for_info_protocol "$SERVER_NAME" "tcp"' not in text
+
+
+def test_astroneer_smoke_requires_network_log_before_udp_info():
+    text = ASTRONEER_SMOKE.read_text(encoding="utf-8")
+
+    glob_ready = 'wait_for_glob_ready_strict "$INSTALL_DIR/Astro/Saved/Logs/*.log"'
+    udp_ready = 'wait_for_info_protocol "$SERVER_NAME" "udp"'
+    assert "backend = docker" in text
+    assert glob_ready in text
+    assert '"IpNetDriver listening on port $PORT"' in text
+    assert "GameNetDriver" not in text
+    assert udp_ready in text
+    assert text.index(glob_ready) < text.index(udp_ready)
+    assert 'wait_for_info_protocol "$SERVER_NAME" tcp' not in text
+    assert 'wait_for_info_protocol "$SERVER_NAME" "tcp"' not in text
+
+
+def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():
+    text = STEAMCMD_HELPERS.read_text(encoding="utf-8")
+
+    assert "wait_for_glob_ready_strict()" in text
+    assert 'local readiness_mode="${4:-skip}"' in text
+    assert 'wait_for_glob_ready "$log_glob" "$timeout_seconds" "$pattern" "required"' in text
+    assert 'if [[ "$readiness_mode" == "required" ]]; then' in text
+    assert "return 1" in text

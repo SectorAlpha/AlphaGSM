@@ -15,7 +15,6 @@ from conftest import (
     require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    read_info_json,
     run_and_assert_ok,
     run_setup_with_port_retry,
     run_alphagsm,
@@ -23,7 +22,7 @@ from conftest import (
     set_source_hibernation,
     wait_for_a2s_ready,
     wait_for_info_protocol,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_udp_closed,
     write_config,
     resolve_steamcmd_linux_runtime_image,
@@ -102,9 +101,10 @@ def test_dysserver_lifecycle(tmp_path):
     )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, result.stderr or result.stdout
 
     server_cfg_path = find_source_server_cfg(install_dir)
-    set_source_hibernation(server_cfg_path, enabled=True)
+    set_source_hibernation(server_cfg_path, enabled=False)
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -112,8 +112,9 @@ def test_dysserver_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["SV_ActivateServer", "Connection to Steam servers successful", "VAC secure mode"],
             START_TIMEOUT,
         )
@@ -121,15 +122,10 @@ def test_dysserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        hibernating_info = read_info_json(env, server_name)
-        assert hibernating_info["protocol"] in {"console", "a2s"}, (
-            f"Expected console or a2s info after startup: {hibernating_info!r}"
+        info_data = wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
-        assert_source_server_empty(hibernating_info)
-
-        if hibernating_info["protocol"] != "a2s":
-            awake_info = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
-            assert_source_server_empty(awake_info)
+        assert_source_server_empty(info_data)
 
         wait_for_a2s_ready(query_host, port, START_TIMEOUT, log_path=log_path)
 
@@ -151,10 +147,15 @@ def test_dysserver_lifecycle(tmp_path):
         assert info_data["protocol"] == "a2s", (
             f"Expected a2s protocol in info JSON: {info_data!r}"
         )
+        assert info_data["port"] == port, (
+            f"Expected A2S query port {port}: {info_data!r}"
+        )
         assert_source_server_empty(info_data)
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = run_alphagsm(env, server_name, "stop")
+        log_command_result("alphagsm stop", stop_result)
 
+    assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
     # verify stopped
     wait_for_udp_closed(query_host, port, STOP_TIMEOUT)

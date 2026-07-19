@@ -2,9 +2,15 @@
 
 This guide covers the `ns2cserver` module in AlphaGSM.
 
+The checked-in NS2: Combat lifecycle is wired for both process and Docker
+runtimes on the documented Ubuntu 24.04 Linux baseline. Its corrected
+launch/A2S contract is pending replacement GitHub validation, so no new
+`PASSED` tracker result is recorded for this change.
+
 ## Requirements
 
-- `screen`
+- Process runtime: `screen`
+- Docker runtime: Docker and the shared `steamcmd-linux` runtime image
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -51,6 +57,7 @@ Setup configures:
 - SteamCMD downloads the server files
 - a per-instance config directory at `<install_dir>/<server_name>/`
 - a workshop storage directory at `<install_dir>/<server_name>/Workshop`
+- managed claims for game UDP, `game + 1` UDP, and web-admin TCP
 
 ## Useful Commands
 
@@ -67,8 +74,12 @@ alphagsm myns2c backup
 - SteamCMD App ID: `313900`
 - Executable: `<install_dir>/ia32/ns2combatserver_linux32`
 - Default map: `co_core`
-- AlphaGSM probes `query` and `info` over A2S on the main game port
+- Process and Docker launch identical game argv as
+  `./ns2combatserver_linux32` from `<install_dir>/ia32`, which preserves the
+  executable's `../bin/ship` dependency lookup
+- AlphaGSM probes exact runtime-resolved A2S on `game port + 1`
 - Web admin is enabled by default on `httpport` `8080`
+- Current correction status: replacement GitHub validation pending
 
 ## Developer Notes
 
@@ -76,6 +87,8 @@ alphagsm myns2c backup
 
 - **Executable**: `ia32/ns2combatserver_linux32`
 - **Location**: `<install_dir>/ia32/ns2combatserver_linux32`
+- **Working directory**: `<install_dir>/ia32`
+- **Launch path**: `./ns2combatserver_linux32`
 - **Engine**: Spark
 - **SteamCMD App ID**: `313900`
 
@@ -83,6 +96,8 @@ alphagsm myns2c backup
 
 - **Config path**: `<install_dir>/<server_name>/`
 - **Workshop storage**: `<install_dir>/<server_name>/Workshop`
+- **Runtime argv paths**: `../<server_name>` and
+  `../<server_name>/Workshop`
 - **Key settings**:
   - `port` — Game port (default: `27015`)
   - `httpport` — Web admin port (default: `8080`)

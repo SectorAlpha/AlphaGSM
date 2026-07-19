@@ -62,7 +62,6 @@ Notes:
 - [x] fofserver
 - [x] frozenflameserver
 - [x] gmodserver
-- [x] goldeneyesourceserver
 - [x] hl2dmserver
 - [x] hldmserver
 - [x] hldmsserver
@@ -236,6 +235,7 @@ Notes:
 - [x] etlegacyserver
 - [x] ets2server
 - [x] foundryserver
+- [x] goldeneyesourceserver
 - [x] gravserver
 - [x] hogwarpserver
 - [x] identityserver

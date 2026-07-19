@@ -24,6 +24,11 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+_RUNTIME_PORTS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "httpport", "protocol": "tcp"},
+)
 setting_schema = {
     "servername": SettingSpec(
         canonical_key="servername",
@@ -83,9 +88,14 @@ def _mod_storage_dir(server):
     return os.path.join(_config_dir(server), "Workshop")
 
 
+def _log_dir(server):
+    return os.path.join(server.data["dir"], "logs")
+
+
 def _ensure_server_dirs(server):
     os.makedirs(_config_dir(server), exist_ok=True)
     os.makedirs(_mod_storage_dir(server), exist_ok=True)
+    os.makedirs(_log_dir(server), exist_ok=True)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="ia32/ns2combatserver_linux32"):
@@ -152,9 +162,9 @@ restart.__doc__ = "Restart the NS2: Combat server."
 
 
 def get_query_address(server):
-    """NS2: Combat exposes A2S on its main gameplay port."""
+    """NS2: Combat exposes A2S one port above gameplay."""
 
-    return runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s"
+    return runtime_module.resolve_query_host(server), int(server.data["port"]) + 1, "a2s"
 
 
 def get_info_address(server):
@@ -163,13 +173,117 @@ def get_info_address(server):
     return get_query_address(server)
 
 
+def _relative_launch_path(target, working_dir):
+    relative_path = os.path.relpath(target, working_dir)
+    if not relative_path.startswith("."):
+        relative_path = "./" + relative_path
+    return relative_path.replace(os.sep, "/")
+
+
+def _path_is_within(root, path):
+    try:
+        return os.path.commonpath((root, path)) == root
+    except ValueError:
+        return False
+
+
+def _validate_payload_location(server, install_dir, exe_path, *, resolve_links):
+    normalize = os.path.realpath if resolve_links else os.path.abspath
+    normalized_install_dir = normalize(install_dir)
+    normalized_exe_path = normalize(exe_path)
+    if not _path_is_within(normalized_install_dir, normalized_exe_path):
+        raise ServerError("Executable target is outside the install directory")
+
+    relative_dir = os.path.dirname(
+        os.path.relpath(normalized_exe_path, normalized_install_dir)
+    )
+    excluded_dirs = {server.name.lower(), "workshop", "config", "logs"}
+    if any(part.lower() in excluded_dirs for part in relative_dir.split(os.sep)):
+        raise ServerError("Executable is not in a safe install payload directory")
+
+
+def _validate_payload_executable(server, install_dir, exe_path):
+    _validate_payload_location(
+        server,
+        install_dir,
+        exe_path,
+        resolve_links=False,
+    )
+    _validate_payload_location(
+        server,
+        install_dir,
+        exe_path,
+        resolve_links=True,
+    )
+
+
+def _launcher_for_executable(install_dir, exe_path):
+    resolved_exe_path = os.path.realpath(exe_path)
+    working_dir = os.path.dirname(resolved_exe_path) or install_dir
+    if os.path.normpath(working_dir) == os.path.normpath(install_dir):
+        working_dir = os.path.join(install_dir, "")
+    return resolved_exe_path, "./" + os.path.basename(resolved_exe_path), working_dir
+
+
+def _resolve_safe_install_launcher(server):
+    install_dir = os.path.abspath(server.data["dir"])
+    configured_name = server.data["exe_name"]
+    if os.path.isabs(configured_name) or ".." in configured_name.split(os.sep):
+        raise ServerError("Executable target is outside the install directory")
+    configured_name = os.path.normpath(configured_name)
+    configured_path = os.path.join(install_dir, configured_name)
+
+    if os.path.lexists(configured_path):
+        _validate_payload_location(
+            server,
+            install_dir,
+            configured_path,
+            resolve_links=False,
+        )
+        if not os.path.isfile(configured_path):
+            raise ServerError("Configured executable is not a regular file")
+        _validate_payload_executable(server, install_dir, configured_path)
+        return _launcher_for_executable(install_dir, configured_path)
+
+    basename = os.path.basename(configured_name)
+    excluded_dirs = {server.name.lower(), "workshop", "config", "logs"}
+    candidates = []
+    for current_dir, dirnames, filenames in os.walk(install_dir):
+        dirnames[:] = [
+            dirname for dirname in dirnames if dirname.lower() not in excluded_dirs
+        ]
+        if basename not in filenames:
+            continue
+        candidate = os.path.join(current_dir, basename)
+        if not os.path.isfile(candidate):
+            continue
+        _validate_payload_executable(server, install_dir, candidate)
+        candidates.append(candidate)
+
+    if not candidates:
+        raise ServerError("Executable file not found in safe install payload directories")
+    if len(candidates) != 1:
+        raise ServerError(
+            "Executable fallback is ambiguous across safe install payload directories"
+        )
+
+    return _launcher_for_executable(install_dir, candidates[0])
+
+
 def get_start_command(server):
     """Build the command used to launch an NS2: Combat server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
-    runtime_dir = "." if server.data.get("runtime") == "docker" else server.data["dir"]
+    _exe_path, launcher, working_dir = _resolve_safe_install_launcher(server)
+    install_dir = os.path.realpath(os.path.abspath(server.data["dir"]))
+
+    config_path = _relative_launch_path(
+        os.path.join(install_dir, server.name),
+        working_dir,
+    )
+    log_path = _relative_launch_path(
+        os.path.join(install_dir, "logs"),
+        working_dir,
+    )
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -177,17 +291,17 @@ def get_start_command(server):
         value_transform=lambda _spec, current_value: str(current_value),
     )
     command = [
-        "./" + server.data["exe_name"],
+        launcher,
         *dynamic_args,
         "-webadmin",
-        "-webdomain",
-        "0.0.0.0",
         "-config_path",
-        os.path.join(runtime_dir, server.name),
+        config_path,
+        "-logdir",
+        log_path,
         "-modstorage",
-        os.path.join(runtime_dir, server.name, "Workshop"),
+        config_path + "/Workshop",
     ]
-    return command, server.data["dir"]
+    return command, working_dir
 
 
 def do_stop(server, j):
@@ -228,21 +342,13 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     family="steamcmd-linux",
-    port_definitions=(
-        {"key": "port", "protocol": "udp"},
-        {"key": "port", "protocol": "tcp"},
-        {"key": "httpport", "protocol": "tcp"},
-    ),
+    port_definitions=_RUNTIME_PORTS,
 )
 
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
     family="steamcmd-linux",
     get_start_command=get_start_command,
-    port_definitions=(
-        {"key": "port", "protocol": "udp"},
-        {"key": "port", "protocol": "tcp"},
-        {"key": "httpport", "protocol": "tcp"},
-    ),
+    port_definitions=_RUNTIME_PORTS,
     stdin_open=True,
 )

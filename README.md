@@ -20,7 +20,9 @@ daemon.
 It can also run directly on the host while still using Docker as the runtime for
 individual game servers.
 
-If you want the Docker-manager route, there is also a root wrapper script:
+If you want the Docker-manager route, there is also a non-root wrapper script.
+It runs the manager as your numeric UID/GID; invoking it as UID `0` is rejected
+before wrapper state or manager containers are created or changed:
 
 For many first-time setups, this is the quickest way to get started because it
 avoids most of the host-side Python, Java, and system-package setup.
@@ -59,9 +61,10 @@ AlphaGSM now documents runtime usage in this order:
   not have a validated Docker path yet or when you explicitly want local
   process control.
 
-Runtime validation and dependency guidance in this repository assume an Ubuntu
-24.04 or newer Linux host. Older Linux distributions may still work, but they
-are not the documented baseline.
+Full game-server lifecycle validation in this repository uses Ubuntu 24.04 as
+its baseline. Newer and other Linux distributions may work, and CI has
+representative Minecraft backend checks on macOS and Windows, but broader
+validation on those environments is future work.
 
 ## Host Install Requirements
 

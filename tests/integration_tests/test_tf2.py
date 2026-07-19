@@ -2,8 +2,6 @@
 
 import json
 import os
-from pathlib import Path
-import time
 
 import pytest
 
@@ -19,7 +17,8 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
+    wait_for_runtime_log_marker,
     wait_for_udp_closed,
 )
 from gamemodules.teamfortress2 import steam_app_id
@@ -31,7 +30,6 @@ TEST_TIMEOUT_SECONDS = 1200
 START_TIMEOUT_SECONDS = 600
 STOP_TIMEOUT_SECONDS = 90
 READY_LOG_MARKERS = ("SV_ActivateServer: setting tickrate")
-HIBERNATION_MARKERS = ("Server is hibernating",)
 
 
 def _skip_for_known_tf2_setup_issue(result):
@@ -50,34 +48,6 @@ def _skip_for_known_tf2_setup_issue(result):
 def _assert_tf2_launcher_exists(install_dir):
     launchers = [install_dir / "srcds_run_64", install_dir / "srcds_run"]
     assert any(path.exists() for path in launchers), "No TF2 launcher found after setup"
-
-
-def _wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    last_result = None
-    last_data = None
-    while time.time() < deadline:
-        result = _run_alphagsm(env, server_name, "info", "--json", timeout=120)
-        last_result = result
-        if result.returncode == 0:
-            try:
-                data = json.loads(result.stdout.strip())
-            except json.JSONDecodeError:
-                data = None
-            else:
-                last_data = data
-                if data.get("protocol") == expected_protocol:
-                    return data
-        time.sleep(5)
-
-    _log_command_result(
-        "alphagsm " + " ".join((server_name, "info", "--json")),
-        last_result,
-    )
-    pytest.fail(
-        f"TF2 info --json never returned protocol {expected_protocol!r} within {timeout_seconds}s: "
-        f"last payload={last_data!r}"
-    )
 
 
 def _set_tf2_hibernation(server_cfg_path, enabled):
@@ -129,7 +99,6 @@ def test_tf2_download_install_and_start(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    log_path = home_dir / "logs" / f"AlphaGSM-TF2-IT#{server_name}.log"
     query_host = detect_query_host()
 
     run_and_assert_ok(env, server_name, "create", module_name)
@@ -170,34 +139,29 @@ def test_tf2_download_install_and_start(tmp_path):
     config_text = server_cfg_path.read_text(encoding="utf-8")
     assert f'rcon_password "{rcon_password}"' in config_text
 
+    _set_tf2_hibernation(server_cfg_path, enabled=False)
+    run_and_assert_ok(env, server_name, "start", timeout=60)
+
     try:
-        _set_tf2_hibernation(server_cfg_path, enabled=True)
-        run_and_assert_ok(env, server_name, "start", timeout=60)
-        wait_for_log_marker(log_path, READY_LOG_MARKERS, START_TIMEOUT_SECONDS)
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
+            READY_LOG_MARKERS,
+            START_TIMEOUT_SECONDS,
+        )
         status_cmd = run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
 
-        wait_for_log_marker(log_path, HIBERNATION_MARKERS, START_TIMEOUT_SECONDS)
-
-        hibernating_info_result = run_and_assert_ok(
-            env, server_name, "info", "--json"
+        info_data = wait_for_info_protocol(
+            env,
+            server_name,
+            "a2s",
+            START_TIMEOUT_SECONDS,
+            expected_port=port,
         )
-        hibernating_info = json.loads(hibernating_info_result.stdout.strip())
-        assert hibernating_info["protocol"] in {"console", "a2s"}, (
-            f"Expected console or a2s protocol for hibernating TF2: {hibernating_info!r}"
-        )
-        _assert_common_tf2_info(hibernating_info, expected_map=selected_map)
-        if hibernating_info["protocol"] == "console":
-            assert "version" in hibernating_info, (
-                f"Expected console-derived version details for hibernating TF2: {hibernating_info!r}"
-            )
-            awake_info = _wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT_SECONDS)
-        else:
-            awake_info = hibernating_info
-
-        _assert_common_tf2_info(awake_info, expected_map=selected_map)
-        assert "Team Fortress" in (awake_info.get("game") or ""), (
-            f"Expected 'Team Fortress' in game field: {awake_info!r}"
+        _assert_common_tf2_info(info_data, expected_map=selected_map)
+        assert "Team Fortress" in (info_data.get("game") or ""), (
+            f"Expected 'Team Fortress' in game field: {info_data!r}"
         )
 
         # query
@@ -222,15 +186,20 @@ def test_tf2_download_install_and_start(tmp_path):
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol for TF2: {_info_data!r}"
         )
+        assert _info_data["port"] == port, (
+            f"Expected A2S query port {port}: {_info_data!r}"
+        )
         _assert_common_tf2_info(_info_data, expected_map=selected_map)
         assert "Team Fortress" in (_info_data.get("game") or ""), (
             f"Expected 'Team Fortress' in game field: {_info_data!r}"
         )
     finally:
-        log_command_result(
-            "alphagsm stop",
-            run_alphagsm(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS),
+        stop_result = run_alphagsm(
+            env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS
         )
-        wait_for_udp_closed(query_host, port, STOP_TIMEOUT_SECONDS)
-        final_status = run_and_assert_ok(env, server_name, "status")
-        assert "isn't running" in final_status.stdout
+        log_command_result("alphagsm stop", stop_result)
+
+    assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
+    wait_for_udp_closed(query_host, port, STOP_TIMEOUT_SECONDS)
+    final_status = run_and_assert_ok(env, server_name, "status")
+    assert "isn't running" in final_status.stdout

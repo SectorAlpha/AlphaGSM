@@ -2,7 +2,11 @@
 
 This guide covers the `arksurvivalascended` module in AlphaGSM.
 
-`arksurvivalascended` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The checked-in GitHub validation path for this server is Docker-backed, so the documented Linux lifecycle is proven through the module's container runtime contract first.
+`arksurvivalascended` retains its prior `PASSED` status from 2026-05-30 on the
+documented Ubuntu 24.04 Linux baseline. The current runtime/protocol correction
+is pending replacement GitHub validation and does not record a new pass. The
+checked-in Linux validation path is Docker-backed through the module's
+`wine-proton` runtime contract.
 
 ## Requirements
 
@@ -45,7 +49,8 @@ alphagsm myarksurvi stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default `7777`)
+- a distinct A2S query port (default `27015`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -59,12 +64,12 @@ alphagsm myarksurvi backup
 ## Notes
 
 - Module name: `arksurvivalascended`
-- Default port: 27015
-- Current validation status: PASSED 2026-05-30. Fresh smoke and integration
-  now both pass on the Docker-backed Linux `wine-proton` runtime with
-  anonymous SteamCMD install for app `2430930`, and the supported Linux
-  health surface is generic `tcp` on the managed main game port instead of
-  the older stale log-marker and A2S assumptions.
+- Default game port: `7777`
+- Default query port: `27015`
+- `query`, `info`, and `info --json` resolve the selected runtime host and use
+  exact A2S on the managed query port
+- The runtime claims and publishes game UDP, `game + 1` UDP, and query UDP
+- Current correction status: replacement GitHub validation pending
 
 ## Developer Notes
 
@@ -75,15 +80,17 @@ alphagsm myarksurvi backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `2430930`
 
-The validated Linux path now runs through AlphaGSM's Docker-backed
+The documented Linux path runs through AlphaGSM's Docker-backed
 `wine-proton` runtime image rather than a host `screen` session. Anonymous
-SteamCMD setup for app `2430930` succeeds on the current branch, and the live
-server answers `query`, `info`, and `info --json` as generic `tcp` on the
-managed main port. The older `ShooterGame.log` readiness marker and A2S-style
-info assumptions are no longer part of the supported Linux path. The module
-delegates its Docker launch to the shared Proton runtime builder, so the
-container entrypoint runs `ArkAscendedServer.exe` through Proton rather than
-executing the Windows binary directly.
+SteamCMD setup for app `2430930` succeeds on the current branch. The module
+delegates Docker launch to the shared Proton runtime builder, then queries the
+runtime-resolved host through A2S on the distinct managed query port.
+
+The launch keeps the map as the leading travel value, passes the game port as
+`-port=<game>`, and leaves `Port` out of the map URL. When configured,
+`ServerPassword` appears before the final `ServerAdminPassword`. The runtime
+publishes the game port and its adjacent UDP port as well as the distinct UDP
+query port.
 
 ### Server Configuration
 

@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-07-16
+Last updated: 2026-07-19
 
 ## Summary
 
@@ -11,11 +11,22 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 145      |
+| PASSED   | 144      |
 | ENABLED (AUTH) | 47 |
-| ENABLED (BYO) | 42 |
+| ENABLED (BYO) | 43 |
 | DISABLED | 3      |
 | SKIPPED  | 0      |
+
+## Environment Coverage
+
+- Ubuntu 24.04 is the full game-server lifecycle validation baseline for this
+  tracker, including process and Docker lanes where each runtime is supported.
+- Windows and macOS currently run representative Minecraft backend integration
+  checks only; they do not yet validate the complete game-server matrix.
+- Broader lifecycle coverage on newer and other Linux distributions, Windows,
+  and macOS remains future work.
+- Corrections described as pending replacement GitHub CI do not record a new
+  integration or smoke pass until that workflow completes successfully.
 
 ## Status Key
 
@@ -30,7 +41,17 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - `counterstrike2` and `cs2server` are the current CS2 surface. They now have a dedicated integration test and smoke runner, and they are not listed in `disabled_servers.conf`.
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
-## PASSED (145)
+## Pending Replacement CI (Not Support States)
+
+These entries are explicitly not `PASSED`. They are intentionally outside the
+support-state tables and do not change the summary counts or record a new pass.
+
+| Test | Pending validation |
+|------|--------------------|
+| ns2server | Process and Docker lifecycle revalidation of the corrected install-root launcher, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
+| ns2cserver | Process and Docker lifecycle revalidation of the corrected `ia32` working directory, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
+
+## PASSED (144)
 
 | Test | Type |
 |------|------|
@@ -38,9 +59,9 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | ahl2server | SteamCMD (Source) — PASSED; process and Docker lanes retain the hibernation-aware lifecycle and final real A2S `query` / `info` contract. The 2026-07-16 process lane exposed that the package-backed wrapper kept the shared Source hooks only on its internal `MODULE` namespace, causing an intermediate generic-TCP fallback; the Valve factory now exports query, wake, and hibernating-console hooks on the canonical module surface, with replacement CI validation pending. |
 | argoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31 on anonymous SteamCMD app `563930`; AlphaGSM launches the shipped `argoserver` binary inside the shared `steamcmd-linux` runtime, syncs `server.cfg` from the managed `servername`, and validates `query`, `info`, and `info --json` on Argo's generic `tcp` health surface at the managed main game port. The stale `server` beta override has been removed because current SteamCMD rejects that branch; public-branch revalidation is pending the replacement CI run. |
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
-| arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; anonymous SteamCMD app `2430930` and generic `tcp` health on the managed main port remain the supported Linux contract. The 2026-07-16 replacement run completed the 12.8 GB install, then exhausted hosted-runner disk while Docker unpacked a duplicate Wine/Proton stack before launch. The integration job image now extends the exact branch-local runtime image so those layers are shared; replacement CI validation is pending. |
+| arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the stale generic-TCP/game-port assumption with exact runtime-resolved A2S on the distinct managed UDP `queryport`. The runtime contract claims and publishes game UDP, `game + 1` UDP, and query UDP; launch keeps the map separate from `-port=<game>` and orders optional `ServerPassword` before the final `ServerAdminPassword`. Replacement CI validation is pending; this does not record a new pass. |
 | armarserver | SteamCMD |
-| astroneerserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; the branch-local `wine-proton` path uses in-container Xvfb and generic `tcp` health on the managed main port. The current branch also syncs the official `WindowsServer/Engine.ini` port plus `AstroServerSettings.ini` public-IP/owner settings during install, update, `set`, and pre-start; replacement CI validation is pending. |
+| astroneerserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; the current correction waits for `IpNetDriver listening on port <managed port>` in the game-owned `Astro/Saved/Logs/*.log` before exact runtime-resolved generic UDP `query` / `info` on the main port. Its runtime claim is UDP-only, while official `WindowsServer/Engine.ini` and `AstroServerSettings.ini` synchronization remains in install, update, `set`, and pre-start. Replacement CI validation is pending; this does not record a new pass. |
 | avserver | SteamCMD |
 | archive_backed_installs | Archive |
 | bb2server | SteamCMD (Source) |
@@ -74,7 +95,6 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | fofserver | SteamCMD (Source) |
 | frozenflameserver | SteamCMD |
 | gmodserver | SteamCMD (Source) |
-| goldeneyesourceserver | Direct download |
 | hl2dmserver | SteamCMD (Source) |
 | hldmserver | SteamCMD (GoldSrc) |
 | hldmsserver | SteamCMD (Source) |
@@ -148,7 +168,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | terratechworldsserver | Wine/Proton — PASSED 2026-05-28; the Linux lane now launches `TT2/Binaries/Win64/TT2Server-Win64-Shipping.exe` directly under `xvfb-run` + Wine, syncs AlphaGSM's managed port into `dedicated_server_config.json`, reaches `Created socket for bind address`, `IpNetDriver listening on port`, and `Bringing World` in `TT2/Saved/Logs/TT2.log`, and passes the full AlphaGSM lifecycle on the generic `udp` contract instead of A2S |
 | tf2 | SteamCMD (Source) |
 | tfcserver | SteamCMD (GoldSrc) |
-| thefrontserver | SteamCMD |
+| thefrontserver | SteamCMD — PASSED on the Ubuntu 24.04 baseline; process and Docker retain one game command. The current Docker correction opts into the shared non-root host UID/GID contract with manager-owned HOME state, fail-closed host-path translation, and matching `doctor` checks. Replacement CI validation is pending and this does not record a new pass. |
 | trackmaniaserver | Direct download — PASSED 2026-05-17; setup now syncs the configured XML-RPC port into `GameData/Config/dedicated_cfg.txt`, launch stays attached with `/nodaemon`, and query/info use TCP reachability on the XML-RPC endpoint |
 | unturned | SteamCMD |
 | ut2k4server | Direct download — PASSED 2026-05-29; fresh focused integration now passes once AlphaGSM requires the OldUnreal installer prerequisites, isolates the runtime `HOME` under `.alphagsm/ut2k4-home` so per-instance user state no longer leaks between servers, extends the setup budget for the full native installer path, and aligns `query`, `info`, and `info --json` to the current generic `udp` health surface on the managed game port |
@@ -174,7 +194,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | pixarkserver | SteamCMD (Wine) |
 | remnantsserver | Docker runtime (Wine/Proton) — PASSED; AlphaGSM launches `RemSurvivalServer.exe` and validates A2S on the managed query port. The forced process lane exited during the 2026-07-16 run, so CI now keeps one Docker-default lifecycle and no longer requires the install-tree log before AlphaGSM readiness. |
 | readyornotserver | Docker runtime (Wine/Proton) — PASSED 2026-03-28; the current EOS-backed dedicated tool remains supervised in Docker but no longer answers the stale A2S contract in the 2026-07-16 run. Smoke/integration now require `ReadyOrNot.log` engine readiness and use generic `udp` query/info on the managed game port; replacement CI validation is pending. |
-| returntomoriaserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; AlphaGSM manages `MoriaServerConfig.ini` and generic `udp` health on the managed game port. CI keeps one Docker-default lifecycle, waits for the game-owned `Status.json` running state used by the canonical smoke runner, then validates readiness through AlphaGSM `info --json`. The 2026-07-16 UDP-only wait produced a false early success before `query`; the smoke-driven readiness gate and post-start diagnostics are restored, with replacement validation pending. |
+| returntomoriaserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; AlphaGSM manages `MoriaServerConfig.ini`, keeps process and Docker builders on one Proton preference, waits for the game-owned `Status.json` running state without retaining invite/join secrets, then validates exact generic `udp` readiness on the managed game port through `info --json`. Redacted post-start diagnostics and failure-preserving cleanup are in-tree, with replacement validation pending. |
 | rs2server | Docker runtime (Wine/Proton) — PASSED 2026-07-16; the current Docker lifecycle completed in 4:08 and proved `query`, `info`, `info --json`, and shutdown verification on the module-owned A2S `queryport`. The matching forced host-process Wine lane stalled for 20 minutes without reaching A2S, so CI now keeps RS2 as one Docker-default heavy lifecycle. |
 | rwserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old disabled Java-era note was stale: anonymous SteamCMD setup for app `339010` installs the current native Linux dedicated server, AlphaGSM launches `RisingWorldServer.x64` with the required `LD_LIBRARY_PATH` bootstrap inside the shared `steamcmd-linux` runtime as a non-root user, syncs `Server_Port` / `Server_Name` / `World_Name` into `server.properties`, and validates `query`, `info`, and `info --json` on Rising World's real TCP web-query surface at `serverport - 1` |
 | insserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for Source startup markers and `info --json` protocol `a2s` |
@@ -236,7 +256,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
 | zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |
 
-## ENABLED (BYO) (42)
+## ENABLED (BYO) (43)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -259,6 +279,7 @@ URLs.
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
 | foundryserver | staged native FOUNDRY dedicated server tree |
+| goldeneyesourceserver | complete operator-staged Source 2007/AppID 310 base plus preserved top-level `gesource` content; the official `/go/` path returns a 241-byte HTML meta-refresh in process and Docker CI, the authoritative ModDB release returns HTTP 403, and the signed official object returns HTTP 401, so AlphaGSM does not claim a network install or a current pass |
 | gravserver | owned GRAV dedicated server tree |
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |

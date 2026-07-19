@@ -174,13 +174,13 @@ def prestart(server):
 
 
 def get_query_address(server):
-    """ASTRONEER exposes a generic TCP listener on the managed game port."""
+    """Return ASTRONEER's generic UDP game address."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
 
 
 def get_info_address(server):
-    """Return the TCP address used by the info command."""
+    """Return the UDP address used by the info command."""
 
     return get_query_address(server)
 
@@ -235,13 +235,15 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
+port_claim_definitions = ({"key": "port", "protocol": "udp"},)
+
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    port_definitions=port_claim_definitions,
     extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    port_definitions=port_claim_definitions,
     extra_env=_container_runtime_env,
 )

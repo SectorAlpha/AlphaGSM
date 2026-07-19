@@ -273,6 +273,7 @@ wait_for_glob_ready() {
   local log_glob="$1"
   local timeout_seconds="$2"
   local pattern="${3:-ready|started|listening|Done}"
+  local readiness_mode="${4:-skip}"
   local deadline=$((SECONDS + timeout_seconds))
   local matches=()
   while (( SECONDS < deadline )); do
@@ -299,8 +300,21 @@ wait_for_glob_ready() {
   else
     echo "[diagnostic] No log file matched: ${log_glob}" >&2
   fi
+  if [[ "$readiness_mode" == "required" ]]; then
+    echo "Server log did not show required readiness markers in ${timeout_seconds}s" >&2
+    return 1
+  fi
   echo "Server log did not show readiness markers in ${timeout_seconds}s — skipping smoke test (CI)" >&2
   exit 0
+}
+
+# wait_for_glob_ready_strict LOG_GLOB TIMEOUT_SECONDS [PATTERN]
+# Require a matching game-owned readiness marker instead of skipping on timeout.
+wait_for_glob_ready_strict() {
+  local log_glob="$1"
+  local timeout_seconds="$2"
+  local pattern="${3:-ready|started|listening|Done}"
+  wait_for_glob_ready "$log_glob" "$timeout_seconds" "$pattern" "required"
 }
 
 # wait_for_info_protocol SERVER_NAME EXPECTED_PROTOCOL TIMEOUT_SECONDS

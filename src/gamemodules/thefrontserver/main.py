@@ -189,6 +189,10 @@ def checkvalue(server, key, *value):
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra={
+            "run_as_host_user": True,
+            "container_home": "/home/alphagsm",
+        },
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
@@ -196,4 +200,8 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
+        extra={
+            "run_as_host_user": True,
+            "container_home": "/home/alphagsm",
+        },
 )

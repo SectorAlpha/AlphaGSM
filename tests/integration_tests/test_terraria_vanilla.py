@@ -15,7 +15,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_tcp_open,
     wait_for_tcp_closed,
     wait_for_udp_closed,
@@ -32,7 +32,7 @@ def test_terraria_vanilla_lifecycle(tmp_path):
     runtime_backend = os.environ.get(
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
-    module_name = "terraria_vanilla"
+    module_name = "terraria.vanilla"
     require_command_for_runtime(
         "screen",
         runtime_backend=runtime_backend,
@@ -69,8 +69,9 @@ def test_terraria_vanilla_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["Listening on port", "Type 'help'"],
             START_TIMEOUT,
         )

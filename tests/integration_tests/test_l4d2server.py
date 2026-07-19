@@ -2,7 +2,6 @@
 
 import json
 import os
-import time
 
 import pytest
 
@@ -18,7 +17,9 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
+    set_source_hibernation,
+    wait_for_runtime_log_marker,
     wait_for_a2s_ready,
     wait_for_tcp_closed,
     wait_for_udp_closed,
@@ -30,50 +31,6 @@ pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-
-
-def _wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    last_result = None
-    last_data = None
-    while time.time() < deadline:
-        result = run_alphagsm(env, server_name, "info", "--json", timeout=120)
-        last_result = result
-        if result.returncode == 0:
-            try:
-                data = json.loads(result.stdout.strip())
-            except json.JSONDecodeError:
-                data = None
-            else:
-                last_data = data
-                if data.get("protocol") == expected_protocol:
-                    return data
-        time.sleep(5)
-
-    log_command_result(
-        "alphagsm " + " ".join((server_name, "info", "--json")),
-        last_result,
-    )
-    pytest.fail(
-        f"l4d2server info --json never returned protocol {expected_protocol!r} within {timeout_seconds}s: "
-        f"last payload={last_data!r}"
-    )
-
-
-def _set_source_hibernation(server_cfg_path, enabled):
-    cfg_text = server_cfg_path.read_text(encoding="utf-8")
-    target = "sv_hibernate_when_empty 0"
-    replacement = "sv_hibernate_when_empty 1" if enabled else target
-    if enabled:
-        if target in cfg_text:
-            cfg_text = cfg_text.replace(target, replacement)
-        elif replacement not in cfg_text:
-            cfg_text += "\nsv_hibernate_when_empty 1\n"
-    else:
-        cfg_text = cfg_text.replace("sv_hibernate_when_empty 1", target)
-        if target not in cfg_text:
-            cfg_text += "\nsv_hibernate_when_empty 0\n"
-    server_cfg_path.write_text(cfg_text, encoding="utf-8")
 
 
 def _assert_common_l4d2_info(data):
@@ -126,7 +83,7 @@ def test_l4d2server_lifecycle(tmp_path):
 
     server_cfg_path = install_dir / "left4dead2" / "cfg" / "server.cfg"
     assert server_cfg_path.exists()
-    _set_source_hibernation(server_cfg_path, enabled=True)
+    set_source_hibernation(server_cfg_path, enabled=False)
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -134,8 +91,9 @@ def test_l4d2server_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["SV_ActivateServer", "Connection to Steam servers successful", "VAC secure mode"],
             START_TIMEOUT,
         )
@@ -143,16 +101,10 @@ def test_l4d2server_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        hibernating_info = json.loads(info_json_result.stdout.strip())
-        assert hibernating_info["protocol"] in {"console", "a2s"}, (
-            f"Expected console or a2s info after startup: {hibernating_info!r}"
+        info_data = wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
-        _assert_common_l4d2_info(hibernating_info)
-
-        if hibernating_info["protocol"] != "a2s":
-            awake_info = _wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
-            _assert_common_l4d2_info(awake_info)
+        _assert_common_l4d2_info(info_data)
 
         wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
 
@@ -174,10 +126,15 @@ def test_l4d2server_lifecycle(tmp_path):
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
+        assert _info_data["port"] == port, (
+            f"Expected A2S query port {port}: {_info_data!r}"
+        )
         _assert_common_l4d2_info(_info_data)
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = run_alphagsm(env, server_name, "stop")
+        log_command_result("alphagsm stop", stop_result)
 
+    assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
     # verify stopped
     wait_for_udp_closed(query_host, port, STOP_TIMEOUT)

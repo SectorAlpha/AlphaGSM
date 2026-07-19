@@ -16,6 +16,8 @@ import pytest
 from scripts import select_test_port
 from utils.steamcmd import _steamcmd_state_202_flake
 
+_CONTROL_EXCEPTIONS = (KeyboardInterrupt, SystemExit, GeneratorExit)
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 DEFAULT_INTEGRATION_WORK_DIR = Path("/tmp/alphagsm-work")
@@ -236,48 +238,66 @@ def run_setup_with_port_retry(env, server_name, port, install_dir, *extra_flags,
         timeout = DEFAULT_TIMEOUT
     current_port = port
     last_result = None
-    for _attempt in range(max_tries):
-        command_parts = [
-            server_name, "setup", "-n", str(current_port), str(install_dir),
-            *map(str, extra_flags),
-        ]
-        result = run_alphagsm(
-            env, *command_parts, timeout=timeout,
-        )
-        log_command_result(
-            "alphagsm " + " ".join(command_parts) + f" [timeout={timeout}]",
-            result,
-        )
-        last_result = result
-        if result.returncode == 0:
-            return result, current_port
-        combined = (result.stdout or "") + "\n" + (result.stderr or "")
-        if not any(m in combined for m in _PORT_CONFLICT_MARKERS):
-            break
-        recommended = _parse_recommended_port_overrides(combined)
-        current_port = recommended.get("port", pick_free_tcp_port())
-        for key, value in recommended.items():
-            if key == "port":
-                continue
-            set_result = run_alphagsm(
-                env, server_name, "set", key, str(value), timeout=timeout,
+    result = None
+    set_result = None
+    command_parts = []
+    combined = ""
+    recommended = {}
+    try:
+        for _attempt in range(max_tries):
+            command_parts = [
+                server_name, "setup", "-n", str(current_port), str(install_dir),
+                *map(str, extra_flags),
+            ]
+            result = run_alphagsm(
+                env, *command_parts, timeout=timeout,
             )
             log_command_result(
-                f"alphagsm {server_name} set {key} {value} [timeout={timeout}]",
-                set_result,
+                "alphagsm " + " ".join(command_parts) + f" [timeout={timeout}]",
+                result,
             )
-            if set_result.returncode != 0:
-                last_result = set_result
+            last_result = result
+            if result.returncode == 0:
+                return _redact_subprocess_diagnostic(result), current_port
+            combined = (result.stdout or "") + "\n" + (result.stderr or "")
+            if not any(m in combined for m in _PORT_CONFLICT_MARKERS):
                 break
+            recommended = _parse_recommended_port_overrides(combined)
+            current_port = recommended.get("port", pick_free_tcp_port())
+            for key, value in recommended.items():
+                if key == "port":
+                    continue
+                set_result = run_alphagsm(
+                    env, server_name, "set", key, str(value), timeout=timeout,
+                )
+                log_command_result(
+                    f"alphagsm {server_name} set {key} {value} [timeout={timeout}]",
+                    set_result,
+                )
+                if set_result.returncode != 0:
+                    last_result = set_result
+                    break
+            else:
+                continue
+            break
+        if steam_app_id is None:
+            skip_for_known_steamcmd_issue(last_result)
         else:
-            continue
-        break
-    if steam_app_id is None:
-        skip_for_known_steamcmd_issue(last_result)
-    else:
-        skip_for_known_steamcmd_issue(last_result, app_id=steam_app_id)
-    assert last_result.returncode == 0, last_result.stderr or last_result.stdout
-    return last_result, current_port  # unreachable after assert
+            skip_for_known_steamcmd_issue(last_result, app_id=steam_app_id)
+        assert_alphagsm_result_ok(last_result)
+        return last_result, current_port  # unreachable after failure
+    finally:
+        if sys.exc_info()[0] is not None:
+            env = None
+            server_name = None
+            install_dir = None
+            extra_flags = _redact_command_args(extra_flags)
+            command_parts = list(_redact_command_args(command_parts))
+            result = _redact_subprocess_diagnostic(result)
+            set_result = _redact_subprocess_diagnostic(set_result)
+            last_result = _redact_subprocess_diagnostic(last_result)
+            combined = _redact_logged_text(combined)
+            recommended = {}
 
 
 # ---------------------------------------------------------------------------
@@ -437,9 +457,29 @@ def write_config(
     config_path.write_text("\n".join(config_lines) + "\n")
 
 
+class _SecretSafeEnvironment(dict):
+    """Environment mapping with exact values and a redacted diagnostic repr."""
+
+    def __repr__(self):
+        safe_values = {
+            key: (
+                "<redacted>"
+                if _looks_sensitive_cli_key(key)
+                else _redact_logged_text(value)
+            )
+            for key, value in self.items()
+        }
+        return repr(safe_values)
+
+    __str__ = __repr__
+
+    def copy(self):
+        return type(self)(self)
+
+
 def alphagsm_env(config_path):
-    """Return an environ dict configured for an integration test run."""
-    env = os.environ.copy()
+    """Return an environ mapping configured for an integration test run."""
+    env = _SecretSafeEnvironment(os.environ)
     env["ALPHAGSM_CONFIG_LOCATION"] = str(config_path)
     env["PYTHONPATH"] = str(REPO_ROOT / "src")
     return env
@@ -477,10 +517,18 @@ DEFAULT_TIMEOUT = 1200
 
 
 def _looks_sensitive_cli_key(value):
-    normalized = re.sub(r"[^a-z0-9]", "", str(value).lower())
+    lowered = str(value).lower()
+    normalized = re.sub(r"[^a-z0-9]", "", lowered)
     if not normalized:
         return False
-    sensitive_markers = (
+    if normalized in {
+        "authorization",
+        "authorizationheader",
+        "privatekey",
+        "sshprivatekey",
+    }:
+        return True
+    sensitive_parts = {
         "password",
         "passwd",
         "passphrase",
@@ -488,29 +536,56 @@ def _looks_sensitive_cli_key(value):
         "secret",
         "apikey",
         "licensekey",
+        "invitecode",
+        "joincode",
+    }
+    parts = {part for part in re.split(r"[^a-z0-9]+", lowered) if part}
+    if parts & sensitive_parts:
+        return True
+    sensitive_suffixes = (
+        "password",
+        "passwd",
+        "passphrase",
+        "token",
+        "secret",
+        "apikey",
+        "licensekey",
+        "invitecode",
+        "joincode",
     )
-    return any(marker in normalized for marker in sensitive_markers)
+    return any(normalized.endswith(suffix) for suffix in sensitive_suffixes)
 
 
 def _redact_command_args(command_args):
     redacted = []
-    mask_next = False
-    for arg in command_args:
-        text = str(arg)
-        if mask_next:
-            redacted.append("<redacted>")
-            mask_next = False
-            continue
+    arguments = tuple(map(str, command_args))
+    index = 0
+    while index < len(arguments):
+        text = arguments[index]
         if "=" in text:
-            key, value = text.split("=", 1)
+            key, _value = text.split("=", 1)
             if _looks_sensitive_cli_key(key):
                 redacted.append(f"{key}=<redacted>")
+                index += 1
                 continue
-        if _looks_sensitive_cli_key(text):
+        if (
+            re.fullmatch(r"-{0,2}[A-Za-z0-9_.-]+", text)
+            and _looks_sensitive_cli_key(text)
+        ):
             redacted.append(text)
-            mask_next = True
+            normalized = re.sub(r"[^a-z0-9]", "", text.lower())
+            index += 1
+            if normalized in {"authorization", "authorizationheader"}:
+                while index < len(arguments) and not arguments[index].startswith("-"):
+                    redacted.append("<redacted>")
+                    index += 1
+                continue
+            if index < len(arguments):
+                redacted.append("<redacted>")
+                index += 1
             continue
-        redacted.append(text)
+        redacted.append(_redact_logged_text(text))
+        index += 1
     return tuple(redacted)
 
 
@@ -523,48 +598,301 @@ def _format_logged_command(name, command_args=None):
     return f"{name} {rendered_args}"
 
 
+def _quote_delimiter_at(text, index):
+    """Return ``(slash_count, quote, content_start)`` at *index*, if quoted."""
+
+    cursor = index
+    while cursor < len(text) and text[cursor] == "\\":
+        cursor += 1
+    if cursor < len(text) and text[cursor] in {'"', "'"}:
+        return cursor - index, text[cursor], cursor + 1
+    return None
+
+
+def _find_quoted_end(text, content_start, slash_count, quote):
+    """Find an escape-layer-aware closing quote for a logged value."""
+
+    cursor = content_start
+    escape_unit = slash_count + 1
+    while cursor < len(text):
+        quote_index = text.find(quote, cursor)
+        if quote_index < 0:
+            return None
+        run_start = quote_index
+        while run_start > content_start and text[run_start - 1] == "\\":
+            run_start -= 1
+        run_length = quote_index - run_start
+        extra_slashes = run_length - slash_count
+        if (
+            extra_slashes >= 0
+            and extra_slashes % escape_unit == 0
+            and (extra_slashes // escape_unit) % 2 == 0
+        ):
+            return quote_index - slash_count, quote_index + 1
+        cursor = quote_index + 1
+    return None
+
+
+def _parse_logged_key(text, index):
+    """Return the end and metadata of a sensitive key at *index*."""
+
+    if index > 0 and (text[index - 1].isalnum() or text[index - 1] in "_-"):
+        return None
+
+    cursor = index
+    prefixed = False
+    if text.startswith("--", cursor):
+        cursor += 2
+        prefixed = True
+    elif text.startswith("-", cursor):
+        cursor += 1
+        prefixed = True
+
+    delimiter = _quote_delimiter_at(text, cursor)
+    if delimiter is not None:
+        slash_count, quote, content_start = delimiter
+        closing = _find_quoted_end(text, content_start, slash_count, quote)
+        if closing is None:
+            return None
+        content_end, after_key = closing
+        key = text[content_start:content_end]
+        if _looks_sensitive_cli_key(key):
+            normalized_key = re.sub(r"[^a-z0-9]", "", key.lower())
+            return after_key, (normalized_key, (slash_count, quote))
+        return None
+
+    key_start = cursor
+    while cursor < len(text) and (
+        text[cursor].isalnum() or text[cursor] in "_.-"
+    ):
+        cursor += 1
+    if cursor == key_start:
+        return None
+    key = text[key_start:cursor]
+    if _looks_sensitive_cli_key(key):
+        value_cursor = cursor
+        while value_cursor < len(text) and text[value_cursor] in " \t":
+            value_cursor += 1
+        normalized_key = re.sub(r"[^a-z0-9]", "", key.lower())
+        ambiguous_bare_keys = {
+            "password",
+            "passwd",
+            "passphrase",
+            "token",
+            "secret",
+            "authorization",
+            "authorizationheader",
+            "privatekey",
+            "sshprivatekey",
+        }
+        if (
+            prefixed
+            or (value_cursor < len(text) and text[value_cursor] in ":=")
+            or any(character in key for character in "_.-")
+            or normalized_key not in ambiguous_bare_keys
+        ):
+            return cursor, (normalized_key, None)
+
+    whitespace_end = cursor
+    while whitespace_end < len(text) and text[whitespace_end] in " \t":
+        whitespace_end += 1
+    second_start = whitespace_end
+    while whitespace_end < len(text) and (
+        text[whitespace_end].isalnum() or text[whitespace_end] in "_.-"
+    ):
+        whitespace_end += 1
+    spaced_key = re.sub(
+        r"[^a-z0-9]",
+        "",
+        (key + text[second_start:whitespace_end]).lower(),
+    )
+    if second_start < whitespace_end and spaced_key in {
+        "apikey",
+        "licensekey",
+        "invitecode",
+        "joincode",
+    }:
+        return whitespace_end, (spaced_key, None)
+    return None
+
+
+_PRIVATE_KEY_BEGIN = re.compile(r"-----BEGIN ([A-Z0-9 ]*PRIVATE KEY)-----")
+
+
+def _private_key_block_end(text, value_start):
+    """Return the matching private-key block end, failing closed if truncated."""
+
+    marker_start = value_start
+    if text.startswith("\r\n", marker_start):
+        marker_start += 2
+    elif marker_start < len(text) and text[marker_start] in "\r\n":
+        marker_start += 1
+    match = _PRIVATE_KEY_BEGIN.match(text, marker_start)
+    if match is None:
+        return None
+    end_marker = f"-----END {match.group(1)}-----"
+    marker_end = text.find(end_marker, match.end())
+    if marker_end < 0:
+        return len(text)
+    return marker_end + len(end_marker)
+
+
+def _parse_logged_value(text, key_end, key_metadata):
+    """Return value content and suffix boundaries following a sensitive key."""
+
+    normalized_key, quoted_key = key_metadata
+    cursor = key_end
+    while cursor < len(text) and text[cursor] in " \t":
+        cursor += 1
+    if cursor < len(text) and text[cursor] in ":=":
+        cursor += 1
+        while cursor < len(text) and text[cursor] in " \t":
+            cursor += 1
+    elif cursor == key_end or quoted_key is not None:
+        return None
+    if cursor >= len(text):
+        return None
+
+    is_private_key = normalized_key in {"privatekey", "sshprivatekey"}
+    if is_private_key:
+        block_end = _private_key_block_end(text, cursor)
+        if block_end is not None:
+            return cursor, block_end, block_end, "<redacted>"
+    if text[cursor] in "\r\n":
+        return None
+
+    delimiter = _quote_delimiter_at(text, cursor)
+    if delimiter is not None:
+        slash_count, quote, content_start = delimiter
+        closing = _find_quoted_end(text, content_start, slash_count, quote)
+        if closing is None:
+            if is_private_key and _private_key_block_end(text, content_start) is not None:
+                return content_start, len(text), len(text), "<redacted>"
+            line_end = len(text)
+            for newline in ("\r", "\n"):
+                newline_index = text.find(newline, content_start)
+                if newline_index >= 0:
+                    line_end = min(line_end, newline_index)
+            return content_start, line_end, line_end, "<redacted>"
+        content_end, after_value = closing
+        return content_start, content_end, after_value, "<redacted>"
+
+    value_end = cursor
+    terminators = "\r\n,]}" if quoted_key is not None else "\r\n"
+    while value_end < len(text) and text[value_end] not in terminators:
+        value_end += 1
+    if value_end == cursor:
+        return None
+    replacement = "<redacted>"
+    if quoted_key is not None:
+        slash_count, quote = quoted_key
+        delimiter = "\\" * slash_count + quote
+        replacement = f"{delimiter}<redacted>{delimiter}"
+    return cursor, value_end, value_end, replacement
+
+
 def _redact_logged_text(text):
+    """Redact sensitive logged values without leaking escaped value suffixes."""
+
+    if isinstance(text, bytes):
+        text = text.decode("utf-8", errors="replace")
     if not text:
         return text
 
-    redacted = str(text)
-    sensitive_fragment = r"[\w.-]*(?:password|passwd|passphrase|token|secret|apikey|licensekey)[\w.-]*"
-    replacements = (
-        (
-            re.compile(rf'([\'"]?{sensitive_fragment}[\'"]?\s*[:=]\s*["\'])([^"\r\n]*)(["\'])', re.IGNORECASE),
-            r"\1<redacted>\3",
-        ),
-        (
-            re.compile(rf'([\'"]?{sensitive_fragment}[\'"]?\s*[:=]\s*)([^\s,"\']+)', re.IGNORECASE),
-            r"\1<redacted>",
-        ),
-        (
-            re.compile(rf'(\b{sensitive_fragment}\b\s+)([^\s]+)', re.IGNORECASE),
-            r"\1<redacted>",
-        ),
-        (
-            re.compile(rf'(--?[\w-]*(?:password|passwd|passphrase|token|secret|apikey|licensekey)[\w-]*=)([^\s]+)', re.IGNORECASE),
-            r"\1<redacted>",
-        ),
-    )
-    for pattern, replacement in replacements:
-        redacted = pattern.sub(replacement, redacted)
-    return redacted
+    source = str(text)
+    fragments = []
+    copied_until = 0
+    cursor = 0
+    while cursor < len(source):
+        parsed_key = _parse_logged_key(source, cursor)
+        if parsed_key is None:
+            cursor += 1
+            continue
+        key_end, key_metadata = parsed_key
+        parsed_value = _parse_logged_value(source, key_end, key_metadata)
+        if parsed_value is None:
+            cursor += 1
+            continue
+        value_start, value_end, after_value, replacement = parsed_value
+        fragments.append(source[copied_until:value_start])
+        fragments.append(replacement)
+        fragments.append(source[value_end:after_value])
+        copied_until = after_value
+        cursor = after_value
+    fragments.append(source[copied_until:])
+    return "".join(fragments)
+
+
+def _redact_subprocess_diagnostic(value):
+    """Return a subprocess diagnostic copy with command and output redacted."""
+
+    if isinstance(value, subprocess.CompletedProcess):
+        args = value.args
+        if isinstance(args, (list, tuple)):
+            args = list(_redact_command_args(args))
+        else:
+            args = _redact_logged_text(args)
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=value.returncode,
+            stdout=_redact_logged_text(value.stdout),
+            stderr=_redact_logged_text(value.stderr),
+        )
+    if isinstance(value, subprocess.TimeoutExpired):
+        command = value.cmd
+        if isinstance(command, (list, tuple)):
+            command = list(_redact_command_args(command))
+        else:
+            command = _redact_logged_text(command)
+        return subprocess.TimeoutExpired(
+            command,
+            value.timeout,
+            output=_redact_logged_text(value.output),
+            stderr=_redact_logged_text(value.stderr),
+        )
+    return value
+
+
+def _sanitized_subprocess_exception(exc):
+    """Return a fresh subprocess/OS exception containing only redacted state."""
+
+    if isinstance(exc, subprocess.TimeoutExpired):
+        return _redact_subprocess_diagnostic(exc)
+    message = _redact_logged_text(str(exc))
+    try:
+        return type(exc)(message)
+    except BaseException:  # uncommon exception constructors use a safe fallback
+        return RuntimeError(f"AlphaGSM command execution failed: {message}")
 
 
 def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
     """Run the alphagsm script and return the CompletedProcess."""
     command = [sys.executable, str(ALPHAGSM_SCRIPT)] + list(args)
-    return subprocess.run(
-        command,
-        env=env,
-        cwd=str(REPO_ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
+    completed_result = None
+    sanitized_error = None
+    try:
+        try:
+            completed_result = subprocess.run(
+                command,
+                env=env,
+                cwd=str(REPO_ROOT),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=timeout,
+                check=False,
+            )
+        except (subprocess.SubprocessError, OSError) as exc:
+            sanitized_error = _sanitized_subprocess_exception(exc)
+        if sanitized_error is not None:
+            raise sanitized_error from None
+        return completed_result
+    finally:
+        if sys.exc_info()[0] is not None:
+            env = None
+            args = _redact_command_args(args)
+            command = list(_redact_command_args(command))
+            completed_result = _redact_subprocess_diagnostic(completed_result)
 
 
 def log_command_result(name, result, command_args=None, label=None):
@@ -582,28 +910,72 @@ def log_command_result(name, result, command_args=None, label=None):
         print(_redact_logged_text(result.stderr).rstrip())
 
 
-def run_and_assert_ok(env, *args, timeout=DEFAULT_TIMEOUT):
+def assert_alphagsm_result_ok(result):
+    """Raise a redacted assertion when an AlphaGSM command fails."""
+
+    if result.returncode == 0:
+        return result
+    result = _redact_subprocess_diagnostic(result)
+    message = _redact_logged_text(result.stderr or result.stdout)
+    if not message:
+        message = f"AlphaGSM command failed with return code {result.returncode}"
+    raise AssertionError(message)
+
+
+def run_and_assert_ok(
+    env,
+    *args,
+    timeout=DEFAULT_TIMEOUT,
+    allow_known_steamcmd_skip=True,
+):
     """Run alphagsm and assert a zero return code."""
-    result = run_alphagsm(env, *args, timeout=timeout)
-    log_command_result("alphagsm", result, label="alphagsm")
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
-        if len(args) >= 2 and args[1] in {
-            "start",
-            "status",
-            "query",
-            "info",
-            "stop",
-            "restart",
-        }:
-            server_name = args[0]
-            _dump_alphagsm_runtime_logs(env, server_name)
-    assert result.returncode == 0, result.stderr or result.stdout
-    return result
+    result = None
+    command_failure = None
+    try:
+        result = run_alphagsm(env, *args, timeout=timeout)
+        log_command_result("alphagsm", result, label="alphagsm")
+        if result.returncode != 0:
+            if allow_known_steamcmd_skip:
+                skip_for_known_steamcmd_issue(result)
+            try:
+                assert_alphagsm_result_ok(result)
+            except BaseException as exc:
+                command_failure = exc
+            if len(args) >= 2 and args[1] in {
+                "start",
+                "status",
+                "query",
+                "info",
+                "stop",
+                "restart",
+            }:
+                server_name = args[0]
+                _run_readiness_diagnostic(
+                    "Runtime",
+                    lambda: _dump_alphagsm_runtime_logs(env, server_name),
+                )
+            if command_failure is not None:
+                raise command_failure from None
+        assert_alphagsm_result_ok(result)
+        return _redact_subprocess_diagnostic(result)
+    finally:
+        if sys.exc_info()[0] is not None:
+            env = None
+            args = _redact_command_args(args)
+            result = _redact_subprocess_diagnostic(result)
 
 
-def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds):
-    """Poll ``info --json`` until it returns *expected_protocol*."""
+def wait_for_info_protocol(
+    env,
+    server_name,
+    expected_protocol,
+    timeout_seconds,
+    expected_port=None,
+):
+    """Poll ``info --json`` until it returns the expected protocol and port."""
+
+    if expected_port is not None:
+        expected_port = int(expected_port)
     deadline = time.time() + timeout_seconds
     last_result = None
     last_data = None
@@ -617,20 +989,40 @@ def wait_for_info_protocol(env, server_name, expected_protocol, timeout_seconds)
                 data = None
             else:
                 last_data = data
-                if data.get("protocol") == expected_protocol:
+                if data.get("protocol") == expected_protocol and (
+                    expected_port is None or data.get("port") == expected_port
+                ):
                     return data
         time.sleep(5)
 
-    log_command_result(
-        "alphagsm",
-        last_result,
-        label="alphagsm info --json",
+    failure_message = _redact_logged_text(
+        f"info --json never returned protocol {expected_protocol!r} "
+        f"within {timeout_seconds}s: last payload={last_data!r}"
     )
-    _dump_alphagsm_runtime_logs(env, server_name)
-    pytest.fail(
-        f"info --json never returned protocol {expected_protocol!r} within {timeout_seconds}s: "
-        f"last payload={last_data!r}"
-    )
+    diagnostic_result = _redact_subprocess_diagnostic(last_result)
+    result = None
+    last_result = None
+    data = None
+    last_data = None
+    try:
+        fail_readiness_timeout(
+            env,
+            server_name,
+            failure_message,
+            diagnostics=(
+                (
+                    "info --json",
+                    lambda: log_command_result(
+                        "alphagsm",
+                        diagnostic_result,
+                        label="alphagsm info --json",
+                    ),
+                ),
+            ),
+        )
+    finally:
+        env = None
+        diagnostic_result = None
 
 
 def read_info_json(env, server_name):
@@ -684,23 +1076,33 @@ def _dump_log(log_path, context="", max_lines=150):
     try:
         p = Path(log_path)
         if not p.exists():
-            print(f"[diagnostic] Log file not found ({context}): {log_path}")
+            print(
+                _redact_logged_text(
+                    f"[diagnostic] Log file not found ({context}): {log_path}"
+                )
+            )
             return
         text = p.read_text(errors="replace")
         lines = text.splitlines()
         size = p.stat().st_size
         print(
-            f"[diagnostic] Log tail — {len(lines)} total lines, {size} bytes"
-            + (f" [{context}]" if context else "")
-            + f": {log_path}"
+            _redact_logged_text(
+                f"[diagnostic] Log tail — {len(lines)} total lines, {size} bytes"
+                + (f" [{context}]" if context else "")
+                + f": {log_path}"
+            )
         )
         shown = lines[-max_lines:]
         for line in shown:
-            print(f"  {line}")
+            print(f"  {_redact_logged_text(line)}")
         if len(lines) > max_lines:
             print(f"  ... ({len(lines) - max_lines} earlier lines omitted)")
     except OSError as exc:
-        print(f"[diagnostic] Could not read log ({context}): {exc}")
+        print(
+            _redact_logged_text(
+                f"[diagnostic] Could not read log ({context}): {exc}"
+            )
+        )
 
 
 def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
@@ -720,9 +1122,242 @@ def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
         log_command_result("alphagsm", result, label=f"alphagsm {command_name}")
 
 
+def _run_readiness_diagnostic(label, diagnostic):
+    """Run one redacted diagnostic without replacing a readiness failure."""
+
+    try:
+        diagnostic()
+    except BaseException as exc:
+        try:
+            print(
+                _redact_logged_text(
+                    f"[diagnostic] {label} diagnostic collection failed: {exc}"
+                )
+            )
+        except BaseException:
+            pass
+
+
+def fail_readiness_timeout(
+    env,
+    server_name,
+    message,
+    *,
+    diagnostics=(),
+):
+    """Run best-effort diagnostics, then fail readiness with a redacted message."""
+
+    message = _redact_logged_text(message)
+    try:
+        for label, diagnostic in diagnostics:
+            _run_readiness_diagnostic(label, diagnostic)
+        if env is not None and server_name is not None:
+            _run_readiness_diagnostic(
+                "Runtime",
+                lambda: _dump_alphagsm_runtime_logs(env, server_name),
+            )
+        pytest.fail(message)
+    finally:
+        env = None
+        server_name = None
+        diagnostics = ()
+        label = None
+        diagnostic = None
+
+
+def _report_suppressed_cleanup_error(stage, exc):
+    """Best-effort report for cleanup errors hidden by a lifecycle failure."""
+
+    try:
+        print(
+            _redact_logged_text(
+                f"[diagnostic] AlphaGSM {stage} cleanup failed: {exc}"
+            )
+        )
+    except BaseException:
+        pass
+
+
+def _sanitized_cleanup_exception(stage, exc):
+    """Return a fresh cleanup exception that contains only redacted state."""
+
+    if isinstance(exc, subprocess.TimeoutExpired):
+        return _redact_subprocess_diagnostic(exc)
+    message = _redact_logged_text(str(exc))
+    try:
+        return type(exc)(message)
+    except BaseException:  # uncommon constructors use a safe fallback
+        return RuntimeError(f"AlphaGSM {stage} cleanup failed: {message}")
+
+
+def capture_alphagsm_stop(
+    env,
+    server_name,
+    lifecycle_exception,
+    timeout=DEFAULT_TIMEOUT,
+):
+    """Stop and log a server without replacing an active lifecycle failure."""
+
+    stop_result = None
+    standalone_error = None
+    try:
+        try:
+            stop_result = run_alphagsm(env, server_name, "stop", timeout=timeout)
+        except BaseException as exc:
+            if lifecycle_exception is None:
+                if isinstance(exc, _CONTROL_EXCEPTIONS):
+                    raise
+                standalone_error = _sanitized_cleanup_exception("stop", exc)
+            else:
+                _report_suppressed_cleanup_error("stop", exc)
+                return None
+        if standalone_error is not None:
+            raise standalone_error from None
+
+        try:
+            log_command_result("alphagsm stop", stop_result)
+        except BaseException as exc:
+            if lifecycle_exception is None:
+                if isinstance(exc, _CONTROL_EXCEPTIONS):
+                    raise
+                standalone_error = _sanitized_cleanup_exception("logging", exc)
+            else:
+                _report_suppressed_cleanup_error("logging", exc)
+        if standalone_error is not None:
+            raise standalone_error from None
+        return _redact_subprocess_diagnostic(stop_result)
+    finally:
+        if sys.exc_info()[0] is not None or lifecycle_exception is not None:
+            env = None
+            lifecycle_exception = None
+            stop_result = _redact_subprocess_diagnostic(stop_result)
+
+
 # ---------------------------------------------------------------------------
 # Wait helpers
 # ---------------------------------------------------------------------------
+
+_RUNTIME_LOG_MARKER_TAIL_LINES = 10_000
+
+
+def _dump_runtime_log_poll(last_poll):
+    """Print the last runtime-log readiness poll with redaction."""
+
+    if isinstance(last_poll, subprocess.CompletedProcess):
+        log_command_result(
+            "alphagsm",
+            last_poll,
+            label="alphagsm logs readiness poll",
+        )
+    elif isinstance(last_poll, subprocess.TimeoutExpired):
+        print(
+            "[diagnostic] Last alphagsm logs readiness poll timed out after "
+            f"{last_poll.timeout}s"
+        )
+        if last_poll.stdout:
+            print(_redact_logged_text(last_poll.stdout).rstrip())
+        if last_poll.stderr:
+            print(_redact_logged_text(last_poll.stderr).rstrip())
+    else:
+        print("[diagnostic] No alphagsm logs readiness poll completed")
+
+
+def _dump_glob_log_timeout(log_dir_path, glob_pattern, markers):
+    """Print redacted tails for a failed glob-log readiness wait."""
+
+    if log_dir_path.exists():
+        matched = list(log_dir_path.glob(glob_pattern))
+        if matched:
+            for log_path in matched:
+                _dump_log(
+                    log_path,
+                    context=f"glob timeout, looking for {markers!r}",
+                )
+        else:
+            print(
+                _redact_logged_text(
+                    f"[diagnostic] No files matching {glob_pattern!r} "
+                    f"in {log_dir_path}"
+                )
+            )
+    else:
+        print(_redact_logged_text(f"[diagnostic] Log dir not found: {log_dir_path}"))
+
+
+def _print_readiness_diagnostic(message):
+    """Print a redacted readiness diagnostic summary."""
+
+    print(_redact_logged_text(message))
+
+
+def _dump_a2s_tcp_probe(host, port):
+    """Probe and report the TCP side of an A2S readiness timeout."""
+
+    try:
+        with socket.create_connection((host, port), timeout=5):
+            tcp_diagnostic = f"TCP port {host}:{port} is open"
+    except OSError as exc:
+        tcp_diagnostic = f"TCP probe on {host}:{port} failed: {exc}"
+    _print_readiness_diagnostic(f"[diagnostic] {tcp_diagnostic}")
+
+
+def wait_for_runtime_log_marker(env, server_name, markers, timeout_seconds):
+    """Poll AlphaGSM-managed runtime logs until one of *markers* appears."""
+
+    deadline = time.monotonic() + timeout_seconds
+    last_poll = None
+    while True:
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
+        poll_timeout = min(120, remaining_seconds)
+        try:
+            result = run_alphagsm(
+                env,
+                server_name,
+                "logs",
+                "-n",
+                str(_RUNTIME_LOG_MARKER_TAIL_LINES),
+                timeout=poll_timeout,
+            )
+        except subprocess.TimeoutExpired as exc:
+            last_poll = exc
+        else:
+            last_poll = result
+            collected = "\n".join(
+                text for text in (result.stdout, result.stderr) if text
+            )
+            if result.returncode == 0 and any(
+                marker in collected for marker in markers
+            ):
+                return _redact_logged_text(collected)
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
+        time.sleep(min(2, remaining_seconds))
+
+    diagnostic_poll = _redact_subprocess_diagnostic(last_poll)
+    result = None
+    last_poll = None
+    collected = None
+    try:
+        fail_readiness_timeout(
+            env,
+            server_name,
+            f"Runtime logs never showed readiness markers {markers!r} "
+            f"within {timeout_seconds}s for {server_name}",
+            diagnostics=(
+                (
+                    "Last runtime-log poll",
+                    lambda: _dump_runtime_log_poll(diagnostic_poll),
+                ),
+            ),
+        )
+    finally:
+        env = None
+        markers = None
+        diagnostic_poll = None
+
 
 def wait_for_log_marker(log_path, markers, timeout_seconds, env=None, server_name=None):
     """Poll a log file until one of *markers* appears; return the log text.
@@ -735,14 +1370,29 @@ def wait_for_log_marker(log_path, markers, timeout_seconds, env=None, server_nam
         if log_path.exists():
             log_text = log_path.read_text(errors="replace")
             if any(marker in log_text for marker in markers):
-                return log_text
+                return _redact_logged_text(log_text)
         time.sleep(2)
-    _dump_log(log_path, context=f"looking for {markers!r}")
-    if env is not None and server_name is not None:
-        _dump_alphagsm_runtime_logs(env, server_name)
-    pytest.fail(
-        f"Log never showed readiness markers {markers!r} within {timeout_seconds}s: {log_path}"
-    )
+    log_text = None
+    try:
+        fail_readiness_timeout(
+            env,
+            server_name,
+            f"Log never showed readiness markers {markers!r} within {timeout_seconds}s: "
+            f"{log_path}",
+            diagnostics=(
+                (
+                    "Local log",
+                    lambda: _dump_log(
+                        log_path,
+                        context=f"looking for {markers!r}",
+                    ),
+                ),
+            ),
+        )
+    finally:
+        env = None
+        markers = None
+        log_path = None
 
 
 def wait_for_glob_log_marker(
@@ -765,25 +1415,33 @@ def wait_for_glob_log_marker(
                 try:
                     text = log_path.read_text(errors="replace")
                     if any(marker in text for marker in markers):
-                        return text
+                        return _redact_logged_text(text)
                 except OSError:
                     pass
         time.sleep(2)
-    # Dump all matching log files for diagnostics.
-    if log_dir_path.exists():
-        matched = list(log_dir_path.glob(glob_pattern))
-        if matched:
-            for lp in matched:
-                _dump_log(lp, context=f"glob timeout, looking for {markers!r}")
-        else:
-            print(f"[diagnostic] No files matching {glob_pattern!r} in {log_dir}")
-    else:
-        print(f"[diagnostic] Log dir not found: {log_dir}")
-    if env is not None and server_name is not None:
-        _dump_alphagsm_runtime_logs(env, server_name)
-    pytest.fail(
-        f"Log never showed readiness markers {markers!r} within {timeout_seconds}s in {log_dir}"
-    )
+    text = None
+    try:
+        fail_readiness_timeout(
+            env,
+            server_name,
+            f"Log never showed readiness markers {markers!r} within {timeout_seconds}s "
+            f"in {log_dir}",
+            diagnostics=(
+                (
+                    "Glob log",
+                    lambda: _dump_glob_log_timeout(
+                        log_dir_path,
+                        glob_pattern,
+                        markers,
+                    ),
+                ),
+            ),
+        )
+    finally:
+        env = None
+        markers = None
+        log_dir = None
+        log_dir_path = None
 
 
 def wait_for_tcp_closed(host, port, timeout_seconds):
@@ -886,28 +1544,39 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None
         # No additional sleep: Phase 1 already waits 15 s on timeout; Phase 2
         # (when it runs) takes up to 120 s, providing a natural gap.
 
-    _tcp_check_port = tcp_port if tcp_port is not None else port
-    tcp_diag = None
-    try:
-        with socket.create_connection((host, _tcp_check_port), timeout=5):
-            tcp_diag = f"TCP port {host}:{_tcp_check_port} is open"
-    except OSError as exc:
-        tcp_diag = f"TCP probe on {host}:{_tcp_check_port} failed: {exc}"
-
-    if log_path is not None and Path(log_path).exists() and Path(log_path).stat().st_size > 0:
-        print(
-            f"[diagnostic] Log file exists for failed A2S readiness check: {log_path}"
-            f" ({Path(log_path).stat().st_size} bytes)"
-        )
-    print(
+    last_error = _redact_logged_text(str(last_exc))
+    last_exc = None
+    diagnostic_summary = (
         f"[diagnostic] A2S on {host}:{port} never responded within {timeout_seconds}s"
-        f" — last error: {last_exc}"
-        + (f" — {tcp_diag}" if tcp_diag else "")
+        f" — last error: {last_error}"
     )
+    tcp_check_port = tcp_port if tcp_port is not None else port
+    diagnostics = [
+        (
+            "A2S summary",
+            lambda: _print_readiness_diagnostic(diagnostic_summary),
+        ),
+        (
+            "A2S TCP probe",
+            lambda: _dump_a2s_tcp_probe(host, tcp_check_port),
+        ),
+    ]
     if log_path is not None:
-        _dump_log(log_path, context=f"A2S timeout on port {port}")
-    pytest.fail(
-        f"A2S on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+        diagnostics.append(
+            (
+                "Local log",
+                lambda: _dump_log(
+                    log_path,
+                    context=f"A2S timeout on port {port}",
+                ),
+            )
+        )
+    fail_readiness_timeout(
+        None,
+        None,
+        f"A2S on {host}:{port} never responded within {timeout_seconds}s: "
+        f"{last_error}",
+        diagnostics=tuple(diagnostics),
     )
 
 
@@ -930,13 +1599,34 @@ def wait_for_tcp_open(host, port, timeout_seconds, log_path=None):
         except OSError as exc:
             last_exc = exc
             time.sleep(2)
-    print(
+    last_error = _redact_logged_text(str(last_exc))
+    last_exc = None
+    diagnostic_summary = (
         f"[diagnostic] TCP port {host}:{port} never opened within {timeout_seconds}s"
-        f" — last error: {last_exc}"
+        f" — last error: {last_error}"
     )
+    diagnostics = [
+        (
+            "TCP summary",
+            lambda: _print_readiness_diagnostic(diagnostic_summary),
+        )
+    ]
     if log_path is not None:
-        _dump_log(log_path, context=f"TCP open timeout on port {port}")
-    pytest.fail(f"TCP port {host}:{port} never opened within {timeout_seconds}s")
+        diagnostics.append(
+            (
+                "Local log",
+                lambda: _dump_log(
+                    log_path,
+                    context=f"TCP open timeout on port {port}",
+                ),
+            )
+        )
+    fail_readiness_timeout(
+        None,
+        None,
+        f"TCP port {host}:{port} never opened within {timeout_seconds}s",
+        diagnostics=tuple(diagnostics),
+    )
 
 
 def wait_for_udp_open(host, port, timeout_seconds, log_path=None):
@@ -961,13 +1651,34 @@ def wait_for_udp_open(host, port, timeout_seconds, log_path=None):
         except query_utils.QueryError as exc:
             last_exc = exc
             time.sleep(2)
-    print(
+    last_error = _redact_logged_text(str(last_exc))
+    last_exc = None
+    diagnostic_summary = (
         f"[diagnostic] UDP port {host}:{port} never opened within {timeout_seconds}s"
-        f" — last error: {last_exc}"
+        f" — last error: {last_error}"
     )
+    diagnostics = [
+        (
+            "UDP summary",
+            lambda: _print_readiness_diagnostic(diagnostic_summary),
+        )
+    ]
     if log_path is not None:
-        _dump_log(log_path, context=f"UDP open timeout on port {port}")
-    pytest.fail(f"UDP port {host}:{port} never opened within {timeout_seconds}s")
+        diagnostics.append(
+            (
+                "Local log",
+                lambda: _dump_log(
+                    log_path,
+                    context=f"UDP open timeout on port {port}",
+                ),
+            )
+        )
+    fail_readiness_timeout(
+        None,
+        None,
+        f"UDP port {host}:{port} never opened within {timeout_seconds}s",
+        diagnostics=tuple(diagnostics),
+    )
 
 
 def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
@@ -997,14 +1708,34 @@ def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
         except query_utils.QueryError as exc:
             last_exc = exc
         time.sleep(2)
-    print(
+    last_error = _redact_logged_text(str(last_exc))
+    last_exc = None
+    diagnostic_summary = (
         f"[diagnostic] Quake status on {host}:{port} never responded within {timeout_seconds}s"
-        f" — last error: {last_exc}"
+        f" — last error: {last_error}"
     )
+    diagnostics = [
+        (
+            "Quake summary",
+            lambda: _print_readiness_diagnostic(diagnostic_summary),
+        )
+    ]
     if log_path is not None:
-        _dump_log(log_path, context=f"Quake timeout on port {port}")
-    pytest.fail(
-        f"Quake status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+        diagnostics.append(
+            (
+                "Local log",
+                lambda: _dump_log(
+                    log_path,
+                    context=f"Quake timeout on port {port}",
+                ),
+            )
+        )
+    fail_readiness_timeout(
+        None,
+        None,
+        f"Quake status on {host}:{port} never responded within {timeout_seconds}s: "
+        f"{last_error}",
+        diagnostics=tuple(diagnostics),
     )
 
 
@@ -1025,14 +1756,34 @@ def wait_for_quakeworld_ready(host, port, timeout_seconds, log_path=None):
         except query_utils.QueryError as exc:
             last_exc = exc
         time.sleep(2)
-    print(
+    last_error = _redact_logged_text(str(last_exc))
+    last_exc = None
+    diagnostic_summary = (
         f"[diagnostic] QuakeWorld status on {host}:{port} never responded within {timeout_seconds}s"
-        f" — last error: {last_exc}"
+        f" — last error: {last_error}"
     )
+    diagnostics = [
+        (
+            "QuakeWorld summary",
+            lambda: _print_readiness_diagnostic(diagnostic_summary),
+        )
+    ]
     if log_path is not None:
-        _dump_log(log_path, context=f"QuakeWorld timeout on port {port}")
-    pytest.fail(
-        f"QuakeWorld status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+        diagnostics.append(
+            (
+                "Local log",
+                lambda: _dump_log(
+                    log_path,
+                    context=f"QuakeWorld timeout on port {port}",
+                ),
+            )
+        )
+    fail_readiness_timeout(
+        None,
+        None,
+        f"QuakeWorld status on {host}:{port} never responded within {timeout_seconds}s: "
+        f"{last_error}",
+        diagnostics=tuple(diagnostics),
     )
 
 
@@ -1053,14 +1804,34 @@ def wait_for_quake2_ready(host, port, timeout_seconds, log_path=None):
         except query_utils.QueryError as exc:
             last_exc = exc
         time.sleep(2)
-    print(
+    last_error = _redact_logged_text(str(last_exc))
+    last_exc = None
+    diagnostic_summary = (
         f"[diagnostic] Quake II status on {host}:{port} never responded within {timeout_seconds}s"
-        f" — last error: {last_exc}"
+        f" — last error: {last_error}"
     )
+    diagnostics = [
+        (
+            "Quake II summary",
+            lambda: _print_readiness_diagnostic(diagnostic_summary),
+        )
+    ]
     if log_path is not None:
-        _dump_log(log_path, context=f"Quake II timeout on port {port}")
-    pytest.fail(
-        f"Quake II status on {host}:{port} never responded within {timeout_seconds}s: {last_exc}"
+        diagnostics.append(
+            (
+                "Local log",
+                lambda: _dump_log(
+                    log_path,
+                    context=f"Quake II timeout on port {port}",
+                ),
+            )
+        )
+    fail_readiness_timeout(
+        None,
+        None,
+        f"Quake II status on {host}:{port} never responded within {timeout_seconds}s: "
+        f"{last_error}",
+        diagnostics=tuple(diagnostics),
     )
 
 # ---------------------------------------------------------------------------
@@ -1079,10 +1850,14 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
 
     if _steamcmd_state_202_flake(combined, app_id):
         extra = f" (app {app_id})" if app_id else ""
-        snippet = combined[:300].replace("\n", " | ")
-        pytest.skip(
-            f"SteamCMD flake skip — repeated known state 0x202 during setup{extra}: {snippet}"
+        snippet = _redact_logged_text(combined[:300]).replace("\n", " | ")
+        reason = (
+            f"SteamCMD flake skip — repeated known state 0x202 during setup"
+            f"{extra}: {snippet}"
         )
+        result = None
+        combined = None
+        pytest.skip(reason)
 
     # Only markers that make it impossible to run the test in CI at all
     # (authentication required, or module intentionally disabled) warrant a
@@ -1097,7 +1872,10 @@ def skip_for_known_steamcmd_issue(result, app_id=None):
     for marker in skip_markers:
         if marker in combined:
             extra = f" (app {app_id})" if app_id else ""
-            snippet = combined[:300].replace("\n", " | ")
-            pytest.skip(
+            snippet = _redact_logged_text(combined[:300]).replace("\n", " | ")
+            reason = (
                 f"Setup skipped — {marker!r} in output{extra}: {snippet}"
             )
+            result = None
+            combined = None
+            pytest.skip(reason)

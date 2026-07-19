@@ -2,12 +2,16 @@
 
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
 import pytest
 
 from conftest import (
+    assert_alphagsm_result_ok,
+    capture_alphagsm_stop,
+    fail_readiness_timeout,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     default_runtime_backend,
@@ -21,8 +25,6 @@ from conftest import (
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
     wait_for_udp_closed,
@@ -36,28 +38,59 @@ SETUP_TIMEOUT = 3600  # 60 min: large SteamCMD payload under shared CI load
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
+_SAFE_STATUS_DIAGNOSTIC_FIELDS = ("Status", "AdvertisedAddressAndPort")
 
 
-def wait_for_status_json_running(status_json_path: Path, timeout_seconds: int):
+def _safe_status_diagnostics(payload):
+    """Return only non-secret Status.json fields suitable for test output."""
+
+    if not isinstance(payload, dict):
+        return None
+    return {
+        field: payload[field]
+        for field in _SAFE_STATUS_DIAGNOSTIC_FIELDS
+        if field in payload
+    }
+
+
+def wait_for_status_json_running(
+    env,
+    server_name: str,
+    status_json_path: Path,
+    timeout_seconds: int,
+):
     """Poll Status.json until it reports the hosted session as running."""
 
     deadline = time.time() + timeout_seconds
-    last_payload = None
+    last_safe_status = None
     while time.time() < deadline:
         if status_json_path.is_file():
             try:
-                payload = json.loads(status_json_path.read_text(encoding="utf-8-sig"))
+                safe_status = _safe_status_diagnostics(
+                    json.loads(
+                        status_json_path.read_text(encoding="utf-8-sig")
+                    )
+                )
             except json.JSONDecodeError:
-                payload = None
-            if isinstance(payload, dict):
-                last_payload = payload
-                if payload.get("Status") == "running":
-                    return payload
+                safe_status = None
+            if safe_status is not None:
+                last_safe_status = safe_status
+                if safe_status.get("Status") == "running":
+                    return safe_status
         time.sleep(5)
-    pytest.fail(
-        "Status.json did not report a running Return to Moria server within {}s. "
-        "Last payload: {!r}".format(timeout_seconds, last_payload)
-    )
+    try:
+        fail_readiness_timeout(
+            env,
+            server_name,
+            "Status.json did not report a running Return to Moria server within {}s. "
+            "Last safe status fields: {!r}".format(
+                timeout_seconds,
+                last_safe_status,
+            ),
+        )
+    finally:
+        env = None
+        last_safe_status = None
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)
@@ -121,48 +154,66 @@ def test_returntomoriaserver_lifecycle(tmp_path):
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
-    # start
-    run_and_assert_ok(env, server_name, "start")
-
     try:
+        # start
+        run_and_assert_ok(env, server_name, "start")
+
         # wait for readiness
         status_json_path = install_dir / "Moria" / "Saved" / "Config" / "Status.json"
-        status_payload = wait_for_status_json_running(status_json_path, START_TIMEOUT)
-        info_data = wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
-        assert info_data.get("port") == port, (
-            f"Expected game-port UDP readiness on fresh server: {info_data!r}"
+        status_payload = wait_for_status_json_running(
+            env,
+            server_name,
+            status_json_path,
+            START_TIMEOUT,
         )
+        info_data = wait_for_info_protocol(
+            env,
+            server_name,
+            "udp",
+            START_TIMEOUT,
+            expected_port=port,
+        )
+        ready_port = info_data.get("port")
+        info_data = None
+        assert ready_port == port, "Expected game-port UDP readiness on fresh server"
 
         # status
         run_and_assert_ok(env, server_name, "status")
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server port is open" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        query_ready = "Server port is open" in query_result.stdout
+        query_result = None
+        assert query_ready, "Expected Return to Moria query readiness"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "No further details available." in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
+        info_ready = "No further details available." in info_result.stdout
+        info_result = None
+        assert info_ready, "Expected Return to Moria info readiness"
 
         # info --json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "udp", (
-            f"Expected udp protocol in info JSON: {_info_data!r}"
-        )
-        assert _info_data.get("port") == port, (
-            f"Expected game-port UDP readiness on fresh server: {_info_data!r}"
-        )
-        assert status_payload.get("AdvertisedAddressAndPort", "").endswith(f":{port}"), (
-            f"Expected advertised port to match the managed game port: {status_payload!r}"
+        info_protocol = _info_data.get("protocol")
+        info_port = _info_data.get("port")
+        _info_data = None
+        info_json_result = None
+        assert info_protocol == "udp", "Expected udp protocol in info JSON"
+        assert info_port == port, "Expected managed game port in info JSON"
+        advertised_address = status_payload.get("AdvertisedAddressAndPort", "")
+        assert advertised_address.endswith(f":{port}"), (
+            "Expected advertised port to match the managed game port: "
+            f"{advertised_address!r}"
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env,
+            server_name,
+            sys.exc_info()[1],
+        )
 
     # verify stopped
+    assert_alphagsm_result_ok(stop_result)
     wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

@@ -2,10 +2,57 @@
 
 set -euo pipefail
 
+MANAGER_HOST_UID="$EUID"
+if [[ ! "$MANAGER_HOST_UID" =~ ^[0-9]+$ ]]; then
+    echo "Unable to determine the invoking process's numeric UID:GID." >&2
+    exit 1
+fi
+if [[ "$MANAGER_HOST_UID" == "0" ]]; then
+    echo "AlphaGSM refuses to run the manager container as UID 0." >&2
+    exit 1
+fi
+if [[ -x /usr/bin/id ]]; then
+    MANAGER_HOST_GID="$(/usr/bin/id -g)"
+elif [[ -x /bin/id ]]; then
+    MANAGER_HOST_GID="$(/bin/id -g)"
+else
+    echo "Unable to locate a trusted id executable for the invoking process's numeric GID." >&2
+    exit 1
+fi
+if [[ ! "$MANAGER_HOST_GID" =~ ^[0-9]+$ ]]; then
+    echo "Unable to determine the invoking process's numeric UID:GID." >&2
+    exit 1
+fi
+
+normalize_absolute_path() {
+    local path="$1"
+    local part
+    local normalized=""
+    local -a parts=()
+
+    if [[ "$path" != /* ]]; then
+        path="$PWD/$path"
+    fi
+    IFS='/' read -r -a parts <<< "$path"
+    for part in "${parts[@]}"; do
+        case "$part" in
+            ""|.)
+                ;;
+            ..)
+                normalized="${normalized%/*}"
+                ;;
+            *)
+                normalized="$normalized/$part"
+                ;;
+        esac
+    done
+    printf '%s\n' "${normalized:-/}"
+}
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker/manager/compose.yml"
 STATE_DIR="${ALPHAGSM_HOME:-$SCRIPT_DIR/.alphagsm-docker}"
-STATE_DIR="$(mkdir -p "$STATE_DIR" && cd "$STATE_DIR" && pwd)"
+STATE_DIR="$(normalize_absolute_path "$STATE_DIR")"
 CONFIG_PATH="$STATE_DIR/alphagsm.conf"
 EXAMPLE_CONFIG="$SCRIPT_DIR/docker/manager/alphagsm.conf.example"
 PULL_RUNTIME_IMAGES="${ALPHAGSM_PULL_RUNTIME_IMAGES:-0}"
@@ -13,6 +60,8 @@ MANAGER_CONTAINER_NAME="${ALPHAGSM_MANAGER_CONTAINER_NAME:-alphagsm-manager}"
 MANAGER_MODE_FILE="$STATE_DIR/.manager-mode"
 DEFAULT_MANAGER_IMAGE="${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm:latest}"
 DEVELOP_MANAGER_IMAGE="${ALPHAGSM_MANAGER_DEVELOP_IMAGE:-alphagsm:dev}"
+MANAGER_DOCKER_GID=""
+MANAGER_DOCKER_SOCKET=""
 
 compose_cmd() {
     if docker compose version >/dev/null 2>&1; then
@@ -25,6 +74,136 @@ compose_cmd() {
     fi
     echo "Docker Compose is required. Install Docker Compose plugin or docker-compose." >&2
     exit 1
+}
+
+state_path_symlink_component() {
+    local component
+    local current=""
+    local -a components=()
+
+    IFS='/' read -r -a components <<< "$STATE_DIR"
+    for component in "${components[@]}"; do
+        [[ -n "$component" ]] || continue
+        current="$current/$component"
+        if [[ -L "$current" ]]; then
+            printf '%s\n' "$current"
+            return 0
+        fi
+    done
+    return 1
+}
+
+state_entry_metadata() {
+    local path="$1"
+    local metadata=""
+
+    if ! metadata="$(stat -c '%u|%g|%a|%F' "$path" 2>/dev/null)"; then
+        metadata="$(stat -f '%u|%g|%Lp|%HT' "$path" 2>/dev/null || true)"
+    fi
+    [[ -n "$metadata" ]] || return 1
+    printf '%s\n' "$metadata"
+}
+
+state_entry_failure_reason() {
+    local path="$1"
+    local metadata
+    local owner_uid
+    local owner_gid
+    local mode
+    local file_type
+    local permission_digit
+    local required_bits
+
+    if ! metadata="$(state_entry_metadata "$path")"; then
+        printf 'metadata inspection failed'
+        return 1
+    fi
+    IFS='|' read -r owner_uid owner_gid mode file_type <<< "$metadata"
+    if [[ ! "$owner_uid" =~ ^[0-9]+$ || ! "$owner_gid" =~ ^[0-9]+$ || ! "$mode" =~ ^[0-7]+$ ]]; then
+        printf 'metadata inspection was ambiguous'
+        return 1
+    fi
+
+    case "$file_type" in
+        *symbolic*link*|*Symbolic*Link*)
+            printf 'symbolic links are not allowed in manager state'
+            return 1
+            ;;
+        *directory*|*Directory*)
+            required_bits=3
+            ;;
+        *regular*file*|*Regular*File*)
+            required_bits=2
+            ;;
+        *)
+            printf 'unsupported state entry type: %s' "$file_type"
+            return 1
+            ;;
+    esac
+
+    mode="${mode: -3}"
+    if [[ "$owner_uid" == "$MANAGER_HOST_UID" ]]; then
+        permission_digit="${mode:0:1}"
+    elif [[ "$owner_gid" == "$MANAGER_HOST_GID" ]]; then
+        permission_digit="${mode:1:1}"
+    else
+        permission_digit="${mode:2:1}"
+    fi
+    if (( (8#$permission_digit & required_bits) != required_bits )); then
+        printf 'not writable%s by host UID:GID %s:%s' \
+            "$([[ "$required_bits" == "3" ]] && printf '/traversable')" \
+            "$MANAGER_HOST_UID" \
+            "$MANAGER_HOST_GID"
+        return 1
+    fi
+}
+
+fail_unsafe_manager_state() {
+    local unsafe_path="$1"
+    local reason="$2"
+
+    echo "Refusing to recreate the manager because its state tree is unsafe for host UID:GID ${MANAGER_HOST_UID}:${MANAGER_HOST_GID}." >&2
+    echo "State path: $STATE_DIR" >&2
+    echo "Unsafe state entry: $unsafe_path ($reason)." >&2
+    echo "Existing state was preserved; AlphaGSM will not chown or delete it automatically." >&2
+    echo "After verifying this is the intended state tree, repair its ownership as an administrator:" >&2
+    printf '  sudo chown -R %s:%s -- %q\n' \
+        "$MANAGER_HOST_UID" \
+        "$MANAGER_HOST_GID" \
+        "$STATE_DIR" >&2
+    if [[ "$reason" == *"symbolic link"* ]]; then
+        echo "Replace the symbolic link with state owned directly at $STATE_DIR before retrying." >&2
+    fi
+    exit 1
+}
+
+preflight_existing_manager_state() {
+    local symlink_component
+    local failure
+    local unsafe_path
+    local reason
+
+    if [[ ! -e "$STATE_DIR" && ! -L "$STATE_DIR" ]]; then
+        return
+    fi
+    if symlink_component="$(state_path_symlink_component)"; then
+        fail_unsafe_manager_state "$symlink_component" "symbolic link in state path"
+    fi
+    if failure="$(
+        find -P "$STATE_DIR" -print0 |
+            while IFS= read -r -d '' path; do
+                if ! reason="$(state_entry_failure_reason "$path")"; then
+                    printf '%s\n%s\n' "$path" "$reason"
+                    exit 1
+                fi
+            done
+    )"; then
+        return
+    fi
+
+    unsafe_path="$(printf '%s\n' "$failure" | sed -n '1p')"
+    reason="$(printf '%s\n' "$failure" | sed -n '2p')"
+    fail_unsafe_manager_state "${unsafe_path:-$STATE_DIR}" "${reason:-state inspection failed}"
 }
 
 ensure_config() {
@@ -87,11 +266,53 @@ manager_compose() {
         mode="$(current_manager_mode)"
     fi
     image="$(manager_image_for_mode "$mode")"
+    resolve_manager_identity
 
     ALPHAGSM_HOME="$STATE_DIR" \
     ALPHAGSM_PULL_RUNTIME_IMAGES="$PULL_RUNTIME_IMAGES" \
     ALPHAGSM_MANAGER_IMAGE="$image" \
+    ALPHAGSM_HOST_UID="$MANAGER_HOST_UID" \
+    ALPHAGSM_HOST_GID="$MANAGER_HOST_GID" \
+    ALPHAGSM_DOCKER_GID="$MANAGER_DOCKER_GID" \
+    ALPHAGSM_DOCKER_SOCKET="$MANAGER_DOCKER_SOCKET" \
     compose_cmd -f "$COMPOSE_FILE" "${@:2}"
+}
+
+resolve_manager_identity() {
+    if [[ -n "$MANAGER_DOCKER_GID" ]]; then
+        return
+    fi
+
+    MANAGER_DOCKER_SOCKET="$(resolve_docker_socket)"
+    MANAGER_DOCKER_GID="$(resolve_docker_socket_gid "$MANAGER_DOCKER_SOCKET")"
+}
+
+resolve_docker_socket() {
+    local socket_path="${ALPHAGSM_DOCKER_SOCKET:-}"
+
+    if [[ -z "$socket_path" && "${DOCKER_HOST:-}" == unix://* ]]; then
+        socket_path="${DOCKER_HOST#unix://}"
+    fi
+    socket_path="${socket_path:-/var/run/docker.sock}"
+    if [[ "$socket_path" != /* ]]; then
+        echo "ALPHAGSM_DOCKER_SOCKET must be an absolute path." >&2
+        exit 1
+    fi
+    normalize_absolute_path "$socket_path"
+}
+
+resolve_docker_socket_gid() {
+    local socket_path="$1"
+    local docker_gid=""
+
+    if ! docker_gid="$(stat -c '%g' "$socket_path" 2>/dev/null)"; then
+        docker_gid="$(stat -f '%g' "$socket_path" 2>/dev/null || true)"
+    fi
+    if [[ ! "$docker_gid" =~ ^[0-9]+$ ]]; then
+        echo "Unable to determine the numeric group ID for Docker socket $socket_path." >&2
+        exit 1
+    fi
+    printf '%s\n' "$docker_gid"
 }
 
 docker_image_exists() {
@@ -108,6 +329,50 @@ manager_running() {
 
 manager_exists() {
     docker inspect "$MANAGER_CONTAINER_NAME" >/dev/null 2>&1
+}
+
+manager_identity_matches() {
+    local configured_identity
+    local expected_identity
+
+    resolve_manager_identity
+    configured_identity="$(
+        docker inspect -f '{{.Config.User}}|{{json .HostConfig.GroupAdd}}' \
+            "$MANAGER_CONTAINER_NAME" 2>/dev/null || true
+    )"
+    expected_identity="${MANAGER_HOST_UID}:${MANAGER_HOST_GID}|[\"${MANAGER_DOCKER_GID}\"]"
+    [[ "$configured_identity" == "$expected_identity" ]] || return 1
+    manager_socket_source_matches
+}
+
+manager_socket_source_matches() {
+    local inspected_sources
+    local -a sources=()
+
+    if ! inspected_sources="$(
+        docker inspect -f \
+            '{{range .Mounts}}{{if eq .Destination "/var/run/docker.sock"}}{{println .Source}}{{end}}{{end}}' \
+            "$MANAGER_CONTAINER_NAME" 2>/dev/null
+    )"; then
+        return 1
+    fi
+    mapfile -t sources <<< "$inspected_sources"
+    [[ "${#sources[@]}" == "1" && -n "${sources[0]}" ]] || return 1
+    [[ "${sources[0]}" == "$MANAGER_DOCKER_SOCKET" ]]
+}
+
+guard_existing_manager_identity() {
+    local mode="$1"
+
+    if ! manager_exists; then
+        return
+    fi
+    if manager_identity_matches; then
+        return
+    fi
+
+    echo "Manager container identity or Docker socket mount changed; recreating it in $mode mode."
+    ensure_manager "$mode" 1
 }
 
 docker_container_running() {
@@ -436,15 +701,31 @@ ensure_manager() {
     local force_refresh="${2:-0}"
     local image
     local up_args=()
+    local state_preflight_done=0
 
     if [[ -z "$mode" ]]; then
         mode="$(current_manager_mode)"
     fi
 
-    ensure_config
-    if [[ "$force_refresh" != "1" ]] && wait_for_manager_running; then
-        return
+    resolve_manager_identity
+    if [[ "$force_refresh" == "1" ]] && manager_exists; then
+        preflight_existing_manager_state
+        state_preflight_done=1
     fi
+    if [[ "$force_refresh" != "1" ]] && wait_for_manager_running; then
+        if manager_identity_matches; then
+            ensure_config
+            return
+        fi
+        preflight_existing_manager_state
+        state_preflight_done=1
+        echo "Manager container identity or Docker socket mount changed; recreating it in $mode mode."
+        force_refresh=1
+    fi
+    if [[ "$state_preflight_done" == "0" ]] && manager_exists; then
+        preflight_existing_manager_state
+    fi
+    ensure_config
 
     image="$(manager_image_for_mode "$mode")"
     if manager_exists || [[ "$force_refresh" == "1" ]]; then
@@ -560,6 +841,7 @@ EOF
 
 main() {
     local command="${1:-help}"
+    local mode
 
     case "$command" in
         help|-h|--help)
@@ -568,8 +850,8 @@ main() {
         up|start)
             shift
             command="$(parse_start_mode "$@")"
-            persist_manager_mode "$command"
             ensure_manager "$command" 1
+            persist_manager_mode "$command"
             ;;
         down|stop)
             shift
@@ -587,8 +869,10 @@ main() {
             ;;
         compose)
             shift
+            mode="$(current_manager_mode)"
+            guard_existing_manager_identity "$mode"
             ensure_config
-            manager_compose "$(current_manager_mode)" "$@"
+            manager_compose "$mode" "$@"
             ;;
         ps)
             shift

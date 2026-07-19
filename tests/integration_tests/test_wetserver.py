@@ -18,7 +18,7 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_quake_ready,
     wait_for_tcp_closed,
 )
@@ -63,7 +63,12 @@ def test_wetserver_lifecycle(tmp_path):
 
     try:
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(log_path, ["ready", "started", "listening", "Done"], START_TIMEOUT)
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
+            ["ready", "started", "listening", "Done"],
+            START_TIMEOUT,
+        )
         run_and_assert_ok(env, server_name, "status")
         wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
 

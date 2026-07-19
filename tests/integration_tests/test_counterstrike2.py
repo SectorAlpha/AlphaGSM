@@ -23,7 +23,7 @@ from conftest import (
     find_source_server_cfg,
     set_source_hibernation,
     assert_source_server_empty,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_a2s_ready,
     wait_for_udp_closed,
 )
@@ -109,8 +109,9 @@ def test_counterstrike2_lifecycle(tmp_path):
 
     try:
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["SV_ActivateServer", "VAC secure mode"],
             START_TIMEOUT,
         )

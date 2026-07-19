@@ -15,7 +15,7 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_info_protocol,
     wait_for_tcp_open,
     wait_for_tcp_closed,
@@ -68,8 +68,9 @@ def test_minecraft_bungeecord_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["Listening on", "Done (", "For help, type"],
             START_TIMEOUT,
         )

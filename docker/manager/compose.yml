@@ -5,18 +5,26 @@ services:
       dockerfile: docker/manager/Dockerfile
     image: ${ALPHAGSM_MANAGER_IMAGE:-ghcr.io/sectoralpha/alphagsm:latest}
     container_name: ${ALPHAGSM_MANAGER_CONTAINER_NAME:-alphagsm-manager}
+    # Direct Compose users should export the three numeric IDs for their host.
+    # These defaults stay non-root and deliberately fail closed on socket access.
+    user: "${ALPHAGSM_HOST_UID:-1000}:${ALPHAGSM_HOST_GID:-1000}"
+    group_add:
+      - "${ALPHAGSM_DOCKER_GID:-65534}"
     working_dir: /opt/alphagsm
     environment:
+      ALPHAGSM_HOST_UID: ${ALPHAGSM_HOST_UID:-1000}
+      ALPHAGSM_HOST_GID: ${ALPHAGSM_HOST_GID:-1000}
+      ALPHAGSM_DOCKER_GID: ${ALPHAGSM_DOCKER_GID:-65534}
       ALPHAGSM_CONFIG_LOCATION: ${ALPHAGSM_HOME:-/srv/alphagsm}/alphagsm.conf
       ALPHAGSM_PULL_RUNTIME_IMAGES: ${ALPHAGSM_PULL_RUNTIME_IMAGES:-1}
       ALPHAGSM_HOME: ${ALPHAGSM_HOME:-/srv/alphagsm}
       HOME: ${ALPHAGSM_HOME:-/srv/alphagsm}
-      DOCKER_CONFIG: /root/.docker
+      DOCKER_CONFIG: /home/alphagsm/.docker
       GHCR_TOKEN: ${GHCR_TOKEN:-}
       GHCR_USERNAME: ${GHCR_USERNAME:-}
       PYTHONPATH: /opt/alphagsm/src
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${ALPHAGSM_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
       - ${ALPHAGSM_HOME:-/srv/alphagsm}:${ALPHAGSM_HOME:-/srv/alphagsm}
-      - ${HOME}/.docker:/root/.docker:ro
+      - ${HOME}/.docker:/home/alphagsm/.docker:ro
     command: ["sleep", "infinity"]

@@ -140,12 +140,42 @@ def test_do_stop(monkeypatch):
     send_mock.assert_called_with(server, "\003")
 
 
-def test_query_and_info_addresses_use_tcp_on_main_port():
+def test_query_info_and_runtime_ports_use_udp_on_main_port(monkeypatch):
     server = DummyServer()
     server.data["port"] = 8777
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda current: "10.0.0.8",
+    )
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 8777, "tcp")
-    assert mod.get_info_address(server) == ("127.0.0.1", 8777, "tcp")
+    assert mod.get_query_address(server) == ("10.0.0.8", 8777, "udp")
+    assert mod.get_info_address(server) == ("10.0.0.8", 8777, "udp")
+    assert mod.get_runtime_requirements(server)["ports"] == [
+        {"host": 8777, "container": 8777, "protocol": "udp"},
+    ]
+
+
+def test_container_spec_uses_same_game_command_and_udp_port(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "AstroServer.exe",
+            "port": 8777,
+        }
+    )
+    (tmp_path / "AstroServer.exe").write_text("")
+
+    process_command, _cwd = mod.get_start_command(server)
+    spec = mod.get_container_spec(server)
+
+    assert process_command == ["AstroServer.exe"]
+    assert spec["command"] == ["./AstroServer.exe"]
+    assert spec["ports"] == [
+        {"host": 8777, "container": 8777, "protocol": "udp"},
+    ]
 
 
 def test_status():

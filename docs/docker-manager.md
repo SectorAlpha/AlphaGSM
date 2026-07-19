@@ -6,16 +6,20 @@ AlphaGSM can still run directly on the host exactly as before. This guide is
 only for the case where you want AlphaGSM itself to run in a Docker container
 while still launching game-server containers through the host Docker daemon.
 
-This repository's runtime validation baseline assumes an Ubuntu 24.04 or newer
-Linux host. Older Linux hosts may still work, but they are not the documented
-target for the Docker-manager workflow.
+Ubuntu 24.04 is this repository's validated full-runtime baseline for the
+Docker-manager workflow. Newer and other Linux distributions may work, but
+their broader lifecycle coverage remains future validation, as does broader
+macOS and Windows runtime coverage.
 
 ## How This Works
 
 Use Docker-outside-of-Docker:
 
 - run one AlphaGSM "manager" container
+- run the manager process as the invoking host user's numeric UID and primary
+  GID instead of as root
 - mount the host Docker socket into it
+- add the Docker socket's numeric GID as the manager's supplementary group
 - let AlphaGSM call the host Docker daemon through the normal `docker` CLI
 - keep server data on a host path that is mounted into the manager container at
   the same absolute path
@@ -69,11 +73,34 @@ The script will:
 - write `alphagsm.conf` there from the manager example config
 - default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm:latest` and falls back to a local build if that pull fails
 - support `./alphagsm-docker up --develop` or `./alphagsm-docker start --develop`, which switches the state dir into developer mode and always rebuilds the manager image locally
-- reuse the existing running manager container for forwarded AlphaGSM commands instead of rebuilding on every exec
+- reuse an existing running manager only when its configured UID, primary GID,
+  Docker socket supplementary GID, and inspected socket mount source exactly
+  match the current host values
+- recreate an old root manager or any manager with stale identity, group, or
+  socket metadata through the currently selected release/develop mode
 - recreate a stopped manager container from the active mode without forcing the other mode's image path
 - build bundled AlphaGSM runtime-family images locally on demand when their default GHCR tag is missing, so quick-start still works without registry auth
 - provide wrapper-native `./alphagsm-docker ps` and `./alphagsm-docker <server> connect` commands that read local server metadata instead of forwarding through manager `exec`
 - forward any other arguments to `python alphagsm ...` inside the manager container
+
+The wrapper obtains its UID from Bash's read-only effective-process identity,
+obtains its primary GID through a trusted absolute system `id` executable, and
+obtains the supplementary group from the selected Docker socket. It does not
+trust a caller-controlled `PATH` for identity discovery and deliberately
+overwrites caller-supplied `ALPHAGSM_HOST_UID`,
+`ALPHAGSM_HOST_GID`, and `ALPHAGSM_DOCKER_GID` values. Running the wrapper as
+UID `0` is rejected before wrapper state or manager containers are created or
+changed. This also makes upgrades self-correcting: the first manager-targeting
+wrapper command after upgrading, including `./alphagsm-docker compose ...`,
+validates and recreates a running manager left behind with root or stale group
+configuration, or with a different Docker socket source, while an exact
+identity and socket-mount match is reused. Before any recreation, the wrapper
+checks the existing state tree without following symlinks. If the invoking
+non-root UID/GID cannot safely write and traverse that tree, AlphaGSM preserves
+it and stops with the exact path plus an explicit administrator `chown`
+command; it never changes legacy ownership automatically. Direct
+`docker compose` commands bypass the wrapper and therefore cannot discover or
+repair stale manager identity or socket selection.
 
 Because `./alphagsm-docker ps` reads local JSON server config, it still
 requires a working host `python3`. For Docker-backed servers, wrapper
@@ -138,7 +165,16 @@ main use case.
 
 ## Start The Manager Container
 
-From the repository root:
+The wrapper is the recommended path because it derives these values for you.
+If you invoke Compose directly, export the numeric identity explicitly:
+
+```bash
+export ALPHAGSM_HOST_UID="$(id -u)"
+export ALPHAGSM_HOST_GID="$(id -g)"
+export ALPHAGSM_DOCKER_GID="$(stat -c '%g' /var/run/docker.sock)"
+```
+
+Then, from the repository root:
 
 ```bash
 docker compose -f docker/manager/compose.yml up -d
@@ -156,8 +192,15 @@ This mounts:
 - `${ALPHAGSM_HOME:-/srv/alphagsm}:${ALPHAGSM_HOME:-/srv/alphagsm}` so stored
   server paths are valid both inside the manager container and on the host
   daemon
-- `${HOME}/.docker:/root/.docker:ro` so existing Docker registry credentials can
-  be reused inside the manager container
+- `${HOME}/.docker:/home/alphagsm/.docker:ro` so existing Docker registry
+  credentials can be reused inside the non-root manager container
+
+The direct Compose variables remain operator-controlled. Their checked-in
+defaults are intentionally non-root (`1000:1000`) and use the fail-closed
+supplementary GID `65534`; they are safe defaults, not portable guesses about
+your host. Export the real values above whenever the host uses different IDs.
+Unlike `alphagsm-docker`, direct Compose cannot discover or recreate stale
+manager identity automatically.
 
 The manager image also includes Java and the Docker CLI. That is intentional:
 some Docker-backed modules still perform local setup-time work, then hand off
@@ -232,7 +275,10 @@ nested daemon inside the manager container.
 ## Security Note
 
 Mounting `/var/run/docker.sock` gives the manager container broad control over
-the host Docker daemon. Treat this as a trusted-admin deployment pattern.
+the host Docker daemon. Treat this as a trusted-admin deployment pattern. The
+manager process is non-root and receives only the invoking primary identity
+plus the socket's supplementary GID, but socket access itself remains highly
+privileged.
 
 ## Outside Docker Still Works
 

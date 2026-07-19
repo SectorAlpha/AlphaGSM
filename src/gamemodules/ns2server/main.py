@@ -24,6 +24,12 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+_RUNTIME_PORTS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "httpport", "protocol": "tcp"},
+    {"key": "modserverport", "protocol": "tcp"},
+)
 setting_schema = {
     "servername": SettingSpec(
         canonical_key="servername",
@@ -173,9 +179,9 @@ restart.__doc__ = "Restart the Natural Selection 2 server."
 
 
 def get_query_address(server):
-    """Natural Selection 2 exposes A2S on its main gameplay port."""
+    """Natural Selection 2 exposes A2S one port above gameplay."""
 
-    return runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s"
+    return runtime_module.resolve_query_host(server), int(server.data["port"]) + 1, "a2s"
 
 
 def get_info_address(server):
@@ -184,13 +190,51 @@ def get_info_address(server):
     return get_query_address(server)
 
 
+def _path_is_within(root, path):
+    try:
+        return os.path.commonpath((root, path)) == root
+    except ValueError:
+        return False
+
+
+def _validate_payload_location(server, install_dir, exe_path, *, resolve_links):
+    normalize = os.path.realpath if resolve_links else os.path.abspath
+    normalized_install_dir = normalize(install_dir)
+    normalized_exe_path = normalize(exe_path)
+    if not _path_is_within(normalized_install_dir, normalized_exe_path):
+        raise ServerError("Executable must be inside the install directory")
+
+    relative_dir = os.path.dirname(
+        os.path.relpath(normalized_exe_path, normalized_install_dir)
+    )
+    excluded_dirs = {server.name.lower(), "workshop", "config", "logs"}
+    if any(part.lower() in excluded_dirs for part in relative_dir.split(os.sep)):
+        raise ServerError("Executable is not in a safe install payload directory")
+
+
 def get_start_command(server):
     """Build the command used to launch a Natural Selection 2 server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    install_dir = os.path.abspath(server.data["dir"])
+    exe_name = server.data["exe_name"]
+    if os.path.isabs(exe_name) or ".." in exe_name.split(os.sep):
+        raise ServerError("Executable must be inside the install directory")
+    exe_name = os.path.normpath(exe_name)
+    exe_path = os.path.abspath(os.path.join(install_dir, exe_name))
+    _validate_payload_location(
+        server,
+        install_dir,
+        exe_path,
+        resolve_links=False,
+    )
+    _validate_payload_location(
+        server,
+        install_dir,
+        exe_path,
+        resolve_links=True,
+    )
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    runtime_dir = "." if server.data.get("runtime") == "docker" else server.data["dir"]
     dynamic_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -198,18 +242,16 @@ def get_start_command(server):
         value_transform=lambda _spec, current_value: str(current_value),
     )
     command = [
-        "./" + server.data["exe_name"],
+        "./" + exe_name,
         *dynamic_args,
         "-webadmin",
-        "-webdomain",
-        "0.0.0.0",
         "-startmodserver",
         "-config_path",
-        os.path.join(runtime_dir, server.name),
+        "./" + server.name,
         "-logdir",
-        os.path.join(runtime_dir, "logs"),
+        "./logs",
         "-modstorage",
-        os.path.join(runtime_dir, server.name, "Workshop"),
+        "./" + server.name + "/Workshop",
     ]
     return command, server.data["dir"]
 
@@ -252,23 +294,13 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     family="steamcmd-linux",
-    port_definitions=(
-        {"key": "port", "protocol": "udp"},
-        {"key": "port", "protocol": "tcp"},
-        {"key": "httpport", "protocol": "tcp"},
-        {"key": "modserverport", "protocol": "tcp"},
-    ),
+    port_definitions=_RUNTIME_PORTS,
 )
 
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
     family="steamcmd-linux",
     get_start_command=get_start_command,
-    port_definitions=(
-        {"key": "port", "protocol": "udp"},
-        {"key": "port", "protocol": "tcp"},
-        {"key": "httpport", "protocol": "tcp"},
-        {"key": "modserverport", "protocol": "tcp"},
-    ),
+    port_definitions=_RUNTIME_PORTS,
     stdin_open=True,
 )

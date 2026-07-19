@@ -6,9 +6,11 @@ import pytest
 
 from conftest import (
     default_runtime_backend,
+    effective_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
+    require_proton,
     resolve_runtime_image,
     pick_free_tcp_port,
     run_setup_with_port_retry,
@@ -40,20 +42,26 @@ PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:
 def test_notdserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command_for_runtime(
-        "docker", runtime_backend=runtime_backend, module_name=module_name
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
     )
+    image = None
+    if selected_runtime_backend == "process":
+        require_proton()
+    else:
+        require_command("docker")
+        image = resolve_runtime_image(
+            "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+            LOCAL_WINE_PROTON_IMAGE,
+            PUBLISHED_WINE_PROTON_IMAGE,
+        )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itnotdserver"
-    image = resolve_runtime_image(
-        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
-        LOCAL_WINE_PROTON_IMAGE,
-        PUBLISHED_WINE_PROTON_IMAGE,
-    )
 
     write_config(
         config_path,
@@ -68,7 +76,8 @@ def test_notdserver_lifecycle(tmp_path):
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
-    run_and_assert_ok(env, server_name, "set", "image", image)
+    if image is not None:
+        run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
     result, port = run_setup_with_port_retry(

@@ -1,23 +1,24 @@
 """Integration test for theforestserver."""
 
+import json
 import os
+import sys
 
 import pytest
 
 from conftest import (
     alphagsm_env,
+    assert_alphagsm_result_ok,
+    capture_alphagsm_stop,
     default_runtime_backend,
-    log_command_result,
     pick_free_tcp_port,
     require_command_for_runtime,
     require_integration_opt_in,
     require_proton,
     require_steamcmd_opt_in,
-    run_alphagsm,
     run_and_assert_ok,
     skip_for_known_steamcmd_issue,
     wait_for_log_marker,
-    wait_for_tcp_closed,
     wait_for_udp_closed,
     write_config,
 )
@@ -66,10 +67,14 @@ def test_theforestserver_lifecycle(tmp_path):
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
-    # start
-    run_and_assert_ok(env, server_name, "start")
+    dump_result = run_and_assert_ok(env, server_name, "dump")
+    query_port = int(json.loads(dump_result.stdout)["queryport"])
+    dump_result = None
 
     try:
+        # start
+        run_and_assert_ok(env, server_name, "start")
+
         # The Forest writes its Steam CM log to logs/connection_log_27015.txt
         # (port 27015 is the hardcoded game-server Steam auth port).
         # "[Logged On" appears when Steam auth succeeds and the server is ready.
@@ -78,6 +83,8 @@ def test_theforestserver_lifecycle(tmp_path):
             server_log,
             ["[Logged On"],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
 
         # status
@@ -85,29 +92,35 @@ def test_theforestserver_lifecycle(tmp_path):
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        query_ready = "Server is responding" in query_result.stdout
+        query_result = None
+        assert query_ready, "Expected The Forest query readiness"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "Players     : 0/" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
+        info_ready = "Players     : 0/" in info_result.stdout
+        info_result = None
+        assert info_ready, "Expected The Forest info readiness"
 
         # info --json
-        import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
-        )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
-        )
+        _info_data = json.loads(info_json_result.stdout.strip())
+        info_protocol = _info_data.get("protocol")
+        info_players = _info_data.get("players")
+        info_port = _info_data.get("port")
+        _info_data = None
+        info_json_result = None
+        assert info_protocol == "a2s", "Expected a2s protocol in info JSON"
+        assert info_players == 0, "Expected 0 players on fresh server"
+        assert info_port == query_port, "Expected selected queryport in info JSON"
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env,
+            server_name,
+            sys.exc_info()[1],
+        )
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)
