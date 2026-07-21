@@ -103,7 +103,10 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_glob_ready_strict "$INSTALL_DIR/Astro/Saved/Logs/*.log" "$START_TIMEOUT_SECONDS" "IpNetDriver listening on port $PORT"
+if ! wait_for_glob_ready_strict "$INSTALL_DIR/Astro/Saved/Logs/*.log" "$START_TIMEOUT_SECONDS" "IpNetDriver listening on port $PORT"; then
+  capture_runtime_diagnostics "$SERVER_NAME"
+  exit 1
+fi
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info

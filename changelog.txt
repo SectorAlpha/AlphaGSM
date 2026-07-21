@@ -10,6 +10,7 @@ high-level milestones.
 2026-07-21
 - Docker manager: allow wrapper-managed commands to run under a non-root host UID that has no matching `/etc/passwd` entry, retaining configured named downloader users while using the mounted manager home directly for unmapped UIDs.
 - CI/integration: retain pytest-captured failure diagnostics in retry-shard JUnit artifacts, so GitHub artifacts include AlphaGSM runtime log dumps needed to diagnose failed process and Docker lifecycle checks.
+- CI/smoke: capture AlphaGSM doctor output and recent runtime-container logs before strict readiness cleanup removes a failed Docker server, starting with ASTRONEER's Wine/Proton smoke path.
 
 2026-07-19
 - Docker manager: run wrapper-managed commands as the invoking non-root UID/GID with the Docker socket's supplementary group, reject UID 0 before creating or mutating wrapper state, ignore caller identity overrides, and validate the exact inspected socket mount as well as manager identity for manager-targeting wrapper commands including `compose`; stale managers are recreated only after a no-follow state-tree preflight, while unsafe root-owned or symlinked legacy state is preserved and rejected with explicit ownership-remediation guidance.

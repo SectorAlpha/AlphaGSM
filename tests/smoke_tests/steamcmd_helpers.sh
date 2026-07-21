@@ -317,6 +317,16 @@ wait_for_glob_ready_strict() {
   wait_for_glob_ready "$log_glob" "$timeout_seconds" "$pattern" "required"
 }
 
+# capture_runtime_diagnostics SERVER_NAME
+# Preserve Docker/runtime state before a smoke runner's cleanup trap removes it.
+capture_runtime_diagnostics() {
+  local server_name="$1"
+  echo "[diagnostic] Runtime doctor for ${server_name}" >&2
+  run_alphagsm "$server_name" doctor || true
+  echo "[diagnostic] Recent runtime logs for ${server_name}" >&2
+  run_alphagsm "$server_name" logs -n 200 || true
+}
+
 # wait_for_info_protocol SERVER_NAME EXPECTED_PROTOCOL TIMEOUT_SECONDS
 # Polls ``info --json`` until it reports the expected protocol.
 wait_for_info_protocol() {

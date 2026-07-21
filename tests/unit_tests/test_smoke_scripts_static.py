@@ -115,6 +115,22 @@ def test_astroneer_smoke_requires_network_log_before_udp_info():
     assert 'wait_for_info_protocol "$SERVER_NAME" "tcp"' not in text
 
 
+def test_astroneer_smoke_captures_container_diagnostics_before_cleanup():
+    text = ASTRONEER_SMOKE.read_text(encoding="utf-8")
+    helpers = STEAMCMD_HELPERS.read_text(encoding="utf-8")
+
+    readiness_call = (
+        'wait_for_glob_ready_strict "$INSTALL_DIR/Astro/Saved/Logs/*.log"'
+    )
+    diagnostics_call = 'capture_runtime_diagnostics "$SERVER_NAME"'
+
+    assert "capture_runtime_diagnostics()" in helpers
+    assert 'run_alphagsm "$server_name" doctor' in helpers
+    assert 'run_alphagsm "$server_name" logs -n 200' in helpers
+    assert diagnostics_call in text
+    assert text.index(readiness_call) < text.index(diagnostics_call)
+
+
 def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():
     text = STEAMCMD_HELPERS.read_text(encoding="utf-8")
 
