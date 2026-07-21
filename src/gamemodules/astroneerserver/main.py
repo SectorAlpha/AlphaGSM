@@ -263,11 +263,13 @@ port_claim_definitions = ({"key": "port", "protocol": "udp"},)
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
     port_definitions=port_claim_definitions,
+    prefer_proton=True,
     extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
     port_definitions=port_claim_definitions,
+    prefer_proton=True,
     extra_env=_container_runtime_env,
 )

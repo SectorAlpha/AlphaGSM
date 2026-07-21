@@ -89,7 +89,7 @@ alphagsm myastronee backup
 - **Location**: `<install_dir>/AstroServer.exe`
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `728470`
-- **Docker runtime note**: the shared `wine-proton` entrypoint now starts Xvfb for this module so the bundled UE4 prerequisite bootstrap can complete instead of aborting on `Failed to create window`
+- **Docker runtime note**: the shared `wine-proton` entrypoint selects Proton, matching the process runtime, and starts Xvfb so the bundled UE4 prerequisite bootstrap can complete instead of aborting on `Failed to create window`
 
 The readiness marker comes from ASTRONEER's own log rather than a host
 `screen` log. After that marker names the managed port, AlphaGSM resolves the

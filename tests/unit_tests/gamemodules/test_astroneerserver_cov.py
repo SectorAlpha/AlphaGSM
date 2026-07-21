@@ -157,6 +157,7 @@ def test_query_info_and_runtime_ports_use_udp_on_main_port(monkeypatch):
     assert mod.get_runtime_requirements(server)["ports"] == [
         {"host": 8777, "container": 8777, "protocol": "udp"},
     ]
+    assert mod.get_runtime_requirements(server)["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
 
 
 def test_container_spec_uses_same_game_command_and_udp_port(tmp_path, monkeypatch):
@@ -179,6 +180,7 @@ def test_container_spec_uses_same_game_command_and_udp_port(tmp_path, monkeypatc
     assert spec["ports"] == [
         {"host": 8777, "container": 8777, "protocol": "udp"},
     ]
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
 
 
 def test_status():
