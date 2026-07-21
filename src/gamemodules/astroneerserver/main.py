@@ -28,6 +28,8 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 command_functions = {}
 max_stop_wait = 1
 config_sync_keys = ("port", "publicip", "ownername")
+LEGACY_LAUNCHER_EXE = "AstroServer.exe"
+DEDICATED_SERVER_EXE = "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
 
 
 def _container_runtime_env(_server):
@@ -44,7 +46,7 @@ def _container_runtime_env(_server):
     }
 
 
-def configure(server, ask, port=None, dir=None, *, exe_name="AstroServer.exe"):
+def configure(server, ask, port=None, dir=None, *, exe_name=DEDICATED_SERVER_EXE):
     """Collect and store configuration values for an ASTRONEER server."""
 
     gamemodule_common.set_steam_install_metadata(
@@ -209,13 +211,24 @@ def get_info_address(server):
     return get_query_address(server)
 
 
+def _resolve_start_executable(server):
+    """Prefer the dedicated server payload over the legacy root launcher."""
+
+    configured_exe = server.data["exe_name"]
+    shipping_exe_path = os.path.join(server.data["dir"], DEDICATED_SERVER_EXE)
+    if configured_exe == LEGACY_LAUNCHER_EXE and os.path.isfile(shipping_exe_path):
+        return DEDICATED_SERVER_EXE
+    return configured_exe
+
+
 def get_start_command(server):
     """Build the command used to launch an ASTRONEER dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    executable = _resolve_start_executable(server)
+    exe_path = os.path.join(server.data["dir"], executable)
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"]]
+    cmd = [executable]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,

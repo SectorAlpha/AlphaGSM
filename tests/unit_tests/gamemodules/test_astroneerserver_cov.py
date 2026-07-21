@@ -19,6 +19,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8777, dir=str(tmp_path))
     assert server.data['port'] == 8777
+    assert server.data["exe_name"] == "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -117,14 +118,33 @@ def test_restart():
     assert server._started
 
 
-def test_get_start_command(tmp_path, monkeypatch):
+def test_get_start_command_prefers_shipping_executable_for_legacy_launcher(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "AstroServer.exe"
     (tmp_path / "AstroServer.exe").write_text("")
+    shipping_exe = "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
+    shipping_path = tmp_path / shipping_exe
+    shipping_path.parent.mkdir(parents=True)
+    shipping_path.write_text("")
+
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+
+    assert cmd == [shipping_exe]
+    assert cwd == str(tmp_path) + "/"
+
+
+def test_get_start_command_keeps_legacy_launcher_until_shipping_payload_exists(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "AstroServer.exe"
+    (tmp_path / "AstroServer.exe").write_text("")
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert cmd == ["AstroServer.exe"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -171,12 +191,16 @@ def test_container_spec_uses_same_game_command_and_udp_port(tmp_path, monkeypatc
         }
     )
     (tmp_path / "AstroServer.exe").write_text("")
+    shipping_exe = "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
+    shipping_path = tmp_path / shipping_exe
+    shipping_path.parent.mkdir(parents=True)
+    shipping_path.write_text("")
 
     process_command, _cwd = mod.get_start_command(server)
     spec = mod.get_container_spec(server)
 
-    assert process_command == ["AstroServer.exe"]
-    assert spec["command"] == ["./AstroServer.exe"]
+    assert process_command == [shipping_exe]
+    assert spec["command"] == ["./" + shipping_exe]
     assert spec["ports"] == [
         {"host": 8777, "container": 8777, "protocol": "udp"},
     ]
