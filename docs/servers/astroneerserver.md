@@ -55,8 +55,9 @@ Setup configures:
 - the public IP and owner identity
 - the install directory
 - SteamCMD downloads the server files
-- AlphaGSM syncs the port into `WindowsServer/Engine.ini` and the ownership
-  values into `WindowsServer/AstroServerSettings.ini`
+- AlphaGSM syncs the port and `net.AllowEncryption=False` into
+  `WindowsServer/Engine.ini`, and the ownership values into
+  `WindowsServer/AstroServerSettings.ini`
 
 ## Useful Commands
 
@@ -76,6 +77,9 @@ alphagsm myastronee backup
   UDP endpoint on the managed main port
 - The runtime claims and publishes only the managed UDP game port
 - Current correction status: replacement GitHub validation pending
+- ASTRONEER's Windows-only server needs `net.AllowEncryption=False` for the
+  supported Wine/Proton path. Players joining from a Windows or Proton client
+  must set the same value in that client's Astroneer `Engine.ini`.
 
 ## Developer Notes
 
@@ -97,7 +101,8 @@ main-port endpoint.
 - **Config file**: See game module source
 - **Managed files**: `Astro/Saved/Config/WindowsServer/Engine.ini` and
   `AstroServerSettings.ini`
-- **Managed keys**: `port`, `publicip`, `ownername`
+- **Managed keys**: `port`, `publicip`, `ownername`; Engine compatibility also
+  keeps `net.AllowEncryption=False`
 - **Template**: See [server-templates/astroneerserver/](../server-templates/astroneerserver/) if available
 
 ### Maps and Mods

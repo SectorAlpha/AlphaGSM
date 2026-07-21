@@ -94,13 +94,16 @@ def _config_dir(server):
     )
 
 
-def _sync_engine_port(config_path, port):
-    """Keep the URL port in Engine.ini while preserving unrelated settings."""
+def _sync_engine_settings(config_path, port):
+    """Keep Engine.ini's port and Wine-compatible encryption setting in sync."""
 
     lines = []
-    section_found = False
+    url_section_found = False
     port_written = False
+    system_settings_found = False
+    encryption_written = False
     in_url_section = False
+    in_system_settings = False
     if os.path.isfile(config_path):
         with open(config_path, "r", encoding="utf-8") as handle:
             for line in handle:
@@ -109,18 +112,39 @@ def _sync_engine_port(config_path, port):
                     if in_url_section and not port_written:
                         lines.append("Port=%s\n" % (port,))
                         port_written = True
+                    if in_system_settings and not encryption_written:
+                        lines.append("net.AllowEncryption=False\n")
+                        encryption_written = True
                     in_url_section = stripped.lower() == "[url]"
-                    section_found = section_found or in_url_section
+                    in_system_settings = stripped.lower() == "[systemsettings]"
+                    url_section_found = url_section_found or in_url_section
+                    system_settings_found = (
+                        system_settings_found or in_system_settings
+                    )
                 if in_url_section and stripped.lower().startswith("port="):
                     line = "Port=%s\n" % (port,)
                     port_written = True
+                if (
+                    in_system_settings
+                    and stripped.lower().startswith("net.allowencryption=")
+                ):
+                    line = "net.AllowEncryption=False\n"
+                    encryption_written = True
                 lines.append(line)
-    if not section_found:
+    if not url_section_found:
         if lines and lines[-1].strip():
             lines.append("\n")
         lines.append("[URL]\n")
-    if not port_written:
         lines.append("Port=%s\n" % (port,))
+    elif not port_written:
+        lines.append("Port=%s\n" % (port,))
+    if not system_settings_found:
+        if lines and lines[-1].strip():
+            lines.append("\n")
+        lines.append("[SystemSettings]\n")
+        lines.append("net.AllowEncryption=False\n")
+    elif not encryption_written:
+        lines.append("net.AllowEncryption=False\n")
     with open(config_path, "w", encoding="utf-8") as handle:
         handle.write("".join(lines))
 
@@ -130,7 +154,7 @@ def sync_server_config(server):
 
     config_dir = _config_dir(server)
     os.makedirs(config_dir, exist_ok=True)
-    _sync_engine_port(
+    _sync_engine_settings(
         os.path.join(config_dir, "Engine.ini"),
         int(server.data.get("port", 8777)),
     )

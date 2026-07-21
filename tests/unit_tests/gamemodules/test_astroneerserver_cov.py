@@ -67,6 +67,9 @@ def test_sync_server_config_writes_official_astroneer_ini_files(tmp_path):
     assert (config_dir / "Engine.ini").read_text(encoding="utf-8") == (
         "[URL]\n"
         "Port=28777\n"
+        "\n"
+        "[SystemSettings]\n"
+        "net.AllowEncryption=False\n"
     )
     assert (config_dir / "AstroServerSettings.ini").read_text(
         encoding="utf-8"
