@@ -105,6 +105,7 @@ run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 if ! wait_for_glob_ready_strict "$INSTALL_DIR/Astro/Saved/Logs/*.log" "$START_TIMEOUT_SECONDS" "IpNetDriver listening on port $PORT"; then
   capture_runtime_diagnostics "$SERVER_NAME"
+  capture_container_process_diagnostics "$SERVER_NAME" "$INSTALL_DIR/Astro/Saved/Config/WindowsServer/Engine.ini"
   exit 1
 fi
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"

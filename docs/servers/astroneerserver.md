@@ -90,6 +90,9 @@ alphagsm myastronee backup
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `728470`
 - **Docker runtime note**: the shared `wine-proton` entrypoint selects Proton, matching the process runtime, and starts Xvfb so the bundled UE4 prerequisite bootstrap can complete instead of aborting on `Failed to create window`
+- **Failure diagnostics**: strict readiness failures record the container command,
+  safe runtime-selection environment, process table, and managed `Engine.ini`
+  before cleanup
 
 The readiness marker comes from ASTRONEER's own log rather than a host
 `screen` log. After that marker names the managed port, AlphaGSM resolves the
