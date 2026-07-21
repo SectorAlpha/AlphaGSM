@@ -2,6 +2,7 @@
 
 import argparse
 from pathlib import Path
+from types import SimpleNamespace
 import xml.etree.ElementTree as ET
 
 from tests.helpers import load_module_from_repo
@@ -90,6 +91,31 @@ def test_failing_test_nodeids_returns_only_failed_cases(tmp_path):
     assert retry.failing_test_nodeids(report) == [
         "tests/integration_tests/test_alpha.py::test_fail",
         "tests/integration_tests/test_beta.py::TestServer::test_boom",
+    ]
+
+
+def test_run_pytest_captures_diagnostics_in_junit_report(tmp_path, monkeypatch):
+    retry = load_retry_module()
+    commands = []
+
+    def fake_run(command, check):
+        commands.append(command)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(retry.subprocess, "run", fake_run)
+
+    assert retry.run_pytest(["tests/integration_tests/test_alpha.py"], tmp_path / "results.xml") == 0
+    assert commands == [
+        [
+            retry.sys.executable,
+            "-m",
+            "pytest",
+            "-rs",
+            "-o",
+            "junit_logging=all",
+            f"--junit-xml={tmp_path / 'results.xml'}",
+            "tests/integration_tests/test_alpha.py",
+        ]
     ]
 
 

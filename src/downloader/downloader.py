@@ -19,10 +19,19 @@ else:
 def expandcustomuser(path, user):
     """Expand a `~/` path using the home directory of the named user."""
     if path[0:2] == "~/":
-        if IS_WINDOWS:
+        if IS_WINDOWS or user is None:
             return os.path.expanduser("~") + path[1:]
         return pwd.getpwnam(user).pw_dir + path[1:]
     return path
+
+
+def current_user():
+    """Return the current POSIX account name, if the runtime UID has one."""
+    try:
+        return pwd.getpwuid(os.getuid()).pw_name
+    except KeyError:
+        # Docker can deliberately run with a host UID that is not in /etc/passwd.
+        return None
 
 
 # NONE OF THESE PATHS SHOULD BE ON A NFS!
@@ -36,7 +45,7 @@ if USER_SET:
 elif IS_WINDOWS:
     USER = getpass.getuser()
 else:
-    USER = pwd.getpwuid(os.getuid()).pw_name
+    USER = current_user()
 DB_PATH = expandcustomuser(
     settings.get(USER_SET).downloader.get("db_path")
     or os.path.join(
@@ -189,7 +198,7 @@ def getpath(module, args):
     if path is not None:
         return path
 
-    if not IS_WINDOWS and os.getuid() != pwd.getpwnam(USER).pw_uid:
+    if not IS_WINDOWS and USER is not None and os.getuid() != pwd.getpwnam(USER).pw_uid:
         import subprocess as sp
 
         try:

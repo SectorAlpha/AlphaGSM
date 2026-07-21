@@ -141,7 +141,16 @@ def merge_junit_reports(initial_report: Path, retry_report: Path, destination: P
 
 
 def run_pytest(targets: list[str], results_file: Path) -> int:
-    command = [sys.executable, "-m", "pytest", "-rs", f"--junit-xml={results_file}", *targets]
+    command = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-rs",
+        "-o",
+        "junit_logging=all",
+        f"--junit-xml={results_file}",
+        *targets,
+    ]
     return subprocess.run(command, check=False).returncode
 
 

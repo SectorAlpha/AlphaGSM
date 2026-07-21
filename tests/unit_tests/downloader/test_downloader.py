@@ -5,6 +5,20 @@ import sys
 import pytest
 
 
+def test_import_accepts_unmapped_posix_uid(monkeypatch):
+    monkeypatch.setenv("ALPHAGSM_CONFIG_LOCATION", "./tests/alphagsm-test.conf")
+    monkeypatch.setattr(
+        "pwd.getpwuid",
+        lambda _uid: (_ for _ in ()).throw(KeyError("uid is not in passwd")),
+    )
+    sys.modules.pop("downloader.downloader", None)
+    sys.modules.pop("downloader", None)
+
+    module = importlib.import_module("downloader.downloader")
+
+    assert module.USER is None
+
+
 @pytest.fixture
 def downloader_module(monkeypatch, tmp_path):
     monkeypatch.setenv("ALPHAGSM_CONFIG_LOCATION", "./tests/alphagsm-test.conf")
