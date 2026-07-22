@@ -165,8 +165,8 @@ def sync_server_config(server):
     rewrite_equals_config(
         os.path.join(config_dir, "AstroServerSettings.ini"),
         {
-            "PublicIP": server.data.get("publicip", "127.0.0.1"),
-            "OwnerName": server.data.get("ownername", "AlphaGSM"),
+            "PublicIP": server.data.get("publicip") or "127.0.0.1",
+            "OwnerName": server.data.get("ownername") or "AlphaGSM",
             "OwnerGuid": 0,
         },
     )

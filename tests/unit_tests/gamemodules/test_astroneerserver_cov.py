@@ -82,6 +82,65 @@ def test_sync_server_config_writes_official_astroneer_ini_files(tmp_path):
     assert mod.config_sync_keys == ("port", "publicip", "ownername")
 
 
+def test_sync_server_config_rewrites_generated_astroneer_server_settings(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "203.0.113.10",
+            "ownername": "AlphaOwner",
+        }
+    )
+    config_dir = tmp_path / "Astro" / "Saved" / "Config" / "WindowsServer"
+    config_dir.mkdir(parents=True)
+    settings_path = config_dir / "AstroServerSettings.ini"
+    settings_path.write_text(
+        "[/Script/Astro.AstroServerSettings]\n"
+        "PublicIP=\n"
+        "ServerName=\n"
+        "OwnerName=\n"
+        "OwnerGuid=0\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    settings = settings_path.read_text(encoding="utf-8")
+    assert "[/Script/Astro.AstroServerSettings]\n" in settings
+    assert "PublicIP=203.0.113.10\n" in settings
+    assert "OwnerName=AlphaOwner\n" in settings
+    assert "OwnerGuid=0\n" in settings
+
+
+def test_sync_server_config_defaults_blank_astroneer_registration_values(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "",
+            "ownername": "",
+        }
+    )
+    config_dir = tmp_path / "Astro" / "Saved" / "Config" / "WindowsServer"
+    config_dir.mkdir(parents=True)
+    settings_path = config_dir / "AstroServerSettings.ini"
+    settings_path.write_text(
+        "[/Script/Astro.AstroServerSettings]\n"
+        "PublicIP=\n"
+        "OwnerName=\n"
+        "OwnerGuid=0\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    settings = settings_path.read_text(encoding="utf-8")
+    assert "PublicIP=127.0.0.1\n" in settings
+    assert "OwnerName=AlphaGSM\n" in settings
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

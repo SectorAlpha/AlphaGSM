@@ -52,7 +52,8 @@ alphagsm myastronee stop
 Setup configures:
 
 - the game port (default 8777)
-- the public IP and owner identity
+- the public IP and owner identity (blank values retain the local `127.0.0.1`
+  and `AlphaGSM` defaults)
 - the install directory
 - SteamCMD downloads the server files
 - AlphaGSM syncs the port and `net.AllowEncryption=False` into
@@ -91,9 +92,9 @@ alphagsm myastronee backup
 - **SteamCMD App ID**: `728470`
 - **Docker runtime note**: the shared `wine-proton` entrypoint selects Proton, matching the process runtime, and starts Xvfb so the bundled UE4 prerequisite bootstrap can complete instead of aborting on `Failed to create window`
 - **Launcher note**: AlphaGSM launches the dedicated-server shipping executable directly from `Astro/Binaries/Win64`, preserving Unreal's relative engine-content paths. Existing configurations that still name the root `AstroServer.exe` launcher are migrated at launch when the shipping executable is present.
-- **Failure diagnostics**: strict readiness failures record the container command,
-  safe runtime-selection environment, process table, and managed `Engine.ini`
-  before cleanup
+- **Failure diagnostics**: strict readiness failures record the Docker exit state,
+  container command, safe runtime-selection environment, process table, and
+  managed `Engine.ini` plus `AstroServerSettings.ini` before cleanup
 
 The readiness marker comes from ASTRONEER's own log rather than a host
 `screen` log. After that marker names the managed port, AlphaGSM resolves the
