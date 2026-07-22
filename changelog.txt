@@ -7,6 +7,9 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-07-22
+- Server info: label successful human-readable A2S responses with their protocol, matching the established lifecycle contract without changing query behavior.
+
 2026-07-21
 - Docker manager: allow wrapper-managed commands to run under a non-root host UID that has no matching `/etc/passwd` entry, retaining configured named downloader users while using the mounted manager home directly for unmapped UIDs.
 - CI/integration: retain pytest-captured failure diagnostics in retry-shard JUnit artifacts, so GitHub artifacts include AlphaGSM runtime log dumps needed to diagnose failed process and Docker lifecycle checks.

@@ -2033,6 +2033,7 @@ def test_info_succeeds_via_a2s(monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "Server info (A2S" in out
+    assert "Protocol    : A2S" in out
     assert "cp_badlands" in out
     assert "4/24" in out
 

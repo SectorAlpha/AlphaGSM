@@ -1379,6 +1379,7 @@ class Server(object):
                         return
                     print(
                         "Server info (A2S on port {port}):\n"
+                        "  Protocol    : A2S\n"
                         "  Name        : {name}\n"
                         "  Map         : {map}\n"
                         "  Folder      : {folder}\n"
@@ -1411,6 +1412,7 @@ class Server(object):
                                 return
                             print(
                                 "Server info (A2S on port {port}):\n"
+                                "  Protocol    : A2S\n"
                                 "  Name        : {name}\n"
                                 "  Map         : {map}\n"
                                 "  Folder      : {folder}\n"
