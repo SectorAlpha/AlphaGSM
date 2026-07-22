@@ -92,6 +92,8 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     cmd = [
             server.data["exe_name"],
+            "-batchmode",
+            "-nographics",
             "-port",
             str(server.data["port"]),
             "-queryport",

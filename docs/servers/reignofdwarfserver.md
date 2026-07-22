@@ -48,7 +48,8 @@ alphagsm myreignofd stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the Steam query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -62,7 +63,10 @@ alphagsm myreignofd backup
 ## Notes
 
 - Module name: `reignofdwarfserver`
-- Default port: 27015
+- Default game port: 7777
+- Default Steam query port: 27015
+- AlphaGSM supplies Unity's `-batchmode -nographics` launch flags so the
+  dedicated payload does not require a graphical window in either runtime.
 - Integration readiness uses AlphaGSM `info --json` protocol `a2s` rather than
   a host `screen` log.
 

@@ -70,6 +70,31 @@ def test_reignofdwarf_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert cwd == server.data["dir"]
 
 
+def test_reignofdwarf_launches_without_a_graphical_window(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        reignofdwarfserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
+    executable = tmp_path / "Server.exe"
+    executable.write_text("", encoding="utf-8")
+    server = DummyServer("rod")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Server.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "maxplayers": 16,
+        }
+    )
+
+    command, _ = reignofdwarfserver.get_start_command(server)
+
+    assert "-batchmode" in command
+    assert "-nographics" in command
+
+
 def test_mw3_and_reignofdwarf_update_downloads_and_optionally_restart(monkeypatch):
     mw3 = DummyServer("mw3")
     mw3.data["dir"] = "/srv/mw3/"

@@ -123,6 +123,22 @@ def test_backend_ci_workflow_uses_branch_local_java_runtime_image_for_java_cases
     assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}" not in text
 
 
+def test_backend_ci_workflow_uses_branch_local_simple_tcp_runtime_image_for_mumble_cases():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+    assert "build-simple-tcp-runtime:" in text
+    assert (
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: "
+        "${{ needs.build-simple-tcp-runtime.outputs.image }}"
+        in text
+    )
+    assert (
+        'export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="${{ '
+        'needs.build-simple-tcp-runtime.outputs.image }}"'
+        in text
+    )
+
+
 def test_summarize_tests_includes_backend_integration_results():
     text = WORKFLOW_PATH.read_text()
 

@@ -14,6 +14,7 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
+    resolve_runtime_image,
     skip_for_known_steamcmd_issue,
     wait_for_tcp_open,
     wait_for_tcp_closed,
@@ -35,7 +36,11 @@ def test_mumbleserver_lifecycle(tmp_path):
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itmumbleserver"
-    image = "ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:latest"
+    image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP",
+        "alphagsm-simple-tcp-runtime:test",
+        "ghcr.io/sectoralpha/alphagsm-simple-tcp-runtime:latest",
+    )
 
     write_config(
         config_path,
