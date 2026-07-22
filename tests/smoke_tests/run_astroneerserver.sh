@@ -45,6 +45,18 @@ resolve_docker_image() {
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 
+capture_astroneer_registration_diagnostics() {
+  local config_path="$1"
+
+  echo "[diagnostic] Pre-start ASTRONEER registration settings: ${config_path}" >&2
+  if [[ -f "$config_path" ]]; then
+    grep -E '^(PublicIP|OwnerName|OwnerGuid)=' "$config_path" >&2 || true
+  else
+    echo "[diagnostic] Registration settings missing: ${config_path}" >&2
+  fi
+}
+
+
 cleanup() {
   set +e
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
@@ -100,6 +112,7 @@ run_create_or_skip_disabled "$SERVER_NAME" create astroneerserver
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_alphagsm "$SERVER_NAME" set dir "$INSTALL_DIR"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+capture_astroneer_registration_diagnostics "$INSTALL_DIR/Astro/Saved/Config/WindowsServer/AstroServerSettings.ini"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

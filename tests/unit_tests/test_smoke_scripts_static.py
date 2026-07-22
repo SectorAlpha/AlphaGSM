@@ -150,6 +150,22 @@ def test_astroneer_smoke_captures_process_and_engine_config_before_cleanup():
     assert server_settings in text
 
 
+def test_astroneer_smoke_records_registration_settings_before_start():
+    text = ASTRONEER_SMOKE.read_text(encoding="utf-8")
+
+    setup_call = 'run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"'
+    registration_diagnostic = (
+        'capture_astroneer_registration_diagnostics '
+        '"$INSTALL_DIR/Astro/Saved/Config/WindowsServer/AstroServerSettings.ini"'
+    )
+    start_call = 'run_alphagsm "$SERVER_NAME" start'
+
+    assert "capture_astroneer_registration_diagnostics()" in text
+    assert registration_diagnostic in text
+    assert text.index(setup_call) < text.index(registration_diagnostic)
+    assert text.index(registration_diagnostic) < text.index(start_call)
+
+
 def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():
     text = STEAMCMD_HELPERS.read_text(encoding="utf-8")
 

@@ -94,7 +94,9 @@ alphagsm myastronee backup
 - **Launcher note**: AlphaGSM launches the dedicated-server shipping executable directly from `Astro/Binaries/Win64`, preserving Unreal's relative engine-content paths. Existing configurations that still name the root `AstroServer.exe` launcher are migrated at launch when the shipping executable is present.
 - **Failure diagnostics**: strict readiness failures record the Docker exit state,
   container command, safe runtime-selection environment, process table, and
-  managed `Engine.ini` plus `AstroServerSettings.ini` before cleanup
+  managed `Engine.ini` plus `AstroServerSettings.ini` before cleanup. The smoke
+  path also records the non-secret registration fields immediately after setup,
+  before the game process can rewrite them.
 
 The readiness marker comes from ASTRONEER's own log rather than a host
 `screen` log. After that marker names the managed port, AlphaGSM resolves the
