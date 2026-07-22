@@ -8,6 +8,7 @@ RUN apt-get update -qq \
         ca-certificates \
       mumble-server \
        python3 \
+ && ln -s /usr/sbin/murmurd /usr/local/bin/mumble-server \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv/server

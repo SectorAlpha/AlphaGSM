@@ -79,6 +79,7 @@ def test_simple_tcp_runtime_image_keeps_mumble_service_binary_available():
         "bash",
         "python3",
         "mumble-server",
+        "ln -s /usr/sbin/murmurd /usr/local/bin/mumble-server",
     )
 
     missing = [snippet for snippet in required_snippets if snippet not in text]
