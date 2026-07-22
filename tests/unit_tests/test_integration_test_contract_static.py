@@ -61,6 +61,15 @@ STRICT_SOURCE_A2S_TESTS = (
     "test_pvkiiserver.py",
     "test_tf2.py",
 )
+STRICT_GOLDSRC_A2S_TESTS = (
+    "test_csczserver.py",
+    "test_csserver.py",
+    "test_dmcserver.py",
+    "test_dodserver.py",
+    "test_hldmserver.py",
+    "test_opforserver.py",
+    "test_tfcserver.py",
+)
 REQUIRED_TOP_LEVEL_IMPORTS = {
     "test_lifeisfeudalserver.py": (("subprocess", None),),
     "test_noonesurvivedserver.py": (
@@ -1319,6 +1328,46 @@ def test_source_integration_tests_require_strict_a2s_lifecycle():
         path = INTEGRATION_TEST_DIR / filename
         tree = ast.parse(path.read_text(encoding="utf-8"))
         offenders.extend(_strict_source_a2s_violations(tree, path))
+
+    assert offenders == []
+
+
+def test_goldsrc_integration_tests_wait_for_a2s_before_query():
+    offenders = []
+    for filename in STRICT_GOLDSRC_A2S_TESTS:
+        path = INTEGRATION_TEST_DIR / filename
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        test_function = _test_function(tree)
+        main_try = next(
+            (
+                statement
+                for statement in (test_function.body if test_function else [])
+                if isinstance(statement, ast.Try)
+            ),
+            None,
+        )
+        if main_try is None:
+            offenders.append(f"{path}: missing lifecycle try/finally")
+            continue
+
+        calls = [
+            (index, _direct_call(statement))
+            for index, statement in enumerate(main_try.body)
+        ]
+        readiness_indexes = [
+            index
+            for index, call in calls
+            if call is not None and _is_exact_a2s_readiness(call)
+        ]
+        query_indexes = [
+            index
+            for index, call in calls
+            if call is not None and _alphagsm_command(call) == "query"
+        ]
+        if len(readiness_indexes) != 1:
+            offenders.append(f"{path}: missing exact A2S readiness")
+        elif not query_indexes or readiness_indexes[0] >= min(query_indexes):
+            offenders.append(f"{path}: A2S readiness must precede query")
 
     assert offenders == []
 

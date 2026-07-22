@@ -17,6 +17,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_runtime_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -111,6 +112,9 @@ def test_csserver_lifecycle(tmp_path):
             server_name,
             ["SV_ActivateServer", "Server is hibernating", "Connection to Steam servers successful", "VAC secure mode"],
             START_TIMEOUT,
+        )
+        wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
 
         # status
