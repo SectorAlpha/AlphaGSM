@@ -178,6 +178,7 @@ def get_runtime_requirements(server):
             {"key": "queryport", "protocol": "tcp"},
         ),
         mounts=mounts,
+        extra={"stop_mode": "docker-stop"},
     )
 
 

@@ -75,6 +75,8 @@ alphagsm myreturnto backup
 - `query`, `info`, and `info --json` use generic UDP reachability on the managed game port
 - the default `AdvertiseAddress` is `local`; for internet-hosted servers set it to `auto`
   or your public IP before sharing the server externally
+- Docker supplies a private Xvfb display for the Windows console payload; the
+  process command stays on the same Proton launch path.
 - readiness failures print redacted managed-runtime diagnostics. Invite and
   join codes from `Status.json` are not retained in failure state or output.
 

@@ -9,6 +9,8 @@ high-level milestones.
 
 2026-07-22
 - Reign Of Dwarf: launch the Unity dedicated payload with `-batchmode -nographics` through the same process and Wine/Proton command path, with a private Wine/Proton Xvfb display for Docker so CI launches do not exit while creating a window.
+- Return to Moria: provide a private Wine/Proton Xvfb display for the Windows dedicated-server console in Docker while retaining the same process launch command.
+- Nightingale: use the Docker runtime's lifecycle stop path for its non-interactive container while retaining the process-runtime interrupt path.
 - CI/runtime images: build the branch-local `simple-tcp` runtime image and inject its content-hashed tag into Mumble smoke, integration, and backend Docker validation instead of relying on a stale published `:latest` image.
 - Mumble runtime: expose Ubuntu 24.04's packaged `murmurd` daemon under the Docker fallback `mumble-server` command so image-only Docker launches do not depend on a process-runtime executable lookup.
 - ASTRONEER: separate the game registration IPv4 from runtime-local query routing, fail clearly on missing or non-public registration values, and route the Docker validation lane through a managed external CI endpoint.

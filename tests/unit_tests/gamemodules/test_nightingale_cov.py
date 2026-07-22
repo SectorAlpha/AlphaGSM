@@ -266,6 +266,14 @@ def test_runtime_requirements_publish_game_udp_and_status_tcp():
     ]
 
 
+def test_runtime_requirements_use_docker_stop_for_noninteractive_container():
+    server = DummyServer()
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["stop_mode"] == "docker-stop"
+
+
 def test_query_hooks_use_runtime_resolved_status_endpoint(monkeypatch):
     server = DummyServer()
     server.data.update({"port": 7777, "queryport": 7778})

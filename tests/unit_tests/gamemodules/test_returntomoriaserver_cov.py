@@ -274,6 +274,22 @@ def test_runtime_requirements_prefer_proton_and_publish_udp_port():
     ]
 
 
+def test_runtime_requirements_enable_virtual_display_for_windows_server():
+    server = DummyServer()
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"].items() >= {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }.items()
+
+
 def test_container_spec_prefers_proton_and_preserves_launch_contract(tmp_path):
     server = DummyServer()
     server.data.update(
