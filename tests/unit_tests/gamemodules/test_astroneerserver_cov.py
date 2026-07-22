@@ -131,8 +131,8 @@ def test_get_start_command_prefers_shipping_executable_for_legacy_launcher(tmp_p
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd == [shipping_exe]
-    assert cwd == str(tmp_path) + "/"
+    assert cmd == ["AstroServer-Win64-Shipping.exe"]
+    assert cwd == str(shipping_path.parent)
 
 
 def test_get_start_command_keeps_legacy_launcher_until_shipping_payload_exists(tmp_path, monkeypatch):
@@ -199,8 +199,9 @@ def test_container_spec_uses_same_game_command_and_udp_port(tmp_path, monkeypatc
     process_command, _cwd = mod.get_start_command(server)
     spec = mod.get_container_spec(server)
 
-    assert process_command == [shipping_exe]
-    assert spec["command"] == ["./" + shipping_exe]
+    assert process_command == ["AstroServer-Win64-Shipping.exe"]
+    assert spec["command"] == ["./AstroServer-Win64-Shipping.exe"]
+    assert spec["working_dir"] == "/srv/server/Astro/Binaries/Win64"
     assert spec["ports"] == [
         {"host": 8777, "container": 8777, "protocol": "udp"},
     ]

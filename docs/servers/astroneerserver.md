@@ -90,7 +90,7 @@ alphagsm myastronee backup
 - **Engine**: Custom (SteamCMD)
 - **SteamCMD App ID**: `728470`
 - **Docker runtime note**: the shared `wine-proton` entrypoint selects Proton, matching the process runtime, and starts Xvfb so the bundled UE4 prerequisite bootstrap can complete instead of aborting on `Failed to create window`
-- **Launcher note**: AlphaGSM launches the dedicated-server shipping executable directly. Existing configurations that still name the root `AstroServer.exe` launcher are migrated at launch when the shipping executable is present.
+- **Launcher note**: AlphaGSM launches the dedicated-server shipping executable directly from `Astro/Binaries/Win64`, preserving Unreal's relative engine-content paths. Existing configurations that still name the root `AstroServer.exe` launcher are migrated at launch when the shipping executable is present.
 - **Failure diagnostics**: strict readiness failures record the container command,
   safe runtime-selection environment, process table, and managed `Engine.ini`
   before cleanup

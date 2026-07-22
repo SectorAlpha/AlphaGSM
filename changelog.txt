@@ -14,7 +14,7 @@ high-level milestones.
 - ASTRONEER: keep the official `WindowsServer/Engine.ini` port setting and the Wine/Proton-compatible `net.AllowEncryption=False` system setting synchronized through the same runtime-neutral game configuration path.
 - ASTRONEER: select the shared Proton runtime for Docker as well as the process path, so both runtime launch contracts use the module's supported Windows compatibility layer.
 - CI/smoke: record safe Docker process state and managed ASTRONEER configuration before strict readiness cleanup, so Wine/Proton startup failures can be diagnosed from GitHub artifacts.
-- ASTRONEER: launch the actual `AstroServer-Win64-Shipping.exe` dedicated-server payload through the shared process/Docker command path, replacing the root launcher that stayed alive under Proton without spawning the game server.
+- ASTRONEER: launch the actual `AstroServer-Win64-Shipping.exe` dedicated-server payload from its `Astro/Binaries/Win64` working directory through the shared process/Docker command path, replacing the root launcher that stayed alive under Proton without spawning the game server.
 
 2026-07-19
 - Docker manager: run wrapper-managed commands as the invoking non-root UID/GID with the Docker socket's supplementary group, reject UID 0 before creating or mutating wrapper state, ignore caller identity overrides, and validate the exact inspected socket mount as well as manager identity for manager-targeting wrapper commands including `compose`; stale managers are recreated only after a no-follow state-tree preflight, while unsafe root-owned or symlinked legacy state is preserved and rejected with explicit ownership-remediation guidance.

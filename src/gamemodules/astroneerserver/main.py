@@ -30,6 +30,8 @@ max_stop_wait = 1
 config_sync_keys = ("port", "publicip", "ownername")
 LEGACY_LAUNCHER_EXE = "AstroServer.exe"
 DEDICATED_SERVER_EXE = "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
+DEDICATED_SERVER_DIR = os.path.dirname(DEDICATED_SERVER_EXE)
+DEDICATED_SERVER_BINARY = os.path.basename(DEDICATED_SERVER_EXE)
 
 
 def _container_runtime_env(_server):
@@ -221,11 +223,23 @@ def _resolve_start_executable(server):
     return configured_exe
 
 
+def _resolve_start_context(server):
+    """Return the command and working directory for the selected payload."""
+
+    executable = _resolve_start_executable(server)
+    if executable == DEDICATED_SERVER_EXE:
+        return (
+            DEDICATED_SERVER_BINARY,
+            os.path.join(server.data["dir"], DEDICATED_SERVER_DIR),
+        )
+    return executable, server.data["dir"]
+
+
 def get_start_command(server):
     """Build the command used to launch an ASTRONEER dedicated server."""
 
-    executable = _resolve_start_executable(server)
-    exe_path = os.path.join(server.data["dir"], executable)
+    executable, working_dir = _resolve_start_context(server)
+    exe_path = os.path.join(working_dir, executable)
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
     cmd = [executable]
@@ -235,7 +249,7 @@ def get_start_command(server):
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
-    return cmd, server.data["dir"]
+    return cmd, working_dir
 
 
 def do_stop(server, j):
