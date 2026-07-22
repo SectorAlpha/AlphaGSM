@@ -135,15 +135,19 @@ def test_astroneer_smoke_captures_process_and_engine_config_before_cleanup():
     text = ASTRONEER_SMOKE.read_text(encoding="utf-8")
     helpers = STEAMCMD_HELPERS.read_text(encoding="utf-8")
 
-    diagnostics_call = (
-        'capture_container_process_diagnostics "$SERVER_NAME" '
-        '"$INSTALL_DIR/Astro/Saved/Config/WindowsServer/Engine.ini"'
+    diagnostics_call = 'capture_container_process_diagnostics "$SERVER_NAME"'
+    engine_config = '"$INSTALL_DIR/Astro/Saved/Config/WindowsServer/Engine.ini"'
+    server_settings = (
+        '"$INSTALL_DIR/Astro/Saved/Config/WindowsServer/AstroServerSettings.ini"'
     )
 
     assert "capture_container_process_diagnostics()" in helpers
+    assert "ExitCode: {{.State.ExitCode}}" in helpers
     assert 'docker exec "$container_name" ps -eo pid,ppid,stat,comm,args' in helpers
     assert "ALPHAGSM_PREFER_PROTON" in helpers
     assert diagnostics_call in text
+    assert engine_config in text
+    assert server_settings in text
 
 
 def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():

@@ -327,16 +327,17 @@ capture_runtime_diagnostics() {
   run_alphagsm "$server_name" logs -n 200 || true
 }
 
-# capture_container_process_diagnostics SERVER_NAME CONFIG_PATH
+# capture_container_process_diagnostics SERVER_NAME CONFIG_PATH [CONFIG_PATH...]
 # Capture safe container launch state before a smoke runner removes the server.
 capture_container_process_diagnostics() {
   local server_name="$1"
-  local config_path="$2"
+  shift
+  local config_path
   local container_name="alphagsm-${server_name}"
 
   if command -v docker >/dev/null 2>&1; then
     echo "[diagnostic] Container launch state for ${container_name}" >&2
-    docker inspect --format 'State: {{.State.Status}} Entrypoint: {{.Config.Entrypoint}} Cmd: {{.Config.Cmd}}' "$container_name" || true
+    docker inspect --format 'State: {{.State.Status}} ExitCode: {{.State.ExitCode}} Error: {{.State.Error}} StartedAt: {{.State.StartedAt}} FinishedAt: {{.State.FinishedAt}} Entrypoint: {{.Config.Entrypoint}} Cmd: {{.Config.Cmd}}' "$container_name" || true
     echo "[diagnostic] Safe runtime environment for ${container_name}" >&2
     docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$container_name" \
       | grep -E '^(ALPHAGSM_PREFER_PROTON=|ALPHAGSM_(WINEPREFIX|XVFB|XVFB_DISPLAY|XVFB_SERVER_ARGS)=|DISPLAY=|SDL_VIDEODRIVER=|SDL_AUDIODRIVER=|WINEDLLOVERRIDES=|LIBGL_ALWAYS_SOFTWARE=)' || true
@@ -346,12 +347,14 @@ capture_container_process_diagnostics() {
     echo "[diagnostic] Docker CLI unavailable; cannot inspect ${container_name}" >&2
   fi
 
-  if [[ -f "$config_path" ]]; then
-    echo "[diagnostic] Managed configuration: ${config_path}" >&2
-    sed -n '1,160p' "$config_path" >&2
-  else
-    echo "[diagnostic] Managed configuration missing: ${config_path}" >&2
-  fi
+  for config_path in "$@"; do
+    if [[ -f "$config_path" ]]; then
+      echo "[diagnostic] Managed configuration: ${config_path}" >&2
+      sed -n '1,160p' "$config_path" >&2
+    else
+      echo "[diagnostic] Managed configuration missing: ${config_path}" >&2
+    fi
+  done
 }
 
 # wait_for_info_protocol SERVER_NAME EXPECTED_PROTOCOL TIMEOUT_SECONDS
