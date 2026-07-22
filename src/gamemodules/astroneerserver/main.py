@@ -1,5 +1,6 @@
 """ASTRONEER dedicated server lifecycle helpers."""
 
+import ipaddress
 import os
 
 import utils.proton as proton
@@ -27,7 +28,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
-config_sync_keys = ("port", "publicip", "ownername")
+config_sync_keys = ("port", "registration_publicip", "ownername")
 LEGACY_LAUNCHER_EXE = "AstroServer.exe"
 DEDICATED_SERVER_EXE = "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
 DEDICATED_SERVER_DIR = os.path.dirname(DEDICATED_SERVER_EXE)
@@ -59,7 +60,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name=DEDICATED_SERVER_EXE
     gamemodule_common.set_server_defaults(
         server,
         {
-            "publicip": "127.0.0.1",
+            "registration_publicip": "",
             "ownername": "AlphaGSM",
             "servername": "AlphaGSM %s" % (server.name,),
         },
@@ -153,6 +154,36 @@ def _sync_engine_settings(config_path, port):
         handle.write("".join(lines))
 
 
+def _registration_publicip(server):
+    """Return Astroneer's public registration address without changing runtime routing."""
+
+    return str(
+        server.data.get("registration_publicip") or server.data.get("publicip") or ""
+    ).strip()
+
+
+def _require_public_registration_ip(server):
+    """Reject values Astroneer cannot use as an externally reachable IPv4 address."""
+
+    registration_ip = _registration_publicip(server)
+    if not registration_ip:
+        raise ServerError(
+            "ASTRONEER requires registration_publicip to be its externally "
+            "routable IPv4 address before start"
+        )
+    try:
+        parsed_ip = ipaddress.ip_address(registration_ip)
+    except ValueError as exc:
+        raise ServerError(
+            "ASTRONEER registration_publicip must be an externally routable IPv4 address"
+        ) from exc
+    if parsed_ip.version != 4 or not parsed_ip.is_global:
+        raise ServerError(
+            "ASTRONEER registration_publicip must be an externally routable IPv4 address"
+        )
+    return registration_ip
+
+
 def sync_server_config(server):
     """Write the official Astroneer connection and ownership settings."""
 
@@ -165,7 +196,7 @@ def sync_server_config(server):
     rewrite_equals_config(
         os.path.join(config_dir, "AstroServerSettings.ini"),
         {
-            "PublicIP": server.data.get("publicip") or "127.0.0.1",
+            "PublicIP": _registration_publicip(server),
             "OwnerName": server.data.get("ownername") or "AlphaGSM",
             "OwnerGuid": 0,
         },
@@ -198,6 +229,7 @@ restart.__doc__ = "Restart the ASTRONEER server."
 def prestart(server):
     """Refresh Astroneer's authoritative INI settings before launch."""
 
+    _require_public_registration_ip(server)
     sync_server_config(server)
 
 
@@ -282,7 +314,14 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port",),
-        str_keys=("publicip", "ownername", "servername", "exe_name", "dir"),
+        str_keys=(
+            "publicip",
+            "registration_publicip",
+            "ownername",
+            "servername",
+            "exe_name",
+            "dir",
+        ),
         backup_module=backup_utils,
     )
 

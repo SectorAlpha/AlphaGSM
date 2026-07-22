@@ -20,6 +20,7 @@ SKIP_MODE = "skip"
 TARGETED_MODE = "targeted"
 DOC_BASENAMES = {"README.md", "DEVELOPERS.md", "SKILLS.md"}
 SLOW_TESTS = [
+    "test_astroneerserver.py",
     "test_rs2server.py",
     "test_scumserver.py",
     "test_sevendaystodie.py",
@@ -37,6 +38,7 @@ SLOW_TESTS = [
     "test_mythofempiresserver.py",
 ]
 HEAVY_SMOKE_TESTS = {
+    "run_astroneerserver.sh",
     "run_arksurvivalascended.sh",
     "run_btserver.sh",
     "run_empyrionserver.sh",

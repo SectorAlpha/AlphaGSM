@@ -37,6 +37,13 @@ def test_astroneerserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     require_command("docker")
+    registration_publicip = os.environ.get("ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP")
+    if not registration_publicip:
+        pytest.fail(
+            "ASTRONEER Docker integration requires "
+            "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP to name the managed "
+            "external IPv4 endpoint"
+        )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -64,6 +71,9 @@ def test_astroneerserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "create", "astroneerserver")
     run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "dir", str(install_dir))
+    run_and_assert_ok(
+        env, server_name, "set", "registration_publicip", registration_publicip
+    )
 
     # setup
     result, port = run_setup_with_port_retry(

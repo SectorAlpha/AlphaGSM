@@ -80,6 +80,12 @@ CONFIG_PATH="$WORK_DIR/alphagsm-astroneerserver.conf"
 mkdir -p "$HOME_DIR"
 
 PORT="$(pick_free_port)" 
+REGISTRATION_PUBLICIP="${ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP:-}"
+
+if [[ -z "$REGISTRATION_PUBLICIP" ]]; then
+  echo "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP must name the managed external IPv4 endpoint" >&2
+  exit 1
+fi
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -111,6 +117,7 @@ echo "Using port: $PORT"
 run_create_or_skip_disabled "$SERVER_NAME" create astroneerserver
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_alphagsm "$SERVER_NAME" set dir "$INSTALL_DIR"
+run_alphagsm "$SERVER_NAME" set registration_publicip "$ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 capture_astroneer_registration_diagnostics "$INSTALL_DIR/Astro/Saved/Config/WindowsServer/AstroServerSettings.ini"
 

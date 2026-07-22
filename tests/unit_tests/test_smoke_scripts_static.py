@@ -166,6 +166,20 @@ def test_astroneer_smoke_records_registration_settings_before_start():
     assert text.index(registration_diagnostic) < text.index(start_call)
 
 
+def test_astroneer_smoke_sets_managed_registration_ip_before_setup():
+    text = ASTRONEER_SMOKE.read_text(encoding="utf-8")
+
+    set_registration_ip = (
+        'run_alphagsm "$SERVER_NAME" set registration_publicip '
+        '"$ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP"'
+    )
+    setup_call = 'run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"'
+
+    assert "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP" in text
+    assert set_registration_ip in text
+    assert text.index(set_registration_ip) < text.index(setup_call)
+
+
 def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():
     text = STEAMCMD_HELPERS.read_text(encoding="utf-8")
 

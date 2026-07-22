@@ -19,6 +19,8 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8777, dir=str(tmp_path))
     assert server.data['port'] == 8777
+    assert server.data["registration_publicip"] == ""
+    assert "publicip" not in server.data
     assert server.data["exe_name"] == "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
 
 
@@ -57,7 +59,8 @@ def test_sync_server_config_writes_official_astroneer_ini_files(tmp_path):
         {
             "dir": str(tmp_path) + "/",
             "port": 28777,
-            "publicip": "203.0.113.10",
+            "publicip": "127.0.0.1",
+            "registration_publicip": "8.8.8.8",
             "ownername": "AlphaOwner",
         }
     )
@@ -75,11 +78,11 @@ def test_sync_server_config_writes_official_astroneer_ini_files(tmp_path):
     assert (config_dir / "AstroServerSettings.ini").read_text(
         encoding="utf-8"
     ) == (
-        "PublicIP=203.0.113.10\n"
+        "PublicIP=8.8.8.8\n"
         "OwnerName=AlphaOwner\n"
         "OwnerGuid=0\n"
     )
-    assert mod.config_sync_keys == ("port", "publicip", "ownername")
+    assert mod.config_sync_keys == ("port", "registration_publicip", "ownername")
 
 
 def test_sync_server_config_rewrites_generated_astroneer_server_settings(tmp_path):
@@ -89,6 +92,7 @@ def test_sync_server_config_rewrites_generated_astroneer_server_settings(tmp_pat
             "dir": str(tmp_path) + "/",
             "port": 28777,
             "publicip": "203.0.113.10",
+            "registration_publicip": "8.8.8.8",
             "ownername": "AlphaOwner",
         }
     )
@@ -108,18 +112,19 @@ def test_sync_server_config_rewrites_generated_astroneer_server_settings(tmp_pat
 
     settings = settings_path.read_text(encoding="utf-8")
     assert "[/Script/Astro.AstroServerSettings]\n" in settings
-    assert "PublicIP=203.0.113.10\n" in settings
+    assert "PublicIP=8.8.8.8\n" in settings
     assert "OwnerName=AlphaOwner\n" in settings
     assert "OwnerGuid=0\n" in settings
 
 
-def test_sync_server_config_defaults_blank_astroneer_registration_values(tmp_path):
+def test_sync_server_config_keeps_blank_astroneer_registration_values_unset(tmp_path):
     server = DummyServer("astro")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
             "port": 28777,
             "publicip": "",
+            "registration_publicip": "",
             "ownername": "",
         }
     )
@@ -137,8 +142,73 @@ def test_sync_server_config_defaults_blank_astroneer_registration_values(tmp_pat
     mod.sync_server_config(server)
 
     settings = settings_path.read_text(encoding="utf-8")
-    assert "PublicIP=127.0.0.1\n" in settings
+    assert "PublicIP=\n" in settings
     assert "OwnerName=AlphaGSM\n" in settings
+
+
+def test_sync_server_config_uses_legacy_publicip_when_registration_ip_is_absent(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "8.8.4.4",
+            "ownername": "AlphaOwner",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    settings_path = (
+        tmp_path
+        / "Astro"
+        / "Saved"
+        / "Config"
+        / "WindowsServer"
+        / "AstroServerSettings.ini"
+    )
+    assert "PublicIP=8.8.4.4\n" in settings_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("registration_publicip", ("", "127.0.0.1", "192.168.1.10"))
+def test_prestart_rejects_missing_or_nonpublic_registration_ip(
+    tmp_path, registration_publicip
+):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "registration_publicip": registration_publicip,
+        }
+    )
+
+    with pytest.raises(ServerError, match="registration_publicip"):
+        mod.prestart(server)
+
+
+def test_prestart_accepts_a_public_registration_ip(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "127.0.0.1",
+            "registration_publicip": "8.8.8.8",
+        }
+    )
+
+    mod.prestart(server)
+
+    settings_path = (
+        tmp_path
+        / "Astro"
+        / "Saved"
+        / "Config"
+        / "WindowsServer"
+        / "AstroServerSettings.ini"
+    )
+    assert "PublicIP=8.8.8.8\n" in settings_path.read_text(encoding="utf-8")
 
 
 def test_update_with_restart(tmp_path):
@@ -311,6 +381,12 @@ def test_checkvalue_port():
 def test_checkvalue_publicip():
     server = DummyServer()
     result = mod.checkvalue(server, ("publicip",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_registration_publicip():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("registration_publicip",), "/test/value")
     assert result == "/test/value"
 
 

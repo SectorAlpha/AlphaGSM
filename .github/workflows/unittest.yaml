@@ -303,6 +303,7 @@ jobs:
     env:
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: ${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}
       ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
     name: smoke-test (${{ matrix.label }})
@@ -679,6 +680,7 @@ jobs:
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: ${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}
       ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
       WINEPREFIX: /opt/wine
@@ -715,6 +717,7 @@ jobs:
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
+            export ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP='${ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP}'
             export WINEPREFIX=/opt/wine
             export WINEDEBUG=-all
             export WINEDLLOVERRIDES='winex11.drv='

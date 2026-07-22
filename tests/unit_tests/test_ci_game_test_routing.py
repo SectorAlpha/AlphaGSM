@@ -310,9 +310,14 @@ def test_docker_only_validation_servers_do_not_keep_forced_process_lanes():
 def test_large_wine_server_validation_uses_heavy_partitions():
     routing = load_routing_module()
 
-    for test_name in ("test_blackops3server.py", "test_mythofempiresserver.py"):
+    for test_name in (
+        "test_astroneerserver.py",
+        "test_blackops3server.py",
+        "test_mythofempiresserver.py",
+    ):
         assert test_name in routing.SLOW_TESTS
     for smoke_name in (
+        "run_astroneerserver.sh",
         "run_blackops3server.sh",
         "run_mythofempiresserver.sh",
     ):
@@ -3173,6 +3178,24 @@ def test_unittest_workflow_routes_heavy_game_jobs_to_configurable_runner_labels(
     assert "runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '[\"ubuntu-latest\"]') }}" in text
     assert "smoke-test-heavy:" in text
     assert "integration-test-heavy:" in text
+
+
+def test_unittest_workflow_supplies_astroneer_registration_ip_to_heavy_game_jobs():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    endpoint_env = (
+        "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: "
+        "${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}"
+    )
+    smoke_heavy = text.split("  smoke-test-heavy:")[1].split(
+        "  build-steamcmd-linux-runtime:"
+    )[0]
+    integration_heavy = text.split("  integration-test-heavy:")[1].split(
+        "  backend-smoke-test:"
+    )[0]
+
+    assert endpoint_env in smoke_heavy
+    assert endpoint_env in integration_heavy
+    assert "export ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP=" in integration_heavy
 
 
 def test_unittest_workflow_keeps_backend_and_cross_platform_jobs_unconditional():

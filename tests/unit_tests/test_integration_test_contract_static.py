@@ -3280,6 +3280,29 @@ def test_astroneer_requires_game_network_log_before_udp_info_surface():
     assert _constant_value(_call_argument(info_ready, 2, "expected_protocol")) == "udp"
 
 
+def test_astroneer_integration_uses_the_managed_registration_endpoint_before_setup():
+    path = INTEGRATION_TEST_DIR / "test_astroneerserver.py"
+    text = path.read_text(encoding="utf-8")
+    tree = ast.parse(text)
+    lifecycle = _test_function(tree)
+    calls = [node for node in ast.walk(lifecycle) if isinstance(node, ast.Call)]
+
+    registration_ip = "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP"
+    set_registration_ip = next(
+        call
+        for call in calls
+        if _call_name(call) == "run_and_assert_ok"
+        and "registration_publicip" in ast.unparse(call)
+    )
+    setup_call = next(
+        call for call in calls if _call_name(call) == "run_setup_with_port_retry"
+    )
+
+    assert registration_ip in text
+    assert "pytest.fail" in text
+    assert set_registration_ip.lineno < setup_call.lineno
+
+
 def test_blackops3_generic_udp_query_assertion_matches_alphagsm_output():
     text = (INTEGRATION_TEST_DIR / "test_blackops3server.py").read_text(
         encoding="utf-8"

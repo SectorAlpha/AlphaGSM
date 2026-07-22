@@ -505,6 +505,16 @@ jobs currently validate representative Minecraft backend paths only; broader
 game-server lifecycle coverage on those platforms and on newer or other Linux
 distributions remains future work.
 
+ASTRONEER's dedicated server registers the address that players use rather
+than a loopback or Docker bridge address. Its Docker smoke and integration
+tests therefore run in the configurable heavy lane. Provision that runner
+with an externally routable UDP endpoint, set
+`ALPHAGSM_HEAVY_RUNNER_LABELS_JSON` to its runner label array, and set the
+`ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP` repository variable to the endpoint's
+real IPv4 address. The endpoint must route the test's managed game port to the
+runner. This setting is intentionally not used by AlphaGSM's local
+process/Docker query resolver.
+
 There is also a documentation publishing workflow:
 
 - [`.github/workflows/wiki-sync.yaml`](.github/workflows/wiki-sync.yaml)
