@@ -95,6 +95,35 @@ def test_reignofdwarf_launches_without_a_graphical_window(tmp_path, monkeypatch)
     assert "-nographics" in command
 
 
+def test_reignofdwarf_runtime_metadata_enables_xvfb_for_docker(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        reignofdwarfserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
+    executable = tmp_path / "Server.exe"
+    executable.write_text("", encoding="utf-8")
+    server = DummyServer("rod")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Server.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "maxplayers": 16,
+        }
+    )
+
+    requirements = reignofdwarfserver.get_runtime_requirements(server)
+    spec = reignofdwarfserver.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
 def test_mw3_and_reignofdwarf_update_downloads_and_optionally_restart(monkeypatch):
     mw3 = DummyServer("mw3")
     mw3.data["dir"] = "/srv/mw3/"

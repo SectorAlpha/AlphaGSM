@@ -28,6 +28,20 @@ command_functions = {}
 max_stop_wait = 1
 
 
+def _container_runtime_env(_server):
+    """Return the Docker display requirements for Unity under Wine/Proton."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="Server.exe"):
     """Collect and store configuration values for a Reign Of Dwarf server."""
 
@@ -152,9 +166,11 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    extra_env=_container_runtime_env,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    extra_env=_container_runtime_env,
 )

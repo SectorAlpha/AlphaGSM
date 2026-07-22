@@ -67,6 +67,8 @@ alphagsm myreignofd backup
 - Default Steam query port: 27015
 - AlphaGSM supplies Unity's `-batchmode -nographics` launch flags so the
   dedicated payload does not require a graphical window in either runtime.
+- The Docker Wine/Proton runtime supplies its private Xvfb display
+  automatically when Unity requires one during startup.
 - Integration readiness uses AlphaGSM `info --json` protocol `a2s` rather than
   a host `screen` log.
 
