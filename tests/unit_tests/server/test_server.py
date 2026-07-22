@@ -1,3 +1,4 @@
+import json
 import sys
 from importlib import import_module
 from types import SimpleNamespace
@@ -2058,6 +2059,32 @@ def test_info_falls_back_to_tcp(monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "Server port is open" in out
+
+
+def test_info_json_tcp_fallback_includes_a2s_error(monkeypatch, capsys):
+    """info --json preserves the failed explicit A2S probe for diagnosis."""
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 27015, "module": "teamfortress2"}))
+    srv.module.get_info_address = lambda server: ("127.0.0.1", 27015, "a2s")
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.a2s_info = lambda host, port, timeout=2.0: (_ for _ in ()).throw(
+        OSError("A2S listener timed out")
+    )
+    fake_q.tcp_ping = lambda host, port: 5.4
+
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["protocol"] == "tcp"
+    assert payload["a2s_error"] == "A2S listener timed out"
 
 
 def test_run_command_dispatches_info(monkeypatch, capsys):

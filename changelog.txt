@@ -9,6 +9,7 @@ high-level milestones.
 
 2026-07-22
 - Server info: label successful human-readable A2S responses with their protocol, matching the established lifecycle contract without changing query behavior.
+- Server info: retain the safe underlying A2S error in explicit-protocol JSON TCP fallbacks, making runtime query incompatibilities diagnosable in CI.
 - CI/integration: require legacy GoldSrc lifecycle tests to observe a real A2S response before query and info checks in both process and Docker lanes.
 
 2026-07-21

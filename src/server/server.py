@@ -1450,7 +1450,16 @@ class Server(object):
                         _game_port = self.data["port"]
                         _ms = query_utils.tcp_ping("127.0.0.1", _game_port)
                         if as_json:
-                            print(json.dumps({"protocol": "tcp", "port": _game_port, "latency_ms": round(_ms, 1)}))
+                            print(
+                                json.dumps(
+                                    {
+                                        "protocol": "tcp",
+                                        "port": _game_port,
+                                        "latency_ms": round(_ms, 1),
+                                        "a2s_error": str(exc),
+                                    }
+                                )
+                            )
                             return
                         print(
                             "Server port is open (TCP ping on port {} \u2014 {:.1f} ms)."
