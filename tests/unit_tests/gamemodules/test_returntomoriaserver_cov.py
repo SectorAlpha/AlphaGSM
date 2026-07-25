@@ -250,7 +250,7 @@ def test_sync_server_config_creates_managed_file(tmp_path):
     assert "AdvertiseAddress=local" in config_text
     assert "AdvertisePort=35389" in config_text
     assert 'Name="AlphaGSM Dwarves"' in config_text
-    assert "Enabled=true" in config_text
+    assert "Enabled=false" in config_text
 
 
 def test_query_and_info_addresses_use_game_udp_port():

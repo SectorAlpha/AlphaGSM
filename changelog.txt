@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-22
+- Return to Moria: disable the interactive dedicated-server console in the managed config so headless process and Docker launches do not stall on the upstream focus/key prompt before `Status.json` becomes `running`.
 - Process runtime: force Screen backend shutdown through the selected session's process groups as well as the screen session, preventing launcher children from keeping a game port alive after `stop`.
 - CI/integration: probe both manager-container loopback and the Docker bridge gateway for TCP/Source-UDP readiness and shutdown, so sibling Docker servers are validated without weakening process-runtime checks.
 - Reign Of Dwarf: launch the Unity dedicated payload with `-batchmode -nographics` through the same process and Wine/Proton command path, with a private Wine/Proton Xvfb display for Docker so CI launches do not exit while creating a window.

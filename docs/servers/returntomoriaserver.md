@@ -73,6 +73,7 @@ alphagsm myreturnto backup
 - Module name: `returntomoriaserver`
 - Default port: 7777
 - `query`, `info`, and `info --json` use generic UDP reachability on the managed game port
+- AlphaGSM disables the interactive `Console/Enabled` prompt in its managed config so headless process and Docker launches do not wait for console focus and keyboard input while loading a world; `Status.json` remains the readiness source.
 - the default `AdvertiseAddress` is `local`; for internet-hosted servers set it to `auto`
   or your public IP before sharing the server externally
 - Docker supplies a private Xvfb display for the Windows console payload; the
