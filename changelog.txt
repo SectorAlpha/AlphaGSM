@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-22
+- CI/integration: extend manager-container Docker gateway probing to generic UDP, A2S, and Quake-family readiness helpers so direct protocol checks use the same endpoint model as AlphaGSM runtime queries.
 - Return to Moria: disable the interactive dedicated-server console in the managed config so headless process and Docker launches do not stall on the upstream focus/key prompt before `Status.json` becomes `running`.
 - Process runtime: force Screen backend shutdown through the selected session's process groups as well as the screen session, preventing launcher children from keeping a game port alive after `stop`.
 - CI/integration: probe both manager-container loopback and the Docker bridge gateway for TCP/Source-UDP readiness and shutdown, so sibling Docker servers are validated without weakening process-runtime checks.

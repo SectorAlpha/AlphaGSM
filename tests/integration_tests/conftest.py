@@ -1525,20 +1525,25 @@ def wait_for_udp_closed(host, port, timeout_seconds):
 
 
 def wait_for_generic_udp_closed(host, port, timeout_seconds, payload=b"\x00"):
-    """Wait until a generic UDP listener on *host:port* stops accepting traffic."""
+    """Wait until generic UDP traffic fails on every relevant endpoint."""
 
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                sock.settimeout(2)
-                sock.connect((host, int(port)))
-                sock.send(payload)
-                try:
-                    sock.recv(1)
-                except socket.timeout:
-                    pass
-        except OSError:
+        endpoint_open = False
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                    sock.settimeout(2)
+                    sock.connect((probe_host, int(port)))
+                    sock.send(payload)
+                    try:
+                        sock.recv(1)
+                    except socket.timeout:
+                        pass
+                    endpoint_open = True
+            except OSError:
+                continue
+        if not endpoint_open:
             return
         time.sleep(2)
     raise AssertionError(
@@ -1584,15 +1589,17 @@ def wait_for_a2s_ready(host, port, timeout_seconds, log_path=None, tcp_port=None
     deadline = time.time() + timeout_seconds
     last_exc = None
     while time.time() < deadline:
-        try:
-            query_utils.a2s_info(
-                host, port,
-                timeout=_A2S_PHASE1_TIMEOUT,
-                phase2_timeout=_A2S_PHASE2_TIMEOUT,
-            )
-            return
-        except query_utils.QueryError as exc:
-            last_exc = exc
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                query_utils.a2s_info(
+                    probe_host,
+                    port,
+                    timeout=_A2S_PHASE1_TIMEOUT,
+                    phase2_timeout=_A2S_PHASE2_TIMEOUT,
+                )
+                return
+            except query_utils.QueryError as exc:
+                last_exc = exc
         # No additional sleep: Phase 1 already waits 15 s on timeout; Phase 2
         # (when it runs) takes up to 120 s, providing a natural gap.
 
@@ -1698,12 +1705,13 @@ def wait_for_udp_open(host, port, timeout_seconds, log_path=None):
     deadline = time.time() + timeout_seconds
     last_exc = None
     while time.time() < deadline:
-        try:
-            query_utils.udp_ping(host, port)
-            return
-        except query_utils.QueryError as exc:
-            last_exc = exc
-            time.sleep(2)
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                query_utils.udp_ping(probe_host, port)
+                return
+            except query_utils.QueryError as exc:
+                last_exc = exc
+        time.sleep(2)
     last_error = _redact_logged_text(str(last_exc))
     last_exc = None
     diagnostic_summary = (
@@ -1755,11 +1763,16 @@ def wait_for_quake_ready(host, port, timeout_seconds, log_path=None):
     # without the query prematurely timing out at the default 2 s.
     _QUAKE_SOCKET_TIMEOUT = 10.0
     while time.time() < deadline:
-        try:
-            query_utils.quake_status(host, port, timeout=_QUAKE_SOCKET_TIMEOUT)
-            return
-        except query_utils.QueryError as exc:
-            last_exc = exc
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                query_utils.quake_status(
+                    probe_host,
+                    port,
+                    timeout=_QUAKE_SOCKET_TIMEOUT,
+                )
+                return
+            except query_utils.QueryError as exc:
+                last_exc = exc
         time.sleep(2)
     last_error = _redact_logged_text(str(last_exc))
     last_exc = None
@@ -1803,11 +1816,16 @@ def wait_for_quakeworld_ready(host, port, timeout_seconds, log_path=None):
     last_exc = None
     _QUAKEWORLD_SOCKET_TIMEOUT = 10.0
     while time.time() < deadline:
-        try:
-            query_utils.quakeworld_status(host, port, timeout=_QUAKEWORLD_SOCKET_TIMEOUT)
-            return
-        except query_utils.QueryError as exc:
-            last_exc = exc
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                query_utils.quakeworld_status(
+                    probe_host,
+                    port,
+                    timeout=_QUAKEWORLD_SOCKET_TIMEOUT,
+                )
+                return
+            except query_utils.QueryError as exc:
+                last_exc = exc
         time.sleep(2)
     last_error = _redact_logged_text(str(last_exc))
     last_exc = None
@@ -1851,11 +1869,16 @@ def wait_for_quake2_ready(host, port, timeout_seconds, log_path=None):
     last_exc = None
     _QUAKE_SOCKET_TIMEOUT = 10.0
     while time.time() < deadline:
-        try:
-            query_utils.quake2_status(host, port, timeout=_QUAKE_SOCKET_TIMEOUT)
-            return
-        except query_utils.QueryError as exc:
-            last_exc = exc
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                query_utils.quake2_status(
+                    probe_host,
+                    port,
+                    timeout=_QUAKE_SOCKET_TIMEOUT,
+                )
+                return
+            except query_utils.QueryError as exc:
+                last_exc = exc
         time.sleep(2)
     last_error = _redact_logged_text(str(last_exc))
     last_exc = None

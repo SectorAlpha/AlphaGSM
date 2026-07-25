@@ -1827,6 +1827,28 @@ def test_wait_for_tcp_closed_requires_loopback_and_docker_gateway(monkeypatch):
     assert attempts[1][0] == ("172.17.0.1", 25565)
 
 
+def test_wait_for_udp_open_tries_the_docker_gateway(monkeypatch):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    query_utils = importlib.import_module("utils.query")
+    attempts = []
+
+    def _udp_ping(host, _port):
+        attempts.append(host)
+        if host == "127.0.0.1":
+            raise query_utils.QueryError("manager loopback has no sibling server")
+
+    monkeypatch.setattr(
+        helpers,
+        "_runtime_probe_hosts",
+        lambda _host: ("127.0.0.1", "172.17.0.1"),
+    )
+    monkeypatch.setattr(query_utils, "udp_ping", _udp_ping)
+
+    helpers.wait_for_udp_open("127.0.0.1", 25565, 1)
+
+    assert attempts == ["127.0.0.1", "172.17.0.1"]
+
+
 def test_capture_alphagsm_stop_preserves_lifecycle_failure_on_stop_timeout(
     monkeypatch,
 ):
