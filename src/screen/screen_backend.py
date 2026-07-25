@@ -1,6 +1,8 @@
 """GNU screen process backend for AlphaGSM."""
 
 import os
+import re
+import signal
 import subprocess as sp
 
 from .backend import ProcessBackend, ProcessError
@@ -71,6 +73,57 @@ class ScreenBackend(ProcessBackend):
             output = ex.output
         return output.decode(errors="ignore")
 
+    def _session_process_groups(self, name):
+        """Return process groups currently owned by the named screen session."""
+
+        listing = self._session_listing(name)
+        match = re.search(
+            r"^\s*(\d+)\." + re.escape(self._tag(name)) + r"\s+\(",
+            listing,
+            flags=re.MULTILINE,
+        )
+        if match is None:
+            return set()
+
+        root_pid = int(match.group(1))
+        pending = [root_pid]
+        descendants = set()
+        process_info = {}
+        while pending:
+            parent_pid = pending.pop()
+            if parent_pid in descendants:
+                continue
+            descendants.add(parent_pid)
+            try:
+                entries = os.listdir("/proc")
+            except OSError:
+                break
+            for entry in entries:
+                if not entry.isdigit():
+                    continue
+                pid = int(entry)
+                try:
+                    with open(
+                        "/proc/{}/stat".format(pid),
+                        "r",
+                        encoding="ascii",
+                    ) as stat_file:
+                        stat = stat_file.read()
+                    fields = stat.rsplit(")", 1)[1].split()
+                    ppid = int(fields[1])
+                    pgrp = int(fields[2])
+                except (OSError, ValueError, IndexError):
+                    continue
+                process_info[pid] = (ppid, pgrp)
+                if ppid == parent_pid:
+                    pending.append(pid)
+
+        return {
+            process_info[pid][1]
+            for pid in descendants
+            if pid in process_info and process_info[pid][1] > 1
+        }
+
     # ── public API ──────────────────────────────────────────────────────────
 
     def start(self, name, command, cwd=None):
@@ -134,8 +187,18 @@ class ScreenBackend(ProcessBackend):
         return self.send_raw(name, ["stuff", text])
 
     def kill(self, name):
-        """Kill the screen session by sending the ``quit`` command."""
-        return self.send_raw(name, ["quit"])
+        """Kill the screen session and its currently owned process groups."""
+        process_groups = self._session_process_groups(name)
+        result = self.send_raw(name, ["quit"])
+        current_group = os.getpgrp()
+        for process_group in sorted(process_groups):
+            if process_group == current_group:
+                continue
+            try:
+                os.killpg(process_group, signal.SIGKILL)
+            except (OSError, ProcessLookupError):
+                continue
+        return result
 
     def is_running(self, name):
         """Return whether the named screen session exists."""

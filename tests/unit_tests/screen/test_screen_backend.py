@@ -1,6 +1,7 @@
 """Tests for ScreenBackend."""
 
 import os
+import signal
 import subprocess as sp
 
 import pytest
@@ -107,8 +108,35 @@ def test_kill_delegates_to_send_raw(monkeypatch):
     backend = ScreenBackend("Alpha#", "/tmp", 5, "/tmp/rc", "/tmp")
     calls = []
     monkeypatch.setattr(backend, "send_raw", lambda n, c: calls.append((n, c)))
+    monkeypatch.setattr(backend, "_session_process_groups", lambda _name: set())
     backend.kill("srv1")
     assert calls == [("srv1", ["quit"])]
+
+
+def test_kill_terminates_process_groups_owned_by_screen_session(monkeypatch):
+    backend = ScreenBackend("Alpha#", "/tmp", 5, "/tmp/rc", "/tmp")
+    calls = []
+    killed_groups = []
+    monkeypatch.setattr(
+        backend,
+        "send_raw",
+        lambda name, command: calls.append((name, command)) or b"ok",
+    )
+    monkeypatch.setattr(
+        backend,
+        "_session_process_groups",
+        lambda _name: {123, 456},
+    )
+    monkeypatch.setattr(os, "getpgrp", lambda: 999)
+    monkeypatch.setattr(
+        os,
+        "killpg",
+        lambda group, sig: killed_groups.append((group, sig)),
+    )
+
+    assert backend.kill("srv1") == b"ok"
+    assert calls == [("srv1", ["quit"])]
+    assert killed_groups == [(123, signal.SIGKILL), (456, signal.SIGKILL)]
 
 
 def test_is_running_true_on_success(monkeypatch):
