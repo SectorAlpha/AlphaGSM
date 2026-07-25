@@ -1043,7 +1043,7 @@ class Server(object):
             host, port, protocol = get_addr(self)
             _explicit = True
         else:
-            host = "127.0.0.1"
+            host = runtime_module.resolve_query_host(self)
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
             _explicit = False
@@ -1103,7 +1103,7 @@ class Server(object):
                     # UDP may be unreliable but a TCP game port is still open.
                     try:
                         _game_port = self.data["port"]
-                        _ms = query_utils.tcp_ping("127.0.0.1", _game_port)
+                        _ms = query_utils.tcp_ping(host, _game_port)
                         print(
                             "Server port is open (TCP ping on port {} \u2014 {:.1f} ms).".format(
                                 _game_port, _ms
@@ -1116,7 +1116,7 @@ class Server(object):
                         "Server does not appear to be responding: " + str(exc)
                     )
                 # Default heuristic: fall back to TCP ping on the main game port.
-                host = "127.0.0.1"
+                host = runtime_module.resolve_query_host(self)
                 port = self.data["port"]
                 protocol = "tcp"
 
@@ -1305,7 +1305,7 @@ class Server(object):
             host, port, protocol = get_addr(self)
             _explicit = True
         else:
-            host = "127.0.0.1"
+            host = runtime_module.resolve_query_host(self)
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
             _explicit = False
@@ -1448,7 +1448,7 @@ class Server(object):
                     # game port before giving up.
                     try:
                         _game_port = self.data["port"]
-                        _ms = query_utils.tcp_ping("127.0.0.1", _game_port)
+                        _ms = query_utils.tcp_ping(host, _game_port)
                         if as_json:
                             print(
                                 json.dumps(
@@ -1470,7 +1470,7 @@ class Server(object):
                         pass
                     raise ServerError("Info query failed: " + str(exc))
                 # Default heuristic: fall through to TCP
-                host = "127.0.0.1"
+                host = runtime_module.resolve_query_host(self)
                 port = self.data["port"]
 
         if protocol == "quake2":

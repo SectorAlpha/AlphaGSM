@@ -1757,6 +1757,32 @@ def test_query_succeeds_via_a2s(monkeypatch, capsys):
     assert "A2S" in capsys.readouterr().out
 
 
+def test_query_uses_runtime_resolved_host_without_module_hook(monkeypatch, capsys):
+    srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
+
+    import utils.query as _ensure_imported  # ensure attribute exists on utils
+    import utils
+    import sys, types
+
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    calls = []
+    fake_q.a2s_info = lambda host, port, timeout=2.0: calls.append((host, port)) or b"reply"
+    fake_q.parse_a2s_info = lambda data: None
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "resolve_query_host",
+        lambda server: "172.18.0.1",
+    )
+
+    srv.query()
+
+    assert calls == [("172.18.0.1", "27015")]
+    assert "A2S" in capsys.readouterr().out
+
+
 def test_query_falls_back_to_tcp_when_a2s_fails(monkeypatch, capsys):
     srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
 
@@ -2037,6 +2063,32 @@ def test_info_succeeds_via_a2s(monkeypatch, capsys):
     assert "Protocol    : A2S" in out
     assert "cp_badlands" in out
     assert "4/24" in out
+
+
+def test_info_uses_runtime_resolved_host_without_module_hook(monkeypatch, capsys):
+    import utils.query as _ensure_imported  # noqa: F401
+    import utils
+    import sys, types
+
+    srv = make_server(data=DummyData({"port": 27015}))
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    calls = []
+    fake_q.a2s_info = lambda host, port, timeout=2.0: calls.append((host, port)) or b"reply"
+    fake_q.parse_a2s_info = lambda data: None
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+    monkeypatch.setattr(
+        server_module.runtime_module,
+        "resolve_query_host",
+        lambda server: "172.18.0.1",
+    )
+
+    srv.info(as_json=True)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert calls == [("172.18.0.1", 27015)]
+    assert payload == {"protocol": "a2s", "port": 27015}
 
 
 def test_info_falls_back_to_tcp(monkeypatch, capsys):

@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-07-25
+- Runtime/query: route generic `query` and `info` A2S/TCP fallback probes through the
+  shared runtime host resolver, so modules without custom query hooks validate sibling
+  Docker containers instead of probing the manager container's loopback address.
+
 2026-07-22
 - CI/integration: extend manager-container Docker gateway probing to generic UDP, A2S, and Quake-family readiness helpers so direct protocol checks use the same endpoint model as AlphaGSM runtime queries.
 - Return to Moria: disable the interactive dedicated-server console in the managed config so headless process and Docker launches do not stall on the upstream focus/key prompt before `Status.json` becomes `running`.
