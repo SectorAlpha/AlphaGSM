@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import shutil
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -21,6 +22,7 @@ _CONTROL_EXCEPTIONS = (KeyboardInterrupt, SystemExit, GeneratorExit)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 DEFAULT_INTEGRATION_WORK_DIR = Path("/tmp/alphagsm-work")
+DOCKER_ROUTE_FILE = "/proc/net/route"
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +136,44 @@ def require_mysql(host="127.0.0.1", port=3306):
             f"MySQL/MariaDB is not reachable at {host}:{port}; "
             "start a local database service to run this test"
         )
+
+
+def _docker_bridge_gateway():
+    """Return the default Docker bridge gateway for a containerized test runner."""
+
+    if not os.path.exists("/.dockerenv"):
+        return None
+    try:
+        route_text = Path(DOCKER_ROUTE_FILE).read_text(encoding="ascii")
+    except (OSError, UnicodeError):
+        return None
+
+    for line in route_text.splitlines()[1:]:
+        fields = line.split()
+        if len(fields) < 3 or fields[1] != "00000000":
+            continue
+        try:
+            gateway_bytes = struct.pack("<L", int(fields[2], 16))
+            return socket.inet_ntoa(gateway_bytes)
+        except (OSError, ValueError, struct.error):
+            continue
+    return None
+
+
+def _runtime_probe_hosts(host):
+    """Return endpoint hosts needed from a process or Docker test runner.
+
+    GitHub integration tests run inside a manager container. In that context
+    loopback reaches process-runtime servers, while a published sibling
+    Docker container is reachable through the manager's bridge gateway.
+    """
+
+    hosts = [str(host)]
+    if os.path.exists("/.dockerenv"):
+        for candidate in ("127.0.0.1", _docker_bridge_gateway()):
+            if candidate and candidate not in hosts:
+                hosts.append(candidate)
+    return tuple(hosts)
 
 
 # ---------------------------------------------------------------------------
@@ -1445,29 +1485,41 @@ def wait_for_glob_log_marker(
 
 
 def wait_for_tcp_closed(host, port, timeout_seconds):
-    """Wait until a TCP connect to *host:port* fails."""
+    """Wait until TCP connects fail on every relevant runtime endpoint."""
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        try:
-            with socket.create_connection((host, port), timeout=2):
-                pass
-        except Exception:  # noqa: BLE001
+        endpoint_open = False
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                with socket.create_connection((probe_host, port), timeout=2):
+                    endpoint_open = True
+            except Exception:  # noqa: BLE001
+                continue
+        if not endpoint_open:
             return
         time.sleep(2)
     raise AssertionError(f"TCP port {host}:{port} still open after {timeout_seconds}s")
 
 
 def wait_for_udp_closed(host, port, timeout_seconds):
-    """Wait until a UDP Source query to *host:port* stops responding."""
+    """Wait until UDP Source queries stop responding on every endpoint."""
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.settimeout(2)
-            try:
-                sock.sendto(b"\xFF\xFF\xFF\xFFTSource Engine Query\x00", (host, port))
-                sock.recv(4096)
-            except Exception:  # noqa: BLE001
-                return
+        endpoint_open = False
+        for probe_host in _runtime_probe_hosts(host):
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(2)
+                try:
+                    sock.sendto(
+                        b"\xFF\xFF\xFF\xFFTSource Engine Query\x00",
+                        (probe_host, port),
+                    )
+                    sock.recv(4096)
+                    endpoint_open = True
+                except Exception:  # noqa: BLE001
+                    continue
+        if not endpoint_open:
+            return
         time.sleep(2)
     raise AssertionError(f"UDP port {host}:{port} still responds after {timeout_seconds}s")
 
@@ -1593,12 +1645,13 @@ def wait_for_tcp_open(host, port, timeout_seconds, log_path=None):
     deadline = time.time() + timeout_seconds
     last_exc = None
     while time.time() < deadline:
-        try:
-            with _socket.create_connection((host, port), timeout=2):
-                return
-        except OSError as exc:
-            last_exc = exc
-            time.sleep(2)
+        for probe_host in _runtime_probe_hosts(host):
+            try:
+                with _socket.create_connection((probe_host, port), timeout=2):
+                    return
+            except OSError as exc:
+                last_exc = exc
+        time.sleep(2)
     last_error = _redact_logged_text(str(last_exc))
     last_exc = None
     diagnostic_summary = (

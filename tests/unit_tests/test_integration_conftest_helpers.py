@@ -1754,6 +1754,79 @@ def test_readiness_router_ast_guard_rejects_renamed_call_with_comment_decoy():
     assert not _uses_shared_readiness_failure(mutated, "wait_for_tcp_open")
 
 
+def test_runtime_probe_hosts_include_docker_bridge_gateway(monkeypatch, tmp_path):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    route_file = tmp_path / "route"
+    route_file.write_text(
+        "Iface Destination Gateway Flags RefCnt Use Metric Mask MTU Window IRTT\n"
+        "eth0 00000000 010011AC 0003 0 0 0 00000000 0 0 0\n",
+        encoding="ascii",
+    )
+    monkeypatch.setattr(helpers, "DOCKER_ROUTE_FILE", str(route_file))
+    monkeypatch.setattr(
+        helpers.os.path,
+        "exists",
+        lambda path: path == "/.dockerenv",
+    )
+
+    assert helpers._runtime_probe_hosts("127.0.0.1") == (
+        "127.0.0.1",
+        "172.17.0.1",
+    )
+
+
+def test_runtime_probe_hosts_preserve_explicit_host_and_deduplicate(monkeypatch):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setattr(
+        helpers,
+        "_docker_bridge_gateway",
+        lambda: "172.17.0.1",
+    )
+    monkeypatch.setattr(
+        helpers.os.path,
+        "exists",
+        lambda path: path == "/.dockerenv",
+    )
+
+    assert helpers._runtime_probe_hosts("172.17.0.1") == (
+        "172.17.0.1",
+        "127.0.0.1",
+    )
+
+
+def test_wait_for_tcp_closed_requires_loopback_and_docker_gateway(monkeypatch):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    attempts = []
+
+    class _Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def _connect(address, timeout):
+        attempts.append((address, timeout))
+        if address[0] == "172.17.0.1":
+            return _Connection()
+        raise OSError("closed")
+
+    monkeypatch.setattr(helpers, "_runtime_probe_hosts", lambda _host: (
+        "127.0.0.1",
+        "172.17.0.1",
+    ))
+    monkeypatch.setattr(helpers.socket, "create_connection", _connect)
+    clock = iter((0.0, 0.0, 1.1))
+    monkeypatch.setattr(helpers.time, "time", lambda: next(clock, 1.1))
+    monkeypatch.setattr(helpers.time, "sleep", lambda _seconds: None)
+
+    with pytest.raises(AssertionError, match="still open"):
+        helpers.wait_for_tcp_closed("127.0.0.1", 25565, 1)
+
+    assert attempts[0][0] == ("127.0.0.1", 25565)
+    assert attempts[1][0] == ("172.17.0.1", 25565)
+
+
 def test_capture_alphagsm_stop_preserves_lifecycle_failure_on_stop_timeout(
     monkeypatch,
 ):

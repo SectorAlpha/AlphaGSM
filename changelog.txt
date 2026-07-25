@@ -8,6 +8,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-22
+- CI/integration: probe both manager-container loopback and the Docker bridge gateway for TCP/Source-UDP readiness and shutdown, so sibling Docker servers are validated without weakening process-runtime checks.
 - Reign Of Dwarf: launch the Unity dedicated payload with `-batchmode -nographics` through the same process and Wine/Proton command path, with a private Wine/Proton Xvfb display for Docker so CI launches do not exit while creating a window.
 - Return to Moria: provide a private Wine/Proton Xvfb display for the Windows dedicated-server console in Docker while retaining the same process launch command.
 - Nightingale: use the Docker runtime's lifecycle stop path for its non-interactive container while retaining the process-runtime interrupt path.
