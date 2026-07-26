@@ -40,6 +40,7 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
         "lib32gcc-s1",
         "lib32stdc++6",
         "libcurl3t64-gnutls",
+        "libcurl4-gnutls-dev",
         "libatomic1",
         "libsdl2-2.0-0",
         "libpulse0",
@@ -66,7 +67,12 @@ def test_integration_image_keeps_official_valheim_linux_packages_across_layers()
         )
     )
 
-    required_snippets = ("libatomic1", "libpulse0", "libpulse-dev")
+    required_snippets = (
+        "libatomic1",
+        "libpulse0",
+        "libpulse-dev",
+        "libcurl4-gnutls-dev",
+    )
     missing = [snippet for snippet in required_snippets if snippet not in text]
 
     assert missing == []

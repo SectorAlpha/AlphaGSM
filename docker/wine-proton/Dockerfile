@@ -21,6 +21,7 @@ RUN dpkg --add-architecture i386 \
         libatomic1 \
         libgdiplus \
         libsdl2-2.0-0 \
+        libcurl4-gnutls-dev \
         libpulse0 \
         python3 \
         procps \

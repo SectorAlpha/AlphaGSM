@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-25
+- CI/runtime images: include Ubuntu 24.04's unversioned GnuTLS libcurl development
+  surface in the native SteamCMD and shared process-test images, allowing legacy
+  Steam API and crash-reporting paths to resolve `libcurl.so` in Docker as well as
+  the process runtime.
 - Runtime/query: route generic `query` and `info` A2S/TCP fallback probes through the
   shared runtime host resolver, so modules without custom query hooks validate sibling
   Docker containers instead of probing the manager container's loopback address.
