@@ -202,12 +202,19 @@ def test_get_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
     mounts = requirements["mounts"]
 
     assert mounts[0] == {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
-    assert mounts[1]["target"] == "/root/.steam/sdk64"
-    assert mounts[1]["mode"] == "ro"
-    assert os.path.basename(mounts[1]["source"]) == "linux64"
-    assert mounts[2]["target"] == "/root/.steam/sdk32"
-    assert mounts[2]["mode"] == "ro"
-    assert os.path.basename(mounts[2]["source"]) == "linux32"
+    assert [mount["target"] for mount in mounts[1:]] == [
+        "/root/.steam/sdk64",
+        "/root/.steam/steamcmd/linux64",
+        "/root/.steam/sdk32",
+        "/root/.steam/steamcmd/linux32",
+    ]
+    assert all(mount["mode"] == "ro" for mount in mounts[1:])
+    assert [os.path.basename(mount["source"]) for mount in mounts[1:]] == [
+        "linux64",
+        "linux64",
+        "linux32",
+        "linux32",
+    ]
 
 
 def test_get_container_spec_publishes_game_and_a2s_ports(monkeypatch, tmp_path):
