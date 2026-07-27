@@ -386,23 +386,20 @@ def _write_runtime_steam_appid(server, app_id):
 
 
 def _steamcmd_sdk_mounts():
-    """Return Docker bind mounts for Steam SDK client directories when present."""
+    """Return Docker mounts for Steam SDK and canonical client paths."""
 
     mounts = []
-    for src_subdir, target_dir in (
-        ("linux64", "/root/.steam/sdk64"),
-        ("linux32", "/root/.steam/sdk32"),
+    for src_subdir, target_dirs in (
+        ("linux64", ("/root/.steam/sdk64", "/root/.steam/steamcmd/linux64")),
+        ("linux32", ("/root/.steam/sdk32", "/root/.steam/steamcmd/linux32")),
     ):
         source_dir = os.path.join(steamcmd.STEAMCMD_DIR, src_subdir)
         source_file = os.path.join(source_dir, "steamclient.so")
         if not os.path.isfile(source_file):
             continue
-        mounts.append(
-            {
-                "source": source_dir,
-                "target": target_dir,
-                "mode": "ro",
-            }
+        mounts.extend(
+            {"source": source_dir, "target": target_dir, "mode": "ro"}
+            for target_dir in target_dirs
         )
     return mounts
 

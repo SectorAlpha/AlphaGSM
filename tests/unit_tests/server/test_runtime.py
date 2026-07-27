@@ -341,7 +341,17 @@ def test_build_steamcmd_linux_runtime_requirements_adds_steam_sdk_mounts(monkeyp
     assert requirements["mounts"] == [
         {"source": "/srv/game/", "target": "/srv/server", "mode": "rw"},
         {"source": str(linux64), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {
+            "source": str(linux64),
+            "target": "/root/.steam/steamcmd/linux64",
+            "mode": "ro",
+        },
         {"source": str(linux32), "target": "/root/.steam/sdk32", "mode": "ro"},
+        {
+            "source": str(linux32),
+            "target": "/root/.steam/steamcmd/linux32",
+            "mode": "ro",
+        },
     ]
 
 
@@ -381,7 +391,17 @@ def test_build_steamcmd_requirements_use_opted_in_home_for_sdk_and_runtime_data(
             "mode": "rw",
         },
         {"source": str(linux64), "target": "/home/custom-front/.steam/sdk64", "mode": "ro"},
+        {
+            "source": str(linux64),
+            "target": "/home/custom-front/.steam/steamcmd/linux64",
+            "mode": "ro",
+        },
         {"source": str(linux32), "target": "/home/custom-front/.steam/sdk32", "mode": "ro"},
+        {
+            "source": str(linux32),
+            "target": "/home/custom-front/.steam/steamcmd/linux32",
+            "mode": "ro",
+        },
     ]
     assert install_dir not in runtime_home.parents
 

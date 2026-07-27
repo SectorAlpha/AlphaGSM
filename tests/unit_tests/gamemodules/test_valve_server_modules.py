@@ -484,7 +484,17 @@ def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     assert requirements["mounts"] == [
         {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"},
         {"source": str(steamcmd_root / "linux64"), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux64"),
+            "target": "/root/.steam/steamcmd/linux64",
+            "mode": "ro",
+        },
         {"source": str(steamcmd_root / "linux32"), "target": "/root/.steam/sdk32", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux32"),
+            "target": "/root/.steam/steamcmd/linux32",
+            "mode": "ro",
+        },
     ]
     assert requirements["ports"] == [
         {"host": 27015, "container": 27015, "protocol": "udp"},
@@ -526,7 +536,17 @@ def test_legacy_source_module_runtime_requirements_include_steam_sdk_mounts(tmp_
     assert requirements["mounts"] == [
         {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"},
         {"source": str(steamcmd_root / "linux64"), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux64"),
+            "target": "/root/.steam/steamcmd/linux64",
+            "mode": "ro",
+        },
         {"source": str(steamcmd_root / "linux32"), "target": "/root/.steam/sdk32", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux32"),
+            "target": "/root/.steam/steamcmd/linux32",
+            "mode": "ro",
+        },
     ]
     assert spec["mounts"] == requirements["mounts"]
 

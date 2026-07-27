@@ -505,23 +505,32 @@ def _mount_is_read_only(mount):
 
 
 def _steamcmd_sdk_mounts(container_home="/root"):
-    """Return Docker mounts for SteamCMD's sdk32/sdk64 client libraries."""
+    """Return Docker mounts for SteamCMD's SDK and canonical client paths."""
 
     mounts = []
-    for src_subdir, target_dir in (
-        ("linux64", posixpath.join(container_home, ".steam", "sdk64")),
-        ("linux32", posixpath.join(container_home, ".steam", "sdk32")),
+    for src_subdir, target_dirs in (
+        (
+            "linux64",
+            (
+                posixpath.join(container_home, ".steam", "sdk64"),
+                posixpath.join(container_home, ".steam", "steamcmd", "linux64"),
+            ),
+        ),
+        (
+            "linux32",
+            (
+                posixpath.join(container_home, ".steam", "sdk32"),
+                posixpath.join(container_home, ".steam", "steamcmd", "linux32"),
+            ),
+        ),
     ):
         source_dir = os.path.join(steamcmd_module.STEAMCMD_DIR, src_subdir)
         source_file = os.path.join(source_dir, "steamclient.so")
         if not os.path.isfile(source_file):
             continue
-        mounts.append(
-            {
-                "source": source_dir,
-                "target": target_dir,
-                "mode": "ro",
-            }
+        mounts.extend(
+            {"source": source_dir, "target": target_dir, "mode": "ro"}
+            for target_dir in target_dirs
         )
     return mounts
 

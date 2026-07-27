@@ -156,7 +156,12 @@ def _assert_steamcmd_sdk_mounts_present(lifecycle, container_name):
             "-lc",
             "test -f /root/.steam/sdk64/steamclient.so && "
             "test -f /root/.steam/sdk32/steamclient.so && "
-            "ls -l /root/.steam/sdk64/steamclient.so /root/.steam/sdk32/steamclient.so",
+            "test -f /root/.steam/steamcmd/linux64/steamclient.so && "
+            "test -f /root/.steam/steamcmd/linux32/steamclient.so && "
+            "ls -l /root/.steam/sdk64/steamclient.so "
+            "/root/.steam/sdk32/steamclient.so "
+            "/root/.steam/steamcmd/linux64/steamclient.so "
+            "/root/.steam/steamcmd/linux32/steamclient.so",
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

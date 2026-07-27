@@ -7,6 +7,12 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-07-27
+- CI/runtime: expose SteamCMD's Linux ABI directories through both the
+  established `.steam/sdk32` / `.steam/sdk64` bootstrap paths and Steam's
+  canonical `.steam/steamcmd/linux32` / `.steam/steamcmd/linux64` paths in
+  Docker, without mounting Steam user state or authentication data.
+
 2026-07-25
 - CI/runtime images: include Ubuntu 24.04's unversioned GnuTLS libcurl development
   surface in the native SteamCMD and shared process-test images, allowing legacy
