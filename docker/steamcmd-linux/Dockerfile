@@ -13,6 +13,8 @@ RUN dpkg --add-architecture i386 \
         lib32stdc++6 \
         libcurl3t64-gnutls \
         libcurl4-gnutls-dev \
+        libcurl3t64-gnutls:i386 \
+        libcurl4-gnutls-dev:i386 \
         libatomic1 \
         libc++1 \
         libgdiplus \

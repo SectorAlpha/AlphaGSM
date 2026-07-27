@@ -22,6 +22,8 @@ RUN dpkg --add-architecture i386 \
         libgdiplus \
         libsdl2-2.0-0 \
         libcurl4-gnutls-dev \
+        libcurl3t64-gnutls:i386 \
+        libcurl4-gnutls-dev:i386 \
         libpulse0 \
         python3 \
         procps \
