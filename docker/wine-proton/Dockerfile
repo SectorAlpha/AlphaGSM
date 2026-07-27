@@ -23,7 +23,6 @@ RUN dpkg --add-architecture i386 \
         libsdl2-2.0-0 \
         libcurl4-gnutls-dev \
         libcurl3t64-gnutls:i386 \
-        libcurl4-gnutls-dev:i386 \
         libpulse0 \
         python3 \
         procps \
@@ -36,6 +35,10 @@ RUN dpkg --add-architecture i386 \
         xauth \
         xvfb \
     && rm -rf /var/lib/apt/lists/*
+
+# Keep the legacy 32-bit Steam loader name without installing the i386 dev
+# package, whose shared curl-config path conflicts with the amd64 package.
+RUN ln -sf libcurl.so.4 /usr/lib/i386-linux-gnu/libcurl.so
 
 RUN wineboot --init \
     && winetricks -q win10 \

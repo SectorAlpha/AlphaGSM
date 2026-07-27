@@ -12,8 +12,9 @@ high-level milestones.
   surface in the native SteamCMD and shared process-test images, allowing legacy
   Steam API and crash-reporting paths to resolve `libcurl.so` in Docker as well as
   the process runtime.
-- CI/runtime images: include the matching i386 libcurl development surface for
-  legacy 32-bit Steam API and crash-reporting helpers.
+- CI/runtime images: include the matching i386 libcurl runtime surface and
+  compatibility linker name for legacy 32-bit Steam API and crash-reporting
+  helpers without installing Ubuntu's conflicting multiarch dev packages.
 - Runtime/query: route generic `query` and `info` A2S/TCP fallback probes through the
   shared runtime host resolver, so modules without custom query hooks validate sibling
   Docker containers instead of probing the manager container's loopback address.

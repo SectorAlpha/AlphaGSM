@@ -42,7 +42,7 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
         "libcurl3t64-gnutls",
         "libcurl4-gnutls-dev",
         "libcurl3t64-gnutls:i386",
-        "libcurl4-gnutls-dev:i386",
+        "ln -sf libcurl.so.4 /usr/lib/i386-linux-gnu/libcurl.so",
         "libatomic1",
         "libsdl2-2.0-0",
         "libpulse0",
@@ -75,7 +75,7 @@ def test_integration_image_keeps_official_valheim_linux_packages_across_layers()
         "libpulse-dev",
         "libcurl4-gnutls-dev",
         "libcurl3t64-gnutls:i386",
-        "libcurl4-gnutls-dev:i386",
+        "ln -sf libcurl.so.4 /usr/lib/i386-linux-gnu/libcurl.so",
     )
     missing = [snippet for snippet in required_snippets if snippet not in text]
 

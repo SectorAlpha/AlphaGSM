@@ -14,7 +14,6 @@ RUN dpkg --add-architecture i386 \
         libcurl3t64-gnutls \
         libcurl4-gnutls-dev \
         libcurl3t64-gnutls:i386 \
-        libcurl4-gnutls-dev:i386 \
         libatomic1 \
         libc++1 \
         libgdiplus \
@@ -24,6 +23,11 @@ RUN dpkg --add-architecture i386 \
         python3 \
         wget \
  && rm -rf /var/lib/apt/lists/*
+
+# The amd64 development package provides the native unversioned libcurl.so.
+# Ubuntu's i386 development package conflicts on the shared curl-config path,
+# so expose the equivalent 32-bit linker name from the installed runtime ABI.
+RUN ln -sf libcurl.so.4 /usr/lib/i386-linux-gnu/libcurl.so
 
 # Older dedicated servers in the steamcmd-linux family still link against
 # OpenSSL 1.1 or 1.0.x just like the CI integration image.
