@@ -433,6 +433,59 @@ def test_valve_source_module_exports_info_hooks_on_canonical_surface():
     assert callable(module.get_hibernating_console_info)
 
 
+def test_ahl2_docker_contract_uses_private_host_user_home_and_runtime_appid(
+    monkeypatch, tmp_path
+):
+    module = importlib.import_module("gamemodules.ahl2server")
+    valve_server = importlib.import_module("utils.valve_server")
+    monkeypatch.setenv("ALPHAGSM_HOME", str(tmp_path / "manager"))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+    steamcmd_root = tmp_path / "steamcmd"
+    for bits in ("linux32", "linux64"):
+        sdk_dir = steamcmd_root / bits
+        sdk_dir.mkdir(parents=True)
+        (sdk_dir / "steamclient.so").write_text("", encoding="utf-8")
+    monkeypatch.setattr(valve_server.steamcmd, "STEAMCMD_DIR", str(steamcmd_root))
+    server = SimpleNamespace(
+        name="ahl2alpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "port": 27015,
+            "clientport": 27005,
+            "sourcetvport": 27020,
+            "exe_name": "srcds_run",
+            "startmap": "act_airport",
+            "server_cfg": "server.cfg",
+            "maxplayers": "20",
+        },
+    )
+
+    requirements = module.get_runtime_requirements(server)
+    spec = module.get_container_spec(server)
+
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert requirements["env"]["HOME"] == "/home/alphagsm"
+    assert spec["run_as_host_user"] is True
+    assert spec["container_home"] == "/home/alphagsm"
+    assert spec["env"]["HOME"] == "/home/alphagsm"
+    assert {
+        mount["target"] for mount in requirements["mounts"]
+    } == {
+        "/srv/server",
+        "/home/alphagsm",
+        "/home/alphagsm/.steam/sdk64",
+        "/home/alphagsm/.steam/steamcmd/linux64",
+        "/home/alphagsm/.steam/sdk32",
+        "/home/alphagsm/.steam/steamcmd/linux32",
+    }
+
+    monkeypatch.setattr(valve_server, "_ensure_steamclient_link", lambda: None)
+    module.prestart(server)
+
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "985050\n"
+
+
 def test_valve_source_query_hooks_use_runtime_resolved_host(monkeypatch):
     module = importlib.import_module("gamemodules.cssserver")
     valve_server = importlib.import_module("utils.valve_server")

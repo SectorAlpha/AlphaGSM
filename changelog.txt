@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
 high-level milestones.
 
+2026-07-28
+- AHL2 / Action: Source: run the Docker lifecycle through the shared non-root
+  host-user HOME contract and write its Steam runtime app ID before launch,
+  preserving the same game-module command path as the process runtime.
+
 2026-07-27
 - CI/runtime: expose SteamCMD's Linux ABI directories through both the
   established `.steam/sdk32` / `.steam/sdk64` bootstrap paths and Steam's

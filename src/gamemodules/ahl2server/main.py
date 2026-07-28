@@ -23,6 +23,7 @@ MODULE = define_valve_server_module(
     sourcetv_port=27020,
     steam_port=None,
     app_id_mod=None,
+    runtime_app_id=985050,
     config_subdir='cfg',
     config_default='server.cfg',
 )
@@ -64,6 +65,7 @@ checkvalue = MODULE.checkvalue
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
+        extra={'run_as_host_user': True, 'container_home': '/home/alphagsm'},
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
@@ -71,4 +73,5 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
         stdin_open=True,
+        extra={'run_as_host_user': True, 'container_home': '/home/alphagsm'},
 )
