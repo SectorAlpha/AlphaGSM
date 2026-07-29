@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-07-29
+- Docker SteamCMD runtime: include the 32-bit X11 loader used by legacy
+  Steam-backed Source servers, keeping the Docker image's native Steam client
+  surface aligned with the process integration image.
 - Docker SteamCMD runtime: emit the complete non-secret Steam library-folder
   metadata record required by legacy dedicated-server Steam clients.
 

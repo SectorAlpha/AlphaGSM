@@ -42,6 +42,7 @@ def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
         "libcurl3t64-gnutls",
         "libcurl4-gnutls-dev",
         "libcurl3t64-gnutls:i386",
+        "libx11-6:i386",
         "ln -sf libcurl.so.4 /usr/lib/i386-linux-gnu/libcurl.so",
         "libatomic1",
         "libsdl2-2.0-0",
