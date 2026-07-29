@@ -3044,6 +3044,11 @@ def _steam_runtime_library_state(server, spec, home_relative_path):
         '    "0"\n'
         "    {\n"
         f'        "path" "{install_target}"\n'
+        '        "label" ""\n'
+        '        "contentid" "0"\n'
+        '        "totalsize" "0"\n'
+        '        "update_clean_bytes_tally" "0"\n'
+        '        "time_last_update_corruption" "0"\n'
         '        "apps"\n'
         "        {\n"
         f'            "{app_id}" "0"\n'

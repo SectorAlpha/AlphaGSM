@@ -1783,6 +1783,11 @@ def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypat
         '    "0"\n'
         "    {\n"
         '        "path" "/srv/server"\n'
+        '        "label" ""\n'
+        '        "contentid" "0"\n'
+        '        "totalsize" "0"\n'
+        '        "update_clean_bytes_tally" "0"\n'
+        '        "time_last_update_corruption" "0"\n'
         '        "apps"\n'
         "        {\n"
         '            "985050" "0"\n'

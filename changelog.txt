@@ -5,7 +5,11 @@ Current release notes should be updated in every PR that changes user-facing beh
 server support, CI, packaging, or workflow defaults.
 
 Historical detail lives in git history. Keep this file focused on release-facing notes and
-high-level milestones.
+ high-level milestones.
+
+2026-07-29
+- Docker SteamCMD runtime: emit the complete non-secret Steam library-folder
+  metadata record required by legacy dedicated-server Steam clients.
 
 2026-07-28
 - Docker SteamCMD runtime: seed a per-server, non-secret Steam library index in
