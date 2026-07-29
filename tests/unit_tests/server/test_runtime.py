@@ -1739,7 +1739,9 @@ def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypat
         "run_as_host_user": True,
         "container_home": "/home/alphagsm",
     }
-    server = DummyServer(data={"runtime": "docker", "dir": str(install_dir)})
+    server = DummyServer(
+        data={"runtime": "docker", "dir": str(install_dir), "Steam_AppID": 985050}
+    )
     server.module = SimpleNamespace(
         get_runtime_requirements=lambda current: runtime_module.build_runtime_requirements(
             current,
@@ -1772,6 +1774,24 @@ def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypat
     assert home_source.is_dir()
     assert (home_source / ".steam" / "sdk64").is_dir()
     assert (home_source / ".steam" / "sdk32").is_dir()
+    libraryfolders = (
+        home_source / ".steam" / "steam" / "steamapps" / "libraryfolders.vdf"
+    )
+    assert libraryfolders.read_text(encoding="utf-8") == (
+        '"libraryfolders"\n'
+        "{\n"
+        '    "0"\n'
+        "    {\n"
+        '        "path" "/srv/server"\n'
+        '        "apps"\n'
+        "        {\n"
+        '            "985050" "0"\n'
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    assert not (home_source / "Steam" / "config" / "config.vdf").exists()
+    assert not (home_source / "Steam").exists()
     assert command[:3] == ["docker", "run", "-d"]
     assert command[command.index("--user") : command.index("--user") + 2] == [
         "--user",

@@ -2863,9 +2863,23 @@ def _validate_host_user_container_home(server, spec, identity):
     )
     for relative_path in relative_paths[1:]:
         _inspect_secure_runtime_path(manager_root, relative_path, effective_uid)
+    generated_files = []
+    steam_library_state = _steam_runtime_library_state(
+        server, spec, home_relative_path
+    )
+    if steam_library_state is not None:
+        steam_library_directory = os.path.dirname(
+            steam_library_state["relative_file"]
+        )
+        relative_paths.append(steam_library_directory)
+        _inspect_secure_runtime_path(
+            manager_root, steam_library_directory, effective_uid
+        )
+        generated_files.append(steam_library_state)
     return {
         "manager_root": manager_root,
         "relative_paths": tuple(dict.fromkeys(relative_paths)),
+        "generated_files": tuple(generated_files),
         "container_home": container_home,
         "home_mount": home_mount,
         "home_source": expected_source,
@@ -2986,6 +3000,89 @@ def _secure_create_runtime_path(manager_root, relative_path, effective_uid):
         os.close(parent_fd)
 
 
+def _steam_runtime_library_state(server, spec, home_relative_path):
+    """Return non-secret Steam library metadata for a SteamCMD container."""
+
+    if str(spec.get("runtime_family") or "").strip().lower() != "steamcmd-linux":
+        return None
+    app_id = str(server.data.get("Steam_AppID") or "").strip()
+    if not app_id.isdecimal():
+        return None
+
+    install_source = server.data.get("dir")
+    install_source = (
+        os.path.abspath(os.path.expanduser(str(install_source)))
+        if install_source
+        else None
+    )
+    install_target = None
+    if install_source:
+        for mount in spec.get("mounts", ()):
+            mount_source = _mount_source(mount)
+            if not mount_source:
+                continue
+            normalized_source = os.path.abspath(
+                os.path.expanduser(str(mount_source))
+            )
+            if normalized_source == install_source:
+                install_target = posixpath.normpath(str(_mount_target(mount)))
+                break
+    install_target = install_target or posixpath.normpath(
+        str(spec.get("working_dir") or DEFAULT_CONTAINER_WORKDIR)
+    )
+    install_target = install_target.replace("\\", "\\\\").replace('"', '\\"')
+    relative_file = os.path.join(
+        home_relative_path,
+        ".steam",
+        "steam",
+        "steamapps",
+        "libraryfolders.vdf",
+    )
+    content = (
+        '"libraryfolders"\n'
+        "{\n"
+        '    "0"\n'
+        "    {\n"
+        f'        "path" "{install_target}"\n'
+        '        "apps"\n'
+        "        {\n"
+        f'            "{app_id}" "0"\n'
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    return {"relative_file": relative_file, "content": content}
+
+
+def _secure_write_runtime_file(manager_root, relative_path, content, effective_uid):
+    """Write one manager-owned runtime file without following symlinks."""
+
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    path = os.path.join(manager_root, relative_path)
+    file_descriptor = None
+    try:
+        file_descriptor = os.open(path, flags, 0o600)
+        file_stat = os.fstat(file_descriptor)
+        if not stat.S_ISREG(file_stat.st_mode) or file_stat.st_uid != effective_uid:
+            raise RuntimeError(
+                "Container HOME runtime state file has unsafe ownership: " + path
+            )
+        os.fchmod(file_descriptor, 0o600)
+        with os.fdopen(file_descriptor, "w", encoding="utf-8") as handle:
+            file_descriptor = None
+            handle.write(content)
+    except OSError as ex:
+        raise RuntimeError(
+            "Unable to securely write container HOME runtime state {}: {}".format(
+                path, ex
+            )
+        ) from ex
+    finally:
+        if file_descriptor is not None:
+            os.close(file_descriptor)
+
+
 def _create_host_user_container_home(plan, identity):
     """Securely create the directories approved by a prior validation plan."""
 
@@ -2993,6 +3090,13 @@ def _create_host_user_container_home(plan, identity):
     for relative_path in plan["relative_paths"]:
         _secure_create_runtime_path(
             plan["manager_root"], relative_path, effective_uid
+        )
+    for generated_file in plan.get("generated_files", ()):
+        _secure_write_runtime_file(
+            plan["manager_root"],
+            generated_file["relative_file"],
+            generated_file["content"],
+            effective_uid,
         )
 
 

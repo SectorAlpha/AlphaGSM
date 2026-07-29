@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 high-level milestones.
 
 2026-07-28
+- Docker SteamCMD runtime: seed a per-server, non-secret Steam library index in
+  the private container HOME so dedicated servers can resolve their mounted
+  install base without mounting Steam session or authentication state.
 - AHL2 / Action: Source: run the Docker lifecycle through the shared non-root
   host-user HOME contract and write its Steam runtime app ID before launch,
   preserving the same game-module command path as the process runtime.
