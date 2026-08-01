@@ -44,7 +44,7 @@ def test_wfserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = wfserver.get_start_command(server)
 
     assert cmd[0] == "./wf_server.x86_64"
-    assert "net_port" in cmd
+    assert "sv_port" in cmd
     assert cwd == server.data["dir"]
 
 

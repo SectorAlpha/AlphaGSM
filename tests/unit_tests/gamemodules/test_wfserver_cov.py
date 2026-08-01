@@ -48,7 +48,7 @@ def test_install(tmp_path):
     server.data["hostname"] = "AlphaGSM Warfork"
     server.data["port"] = 44400
     mod.install(server)
-    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set sv_port 44400\nset sv_hostname "AlphaGSM Warfork"\n'
+    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set sv_port "44400"\nset sv_hostname "AlphaGSM Warfork"\n'
 
 
 def test_sync_server_config_rewrites_autoexec(tmp_path):
@@ -59,7 +59,7 @@ def test_sync_server_config_rewrites_autoexec(tmp_path):
 
     mod.sync_server_config(server)
 
-    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set sv_port 44401\nset sv_hostname "AlphaGSM Warfork"\n'
+    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set sv_port "44401"\nset sv_hostname "AlphaGSM Warfork"\n'
 
 
 def test_update_with_restart(tmp_path):
