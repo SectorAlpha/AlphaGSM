@@ -47,6 +47,7 @@ setting_schema = {
 
 DEFAULT_CFG_PATH = "default.cfg"
 EXAMPLE_DEFAULT_CFG_PATH = os.path.join("Docs", "ExampleConfigs", "Example1.cfg")
+DEFAULT_MAP_DIRECTIVE = "MapRotation.AddMap VILLAGE DM"
 MANAGED_CONFIG_DIRECTIVES = (
     "Server.Name",
     "Server.AuthPort",
@@ -170,14 +171,19 @@ def sync_server_config(server):
         lines = cfg_file.read().splitlines()
 
     preserved_lines = []
+    has_map_rotation = False
     for line in lines:
         directive = line.strip().split(None, 1)[0] if line.strip() else ""
+        if directive == "MapRotation.AddMap":
+            has_map_rotation = True
         if directive in MANAGED_CONFIG_DIRECTIVES:
             continue
         preserved_lines.append(line)
 
     port = int(server.data.get("port", 7777))
     maxplayers = int(server.data.get("maxplayers", 12))
+    if not has_map_rotation:
+        preserved_lines.append(DEFAULT_MAP_DIRECTIVE)
     managed_lines = [
         "Server.Name {}".format(server.name),
         "Server.GamePort {}".format(port),

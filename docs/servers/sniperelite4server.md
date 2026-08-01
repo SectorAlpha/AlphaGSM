@@ -89,7 +89,9 @@ alphagsm mysniperel backup
   Docker-backed `wine-proton` runtime image rather than a host `screen`
   session. AlphaGSM stages `default.cfg` in the install root before launch,
   copying the shipped `Docs/ExampleConfigs/Example1.cfg` when available so the
-  dedicated server no longer aborts immediately on `default.cfg` lookup.
+  dedicated server no longer aborts immediately on `default.cfg` lookup. If no
+  map rotation is present, AlphaGSM adds `VILLAGE DM` as the minimum startup
+  map and preserves any operator-defined rotation entries.
 - **Managed directives**: `Server.Name`, `Server.GamePort`,
   `Server.AuthPort`, `Server.UpdatePort`, `Server.LobbyPort`,
   `Settings.MaxPlayers`, and `Server.Host`

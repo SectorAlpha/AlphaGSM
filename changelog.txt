@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- Sniper Elite 4: when the downloaded depot does not provide a usable map
+  rotation, generate the minimum `VILLAGE DM` entry before `Server.Host` so
+  the default configuration can start while preserving operator-defined maps.
 - CI/integration: correct Argo's generic UDP health contract and Citadel's A2S
   query-port contract, and make the Wine/Proton Docker metadata for Reign of
   Dwarf, Remnants, and Sniper Elite 4 agree with their process launchers.

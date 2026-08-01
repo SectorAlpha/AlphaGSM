@@ -89,6 +89,7 @@ def test_install_generates_fallback_default_cfg(tmp_path):
 
     config_text = (tmp_path / "default.cfg").read_text(encoding="utf-8")
     assert "// AlphaGSM generated default.cfg" in config_text
+    assert "MapRotation.AddMap VILLAGE DM" in config_text
     assert "Server.GamePort 7777" in config_text
     assert config_text.rstrip().endswith("Server.Host")
 
