@@ -180,24 +180,6 @@ def _runtime_probe_hosts(host):
 # Port helpers
 # ---------------------------------------------------------------------------
 
-def _port_free_for_both(port):
-    """Return True if *port* is bindable on both TCP and UDP (no SO_REUSEADDR).
-
-    This mirrors the check performed by ``server.port_manager.probe_live_listener``
-    so that a port accepted here will also pass the port-manager pre-flight.
-    Ports in TCP TIME_WAIT state or with any live listener will return False.
-    """
-    probe_hosts = ("127.0.0.1", "0.0.0.0")
-    for socktype in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
-        for host in probe_hosts:
-            with socket.socket(socket.AF_INET, socktype) as sock:
-                try:
-                    sock.bind((host, port))
-                except OSError:
-                    return False
-    return True
-
-
 def pick_free_tcp_port(min_port=None, max_port=None):
     """Return a free TCP port on localhost, optionally constrained to a range.
 
@@ -205,7 +187,7 @@ def pick_free_tcp_port(min_port=None, max_port=None):
     SO_REUSEADDR) so that AlphaGSM's port-manager pre-flight check, which
     probes both protocols, will not reject it.
     """
-    selector_options = {"port_is_free": _port_free_for_both}
+    selector_options = {"port_is_free": select_test_port.port_free_for_both}
     if min_port is not None:
         selector_options["min_port"] = int(min_port)
     if max_port is not None:
@@ -218,7 +200,7 @@ def pick_free_tcp_port_group(count):
 
     return select_test_port.pick_free_port_group(
         count,
-        port_is_free=_port_free_for_both,
+        port_is_free=select_test_port.port_free_for_both,
     )
 
 
@@ -232,7 +214,7 @@ def pick_free_udp_port():
     """
     return select_test_port.pick_free_port_group(
         1,
-        port_is_free=_port_free_for_both,
+        port_is_free=select_test_port.port_free_for_both,
     )
 
 

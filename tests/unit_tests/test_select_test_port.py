@@ -1,6 +1,7 @@
 """Tests for stable CI port allocation outside the OS ephemeral range."""
 
 from pathlib import Path
+import socket
 
 import pytest
 
@@ -70,6 +71,80 @@ def test_pick_free_port_group_rejects_invalid_count():
         select_test_port.pick_free_port_group(0)
 
 
+def test_port_free_for_both_checks_tcp_and_udp_and_closes_every_probe(monkeypatch):
+    probes = []
+
+    class FakeSocket:
+        def __init__(self, _family, socktype):
+            self.socktype = socktype
+            self.closed = False
+
+        def __enter__(self):
+            probes.append(self)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self.close()
+            return False
+
+        def bind(self, address):
+            self.address = address
+
+        def close(self):
+            self.closed = True
+
+        def listen(self, _backlog):
+            raise AssertionError("availability probes must never listen")
+
+    monkeypatch.setattr(select_test_port.socket, "socket", FakeSocket)
+
+    assert select_test_port.port_free_for_both(25565) is True
+    assert [(probe.socktype, probe.address) for probe in probes] == [
+        (socket.SOCK_STREAM, ("127.0.0.1", 25565)),
+        (socket.SOCK_STREAM, ("0.0.0.0", 25565)),
+        (socket.SOCK_DGRAM, ("127.0.0.1", 25565)),
+        (socket.SOCK_DGRAM, ("0.0.0.0", 25565)),
+    ]
+    assert all(probe.closed for probe in probes)
+
+
+def test_port_free_for_both_closes_probe_when_bind_fails(monkeypatch):
+    probes = []
+
+    class FakeSocket:
+        def __init__(self, _family, _socktype):
+            self.closed = False
+
+        def __enter__(self):
+            probes.append(self)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self.close()
+            return False
+
+        def bind(self, _address):
+            raise OSError("port is occupied")
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(select_test_port.socket, "socket", FakeSocket)
+
+    assert select_test_port.port_free_for_both(25565) is False
+    assert len(probes) == 1
+    assert probes[0].closed is True
+
+
+def test_port_free_for_both_rejects_real_wildcard_listener():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+        listener.bind(("0.0.0.0", 0))
+        listener.listen(1)
+        port = listener.getsockname()[1]
+
+        assert select_test_port.port_free_for_both(port) is False
+
+
 def test_main_prints_selected_group_base(monkeypatch, capsys):
     monkeypatch.setattr(
         select_test_port,
@@ -103,3 +178,5 @@ def test_python_integration_helpers_delegate_to_shared_selector():
 
     assert "from scripts import select_test_port" in integration_helpers
     assert "from scripts import select_test_port" in backend_helpers
+    assert "_port_free_for_both" not in integration_helpers
+    assert "select_test_port.port_free_for_both" in integration_helpers

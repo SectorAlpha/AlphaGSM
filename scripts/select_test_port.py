@@ -63,6 +63,9 @@ def port_free_for_both(port):
         for host in PROBE_HOSTS:
             with socket.socket(socket.AF_INET, socktype) as probe:
                 try:
+                    # This wildcard bind is a short-lived, non-listening collision
+                    # probe; the context manager closes it before this returns.
+                    # codeql[py/bind-socket-all-network-interfaces]
                     probe.bind((host, port))
                 except OSError:
                     return False

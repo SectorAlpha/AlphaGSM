@@ -4166,35 +4166,6 @@ def test_parse_recommended_port_overrides_reads_full_claim_set():
     }
 
 
-def test_port_free_for_both_probes_loopback_and_wildcard(monkeypatch):
-    helpers = importlib.import_module("tests.integration_tests.conftest")
-
-    binds = []
-
-    class _FakeSocket:
-        def __init__(self, _family, socktype):
-            self.socktype = socktype
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def bind(self, address):
-            binds.append((self.socktype, address))
-
-    monkeypatch.setattr(helpers.socket, "socket", _FakeSocket)
-
-    assert helpers._port_free_for_both(25565) is True
-    assert binds == [
-        (helpers.socket.SOCK_STREAM, ("127.0.0.1", 25565)),
-        (helpers.socket.SOCK_STREAM, ("0.0.0.0", 25565)),
-        (helpers.socket.SOCK_DGRAM, ("127.0.0.1", 25565)),
-        (helpers.socket.SOCK_DGRAM, ("0.0.0.0", 25565)),
-    ]
-
-
 def test_set_source_hibernation_preserves_line_boundaries_when_appending(tmp_path):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     server_cfg = tmp_path / "server.cfg"

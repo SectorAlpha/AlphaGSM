@@ -7,6 +7,12 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-08-01
+- CI/integration: centralize TCP+UDP test-port availability probes in the
+  shared selector, retaining wildcard collision detection while explicitly
+  documenting the short-lived, non-listening CodeQL suppression and covering
+  probe cleanup and live-listener rejection with unit tests.
+
 2026-07-29
 - Docker SteamCMD runtime: include the 32-bit X11 loader used by legacy
   Steam-backed Source servers, keeping the Docker image's native Steam client
