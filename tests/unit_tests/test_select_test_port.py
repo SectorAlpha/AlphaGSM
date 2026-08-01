@@ -138,6 +138,9 @@ def test_port_free_for_both_closes_probe_when_bind_fails(monkeypatch):
 
 def test_port_free_for_both_rejects_real_wildcard_listener():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+        # This fixture deliberately creates a real wildcard listener to prove
+        # that the availability probe rejects an occupied wildcard port.
+        # codeql[py/bind-socket-all-network-interfaces]
         listener.bind(("0.0.0.0", 0))
         listener.listen(1)
         port = listener.getsockname()[1]
