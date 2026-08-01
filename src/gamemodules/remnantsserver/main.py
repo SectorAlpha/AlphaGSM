@@ -121,6 +121,7 @@ def get_start_command(server):
         cmd = proton.wrap_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
+            prefer_proton=True,
         )
     return cmd, server.data["dir"]
 
@@ -163,9 +164,11 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    prefer_proton=True,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    prefer_proton=True,
 )

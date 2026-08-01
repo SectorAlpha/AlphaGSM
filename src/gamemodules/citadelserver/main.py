@@ -115,9 +115,13 @@ restart = gamemodule_common.make_restart_hook()
 
 
 def get_query_address(server):
-    """Return Citadel's validated Linux health endpoint."""
+    """Return Citadel's A2S query endpoint."""
 
-    return ("127.0.0.1", int(server.data["port"]), "tcp")
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
 
 
 def get_info_address(server):

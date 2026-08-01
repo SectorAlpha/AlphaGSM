@@ -12,7 +12,7 @@ The validated path is:
 - the shared Docker-backed `steamcmd-linux` runtime
 - the real native binary `argoserver`
 
-AlphaGSM manages the native `server.cfg`, lifecycle, and current generic `tcp`
+AlphaGSM manages the native `server.cfg`, lifecycle, and current generic `udp`
 health surface on the managed main game port.
 
 ## Quick Start
@@ -97,5 +97,5 @@ alphagsm myargoserv backup
 - The old disabled note was stale: the anonymous payload does include a native Linux server.
 - AlphaGSM does not force the removed `server` beta; current SteamCMD rejects
   that branch, while the public branch is the last validated install path.
-- The validated health contract is generic `tcp` on the managed main game port rather than A2S.
+- The validated health contract is generic `udp` on the managed main game port rather than A2S.
 - The validated Linux path is the shared Docker-backed `steamcmd-linux` runtime.

@@ -50,9 +50,16 @@ def test_argoserver_get_start_command_builds_expected_args(tmp_path):
         "-profiles=profiles",
         "-name=argo",
         "-world=empty",
-        "-autoinit",
     ]
     assert cwd == server.data["dir"]
+
+
+def test_argoserver_uses_udp_game_port_for_health_checks():
+    server = DummyServer("argo")
+    server.data["port"] = 2302
+
+    assert argoserver.get_query_address(server) == ("127.0.0.1", 2302, "udp")
+    assert argoserver.get_info_address(server) == ("127.0.0.1", 2302, "udp")
 
 
 def test_bobserver_get_start_command_builds_expected_args(tmp_path):

@@ -78,6 +78,37 @@ def _container_runtime_env(_server):
     }
 
 
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap Sniper Elite 4 for headless Linux process launches."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        *wrapped,
+    ]
+
+
 def configure(server, ask, port=None, dir=None, *, exe_name="bin/SniperElite4_Dedicated.exe"):
     """Collect and store configuration values for a Sniper Elite 4 server."""
 
@@ -211,10 +242,9 @@ def get_start_command(server):
         DEFAULT_CFG_PATH,
     ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
         )
     return cmd, server.data["dir"]
 
@@ -274,11 +304,14 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
     port_definitions=port_claim_definitions,
+    prefer_proton=True,
     extra_env=_container_runtime_env,
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
     port_definitions=port_claim_definitions,
+    prefer_proton=True,
     extra_env=_container_runtime_env,
 )

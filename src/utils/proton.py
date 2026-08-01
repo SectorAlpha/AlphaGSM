@@ -219,7 +219,7 @@ def _is_env_assignment(token):
 
 
 def unwrap_runtime_command(command):
-    """Strip a leading ``env``/Wine/Proton launcher wrapper from *command*."""
+    """Strip display, env, Wine, and Proton wrappers from *command*."""
 
     command = list(command)
     if not command:
@@ -233,6 +233,13 @@ def unwrap_runtime_command(command):
             index += 1
     if index >= len(command):
         return command
+    if os.path.basename(command[index]) == "xvfb-run":
+        index += 1
+        while index < len(command) and command[index].startswith("-"):
+            index += 1
+        if index >= len(command):
+            return command
+        return unwrap_runtime_command(command[index:])
     launcher = os.path.basename(command[index])
     if launcher in ("wine", "wine64"):
         return command[index + 1 :]

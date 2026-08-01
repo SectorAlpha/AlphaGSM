@@ -128,11 +128,22 @@ def get_start_command(server):
         "-profiles=%s" % (server.data["profilesdir"],),
         "-name=%s" % (server.name,),
         "-world=%s" % (server.data["world"],),
-        "-autoinit",
     ]
     if server.data["mod"]:
         command.append("-mod=%s" % (server.data["mod"],))
     return (command, server.data["dir"])
+
+
+def get_query_address(server):
+    """Return Argo's generic UDP game-port health surface."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+
+
+def get_info_address(server):
+    """Return the same UDP endpoint used by Argo's info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):

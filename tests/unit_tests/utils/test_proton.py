@@ -314,6 +314,27 @@ def test_unwrap_runtime_command_skips_env_unset_options():
     assert result == ["Server.exe", "-port", "27015"]
 
 
+def test_unwrap_runtime_command_removes_xvfb_wrapper():
+    command = [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        "env",
+        "DISPLAY=",
+        "/usr/bin/proton",
+        "run",
+        "Server.exe",
+        "-port",
+        "27015",
+    ]
+
+    assert proton_module.unwrap_runtime_command(command) == [
+        "Server.exe",
+        "-port",
+        "27015",
+    ]
+
+
 def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
     server = DummyServer(
         data={

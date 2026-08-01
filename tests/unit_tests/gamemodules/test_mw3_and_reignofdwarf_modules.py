@@ -118,9 +118,11 @@ def test_reignofdwarf_runtime_metadata_enables_xvfb_for_docker(tmp_path, monkeyp
     spec = reignofdwarfserver.get_container_spec(server)
 
     assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
     assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
     assert requirements["env"]["WINEDLLOVERRIDES"] == ""
     assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
     assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 

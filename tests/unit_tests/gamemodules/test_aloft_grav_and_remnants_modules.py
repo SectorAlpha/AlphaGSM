@@ -115,3 +115,22 @@ def test_remnants_update_downloads_and_optionally_restart(monkeypatch):
 
     assert calls == [("/srv/remnants/", 1141420, True, True)]
     assert server.start_calls == 1
+
+
+def test_remnants_runtime_metadata_prefers_proton(tmp_path):
+    server = DummyServer("remnants")
+    (tmp_path / "RemSurvivalServer.exe").write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "RemSurvivalServer.exe",
+            "port": 7777,
+            "queryport": 27015,
+        }
+    )
+
+    requirements = remnantsserver.get_runtime_requirements(server)
+    spec = remnantsserver.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"

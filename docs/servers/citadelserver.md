@@ -4,9 +4,8 @@ This guide covers the `citadelserver` module in AlphaGSM.
 
 `citadelserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
 baseline. The checked-in GitHub validation path for this server is
-Docker-first through the shared `steamcmd-linux` runtime, with generic `tcp`
-`query` / `info` on the managed main port rather than an A2S `queryport`
-contract.
+Docker-first through the shared `steamcmd-linux` runtime, with A2S `query` /
+`info` on the managed `queryport`.
 
 ## Requirements
 
@@ -67,7 +66,7 @@ alphagsm mycitadels backup
 - Module name: `citadelserver`
 - Default game port: `7777`
 - Default query port: `27015`
-- Supported Linux health contract: `query`, `info`, and `info --json` use generic `tcp` on the managed main game port
+- Supported Linux health contract: `query`, `info`, and `info --json` use A2S on the managed `queryport`
 
 ## Developer Notes
 

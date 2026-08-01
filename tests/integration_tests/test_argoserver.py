@@ -79,12 +79,12 @@ def test_argoserver_lifecycle(tmp_path):
 
     try:
         wait_for_udp_open("127.0.0.1", port, START_TIMEOUT)
-        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT, expected_port=port)
 
         run_and_assert_ok(env, server_name, "status")
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "TCP ping on port" in query_result.stdout
+            "Server port is open" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         info_result = run_and_assert_ok(env, server_name, "info")
@@ -95,8 +95,8 @@ def test_argoserver_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
         )
         assert _info_data["port"] == port, (
             f"Expected reported info port {port}: {_info_data!r}"

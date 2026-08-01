@@ -8,6 +8,16 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- CI/integration: correct Argo's generic UDP health contract and Citadel's A2S
+  query-port contract, and make the Wine/Proton Docker metadata for Reign of
+  Dwarf, Remnants, and Sniper Elite 4 agree with their process launchers.
+- Runtime: give Sniper Elite 4 process launches the same headless Xvfb support
+  as its Docker path, teach the shared container manifest builder to remove that
+  process-only wrapper, and restore Return to Moria's console setting required
+  for world startup.
+- Warfork: write the upstream `sv_port` cvar, rather than the unrelated
+  `net_port` cvar, so the managed process and Docker launches bind the requested
+  game port instead of silently falling back to `44400`.
 - Terraria: resolve the latest vanilla dedicated-server archive from the
   official metadata endpoint, retaining the numeric probe only as a transient
   metadata failure fallback.

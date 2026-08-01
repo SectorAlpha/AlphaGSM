@@ -137,9 +137,8 @@ def sync_server_config(server):
             "AfterDisconnectionRetryTime": "600",
         },
         "Console": {
-            # Headless operation avoids the documented focus/key prompt that
-            # can stall world loading when no interactive console is attached.
-            "Enabled": "false",
+            # The server uses the enabled console to complete world startup.
+            "Enabled": "true",
         },
         "Performance": {
             "ServerFPS": "60",

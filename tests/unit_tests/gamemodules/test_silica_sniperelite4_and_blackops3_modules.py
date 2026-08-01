@@ -55,6 +55,7 @@ def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypat
         return list(cmd)
 
     monkeypatch.setattr(sniperelite4server.proton, "wrap_command", fake_wrap_command)
+    monkeypatch.setattr(sniperelite4server.shutil, "which", lambda _name: None)
     server = DummyServer("se4")
     exe = tmp_path / "SniperElite4_DedicatedServer.exe"
     exe.write_text("")
@@ -99,6 +100,24 @@ def test_blackops3_get_start_command_builds_expected_args(tmp_path, monkeypatch)
     assert "sv_maxclients" in cmd
     import os
     assert cwd == os.path.join(server.data["dir"], "UnrankedServer")
+
+
+def test_sniperelite4_runtime_metadata_prefers_proton(tmp_path):
+    server = DummyServer("sniper")
+    (tmp_path / "SniperElite4_DedicatedServer.exe").write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "SniperElite4_DedicatedServer.exe",
+            "port": 7777,
+        }
+    )
+
+    requirements = sniperelite4server.get_runtime_requirements(server)
+    spec = sniperelite4server.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
 
 
 def test_silica_and_blackops3_update_downloads_and_optionally_restart(monkeypatch):

@@ -148,6 +148,15 @@ def test_get_start_command(tmp_path):
     server.data["world"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert "-autoinit" not in cmd
+
+
+def test_query_and_info_addresses_use_udp_game_port():
+    server = DummyServer()
+    server.data["port"] = 2302
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 2302, "udp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 2302, "udp")
 
 
 def test_get_start_command_missing_exe(tmp_path):

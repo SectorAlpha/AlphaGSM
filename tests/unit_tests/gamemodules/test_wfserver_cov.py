@@ -48,7 +48,7 @@ def test_install(tmp_path):
     server.data["hostname"] = "AlphaGSM Warfork"
     server.data["port"] = 44400
     mod.install(server)
-    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set net_port 44400\nset sv_hostname "AlphaGSM Warfork"\n'
+    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set sv_port 44400\nset sv_hostname "AlphaGSM Warfork"\n'
 
 
 def test_sync_server_config_rewrites_autoexec(tmp_path):
@@ -59,7 +59,7 @@ def test_sync_server_config_rewrites_autoexec(tmp_path):
 
     mod.sync_server_config(server)
 
-    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set net_port 44401\nset sv_hostname "AlphaGSM Warfork"\n'
+    assert (tmp_path / "basewf" / "dedicated_autoexec.cfg").read_text() == 'set sv_port 44401\nset sv_hostname "AlphaGSM Warfork"\n'
 
 
 def test_update_with_restart(tmp_path):
@@ -120,7 +120,7 @@ def test_get_start_command(tmp_path):
         "net_ip",
         "0.0.0.0",
         "+set",
-        "net_port",
+        "sv_port",
         "27015",
         "+map",
         "test",
@@ -130,7 +130,7 @@ def test_get_start_command(tmp_path):
 
 def test_setting_schema_exposes_warfork_launch_and_native_config_keys():
     assert mod.setting_schema["hostname"].native_config_key == "sv_hostname"
-    assert mod.setting_schema["port"].native_config_key == "net_port"
+    assert mod.setting_schema["port"].native_config_key == "sv_port"
     assert mod.setting_schema["bindaddress"].launch_arg_tokens == ("+set", "net_ip")
     assert mod.setting_schema["startmap"].aliases == ("map",)
 

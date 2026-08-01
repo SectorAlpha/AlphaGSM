@@ -72,9 +72,9 @@ config_sync_keys = ("port", "hostname")
 setting_schema = {
     **gamemodule_common.build_quake_setting_schema(
         include_fs_game=True,
-        port_tokens=("+set", "net_port"),
+        port_tokens=("+set", "sv_port"),
         hostname_tokens=("+set", "sv_hostname"),
-        port_native_config_key="net_port",
+        port_native_config_key="sv_port",
         hostname_native_config_key="sv_hostname",
         include_bind_address=True,
         hostname_before_port=True,
@@ -428,10 +428,10 @@ def sync_server_config(server):
         },
         require_explicit_key=True,
     )
-    port = int(managed_values["net_port"])
+    port = int(managed_values["sv_port"])
     hostname = managed_values["sv_hostname"]
     with open(autoexec_path, "w", encoding="utf-8") as fh:
-        fh.write(f'set net_port {port}\n')
+        fh.write(f'set sv_port "{port}"\n')
         fh.write('set sv_hostname "%s"\n' % (hostname.replace('"', '\\"'),))
 
 
@@ -479,7 +479,7 @@ def install(server):
 
     _base_install(server)
     # SteamCMD ships a basewf/dedicated_autoexec.cfg that hard-codes
-    # net_port 44400. Overwrite it with the configured port after install.
+    # sv_port 44400. Overwrite it with the configured port after install.
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
