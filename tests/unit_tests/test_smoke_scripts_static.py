@@ -192,7 +192,7 @@ def test_workflow_reports_smoke_skips_separately_from_passes_and_failures():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert text.count('echo "SKIPPED: $script" | tee -a smoke-results.txt') == 2
-    assert text.count('elif [ "$rc" -eq 77 ]; then') == 2
+    assert text.count('if [ "$rc" -eq 77 ]; then') == 2
     assert 'line.startswith("SKIPPED: ")' in text
     assert "smoke_skipped" in text
 

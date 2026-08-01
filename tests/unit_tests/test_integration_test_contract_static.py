@@ -3300,7 +3300,7 @@ def test_astroneer_integration_uses_the_managed_registration_endpoint_before_set
 
     assert registration_ip in text
     assert "pytest.skip" in text
-    assert "externally routable" in text
+    assert "external IPv4 endpoint" in text
     assert set_registration_ip.lineno < setup_call.lineno
 
 
