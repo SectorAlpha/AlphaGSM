@@ -13,6 +13,7 @@ BLACK_OPS_3_SMOKE = Path("tests/smoke_tests/run_blackops3server.sh")
 ASA_SMOKE = Path("tests/smoke_tests/run_arksurvivalascended.sh")
 ASTRONEER_SMOKE = Path("tests/smoke_tests/run_astroneerserver.sh")
 STEAMCMD_HELPERS = Path("tests/smoke_tests/steamcmd_helpers.sh")
+WORKFLOW = Path(".github/workflows/unittest.yaml")
 
 
 def test_life_is_feudal_smoke_uses_docker_runtime_backend():
@@ -178,6 +179,22 @@ def test_astroneer_smoke_sets_managed_registration_ip_before_setup():
     assert "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP" in text
     assert set_registration_ip in text
     assert text.index(set_registration_ip) < text.index(setup_call)
+
+
+def test_astroneer_smoke_reports_missing_external_endpoint_as_explicit_skip():
+    text = ASTRONEER_SMOKE.read_text(encoding="utf-8")
+
+    assert "SKIPPED: Astroneer smoke requires" in text
+    assert "exit 77" in text
+
+
+def test_workflow_reports_smoke_skips_separately_from_passes_and_failures():
+    text = WORKFLOW.read_text(encoding="utf-8")
+
+    assert text.count('echo "SKIPPED: $script" | tee -a smoke-results.txt') == 2
+    assert text.count('elif [ "$rc" -eq 77 ]; then') == 2
+    assert 'line.startswith("SKIPPED: ")' in text
+    assert "smoke_skipped" in text
 
 
 def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():

@@ -24,6 +24,9 @@ TERRARIA_HOMEPAGE = "https://terraria.org"
 TERRARIA_DOWNLOAD_TEMPLATE = (
     "https://terraria.org/api/download/pc-dedicated-server/terraria-server-%s.zip"
 )
+TERRARIA_DEDICATED_SERVERS_API = (
+    "https://terraria.org/api/get/dedicated-servers-names"
+)
 TSHOCK_LATEST_RELEASE_API = "https://api.github.com/repos/Pryaxis/TShock/releases/latest"
 HTTP_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 
@@ -69,9 +72,34 @@ def _head_ok(url):
         return False
 
 
+def _resolve_latest_from_metadata():
+    names = _read_json(TERRARIA_DEDICATED_SERVERS_API)
+    if not isinstance(names, list):
+        raise ValueError("Terraria dedicated-server metadata is not a list")
+
+    for name in names:
+        if not isinstance(name, str):
+            continue
+        match = re.fullmatch(r"terraria-server-(\d+)\.zip", name)
+        if match:
+            tag = match.group(1)
+            return tag, TERRARIA_DOWNLOAD_TEMPLATE % tag
+
+    raise ValueError("Terraria dedicated-server metadata has no PC server asset")
+
+
 def resolve_terraria_download(version=None):
     if version not in (None, "", "latest"):
         return version, TERRARIA_DOWNLOAD_TEMPLATE % (_version_to_tag(version),)
+
+    try:
+        tag, url = _resolve_latest_from_metadata()
+        return ".".join(tag), url
+    except (OSError, TypeError, ValueError):
+        # Keep the numeric probe as a compatibility fallback if the metadata
+        # endpoint is temporarily unavailable.
+        pass
+
     baseline = 1449
     tag = baseline
     while _head_ok(TERRARIA_DOWNLOAD_TEMPLATE % (tag + 1,)):

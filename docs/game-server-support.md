@@ -29,7 +29,6 @@ Notes:
 - [x] ark
 - [x] arksurvivalascended
 - [x] armarserver
-- [x] astroneerserver
 - [x] avserver
 - [x] bb2server
 - [x] btlserver
@@ -220,6 +219,7 @@ Notes:
 
 ## Supported Now
 
+- [x] astroneerserver
 - [x] aloftserver
 - [x] ahlserver
 - [x] alienarenaserver

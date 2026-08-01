@@ -83,8 +83,8 @@ PORT="$(pick_free_port)"
 REGISTRATION_PUBLICIP="${ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP:-}"
 
 if [[ -z "$REGISTRATION_PUBLICIP" ]]; then
-  echo "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP must name the managed external IPv4 endpoint" >&2
-  exit 1
+  echo "SKIPPED: Astroneer smoke requires ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP to name the managed external IPv4 endpoint" >&2
+  exit 77
 fi
 
 cat > "$CONFIG_PATH" <<EOF

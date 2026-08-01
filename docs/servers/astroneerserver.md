@@ -2,12 +2,11 @@
 
 This guide covers the `astroneerserver` module in AlphaGSM.
 
-`astroneerserver` retains its prior `PASSED` status from 2026-05-29 on the
-documented Ubuntu 24.04 Linux baseline. The current protocol/readiness
-correction is pending replacement GitHub validation and does not record a new
-pass. The checked-in Linux validation path is Docker-first through the shared
-`wine-proton` runtime plus in-container Xvfb and a managed externally
-routable CI endpoint.
+`astroneerserver` is `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline because registration validation requires an externally routable
+endpoint. The checked-in Linux validation path is Docker-first through the
+shared `wine-proton` runtime plus in-container Xvfb; CI explicitly reports the
+test as skipped when that external endpoint is not configured.
 
 ## Requirements
 

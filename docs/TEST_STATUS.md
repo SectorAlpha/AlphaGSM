@@ -11,9 +11,9 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 144      |
+| PASSED   | 143      |
 | ENABLED (AUTH) | 47 |
-| ENABLED (BYO) | 43 |
+| ENABLED (BYO) | 44 |
 | DISABLED | 3      |
 | SKIPPED  | 0      |
 
@@ -51,7 +51,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ns2server | Process and Docker lifecycle revalidation of the corrected install-root launcher, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 | ns2cserver | Process and Docker lifecycle revalidation of the corrected `ia32` working directory, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 
-## PASSED (144)
+## PASSED (143)
 
 | Test | Type |
 |------|------|
@@ -61,7 +61,6 @@ support-state tables and do not change the summary counts or record a new pass.
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
 | arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the stale generic-TCP/game-port assumption with exact runtime-resolved A2S on the distinct managed UDP `queryport`. The runtime contract claims and publishes game UDP, `game + 1` UDP, and query UDP; launch keeps the map separate from `-port=<game>` and orders optional `ServerPassword` before the final `ServerAdminPassword`. Replacement CI validation is pending; this does not record a new pass. |
 | armarserver | SteamCMD |
-| astroneerserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; the current correction waits for `IpNetDriver listening on port <managed port>` in the game-owned `Astro/Saved/Logs/*.log` before exact runtime-resolved generic UDP `query` / `info` on the main port. Its runtime claim is UDP-only, while official `WindowsServer/Engine.ini` and `AstroServerSettings.ini` synchronization remains in install, update, `set`, and pre-start; Engine config also writes Wine/Proton-compatible `net.AllowEncryption=False`. Astroneer registration now uses the separate `registration_publicip` key and rejects non-public addresses before launch, without changing runtime query routing. Replacement CI requires an externally routable heavy runner plus its real IPv4 in `ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP`; this does not record a new pass. |
 | avserver | SteamCMD |
 | archive_backed_installs | Archive |
 | bb2server | SteamCMD (Source) |
@@ -256,7 +255,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
 | zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |
 
-## ENABLED (BYO) (43)
+## ENABLED (BYO) (44)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -264,6 +263,7 @@ URLs.
 
 | Test | Type |
 |------|------|
+| astroneerserver | Docker runtime (Wine/Proton); provide an externally routable IPv4 endpoint through `ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP` for registration validation. The lifecycle remains Docker-first and is explicitly skipped in CI when that external prerequisite is absent. |
 | aloftserver | owned Aloft server tree |
 | ahlserver | owned Action Half-Life mod content tree |
 | alienarenaserver | staged native Alien Arena dedicated server tree |

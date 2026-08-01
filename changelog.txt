@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- Terraria: resolve the latest vanilla dedicated-server archive from the
+  official metadata endpoint, retaining the numeric probe only as a transient
+  metadata failure fallback.
+- CI/integration: classify Astroneer's missing externally routable registration
+  endpoint as an explicit `ENABLED (BYO)` skip in both smoke and pytest output,
+  so blocked external infrastructure is visible without being reported as a
+  pass or an unrelated runtime failure.
 - CI/integration: centralize TCP+UDP test-port availability probes in the
   shared selector, retaining wildcard collision detection while explicitly
   documenting the short-lived, non-listening CodeQL suppression and covering

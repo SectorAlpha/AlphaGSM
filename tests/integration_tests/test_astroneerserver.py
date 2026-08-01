@@ -39,7 +39,7 @@ def test_astroneerserver_lifecycle(tmp_path):
     require_command("docker")
     registration_publicip = os.environ.get("ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP")
     if not registration_publicip:
-        pytest.fail(
+        pytest.skip(
             "ASTRONEER Docker integration requires "
             "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP to name the managed "
             "external IPv4 endpoint"

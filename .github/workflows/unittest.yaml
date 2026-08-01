@@ -269,6 +269,7 @@ jobs:
         run: |
           touch smoke-results.txt
           passed=0
+          skipped=0
           failed=0
           for script in ${{ matrix.scripts }}; do
             echo ""
@@ -279,10 +280,19 @@ jobs:
               echo "PASSED: $script" | tee -a smoke-results.txt
               passed=$((passed + 1))
             else
-              echo "FAILED: $script" | tee -a smoke-results.txt
-              failed=$((failed + 1))
+              rc=$?
+              if [ "$rc" -eq 77 ]; then
+                echo "SKIPPED: $script" | tee -a smoke-results.txt
+                skipped=$((skipped + 1))
+              else
+                echo "FAILED: $script" | tee -a smoke-results.txt
+                failed=$((failed + 1))
+              fi
             fi
           done
+          if [ "$skipped" -gt 0 ]; then
+            echo "$skipped smoke test(s) skipped"
+          fi
           if [ "$failed" -gt 0 ]; then
             echo "$failed smoke test(s) failed"
             exit 1
@@ -359,6 +369,7 @@ jobs:
         run: |
           touch smoke-results.txt
           passed=0
+          skipped=0
           failed=0
           for script in ${{ matrix.scripts }}; do
             echo ""
@@ -369,10 +380,19 @@ jobs:
               echo "PASSED: $script" | tee -a smoke-results.txt
               passed=$((passed + 1))
             else
-              echo "FAILED: $script" | tee -a smoke-results.txt
-              failed=$((failed + 1))
+              rc=$?
+              if [ "$rc" -eq 77 ]; then
+                echo "SKIPPED: $script" | tee -a smoke-results.txt
+                skipped=$((skipped + 1))
+              else
+                echo "FAILED: $script" | tee -a smoke-results.txt
+                failed=$((failed + 1))
+              fi
             fi
           done
+          if [ "$skipped" -gt 0 ]; then
+            echo "$skipped smoke test(s) skipped"
+          fi
           if [ "$failed" -gt 0 ]; then
             echo "$failed smoke test(s) failed"
             exit 1
@@ -990,7 +1010,7 @@ jobs:
           python3 - <<'PYEOF'
           import glob, sys, xml.etree.ElementTree as ET
 
-          smoke_passed, smoke_failed = [], []
+          smoke_passed, smoke_skipped, smoke_failed = [], [], []
           int_passed, int_skipped, int_failed = [], [], []
           backend_passed, backend_skipped, backend_failed = [], [], []
 
@@ -999,6 +1019,8 @@ jobs:
                   line = line.strip()
                   if line.startswith("PASSED: "):
                       smoke_passed.append(line[8:])
+                  elif line.startswith("SKIPPED: "):
+                      smoke_skipped.append(line[9:])
                   elif line.startswith("FAILED: "):
                       smoke_failed.append(line[8:])
 
@@ -1045,6 +1067,7 @@ jobs:
 
           print("\nSMOKE TESTS")
           print(f"  Passed : {len(smoke_passed)}")
+          print(f"  Skipped: {len(smoke_skipped)}")
           print(f"  Failed : {len(smoke_failed)}")
           if smoke_passed:
               print("\n  Passed:")
@@ -1054,6 +1077,10 @@ jobs:
               print("\n  Failed:")
               for t in smoke_failed:
                   print(f"    FAIL  {t}")
+          if smoke_skipped:
+              print("\n  Skipped:")
+              for t in smoke_skipped:
+                  print(f"    SKIP  {t}")
 
           print("\nINTEGRATION TESTS")
           print(f"  Passed  : {len(int_passed)}")
@@ -1098,7 +1125,7 @@ jobs:
                       print(f"          Reason: {r}")
 
           total_p = len(smoke_passed) + len(int_passed) + len(backend_passed)
-          total_s = len(int_skipped) + len(backend_skipped)
+          total_s = len(smoke_skipped) + len(int_skipped) + len(backend_skipped)
           total_f = len(smoke_failed) + len(int_failed) + len(backend_failed)
           print("\n" + SEP)
           print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")

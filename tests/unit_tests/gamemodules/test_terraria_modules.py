@@ -28,7 +28,30 @@ def test_resolve_terraria_download_uses_explicit_version():
     assert url.endswith("/terraria-server-1453.zip")
 
 
+def test_resolve_terraria_download_uses_official_latest_metadata(monkeypatch):
+    monkeypatch.setattr(
+        terraria_common_impl,
+        "_read_json",
+        lambda url: ["terraria-server-1456.zip", "terraria-server-1456.zip"],
+    )
+    monkeypatch.setattr(
+        terraria_common_impl,
+        "_head_ok",
+        lambda url: (_ for _ in ()).throw(AssertionError("metadata should avoid probing")),
+    )
+
+    version, url = terraria_common.resolve_terraria_download()
+
+    assert version == "1.4.5.6"
+    assert url.endswith("/terraria-server-1456.zip")
+
+
 def test_resolve_terraria_download_finds_latest_from_homepage(monkeypatch):
+    monkeypatch.setattr(
+        terraria_common_impl,
+        "_read_json",
+        lambda url: (_ for _ in ()).throw(OSError("metadata unavailable")),
+    )
     monkeypatch.setattr(
         terraria_common_impl,
         "_head_ok",
