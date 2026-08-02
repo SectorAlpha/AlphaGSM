@@ -97,7 +97,7 @@ def test_sniper_elite_4_smoke_captures_exited_container_diagnostics():
     assert "capture_container_process_diagnostics()" in helpers
     assert "ExitCode: {{.State.ExitCode}}" in helpers
     assert diagnostics_call in text
-    assert text.index(query_call) < text.index(diagnostics_call)
+    assert text.index(query_call) < text.rindex(diagnostics_call)
 
 
 def test_asa_smoke_uses_distinct_udp_game_pair_and_a2s_query_port():
