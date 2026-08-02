@@ -66,7 +66,7 @@ alphagsm mysaleblaz backup
 - Module name: `saleblazersserver`
 - Default game port: 27015
 - Default helper port: 27016 (`port + 1`)
-- Current validation status: PASSED 2026-05-29. Fresh smoke and focused integration now both pass on Linux/Wine once AlphaGSM writes `DedicatedServerConfig.json`, launches the upstream `-config ./DedicatedServerConfig.json` path under `xvfb-run` plus SDL `x11`, dummy audio, and software GL, and treats the live helper surface as generic `udp` on `port + 1`. The current readiness markers are `Server hosted on port ...` and `Connected to Console Window!`, and `query`, `info`, and `info --json` all pass on the derived helper port instead of the older stale A2S expectation.
+- Current validation status: pending the current GitHub Actions rerun. AlphaGSM starts the upstream executable from `<install_dir>/Default`, passes the managed root config as `-config ../DedicatedServerConfig.json`, runs it under `xvfb-run` plus SDL `x11`, dummy audio, and software GL, and treats the live helper surface as generic `udp` on `port + 1`. The current readiness markers are `Server hosted on port ...` and `Connected to Console Window!`, and `query`, `info`, and `info --json` must all pass on the derived helper port.
 
 ## Developer Notes
 
@@ -86,10 +86,11 @@ confirming the helper listener. On Linux hosts AlphaGSM launches Saleblazers
 through `xvfb-run` with SDL `x11` video, dummy audio, software GL
 (`LIBGL_ALWAYS_SOFTWARE=1`), and without the explicit `-headless` flag because
 that is the first launcher shape that consistently reaches the dedicated-server
-bring-up path under Wine/Proton. The upstream `-config
-<DedicatedServerConfig.json>` surface is now part of the managed contract, and
-AlphaGSM keeps the generated config aligned with the owned game port plus the
-basic lobby settings exposed through `set`.
+bring-up path under Wine/Proton. It always starts from the upstream-required
+`Default` executable directory and passes the root-owned config as
+`-config ../DedicatedServerConfig.json`, so process and Docker runtimes consume
+the same module launch contract. AlphaGSM keeps the generated config aligned
+with the owned game port plus the basic lobby settings exposed through `set`.
 
 ### Server Configuration
 

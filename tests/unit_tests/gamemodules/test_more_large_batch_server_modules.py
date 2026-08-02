@@ -79,16 +79,16 @@ def test_saleblazers_get_start_command_builds_expected_args(tmp_path, monkeypatc
     cmd, cwd = saleblazersserver.get_start_command(server)
 
     assert cmd == [
-        "Default/Saleblazers.exe",
+        "Saleblazers.exe",
         "-headless",
         "-config",
-        "./DedicatedServerConfig.json",
+        "../DedicatedServerConfig.json",
         "-batchmode",
         "-nographics",
         "-logFile",
-        "./server.log",
+        "../server.log",
     ]
-    assert cwd == server.data["dir"]
+    assert cwd == str(exe_dir)
 
 
 def test_terratechworlds_get_start_command_builds_expected_args(tmp_path, monkeypatch):

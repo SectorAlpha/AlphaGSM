@@ -100,16 +100,16 @@ def test_get_start_command(tmp_path, monkeypatch):
     exe_path.write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "Default/Saleblazers.exe",
+        "Saleblazers.exe",
         "-headless",
         "-config",
-        "./DedicatedServerConfig.json",
+        "../DedicatedServerConfig.json",
         "-batchmode",
         "-nographics",
         "-logFile",
-        "./server.log",
+        "../server.log",
     ]
-    assert cwd == server.data["dir"]
+    assert cwd == str(exe_path.parent)
 
 
 def test_get_start_command_linux_drops_headless_flag(tmp_path, monkeypatch):
@@ -125,14 +125,14 @@ def test_get_start_command_linux_drops_headless_flag(tmp_path, monkeypatch):
     cmd, cwd = mod.get_start_command(server)
 
     assert cmd == [
-        "Default/Saleblazers.exe",
+        "Saleblazers.exe",
         "-config",
-        "./DedicatedServerConfig.json",
+        "../DedicatedServerConfig.json",
         "-batchmode",
         "-logFile",
-        "./server.log",
+        "../server.log",
     ]
-    assert cwd == server.data["dir"]
+    assert cwd == str(exe_path.parent)
 
 
 def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):

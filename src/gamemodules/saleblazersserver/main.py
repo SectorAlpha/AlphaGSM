@@ -239,33 +239,39 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    working_dir = os.path.dirname(exe_path) or server.data["dir"]
+    config_path = os.path.relpath(_config_path(server), working_dir)
+    log_path = os.path.relpath(
+        os.path.join(server.data["dir"], "server.log"),
+        working_dir,
+    )
     cmd = [
-        server.data["exe_name"],
+        os.path.basename(server.data["exe_name"]),
         "-headless",
         "-config",
-        "./DedicatedServerConfig.json",
+        config_path,
         "-batchmode",
         "-nographics",
         "-logFile",
-        "./server.log",
+        log_path,
     ]
     if IS_LINUX:
         # Unity's explicit headless flags push this build onto a NullGfx path
         # that never reaches the dedicated console on Linux/Wine. Keep the
         # Xvfb-backed windowed server path and only retain batch logging.
         cmd = [
-            server.data["exe_name"],
+            os.path.basename(server.data["exe_name"]),
             "-config",
-            "./DedicatedServerConfig.json",
+            config_path,
             "-batchmode",
             "-logFile",
-            "./server.log",
+            log_path,
         ]
         cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
         )
-    return cmd, server.data["dir"]
+    return cmd, working_dir
 
 
 def prestart(server):
