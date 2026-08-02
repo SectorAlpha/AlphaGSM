@@ -89,9 +89,10 @@ through `xvfb-run` with SDL `x11` video, dummy audio, software GL
 dedicated listener is created under Wine/Proton. AlphaGSM always starts from
 the upstream-required `Default` executable directory and passes the root-owned
 config as `-config ../DedicatedServerConfig.json`, so process and Docker
-runtimes consume the same module launch contract. AlphaGSM keeps the generated
-config aligned with the owned game port plus the basic lobby settings exposed
-through `set`.
+runtimes consume the same module launch contract. Docker explicitly enables
+the Wine/Proton runtime image's matching 24-bit Xvfb display. AlphaGSM keeps
+the generated config aligned with the owned game port plus the basic lobby
+settings exposed through `set`.
 
 ### Server Configuration
 

@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- Saleblazers: explicitly enable the Wine/Proton Docker runtime's 24-bit Xvfb
+  display and use matching Xvfb settings for process launches, preventing
+  Unity from exiting before the dedicated listener starts.
 - Runtime: force-kill the complete subprocess launch group during cross-process
   `stop`/`kill` operations, preventing wrapper-launched game children from
   keeping listeners open after the AlphaGSM process has exited.

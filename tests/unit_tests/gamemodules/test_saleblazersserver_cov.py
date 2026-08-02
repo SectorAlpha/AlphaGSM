@@ -164,6 +164,7 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
     assert wrapped == [
         "xvfb-run",
         "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
         "env",
         "SDL_VIDEODRIVER=x11",
         "SDL_AUDIODRIVER=dummy",
@@ -242,6 +243,19 @@ def test_runtime_ports_follow_game_port_plus_one(tmp_path):
     assert (38722, "udp") in ports
     assert (38722, "tcp") in ports
     assert server.data["queryport"] == "38722"
+    expected_display_env = {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
+    assert {
+        key: requirements["env"].get(key)
+        for key in expected_display_env
+    } == expected_display_env
 
 
 def test_do_stop():

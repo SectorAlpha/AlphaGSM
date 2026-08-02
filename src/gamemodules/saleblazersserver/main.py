@@ -19,6 +19,7 @@ steam_app_id = 3099600
 steam_anonymous_login_possible = True
 DEFAULT_PORT = 27015
 STATUS_PORT_OFFSET = 1
+XVFB_SERVER_ARGS = "-screen 0 1024x768x24 -nolisten tcp"
 config_sync_keys = ("port", "maxplayers", "servername", "serverpassword")
 setting_schema = {
     "port": SettingSpec(
@@ -218,7 +219,21 @@ def _wrap_linux_command(command, wineprefix=None):
             or arg.startswith("WINEDLLOVERRIDES=")
         )
     ]
-    return ["xvfb-run", "-a", *wrapped]
+    return ["xvfb-run", "-a", f"--server-args={XVFB_SERVER_ARGS}", *wrapped]
+
+
+def _container_runtime_env(_server):
+    """Return display settings for the shared Wine/Proton container entrypoint."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": XVFB_SERVER_ARGS,
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+    }
 
 
 def get_query_address(server):
@@ -326,6 +341,7 @@ _shared_runtime_requirements = gamemodule_common.make_proton_runtime_requirement
         {"key": "port", "protocol": "udp"},
         {"key": "port", "protocol": "tcp"},
     ),
+    extra_env=_container_runtime_env,
     extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
@@ -345,6 +361,7 @@ _shared_container_spec = gamemodule_common.make_proton_container_spec_builder(
         {"key": "port", "protocol": "udp"},
         {"key": "port", "protocol": "tcp"},
     ),
+    extra_env=_container_runtime_env,
 )
 
 
