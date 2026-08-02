@@ -314,6 +314,23 @@ def test_unwrap_runtime_command_skips_env_unset_options():
     assert result == ["Server.exe", "-port", "27015"]
 
 
+def test_unwrap_runtime_command_removes_env_wrapper_for_native_command():
+    command = [
+        "env",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "bin/Server.exe",
+        "exec",
+        "default.cfg",
+    ]
+
+    assert proton_module.unwrap_runtime_command(command) == [
+        "bin/Server.exe",
+        "exec",
+        "default.cfg",
+    ]
+
+
 def test_unwrap_runtime_command_removes_xvfb_wrapper():
     command = [
         "xvfb-run",

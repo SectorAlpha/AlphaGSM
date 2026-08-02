@@ -245,7 +245,7 @@ def unwrap_runtime_command(command):
         return command[index + 1 :]
     if index + 1 < len(command) and command[index + 1] == "run":
         return command[index + 2 :]
-    return command
+    return command[index:]
 
 
 def _build_port_specs(server, port_definitions):

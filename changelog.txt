@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- Runtime: correctly remove nested `env` assignments when generating a
+  Docker-native command from a headless Wine/Proton process wrapper, avoiding
+  accidental attempts to launch `./env` as the server executable.
 - CI/smoke: retain Wine/Proton Docker container state, runtime diagnostics,
   and managed configuration output when Sniper Elite 4 exits before its UDP
   health check, so failed lifecycle runs expose the server-side cause.
