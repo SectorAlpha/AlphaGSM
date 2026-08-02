@@ -91,7 +91,7 @@ def test_ahl2server_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            "Server port is open" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
