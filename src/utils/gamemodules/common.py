@@ -1163,15 +1163,19 @@ def make_proton_container_spec_builder(
         resolved_working_dir = working_dir
         if resolved_working_dir is None:
             resolved_working_dir = _proton_module().CONTAINER_SERVER_DIR
+        optional_kwargs = {}
+        if stop_mode is not None:
+            optional_kwargs["stop_mode"] = stop_mode
+        if stdin_open:
+            optional_kwargs["stdin_open"] = True
         return _proton_module().get_container_spec(
             server,
             get_start_command,
             port_definitions=port_definitions,
             prefer_proton=prefer_proton,
             extra_env=_resolve_optional_mapping(extra_env, server),
-            stop_mode=stop_mode,
-            stdin_open=stdin_open,
             working_dir=resolved_working_dir,
+            **optional_kwargs,
         )
 
     get_container_spec.__name__ = "get_container_spec"
