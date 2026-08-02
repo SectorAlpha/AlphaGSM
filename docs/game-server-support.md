@@ -85,7 +85,6 @@ Notes:
 - [x] medievalengineersserver
 - [x] memoriesofmarsserver
 - [x] miscreatedserver
-- [x] codserver
 - [x] codwawserver
 - [x] mumbleserver
 - [x] mtaserver
@@ -230,6 +229,7 @@ Notes:
 - [x] bfvserver
 - [x] cod2server
 - [x] cod4server
+- [x] codserver
 - [x] coduoserver
 - [x] dstserver
 - [x] etlegacyserver
