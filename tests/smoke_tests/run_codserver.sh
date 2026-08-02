@@ -81,6 +81,16 @@ run_create_or_skip_disabled "$SERVER_NAME" create codserver
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
+# The public depot does not include multiplayer maps. Keep this smoke lane
+# explicit about the owned-content prerequisite instead of starting a server
+# that can only fail later with a missing-map error.
+if ! PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" -c \
+  'from gamemodules.codserver import has_start_map; import sys; raise SystemExit(0 if has_start_map(sys.argv[1], "mp_carentan") else 1)' \
+  "$INSTALL_DIR"; then
+  echo "SKIPPED: Call of Duty smoke requires owned mp_carentan map content" >&2
+  exit 77
+fi
+
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS"

@@ -114,10 +114,10 @@ RUN wget -q -O /usr/share/keyrings/adoptium.asc \
  && apt-get install -y --no-install-recommends temurin-25-jdk \
  && rm -rf /var/lib/apt/lists/*
 
-# Install the .NET 9 and 10 runtimes — required by current Linux apphosts such
-# as TShock (.NET 9) and SS14 (dotnet 10). Baking them into the integration
-# image keeps them available under the non-root gsmuser account used by the
-# integration-test job.
+# Install the .NET 6, 9, and 10 runtimes — required by Linux apphosts such as
+# CryoFall (.NET 6), TShock (.NET 9), and SS14 (dotnet 10). Baking them into
+# the integration image keeps them available under the non-root gsmuser account
+# used by the integration-test job.
 RUN wget -q \
        https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
        -O /tmp/packages-microsoft-prod.deb \
@@ -126,6 +126,7 @@ RUN wget -q \
  && apt-get update -qq \
  && apt-get install -y --no-install-recommends dotnet-runtime-10.0 \
  && wget -q https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh \
+ && bash /tmp/dotnet-install.sh --runtime dotnet --channel 6.0 --install-dir /usr/lib/dotnet \
  && bash /tmp/dotnet-install.sh --runtime dotnet --channel 9.0 --install-dir /usr/lib/dotnet \
  && rm -f /tmp/dotnet-install.sh \
  && rm -rf /var/lib/apt/lists/*

@@ -84,6 +84,20 @@ def test_integration_image_keeps_official_valheim_linux_packages_across_layers()
     assert missing == []
 
 
+def test_integration_image_includes_dotnet6_for_legacy_linux_servers():
+    text = INTEGRATION_ENV_DOCKERFILE.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "dotnet-install.sh",
+        "--channel 6.0",
+        "--install-dir /usr/lib/dotnet",
+    )
+
+    missing = [snippet for snippet in required_snippets if snippet not in text]
+
+    assert missing == []
+
+
 def test_simple_tcp_runtime_image_keeps_mumble_service_binary_available():
     text = SIMPLE_TCP_DOCKERFILE.read_text(encoding="utf-8")
 

@@ -11,6 +11,7 @@ NIGHTINGALE_SMOKE = Path("tests/smoke_tests/run_nightingale.sh")
 MYTH_OF_EMPIRES_SMOKE = Path("tests/smoke_tests/run_mythofempiresserver.sh")
 BLACK_OPS_3_SMOKE = Path("tests/smoke_tests/run_blackops3server.sh")
 SNIPER_ELITE_4_SMOKE = Path("tests/smoke_tests/run_sniperelite4server.sh")
+COD_SERVER_SMOKE = Path("tests/smoke_tests/run_codserver.sh")
 RETURN_TO_MORIA_SMOKE = Path("tests/smoke_tests/run_returntomoriaserver.sh")
 ASA_SMOKE = Path("tests/smoke_tests/run_arksurvivalascended.sh")
 ASTRONEER_SMOKE = Path("tests/smoke_tests/run_astroneerserver.sh")
@@ -97,6 +98,16 @@ def test_sniper_elite_4_smoke_captures_exited_container_diagnostics():
     assert "capture_container_process_diagnostics()" in helpers
     assert "ExitCode: {{.State.ExitCode}}" in helpers
     assert diagnostics_call in text
+
+
+def test_codserver_smoke_skips_before_start_when_byo_map_content_is_missing():
+    text = COD_SERVER_SMOKE.read_text(encoding="utf-8")
+
+    map_check = "from gamemodules.codserver import has_start_map"
+    assert map_check in text
+    assert '"mp_carentan"' in text
+    assert "exit 77" in text
+    assert text.index(map_check) < text.index('run_alphagsm "$SERVER_NAME" start')
 
 
 def test_return_to_moria_smoke_supports_current_and_legacy_status_paths():
