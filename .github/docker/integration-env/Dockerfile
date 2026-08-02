@@ -24,6 +24,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 #                                         libcurl-gnutls.so.4 specifically
 #                                         (Ubuntu 24.04 renamed this package from
 #                                         libcurl3-gnutls to libcurl3t64-gnutls)
+#   libstdc++5:i386                    — legacy 32-bit libstdc++.so.5 required by
+#                                         the native Call of Duty dedicated server
 #   jq                                 — required by the UT99 installer script
 #   docker.io                          — Docker CLI used by Docker-backed
 #                                         integration-test lanes inside the
@@ -38,6 +40,7 @@ RUN apt-get update -qq \
         libc++1 \
         libpulse-dev \
         libcurl3t64-gnutls \
+        libstdc++5:i386 \
         jq python3-pip python3-venv \
         docker.io \
         gcc make \

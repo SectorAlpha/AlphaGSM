@@ -107,6 +107,16 @@ def test_return_to_moria_smoke_supports_current_and_legacy_status_paths():
     assert 'STATUS_JSON_CANDIDATES=(' in text
 
 
+def test_return_to_moria_smoke_wakes_the_enabled_console_after_start():
+    text = RETURN_TO_MORIA_SMOKE.read_text(encoding="utf-8")
+
+    start = 'run_alphagsm "$SERVER_NAME" start'
+    wake = 'run_alphagsm "$SERVER_NAME" send " "'
+    assert start in text
+    assert wake in text
+    assert text.index(start) < text.index(wake)
+
+
 def test_asa_smoke_uses_distinct_udp_game_pair_and_a2s_query_port():
     text = ASA_SMOKE.read_text(encoding="utf-8")
 

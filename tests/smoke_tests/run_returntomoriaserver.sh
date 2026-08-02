@@ -79,6 +79,9 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
+# The enabled upstream console can wait for an initial key before world load
+# completes and Status.json reaches its running state.
+run_alphagsm "$SERVER_NAME" send " "
 
 STATUS_JSON=""
 STATUS_JSON_CANDIDATES=(

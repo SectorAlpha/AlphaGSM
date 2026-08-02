@@ -174,6 +174,9 @@ def test_returntomoriaserver_lifecycle(tmp_path):
     try:
         # start
         run_and_assert_ok(env, server_name, "start")
+        # The enabled upstream console can wait for a key before world load
+        # completes and Status.json reaches its running state.
+        run_and_assert_ok(env, server_name, "send", " ")
 
         # wait for readiness
         status_json_path = status_json_candidates(install_dir)

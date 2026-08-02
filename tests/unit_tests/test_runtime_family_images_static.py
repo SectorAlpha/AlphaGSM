@@ -72,6 +72,7 @@ def test_integration_image_keeps_official_valheim_linux_packages_across_layers()
 
     required_snippets = (
         "libatomic1",
+        "libstdc++5:i386",
         "libpulse0",
         "libpulse-dev",
         "libcurl4-gnutls-dev",

@@ -3419,6 +3419,18 @@ def test_returntomoria_uses_status_json_before_alphagsm_info_readiness():
     assert "wait_for_udp_open" not in text
 
 
+def test_returntomoria_wakes_the_enabled_console_before_status_readiness():
+    text = (INTEGRATION_TEST_DIR / "test_returntomoriaserver.py").read_text(
+        encoding="utf-8"
+    )
+
+    start = text.index('run_and_assert_ok(env, server_name, "start")')
+    wake = text.index('run_and_assert_ok(env, server_name, "send", " ")')
+    status_wait = text.index("status_payload = wait_for_status_json_running(")
+
+    assert start < wake < status_wait
+
+
 def test_theforest_shutdown_proves_selected_a2s_query_endpoint_closed():
     path = INTEGRATION_TEST_DIR / "test_theforestserver.py"
     tree = ast.parse(path.read_text(encoding="utf-8"))
