@@ -48,6 +48,8 @@ source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 cleanup() {
   set +e
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
+    capture_runtime_diagnostics "$SERVER_NAME"
+    capture_container_process_diagnostics "$SERVER_NAME" "$CONFIG_PATH"
     ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
 }

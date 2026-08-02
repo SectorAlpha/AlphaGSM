@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- CI/smoke: retain Wine/Proton Docker container state, runtime diagnostics,
+  and managed configuration output when Sniper Elite 4 exits before its UDP
+  health check, so failed lifecycle runs expose the server-side cause.
 - Sniper Elite 4: when the downloaded depot does not provide a usable map
   rotation, generate the minimum `VILLAGE DM` entry before `Server.Host` so
   the default configuration can start while preserving operator-defined maps.

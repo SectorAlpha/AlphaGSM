@@ -10,6 +10,7 @@ SS14_SMOKE = Path("tests/smoke_tests/run_ss14server.sh")
 NIGHTINGALE_SMOKE = Path("tests/smoke_tests/run_nightingale.sh")
 MYTH_OF_EMPIRES_SMOKE = Path("tests/smoke_tests/run_mythofempiresserver.sh")
 BLACK_OPS_3_SMOKE = Path("tests/smoke_tests/run_blackops3server.sh")
+SNIPER_ELITE_4_SMOKE = Path("tests/smoke_tests/run_sniperelite4server.sh")
 ASA_SMOKE = Path("tests/smoke_tests/run_arksurvivalascended.sh")
 ASTRONEER_SMOKE = Path("tests/smoke_tests/run_astroneerserver.sh")
 STEAMCMD_HELPERS = Path("tests/smoke_tests/steamcmd_helpers.sh")
@@ -84,6 +85,19 @@ def test_black_ops_3_smoke_is_active_on_docker_udp_health_surface():
     assert 'PORT="$(pick_free_port_group 3)"' in text
     assert "CreateDedicatedModsLobby: ready!" in text
     assert 'wait_for_info_protocol "$SERVER_NAME" "udp"' in text
+
+
+def test_sniper_elite_4_smoke_captures_exited_container_diagnostics():
+    text = SNIPER_ELITE_4_SMOKE.read_text(encoding="utf-8")
+    helpers = STEAMCMD_HELPERS.read_text(encoding="utf-8")
+
+    diagnostics_call = 'capture_container_process_diagnostics "$SERVER_NAME"'
+    query_call = 'run_alphagsm "$SERVER_NAME" query'
+
+    assert "capture_container_process_diagnostics()" in helpers
+    assert "ExitCode: {{.State.ExitCode}}" in helpers
+    assert diagnostics_call in text
+    assert text.index(query_call) < text.index(diagnostics_call)
 
 
 def test_asa_smoke_uses_distinct_udp_game_pair_and_a2s_query_port():
