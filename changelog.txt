@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- Runtime: declare Return to Moria's Docker console capability explicitly by
+  keeping the Wine/Proton container stdin open and using `exec-console`, so its
+  required post-start AlphaGSM `send` command reaches the game process.
 - CI/integration: wake Return to Moria's enabled console through the normal
   AlphaGSM `send` command after `start`, and include the legacy i386 C++ runtime
   required by the native Call of Duty process lane in the Ubuntu 24.04 test

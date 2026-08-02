@@ -405,6 +405,8 @@ def get_container_spec(
     port_definitions=(),
     prefer_proton=False,
     extra_env=None,
+    stop_mode=None,
+    stdin_open=False,
     working_dir=CONTAINER_SERVER_DIR,
 ):
     """Return the Docker launch spec for a Wine/Proton-backed server."""
@@ -427,13 +429,18 @@ def get_container_spec(
         and not native_command[0].startswith("./")
     ):
         native_command[0] = "./" + native_command[0].lstrip("./")
-    return {
+    spec = {
         "working_dir": resolved_working_dir,
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
         "env": requirements.get("env", {}),
         "command": native_command,
     }
+    if stop_mode is not None:
+        spec["stop_mode"] = stop_mode
+    if stdin_open:
+        spec["stdin_open"] = True
+    return spec
 
 
 def _get_container_start_command(server, get_start_command):

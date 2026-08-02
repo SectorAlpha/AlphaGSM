@@ -1153,6 +1153,8 @@ def make_proton_container_spec_builder(
     port_definitions=(),
     prefer_proton=False,
     extra_env=None,
+    stop_mode=None,
+    stdin_open=False,
     working_dir=None,
 ):
     """Return a Proton-backed ``get_container_spec`` hook."""
@@ -1167,6 +1169,8 @@ def make_proton_container_spec_builder(
             port_definitions=port_definitions,
             prefer_proton=prefer_proton,
             extra_env=_resolve_optional_mapping(extra_env, server),
+            stop_mode=stop_mode,
+            stdin_open=stdin_open,
             working_dir=resolved_working_dir,
         )
 

@@ -306,6 +306,8 @@ def test_container_spec_prefers_proton_and_preserves_launch_contract(tmp_path):
     assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
     assert spec["command"] == ["./MoriaServer.exe"]
     assert spec["working_dir"] == "/srv/server"
+    assert spec["stop_mode"] == "exec-console"
+    assert spec["stdin_open"] is True
     assert spec["ports"] == [
         {"host": 35389, "container": 35389, "protocol": "udp"}
     ]
