@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- Saleblazers: use the normal Xvfb-backed console launch on Linux/Wine instead
+  of Unity's batch-mode window path, which failed before creating the dedicated
+  listener in the CI runtime.
 - Return to Moria: accept both documented `status.json` filename casing
   variants in the current and legacy status directories, which keeps the
   Linux process and Docker readiness checks aligned with the upstream Windows

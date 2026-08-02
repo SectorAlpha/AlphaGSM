@@ -84,13 +84,14 @@ checked-in smoke and integration flows wait for the later
 `Server hosted on port ...` / `Connected to Console Window!` lines before
 confirming the helper listener. On Linux hosts AlphaGSM launches Saleblazers
 through `xvfb-run` with SDL `x11` video, dummy audio, software GL
-(`LIBGL_ALWAYS_SOFTWARE=1`), and without the explicit `-headless` flag because
-that is the first launcher shape that consistently reaches the dedicated-server
-bring-up path under Wine/Proton. It always starts from the upstream-required
-`Default` executable directory and passes the root-owned config as
-`-config ../DedicatedServerConfig.json`, so process and Docker runtimes consume
-the same module launch contract. AlphaGSM keeps the generated config aligned
-with the owned game port plus the basic lobby settings exposed through `set`.
+(`LIBGL_ALWAYS_SOFTWARE=1`), and the normal console launch without Unity's
+`-batchmode` or `-nographics` flags. The batch-mode window path fails before the
+dedicated listener is created under Wine/Proton. AlphaGSM always starts from
+the upstream-required `Default` executable directory and passes the root-owned
+config as `-config ../DedicatedServerConfig.json`, so process and Docker
+runtimes consume the same module launch contract. AlphaGSM keeps the generated
+config aligned with the owned game port plus the basic lobby settings exposed
+through `set`.
 
 ### Server Configuration
 
