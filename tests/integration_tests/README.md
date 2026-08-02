@@ -57,6 +57,11 @@ proof surface for integration behavior. In particular:
   artifacts before changing contracts
 - protocol-sensitive lanes like A2S should be treated as unresolved until
   GitHub CI proves them green under the intended runtime
+- after the primary smoke, backend, and integration jobs finish, CI rechecks
+  each failed integration node once on a fresh runner with the original
+  `auto`, Docker, or process runtime selection
+- a recovered recheck is reported as `FLAKY RECOVERED`, but the first failure
+  remains release-blocking and is never overwritten by the recheck result
 
 ## Current Coverage Goals
 

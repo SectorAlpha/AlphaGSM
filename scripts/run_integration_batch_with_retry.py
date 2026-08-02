@@ -17,6 +17,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("tests", nargs="+", help="Integration test files or node ids to run")
     parser.add_argument("--results-file", default="results.xml")
     parser.add_argument("--retry-results-file", default="results-retry.xml")
+    parser.add_argument(
+        "--no-retry",
+        action="store_true",
+        help="Preserve the initial result for post-matrix CI rechecks.",
+    )
     return parser.parse_args()
 
 
@@ -165,6 +170,8 @@ def main() -> int:
     first_exit = run_pytest(args.tests, results_file)
     if first_exit == 0:
         return 0
+    if args.no_retry:
+        return first_exit
 
     retry_targets = failing_test_nodeids(results_file)
     isolated_retry = bool(retry_targets)

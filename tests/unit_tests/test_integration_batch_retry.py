@@ -183,6 +183,7 @@ def test_main_retries_only_failed_collection_target(tmp_path, monkeypatch):
             tests=["tests/integration_tests/test_gmodserver.py"],
             results_file=str(results_file),
             retry_results_file=str(retry_results_file),
+            no_retry=False,
         ),
     )
 
@@ -211,3 +212,36 @@ def test_main_retries_only_failed_collection_target(tmp_path, monkeypatch):
         ["tests/integration_tests/test_gmodserver.py"],
         ["tests/integration_tests/test_gmodserver.py"],
     ]
+
+
+def test_main_preserves_initial_failure_when_no_retry_is_requested(tmp_path, monkeypatch):
+    retry = load_retry_module()
+    results_file = tmp_path / "results.xml"
+    retry_results_file = tmp_path / "retry.xml"
+    calls = []
+
+    monkeypatch.setattr(
+        retry,
+        "parse_args",
+        lambda: argparse.Namespace(
+            tests=["tests/integration_tests/test_gmodserver.py"],
+            results_file=str(results_file),
+            retry_results_file=str(retry_results_file),
+            no_retry=True,
+        ),
+    )
+
+    def fake_run_pytest(targets, report_path):
+        calls.append(list(targets))
+        write_report(
+            report_path,
+            [("tests.integration_tests.test_gmodserver", "test_lifecycle", "failure")],
+        )
+        return 1
+
+    monkeypatch.setattr(retry, "run_pytest", fake_run_pytest)
+
+    assert retry.main() == 1
+    assert calls == [["tests/integration_tests/test_gmodserver.py"]]
+    testcase = next(ET.parse(results_file).getroot().iter("testcase"))
+    assert testcase.find("failure") is not None

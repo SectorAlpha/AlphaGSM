@@ -7,6 +7,12 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-08-02
+- CI/integration: preserve initial failed JUnit results, then recheck each
+  failed node once on a fresh GitHub runner after the primary matrix completes.
+  Recovered cases are reported as `FLAKY RECOVERED` for triage without
+  masking the release-blocking first failure or changing its runtime lane.
+
 2026-08-01
 - Saleblazers: explicitly enable the Wine/Proton Docker runtime's 24-bit Xvfb
   display and use matching Xvfb settings for process launches, preventing
