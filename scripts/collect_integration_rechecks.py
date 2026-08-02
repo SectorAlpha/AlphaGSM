@@ -81,6 +81,23 @@ def collect_failed_rechecks(artifacts_dir: Path) -> list[dict[str, str]]:
     return collected
 
 
+def partition_integration_failures(
+    initial_failures: list[tuple[str, str, str]],
+    recheck_passes: set[tuple[str, str]],
+) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, str]]]:
+    """Split initial failures into recovered and still-blocking cases."""
+
+    recovered: list[tuple[str, str, str]] = []
+    unrecovered: list[tuple[str, str, str]] = []
+    for failure in initial_failures:
+        source_artifact, nodeid, _reason = failure
+        if (source_artifact, nodeid) in recheck_passes:
+            recovered.append(failure)
+        else:
+            unrecovered.append(failure)
+    return recovered, unrecovered
+
+
 def main() -> int:
     args = parse_args()
     matrix = {"include": collect_failed_rechecks(args.artifacts_dir)}

@@ -682,6 +682,7 @@ jobs:
           docker system prune -af || true
           df -h /
       - name: AlphaGSM Pytest Integration Tests
+        continue-on-error: true
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
           ALPHAGSM_RUN_STEAMCMD: "1"
@@ -762,6 +763,7 @@ jobs:
           docker system prune -af || true
           df -h /
       - name: AlphaGSM Pytest Integration Tests
+        continue-on-error: true
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
           ALPHAGSM_RUN_STEAMCMD: "1"
@@ -1102,6 +1104,7 @@ jobs:
         run: |
           python3 - <<'PYEOF'
           import glob, sys, xml.etree.ElementTree as ET
+          from scripts.collect_integration_rechecks import partition_integration_failures
 
           smoke_passed, smoke_skipped, smoke_failed = [], [], []
           int_passed, int_skipped, int_failed = [], [], []
@@ -1123,6 +1126,7 @@ jobs:
                   root = ET.parse(xml_file).getroot()
               except ET.ParseError:
                   continue
+              source_artifact = xml_file.parent.name
               for tc in root.iter("testcase"):
                   name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
                   skip = tc.find("skipped")
@@ -1132,7 +1136,9 @@ jobs:
                       int_skipped.append((name, skip.attrib.get("message", "").split("\n")[0]))
                   elif fail is not None or err is not None:
                       node = fail if fail is not None else err
-                      int_failed.append((name, node.attrib.get("message", "").split("\n")[0]))
+                      int_failed.append(
+                          (source_artifact, name, node.attrib.get("message", "").split("\n")[0])
+                      )
                   else:
                       int_passed.append(name)
 
@@ -1142,19 +1148,28 @@ jobs:
               except ET.ParseError:
                   continue
               source = xml_file.parent.name.removeprefix("integration-recheck-results-")
+              source_artifact = source.rsplit("-", 1)[0]
               for tc in root.iter("testcase"):
                   name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
-                  label = f"{source}: {name}"
                   skip = tc.find("skipped")
                   fail = tc.find("failure")
                   err = tc.find("error")
                   if skip is not None:
-                      recheck_skipped.append((label, skip.attrib.get("message", "").split("\\n")[0]))
+                      recheck_skipped.append(
+                          (source_artifact, name, skip.attrib.get("message", "").split("\\n")[0])
+                      )
                   elif fail is not None or err is not None:
                       node = fail if fail is not None else err
-                      recheck_failed.append((label, node.attrib.get("message", "").split("\\n")[0]))
+                      recheck_failed.append(
+                          (source_artifact, name, node.attrib.get("message", "").split("\\n")[0])
+                      )
                   else:
-                      recheck_passed.append(label)
+                      recheck_passed.append((source_artifact, name))
+
+          recovered_int_failed, unrecovered_int_failed = partition_integration_failures(
+              int_failed,
+              set(recheck_passed),
+          )
 
           for xml_file in sorted(glob.glob("artifacts/backend-integration-results-*/*.xml")):
               try:
@@ -1212,30 +1227,30 @@ jobs:
                       print(f"          Reason: {r}")
           if int_failed:
               print("\n  Failed:")
-              for t, r in int_failed:
-                  print(f"    FAIL  {t}")
+              for source, t, r in int_failed:
+                  print(f"    FAIL  {t} [{source}]")
                   if r:
                       print(f"          Reason: {r}")
 
           print("\nINTEGRATION FLAKE RECHECKS")
-          print("  Original integration failures remain release-blocking.")
-          print(f"  Recovered : {len(recheck_passed)}")
+          print("  Recovered integration failures are temporarily non-blocking.")
+          print(f"  Recovered : {len(recovered_int_failed)}")
           print(f"  Skipped   : {len(recheck_skipped)}")
           print(f"  Still red : {len(recheck_failed)}")
-          if recheck_passed:
+          if recovered_int_failed:
               print("\n  Recovered:")
-              for t in recheck_passed:
-                  print(f"    FLAKY RECOVERED  {t} (initial failure retained)")
+              for source, t, _r in recovered_int_failed:
+                  print(f"    FLAKY RECOVERED  {t} [{source}] (initial failure retained)")
           if recheck_skipped:
               print("\n  Skipped:")
-              for t, r in recheck_skipped:
-                  print(f"    RECHECK SKIP  {t}")
+              for source, t, r in recheck_skipped:
+                  print(f"    RECHECK SKIP  {t} [{source}]")
                   if r:
                       print(f"                  Reason: {r}")
           if recheck_failed:
               print("\n  Still red:")
-              for t, r in recheck_failed:
-                  print(f"    RECHECK FAIL  {t}")
+              for source, t, r in recheck_failed:
+                  print(f"    RECHECK FAIL  {t} [{source}]")
                   if r:
                       print(f"                  Reason: {r}")
 
@@ -1262,7 +1277,7 @@ jobs:
 
           total_p = len(smoke_passed) + len(int_passed) + len(backend_passed)
           total_s = len(smoke_skipped) + len(int_skipped) + len(backend_skipped)
-          total_f = len(smoke_failed) + len(int_failed) + len(backend_failed)
+          total_f = len(smoke_failed) + len(unrecovered_int_failed) + len(backend_failed)
           print("\n" + SEP)
           print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")
           print(SEP)
