@@ -55,7 +55,13 @@ doinstall = MODULE.doinstall
 prestart = MODULE.prestart
 update = MODULE.update
 restart = MODULE.restart
-get_start_command = MODULE.get_start_command
+
+
+def get_start_command(server):
+    """Build AHL2's Steam-installed Source console launch command."""
+
+    command, working_dir = MODULE.get_start_command(server)
+    return [command[0], "-console", "-steam", *command[1:]], working_dir
 
 
 def get_query_address(server):

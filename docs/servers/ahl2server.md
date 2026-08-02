@@ -72,6 +72,8 @@ alphagsm myahl2serv backup
 - **Location**: `<install_dir>/srcds_run`
 - **Engine**: Source
 - **SteamCMD App ID**: `985050`
+- **Launch mode**: AlphaGSM uses Source's `-console -steam` flags for the
+  Steam-installed Linux payload in both process and Docker runtimes.
 
 ### Server Configuration
 

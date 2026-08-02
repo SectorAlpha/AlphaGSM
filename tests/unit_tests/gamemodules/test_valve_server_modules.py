@@ -446,6 +446,18 @@ def test_ahl2_health_contract_uses_runtime_resolved_tcp_game_port(monkeypatch):
     assert module.get_info_address(server) == ("172.18.0.9", 27015, "tcp")
 
 
+def test_ahl2_start_command_uses_steam_console_mode(tmp_path):
+    module = importlib.import_module("gamemodules.ahl2server")
+    server = SimpleNamespace(name="ahl2alpha", data={})
+
+    module.configure(server, False, 27015, str(tmp_path))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+
+    cmd, _cwd = module.get_start_command(server)
+
+    assert cmd[1:3] == ["-console", "-steam"]
+
+
 def test_ahl2_docker_contract_uses_private_host_user_home_and_runtime_appid(
     monkeypatch, tmp_path
 ):
