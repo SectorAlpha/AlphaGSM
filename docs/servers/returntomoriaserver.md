@@ -57,8 +57,9 @@ Setup configures:
 - SteamCMD downloads the server files
 - AlphaGSM writes `MoriaServerConfig.ini` before first launch and keeps `ListenPort`,
   `AdvertiseAddress`, and the world name aligned with the managed datastore
-- readiness first follows `Moria/Config/Status.json` reporting `running`, with
-  `Moria/Saved/Config/Status.json` retained as a legacy-build fallback,
+- readiness first follows `Moria/Config/status.json` reporting `running`, with
+  both filename casings and `Moria/Saved/Config/status.json` retained for
+  Windows/Linux and legacy-build variants,
   then AlphaGSM validates the exact managed runtime-resolved `udp` port through
   `info --json`
 

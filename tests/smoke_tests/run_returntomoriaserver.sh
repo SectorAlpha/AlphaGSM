@@ -85,7 +85,9 @@ run_alphagsm "$SERVER_NAME" send " "
 
 STATUS_JSON=""
 STATUS_JSON_CANDIDATES=(
+  "$INSTALL_DIR/Moria/Config/status.json"
   "$INSTALL_DIR/Moria/Config/Status.json"
+  "$INSTALL_DIR/Moria/Saved/Config/status.json"
   "$INSTALL_DIR/Moria/Saved/Config/Status.json"
 )
 deadline=$((SECONDS + START_TIMEOUT_SECONDS))

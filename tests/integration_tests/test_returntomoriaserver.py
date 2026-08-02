@@ -39,9 +39,15 @@ TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 _SAFE_STATUS_DIAGNOSTIC_FIELDS = ("Status", "AdvertisedAddressAndPort")
-_STATUS_JSON_RELATIVE_PATHS = (
-    Path("Moria") / "Config" / "Status.json",
-    Path("Moria") / "Saved" / "Config" / "Status.json",
+_STATUS_JSON_RELATIVE_DIRECTORIES = (
+    Path("Moria") / "Config",
+    Path("Moria") / "Saved" / "Config",
+)
+_STATUS_JSON_FILENAMES = ("status.json", "Status.json")
+_STATUS_JSON_RELATIVE_PATHS = tuple(
+    directory / filename
+    for directory in _STATUS_JSON_RELATIVE_DIRECTORIES
+    for filename in _STATUS_JSON_FILENAMES
 )
 
 

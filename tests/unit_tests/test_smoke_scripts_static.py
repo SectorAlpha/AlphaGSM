@@ -114,7 +114,9 @@ def test_return_to_moria_smoke_supports_current_and_legacy_status_paths():
     text = RETURN_TO_MORIA_SMOKE.read_text(encoding="utf-8")
 
     assert '"$INSTALL_DIR/Moria/Config/Status.json"' in text
+    assert '"$INSTALL_DIR/Moria/Config/status.json"' in text
     assert '"$INSTALL_DIR/Moria/Saved/Config/Status.json"' in text
+    assert '"$INSTALL_DIR/Moria/Saved/Config/status.json"' in text
     assert 'STATUS_JSON_CANDIDATES=(' in text
 
 

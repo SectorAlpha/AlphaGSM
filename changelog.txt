@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- Return to Moria: accept both documented `status.json` filename casing
+  variants in the current and legacy status directories, which keeps the
+  Linux process and Docker readiness checks aligned with the upstream Windows
+  server output.
 - Saleblazers: start the dedicated executable from its upstream-required
   `Default` directory while keeping AlphaGSM's managed root config and log
   paths explicit, so the Docker-first runtime contract and its process

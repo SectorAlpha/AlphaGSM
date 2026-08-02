@@ -2814,7 +2814,11 @@ def test_return_to_moria_info_readiness_requires_managed_port(monkeypatch):
     assert _moria_info_readiness_contract(source)
 
 
-def test_return_to_moria_status_candidates_prefer_current_path_and_keep_legacy():
+def test_return_to_moria_status_candidates_prefer_current_path_and_keep_legacy(
+    monkeypatch,
+):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setitem(sys.modules, "conftest", helpers)
     moria_test = importlib.import_module(
         "tests.integration_tests.test_returntomoriaserver"
     )
@@ -2822,7 +2826,9 @@ def test_return_to_moria_status_candidates_prefer_current_path_and_keep_legacy()
     candidates = moria_test.status_json_candidates("/srv/moria")
 
     assert candidates == (
+        Path("/srv/moria/Moria/Config/status.json"),
         Path("/srv/moria/Moria/Config/Status.json"),
+        Path("/srv/moria/Moria/Saved/Config/status.json"),
         Path("/srv/moria/Moria/Saved/Config/Status.json"),
     )
 
@@ -3085,6 +3091,38 @@ def test_return_to_moria_status_running_returns_only_safe_payload_fields(
     }
     assert invite_code not in repr(status)
     assert join_code not in repr(status)
+
+
+def test_return_to_moria_status_running_accepts_upstream_lowercase_filename(
+    monkeypatch,
+    tmp_path,
+):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setitem(sys.modules, "conftest", helpers)
+    moria_test = importlib.import_module(
+        "tests.integration_tests.test_returntomoriaserver"
+    )
+    status_path = tmp_path / "Moria" / "Config" / "status.json"
+    status_path.parent.mkdir(parents=True)
+    status_path.write_text(
+        json.dumps(
+            {
+                "Status": "running",
+                "AdvertisedAddressAndPort": "127.0.0.1:7777",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(moria_test.time, "time", _retaining_clock(0.0, 0.0))
+
+    status = moria_test.wait_for_status_json_running(
+        {},
+        "itreturntomo",
+        moria_test.status_json_candidates(tmp_path),
+        5,
+    )
+
+    assert status["Status"] == "running"
 
 
 def test_return_to_moria_status_timeout_clears_env_from_traceback(
