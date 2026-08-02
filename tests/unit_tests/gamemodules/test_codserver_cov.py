@@ -45,7 +45,8 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
-def test_get_start_command(tmp_path):
+def test_get_start_command(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "has_start_map", lambda *args: True)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "cod_lnxded"
@@ -72,7 +73,8 @@ def test_get_start_command(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "has_start_map", lambda *args: True)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "cod_lnxded"
@@ -125,6 +127,35 @@ def test_sync_server_config_updates_mod_server_cfg(tmp_path):
         'startmap=mp_harbor\n'
         'set scr_friendlyfire 1\n'
     )
+
+
+def test_has_start_map_accepts_a_pk3_map(tmp_path):
+    import zipfile
+
+    main_dir = tmp_path / "main"
+    main_dir.mkdir()
+    with zipfile.ZipFile(main_dir / "custom_maps.pk3", "w") as archive:
+        archive.writestr("maps/mp/mp_harbor.bsp", b"map")
+
+    assert mod.has_start_map(tmp_path, "mp_harbor") is True
+
+
+def test_get_start_command_requires_owned_multiplayer_map(tmp_path):
+    server = DummyServer("cod")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "cod_lnxded",
+            "hostname": "test",
+            "moddir": "main",
+            "port": 27015,
+            "startmap": "mp_carentan",
+        }
+    )
+    (tmp_path / "cod_lnxded").write_text("")
+
+    with pytest.raises(ServerError, match=r"ENABLED \(BYO\).*multiplayer map"):
+        mod.get_start_command(server)
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

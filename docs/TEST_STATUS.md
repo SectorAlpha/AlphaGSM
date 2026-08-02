@@ -11,9 +11,9 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 143      |
+| PASSED   | 142      |
 | ENABLED (AUTH) | 47 |
-| ENABLED (BYO) | 44 |
+| ENABLED (BYO) | 45 |
 | DISABLED | 3      |
 | SKIPPED  | 0      |
 
@@ -64,7 +64,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | avserver | SteamCMD |
 | archive_backed_installs | Archive |
 | bb2server | SteamCMD (Source) |
-| btlserver | SteamCMD |
+| btlserver | SteamCMD — Docker runtime uses the shared non-root host-user contract required by the Unreal payload; the current GitHub matrix validates both process and Docker lanes |
 | btserver | Docker runtime (SteamCMD Linux) — PASSED; the current contract keeps process and Docker module code aligned, publishes the configured game/query ports, and validates `query`, `info`, and `info --json` through Barotrauma's live Lidgren UDP surface on the primary game port instead of requiring stale A2S behavior from the adjacent query port. |
 | bdserver | SteamCMD (GoldSrc), process + Docker — PASSED; the shared Valve query hook now resolves the runtime-reachable host, and integration readiness uses AlphaGSM's A2S `info --json` surface instead of a host-only `screen` log. Replacement CI validation is pending. |
 | bmdmserver | SteamCMD (Source), process + Docker — PASSED; integration readiness now uses AlphaGSM's A2S `info --json` surface directly and no longer requires a host `screen` log or guessed localhost query address in the Docker lane. |
@@ -118,7 +118,6 @@ support-state tables and do not change the summary counts or record a new pass.
 | medievalengineersserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; fresh formal integration and smoke now prove the old immediate Proton-crash note was stale: anonymous SteamCMD setup for app `367970` completes, AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, launches `DedicatedServer64/MedievalEngineersDedicated.exe` inside the shared `wine-proton` runtime with the rebuilt Wine prefix bootstrap, and validates `query`, `info`, and `info --json` on the current generic `tcp` health surface at the managed main game port instead of the older stale A2S expectation. |
 | memoriesofmarsserver | SteamCMD |
 | miscreatedserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; the supported Linux path reads `user/server.log` and uses generic `tcp` health on the managed main port. CI now keeps one Docker-default lifecycle rather than duplicating an unproven host-Proton lane. |
-| codserver | Docker runtime — PASSED 2026-05-23; standard integration/smoke now run through the shared `steamcmd-linux` Docker runtime image, which supplies the legacy `libstdc++.so.5` compatibility library required by the old Linux dedicated binary |
 | codwawserver | Docker runtime — PASSED 2026-05-30; fresh focused integration now passes on the shared `steamcmd-linux` runtime image once AlphaGSM drives the archive-backed install through Docker and aligns `query`, `info`, and `info --json` to the current generic `tcp` health surface on the managed game port |
 | mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke use the shared `simple-tcp` Docker runtime because upstream does not publish an anonymous standalone Linux server binary. Process mode remains available for operators with a host `mumble-server`/`murmurd` package, but CI keeps one Docker-default lifecycle. |
 | mtaserver | Docker runtime — PASSED 2026-05-30; fresh focused integration and smoke now both pass on the branch-local `steamcmd-linux` runtime image once AlphaGSM auto-installs the official `baseconfig.tar.gz` payload, syncs `mods/deathmatch/mtaserver.conf` before launch, disables `ase` so no unmanaged `port + 123` listener is required, and aligns `query`, `info`, and `info --json` to MTA's real built-in HTTP listener on `httpport = port + 2` instead of the older stale ncurses/A2S assumptions |
@@ -185,7 +184,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | enshrouded | Docker runtime (Wine/Proton) — PASSED; AlphaGSM now treats `enshrouded_server.json` as authoritative, syncs `name` and `queryPort`, preserves unrelated generated settings, and defaults `queryPort` to the managed port `15637` rather than the stale `port + 1` value. The 2026-07-16 bulk process lane completed query/info but left the Wine child answering after its `screen` session was killed; because Enshrouded had been explicitly Docker-validated rather than process-validated, CI now keeps one Docker-default heavy lifecycle. Replacement CI validation is pending. |
 | groundbranchserver | SteamCMD (Proton) |
 | mythofempiresserver | Docker runtime (Wine/Proton) — PASSED; the current branch keeps the module's A2S query contract runtime-agnostic, resolves the Docker-reachable host, and replaces the host-only `MOE.log` readiness wait with AlphaGSM `info --json` on `queryport`. CI now runs this large install as one Docker-default heavy lifecycle; replacement validation is pending. |
-| reignofdwarfserver | Docker runtime (Wine/Proton) — PASSED; the forced host-Proton process exited during the 2026-07-16 full run, so CI now keeps one Docker-default lifecycle and waits for AlphaGSM's A2S `info --json` surface rather than a host `screen` log. The Docker contract now explicitly selects Proton as well as the module's process command. |
+| reignofdwarfserver | Docker runtime (Wine/Proton) — PASSED; the live payload exposes generic TCP on the managed game port rather than A2S on `queryport`, so CI waits for AlphaGSM's TCP `info --json` surface. The forced host-Proton process exited during the 2026-07-16 full run, so CI keeps one Docker-default lifecycle. |
 | sunkenlandserver | SteamCMD (Proton) |
 | theforestserver | SteamCMD (Proton) |
 | askaserver | SteamCMD (Wine) |
@@ -274,6 +273,7 @@ URLs.
 | bfvserver | direct archive URL or staged Battlefield Vietnam Linux dedicated server tree |
 | cod2server | owned localized base-game assets |
 | cod4server | owned base-game assets |
+| codserver | owned multiplayer map content; the public dedicated archive ships the server payload and base PK3 files but no `maps/mp/*.bsp` map data |
 | coduoserver | owned base multiplayer assets |
 | dstserver | cluster token plus staged cluster config |
 | etlegacyserver | owned base-game assets |

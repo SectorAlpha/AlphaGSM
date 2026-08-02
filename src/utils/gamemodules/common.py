@@ -1163,6 +1163,7 @@ def make_proton_container_spec_builder(
     extra_env=None,
     stop_mode=None,
     stdin_open=False,
+    tty=False,
     working_dir=None,
 ):
     """Return a Proton-backed ``get_container_spec`` hook."""
@@ -1176,6 +1177,8 @@ def make_proton_container_spec_builder(
             optional_kwargs["stop_mode"] = stop_mode
         if stdin_open:
             optional_kwargs["stdin_open"] = True
+        if tty:
+            optional_kwargs["tty"] = True
         return _proton_module().get_container_spec(
             server,
             get_start_command,

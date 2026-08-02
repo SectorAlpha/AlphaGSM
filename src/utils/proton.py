@@ -413,6 +413,7 @@ def get_container_spec(
     extra_env=None,
     stop_mode=None,
     stdin_open=False,
+    tty=False,
     working_dir=CONTAINER_SERVER_DIR,
 ):
     """Return the Docker launch spec for a Wine/Proton-backed server."""
@@ -442,6 +443,8 @@ def get_container_spec(
         "env": requirements.get("env", {}),
         "command": native_command,
     }
+    if tty:
+        spec["tty"] = True
     if stop_mode is not None:
         spec["stop_mode"] = stop_mode
     if stdin_open:

@@ -111,6 +111,31 @@ def test_setting_schema_exposes_battalion_launch_formats():
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 
+def test_runtime_wrappers_launch_battalion_as_the_host_user(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.runtime_module, "_steamcmd_sdk_mounts", lambda *args, **kwargs: [])
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Battalion/Binaries/Linux/BattalionServer-Linux-Shipping",
+            "map": "Derailed",
+            "port": 7777,
+            "queryport": 7778,
+        }
+    )
+    executable = tmp_path / server.data["exe_name"]
+    executable.parent.mkdir(parents=True)
+    executable.write_text("", encoding="utf-8")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert spec["run_as_host_user"] is True
+    assert spec["container_home"] == "/home/alphagsm"
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

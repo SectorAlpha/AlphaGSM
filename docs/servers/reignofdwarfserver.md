@@ -69,8 +69,9 @@ alphagsm myreignofd backup
   dedicated payload does not require a graphical window in either runtime.
 - The Docker Wine/Proton runtime supplies its private Xvfb display
   automatically when Unity requires one during startup.
-- Integration readiness uses AlphaGSM `info --json` protocol `a2s` rather than
-  a host `screen` log.
+- Integration readiness uses AlphaGSM generic TCP `info --json` on the managed
+  game port; the current payload does not expose a usable A2S endpoint on the
+  configured query port.
 
 ## Developer Notes
 

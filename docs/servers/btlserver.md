@@ -64,6 +64,8 @@ alphagsm mybtlserve backup
 
 - Module name: `btlserver`
 - Default port: 7788
+- The Docker contract launches the Unreal payload as the mapped host user;
+  the game refuses to run as root.
 
 ## Developer Notes
 

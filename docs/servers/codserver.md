@@ -2,14 +2,17 @@
 
 This guide covers the `codserver` module in AlphaGSM.
 
-`codserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
-baseline. The checked-in GitHub validation path for this server is
-Docker-first through the shared `steamcmd-linux` runtime because the legacy
-Linux dedicated binary still depends on `libstdc++.so.5`.
+`codserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The public dedicated archive supplies the legacy server binary and
+base PK3 files but not multiplayer map data, so start requires an owned PK3
+containing `maps/mp/<map>.bsp` (or the equivalent map format) staged under the
+configured `moddir`. The Docker contract remains available through the shared
+`steamcmd-linux` runtime, which supplies the legacy `libstdc++.so.5` library.
 
 ## Requirements
 
 - `docker` for the validated anonymous support path
+- an owned multiplayer map PK3 staged under `<install_dir>/main/`
 - Python packages from `requirements.txt`
 
 Process mode can still work on a host install, but the tested path uses the shared `steamcmd-linux` Docker runtime image because the legacy Call of Duty dedicated binary still expects `libstdc++.so.5`.
@@ -66,6 +69,9 @@ alphagsm mycodserve backup
 
 - Module name: `codserver`
 - Default port: 28960
+- `setup` can download the public server archive, but it does not provide the
+  licensed multiplayer maps. AlphaGSM reports an `ENABLED (BYO)` requirement
+  before launch when the configured map is not present.
 
 ## Developer Notes
 

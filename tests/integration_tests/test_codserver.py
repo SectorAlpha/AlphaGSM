@@ -4,6 +4,8 @@ import os
 
 import pytest
 
+from gamemodules.codserver import has_start_map
+
 from conftest import (
     require_integration_opt_in,
     require_command_for_runtime,
@@ -65,6 +67,13 @@ def test_codserver_lifecycle(tmp_path):
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+
+    if not has_start_map(install_dir, "mp_carentan"):
+        pytest.skip(
+            "ENABLED (BYO): the public Call of Duty dedicated archive does not "
+            "include multiplayer maps; stage a PK3 containing "
+            "maps/mp/mp_carentan.bsp or set startmap to an owned map"
+        )
 
     # start
     run_and_assert_ok(env, server_name, "start")

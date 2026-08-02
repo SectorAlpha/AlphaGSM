@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- CI/integration: align Reign Of Dwarf lifecycle readiness with its observed
+  generic TCP game-port endpoint and make BATTALION: Legacy Docker launches
+  use the shared non-root host-user contract required by the Unreal payload.
+- Support: reclassify `codserver` as `ENABLED (BYO)` because the public
+  dedicated archive contains the legacy server and base PK3 payload but no
+  multiplayer map data; AlphaGSM now validates the configured map before
+  launch and the CI lifecycle records the explicit BYO prerequisite.
 - CI/integration: preserve Proton Docker console metadata through runtime
   requirements for Return to Moria, and align Remnants readiness with its
   observed generic TCP game-port health surface instead of stale A2S checks.

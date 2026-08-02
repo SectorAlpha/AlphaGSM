@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import shutil
+import zipfile
 
 from server import ServerError
 from server.modsupport.downloads import (
@@ -127,6 +128,57 @@ def _save_data(server):
 
 def _moddir(server) -> str:
     return str(server.data.get("moddir") or server.data.get("fs_game") or "main")
+
+
+def has_start_map(install_dir, map_name, moddir="main"):
+    """Return whether a loose or PK3-packed multiplayer map is installed."""
+
+    map_name = str(map_name).strip().lower()
+    expected_paths = {
+        f"maps/mp/{map_name}.bsp",
+        f"maps/mp/{map_name}.d3dbsp",
+    }
+    expected_filenames = {path.rsplit("/", 1)[-1] for path in expected_paths}
+    content_root = Path(install_dir) / str(moddir)
+    loose_root = content_root / "maps" / "mp"
+    if any(
+        path.is_file() and path.name.lower() in expected_filenames
+        for path in loose_root.glob("*")
+    ):
+        return True
+
+    for pk3_path in sorted(content_root.glob("*.pk3")):
+        try:
+            with zipfile.ZipFile(pk3_path) as archive:
+                names = {
+                    name.replace("\\", "/").lstrip("./").lower()
+                    for name in archive.namelist()
+                }
+        except (OSError, zipfile.BadZipFile):
+            continue
+        if expected_paths & names:
+            return True
+    return False
+
+
+def _assert_required_start_map(server):
+    """Raise standard BYO guidance when the configured map is unavailable."""
+
+    if has_start_map(
+        server.data["dir"],
+        server.data.get("startmap", "mp_carentan"),
+        _moddir(server),
+    ):
+        return
+    gamemodule_common.raise_byo_requirement(
+        "codserver",
+        "owned Call of Duty multiplayer map content",
+        actions=(
+            "Copy a PK3 containing maps/mp/<map>.bsp into <install_dir>/main/",
+            "Set startmap to the staged map and retry start",
+        ),
+        docs_slug="codserver",
+    )
 
 
 def _ensure_moddir_backup(server):
@@ -477,9 +529,16 @@ def sync_server_config(server):
     rewrite_equals_config(config_path, config_values)
 
 
+def prestart(server):
+    """Require the configured multiplayer map before launching the server."""
+
+    _assert_required_start_map(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Call of Duty dedicated server."""
 
+    _assert_required_start_map(server)
     _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     launch_args = build_launch_arg_values(
         server.data,

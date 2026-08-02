@@ -307,4 +307,5 @@ get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     extra_env=_container_runtime_env,
     stop_mode="exec-console",
     stdin_open=True,
+    tty=True,
 )

@@ -27,7 +27,7 @@ RUNTIME_AWARE_PROTOCOL_TESTS = {
     "test_bmdmserver.py": "a2s",
     "test_empyrionserver.py": "tcp",
     "test_readyornotserver.py": "udp",
-    "test_reignofdwarfserver.py": "a2s",
+    "test_reignofdwarfserver.py": "tcp",
     "test_remnantsserver.py": "tcp",
     "test_returntomoriaserver.py": "udp",
     "test_bdserver.py": "a2s",

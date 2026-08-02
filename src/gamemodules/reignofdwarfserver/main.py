@@ -98,6 +98,18 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def get_query_address(server):
+    """Return Reign Of Dwarf's generic TCP game-port health endpoint."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+
+
+def get_info_address(server):
+    """Return the same TCP endpoint used by the info command."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Reign Of Dwarf dedicated server."""
 

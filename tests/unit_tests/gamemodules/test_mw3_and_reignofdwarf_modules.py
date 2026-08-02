@@ -126,6 +126,27 @@ def test_reignofdwarf_runtime_metadata_enables_xvfb_for_docker(tmp_path, monkeyp
     assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
+def test_reignofdwarf_uses_tcp_health_on_the_game_port(monkeypatch):
+    server = DummyServer("rod")
+    server.data.update({"port": 7777})
+    monkeypatch.setattr(
+        reignofdwarfserver.runtime_module,
+        "resolve_query_host",
+        lambda _server: "127.0.0.1",
+    )
+
+    assert reignofdwarfserver.get_query_address(server) == (
+        "127.0.0.1",
+        7777,
+        "tcp",
+    )
+    assert reignofdwarfserver.get_info_address(server) == (
+        "127.0.0.1",
+        7777,
+        "tcp",
+    )
+
+
 def test_mw3_and_reignofdwarf_update_downloads_and_optionally_restart(monkeypatch):
     mw3 = DummyServer("mw3")
     mw3.data["dir"] = "/srv/mw3/"
