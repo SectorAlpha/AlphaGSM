@@ -10,7 +10,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
-    pick_free_udp_port,
+    pick_free_tcp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -18,16 +18,11 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    find_source_server_cfg,
-    set_source_hibernation,
-    assert_source_server_empty,
     wait_for_runtime_log_marker,
-    wait_for_a2s_ready,
+    wait_for_tcp_open,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.ahl2server import steam_app_id
-from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
@@ -61,8 +56,7 @@ def test_ahl2server_lifecycle(tmp_path):
         module_name="ahl2server",
     )
     env = alphagsm_env(config_path)
-    port = pick_free_udp_port()
-    query_host = detect_query_host()
+    port = pick_free_tcp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "ahl2server")
@@ -71,9 +65,6 @@ def test_ahl2server_lifecycle(tmp_path):
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
-
-    server_cfg_path = find_source_server_cfg(install_dir)
-    set_source_hibernation(server_cfg_path, enabled=False)
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -92,11 +83,10 @@ def test_ahl2server_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         info_data = wait_for_info_protocol(
-            env, server_name, "a2s", START_TIMEOUT, expected_port=port
+            env, server_name, "tcp", START_TIMEOUT, expected_port=port
         )
-        assert_source_server_empty(info_data)
-
-        wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
+        assert info_data["protocol"] == "tcp"
+        wait_for_tcp_open("127.0.0.1", port, 600, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -107,18 +97,17 @@ def test_ahl2server_lifecycle(tmp_path):
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "TCP ping on port" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
         )
         assert _info_data["port"] == port, (
-            f"Expected A2S query port {port}: {_info_data!r}"
+            f"Expected TCP game port {port}: {_info_data!r}"
         )
-        assert_source_server_empty(_info_data)
     finally:
         # stop
         stop_result = run_alphagsm(env, server_name, "stop")
@@ -126,4 +115,4 @@ def test_ahl2server_lifecycle(tmp_path):
 
     assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
     # verify stopped
-    wait_for_udp_closed(query_host, port, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

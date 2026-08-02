@@ -57,7 +57,8 @@ Setup configures:
 - SteamCMD downloads the server files
 - AlphaGSM writes `MoriaServerConfig.ini` before first launch and keeps `ListenPort`,
   `AdvertiseAddress`, and the world name aligned with the managed datastore
-- readiness first follows `Moria/Saved/Config/Status.json` reporting `running`,
+- readiness first follows `Moria/Config/Status.json` reporting `running`, with
+  `Moria/Saved/Config/Status.json` retained as a legacy-build fallback,
   then AlphaGSM validates the exact managed runtime-resolved `udp` port through
   `info --json`
 
@@ -93,9 +94,9 @@ alphagsm myreturnto backup
 ### Server Configuration
 
 - **Config files**: `MoriaServerConfig.ini`
-- **Runtime status file**: `Moria/Saved/Config/Status.json` is the game-owned
-  readiness gate used by smoke and integration tests before the same lifecycle
-  validates AlphaGSM's runtime-resolved UDP health surface
+- **Runtime status file**: current builds write `Moria/Config/Status.json`; older
+  builds may write `Moria/Saved/Config/Status.json`. Smoke and integration tests
+  accept both before validating AlphaGSM's runtime-resolved UDP health surface.
 - **Template**: See [server-templates/returntomoriaserver/](../server-templates/returntomoriaserver/) if available
 
 ### Maps and Mods

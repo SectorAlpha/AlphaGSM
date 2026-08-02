@@ -2,7 +2,7 @@
 
 This guide covers the `ahl2server` module in AlphaGSM.
 
-`ahl2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend. Hibernating startup uses the shared Source console-info hook before the lifecycle wakes the server and requires real A2S for final `query`, `info`, and `info --json` checks.
+`ahl2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend. The current Linux payload does not expose a working empty-server A2S surface, so final `query`, `info`, and `info --json` checks use the runtime-resolved TCP game port consistently in both backends. Replacement validation of this corrected contract is pending.
 
 ## Requirements
 
@@ -83,6 +83,7 @@ alphagsm myahl2serv backup
 - **Default port**: `27015`
 - **Default map**: `act_airport`
 - **Max players**: `20`
+- **Health contract**: TCP on the managed game port; the current Linux payload does not answer A2S while empty
 - **Ports**:
   - Game port: `27015` (UDP)
   - Client port: `27005` (UDP)

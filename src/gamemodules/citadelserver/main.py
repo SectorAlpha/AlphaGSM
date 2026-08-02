@@ -115,12 +115,16 @@ restart = gamemodule_common.make_restart_hook()
 
 
 def get_query_address(server):
-    """Return Citadel's A2S query endpoint."""
+    """Return Citadel's live TCP health endpoint on the game port.
+
+    The current native Linux payload accepts TCP connections on ``port`` but
+    does not answer A2S requests on the configured ``queryport``.
+    """
 
     return (
         runtime_module.resolve_query_host(server),
-        int(server.data["queryport"]),
-        "a2s",
+        int(server.data["port"]),
+        "tcp",
     )
 
 

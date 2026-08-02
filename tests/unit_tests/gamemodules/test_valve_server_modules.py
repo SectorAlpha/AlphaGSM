@@ -433,6 +433,19 @@ def test_valve_source_module_exports_info_hooks_on_canonical_surface():
     assert callable(module.get_hibernating_console_info)
 
 
+def test_ahl2_health_contract_uses_runtime_resolved_tcp_game_port(monkeypatch):
+    module = importlib.import_module("gamemodules.ahl2server")
+    server = SimpleNamespace(name="ahl2alpha", data={"port": 27015})
+    monkeypatch.setattr(
+        module.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.9",
+    )
+
+    assert module.get_query_address(server) == ("172.18.0.9", 27015, "tcp")
+    assert module.get_info_address(server) == ("172.18.0.9", 27015, "tcp")
+
+
 def test_ahl2_docker_contract_uses_private_host_user_home_and_runtime_appid(
     monkeypatch, tmp_path
 ):

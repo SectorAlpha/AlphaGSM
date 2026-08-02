@@ -11,6 +11,7 @@ NIGHTINGALE_SMOKE = Path("tests/smoke_tests/run_nightingale.sh")
 MYTH_OF_EMPIRES_SMOKE = Path("tests/smoke_tests/run_mythofempiresserver.sh")
 BLACK_OPS_3_SMOKE = Path("tests/smoke_tests/run_blackops3server.sh")
 SNIPER_ELITE_4_SMOKE = Path("tests/smoke_tests/run_sniperelite4server.sh")
+RETURN_TO_MORIA_SMOKE = Path("tests/smoke_tests/run_returntomoriaserver.sh")
 ASA_SMOKE = Path("tests/smoke_tests/run_arksurvivalascended.sh")
 ASTRONEER_SMOKE = Path("tests/smoke_tests/run_astroneerserver.sh")
 STEAMCMD_HELPERS = Path("tests/smoke_tests/steamcmd_helpers.sh")
@@ -96,6 +97,14 @@ def test_sniper_elite_4_smoke_captures_exited_container_diagnostics():
     assert "capture_container_process_diagnostics()" in helpers
     assert "ExitCode: {{.State.ExitCode}}" in helpers
     assert diagnostics_call in text
+
+
+def test_return_to_moria_smoke_supports_current_and_legacy_status_paths():
+    text = RETURN_TO_MORIA_SMOKE.read_text(encoding="utf-8")
+
+    assert '"$INSTALL_DIR/Moria/Config/Status.json"' in text
+    assert '"$INSTALL_DIR/Moria/Saved/Config/Status.json"' in text
+    assert 'STATUS_JSON_CANDIDATES=(' in text
 
 
 def test_asa_smoke_uses_distinct_udp_game_pair_and_a2s_query_port():

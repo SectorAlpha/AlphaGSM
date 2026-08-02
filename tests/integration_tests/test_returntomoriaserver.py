@@ -39,6 +39,18 @@ TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 _SAFE_STATUS_DIAGNOSTIC_FIELDS = ("Status", "AdvertisedAddressAndPort")
+_STATUS_JSON_RELATIVE_PATHS = (
+    Path("Moria") / "Config" / "Status.json",
+    Path("Moria") / "Saved" / "Config" / "Status.json",
+)
+
+
+def status_json_candidates(install_dir):
+    """Return current and legacy upstream Status.json locations."""
+
+    return tuple(
+        Path(install_dir) / relative for relative in _STATUS_JSON_RELATIVE_PATHS
+    )
 
 
 def _safe_status_diagnostics(payload):
@@ -56,27 +68,32 @@ def _safe_status_diagnostics(payload):
 def wait_for_status_json_running(
     env,
     server_name: str,
-    status_json_path: Path,
+    status_json_paths,
     timeout_seconds: int,
 ):
-    """Poll Status.json until it reports the hosted session as running."""
+    """Poll supported Status.json locations until one reports ``running``."""
 
+    if isinstance(status_json_paths, (str, Path)):
+        status_json_paths = (Path(status_json_paths),)
+    else:
+        status_json_paths = tuple(Path(path) for path in status_json_paths)
     deadline = time.time() + timeout_seconds
     last_safe_status = None
     while time.time() < deadline:
-        if status_json_path.is_file():
-            try:
-                safe_status = _safe_status_diagnostics(
-                    json.loads(
-                        status_json_path.read_text(encoding="utf-8-sig")
+        for status_json_path in status_json_paths:
+            if status_json_path.is_file():
+                try:
+                    safe_status = _safe_status_diagnostics(
+                        json.loads(
+                            status_json_path.read_text(encoding="utf-8-sig")
+                        )
                     )
-                )
-            except json.JSONDecodeError:
-                safe_status = None
-            if safe_status is not None:
-                last_safe_status = safe_status
-                if safe_status.get("Status") == "running":
-                    return safe_status
+                except json.JSONDecodeError:
+                    safe_status = None
+                if safe_status is not None:
+                    last_safe_status = safe_status
+                    if safe_status.get("Status") == "running":
+                        return safe_status
         time.sleep(5)
     try:
         fail_readiness_timeout(
@@ -159,11 +176,11 @@ def test_returntomoriaserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "start")
 
         # wait for readiness
-        status_json_path = install_dir / "Moria" / "Saved" / "Config" / "Status.json"
+        status_json_paths = status_json_candidates(install_dir)
         status_payload = wait_for_status_json_running(
             env,
             server_name,
-            status_json_path,
+            status_json_paths,
             START_TIMEOUT,
         )
         info_data = wait_for_info_protocol(

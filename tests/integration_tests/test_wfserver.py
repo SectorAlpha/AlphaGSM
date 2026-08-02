@@ -93,7 +93,7 @@ def test_wfserver_lifecycle(tmp_path):
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "Players    : 0/" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json

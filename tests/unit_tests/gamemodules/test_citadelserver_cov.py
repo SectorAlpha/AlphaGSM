@@ -212,12 +212,12 @@ def test_setting_schema_exposes_citadel_launch_formats():
     assert mod.setting_schema["servername"].launch_arg_format == "-ServerName={value}"
 
 
-def test_query_and_info_addresses_use_a2s_query_port():
+def test_query_and_info_addresses_use_tcp_game_port():
     server = DummyServer()
     server.data["port"] = 7777
     server.data["queryport"] = 27015
-    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
-    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "tcp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "tcp")
 
 
 def test_get_start_command_missing_exe(tmp_path):

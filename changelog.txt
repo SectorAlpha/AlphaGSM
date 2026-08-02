@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-01
+- CI/integration: align Citadel and AHL2 with the live TCP health surfaces
+  exposed by their current Linux payloads, correct Warfork's Quake info
+  formatting assertion, and retain Return to Moria's current and legacy
+  `Status.json` locations in smoke and integration readiness checks.
 - Runtime: correctly remove nested `env` assignments when generating a
   Docker-native command from a headless Wine/Proton process wrapper, avoiding
   accidental attempts to launch `./env` as the server executable.

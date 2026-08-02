@@ -2814,6 +2814,19 @@ def test_return_to_moria_info_readiness_requires_managed_port(monkeypatch):
     assert _moria_info_readiness_contract(source)
 
 
+def test_return_to_moria_status_candidates_prefer_current_path_and_keep_legacy():
+    moria_test = importlib.import_module(
+        "tests.integration_tests.test_returntomoriaserver"
+    )
+
+    candidates = moria_test.status_json_candidates("/srv/moria")
+
+    assert candidates == (
+        Path("/srv/moria/Moria/Config/Status.json"),
+        Path("/srv/moria/Moria/Saved/Config/Status.json"),
+    )
+
+
 @pytest.mark.parametrize(
     ("old", "new"),
     (

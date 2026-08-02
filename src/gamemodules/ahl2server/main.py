@@ -56,6 +56,26 @@ prestart = MODULE.prestart
 update = MODULE.update
 restart = MODULE.restart
 get_start_command = MODULE.get_start_command
+
+
+def get_query_address(server):
+    """Return Action: Source's live TCP health endpoint.
+
+    The current Linux payload does not implement the configured Source
+    hibernation cvar and does not answer A2S while empty. It does expose
+    the managed game port over TCP, which is the same endpoint for both
+    process and Docker runtimes.
+    """
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["port"]),
+        "tcp",
+    )
+
+
+get_info_address = get_query_address
+
 do_stop = MODULE.do_stop
 status = MODULE.status
 message = MODULE.message

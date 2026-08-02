@@ -9,12 +9,12 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    pick_free_udp_port,
+    pick_free_tcp_port,
     run_alphagsm,
     run_and_assert_ok,
     run_setup_with_port_retry,
     wait_for_info_protocol,
-    wait_for_udp_closed,
+    wait_for_tcp_closed,
     write_config,
     alphagsm_env,
     log_command_result,
@@ -58,10 +58,10 @@ def test_citadelserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_udp_port()
-    queryport = pick_free_udp_port()
+    port = pick_free_tcp_port()
+    queryport = pick_free_tcp_port()
     while queryport == port:
-        queryport = pick_free_udp_port()
+        queryport = pick_free_tcp_port()
 
     run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
@@ -82,9 +82,9 @@ def test_citadelserver_lifecycle(tmp_path):
         wait_for_info_protocol(
             env,
             server_name,
-            "a2s",
+            "tcp",
             START_TIMEOUT,
-            expected_port=queryport,
+            expected_port=port,
         )
 
         run_and_assert_ok(env, server_name, "status")
@@ -95,20 +95,20 @@ def test_citadelserver_lifecycle(tmp_path):
         )
 
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert "Server info (A2S on port" in info_result.stdout, (
+        assert "TCP ping on port" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         import json as _info_json
         info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {info_data!r}"
+        assert info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {info_data!r}"
         )
-        assert info_data["port"] == queryport, (
-            f"Expected reported query port {queryport}: {info_data!r}"
+        assert info_data["port"] == port, (
+            f"Expected reported game port {port}: {info_data!r}"
         )
     finally:
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
-    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

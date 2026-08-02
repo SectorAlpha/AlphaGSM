@@ -35,9 +35,9 @@ RUNTIME_AWARE_PROTOCOL_TESTS = {
     "test_mythofempiresserver.py": "a2s",
     "test_nightingale.py": "http_status",
     "test_xntserver.py": "quake",
+    "test_ahl2server.py": "tcp",
 }
 STRICT_SOURCE_A2S_TESTS = (
-    "test_ahl2server.py",
     "test_bb2server.py",
     "test_bmdmserver.py",
     "test_bsserver.py",

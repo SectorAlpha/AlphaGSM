@@ -80,17 +80,24 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 
-STATUS_JSON="$INSTALL_DIR/Moria/Saved/Config/Status.json"
+STATUS_JSON=""
+STATUS_JSON_CANDIDATES=(
+  "$INSTALL_DIR/Moria/Config/Status.json"
+  "$INSTALL_DIR/Moria/Saved/Config/Status.json"
+)
 deadline=$((SECONDS + START_TIMEOUT_SECONDS))
 while (( SECONDS < deadline )); do
-  if [[ -f "$STATUS_JSON" ]] && grep -Fq '"Status": "running"' "$STATUS_JSON"; then
-    break
-  fi
+  for candidate in "${STATUS_JSON_CANDIDATES[@]}"; do
+    if [[ -f "$candidate" ]] && grep -Fq '"Status": "running"' "$candidate"; then
+      STATUS_JSON="$candidate"
+      break 2
+    fi
+  done
   sleep 2
 done
 if (( SECONDS >= deadline )); then
   echo "Timed out waiting for Return to Moria Status.json readiness" >&2
-  if [[ -f "$STATUS_JSON" ]]; then
+  if [[ -n "$STATUS_JSON" && -f "$STATUS_JSON" ]]; then
     cat "$STATUS_JSON" >&2
   fi
   exit 1
