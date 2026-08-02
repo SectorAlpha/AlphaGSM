@@ -443,6 +443,8 @@ def test_make_proton_builders_forward_arguments(monkeypatch):
         extra_host_dependencies=lambda current_server: (
             {"id": "xvfb-run", "command": "xvfb-run", "platforms": ("linux",)},
         ),
+        stop_mode="exec-console",
+        stdin_open=True,
     )
     container_builder = gamemodule_common.make_proton_container_spec_builder(
         get_start_command=get_start_command,
@@ -463,6 +465,8 @@ def test_make_proton_builders_forward_arguments(monkeypatch):
                 "extra_host_dependencies": (
                     {"id": "xvfb-run", "command": "xvfb-run", "platforms": ("linux",)},
                 ),
+                "stop_mode": "exec-console",
+                "stdin_open": True,
             },
         )
     ]

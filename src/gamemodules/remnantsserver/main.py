@@ -132,6 +132,18 @@ def do_stop(server, j):
     runtime_module.send_to_server(server, "\003")
 
 
+def get_query_address(server):
+    """Return the generic TCP health surface exposed on the game port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+
+
+def get_info_address(server):
+    """Return the address used by AlphaGSM info for Remnants."""
+
+    return get_query_address(server)
+
+
 def status(server, verbose):
     """Detailed Remnants status is not implemented yet."""
 

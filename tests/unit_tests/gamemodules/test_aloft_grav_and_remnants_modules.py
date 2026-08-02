@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import gamemodules.aloftserver as aloftserver
 import gamemodules.gravserver as gravserver
 import gamemodules.remnantsserver as remnantsserver
@@ -134,3 +136,17 @@ def test_remnants_runtime_metadata_prefers_proton(tmp_path):
 
     assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
     assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+
+
+def test_remnants_query_and_info_addresses_use_tcp_game_port():
+    server = DummyServer("remnants")
+    server.data["port"] = 21762
+
+    with patch.object(
+        remnantsserver.runtime_module,
+        "resolve_query_host",
+        return_value="127.0.0.1",
+    ):
+        expected = ("127.0.0.1", 21762, "tcp")
+        assert remnantsserver.get_query_address(server) == expected
+        assert remnantsserver.get_info_address(server) == expected

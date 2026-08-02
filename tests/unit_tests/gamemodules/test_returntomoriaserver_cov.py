@@ -269,6 +269,8 @@ def test_runtime_requirements_prefer_proton_and_publish_udp_port():
 
     assert requirements["family"] == "wine-proton"
     assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["stop_mode"] == "exec-console"
+    assert requirements["stdin_open"] is True
     assert requirements["ports"] == [
         {"host": 35389, "container": 35389, "protocol": "udp"}
     ]

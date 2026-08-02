@@ -363,6 +363,8 @@ def get_runtime_requirements(
     prefer_proton=False,
     extra_env=None,
     extra_host_dependencies=None,
+    stop_mode=None,
+    stdin_open=False,
 ):
     """Return Docker metadata for Windows servers run through Wine/Proton."""
 
@@ -395,6 +397,10 @@ def get_runtime_requirements(
     ports = _build_port_specs(server, port_definitions)
     if ports:
         requirements["ports"] = ports
+    if stop_mode is not None:
+        requirements["stop_mode"] = stop_mode
+    if stdin_open:
+        requirements["stdin_open"] = True
     return requirements
 
 

@@ -1131,16 +1131,24 @@ def make_proton_runtime_requirements_builder(
     prefer_proton=False,
     extra_env=None,
     extra_host_dependencies=None,
+    stop_mode=None,
+    stdin_open=False,
 ):
     """Return a Proton-backed ``get_runtime_requirements`` hook."""
 
     def get_runtime_requirements(server):
+        optional_kwargs = {}
+        if stop_mode is not None:
+            optional_kwargs["stop_mode"] = stop_mode
+        if stdin_open:
+            optional_kwargs["stdin_open"] = True
         return _proton_module().get_runtime_requirements(
             server,
             port_definitions=port_definitions,
             prefer_proton=prefer_proton,
             extra_env=_resolve_optional_mapping(extra_env, server),
             extra_host_dependencies=_resolve_optional_value(extra_host_dependencies, server),
+            **optional_kwargs,
         )
 
     get_runtime_requirements.__name__ = "get_runtime_requirements"

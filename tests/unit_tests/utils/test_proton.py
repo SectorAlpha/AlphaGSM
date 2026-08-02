@@ -366,6 +366,8 @@ def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
         server,
         port_definitions=(("port", "udp"), ("queryport", "udp")),
         prefer_proton=True,
+        stop_mode="exec-console",
+        stdin_open=True,
     )
 
     assert requirements["engine"] == "docker"
@@ -384,6 +386,8 @@ def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
     ]
     assert requirements["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/wineprefix"
     assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["stop_mode"] == "exec-console"
+    assert requirements["stdin_open"] is True
     assert requirements["host_dependencies"][0]["id"] == "wine-proton"
     assert requirements["host_dependencies"][0]["platforms"] == ("linux",)
 

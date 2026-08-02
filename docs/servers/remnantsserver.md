@@ -4,7 +4,8 @@ This guide covers the `remnantsserver` module in AlphaGSM.
 
 `remnantsserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
 baseline. GitHub keeps one Docker-default `wine-proton` lifecycle because the
-forced host-Proton process exited before readiness.
+forced host-Proton process exited before readiness. The current payload exposes
+generic TCP health on the configured game port rather than A2S on `queryport`.
 
 ## Requirements
 

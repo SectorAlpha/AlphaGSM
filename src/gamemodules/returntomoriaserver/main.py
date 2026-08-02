@@ -296,6 +296,8 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
     port_definitions=({"key": "port", "protocol": "udp"},),
     prefer_proton=PREFER_PROTON,
     extra_env=_container_runtime_env,
+    stop_mode="exec-console",
+    stdin_open=True,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
