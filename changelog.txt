@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-08-02
+- Documentation: mark Saleblazers Docker lifecycle support as pending fresh
+  Ubuntu 24.04 GitHub Actions proof rather than carrying forward its historical
+  process validation as a current Docker pass.
 - CI/integration: preserve initial failed JUnit results, then recheck each
   failed node once on a fresh GitHub runner after the primary matrix completes.
   Recovered cases are reported as `FLAKY RECOVERED` for triage without

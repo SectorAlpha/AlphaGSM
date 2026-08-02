@@ -2,7 +2,12 @@
 
 This guide covers the `saleblazersserver` module in AlphaGSM.
 
-`saleblazersserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`saleblazersserver` is being revalidated on the documented Ubuntu 24.04 Linux
+baseline. Docker is the required runtime path, and GitHub CI additionally
+exercises the process path where it remains viable. The previous 2026-05-29
+process validation predates the current Docker display-runtime correction, so
+Docker lifecycle support must not be treated as freshly passed until the current
+GitHub Actions run is green.
 
 ## Requirements
 
