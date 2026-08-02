@@ -176,11 +176,11 @@ def test_returntomoriaserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "start")
 
         # wait for readiness
-        status_json_paths = status_json_candidates(install_dir)
+        status_json_path = status_json_candidates(install_dir)
         status_payload = wait_for_status_json_running(
             env,
             server_name,
-            status_json_paths,
+            status_json_path,
             START_TIMEOUT,
         )
         info_data = wait_for_info_protocol(
