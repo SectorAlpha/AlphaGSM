@@ -1094,6 +1094,8 @@ jobs:
     needs: [smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-integration-test, collect-integration-rechecks, integration-flake-recheck]
     if: always()
     steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
       - name: Download all test results
         uses: actions/download-artifact@v4
         with:

@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-08-03
+- CI/integration: check out the repository in the final test-summary job before
+  it imports the shared recheck classifier, allowing recovered-flake policy to
+  be evaluated instead of failing with a missing module.
+
 2026-08-02
 - Documentation: mark Saleblazers Docker lifecycle support as pending fresh
   Ubuntu 24.04 GitHub Actions proof rather than carrying forward its historical

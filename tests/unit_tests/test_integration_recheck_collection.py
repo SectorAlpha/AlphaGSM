@@ -127,6 +127,16 @@ def test_workflow_makes_only_recovered_integration_failures_non_blocking():
     assert "len(unrecovered_int_failed)" in text
 
 
+def test_summary_checks_out_the_shared_recheck_partition_helper():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    summary_job = text.split("  summarize-tests:", 1)[1]
+
+    assert "uses: actions/checkout@v4" in summary_job
+    assert summary_job.index("uses: actions/checkout@v4") < summary_job.index(
+        "from scripts.collect_integration_rechecks import partition_integration_failures"
+    )
+
+
 def test_workflow_is_valid_yaml():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
