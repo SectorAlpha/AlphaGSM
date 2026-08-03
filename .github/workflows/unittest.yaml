@@ -1106,6 +1106,7 @@ jobs:
         run: |
           python3 - <<'PYEOF'
           import glob, sys, xml.etree.ElementTree as ET
+          from pathlib import Path
           from scripts.collect_integration_rechecks import partition_integration_failures
 
           smoke_passed, smoke_skipped, smoke_failed = [], [], []
@@ -1123,7 +1124,7 @@ jobs:
                   elif line.startswith("FAILED: "):
                       smoke_failed.append(line[8:])
 
-          for xml_file in sorted(glob.glob("artifacts/integration-results-*/*.xml")):
+          for xml_file in sorted(Path("artifacts").glob("integration-results-*/*.xml")):
               try:
                   root = ET.parse(xml_file).getroot()
               except ET.ParseError:
@@ -1144,7 +1145,7 @@ jobs:
                   else:
                       int_passed.append(name)
 
-          for xml_file in sorted(glob.glob("artifacts/integration-recheck-results-*/*.xml")):
+          for xml_file in sorted(Path("artifacts").glob("integration-recheck-results-*/*.xml")):
               try:
                   root = ET.parse(xml_file).getroot()
               except ET.ParseError:

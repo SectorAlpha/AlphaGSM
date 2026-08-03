@@ -112,7 +112,7 @@ def test_workflow_runs_post_matrix_rechecks_without_masking_initial_failures():
 def test_workflow_reports_recovered_rechecks_without_changing_initial_result():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-    assert "artifacts/integration-recheck-results-*/*.xml" in text
+    assert 'Path("artifacts").glob("integration-recheck-results-*/*.xml")' in text
     assert "INTEGRATION FLAKE RECHECKS" in text
     assert "FLAKY RECOVERED" in text
     assert "initial failure retained" in text
@@ -135,6 +135,15 @@ def test_summary_checks_out_the_shared_recheck_partition_helper():
     assert summary_job.index("uses: actions/checkout@v4") < summary_job.index(
         "from scripts.collect_integration_rechecks import partition_integration_failures"
     )
+
+
+def test_summary_uses_path_objects_for_recheck_artifact_parents():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    summary_job = text.split("  summarize-tests:", 1)[1]
+
+    assert "from pathlib import Path" in summary_job
+    assert 'Path("artifacts").glob("integration-results-*/*.xml")' in summary_job
+    assert 'Path("artifacts").glob("integration-recheck-results-*/*.xml")' in summary_job
 
 
 def test_workflow_is_valid_yaml():

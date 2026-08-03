@@ -11,6 +11,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - CI/integration: check out the repository in the final test-summary job before
   it imports the shared recheck classifier, allowing recovered-flake policy to
   be evaluated instead of failing with a missing module.
+- CI/integration: parse initial and recheck JUnit artifact paths as `Path`
+  objects in the final summary, so artifact provenance can be classified
+  without crashing on string paths.
 
 2026-08-02
 - Documentation: mark Saleblazers Docker lifecycle support as pending fresh
