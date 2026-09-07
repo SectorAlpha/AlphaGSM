@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-07
+- CI evidence: collect installation records from the private provenance directory
+  and report missing records instead of silently omitting them.
 - Docker Java: use a UTF-8 locale so native Java filename handling can resolve
   cached jars through paths containing Unicode.
 - Runtime: tolerate Windows status readers briefly holding a supervisor endpoint

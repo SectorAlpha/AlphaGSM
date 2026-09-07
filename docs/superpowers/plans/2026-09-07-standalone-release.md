@@ -66,7 +66,7 @@ Windows-native paths and all remote targets remain pending fresh CI evidence.
 - [x] Reject known game-specific OS/CPU incompatibilities before install/start.
 - [x] Check native executable format and preserve explicit Wine/Proton wrappers.
 - [x] Check Docker daemon OS independently of desktop host OS.
-- [ ] Confirm follow-up Windows cache and Docker console/evidence fixes in CI.
+- [x] Confirm follow-up Windows cache and Docker console fixes in CI.
 
 Follow-up validation: 7,645 unit tests passed (three platform-specific skips),
 with focused coverage added for human-readable platform diagnostics afterward.
@@ -85,3 +85,10 @@ no blocker in supervisor cleanup. Native game lifecycles passed on Linux
 x86-64/ARM64 and both macOS targets; these two latest fixes still require fresh
 Windows and rebuilt-image Docker CI confirmation. No real integration tests
 were run locally after the user's CI-only instruction.
+
+CI run 34140318053 at a68964d4 confirmed Windows x86-64 binary lifecycle and
+Linux x86-64 native/Docker lifecycle with Unicode paths, plus Linux ARM64 and
+both macOS targets. All five binary matrix jobs passed. This establishes the Windows cleanup and Java locale
+follow-up evidence; broad game integration and release prerequisites remain
+separate. The final provenance-capture path correction passed all 16 verifier
+unit tests and lint 10.00/10; its artifact collection awaits final-head CI.

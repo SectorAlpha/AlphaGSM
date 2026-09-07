@@ -128,11 +128,9 @@ class BinaryRunner:
         """Copy the one known, redacted provenance record without a recursive glob."""
         if self.userconf is None:
             return
-        path = self.userconf / "conf" / f"{name}.installation.json"
+        path = self.userconf / "conf" / ".provenance" / f"{name}.installation.json"
         try:
             self._write_evidence("installation.json", path.read_text(encoding="utf-8"))
-        except FileNotFoundError:
-            pass
         except OSError as exc:
             self._write_evidence("capture-errors.log", f"Installation provenance: {exc}\n", append=True)
 

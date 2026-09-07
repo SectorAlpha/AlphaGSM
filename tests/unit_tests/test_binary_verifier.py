@@ -148,6 +148,20 @@ def test_failure_evidence_uses_owned_directory_and_never_scans_server_files(tmp_
     assert any(command[:4] == ["docker", "logs", "--tail", "100"] for command in calls)
 
 
+def test_installation_evidence_reads_private_provenance_directory(tmp_path):
+    binary = tmp_path / "alphagsm"
+    binary.touch()
+    runner = verify_binary.BinaryRunner(binary, tmp_path / "acceptance")
+    runner.configure("process", "subprocess")
+    provenance = runner.userconf / "conf" / ".provenance" / "binarymc.installation.json"
+    provenance.parent.mkdir(parents=True)
+    provenance.write_text('{"game_version": "1.21.11"}', encoding="utf-8")
+
+    runner.capture_installation("binarymc")
+
+    assert json.loads((runner.evidence / "installation.json").read_text())["game_version"] == "1.21.11"
+
+
 def test_lifecycle_captures_failure_before_stopping_container(tmp_path, monkeypatch):
     binary = tmp_path / "alphagsm"
     binary.touch()
