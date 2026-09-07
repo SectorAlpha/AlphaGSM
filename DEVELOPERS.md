@@ -487,6 +487,15 @@ bash ./lint.sh
 
 ## CI Topology
 
+Treat repeated integration failures as defects until evidence establishes an
+intermittent cause. Keep the original JUnit failure alongside the single isolated
+recheck. Retry transient downloads at the transfer boundary (three attempts for
+connection interruptions or HTTP 429/5xx); do not increase whole-lifecycle retry
+counts to hide startup crashes, missing libraries, or wrong query endpoints.
+Readiness timeouts and unexpected shutdown failures must fail smoke tests too.
+The shared smoke helpers retain query errors and capture runtime logs/doctor
+output before cleanup can remove the failed server.
+
 The GitHub Actions workflow is [`.github/workflows/unittest.yaml`](.github/workflows/unittest.yaml).
 
 The workflow runs for pull requests targeting `master`, scheduled coverage,

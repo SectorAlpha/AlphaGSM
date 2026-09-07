@@ -144,7 +144,7 @@ def test_recheck_preserves_heavy_runner_and_registration_environment():
 def test_workflow_is_valid_yaml():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-    assert 'name: "integration-flake-recheck (${{ matrix.runtime_backend }}: ${{ matrix.nodeid }})"' in text
+    assert 'name: "integration-recheck (${{ matrix.runtime_backend }}: ${{ matrix.nodeid }})"' in text
 
 
 def test_collect_rechecks_preserves_runner_class_from_routing(tmp_path):

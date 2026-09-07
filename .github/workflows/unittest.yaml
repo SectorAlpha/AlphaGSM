@@ -1050,7 +1050,7 @@ jobs:
       ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
       WINEPREFIX: /opt/wine
-    name: "integration-flake-recheck (${{ matrix.runtime_backend }}: ${{ matrix.nodeid }})"
+    name: "integration-recheck (${{ matrix.runtime_backend }}: ${{ matrix.nodeid }})"
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4

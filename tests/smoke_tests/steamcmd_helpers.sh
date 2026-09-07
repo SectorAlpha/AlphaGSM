@@ -241,7 +241,7 @@ parse_recommended_port_overrides_line() {
 
 # wait_for_ready LOG_PATH TIMEOUT_SECONDS [PATTERN]
 # Waits for readiness markers in a server log.  Returns 0 on success.
-# On timeout prints the log tail for diagnostics then exits 0 (skip).
+# On timeout prints the log tail for diagnostics and fails.
 wait_for_ready() {
   local log_path="$1"
   local timeout_seconds="$2"
@@ -263,8 +263,7 @@ wait_for_ready() {
   else
     echo "[diagnostic] Log file not found: ${log_path}" >&2
   fi
-  echo "Server log did not show readiness markers in ${timeout_seconds}s — skipping smoke test (CI)" >&2
-  exit 0
+  return 1
 }
 
 # wait_for_glob_ready LOG_GLOB TIMEOUT_SECONDS [PATTERN]
@@ -273,7 +272,6 @@ wait_for_glob_ready() {
   local log_glob="$1"
   local timeout_seconds="$2"
   local pattern="${3:-ready|started|listening|Done}"
-  local readiness_mode="${4:-skip}"
   local deadline=$((SECONDS + timeout_seconds))
   local matches=()
   while (( SECONDS < deadline )); do
@@ -300,16 +298,11 @@ wait_for_glob_ready() {
   else
     echo "[diagnostic] No log file matched: ${log_glob}" >&2
   fi
-  if [[ "$readiness_mode" == "required" ]]; then
-    echo "Server log did not show required readiness markers in ${timeout_seconds}s" >&2
-    return 1
-  fi
-  echo "Server log did not show readiness markers in ${timeout_seconds}s — skipping smoke test (CI)" >&2
-  exit 0
+  return 1
 }
 
 # wait_for_glob_ready_strict LOG_GLOB TIMEOUT_SECONDS [PATTERN]
-# Require a matching game-owned readiness marker instead of skipping on timeout.
+# Compatibility alias; all readiness waits require a matching marker.
 wait_for_glob_ready_strict() {
   local log_glob="$1"
   local timeout_seconds="$2"
@@ -370,7 +363,7 @@ wait_for_info_protocol() {
     set +e
     last_output="$(
       ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
-        "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$server_name" info --json 2>/dev/null
+        "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$server_name" info --json
     )"
     last_rc=$?
     set -e
@@ -400,19 +393,20 @@ PY
   else
     echo "[diagnostic] info --json returned no payload" >&2
   fi
-  echo "Server info protocol did not become ${expected_protocol} in ${timeout_seconds}s — skipping smoke test (CI)" >&2
-  exit 0
+  capture_runtime_diagnostics "$server_name"
+  return 1
 }
 
 # run_stop_or_skip SERVER_NAME
-# Tries to stop a server; if it is not running any more, skip instead of fail.
+# Historical name retained for callers; unexpected stop failures fail the test.
 run_stop_or_skip() {
   set +e
   run_alphagsm "$@" stop 2>&1
   local rc=$?
   set -e
   if [[ $rc -ne 0 ]]; then
-    echo "Stop returned non-zero ($rc) — server may have crashed in CI, skipping" >&2
-    exit 0
+    echo "Stop returned non-zero ($rc) — server may have crashed" >&2
+    capture_runtime_diagnostics "$1"
+    return "$rc"
   fi
 }

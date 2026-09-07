@@ -242,11 +242,10 @@ def test_workflow_reports_smoke_skips_separately_from_passes_and_failures():
     assert "('PASSED', 'SKIPPED', 'FAILED')" in summary
 
 
-def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():
+def test_strict_glob_readiness_alias_reuses_required_helper():
     text = STEAMCMD_HELPERS.read_text(encoding="utf-8")
 
     assert "wait_for_glob_ready_strict()" in text
-    assert 'local readiness_mode="${4:-skip}"' in text
     assert 'wait_for_glob_ready "$log_glob" "$timeout_seconds" "$pattern" "required"' in text
-    assert 'if [[ "$readiness_mode" == "required" ]]; then' in text
+    assert "readiness_mode" not in text
     assert "return 1" in text

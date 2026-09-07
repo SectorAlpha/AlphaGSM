@@ -522,11 +522,48 @@ def test_valve_source_query_hooks_use_runtime_resolved_host(monkeypatch):
     monkeypatch.setattr(
         valve_server.runtime_module,
         "resolve_query_host",
-        lambda server_obj: "172.18.0.9",
+        lambda server_obj, default="127.0.0.1": "172.18.0.9",
     )
 
     assert module.MODULE.get_query_address(server) == ("172.18.0.9", 27016, "a2s")
     assert module.MODULE.get_info_address(server) == ("172.18.0.9", 27016, "a2s")
+
+
+@pytest.mark.parametrize(
+    "backend,inside_container,explicit_host,expected_host",
+    [
+        ("process", False, None, "192.0.2.10"),
+        ("process", True, None, "192.0.2.10"),
+        ("process", False, "127.0.0.1", "127.0.0.1"),
+        ("process", False, "192.0.2.20", "192.0.2.20"),
+        ("docker", False, None, "127.0.0.1"),
+        ("docker", True, None, "172.18.0.1"),
+        ("docker", True, "192.0.2.20", "192.0.2.20"),
+    ],
+)
+def test_source_query_host_preserves_process_nic_and_docker_routing(
+    monkeypatch, backend, inside_container, explicit_host, expected_host
+):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    runtime = valve_server.runtime_module
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={"port": 27015, "queryport": 27016, "bindaddress": explicit_host},
+    )
+    monkeypatch.setattr(valve_server, "detect_query_host", lambda: "192.0.2.10")
+    monkeypatch.setattr(
+        runtime,
+        "resolve_runtime_metadata",
+        lambda _server: {"runtime": backend, "container_name": "alphagsm-cssalpha"},
+    )
+    monkeypatch.setattr(runtime, "_running_inside_container", lambda: inside_container)
+    monkeypatch.setattr(
+        runtime, "_inspect_container_network_value", lambda *_args: "172.18.0.1"
+    )
+
+    assert module.get_query_address(server) == (expected_host, 27016, "a2s")
+    assert module.get_info_address(server) == (expected_host, 27016, "a2s")
 
 
 def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):

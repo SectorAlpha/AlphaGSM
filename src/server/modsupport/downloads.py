@@ -9,16 +9,28 @@ import subprocess as sp
 import shutil
 import tarfile
 import tempfile
+import time
 import zipfile
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from .errors import ModSupportError
 
+DOWNLOAD_ATTEMPTS = 3
+
+
+def _is_transient_download_error(error):
+    """Identify retryable HTTP responses and interrupted network connections."""
+    if isinstance(error, HTTPError):
+        return error.code == 429 or 500 <= error.code < 600
+    reason = error.reason if isinstance(error, URLError) else error
+    return isinstance(reason, (ConnectionError, TimeoutError))
+
 
 def download_to_cache(url, *, allowed_hosts, target_path, checksum=None):
-    """Download a file to cache after validating the source host and checksum."""
+    """Validate and cache a download, retrying transient transport failures."""
     parsed = urlparse(url)
     hostname = parsed.hostname
     if not hostname or hostname not in set(allowed_hosts):
@@ -29,28 +41,31 @@ def download_to_cache(url, *, allowed_hosts, target_path, checksum=None):
 
     target_path = Path(target_path)
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    temp_handle = None
-    temp_path = None
-
-    hasher = hashlib.sha256()
-    try:
-        temp_handle, temp_name = tempfile.mkstemp(
-            prefix=f".{target_path.name}.",
-            suffix=".tmp",
-            dir=target_path.parent,
-        )
-        temp_path = Path(temp_name)
-        with urlopen(url, timeout=30) as response, open(temp_handle, "wb", closefd=True) as handle:
-            while True:
-                chunk = response.read(64 * 1024)
-                if not chunk:
-                    break
-                handle.write(chunk)
-                hasher.update(chunk)
-    except OSError as exc:
-        if temp_path is not None:
-            temp_path.unlink(missing_ok=True)
-        raise ModSupportError(f"Failed to download {url}: {exc}") from exc
+    for attempt in range(DOWNLOAD_ATTEMPTS):
+        temp_path = None
+        hasher = hashlib.sha256()
+        try:
+            temp_handle, temp_name = tempfile.mkstemp(
+                prefix=f".{target_path.name}.",
+                suffix=".tmp",
+                dir=target_path.parent,
+            )
+            temp_path = Path(temp_name)
+            # Own the file descriptor before opening the connection so failures close it.
+            with open(temp_handle, "wb", closefd=True) as handle, urlopen(url, timeout=30) as response:
+                while True:
+                    chunk = response.read(64 * 1024)
+                    if not chunk:
+                        break
+                    handle.write(chunk)
+                    hasher.update(chunk)
+            break
+        except OSError as exc:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)
+            if attempt + 1 == DOWNLOAD_ATTEMPTS or not _is_transient_download_error(exc):
+                raise ModSupportError(f"Failed to download {url}: {exc}") from exc
+            time.sleep(2 ** attempt)
 
     if expected_checksum is not None:
         actual = hasher.hexdigest()

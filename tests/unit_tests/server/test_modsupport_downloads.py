@@ -1,7 +1,9 @@
+import hashlib
 import io
 from pathlib import Path
 import tarfile
-from urllib.error import URLError
+import time
+from urllib.error import HTTPError, URLError
 
 import pytest
 
@@ -23,6 +25,133 @@ def test_download_to_cache_rejects_untrusted_host(tmp_path):
             allowed_hosts={"trusted.invalid"},
             target_path=tmp_path / "mod.tar.gz",
         )
+
+
+@pytest.mark.parametrize("error", [
+    URLError(ConnectionResetError(104, "Connection reset by peer")),
+    TimeoutError("timed out"),
+    HTTPError("https://trusted.invalid/mod.zip", 429, "Too Many Requests", {}, None),
+    HTTPError("https://trusted.invalid/mod.zip", 503, "Service Unavailable", {}, None),
+])
+def test_download_to_cache_retries_transient_open_failure(tmp_path, monkeypatch, error):
+    calls = []
+    sleeps = []
+
+    def fake_urlopen(url, timeout):
+        calls.append((url, timeout))
+        if len(calls) == 1:
+            raise error
+        return io.BytesIO(b"complete archive")
+
+    monkeypatch.setattr(downloads_module, "urlopen", fake_urlopen)
+    monkeypatch.setattr(time, "sleep", sleeps.append)
+    target = tmp_path / "mod.zip"
+
+    assert download_to_cache(
+        "https://trusted.invalid/mod.zip", allowed_hosts={"trusted.invalid"}, target_path=target,
+    ) == target
+    assert target.read_bytes() == b"complete archive"
+    assert len(calls) == 2
+    assert sleeps == [1]
+    assert list(tmp_path.iterdir()) == [target]
+
+
+def test_download_to_cache_restarts_stream_and_checksum_after_reset(tmp_path, monkeypatch):
+    calls = []
+
+    class InterruptedResponse(io.BytesIO):
+        def read(self, size=-1):
+            if self.tell():
+                raise ConnectionResetError(104, "Connection reset by peer")
+            return super().read(size)
+
+    def fake_urlopen(_url, timeout):
+        calls.append(timeout)
+        return InterruptedResponse(b"partial") if len(calls) == 1 else io.BytesIO(b"complete")
+
+    monkeypatch.setattr(downloads_module, "urlopen", fake_urlopen)
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)
+    target = tmp_path / "mod.zip"
+    download_to_cache(
+        "https://trusted.invalid/mod.zip", allowed_hosts={"trusted.invalid"}, target_path=target,
+        checksum=hashlib.sha256(b"complete").hexdigest(),
+    )
+
+    assert target.read_bytes() == b"complete"
+    assert calls == [30, 30]
+    assert list(tmp_path.iterdir()) == [target]
+
+
+def test_download_to_cache_exhausts_retries_without_replacing_cache(tmp_path, monkeypatch):
+    calls = []
+    sleeps = []
+    target = tmp_path / "mod.zip"
+    target.write_bytes(b"existing cache")
+
+    def fake_urlopen(_url, timeout):
+        calls.append(timeout)
+        raise URLError(ConnectionResetError(104, "Connection reset by peer"))
+
+    monkeypatch.setattr(downloads_module, "urlopen", fake_urlopen)
+    monkeypatch.setattr(time, "sleep", sleeps.append)
+    with pytest.raises(ModSupportError, match="Connection reset by peer"):
+        download_to_cache(
+            "https://trusted.invalid/mod.zip", allowed_hosts={"trusted.invalid"}, target_path=target,
+        )
+
+    assert calls == [30, 30, 30]
+    assert sleeps == [1, 2]
+    assert target.read_bytes() == b"existing cache"
+    assert list(tmp_path.iterdir()) == [target]
+
+
+@pytest.mark.parametrize("error", [
+    HTTPError("https://trusted.invalid/mod.zip", 404, "Not Found", {}, None),
+    PermissionError("Permission denied"),
+])
+def test_download_to_cache_does_not_retry_permanent_errors(tmp_path, monkeypatch, error):
+    calls = []
+    sleeps = []
+
+    def fake_urlopen(_url, timeout):
+        calls.append(timeout)
+        raise error
+
+    monkeypatch.setattr(downloads_module, "urlopen", fake_urlopen)
+    monkeypatch.setattr(time, "sleep", sleeps.append)
+    with pytest.raises(ModSupportError, match="Failed to download"):
+        download_to_cache(
+            "https://trusted.invalid/mod.zip", allowed_hosts={"trusted.invalid"},
+            target_path=tmp_path / "mod.zip",
+        )
+
+    assert calls == [30]
+    assert sleeps == []
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_download_to_cache_does_not_retry_or_publish_checksum_mismatch(tmp_path, monkeypatch):
+    calls = []
+    sleeps = []
+    target = tmp_path / "mod.zip"
+    target.write_bytes(b"existing cache")
+
+    def fake_urlopen(_url, timeout):
+        calls.append(timeout)
+        return io.BytesIO(b"unexpected archive")
+
+    monkeypatch.setattr(downloads_module, "urlopen", fake_urlopen)
+    monkeypatch.setattr(time, "sleep", sleeps.append)
+    with pytest.raises(ModSupportError, match="Checksum mismatch"):
+        download_to_cache(
+            "https://trusted.invalid/mod.zip", allowed_hosts={"trusted.invalid"}, target_path=target,
+            checksum=hashlib.sha256(b"expected archive").hexdigest(),
+        )
+
+    assert calls == [30]
+    assert sleeps == []
+    assert target.read_bytes() == b"existing cache"
+    assert list(tmp_path.iterdir()) == [target]
 
 
 def test_extract_tarball_safe_rejects_path_traversal(tmp_path):

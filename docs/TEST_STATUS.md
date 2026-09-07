@@ -43,6 +43,17 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- [PR #36 run 34140847643](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34140847643)
+  passed all five binary acceptance targets. Its downloaded integration-report
+  snapshot contains 113 initial failures; a later job-status check showed 50
+  failures in 51 completed isolated rechecks. The run was still active when
+  captured, so these are not final totals. Explicit root-refusal logs identify Docker identity defects in twelve
+  modules; fixes also restore Source process query routing and retry transient
+  curated downloads. Smoke timeout/stop failures now stay red. These changes
+  require fresh CI and do not promote any support state. Quake Live's missing
+  `libsteam_api.so`, HL2DM's pre-map startup stall, and the other unresolved
+  lifecycle failures remain open investigations.
+
 - PR #36 standalone/runtime and CI-integrity changes require fresh CI proof.
   The binary matrix targets Linux x86-64/ARM64, macOS Intel/Apple Silicon and
   Windows x86-64; these targets do not promote existing game support states.

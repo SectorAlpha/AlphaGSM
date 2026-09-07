@@ -284,8 +284,13 @@ def detect_query_host(default="127.0.0.1"):
 def source_query_address(server):
     """Return the preferred host/port/protocol tuple for Source A2S queries."""
 
+    default_host = "127.0.0.1"
+    if runtime_module.resolve_runtime_metadata(server).get("runtime") != "docker":
+        # Preserve the established local-interface default for Source process
+        # UDP probes while leaving Docker routing to the shared resolver.
+        default_host = detect_query_host()
     return (
-        runtime_module.resolve_query_host(server),
+        runtime_module.resolve_query_host(server, default=default_host),
         int(server.data.get("queryport", server.data["port"])),
         "a2s",
     )

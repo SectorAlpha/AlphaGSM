@@ -4,6 +4,8 @@ This guide covers the `sbotsserver` module in AlphaGSM.
 
 ## Requirements
 
+For Docker, run AlphaGSM as a normal user with Docker access. The server rejects root; its container uses your user and group IDs and a private writable home directory.
+
 - `screen`
 - SteamCMD dependencies from the normal AlphaGSM install path
 

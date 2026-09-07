@@ -8,6 +8,15 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-07
+- Docker: run 12 affected Unreal game modules as the invoking non-root user,
+  with a writable private HOME and matching Steam library mounts.
+- Source queries: restore the local-interface default for process A2S probes,
+  preserving explicit host settings and Docker routing.
+- Downloads: retry transient curated-asset connection failures and HTTP 429/5xx
+  up to three attempts; preserve checksum checks and atomic cache replacement.
+- Smoke tests: fail readiness timeouts and unexpected shutdown failures instead
+  of returning success; retain query errors and runtime diagnostics.
+- CI: label isolated attempts as rechecks without assuming failures are flakes.
 - CI evidence: collect installation records from the private provenance directory
   and report missing records instead of silently omitting them.
 - Docker Java: use a UTF-8 locale so native Java filename handling can resolve
