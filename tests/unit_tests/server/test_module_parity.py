@@ -3,6 +3,7 @@ import runpy
 import sys
 
 from server.module_catalog import load_default_module_catalog
+from server.module_catalog import ModuleCatalog
 from server.module_parity import (
     _module_source_path,
     build_module_parity_rows,
@@ -105,6 +106,17 @@ def test_module_source_path_prefers_package_init_when_present(tmp_path):
 
     assert _module_source_path(repo_root, "teamfortress2") == package_dir / "__init__.py"
     assert _module_source_path(repo_root, "counterstrike2") == flat_module_path
+
+
+def test_parity_does_not_claim_runtime_verification_without_tracker_evidence(tmp_path):
+    module_dir = tmp_path / "src" / "gamemodules"
+    module_dir.mkdir(parents=True)
+    (module_dir / "example.py").write_text("def get_runtime_requirements(server): pass\ndef get_container_spec(server): pass\n")
+    (tmp_path / "disabled_servers.conf").write_text("")
+    catalog = ModuleCatalog(("example",), {}, {})
+    row = build_module_parity_rows(catalog=catalog, repo_root=tmp_path)[0]
+    assert row.support_state == "UNKNOWN"
+    assert row.runtime_verified is False
 
 
 def test_generate_module_parity_script_bootstraps_src_path(monkeypatch):

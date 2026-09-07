@@ -1,2136 +1,3098 @@
 [
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "abfserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": false,
-    "support_state": "disabled"
+    "support_state": "DISABLED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "accserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "acserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ahl2server",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ahlserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "alienarenaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "aloftserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "argoserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ark",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arksurvivalascended",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma2coserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3.altislife",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3.desolationredux",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3.epoch",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3.exile",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3.headless",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3.wasteland",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3altislifeserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3desolationreduxserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3epochserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3exileserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3headlessserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "arma3wastelandserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "armarserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "askaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "astroneerserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "atlasserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "atsserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "avserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bannerlordserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "mixed"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "battlebitserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-provisioning"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "battlecryoffreedomserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bb2server",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bbserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bdserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bf1942server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bfvserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "blackops3server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "blackwakeserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bmdmserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bobserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": false,
-    "support_state": "disabled"
+    "support_state": "DISABLED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "boserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "brickadiaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "brokeprotocolserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "bsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "btlserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "btserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ccserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "cmwserver"
     ],
+    "architectures": null,
     "canonical_id": "chivalryserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "citadelserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ckserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "cod2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "cod4server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "codserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "coduoserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "codwawserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "colserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "conanexiles",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "cs2",
       "cs2server"
     ],
+    "architectures": null,
     "canonical_id": "counterstrike2",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "csgo",
       "csgoserver"
     ],
+    "architectures": null,
     "canonical_id": "counterstrikeglobaloffensive",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": false,
-    "support_state": "disabled"
+    "support_state": "DISABLED"
   },
   {
     "aliases": [
       "ctserver"
     ],
+    "architectures": null,
     "canonical_id": "craftopiaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "cryofallserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "csczserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "csserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "cssserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dabserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "darkandlightserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "dodrserver"
     ],
+    "architectures": null,
     "canonical_id": "dayofdragonsserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dayzarma2epochserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dayzserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "deadmatterserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "deadpolyserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dmcserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dodserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dodsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "doiserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dstserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ducksideserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "dysserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ecoserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "empyrionserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "emserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "enshrouded",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "etlserver"
     ],
+    "architectures": null,
     "canonical_id": "etlegacyserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ets2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "exfilserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "fearthenightserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "fofserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "foundryserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "frozenflameserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "gmodserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "goldeneyesourceserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "assets"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "gravserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "groundbranchserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "gtafivemserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-provisioning"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [
       "hcu"
     ],
+    "architectures": null,
     "canonical_id": "hcuserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "heatserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "hellletlooseserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "hl2dmserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "hldmserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "hldmsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "hogwarpserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [
       "hw"
     ],
+    "architectures": null,
     "canonical_id": "hurtworldserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "hzserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "icarusserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "identityserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "insserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "inssserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "interstellarriftserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "iosserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "jc2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "jc3server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "jk2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "kerbalspaceprogramserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "kf2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "kfserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "l4d2server",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "l4dserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "lastoasisserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "lifeisfeudalserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "longvinterserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "medievalengineersserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "memoriesofmarsserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "mcbserver"
     ],
+    "architectures": null,
     "canonical_id": "minecraft.bedrock",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "service-console",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "minecraft.bungeecord",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "minecraft.custom",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [
       "pmcserver"
     ],
+    "architectures": null,
     "canonical_id": "minecraft.paper",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "minecraft.tekkit",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [
       "mcserver"
     ],
+    "architectures": null,
     "canonical_id": "minecraft.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "vpmcserver"
     ],
+    "architectures": null,
     "canonical_id": "minecraft.velocity",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "wmcserver"
     ],
+    "architectures": null,
     "canonical_id": "minecraft.waterfall",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "miscreatedserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "mohaaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [
       "mhserver"
     ],
+    "architectures": null,
     "canonical_id": "mordserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "motortownserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "mtaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "mumbleserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "simple-tcp",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "mw3server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "mxbikesserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "mythofempiresserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ndserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "necserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "java",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "nightingale",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "nmrihserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "noonesurvivedserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "notdserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ns2cserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ns2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "nsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ohdserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "onsetserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "opforserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "outpostzeroserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "pwserver"
     ],
+    "architectures": null,
     "canonical_id": "palworld",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "pathoftitansserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-token"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [
       "pc2server"
     ],
+    "architectures": null,
     "canonical_id": "pcars2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [
       "pcserver"
     ],
+    "architectures": null,
     "canonical_id": "pcarserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "pixarkserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "police1013server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "primalcarnageextinctionserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "pzserver"
     ],
+    "architectures": null,
     "canonical_id": "projectzomboid",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "pvkiiserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "pvrserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "q2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "q3server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "q4server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "qlserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "qwserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "readyornotserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "redmserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-provisioning"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "reignofdwarfserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "reignofkingsserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "remnantsserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "returntomoriaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ricochetserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "rimworldtogetherserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ror2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "roserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [
       "risingstorm2vietnam"
     ],
+    "architectures": null,
     "canonical_id": "rs2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "rtcwserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "rust",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "rwserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "saleblazersserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "sampserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [
       "sfserver"
     ],
+    "architectures": null,
     "canonical_id": "satisfactory",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "sbots"
     ],
+    "architectures": null,
     "canonical_id": "sbotsserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [
       "scpslsmserver"
     ],
+    "architectures": null,
     "canonical_id": "scpslserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "scumserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "seserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "sdtdserver"
     ],
+    "architectures": null,
     "canonical_id": "sevendaystodie",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "sfcserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "silicaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "skyrimtogetherrebornserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "smallandserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "sniperelite4server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "sof2server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "solserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "sonsoftheforestserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "smserver"
     ],
+    "architectures": null,
     "canonical_id": "soulmask",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "squad44server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "squadserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ss14server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [
       "sbserver"
     ],
+    "architectures": null,
     "canonical_id": "starbound",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "starruptureserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "stserver"
     ],
+    "architectures": null,
     "canonical_id": "stationeersserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "staxelserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "stnserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "stormworksserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "subnauticaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "subsistenceserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "sunkenlandserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "svenserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "tf2",
       "tf2server"
     ],
+    "architectures": null,
     "canonical_id": "teamfortress2",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "terraria.tshock",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "terrariaserver"
     ],
+    "architectures": null,
     "canonical_id": "terraria.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "terratechworldsserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
@@ -2138,272 +3100,386 @@
       "tf2classified",
       "tf2classifiedserver"
     ],
+    "architectures": null,
     "canonical_id": "tf2cserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "tfcserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "theforestserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "tfserver"
     ],
+    "architectures": null,
     "canonical_id": "thefrontserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "tiserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-auth"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "trackmaniaserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ts3server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "service-console",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "tsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "tuserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "twserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [
       "untserver"
     ],
+    "architectures": null,
     "canonical_id": "unturned",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ut2k4server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "ut3server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [
       "utserver"
     ],
+    "architectures": null,
     "canonical_id": "ut99server",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "vhserver"
     ],
+    "architectures": null,
     "canonical_id": "valheim",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "veinserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "vintsserver"
     ],
+    "architectures": null,
     "canonical_id": "vintagestoryserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "vrserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "vsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "warbandserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [
       "wet"
     ],
+    "architectures": null,
     "canonical_id": "wetserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
+    "runtime_verified": false,
+    "support_state": "UNKNOWN"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "wfserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "wreckfestserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "wine-proton",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "wurmserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "xntserver",
     "contract_complete": false,
     "missing_surfaces": [
       "status"
     ],
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "quake-linux",
     "runtime_verified": true,
-    "support_state": "active"
+    "support_state": "PASSED"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "zmrserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (BYO)"
   },
   {
     "aliases": [],
+    "architectures": null,
     "canonical_id": "zpsserver",
     "contract_complete": true,
     "missing_surfaces": [],
-    "runtime_verified": true,
-    "support_state": "active"
+    "platforms": null,
+    "provider_categories": [
+      "provider-license"
+    ],
+    "runtime_family": "steamcmd-linux",
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   }
 ]

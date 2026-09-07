@@ -142,9 +142,11 @@ def test_backend_ci_workflow_uses_branch_local_simple_tcp_runtime_image_for_mumb
 def test_summarize_tests_includes_backend_integration_results():
     text = WORKFLOW_PATH.read_text()
 
-    assert (
-        "needs: [smoke-test-standard, smoke-test-heavy, integration-test-standard, "
-        "integration-test-heavy, backend-integration-test]"
-    ) in text
-    assert "backend-integration-results-" in text
-    assert 'glob.glob("artifacts/backend-integration-results-*/*.xml")' in text
+    summary_job = text.split("  summarize-tests:", 1)[1]
+    needs = summary_job.split("    needs: ", 1)[1].split("\n", 1)[0]
+    assert "backend-integration-test" in needs
+    assert "backend-smoke-test" in needs
+    assert "scripts/summarize_tests.py artifacts" in summary_job
+    summary = Path("scripts/summarize_tests.py").read_text()
+    assert "backend-process-results.xml" in summary
+    assert "backend-docker-results.xml" in summary

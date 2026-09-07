@@ -7,6 +7,7 @@ from . import self_update
 import subprocess as sp
 import screen
 import os
+import sys
 import traceback
 from . import program
 from .version import get_version
@@ -176,6 +177,27 @@ def main(name, args):
 
 
 def run_one(name, server, cmd, args):
+    """Serialize local commands before their datastore is loaded."""
+    from utils.state_io import state_lock
+
+    user, tag = server
+    if user is not None:
+        return _run_one_unlocked(name, server, cmd, args)
+    if not tag or tag in (".", "..") or any(char in tag for char in "/\\\0:"):
+        print("Invalid local server name", file=stderr)
+        return 2
+    # Interactive attachment must not prevent a different CLI from stopping it.
+    if cmd == "connect":
+        return _run_one_unlocked(name, server, cmd, args)
+    try:
+        with state_lock(os.path.join(servermodule.DATAPATH, tag + ".json")):
+            return _run_one_unlocked(name, server, cmd, args)
+    except (TimeoutError, OSError) as error:
+        print_handled_ex(error)
+        return 1
+
+
+def _run_one_unlocked(name, server, cmd, args):
     """
     Run a single command or list of commands on a single server.
     """
@@ -235,7 +257,13 @@ def run_one(name, server, cmd, args):
             #  Here we are running a command on a server that already exists.
             #  First check to see if the server exists
             try:
-                server = Server(tag)
+                if cmd == "doctor" and any(arg in ("--json", "-j") for arg in args):
+                    from contextlib import redirect_stdout
+                    from io import StringIO
+                    with redirect_stdout(StringIO()):
+                        server = Server(tag)
+                else:
+                    server = Server(tag)
             except ServerError as ex:
                 print("Can't find server", file=stderr)
                 print_handled_ex(ex)
@@ -288,6 +316,8 @@ def run_one(name, server, cmd, args):
                 ),
                 "alphagsm",
             )
+            if getattr(sys, "frozen", False):
+                program.PATH = sys.executable
             #  now we have the commands that the game server understands,
             #  try running the command
             try:
@@ -378,7 +408,7 @@ def get_all_user_servers():
         servers = [
             (None, el[:-5])
             for el in os.listdir(servermodule.DATAPATH)
-            if el.endswith(".json")
+            if el.endswith(".json") and not el.endswith(".secrets.json")
         ]
     except FileNotFoundError:
         print("No servers found for user", file=stderr)
@@ -443,6 +473,8 @@ def get_run_cmd(name, server, args, multi=False):
     Return a list suitable to run in sp.subprocess
     """
 
+    if getattr(sys, "frozen", False):
+        return [sys.executable, "--_run-command", "1" if multi else "0", name, server] + list(args)
     scriptpath = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))),
         "alphagsm-internal",
@@ -508,6 +540,8 @@ def run_multi(name, count, servers, args):
     This is achieved by a multiplexer.
     """
 
+    if os.name == "nt":
+        return _run_multi_windows(name, servers, args)
     multi = mp.Multiplexer()
     for user, server in servers:
         if user is not None:
@@ -529,6 +563,7 @@ def run_multi(name, count, servers, args):
     retvals = list(multi.checkreturnvalues().values())
     if len(retvals) != len(servers):
         print("Warning: Not all servers have returned", file=stderr)
+        return 1
     if all(val == 0 for val in retvals):
         return 0
     retvalsnon0 = [val for val in retvals if val != 0]
@@ -536,6 +571,31 @@ def run_multi(name, count, servers, args):
         return retvalsnon0[0]
     else:
         return 10
+
+
+def _run_multi_windows(name, servers, args):
+    """Windows selectors cannot monitor subprocess pipes; drain with threads."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def run_target(target):
+        user, tag = target
+        if user is not None:
+            return tag, 1, "Cross-user commands require a Unix sudo environment."
+        try:
+            process = sp.run(get_run_cmd(name, tag, args), stdin=sp.DEVNULL,
+                             stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False)
+            return tag, process.returncode, process.stdout
+        except OSError as error:
+            return tag, 1, str(error)
+
+    codes = []
+    with ThreadPoolExecutor(max_workers=min(8, len(servers))) as executor:
+        for tag, code, output in executor.map(run_target, servers):
+            for line in output.splitlines():
+                print(tag + ": " + line)
+            codes.append(code)
+    failures = set(code for code in codes if code)
+    return 0 if not failures else next(iter(failures)) if len(failures) == 1 else 10
 
 
 def help(name, server, cmd=None, *, file=stderr, full_help=False):

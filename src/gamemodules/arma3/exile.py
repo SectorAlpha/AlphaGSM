@@ -1,6 +1,7 @@
 """Namespaced Arma 3 Exile server module."""
 
 from gamemodules.arma3exileserver import *  # noqa: F401,F403
+from gamemodules.arma3exileserver import get_start_command
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 

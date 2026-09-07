@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import os
+import platform
+import shutil
 from pathlib import Path
 import re
 import stat
@@ -224,19 +226,18 @@ def _run_binary_self_update(*, check=False):
             "Use --check from source checkouts."
         )
 
-    if os.name == "nt":
-        raise SelfUpdateError(
-            "Binary self-update is not supported while running on Windows; replace the executable manually."
-        )
-
     try:
         binary_asset, checksum_asset = _select_release_assets(release_data, latest_version)
-        _replace_current_binary(
+        deferred_result = _replace_current_binary(
             binary_asset["browser_download_url"],
             checksum_asset["browser_download_url"],
         )
     except (OSError, urllib.error.URLError, ValueError) as ex:
         raise SelfUpdateError("Binary self-update failed.") from ex
+    if deferred_result is not None:
+        print("AlphaGSM binary update to %s scheduled after this process exits." % (latest_version,))
+        print("Check the update result before restarting: %s" % (deferred_result,))
+        return 0
     print("Updated AlphaGSM binary to %s" % (latest_version,))
     print("Restart AlphaGSM to use the new binary")
     return 0
@@ -270,18 +271,41 @@ def _replace_current_binary(binary_url, checksum_url):
     if not current_path.exists():
         raise SelfUpdateError("Current executable path does not exist: %s" % (current_path,))
 
-    with tempfile.TemporaryDirectory(prefix="alphagsm-self-update-") as temp_dir:
-        temp_dir = Path(temp_dir)
-        downloaded_binary = temp_dir / current_path.name
-        downloaded_checksum = temp_dir / (current_path.name + ".sha256")
+    # Atomic rename requires staging on the same filesystem as the executable.
+    temp_dir = Path(tempfile.mkdtemp(prefix=".alphagsm-self-update-", dir=current_path.parent))
+    deferred = False
+    try:
+        downloaded_binary = temp_dir / "replacement.exe"
+        downloaded_checksum = temp_dir / "replacement.sha256"
         _download(binary_url, downloaded_binary)
         _download(checksum_url, downloaded_checksum)
-        _verify_checksum(downloaded_binary, downloaded_checksum)
+        checksum = _verify_checksum(downloaded_binary, downloaded_checksum)
         current_mode = stat.S_IMODE(current_path.stat().st_mode)
         os.chmod(downloaded_binary, current_mode)
-        replacement_path = current_path.with_name(current_path.name + ".new")
-        os.replace(downloaded_binary, replacement_path)
-        os.replace(replacement_path, current_path)
+        if sys.platform.startswith("win"):
+            from .binary_update import schedule_update
+
+            result = schedule_update(current_path, temp_dir, checksum)
+            deferred = True
+            return result
+        os.replace(downloaded_binary, current_path)
+        return None
+    finally:
+        if not deferred:
+            shutil.rmtree(temp_dir)
+
+
+def run_deferred_update(args, *, stderr=None):
+    """Dispatch the private executable-replacement helper without normal CLI parsing."""
+
+    if stderr is None:
+        stderr = sys.stderr
+    if len(args) != 1 or not getattr(sys, "frozen", False) or not sys.platform.startswith("win"):
+        print("Invalid invocation of the internal self-update helper.", file=stderr)
+        return 2
+    from .binary_update import complete_update
+
+    return complete_update(Path(args[0]))
 
 
 def _download(url, target_path):
@@ -300,6 +324,7 @@ def _verify_checksum(binary_path, checksum_path):
     actual_hash = hashlib.sha256(binary_path.read_bytes()).hexdigest()
     if not expected_hash or actual_hash != expected_hash:
         raise SelfUpdateError("Downloaded binary failed SHA256 verification.")
+    return expected_hash
 
 
 def _platform_slug():
@@ -317,7 +342,7 @@ def _platform_slug():
 def _arch_slug():
     """Return the release workflow's architecture slug for this runtime."""
 
-    machine = (os.environ.get("PROCESSOR_ARCHITECTURE") or os.uname().machine).lower()
+    machine = platform.machine().strip().lower()
     if machine in ("x86_64", "amd64"):
         return "X64"
     if machine in ("aarch64", "arm64"):

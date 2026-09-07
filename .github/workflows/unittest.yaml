@@ -3,6 +3,11 @@ name: AlphaGSM PR
 on:
   pull_request:
     branches: [master]
+  workflow_dispatch:
+  workflow_call:
+  merge_group:
+  schedule:
+    - cron: "0 4 * * 1"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -109,50 +114,10 @@ jobs:
             -q --tb=no
 
   binary-build-smoke:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact: alphagsm-linux
-            binary: dist-binary/alphagsm
-          - os: windows-latest
-            artifact: alphagsm-windows
-            binary: dist-binary/alphagsm.exe
-          - os: macos-latest
-            artifact: alphagsm-macos
-            binary: dist-binary/alphagsm
-    runs-on: ${{ matrix.os }}
     needs: build
-    name: binary-build-smoke (${{ matrix.os }})
-    steps:
-      - name: Checkout AlphaGSM code
-        uses: actions/checkout@v4
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
-      - name: Build standalone AlphaGSM binary
-        env:
-          ALPHAGSM_VERSION: ci-${{ github.sha }}
-        run: >-
-          python scripts/build_binary.py
-          --version ci-${{ github.sha }}
-          --release-dir release-artifacts
-          --artifact-name ${{ matrix.artifact }}-${{ runner.arch }}
-      - name: Run binary smoke check
-        env:
-          ALPHAGSM_CONFIG_LOCATION: ${{ github.workspace }}/tests/alphagsm-test.conf
-        run: release-artifacts/${{ matrix.artifact }}-${{ runner.arch }}${{ endsWith(matrix.binary, '.exe') && '.exe' || '' }} --version
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}-${{ runner.arch }}
-          path: release-artifacts/*
+    uses: ./.github/workflows/binary.yml
+    with:
+      version: ci-${{ github.sha }}
 
   classify-changes:
     runs-on: ubuntu-latest
@@ -172,12 +137,14 @@ jobs:
         with:
           fetch-depth: 0
       - name: Fetch PR base commit
+        if: github.event_name == 'pull_request'
         run: |
           git fetch --no-tags origin "${{ github.event.pull_request.base.sha }}"
       - id: classify
         name: Classify Linux game smoke and integration scope
         run: |
           python3 scripts/ci_game_test_routing.py \
+            --event-name "$GITHUB_EVENT_NAME" \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
             --head-sha "${{ github.event.pull_request.head.sha }}"
 
@@ -301,7 +268,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-results-${{ matrix.label }}
+          name: smoke-results-standard-${{ matrix.label }}
           path: smoke-results.txt
 
   smoke-test-heavy:
@@ -401,7 +368,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-results-${{ matrix.label }}
+          name: smoke-results-heavy-${{ matrix.label }}
           path: smoke-results.txt
 
   discover-integration-tests:
@@ -664,6 +631,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
@@ -699,9 +667,11 @@ jobs:
           #
           # uid 1001 matches the GitHub Actions runner user that owns the
           # checked-out workspace, so no chown pass is needed.
+          set +e
           su - gsmuser -c "
             set -e
             cd '$GITHUB_WORKSPACE'
+            export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
             export PYTHONPATH=.:src
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
@@ -724,12 +694,25 @@ jobs:
               --results-file results.xml \
               ${{ matrix.files }}
           "
+          test_exit=$?
+          printf '%s\n' "$test_exit" > exit-code.txt
+          exit "$test_exit"
       - name: Upload integration test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-results-${{ matrix.label }}
-          path: results.xml
+          name: integration-results-standard-${{ matrix.label }}
+          if-no-files-found: error
+          path: |
+            results.xml
+            exit-code.txt
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-diagnostics-integration-test-standard-${{ matrix.label }}
+          path: diagnostics/*.json
+          if-no-files-found: ignore
 
   integration-test-heavy:
     runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') }}
@@ -744,6 +727,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
@@ -773,9 +757,11 @@ jobs:
             groupadd -g "$sock_gid" dockerhost
           fi
           usermod -aG "$sock_gid" gsmuser
+          set +e
           su - gsmuser -c "
             set -e
             cd '$GITHUB_WORKSPACE'
+            export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
             export PYTHONPATH=.:src
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
@@ -799,12 +785,25 @@ jobs:
               --results-file results.xml \
               ${{ matrix.files }}
           "
+          test_exit=$?
+          printf '%s\n' "$test_exit" > exit-code.txt
+          exit "$test_exit"
       - name: Upload integration test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-results-${{ matrix.label }}
-          path: results.xml
+          name: integration-results-heavy-${{ matrix.label }}
+          if-no-files-found: error
+          path: |
+            results.xml
+            exit-code.txt
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-diagnostics-integration-test-heavy-${{ matrix.label }}
+          path: diagnostics/*.json
+          if-no-files-found: ignore
 
   backend-smoke-test:
     runs-on: ubuntu-latest
@@ -866,6 +865,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-test, lint, coverage, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
@@ -945,6 +945,13 @@ jobs:
           path: |
             backend-process-results.xml
             backend-docker-results.xml
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-diagnostics-backend
+          path: diagnostics/*.json
+          if-no-files-found: ignore
 
   windows-minecraft-integration:
     runs-on: windows-latest
@@ -1000,7 +1007,7 @@ jobs:
 
   collect-integration-rechecks:
     runs-on: ubuntu-latest
-    needs: [smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-integration-test]
+    needs: [classify-changes, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-integration-test]
     if: always()
     outputs:
       matrix: ${{ steps.collect.outputs.matrix }}
@@ -1016,10 +1023,12 @@ jobs:
           merge-multiple: false
       - name: Collect failed integration cases
         id: collect
+        env:
+          CI_ROUTING_JSON: ${{ toJson(needs.classify-changes.outputs) }}
         run: python3 scripts/collect_integration_rechecks.py artifacts --github-output "$GITHUB_OUTPUT"
 
   integration-flake-recheck:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJson(matrix.runner_class == 'heavy' && (vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') || '["ubuntu-latest"]') }}
     needs: [collect-integration-rechecks, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     if: always() && needs.collect-integration-rechecks.outputs.has_rechecks == 'true'
     strategy:
@@ -1031,10 +1040,13 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: ${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}
+      ALPHAGSM_RECHECK_NODEID: ${{ matrix.nodeid }}
       ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
       WINEPREFIX: /opt/wine
@@ -1058,9 +1070,10 @@ jobs:
             groupadd -g "$sock_gid" dockerhost
           fi
           usermod -aG "$sock_gid" gsmuser
-          su - gsmuser -c "
+          su --whitelist-environment=ALPHAGSM_RECHECK_NODEID - gsmuser -c "
             set -e
             cd '$GITHUB_WORKSPACE'
+            export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
             export PYTHONPATH=.:src
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
@@ -1072,6 +1085,7 @@ jobs:
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP='${ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
+            export ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP='${ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP}'
             export WINEPREFIX=/opt/wine
             export WINEDEBUG=-all
             export WINEDLLOVERRIDES='winex11.drv='
@@ -1080,18 +1094,26 @@ jobs:
             export DISPLAY=
             python3 -m pytest -rs -o junit_logging=all \
               --junit-xml=recheck-results.xml \
-              '${{ matrix.nodeid }}'
+              \"\$ALPHAGSM_RECHECK_NODEID\"
           "
       - name: Upload isolated recheck result
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integration-recheck-results-${{ matrix.source_artifact }}-${{ strategy.job-index }}
+          if-no-files-found: error
           path: recheck-results.xml
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-diagnostics-recheck-${{ strategy.job-index }}
+          path: diagnostics/*.json
+          if-no-files-found: ignore
 
   summarize-tests:
     runs-on: ubuntu-latest
-    needs: [smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-integration-test, collect-integration-rechecks, integration-flake-recheck]
+    needs: [build, lint, unit-test, coverage, binary-build-smoke, classify-changes, discover-smoke-tests, discover-integration-tests, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-smoke-test, backend-integration-test, windows-minecraft-integration, macos-minecraft-integration, collect-integration-rechecks, integration-flake-recheck]
     if: always()
     steps:
       - name: Checkout AlphaGSM code
@@ -1102,189 +1124,7 @@ jobs:
           pattern: "*-results-*"
           path: artifacts
           merge-multiple: false
-      - name: Summarize test results
-        run: |
-          python3 - <<'PYEOF'
-          import glob, sys, xml.etree.ElementTree as ET
-          from pathlib import Path
-          from scripts.collect_integration_rechecks import partition_integration_failures
-
-          smoke_passed, smoke_skipped, smoke_failed = [], [], []
-          int_passed, int_skipped, int_failed = [], [], []
-          recheck_passed, recheck_skipped, recheck_failed = [], [], []
-          backend_passed, backend_skipped, backend_failed = [], [], []
-
-          for txt in sorted(glob.glob("artifacts/smoke-results-*/*.txt")):
-              for line in open(txt):
-                  line = line.strip()
-                  if line.startswith("PASSED: "):
-                      smoke_passed.append(line[8:])
-                  elif line.startswith("SKIPPED: "):
-                      smoke_skipped.append(line[9:])
-                  elif line.startswith("FAILED: "):
-                      smoke_failed.append(line[8:])
-
-          for xml_file in sorted(Path("artifacts").glob("integration-results-*/*.xml")):
-              try:
-                  root = ET.parse(xml_file).getroot()
-              except ET.ParseError:
-                  continue
-              source_artifact = xml_file.parent.name
-              for tc in root.iter("testcase"):
-                  name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
-                  skip = tc.find("skipped")
-                  fail = tc.find("failure")
-                  err = tc.find("error")
-                  if skip is not None:
-                      int_skipped.append((name, skip.attrib.get("message", "").split("\n")[0]))
-                  elif fail is not None or err is not None:
-                      node = fail if fail is not None else err
-                      int_failed.append(
-                          (source_artifact, name, node.attrib.get("message", "").split("\n")[0])
-                      )
-                  else:
-                      int_passed.append(name)
-
-          for xml_file in sorted(Path("artifacts").glob("integration-recheck-results-*/*.xml")):
-              try:
-                  root = ET.parse(xml_file).getroot()
-              except ET.ParseError:
-                  continue
-              source = xml_file.parent.name.removeprefix("integration-recheck-results-")
-              source_artifact = source.rsplit("-", 1)[0]
-              for tc in root.iter("testcase"):
-                  name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
-                  skip = tc.find("skipped")
-                  fail = tc.find("failure")
-                  err = tc.find("error")
-                  if skip is not None:
-                      recheck_skipped.append(
-                          (source_artifact, name, skip.attrib.get("message", "").split("\\n")[0])
-                      )
-                  elif fail is not None or err is not None:
-                      node = fail if fail is not None else err
-                      recheck_failed.append(
-                          (source_artifact, name, node.attrib.get("message", "").split("\\n")[0])
-                      )
-                  else:
-                      recheck_passed.append((source_artifact, name))
-
-          recovered_int_failed, unrecovered_int_failed = partition_integration_failures(
-              int_failed,
-              set(recheck_passed),
-          )
-
-          for xml_file in sorted(glob.glob("artifacts/backend-integration-results-*/*.xml")):
-              try:
-                  root = ET.parse(xml_file).getroot()
-              except ET.ParseError:
-                  continue
-              for tc in root.iter("testcase"):
-                  name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
-                  skip = tc.find("skipped")
-                  fail = tc.find("failure")
-                  err = tc.find("error")
-                  if skip is not None:
-                      backend_skipped.append((name, skip.attrib.get("message", "").split("\n")[0]))
-                  elif fail is not None or err is not None:
-                      node = fail if fail is not None else err
-                      backend_failed.append((name, node.attrib.get("message", "").split("\n")[0]))
-                  else:
-                      backend_passed.append(name)
-
-          SEP = "=" * 64
-          print(SEP)
-          print("AlphaGSM Test Summary")
-          print(SEP)
-
-          print("\nSMOKE TESTS")
-          print(f"  Passed : {len(smoke_passed)}")
-          print(f"  Skipped: {len(smoke_skipped)}")
-          print(f"  Failed : {len(smoke_failed)}")
-          if smoke_passed:
-              print("\n  Passed:")
-              for t in smoke_passed:
-                  print(f"    PASS  {t}")
-          if smoke_failed:
-              print("\n  Failed:")
-              for t in smoke_failed:
-                  print(f"    FAIL  {t}")
-          if smoke_skipped:
-              print("\n  Skipped:")
-              for t in smoke_skipped:
-                  print(f"    SKIP  {t}")
-
-          print("\nINTEGRATION TESTS")
-          print(f"  Passed  : {len(int_passed)}")
-          print(f"  Skipped : {len(int_skipped)}")
-          print(f"  Failed  : {len(int_failed)}")
-          if int_passed:
-              print("\n  Passed (server launched successfully):")
-              for t in int_passed:
-                  print(f"    PASS  {t}")
-          if int_skipped:
-              print("\n  Skipped:")
-              for t, r in int_skipped:
-                  print(f"    SKIP  {t}")
-                  if r:
-                      print(f"          Reason: {r}")
-          if int_failed:
-              print("\n  Failed:")
-              for source, t, r in int_failed:
-                  print(f"    FAIL  {t} [{source}]")
-                  if r:
-                      print(f"          Reason: {r}")
-
-          print("\nINTEGRATION FLAKE RECHECKS")
-          print("  Recovered integration failures are temporarily non-blocking.")
-          print(f"  Recovered : {len(recovered_int_failed)}")
-          print(f"  Skipped   : {len(recheck_skipped)}")
-          print(f"  Still red : {len(recheck_failed)}")
-          if recovered_int_failed:
-              print("\n  Recovered:")
-              for source, t, _r in recovered_int_failed:
-                  print(f"    FLAKY RECOVERED  {t} [{source}] (initial failure retained)")
-          if recheck_skipped:
-              print("\n  Skipped:")
-              for source, t, r in recheck_skipped:
-                  print(f"    RECHECK SKIP  {t} [{source}]")
-                  if r:
-                      print(f"                  Reason: {r}")
-          if recheck_failed:
-              print("\n  Still red:")
-              for source, t, r in recheck_failed:
-                  print(f"    RECHECK FAIL  {t} [{source}]")
-                  if r:
-                      print(f"                  Reason: {r}")
-
-          print("\nBACKEND INTEGRATION TESTS")
-          print(f"  Passed  : {len(backend_passed)}")
-          print(f"  Skipped : {len(backend_skipped)}")
-          print(f"  Failed  : {len(backend_failed)}")
-          if backend_passed:
-              print("\n  Passed:")
-              for t in backend_passed:
-                  print(f"    PASS  {t}")
-          if backend_skipped:
-              print("\n  Skipped:")
-              for t, r in backend_skipped:
-                  print(f"    SKIP  {t}")
-                  if r:
-                      print(f"          Reason: {r}")
-          if backend_failed:
-              print("\n  Failed:")
-              for t, r in backend_failed:
-                  print(f"    FAIL  {t}")
-                  if r:
-                      print(f"          Reason: {r}")
-
-          total_p = len(smoke_passed) + len(int_passed) + len(backend_passed)
-          total_s = len(smoke_skipped) + len(int_skipped) + len(backend_skipped)
-          total_f = len(smoke_failed) + len(unrecovered_int_failed) + len(backend_failed)
-          print("\n" + SEP)
-          print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")
-          print(SEP)
-
-          if total_f > 0:
-              sys.exit(1)
-          PYEOF
+      - name: Validate required jobs and summarize test results
+        env:
+          CI_NEEDS_JSON: ${{ toJson(needs) }}
+        run: python3 scripts/summarize_tests.py artifacts

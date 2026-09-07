@@ -68,11 +68,15 @@ validation on those environments is future work.
 
 ## Host Install Requirements
 
-If you are installing AlphaGSM directly on the host, you need:
+For a standalone executable that includes Python, follow the
+[standalone binary guide](docs/standalone-binaries.md).
+
+If you are installing AlphaGSM from source on the host, you need:
 
 - Python 3
-- `screen`
-- the Python packages in `requirements.txt`
+- the Python packages in `requirements-runtime.txt`
+
+`screen` and `tmux` are optional; AlphaGSM also provides a subprocess backend.
 
 `gmodserver` note: setup also downloads common mountable Source content into a separate `_gmod_content/` directory and writes `garrysmod/cfg/mount.cfg` plus `mountdepots.txt` defaults.
 

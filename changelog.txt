@@ -7,6 +7,30 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-09-07
+- Binaries: bundle dynamic modules, curated assets, runtime image contexts and
+  default settings; validate the copied executable outside the source tree on
+  five Linux, macOS and Windows architecture targets in CI.
+- Runtime: preserve subprocess console input across CLI invocations with an
+  authenticated supervisor; track Windows descendants with Job Objects and
+  deliver Docker console commands through a private FIFO.
+- Self-update: stage Unix replacement on the destination filesystem and add
+  deferred Windows replacement with rollback and a durable result file.
+- State: serialize server commands and config edits, write state atomically,
+  and recover paired public/secret datastore writes through a private journal.
+- Diagnostics: add redacted doctor --json reports, installation provenance,
+  and generated module capabilities with explicit unknown platform coverage.
+- CI: fail the final gate on missing or invalid results, preserve initial
+  failures and runner requirements during one isolated recheck, and retain
+  failure diagnostics. Make smoke readiness and shutdown failures fail CI.
+- Releases: require validation before publishing, pin build dependencies, add
+  artifact provenance, and require configured Windows/macOS signing identities
+  for tagged releases. Add scheduled and merge-queue validation.
+- Maintenance: restore static checks for undefined names and invalid calls;
+  fix exposed downloader, command parser, log tail and filesystem helper bugs.
+- Dependencies: separate runtime and build requirements and use python-crontab
+  for the CronTab API used by AlphaGSM.
+
 2026-08-03
 - CI/integration: check out the repository in the final test-summary job before
   it imports the shared recheck classifier, allowing recovered-flake policy to

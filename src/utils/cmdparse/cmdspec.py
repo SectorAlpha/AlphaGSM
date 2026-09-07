@@ -1,5 +1,7 @@
 """Command-specification data structures used by the AlphaGSM parser."""
 
+import sys as _sys
+
 from operator import itemgetter as _itemgetter
 from collections import OrderedDict as _OrderedDict
 
@@ -23,6 +25,7 @@ class OptionError(Exception):
 class CmdSpec(tuple):
     "A command specification"
 
+    _fields = ("requiredarguments", "optionalarguments", "repeatable", "options")
     __slots__ = ()
 
     def __new__(
@@ -92,7 +95,7 @@ class CmdSpec(tuple):
                         "Error combing arguments: Can't add extra arguments, already have a catch all argument"
                     )
                 return CmdSpec(
-                    self.requiredaruments,
+                    self.requiredarguments,
                     self.optionalarguments,
                     True,
                     self.options + other.options,
@@ -124,6 +127,7 @@ class CmdSpec(tuple):
 class ArgSpec(tuple):
     "An argument specification"
 
+    _fields = ("name", "description", "conversion")
     __slots__ = ()
 
     def __new__(_cls, name, description, conversion):
@@ -137,7 +141,7 @@ class ArgSpec(tuple):
     @property
     def __dict__(self):
         "A new OrderedDict mapping field names to their values"
-        return OrderedDict(zip(self._fields, self))
+        return _OrderedDict(zip(self._fields, self))
 
     def __getnewargs__(self):
         "Return self as a plain tuple.  Used by copy and pickle."
@@ -159,6 +163,7 @@ class ArgSpec(tuple):
 class OptSpec(tuple):
     "An option specification"
 
+    _fields = ("shortforms", "longforms", "description", "keyword", "argument", "value_or_conversion")
     __slots__ = ()
 
     def __new__(
@@ -187,7 +192,7 @@ class OptSpec(tuple):
     @property
     def __dict__(self):
         "A new OrderedDict mapping field names to their values"
-        return OrderedDict(zip(self._fields, self))
+        return _OrderedDict(zip(self._fields, self))
 
     def __getnewargs__(self):
         "Return self as a plain tuple.  Used by copy and pickle."

@@ -15,7 +15,6 @@ which are written in the new place.
 """
 
 import time
-import string
 import os
 
 
@@ -33,6 +32,7 @@ def tail(filename, tailbytes=0, sleepfor=2, timeout=-1):
     @param timeout Amount of time to yield after even if no new input. If the
         timeout triggers then we yield None
     """
+    fp = None
     try:
         fp = open(filename, "r")
         stat = os.stat(filename)
@@ -43,7 +43,7 @@ def tail(filename, tailbytes=0, sleepfor=2, timeout=-1):
     except (IOError, OSError):
         if fp:
             fp.close()
-        return _gen(filename, None, -1, sleepfor)
+        return _gen(filename, None, -1, sleepfor, timeout)
 
 
 def _nogen():
@@ -57,58 +57,61 @@ def _gen(filename, fp, lastInode, sleepfor, timeout):
     lastSize = 0
     data = ""
     sleeps = 0  # sleeps since last succesful yield
-    while 1:
-        #  open file if it's not already open
-        if not fp:
-            try:
-                fp = open(filename, "r")
-                stat = os.stat(filename)
-                lastInode = stat[1]
-            except (IOError, OSError):
-                if fp:
-                    fp.close()
-                fp = None
-        if not fp:
-            raise StopIteration()
-
-        #  read any new data
+    try:
         while 1:
-            thisData = fp.read(4096)
-            if len(thisData) < 1:
-                break
-            print(("read data '" + thisData + "'"))
-            data = data + thisData
-            #  process lines within the data
+            #  open file if it's not already open
+            if not fp:
+                try:
+                    fp = open(filename, "r")
+                    stat = os.stat(filename)
+                    lastInode = stat[1]
+                except (IOError, OSError):
+                    if fp:
+                        fp.close()
+                    fp = None
+            if not fp:
+                return
+
+            #  read any new data
             while 1:
-                pos = string.find(data, "\n")
-                if pos < 0:
+                thisData = fp.read(4096)
+                if len(thisData) < 1:
                     break
-                line = data[:pos]
-                data = data[pos + 1 :]
-                #  line is line read from file
-                yield line
-                sleeps = 1
-        #  check to see if file has moved under us
-        try:
-            stat = os.stat(filename)
-            thisSize = stat[6]
-            thisInode = stat[1]
-            if thisSize < lastSize or thisInode != lastInode:
-                raise OSError(0, "file updated")
-        except OSError:
-            yield data  # give rest of data as a line even if no newline if we are starting a new input file (implict \n at start of new file)
+                data = data + thisData
+                #  process lines within the data
+                while 1:
+                    pos = data.find("\n")
+                    if pos < 0:
+                        break
+                    line = data[:pos]
+                    data = data[pos + 1 :]
+                    #  line is line read from file
+                    yield line
+                    sleeps = 1
+            #  check to see if file has moved under us
+            try:
+                stat = os.stat(filename)
+                thisSize = stat[6]
+                thisInode = stat[1]
+                if thisSize < lastSize or thisInode != lastInode:
+                    raise OSError(0, "file updated")
+            except OSError:
+                yield data  # give rest of data as a line even if no newline if we are starting a new input file (implict \n at start of new file)
+                fp.close()
+                fp = None
+                data = ""
+                continue
+            lastSize = thisSize
+            lastInode = thisInode
+            if timeout > 0 and sleeps * sleepfor > timeout:
+                yield None
+                sleeps = 0
+            else:
+                time.sleep(sleepfor)
+                sleeps += 1
+    finally:
+        if fp:
             fp.close()
-            fp = None
-            data = ""
-            continue
-        lastSize = thisSize
-        lastInode = thisInode
-        if timeout > 0 and sleeps * sleepfor > timeout:
-            yield None
-            sleeps = 0
-        else:
-            time.sleep(sleepfor)
-            sleeps += 1
 
 
 __all__ = ["tail"]

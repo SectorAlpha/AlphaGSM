@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-08-01
+Last updated: 2026-09-07
 
 ## Summary
 
@@ -42,6 +42,13 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
 ## Pending Replacement CI (Not Support States)
+
+- PR #36 standalone/runtime and CI-integrity changes require fresh CI proof.
+  The binary matrix targets Linux x86-64/ARM64, macOS Intel/Apple Silicon and
+  Windows x86-64; these targets do not promote existing game support states.
+  Integration and real game/backend acceptance for this change run in CI only.
+  Signing identities and ASTRONEER heavy-runner/public-IP configuration remain
+  external prerequisites; see [the release contract](../DEVELOPERS.md#standalone-release-contract).
 
 These entries are explicitly not `PASSED`. They are intentionally outside the
 support-state tables and do not change the summary counts or record a new pass.

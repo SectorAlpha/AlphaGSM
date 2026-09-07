@@ -489,10 +489,11 @@ bash ./lint.sh
 
 The GitHub Actions workflow is [`.github/workflows/unittest.yaml`](.github/workflows/unittest.yaml).
 
-The workflow runs for pull requests targeting `master`. Its current gates are:
+The workflow runs for pull requests targeting `master`, scheduled coverage,
+merge groups, manual dispatch and reusable release validation. Its current gates are:
 
 - dependency/build setup, lint, unit tests, coverage, and standalone binary
-  build smoke on Ubuntu, Windows, and macOS
+  acceptance on Linux x86-64/ARM64, Windows x86-64, and macOS Intel/Apple Silicon
 - change-classified, partitioned Linux game smoke and integration matrices,
   with separate standard and heavy lanes
 - branch-local integration, Java, SteamCMD Linux, and Wine/Proton image builds
@@ -597,3 +598,101 @@ Repo-local automation guidance now lives in:
 - [AGENTS.md](AGENTS.md)
 - [skills/smoke-driven-docs/SKILL.md](skills/smoke-driven-docs/SKILL.md)
 - [skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md)
+
+## Standalone release contract
+
+[`binary.yml`](.github/workflows/binary.yml) is reused by PR validation and the
+release workflow. It builds Linux x86-64/ARM64, macOS Intel/Apple Silicon, and
+Windows x86-64 executables with pinned runtime/build requirements. Each CI job
+copies the executable into an isolated home outside the checkout, exercises
+bundled manifests/templates, and drives a Minecraft lifecycle through separate
+AlphaGSM commands, including console input and verified shutdown. Linux x86-64
+also exercises the artifact with the branch-local Java Docker image. Integration
+and real game acceptance for this PR run in CI; local validation uses unit tests,
+lint, workflow checks, and builds.
+
+The build collects package resources and dynamic imports together. Factorio's
+placeholder implementation raises `NotImplementedError` at import and remains
+excluded; a build must not imply unsupported code is enabled. Frozen processes
+use the current executable for internal bulk-command dispatch, supervision and
+Windows update workers, without invoking a sibling Python script. Never add a
+runtime dependency on the source checkout or the build environment.
+
+Tag publication waits for the complete validation workflow and signed-artifact
+acceptance. Manual release dispatch validates and builds unsigned artifacts; it
+does not publish. Linux artifacts receive checksums and GitHub build-provenance
+attestations. Windows/macOS signing additionally requires these repository
+secrets before a tagged release can succeed:
+
+- `ALPHAGSM_WINDOWS_SIGN_PFX`, `ALPHAGSM_WINDOWS_SIGN_PASSWORD`: base64 PFX and
+  password for Windows Authenticode signing.
+- `ALPHAGSM_MACOS_SIGN_PFX`, `ALPHAGSM_MACOS_SIGN_PASSWORD`: base64 signing
+  identity export and its password.
+- `ALPHAGSM_CODESIGN_IDENTITY`: Developer ID Application identity passed into
+  PyInstaller so nested Mach-O payloads are signed too.
+- `ALPHAGSM_APPLE_ID`, `ALPHAGSM_APPLE_TEAM_ID`,
+  `ALPHAGSM_APPLE_PASSWORD`: Apple notarization credentials.
+
+Signing and notarization fail closed when credentials are absent or rejected.
+No credentials were configured during this change's read-only repository check;
+release certification remains an operator prerequisite. The ASTRONEER runner
+variables described above were also absent. Do not invent substitute public IPs
+or mark those jobs passed without the required provider environment.
+
+Use `summarize-tests` as the stable required check in branch protection/merge
+queue settings. It checks the exact expected artifact inventory and required
+job outcomes, rejecting empty, missing, malformed or duplicate reports. Only
+an initial test-failure exit code can be recovered by one matching successful
+isolated recheck. The initial failure and its standard/heavy runner lane remain
+visible. `FLAKY RECOVERED` is a temporary non-blocking classification, not proof
+that a recurring failure has been fixed; track its failing node and log evidence.
+Scheduled and merge-group runs exercise broad coverage beyond PR routing.
+
+### State and process ownership
+
+Local CLI commands acquire a per-server lock before constructing `Server`, so
+load/mutate/save operations serialize across invocations. Interactive `connect`
+does not retain that lock. Library callers that need a read-modify-write sequence
+must use `JSONDataStore.transaction()`; a stale in-memory object followed by
+`save()` alone cannot merge concurrent edits. `utils.state_io` owns portable
+advisory locks and same-directory atomic writes. Persistent lock sidecars must
+not be deleted during use because replacing an inode defeats ownership.
+
+Public and secret datastore files retain their existing schema. A private
+`.pending` journal makes a paired write recoverable after interruption; once the
+journal is durable, recovery can finish the committed update even if the original
+caller received an I/O error. This is not a general multi-server transaction.
+`simple_kv_config` uses the same lock and atomic replacement for config edits.
+
+The subprocess supervisor keeps an authenticated loopback endpoint, an owned
+process group/job, and a bounded stdin queue. A successful send means queued for
+delivery; a full queue fails explicitly. Windows Job Objects clean up descendants
+when ownership ends. On Unix, an uncatchable supervisor death with a live orphan
+retains diagnostic evidence and conservatively refuses a duplicate launch.
+Docker `exec-console` uses a private FIFO and preserves attach input; custom
+images using this console mode must supply `sh`, `mkfifo`, and `cat`. Existing
+containers need an AlphaGSM stop/start to acquire the new launch wrapper.
+
+### Capabilities and diagnostic evidence
+
+`src/server/capabilities.py` is the shared view of runtime, provider, config-sync
+and query declarations. `src/server/module_capabilities.json` is the generated
+inventory consumed without importing game modules. Regenerate it with
+`scripts/generate_module_parity_report.py`; do not infer operating-system or
+architecture coverage when a module has no explicit evidence. Published support
+states come from checked-in trackers and prerequisites, not the latest CI run.
+They must not be presented as fresh cross-platform validation.
+
+`doctor --json` emits schema version 1 with check IDs, categories, statuses,
+runtime selection and capabilities. Failed checks return exit code 1; a stopped
+server by itself is healthy. Diagnostic strings redact declared secret values,
+sensitive argument values, credentials and URL query data. CI failure artifacts
+contain reports and relevant log tails; operator-supplied game logs may still
+contain information that the game itself chose to print.
+
+Successful setup/update writes a private provenance record under
+`DATAPATH/.provenance/<server>.installation.json`. It records available observed
+Minecraft jar metadata/hashes and Steam build IDs; unsupported or unobservable
+fields stay null. This records the installed payload and operation, not a full
+server validation. Modules can expose `get_installation_provenance(server)` for
+additional authoritative evidence through the shared recording path.

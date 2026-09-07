@@ -30,8 +30,8 @@ RUN wget -q -O /usr/share/keyrings/adoptium.asc \
 
 WORKDIR /opt/alphagsm
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-runtime.txt ./
+RUN pip install --no-cache-dir -r requirements-runtime.txt
 
 COPY . .
 COPY docker/manager/entrypoint.sh /usr/local/bin/alphagsm-manager-entrypoint

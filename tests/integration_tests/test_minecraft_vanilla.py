@@ -11,9 +11,11 @@ import time
 import pytest
 
 from conftest import (
+    alphagsm_env,
     default_runtime_backend,
     effective_runtime_backend,
     require_command_for_runtime,
+    run_alphagsm,
 )
 
 
@@ -125,24 +127,11 @@ def _fetch_latest_release_server_url():
 
 
 def _alphagsm_env(config_path):
-    env = os.environ.copy()
-    env["ALPHAGSM_CONFIG_LOCATION"] = str(config_path)
-    env["PYTHONPATH"] = str(REPO_ROOT / "src")
-    return env
+    return alphagsm_env(config_path)
 
 
 def _run_alphagsm(env, *args, timeout=TEST_TIMEOUT_SECONDS):
-    command = [sys.executable, str(ALPHAGSM_SCRIPT)] + list(args)
-    return subprocess.run(
-        command,
-        env=env,
-        cwd=str(REPO_ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
+    return run_alphagsm(env, *args, timeout=timeout)
 
 
 def _log_command_result(name, result):

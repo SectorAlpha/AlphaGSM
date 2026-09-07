@@ -503,8 +503,20 @@ def alphagsm_env(config_path):
     """Return an environ mapping configured for an integration test run."""
     env = _SecretSafeEnvironment(os.environ)
     env["ALPHAGSM_CONFIG_LOCATION"] = str(config_path)
-    env["PYTHONPATH"] = str(REPO_ROOT / "src")
+    if env.get("ALPHAGSM_BINARY"):
+        env["ALPHAGSM_BINARY"] = str(Path(env["ALPHAGSM_BINARY"]).expanduser().resolve())
+        env.pop("PYTHONPATH", None)
+        env.pop("PYTHONHOME", None)
+    else:
+        env["PYTHONPATH"] = str(REPO_ROOT / "src")
     return env
+
+
+def alphagsm_command(env):
+    """Select a supplied standalone executable, preserving the source default."""
+    if env.get("ALPHAGSM_BINARY"):
+        return [str(Path(env["ALPHAGSM_BINARY"]).expanduser().resolve())]
+    return [sys.executable, str(ALPHAGSM_SCRIPT)]
 
 
 def build_integration_tmp_path(test_name, _tmp_path_factory):
@@ -887,9 +899,40 @@ def _sanitized_subprocess_exception(exc):
         return RuntimeError(f"AlphaGSM command execution failed: {message}")
 
 
+def _capture_doctor_json(env, server_name, stage):
+    """Persist best-effort JSON diagnostics without replacing a lifecycle failure."""
+    directory = env.get("ALPHAGSM_DIAGNOSTICS_DIR")
+    if not directory:
+        return
+    payload = {"schema_version": 1, "server": server_name, "stage": stage, "status": "unavailable"}
+    try:
+        result = run_alphagsm(env, server_name, "doctor", "--json", timeout=30)
+        report = json.loads(_redact_logged_text(result.stdout))
+        if not isinstance(report, dict) or report.get("schema_version") != 1:
+            raise ValueError("Doctor returned an unsupported diagnostic schema")
+        payload.update(report)
+        payload["stage"] = stage
+        payload["diagnostic_exit_code"] = result.returncode
+    except Exception as exc:
+        payload["diagnostic_error"] = _redact_logged_text(str(exc))
+    try:
+        target = Path(directory)
+        target.mkdir(parents=True, exist_ok=True)
+        prefix = re.sub(r"[^a-zA-Z0-9_.-]", "_", f"{server_name}-{stage}-")
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", prefix=prefix,
+                                         dir=target, encoding="utf-8", delete=False) as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+    except OSError as exc:
+        print(_redact_logged_text(f"[diagnostic] Could not save doctor JSON: {exc}"))
+
+
 def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
-    """Run the alphagsm script and return the CompletedProcess."""
-    command = [sys.executable, str(ALPHAGSM_SCRIPT)] + list(args)
+    """Run the selected AlphaGSM CLI and return the CompletedProcess."""
+    command = alphagsm_command(env) + list(args)
+    working_dir = (
+        Path(env["ALPHAGSM_CONFIG_LOCATION"]).resolve().parent
+        if env.get("ALPHAGSM_BINARY") else REPO_ROOT
+    )
     completed_result = None
     sanitized_error = None
     try:
@@ -897,7 +940,7 @@ def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
             completed_result = subprocess.run(
                 command,
                 env=env,
-                cwd=str(REPO_ROOT),
+                cwd=str(working_dir),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -906,6 +949,8 @@ def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
             )
         except (subprocess.SubprocessError, OSError) as exc:
             sanitized_error = _sanitized_subprocess_exception(exc)
+        if (sanitized_error is not None or completed_result.returncode != 0) and len(args) >= 2 and args[1] not in {"doctor", "logs"}:
+            _capture_doctor_json(env, args[0], args[1])
         if sanitized_error is not None:
             raise sanitized_error from None
         return completed_result
@@ -1130,6 +1175,7 @@ def _dump_log(log_path, context="", max_lines=150):
 def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
     """Print AlphaGSM-managed console diagnostics for *server_name*."""
 
+    _capture_doctor_json(env, server_name, "readiness")
     for command_name, command_args in (
         ("logs", (server_name, "logs", "-n", str(lines))),
         ("doctor", (server_name, "doctor")),

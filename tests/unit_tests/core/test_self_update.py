@@ -134,3 +134,117 @@ def test_binary_self_update_normalizes_release_lookup_failures(monkeypatch):
 
     with pytest.raises(self_update.SelfUpdateError, match="latest AlphaGSM release metadata"):
         self_update._run_binary_self_update(check=False)
+
+@pytest.fixture
+def staged_update(monkeypatch, tmp_path):
+    """Provide a real installed binary with deterministic release downloads."""
+    import hashlib
+
+    current = tmp_path / "install" / "alphagsm"
+    current.parent.mkdir()
+    current.write_bytes(b"old executable")
+    current.chmod(0o751)
+    monkeypatch.setattr(self_update.sys, "executable", str(current))
+    digest = hashlib.sha256(b"new executable").hexdigest()
+
+    def download(url, target):
+        target.write_bytes(b"new executable" if url == "binary" else digest.encode())
+
+    monkeypatch.setattr(self_update, "_download", download)
+    return current
+
+
+def test_replace_binary_stages_on_target_filesystem(monkeypatch, staged_update):
+    import errno
+    from pathlib import Path
+
+    original_replace = self_update.os.replace
+
+    def same_filesystem_replace(source, target):
+        if staged_update.parent not in Path(source).parents:
+            raise OSError(errno.EXDEV, "cross-device link")
+        return original_replace(source, target)
+
+    monkeypatch.setattr(self_update.os, "replace", same_filesystem_replace)
+    self_update._replace_current_binary("binary", "checksum")
+    assert staged_update.read_bytes() == b"new executable"
+    assert staged_update.stat().st_mode & 0o777 == 0o751
+    assert list(staged_update.parent.iterdir()) == [staged_update]
+
+
+def test_replace_binary_failure_keeps_original_and_cleans_stage(monkeypatch, staged_update):
+    def fail_replace(_source, _target):
+        raise PermissionError("destination denied")
+
+    monkeypatch.setattr(self_update.os, "replace", fail_replace)
+    with pytest.raises(PermissionError):
+        self_update._replace_current_binary("binary", "checksum")
+    assert staged_update.read_bytes() == b"old executable"
+    assert list(staged_update.parent.iterdir()) == [staged_update]
+
+
+def test_replace_binary_checksum_failure_keeps_original(monkeypatch, staged_update):
+    monkeypatch.setattr(self_update, "_download", lambda _url, target: target.write_bytes(b"bad"))
+    with pytest.raises(self_update.SelfUpdateError, match="SHA256"):
+        self_update._replace_current_binary("binary", "checksum")
+    assert staged_update.read_bytes() == b"old executable"
+    assert list(staged_update.parent.iterdir()) == [staged_update]
+
+
+def test_arch_slug_without_uname(monkeypatch):
+    import platform
+
+    monkeypatch.delenv("PROCESSOR_ARCHITECTURE", raising=False)
+    monkeypatch.delattr(self_update.os, "uname", raising=False)
+    monkeypatch.setattr(platform, "machine", lambda: "AMD64")
+    assert self_update._arch_slug() == "X64"
+
+
+def test_windows_update_reports_scheduled_not_completed(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(self_update, "get_version", lambda: "1.2.2")
+    monkeypatch.setattr(self_update, "read_json", lambda _url: {"tag_name": "v1.2.3"})
+    monkeypatch.setattr(self_update.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(self_update.sys, "platform", "win32")
+    asset = {"browser_download_url": "https://example.invalid/release"}
+    monkeypatch.setattr(self_update, "_select_release_assets", lambda *_args: (asset, asset))
+    monkeypatch.setattr(self_update, "_replace_current_binary", lambda *_args: tmp_path / "result.txt")
+    assert self_update._run_binary_self_update() == 0
+    output = capsys.readouterr().out
+    assert "scheduled" in output.lower()
+    assert "Updated AlphaGSM binary" not in output
+
+
+def test_windows_helper_launch_failure_cleans_stage(monkeypatch, staged_update):
+    binary_update = importlib.import_module("core.binary_update")
+    monkeypatch.setattr(self_update.sys, "platform", "win32")
+
+    def fail_launch(*_args, **_kwargs):
+        raise OSError("helper launch denied")
+
+    monkeypatch.setattr(binary_update.subprocess, "Popen", fail_launch)
+    with pytest.raises(OSError, match="launch denied"):
+        self_update._replace_current_binary("binary", "checksum")
+    assert staged_update.read_bytes() == b"old executable"
+    assert list(staged_update.parent.iterdir()) == [staged_update]
+
+
+def test_windows_replace_retains_stage_for_worker(monkeypatch, staged_update):
+    binary_update = importlib.import_module("core.binary_update")
+    monkeypatch.setattr(self_update.sys, "platform", "win32")
+    monkeypatch.setattr(binary_update.subprocess, "Popen", lambda *_args, **_kwargs: None)
+    result = self_update._replace_current_binary("binary", "checksum")
+    assert staged_update.read_bytes() == b"old executable"
+    assert result.is_file()
+    assert (result.parent / "replacement.exe").read_bytes() == b"new executable"
+
+
+@pytest.mark.parametrize("args", [[], ["one", "two"]])
+def test_internal_helper_rejects_invalid_arguments(args, capsys):
+    assert self_update.run_deferred_update(args) == 2
+    assert "Invalid invocation" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("machine, expected", [("AMD64", "X64"), ("x86_64", "X64"), ("aarch64", "ARM64"), ("ARM64", "ARM64")])
+def test_architecture_aliases(monkeypatch, machine, expected):
+    monkeypatch.setattr(self_update.platform, "machine", lambda: machine)
+    assert self_update._arch_slug() == expected

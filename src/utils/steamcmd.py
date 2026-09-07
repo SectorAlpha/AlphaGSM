@@ -10,7 +10,7 @@ from utils.settings import settings
 
 # SteamCMD prefers an existing Steam directory, but an explicit configuration
 # must always win regardless of whether that default directory exists.
-_CONFIGURED_STEAMCMD_DIR = settings.user.downloader.getsection("steamcmd").get(
+_CONFIGURED_STEAMCMD_DIR = settings.user.getsection("downloader").getsection("steamcmd").get(
     "steamcmd_path"
 )
 _DEFAULT_STEAMCMD_DIR = (
@@ -96,8 +96,8 @@ def _get_login_args(steam_anonymous_login_possible):
 
     if steam_anonymous_login_possible:
         return ["+login", "anonymous"]
-    username = settings.user.downloader.getsection("steamcmd").get("username")
-    password = settings.user.downloader.getsection("steamcmd").get("password", "")
+    username = settings.user.getsection("downloader").getsection("steamcmd").get("username")
+    password = settings.user.getsection("downloader").getsection("steamcmd").get("password", "")
     if not username:
         raise RuntimeError(
             "SteamCMD username required for this server. Set [downloader.steamcmd] username in alphagsm.conf"

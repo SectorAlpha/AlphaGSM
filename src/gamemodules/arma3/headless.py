@@ -1,6 +1,7 @@
 """Namespaced Arma 3 headless client module."""
 
 from gamemodules.arma3headlessserver import *  # noqa: F401,F403
+from gamemodules.arma3headlessserver import get_start_command
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 

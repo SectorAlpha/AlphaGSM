@@ -3,6 +3,8 @@
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+import pytest
+
 from tests.helpers import load_module_from_repo
 
 
@@ -65,14 +67,15 @@ def test_collect_failed_rechecks_keeps_each_runtime_lane(tmp_path):
     ]
 
 
-def test_collect_failed_rechecks_ignores_malformed_junit_reports(tmp_path):
+def test_collect_failed_rechecks_rejects_malformed_junit_reports(tmp_path):
     collector = load_collector_module()
     artifacts = tmp_path / "artifacts"
     malformed = artifacts / "integration-results-batch-1-of-10" / "results.xml"
     malformed.parent.mkdir(parents=True)
     malformed.write_text("not xml", encoding="utf-8")
 
-    assert collector.collect_failed_rechecks(artifacts) == []
+    with pytest.raises(ValueError, match="Malformed"):
+        collector.collect_failed_rechecks(artifacts)
 
 
 def test_partition_integration_failures_allows_only_matching_recovered_rechecks():
@@ -109,44 +112,48 @@ def test_workflow_runs_post_matrix_rechecks_without_masking_initial_failures():
     assert "integration-recheck-results-" in text
 
 
-def test_workflow_reports_recovered_rechecks_without_changing_initial_result():
+def test_workflow_retains_initial_exit_status_and_reports():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
-
-    assert 'Path("artifacts").glob("integration-recheck-results-*/*.xml")' in text
-    assert "INTEGRATION FLAKE RECHECKS" in text
-    assert "FLAKY RECOVERED" in text
-    assert "initial failure retained" in text
+    assert text.count("continue-on-error: true") == 2
+    assert text.count('"$test_exit" > exit-code.txt') == 2
+    assert "scripts/summarize_tests.py artifacts" in text
 
 
-def test_workflow_makes_only_recovered_integration_failures_non_blocking():
+def test_required_summary_covers_all_jobs_and_receives_needs_evidence():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    summary = text.split("  summarize-tests:", 1)[1]
+    assert "if: always()" in summary
+    assert "CI_NEEDS_JSON: ${{ toJson(needs) }}" in summary
+    for job in ("lint", "unit-test", "coverage", "binary-build-smoke", "backend-smoke-test",
+                "backend-integration-test", "windows-minecraft-integration", "macos-minecraft-integration"):
+        assert job in summary.split("    needs: ", 1)[1].split("\n", 1)[0]
+    assert summary.index("uses: actions/checkout@v4") < summary.index("scripts/summarize_tests.py")
 
-    assert text.count("continue-on-error: true") >= 2
-    assert "partition_integration_failures" in text
-    assert "unrecovered_int_failed" in text
-    assert "len(unrecovered_int_failed)" in text
 
-
-def test_summary_checks_out_the_shared_recheck_partition_helper():
+def test_recheck_preserves_heavy_runner_and_registration_environment():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
-    summary_job = text.split("  summarize-tests:", 1)[1]
-
-    assert "uses: actions/checkout@v4" in summary_job
-    assert summary_job.index("uses: actions/checkout@v4") < summary_job.index(
-        "from scripts.collect_integration_rechecks import partition_integration_failures"
-    )
-
-
-def test_summary_uses_path_objects_for_recheck_artifact_parents():
-    text = WORKFLOW_PATH.read_text(encoding="utf-8")
-    summary_job = text.split("  summarize-tests:", 1)[1]
-
-    assert "from pathlib import Path" in summary_job
-    assert 'Path("artifacts").glob("integration-results-*/*.xml")' in summary_job
-    assert 'Path("artifacts").glob("integration-recheck-results-*/*.xml")' in summary_job
+    recheck = text.split("  integration-flake-recheck:", 1)[1].split("  summarize-tests:", 1)[0]
+    assert "matrix.runner_class == 'heavy'" in recheck
+    assert "vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON" in recheck
+    assert "ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: ${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}" in recheck
+    assert "export ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP=" in recheck
+    assert "ALPHAGSM_RECHECK_NODEID: ${{ matrix.nodeid }}" in recheck
+    assert "--whitelist-environment=ALPHAGSM_RECHECK_NODEID" in recheck
 
 
 def test_workflow_is_valid_yaml():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
     assert 'name: "integration-flake-recheck (${{ matrix.runtime_backend }}: ${{ matrix.nodeid }})"' in text
+
+
+def test_collect_rechecks_preserves_runner_class_from_routing(tmp_path):
+    collector = load_collector_module()
+    artifact = 'integration-results-heavy-alpha-process'
+    write_report(tmp_path / artifact / 'results.xml',
+                 [('tests.integration_tests.test_alpha', 'test_lifecycle', 'failure')])
+    routing = {'integration_heavy_matrix': '{"include":[{"label":"alpha-process","runtime_backend":"process"}]}',
+               'integration_standard_matrix': '{"include":[]}'}
+    rows = collector.collect_failed_rechecks(tmp_path, routing=routing)
+    assert rows[0]['runner_class'] == 'heavy'
+    assert rows[0]['runtime_backend'] == 'process'

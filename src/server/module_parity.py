@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
 
+from server.capabilities import load_capability_inventory, load_support_states
+
 
 UNIMPLEMENTED_STATUS_MARKERS = (
     "status is not implemented yet",
@@ -14,22 +16,28 @@ UNIMPLEMENTED_STATUS_MARKERS = (
 
 
 @dataclass(frozen=True)
-class ModuleParityRow:
+class ModuleParityRow:  # pylint: disable=too-many-instance-attributes
     canonical_id: str
     aliases: tuple[str, ...]
     support_state: str
     contract_complete: bool
     runtime_verified: bool
     missing_surfaces: tuple[str, ...]
+    runtime_family: str | None
+    platforms: tuple[str, ...] | None
+    architectures: tuple[str, ...] | None
+    provider_categories: tuple[str, ...] | None
 
 
-def build_module_parity_rows(*, catalog, repo_root: Path) -> list[ModuleParityRow]:
+def build_module_parity_rows(*, catalog, repo_root: Path, capability_inventory=None) -> list[ModuleParityRow]:
     rows = []
     alias_map: dict[str, list[str]] = {}
     for alias, canonical in catalog.aliases.items():
         alias_map.setdefault(canonical, []).append(alias)
 
-    disabled = _load_disabled_modules(repo_root / "disabled_servers.conf")
+    states = load_support_states(repo_root, catalog)
+    inventory = capability_inventory or load_capability_inventory()
+    capabilities = {row["module"]: row for row in inventory["modules"]}
 
     for module_name in catalog.canonical_modules:
         source = _module_source(repo_root, module_name)
@@ -49,31 +57,47 @@ def build_module_parity_rows(*, catalog, repo_root: Path) -> list[ModuleParityRo
             ModuleParityRow(
                 canonical_id=module_name,
                 aliases=tuple(sorted(alias_map.get(module_name, ()))),
-                support_state="disabled" if module_name in disabled else "active",
+                support_state=states.get(module_name, "UNKNOWN"),
                 contract_complete=(len(missing) == 0),
-                runtime_verified=(module_name not in disabled),
+                runtime_verified=(states.get(module_name) == "PASSED"),
                 missing_surfaces=tuple(missing),
+                runtime_family=capabilities.get(module_name, {}).get("runtime", {}).get("family"),
+                platforms=_declared_values(capabilities.get(module_name, {}), "platforms"),
+                architectures=_declared_values(capabilities.get(module_name, {}), "architectures"),
+                provider_categories=_declared_values(capabilities.get(module_name, {}), "provider_categories"),
             )
         )
     return rows
+
+
+def _declared_values(capabilities, key):
+    values = capabilities.get(key)
+    return tuple(values) if values is not None else None
 
 
 def render_markdown_report(rows: list[ModuleParityRow]) -> str:
     lines = [
         "# Module Parity Report",
         "",
-        "| Canonical module | Aliases | Support state | Contract complete | Runtime verified | Missing surfaces |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "Runtime verified reflects recorded PASSED tracker evidence; it is not a new validation run.",
+        "Unknown platforms and architectures have no explicit declaration, even when a runtime hook exists.",
+        "",
+        "| Canonical module | Aliases | Support state | Contract complete | Runtime verified | Missing surfaces | Runtime family | Platforms | Architectures | Provider categories |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for row in rows:
         lines.append(
-            "| {name} | {aliases} | {support} | {contract} | {runtime} | {missing} |".format(
+            "| {name} | {aliases} | {support} | {contract} | {runtime} | {missing} | {family} | {platforms} | {architectures} | {providers} |".format(
                 name=row.canonical_id,
                 aliases=", ".join(row.aliases) or "-",
                 support=row.support_state,
                 contract="yes" if row.contract_complete else "no",
                 runtime="yes" if row.runtime_verified else "no",
                 missing=", ".join(row.missing_surfaces) or "-",
+                family=row.runtime_family or "unknown",
+                platforms=", ".join(row.platforms) if row.platforms is not None else "unknown",
+                architectures=", ".join(row.architectures) if row.architectures is not None else "unknown",
+                providers=", ".join(row.provider_categories) if row.provider_categories is not None else "unknown",
             )
         )
     lines.append("")

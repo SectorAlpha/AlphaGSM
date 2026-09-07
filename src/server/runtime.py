@@ -34,7 +34,7 @@ from utils import steamcmd as steamcmd_module
 from utils.platform_info import PLATFORM
 
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 DEFAULT_IMAGE_REGISTRY = "ghcr.io/sectoralpha"
 DEFAULT_IMAGE_TAG = "latest"
 JAVA_VERSION_RE = re.compile(r'version\s+"(\d+)(?:\.(\d+))?')
@@ -2327,10 +2327,11 @@ def get_runtime_doctor_report(server):
     return report
 
 
-def print_runtime_doctor_report(server):
+def print_runtime_doctor_report(server, *, report=None):
     """Print a human-readable runtime diagnostics snapshot for *server*."""
 
-    report = get_runtime_doctor_report(server)
+    if report is None:
+        report = get_runtime_doctor_report(server)
     print("Runtime doctor for " + server.name)
 
     configured_backend = report.get("configured_backend")
@@ -3105,6 +3106,34 @@ def _create_host_user_container_home(plan, identity):
         )
 
 
+CONTAINER_CONSOLE_FIFO = "/tmp/alphagsm-console.fifo"
+
+
+def container_launch_command(spec):
+    """Bridge attach input and exec commands to a private FIFO for console servers.
+
+    Writing /proc/1/fd/0 writes the output side when stdin is a PTY. A FIFO
+    gives both Docker attach and later exec calls the same real input stream.
+    The image entrypoint still runs, and the server remains PID 1 after exec.
+    Console-capable images must provide POSIX sh, mkfifo and cat.
+    """
+    command = spec.get("command", ())
+    if spec.get("stop_mode") != "exec-console":
+        return list(command)
+    if not isinstance(command, (list, tuple)) or not command or any(
+        not isinstance(item, str) or "\0" in item for item in command
+    ):
+        raise RuntimeError("Docker exec-console requires a nonempty command argument list")
+    wrapper = (
+        'set -eu; fifo=$1; shift; '
+        'command -v mkfifo >/dev/null && command -v cat >/dev/null || '
+        '{ echo "exec-console images require sh, mkfifo and cat" >&2; exit 1; }; '
+        'umask 077; mkfifo "$fifo"; exec 3<>"$fifo"; exec 4<&0; '
+        'cat <&4 >&3 & exec "$@" <&3 4<&-'
+    )
+    return ["sh", "-c", wrapper, "alphagsm-console", CONTAINER_CONSOLE_FIFO, *command]
+
+
 class ContainerRuntime(BaseRuntime):
     """Docker-backed runtime."""
 
@@ -3245,6 +3274,7 @@ class ContainerRuntime(BaseRuntime):
             _mount_snapshot=mount_snapshot,
             **kwargs,
         )
+        launch_command = container_launch_command(spec)
         _validate_container_identity_contract(module_requirements, spec)
         home_plan = None
         if module_requirements.get("run_as_host_user", False):
@@ -3289,7 +3319,7 @@ class ContainerRuntime(BaseRuntime):
                 port = f"{port['host']}:{port['container']}/{proto}"
             command.extend(["-p", str(port)])
         command.append(spec["image"])
-        command.extend(spec.get("command", ()))
+        command.extend(launch_command)
         self._run_check_output(command, text=True)
 
     def is_running(self, server):
@@ -3311,9 +3341,16 @@ class ContainerRuntime(BaseRuntime):
             raise RuntimeError(
                 "Runtime send_input is only supported for docker stop_mode=exec-console"
             )
-        shell_command = "printf '%s' {} > /proc/1/fd/0".format(shlex.quote(text))
+        if not isinstance(text, str) or "\0" in text:
+            raise RuntimeError("Console input must be text without NUL bytes")
+        shell_command = (
+            'set -eu; if [ ! -p "$2" ] || [ -L "$2" ]; then '
+            'echo "Managed console FIFO is missing; restart the server" >&2; exit 1; fi; '
+            'printf "%s" "$1" > "$2"'
+        )
         self._run_check_output(
-            ["docker", "exec", spec["container_name"], "sh", "-lc", shell_command],
+            ["docker", "exec", spec["container_name"], "sh", "-c", shell_command,
+             "alphagsm-send", text, CONTAINER_CONSOLE_FIFO],
             text=True,
         )
 

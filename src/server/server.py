@@ -16,6 +16,7 @@ from . import data
 from .module_catalog import load_default_module_catalog
 from . import port_manager
 from . import runtime as runtime_module
+from . import diagnostics as diagnostics_module
 from .settable_keys import KeyResolutionError, resolve_requested_key
 from .settable_keys import get_effective_aliases
 from .errors import ServerError
@@ -42,15 +43,15 @@ SERVERMODULEPACKAGE = settings.system.getsection("server").get(
     "servermodulespackage", "gamemodules."
 )
 _DISABLED_SERVERS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    runtime_module.REPO_ROOT,
     "disabled_servers.conf",
 )
 _ENABLED_BYO_SERVERS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    runtime_module.REPO_ROOT,
     "enabled_byo_servers.conf",
 )
 _ENABLED_AUTH_SERVERS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    runtime_module.REPO_ROOT,
     "enabled_auth_servers.conf",
 )
 MODULE_CATALOG = load_default_module_catalog()
@@ -537,7 +538,9 @@ class Server(object):
                 ),
             )
         ),
-        "doctor": CmdSpec(),
+        "doctor": CmdSpec(options=(
+            OptSpec("j", ["json"], "Output a versioned diagnostic JSON report", "as_json", None, True),
+        )),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -805,6 +808,8 @@ class Server(object):
                 self.doctor(*args, **kwargs)
         elif command in self.module.commands:
             self.module.command_functions[command](self, *args, **kwargs)
+            if command == "update":
+                diagnostics_module.record_installation_provenance(self, "update")
         else:
             raise ServerError(
                 "Unknown command '"
@@ -830,6 +835,7 @@ class Server(object):
             raise ServerError(str(ex))
         self.module.install(self, *args, **kwargs)
         runtime_module.sync_runtime_metadata(self, save=True)
+        diagnostics_module.record_installation_provenance(self, "setup")
 
     def start(self, *args, **kwargs):
         """Start a server. Won't start it if the server is already running."""
@@ -948,10 +954,19 @@ class Server(object):
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
 
-    def doctor(self, **kwargs):
-        """Print runtime diagnostics for this server."""
-
-        runtime_module.print_runtime_doctor_report(self)
+    def doctor(self, as_json=False, **kwargs):
+        """Print redacted diagnostics; failed checks produce a nonzero CLI exit."""
+        report = diagnostics_module.get_diagnostic_report(self)
+        if as_json:
+            print(json.dumps(report, sort_keys=True))
+        else:
+            runtime_module.print_runtime_doctor_report(self, report=report["runtime"])
+            print("Status: " + report["status"])
+            for check in report["checks"]:
+                print(check["status"].upper() + " [" + check["category"] + "] " + check["message"])
+        if report["status"] == "failed":
+            raise ServerError("Doctor found failing checks; see the diagnostic report")
+        return report
 
     def restore(self, backup=None, **kwargs):
         """Restore the server from a backup archive.

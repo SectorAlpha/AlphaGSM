@@ -1,6 +1,7 @@
 """Static checks for PR routing of Linux game smoke and integration tests."""
 
 from pathlib import Path
+import json
 
 import pytest
 
@@ -14,6 +15,20 @@ ROUTING_SCRIPT = Path("scripts/ci_game_test_routing.py")
 def load_routing_module():
     assert ROUTING_SCRIPT.exists(), f"missing routing helper: {ROUTING_SCRIPT}"
     return load_module_from_repo("ci_game_test_routing_static", str(ROUTING_SCRIPT))
+
+
+def test_routing_uses_generated_capability_aliases_without_game_imports(tmp_path):
+    routing = load_routing_module()
+    inventory = tmp_path / "src/server/module_capabilities.json"
+    inventory.parent.mkdir(parents=True)
+    inventory.write_text(json.dumps({"schema_version": 1, "modules": [
+        {"module": "example", "aliases": ["oldname"]},
+    ]}))
+    test = tmp_path / "tests/integration_tests/test_oldname.py"
+    test.parent.mkdir(parents=True)
+    test.touch()
+    result = routing.resolve_module_targets("src/gamemodules/example/main.py", repo_root=tmp_path)
+    assert result == {"smoke_scripts": [], "integration_tests": ["tests/integration_tests/test_oldname.py"]}
 
 
 def test_docs_only_changes_skip_linux_game_smoke_and_integration():
@@ -3249,3 +3264,19 @@ def test_unittest_workflow_frees_host_toolcache_before_linux_integration_batches
         assert "rm -rf /__t/*" in section
         assert "docker system prune -af || true" in section
         assert "df -h /" in section
+
+
+@pytest.mark.parametrize('event', ['schedule', 'workflow_dispatch', 'merge_group', 'workflow_call', 'push'])
+def test_non_pr_events_run_full_matrices_without_pr_commit_refs(event, monkeypatch):
+    routing = load_routing_module()
+    monkeypatch.setattr(routing, 'git_changed_files', lambda *args, **kwargs: pytest.fail('must not diff PR refs'))
+    outputs = routing.build_outputs_for_event(event, '', '', repo_root=Path('.'))
+    assert outputs['game_test_mode'] == 'all'
+    assert outputs['has_integration_standard_tests'] == 'true'
+    assert outputs['has_integration_heavy_tests'] == 'true'
+
+
+def test_pr_event_still_routes_docs_only_diff(monkeypatch):
+    routing = load_routing_module()
+    monkeypatch.setattr(routing, 'git_changed_files', lambda *args, **kwargs: ['README.md'])
+    assert routing.build_outputs_for_event('pull_request', 'base', 'head')['game_test_mode'] == 'skip'

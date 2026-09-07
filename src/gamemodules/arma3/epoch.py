@@ -1,6 +1,7 @@
 """Namespaced Arma 3 Epoch server module."""
 
 from gamemodules.arma3epochserver import *  # noqa: F401,F403
+from gamemodules.arma3epochserver import get_start_command
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 

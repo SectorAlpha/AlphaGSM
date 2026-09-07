@@ -237,8 +237,9 @@ def test_workflow_reports_smoke_skips_separately_from_passes_and_failures():
 
     assert text.count('echo "SKIPPED: $script" | tee -a smoke-results.txt') == 2
     assert text.count('if [ "$rc" -eq 77 ]; then') == 2
-    assert 'line.startswith("SKIPPED: ")' in text
-    assert "smoke_skipped" in text
+    assert "scripts/summarize_tests.py artifacts" in text
+    summary = Path("scripts/summarize_tests.py").read_text(encoding="utf-8")
+    assert "('PASSED', 'SKIPPED', 'FAILED')" in summary
 
 
 def test_strict_glob_readiness_reuses_legacy_helper_but_returns_failure():

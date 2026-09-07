@@ -3,6 +3,8 @@
 import os
 import re
 
+from utils.state_io import atomic_write_text, state_lock
+
 
 _EQUALS_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(.*?)(\s*)\Z")
 _SPACE_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)[ ](?:[ \t]*(.*?))?(\s*)\Z")
@@ -17,32 +19,32 @@ def _rewrite_key_value_config(
     separator,
     encoding="utf-8",
 ):
-    lines = []
-    if os.path.isfile(filename):
-        config_values = config_values.copy()
-        with open(filename, "r", encoding=encoding) as handle:
-            for line in handle:
-                match = pattern.match(line)
-                if match is not None and match.group(1) in config_values:
-                    line_ending = match.group(3)
-                    if "\n" not in line_ending and "\r" not in line_ending:
-                        line_ending += "\n"
-                    lines.append(
-                        match.group(1)
-                        + separator
-                        + str(config_values[match.group(1)])
-                        + line_ending
-                    )
-                    del config_values[match.group(1)]
-                else:
-                    lines.append(line)
-    for key, value in config_values.items():
-        lines.append("%s%s%s\n" % (key, separator, value))
-    # Game server config files must contain plaintext credentials because the
-    # game binary reads them directly.  Suppressing CodeQL
-    # py/clear-text-storage-sensitive-data: this write is intentional.
-    with open(filename, "w", encoding=encoding) as handle:  # lgtm[py/clear-text-storage-sensitive-data]
-        handle.write("".join(lines))
+    with state_lock(filename):
+        lines = []
+        if os.path.isfile(filename):
+            config_values = config_values.copy()
+            with open(filename, "r", encoding=encoding) as handle:
+                for line in handle:
+                    match = pattern.match(line)
+                    if match is not None and match.group(1) in config_values:
+                        line_ending = match.group(3)
+                        if "\n" not in line_ending and "\r" not in line_ending:
+                            line_ending += "\n"
+                        lines.append(
+                            match.group(1)
+                            + separator
+                            + str(config_values[match.group(1)])
+                            + line_ending
+                        )
+                        del config_values[match.group(1)]
+                    else:
+                        lines.append(line)
+        for key, value in config_values.items():
+            lines.append("%s%s%s\n" % (key, separator, value))
+        # Game server config files must contain plaintext credentials because the
+        # game binary reads them directly.  Suppressing CodeQL
+        # py/clear-text-storage-sensitive-data: this write is intentional.
+        atomic_write_text(filename, "".join(lines), encoding=encoding)  # lgtm[py/clear-text-storage-sensitive-data]
 
 
 def rewrite_equals_config(filename, config_values, encoding="utf-8"):

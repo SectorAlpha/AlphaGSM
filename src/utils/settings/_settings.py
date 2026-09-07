@@ -175,7 +175,7 @@ def _mergesettings(parent, sectiondict, section, value):
             section[key] = parent.sections[key]
 
 
-def _loadsettings(filename, parent=None):
+def _loadsettings(filename, parent=None, *, missing_ok=False):
     """Load a config file into nested immutable settings-section objects."""
     sectiondicts = {}
     sections = {}
@@ -191,6 +191,8 @@ def _loadsettings(filename, parent=None):
         with open(filename, "r") as f:
             config.read_file(f)
     except FileNotFoundError as ex:
+        if missing_ok and parent is None:
+            return _emptysection
         if parent is None:
             print("Config file not found")
             raise ex
@@ -273,7 +275,11 @@ class Settings(object):
             settings_path = os.environ.get(
                 "ALPHAGSM_CONFIG_LOCATION", default_path,
             )
-            self._system = _loadsettings(settings_path)
+            self._system = _loadsettings(
+                settings_path,
+                missing_ok=(getattr(sys, "frozen", False)
+                            and "ALPHAGSM_CONFIG_LOCATION" not in os.environ),
+            )
             return self._system
 
     @property

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -13,6 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("artifacts_dir", type=Path)
     parser.add_argument("--github-output", type=Path)
+    parser.add_argument("--routing-json", default=os.environ.get("CI_ROUTING_JSON"))
     return parser.parse_args()
 
 
@@ -51,18 +53,31 @@ def runtime_backend_from_artifact(artifact_name: str) -> str:
     return "auto"
 
 
-def collect_failed_rechecks(artifacts_dir: Path) -> list[dict[str, str]]:
+def collect_failed_rechecks(artifacts_dir: Path, routing: dict | None = None) -> list[dict[str, str]]:
     """Return failed integration cases with their original runtime selection."""
 
+    sources = {}
+    if routing is not None:
+        for runner_class in ("standard", "heavy"):
+            matrix = json.loads(routing[f"integration_{runner_class}_matrix"])
+            for entry in matrix["include"]:
+                artifact = f"integration-results-{runner_class}-{entry['label']}"
+                sources[artifact] = {
+                    "runner_class": runner_class,
+                    "runtime_backend": entry.get("runtime_backend", "auto"),
+                }
     collected: list[dict[str, str]] = []
     seen: set[tuple[str, str, str]] = set()
     for report_path in sorted(artifacts_dir.glob("integration-results-*/*.xml")):
         try:
             root = ET.parse(report_path).getroot()
-        except ET.ParseError:
-            continue
+        except ET.ParseError as exc:
+            raise ValueError(f"Malformed JUnit report: {report_path}") from exc
         artifact_name = report_path.parent.name
+        if routing is not None and artifact_name not in sources:
+            raise ValueError(f"Unexpected integration artifact: {artifact_name}")
         runtime_backend = runtime_backend_from_artifact(artifact_name)
+        metadata = sources.get(artifact_name, {})
         for testcase in root.iter("testcase"):
             if testcase.find("failure") is None and testcase.find("error") is None:
                 continue
@@ -76,6 +91,7 @@ def collect_failed_rechecks(artifacts_dir: Path) -> list[dict[str, str]]:
                     "nodeid": nodeid,
                     "runtime_backend": runtime_backend,
                     "source_artifact": artifact_name,
+                    **metadata,
                 }
             )
     return collected
@@ -100,7 +116,9 @@ def partition_integration_failures(
 
 def main() -> int:
     args = parse_args()
-    matrix = {"include": collect_failed_rechecks(args.artifacts_dir)}
+    matrix = {"include": collect_failed_rechecks(
+        args.artifacts_dir, json.loads(args.routing_json) if args.routing_json else None
+    )}
     payload = json.dumps(matrix, separators=(",", ":"))
     print(payload)
     if args.github_output:

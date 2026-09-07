@@ -379,7 +379,19 @@ def resolve_module_targets(path: str, repo_root: Path | None = None) -> dict[str
     if file_is_ambiguous_module_support(path):
         return None
 
-    for candidate in candidate_names_for_module(path):
+    candidates = candidate_names_for_module(path)
+    inventory_path = root / "src" / "server" / "module_capabilities.json"
+    if inventory_path.exists():
+        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+        if inventory.get("schema_version") != 1:
+            raise ValueError("Unsupported module capability inventory schema")
+        key = module_key_from_path(path)
+        for module in inventory["modules"]:
+            identifiers = [module["module"], *module.get("aliases", [])]
+            names = [identifier.replace(".", "_") for identifier in identifiers]
+            if key in names:
+                candidates.extend(names)
+    for candidate in dedupe(candidates):
         smoke_path = root / "tests" / "smoke_tests" / f"run_{candidate}.sh"
         integration_path = root / "tests" / "integration_tests" / f"test_{candidate}.py"
         if smoke_path.exists():
@@ -699,18 +711,32 @@ def build_outputs_for_changed_files(changed_files: list[str], repo_root: Path | 
     }
 
 
+def build_outputs_for_event(
+    event_name: str, base_sha: str = "", head_sha: str = "", repo_root: Path | None = None
+) -> dict[str, str]:
+    """Diff PRs only; scheduled, merge-queue, manual and reusable runs cover all."""
+    if event_name == "pull_request":
+        if not base_sha or not head_sha:
+            raise ValueError("PR routing requires both base and head commits")
+        changed = git_changed_files(base_sha, head_sha, repo_root=repo_root)
+    else:
+        # A shared implementation path deliberately selects the full matrix.
+        changed = ["src/server/runtime.py"]
+    return build_outputs_for_changed_files(changed, repo_root=repo_root)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-sha", required=True)
-    parser.add_argument("--head-sha", required=True)
+    parser.add_argument("--base-sha", default="")
+    parser.add_argument("--head-sha", default="")
+    parser.add_argument("--event-name", default=os.environ.get("GITHUB_EVENT_NAME", "pull_request"))
     parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT"))
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    changed_files = git_changed_files(args.base_sha, args.head_sha, repo_root=REPO_ROOT)
-    outputs = build_outputs_for_changed_files(changed_files, repo_root=REPO_ROOT)
+    outputs = build_outputs_for_event(args.event_name, args.base_sha, args.head_sha, repo_root=REPO_ROOT)
     if args.github_output:
         write_github_outputs(outputs, args.github_output)
     else:

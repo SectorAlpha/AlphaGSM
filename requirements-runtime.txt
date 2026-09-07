@@ -1,0 +1,2 @@
+python-crontab==3.3.0
+html5lib==1.1

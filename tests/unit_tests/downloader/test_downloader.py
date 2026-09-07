@@ -122,13 +122,108 @@ def test_getpath_rechecks_database_after_lock_before_downloading(downloader_modu
     monkeypatch.setattr(downloader_module, "getpathifexists", fake_getpathifexists)
     monkeypatch.setattr(downloader_module.os, "getuid", lambda: downloader_module.pwd.getpwnam(downloader_module.USER).pw_uid)
 
-    with pytest.raises(NameError, match="Path"):
-        downloader_module.getpath("url", ("http://example.com/file",))
+    assert downloader_module.getpath("url", ("http://example.com/file",)) == "/downloads/existing"
+    assert not os.path.exists(downloader_module.LOCK_PATH)
 
 
 def test_getpaths_without_module_uses_default_filter(downloader_module):
     with open(downloader_module.DB_PATH, "w") as handle:
         handle.write("url http%3A//example.com/file,server.jar /downloads/a 1.0 1\n")
 
-    with pytest.raises(NameError, match="kwargs"):
-        downloader_module.getpaths(None, active=True)
+    assert downloader_module.getpaths(None, active=True) == [
+        ("url", ["http://example.com/file", "server.jar"], "/downloads/a", "1.0", "1")
+    ]
+
+
+def test_getpaths_filters_active_records_and_sorts_dates_numerically(downloader_module):
+    with open(downloader_module.DB_PATH, "w") as handle:
+        handle.write("url later /downloads/b 10.0 1\n")
+        handle.write("url inactive /downloads/hidden 1.0 0\n")
+        handle.write("url earlier /downloads/a 2.0 1\n")
+    assert [row[2] for row in downloader_module.getpaths(None, sort="date", active=True)] == [
+        "/downloads/a", "/downloads/b"
+    ]
+
+
+def test_getpaths_passes_sort_and_filters_to_module(downloader_module, monkeypatch):
+    calls = []
+    module = type("Downloader", (), {"getfilter": staticmethod(
+        lambda **kwargs: (calls.append(kwargs) or (lambda *_args: True), None)
+    )})
+    monkeypatch.setattr(downloader_module, "_findmodule", lambda _name: module)
+    open(downloader_module.DB_PATH, "w").close()
+    assert downloader_module.getpaths("url", sort="date", custom=True) == []
+    assert calls == [{"sort": "date", "custom": True}]
+
+
+@pytest.mark.parametrize("frozen", [False, True])
+def test_cross_user_downloader_uses_matching_install_entry(downloader_module, monkeypatch, frozen):
+    import subprocess
+    from pathlib import Path
+
+    commands = []
+    monkeypatch.setattr(downloader_module, "getpathifexists", lambda *_args: None)
+    monkeypatch.setattr(downloader_module, "IS_WINDOWS", False)
+    monkeypatch.setattr(downloader_module, "USER", "cache-owner")
+    monkeypatch.setattr(downloader_module.pwd, "getpwnam", lambda _name: type("User", (), {"pw_uid": 1234})())
+    monkeypatch.setattr(downloader_module.os, "getuid", lambda: 4321)
+    monkeypatch.setattr(downloader_module.sys, "frozen", frozen, raising=False)
+    monkeypatch.setattr(downloader_module.sys, "executable", "/install with spaces/alphagsm")
+    monkeypatch.setattr(subprocess, "check_output", lambda command: commands.append(command) or b"/cache/a%20file%2Bdata\n")
+
+    assert downloader_module.getpath("url", ["https://example.invalid/a?x=1&y=2", "server.jar"]) == "/cache/a file+data"
+    executable = (["/install with spaces/alphagsm", "--_download"] if frozen else
+                  [str(Path(downloader_module.__file__).resolve().parents[2] / "alphagsm-downloads")])
+    assert commands == [["sudo", "-Hu", "cache-owner"] + executable + [
+        "url", "https://example.invalid/a?x=1&y=2", "server.jar"
+    ]]
+
+
+def test_download_helper_quotes_only_path_on_stdout(downloader_module, monkeypatch, capsys):
+    def download(module, args):
+        assert module == "url"
+        assert args == ["release"]
+        print("Downloading release")
+        return "/cache/a file+data"
+
+    monkeypatch.setattr(downloader_module, "getpath", download)
+    assert downloader_module.run_download_helper(["url", "release"]) == 0
+    output = capsys.readouterr()
+    assert output.out == "/cache/a%20file%2Bdata\n"
+    assert output.err == "Downloading release\n"
+
+
+def test_download_helper_preserves_downloader_error_status(downloader_module, monkeypatch, capsys):
+    def fail(*_args):
+        raise downloader_module.DownloaderError("release unavailable", ret=7)
+
+    monkeypatch.setattr(downloader_module, "getpath", fail)
+    assert downloader_module.run_download_helper(["url", "release"]) == 7
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == "release unavailable\n"
+
+
+def test_launcher_dispatches_download_helper_without_core(monkeypatch):
+    import runpy
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    calls = []
+    monkeypatch.setitem(sys.modules, "downloader", SimpleNamespace(
+        run_download_helper=lambda args: calls.append(args) or 7,
+    ))
+    monkeypatch.setitem(sys.modules, "core", None)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setattr(sys, "argv", ["alphagsm", "--_download", "url", "release"])
+    with pytest.raises(SystemExit) as caught:
+        runpy.run_path(str(Path(__file__).resolve().parents[3] / "alphagsm"), run_name="__main__")
+    assert caught.value.code == 7
+    assert calls == [["url", "release"]]
+
+
+def test_download_helper_rejects_missing_module(downloader_module, capsys):
+    assert downloader_module.run_download_helper([]) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert "download module is required" in output.err

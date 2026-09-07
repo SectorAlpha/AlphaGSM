@@ -242,9 +242,13 @@ smoke-test:
 	@if [ -n "$(SMOKE_TEST)" ]; then \
 		bash tests/smoke_tests/$(SMOKE_TEST); \
 	else \
+		failed=0; \
 		for f in tests/smoke_tests/run_*.sh; do \
 			echo ""; \
 			echo "=== $$f ==="; \
-			bash "$$f" || true; \
+			if bash "$$f"; then :; else \
+				rc=$$?; [ "$$rc" -eq 77 ] || failed=1; \
+			fi; \
 		done; \
+		exit $$failed; \
 	fi

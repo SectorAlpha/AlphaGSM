@@ -112,7 +112,7 @@ def test_settings_frozen_binary_uses_config_next_to_executable(tmp_path, monkeyp
     config_path.write_text("[core]\nuserconf=/unused\n")
     observed = {}
 
-    def _fake_loadsettings(filename, parent=None):
+    def _fake_loadsettings(filename, parent=None, **kwargs):
         observed["filename"] = filename
         return settings_module.SettingsSection({}, {})
 

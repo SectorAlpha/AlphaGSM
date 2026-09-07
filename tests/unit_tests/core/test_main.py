@@ -7,6 +7,12 @@ import pytest
 main_module = importlib.import_module("core.main")
 
 
+@pytest.fixture(autouse=True)
+def isolated_server_state(monkeypatch, tmp_path):
+    """Command-lock tests must never create state in the operator's home."""
+    monkeypatch.setattr(main_module.servermodule, "DATAPATH", str(tmp_path / "conf"))
+
+
 class FakeStdout:
     encoding = "utf-8"
 

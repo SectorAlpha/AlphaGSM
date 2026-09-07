@@ -1,6 +1,7 @@
 """Module to download game servers and cache and share the downloads"""
 
 from importlib import import_module
+import contextlib
 import getpass
 import os
 import time
@@ -38,7 +39,7 @@ def current_user():
 # If they are there may be race conditions and database corruption
 
 
-RAW_USER = settings.system.downloader.get("user")
+RAW_USER = settings.system.getsection("downloader").get("user")
 USER_SET = RAW_USER != None
 if USER_SET:
     USER = RAW_USER
@@ -47,7 +48,7 @@ elif IS_WINDOWS:
 else:
     USER = current_user()
 DB_PATH = expandcustomuser(
-    settings.get(USER_SET).downloader.get("db_path")
+    settings.get(USER_SET).getsection("downloader").get("db_path")
     or os.path.join(
         settings.get(USER_SET).getsection("core").get("alphagsm_path", "~/.alphagsm"),
         "downloads/downloads.txt",
@@ -55,7 +56,7 @@ DB_PATH = expandcustomuser(
     USER,
 )
 TARGET_PATH = expandcustomuser(
-    settings.system.downloader.get("target_path")
+    settings.system.getsection("downloader").get("target_path")
     or os.path.join(
         settings.get(USER_SET).getsection("core").get("alphagsm_path", "~/.alphagsm"),
         "downloads/downloads",
@@ -63,7 +64,7 @@ TARGET_PATH = expandcustomuser(
     USER,
 )
 
-DOWNLOADERS_PACKAGE = settings.system.downloader.get(
+DOWNLOADERS_PACKAGE = settings.system.getsection("downloader").get(
     "downloaders_package", "downloadermodules."
 )
 UPDATE_SUFFIX = ".new"
@@ -72,17 +73,17 @@ LOCK_SUFFIX = ".lock"
 LOCK_PATH = DB_PATH + LOCK_SUFFIX
 UPDATE_PATH = DB_PATH + UPDATE_SUFFIX
 
-PARENTLEN = settings.user.downloader.getsection("pathgen").get("parentlen", 1)
-PARENTCHARS = settings.user.downloader.getsection("pathgen").get(
+PARENTLEN = settings.user.getsection("downloader").getsection("pathgen").get("parentlen", 1)
+PARENTCHARS = settings.user.getsection("downloader").getsection("pathgen").get(
     "parentchars", "abcdefghijklmnopqrstuvxyz"
 )
 
-DIRLEN = settings.user.downloader.getsection("pathgen").get("dirlen", 8)
-DIRCHARS = settings.user.downloader.getsection("pathgen").get(
+DIRLEN = settings.user.getsection("downloader").getsection("pathgen").get("dirlen", 8)
+DIRCHARS = settings.user.getsection("downloader").getsection("pathgen").get(
     "dirchars", "abcdefghijklmnopqrstuvwxyz0123456789_"
 )
 
-MAX_TRIES = settings.user.downloader.getsection("pathgen").get("maxtries", 238328)
+MAX_TRIES = settings.user.getsection("downloader").getsection("pathgen").get("maxtries", 238328)
 RETRYPARENT = MAX_TRIES // 10
 
 __all__ = [
@@ -92,6 +93,7 @@ __all__ = [
     "main",
     "getpaths",
     "getargsforpath",
+    "run_download_helper",
 ]
 
 
@@ -201,26 +203,19 @@ def getpath(module, args):
     if not IS_WINDOWS and USER is not None and os.getuid() != pwd.getpwnam(USER).pw_uid:
         import subprocess as sp
 
+        if getattr(sys, "frozen", False):
+            launcher = [sys.executable, "--_download"]
+        else:
+            launcher = [os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))),
+                "alphagsm-downloads",
+            )]
         try:
-            path = sp.check_output(
-                [
-                    "sudo",
-                    "-Hu",
-                    str(USER),
-                    os.path.join(
-                        os.path.dirname(
-                            os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))
-                        ),
-                        "alphagsm-downloads",
-                    ),
-                    module,
-                ]
-                + list(args)
-            )
+            path = sp.check_output(["sudo", "-Hu", str(USER)] + launcher + [module] + list(args))
         except sp.CalledProcessError as ex:
             raise DownloaderError("Error downloading file", ret=ex.returncode)
         else:
-            return unquote(path.decode(sys.stdout.encoding).strip())
+            return unquote(path.decode("ascii").strip())
 
     # Definitely running as correct user now and file not found (yet) but may have other threads updating the file so lock then check again
 
@@ -236,7 +231,7 @@ def getpath(module, args):
         # Now locked so no-one else can be changing it
         path = getpathifexists(module, args)
         if path is not None:
-            return Path
+            return path
 
         # definitely doesn't exist so we need to download it
         path = download(module, args)
@@ -258,6 +253,21 @@ def getpath(module, args):
         os.remove(LOCK_PATH)
 
 
+def run_download_helper(args):
+    """Serve the standalone equivalent of alphagsm-downloads' quoted-path CLI."""
+    if not args:
+        print("A download module is required.", file=sys.stderr)
+        return 2
+    with contextlib.redirect_stdout(sys.stderr):
+        try:
+            path = getpath(args[0], args[1:])
+        except DownloaderError as ex:
+            print(ex)
+            return ex.ret
+    print(quote(path))
+    return 0
+
+
 main = getpath
 
 
@@ -272,11 +282,12 @@ def _getallfilter(active=None, sort=None):
     sortfn = None
     if active != None:
         active = bool(active)
-        filterfn = lambda lmodule, largs, llocation, ldate, lactive: active == lactive
+        filterfn = lambda lmodule, largs, llocation, ldate, lactive: active == bool(int(lactive))
     if sort == "date":
-        sortfn = lambda lmodule, largs, llocation, ldate, lactive: ldate
-    else:
+        sortfn = lambda lmodule, largs, llocation, ldate, lactive: float(ldate)
+    elif sort is not None:
         raise DownloaderError("Unknown sort key")
+    return filterfn, sortfn
 
 
 def getpaths(module, sort=None, **filter):
@@ -291,9 +302,9 @@ def getpaths(module, sort=None, **filter):
             (module_name,[list,of,arguments],path,date_added,is_active)
     """
     if module is None:
-        filterfn, sortfn = _getallfilter(**kwargs)
+        filterfn, sortfn = _getallfilter(sort=sort, **filter)
     else:
-        filterfn, sortfn = _findmodule(module).getfilter(**kwargs)
+        filterfn, sortfn = _findmodule(module).getfilter(sort=sort, **filter)
     downloads = []
     with open(DB_PATH, "r") as f:
         for line in f:
@@ -304,7 +315,7 @@ def getpaths(module, sort=None, **filter):
             ):
                 downloads.append((lmodule, largs, llocation, ldate, lactive))
     if sortfn:
-        downloads.sort(key=sortfn)
+        downloads.sort(key=lambda record: sortfn(*record))
     return downloads
 
 

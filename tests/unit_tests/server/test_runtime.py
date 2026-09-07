@@ -3016,7 +3016,7 @@ def test_container_runtime_rewrites_manager_container_mount_sources_to_host_path
 
     runtime.start(server)
 
-    assert observed[-1] == [
+    assert observed[-1][:12] == [
         "docker",
         "run",
         "-d",
@@ -3029,10 +3029,11 @@ def test_container_runtime_rewrites_manager_container_mount_sources_to_host_path
         "-v",
         "/home/runner/work/_temp/alphagsm-work/server:/srv/server:rw",
         STEAMCMD_RUNTIME_IMAGE,
-        "./LocalAdmin",
-        "7777",
     ]
 
+
+    assert observed[-1][12:14] == ["sh", "-c"]
+    assert observed[-1][-2:] == ["./LocalAdmin", "7777"]
 
 def test_container_runtime_carries_single_discovered_mount_mapping_into_docker_argv(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
@@ -3136,7 +3137,9 @@ def test_container_runtime_send_input_uses_exec_console_mode(monkeypatch):
 
     cmd = observed["cmd"]
     assert cmd[:4] == ["docker", "exec", "alphagsm-alpha", "sh"]
-    assert "/proc/1/fd/0" in cmd[-1]
+    assert cmd[-2:] == ["\nstop\n", runtime_module.CONTAINER_CONSOLE_FIFO]
+    assert cmd[4] == "-c"
+    assert "printf" in cmd[5]
 
 
 def test_sync_runtime_metadata_persists_resolved_fields(monkeypatch):

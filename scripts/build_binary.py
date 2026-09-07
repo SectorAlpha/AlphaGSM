@@ -9,13 +9,61 @@ import shutil
 import subprocess as sp
 import sys
 
-from PyInstaller.__main__ import run as pyinstaller_run
-
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DIST_DIR = REPO_ROOT / "dist-binary"
 BUILD_DIR = REPO_ROOT / "build" / "pyinstaller"
 BUILD_VERSION_FILE = REPO_ROOT / "src" / "core" / "_build_version.py"
+PACKAGES = ("core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils")
+
+
+def collect_runtime_data():
+    """Collect package assets, executable module sources, and Docker contexts.
+
+    Package surfaces execute main.py and the module catalog scans source paths,
+    so game sources are runtime assets even when compiled modules are bundled.
+    """
+    source_root = REPO_ROOT / "src"
+    resources = []
+    for package in PACKAGES:
+        for path in sorted((source_root / package).rglob("*")):
+            if not path.is_file() or "__pycache__" in path.parts:
+                continue
+            if path.suffix in (".pyc", ".pyo"):
+                continue
+            if path.suffix == ".py" and package != "gamemodules":
+                continue
+            resources.append((str(path), path.parent.relative_to(source_root).as_posix()))
+    for family in ("java", "quake-linux", "service-console", "simple-tcp",
+                   "steamcmd-linux", "wine-proton"):
+        for path in sorted((REPO_ROOT / "docker" / family).rglob("*")):
+            if path.is_file():
+                resources.append((str(path), path.parent.relative_to(REPO_ROOT).as_posix()))
+    for relative in ("disabled_servers.conf", "enabled_byo_servers.conf", "enabled_auth_servers.conf",
+                     "scripts/install_proton.sh", "scripts/select_proton_asset.py"):
+        path = REPO_ROOT / relative
+        resources.append((str(path), path.parent.relative_to(REPO_ROOT).as_posix()))
+    return resources
+
+
+def pyinstaller_arguments():
+    """Return the complete, platform-independent standalone build specification."""
+    args = [
+        str(REPO_ROOT / "alphagsm"), "--noconfirm", "--clean", "--onefile",
+        "--name", "alphagsm", "--distpath", str(DIST_DIR),
+        "--workpath", str(BUILD_DIR), "--specpath", str(BUILD_DIR),
+        "--paths", str(REPO_ROOT / "src"),
+    ]
+    for package in PACKAGES:
+        args.extend(["--collect-submodules", package])
+    for source, destination in collect_runtime_data():
+        args.extend(["--add-data", f"{source}{os.pathsep}{destination}"])
+    # Factorio is an unsupported placeholder whose import deliberately raises
+    # NotImplementedError; excluding it does not remove a working source module.
+    args.extend(["--exclude-module", "gamemodules.factorio"])
+    identity = os.environ.get("ALPHAGSM_CODESIGN_IDENTITY", "").strip()
+    if identity:
+        args.extend(["--codesign-identity", identity])
+    return args
 
 
 def parse_args():
@@ -101,6 +149,8 @@ def stage_release_artifact(binary_path, release_dir, artifact_name=None):
 
 
 def main():
+    from PyInstaller.__main__ import run as pyinstaller_run
+
     args = parse_args()
     version = resolve_version(args.version)
     previous_build_version = BUILD_VERSION_FILE.read_text(encoding="utf-8")
@@ -114,50 +164,10 @@ def main():
 
     try:
         write_build_version(version)
-        pyinstaller_run(
-            [
-                str(REPO_ROOT / "alphagsm"),
-                "--noconfirm",
-                "--clean",
-                "--onefile",
-                "--name",
-                "alphagsm",
-                "--distpath",
-                str(DIST_DIR),
-                "--workpath",
-                str(BUILD_DIR),
-                "--specpath",
-                str(BUILD_DIR),
-                "--paths",
-                str(REPO_ROOT / "src"),
-                "--collect-submodules",
-                "core",
-                "--collect-submodules",
-                "downloader",
-                "--collect-submodules",
-                "downloadermodules",
-                "--collect-submodules",
-                "gamemodules",
-                "--add-data",
-                f"{REPO_ROOT / 'src' / 'gamemodules' / 'teamfortress2' / 'curated_mods.json'}:gamemodules/teamfortress2",
-                "--add-data",
-                f"{REPO_ROOT / 'src' / 'gamemodules' / 'teamfortress2' / 'curated_maps.json'}:gamemodules/teamfortress2",
-                "--exclude-module",
-                "gamemodules.factorio",
-                "--collect-submodules",
-                "screen",
-                "--add-data",
-                f"{REPO_ROOT / 'src' / 'screen' / 'screenrc_template.txt'}:screen",
-                "--collect-submodules",
-                "server",
-                "--add-data",
-                f"{REPO_ROOT / 'src' / 'server' / 'module_aliases.json'}:server",
-                "--collect-submodules",
-                "utils",
-                "--add-data",
-                f"{REPO_ROOT / 'src' / 'utils' / 'steamcmd_gamescript_template.txt'}:utils",
-            ]
-        )
+        # collect_submodules runs while the spec is evaluated, before Analysis
+        # applies --paths. Make our packages visible during that discovery too.
+        sys.path.insert(0, str(REPO_ROOT / "src"))
+        pyinstaller_run(pyinstaller_arguments())
         binary_name = "alphagsm.exe" if sys.platform.startswith("win") else "alphagsm"
         binary_path = DIST_DIR / binary_name
         if not binary_path.exists():

@@ -142,7 +142,7 @@ ENV SDL_AUDIODRIVER=dummy
 # integration-test runners can use them without a per-job pip install.
 # --break-system-packages is required on Ubuntu 24.04 because the system Python
 # is marked externally-managed (PEP 668).  This is safe in a throwaway CI image.
-COPY requirements.txt /tmp/requirements.txt
+COPY requirements.txt requirements-runtime.txt /tmp/
 RUN pip3 install --break-system-packages -r /tmp/requirements.txt \
  && rm /tmp/requirements.txt
 

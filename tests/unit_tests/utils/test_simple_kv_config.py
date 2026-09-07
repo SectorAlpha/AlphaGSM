@@ -165,3 +165,20 @@ def test_rewrite_space_config_preserves_line_boundaries_when_file_lacks_trailing
         'hostname "New Name"',
         "sv_hibernate_when_empty 0",
     ]
+
+
+def test_failed_config_replacement_keeps_previous_content(monkeypatch, tmp_path):
+    import pytest
+    from utils import state_io
+
+    config_path = tmp_path / "server.properties"
+    config_path.write_text("motd=Old Name\n")
+
+    def fail_replace(*_args):
+        raise PermissionError("config replacement denied")
+
+    monkeypatch.setattr(state_io.os, "replace", fail_replace)
+    with pytest.raises(PermissionError):
+        rewrite_equals_config(str(config_path), {"motd": "New Name"})
+    assert config_path.read_text() == "motd=Old Name\n"
+    assert not list(tmp_path.glob("*.tmp"))

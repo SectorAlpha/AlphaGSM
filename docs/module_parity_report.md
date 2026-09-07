@@ -1,249 +1,252 @@
 # Module Parity Report
 
-| Canonical module | Aliases | Support state | Contract complete | Runtime verified | Missing surfaces |
-| --- | --- | --- | --- | --- | --- |
-| abfserver | - | disabled | no | no | status |
-| accserver | - | active | no | yes | status |
-| acserver | - | active | no | yes | status |
-| ahl2server | - | active | yes | yes | - |
-| ahlserver | - | active | yes | yes | - |
-| alienarenaserver | - | active | no | yes | status |
-| aloftserver | - | active | no | yes | status |
-| argoserver | - | active | no | yes | status |
-| ark | - | active | no | yes | status |
-| arksurvivalascended | - | active | no | yes | status |
-| arma2coserver | - | active | no | yes | status |
-| arma3.altislife | - | active | yes | yes | - |
-| arma3.desolationredux | - | active | yes | yes | - |
-| arma3.epoch | - | active | yes | yes | - |
-| arma3.exile | - | active | yes | yes | - |
-| arma3.headless | - | active | yes | yes | - |
-| arma3.vanilla | - | active | yes | yes | - |
-| arma3.wasteland | - | active | yes | yes | - |
-| arma3altislifeserver | - | active | no | yes | status |
-| arma3desolationreduxserver | - | active | no | yes | status |
-| arma3epochserver | - | active | no | yes | status |
-| arma3exileserver | - | active | no | yes | status |
-| arma3headlessserver | - | active | no | yes | status |
-| arma3server | - | active | no | yes | status |
-| arma3wastelandserver | - | active | no | yes | status |
-| armarserver | - | active | no | yes | status |
-| askaserver | - | active | no | yes | status |
-| astroneerserver | - | active | no | yes | status |
-| atlasserver | - | active | no | yes | status |
-| atsserver | - | active | no | yes | status |
-| avserver | - | active | no | yes | status |
-| bannerlordserver | - | active | no | yes | status |
-| battlebitserver | - | active | no | yes | status |
-| battlecryoffreedomserver | - | active | no | yes | status |
-| bb2server | - | active | yes | yes | - |
-| bbserver | - | active | yes | yes | - |
-| bdserver | - | active | yes | yes | - |
-| bf1942server | - | active | no | yes | status |
-| bfvserver | - | active | no | yes | status |
-| blackops3server | - | active | no | yes | status |
-| blackwakeserver | - | active | no | yes | status |
-| bmdmserver | - | active | yes | yes | - |
-| bobserver | - | disabled | no | no | status |
-| boserver | - | active | no | yes | status |
-| brickadiaserver | - | active | no | yes | status |
-| brokeprotocolserver | - | active | no | yes | status |
-| bsserver | - | active | yes | yes | - |
-| btlserver | - | active | no | yes | status |
-| btserver | - | active | no | yes | status |
-| ccserver | - | active | yes | yes | - |
-| chivalryserver | cmwserver | active | no | yes | status |
-| citadelserver | - | active | no | yes | status |
-| ckserver | - | active | no | yes | status |
-| cod2server | - | active | no | yes | status |
-| cod4server | - | active | no | yes | status |
-| codserver | - | active | no | yes | status |
-| coduoserver | - | active | no | yes | status |
-| codwawserver | - | active | no | yes | status |
-| colserver | - | active | no | yes | status |
-| conanexiles | - | active | no | yes | status |
-| counterstrike2 | cs2, cs2server | active | yes | yes | - |
-| counterstrikeglobaloffensive | csgo, csgoserver | disabled | yes | no | - |
-| craftopiaserver | ctserver | active | no | yes | status |
-| cryofallserver | - | active | no | yes | status |
-| csczserver | - | active | yes | yes | - |
-| csserver | - | active | yes | yes | - |
-| cssserver | - | active | yes | yes | - |
-| dabserver | - | active | yes | yes | - |
-| darkandlightserver | - | active | no | yes | status |
-| dayofdragonsserver | dodrserver | active | no | yes | status |
-| dayzarma2epochserver | - | active | no | yes | status |
-| dayzserver | - | active | no | yes | status |
-| deadmatterserver | - | active | no | yes | status |
-| deadpolyserver | - | active | no | yes | status |
-| dmcserver | - | active | yes | yes | - |
-| dodserver | - | active | yes | yes | - |
-| dodsserver | - | active | yes | yes | - |
-| doiserver | - | active | yes | yes | - |
-| dstserver | - | active | no | yes | status |
-| ducksideserver | - | active | no | yes | status |
-| dysserver | - | active | yes | yes | - |
-| ecoserver | - | active | no | yes | status |
-| empyrionserver | - | active | no | yes | status |
-| emserver | - | active | yes | yes | - |
-| enshrouded | - | active | no | yes | status |
-| etlegacyserver | etlserver | active | no | yes | status |
-| ets2server | - | active | no | yes | status |
-| exfilserver | - | active | no | yes | status |
-| fearthenightserver | - | active | no | yes | status |
-| fofserver | - | active | yes | yes | - |
-| foundryserver | - | active | no | yes | status |
-| frozenflameserver | - | active | no | yes | status |
-| gmodserver | - | active | yes | yes | - |
-| goldeneyesourceserver | - | active | no | yes | status |
-| gravserver | - | active | no | yes | status |
-| groundbranchserver | - | active | no | yes | status |
-| gtafivemserver | - | active | no | yes | status |
-| hcuserver | hcu | active | no | yes | status |
-| heatserver | - | active | no | yes | status |
-| hellletlooseserver | - | active | no | yes | status |
-| hl2dmserver | - | active | yes | yes | - |
-| hldmserver | - | active | yes | yes | - |
-| hldmsserver | - | active | yes | yes | - |
-| hogwarpserver | - | active | no | yes | status |
-| hurtworldserver | hw | active | no | yes | status |
-| hzserver | - | active | no | yes | status |
-| icarusserver | - | active | no | yes | status |
-| identityserver | - | active | no | yes | status |
-| insserver | - | active | yes | yes | - |
-| inssserver | - | active | no | yes | status |
-| interstellarriftserver | - | active | no | yes | status |
-| iosserver | - | active | yes | yes | - |
-| jc2server | - | active | no | yes | status |
-| jc3server | - | active | no | yes | status |
-| jk2server | - | active | no | yes | status |
-| kerbalspaceprogramserver | - | active | no | yes | status |
-| kf2server | - | active | no | yes | status |
-| kfserver | - | active | no | yes | status |
-| l4d2server | - | active | yes | yes | - |
-| l4dserver | - | active | yes | yes | - |
-| lastoasisserver | - | active | no | yes | status |
-| lifeisfeudalserver | - | active | no | yes | status |
-| longvinterserver | - | active | no | yes | status |
-| medievalengineersserver | - | active | no | yes | status |
-| memoriesofmarsserver | - | active | no | yes | status |
-| minecraft.bedrock | mcbserver | active | no | yes | status |
-| minecraft.bungeecord | - | active | no | yes | status |
-| minecraft.custom | - | active | yes | yes | - |
-| minecraft.paper | pmcserver | active | yes | yes | - |
-| minecraft.tekkit | - | active | yes | yes | - |
-| minecraft.vanilla | mcserver | active | yes | yes | - |
-| minecraft.velocity | vpmcserver | active | yes | yes | - |
-| minecraft.waterfall | wmcserver | active | yes | yes | - |
-| miscreatedserver | - | active | no | yes | status |
-| mohaaserver | - | active | no | yes | status |
-| mordserver | mhserver | active | no | yes | status |
-| motortownserver | - | active | no | yes | status |
-| mtaserver | - | active | no | yes | status |
-| mumbleserver | - | active | no | yes | status |
-| mw3server | - | active | no | yes | status |
-| mxbikesserver | - | active | no | yes | status |
-| mythofempiresserver | - | active | no | yes | status |
-| ndserver | - | active | yes | yes | - |
-| necserver | - | active | no | yes | status |
-| nightingale | - | active | no | yes | status |
-| nmrihserver | - | active | yes | yes | - |
-| noonesurvivedserver | - | active | no | yes | status |
-| notdserver | - | active | no | yes | status |
-| ns2cserver | - | active | no | yes | status |
-| ns2server | - | active | no | yes | status |
-| nsserver | - | active | yes | yes | - |
-| ohdserver | - | active | no | yes | status |
-| onsetserver | - | active | no | yes | status |
-| opforserver | - | active | yes | yes | - |
-| outpostzeroserver | - | active | no | yes | status |
-| palworld | pwserver | active | no | yes | status |
-| pathoftitansserver | - | active | no | yes | status |
-| pcars2server | pc2server | active | no | yes | status |
-| pcarserver | pcserver | active | no | yes | status |
-| pixarkserver | - | active | no | yes | status |
-| police1013server | - | active | no | yes | status |
-| primalcarnageextinctionserver | - | active | no | yes | status |
-| projectzomboid | pzserver | active | no | yes | status |
-| pvkiiserver | - | active | yes | yes | - |
-| pvrserver | - | active | no | yes | status |
-| q2server | - | active | no | yes | status |
-| q3server | - | active | no | yes | status |
-| q4server | - | active | no | yes | status |
-| qlserver | - | active | no | yes | status |
-| qwserver | - | active | no | yes | status |
-| readyornotserver | - | active | no | yes | status |
-| redmserver | - | active | no | yes | status |
-| reignofdwarfserver | - | active | no | yes | status |
-| reignofkingsserver | - | active | no | yes | status |
-| remnantsserver | - | active | no | yes | status |
-| returntomoriaserver | - | active | no | yes | status |
-| ricochetserver | - | active | yes | yes | - |
-| rimworldtogetherserver | - | active | no | yes | status |
-| ror2server | - | active | no | yes | status |
-| roserver | - | active | no | yes | status |
-| rs2server | risingstorm2vietnam | active | no | yes | status |
-| rtcwserver | - | active | no | yes | status |
-| rust | - | active | no | yes | status |
-| rwserver | - | active | no | yes | status |
-| saleblazersserver | - | active | no | yes | status |
-| sampserver | - | active | no | yes | status |
-| satisfactory | sfserver | active | no | yes | status |
-| sbotsserver | sbots | active | no | yes | status |
-| scpslserver | scpslsmserver | active | no | yes | status |
-| scumserver | - | active | no | yes | status |
-| seserver | - | active | no | yes | status |
-| sevendaystodie | sdtdserver | active | no | yes | status |
-| sfcserver | - | active | yes | yes | - |
-| silicaserver | - | active | no | yes | status |
-| skyrimtogetherrebornserver | - | active | no | yes | status |
-| smallandserver | - | active | no | yes | status |
-| sniperelite4server | - | active | no | yes | status |
-| sof2server | - | active | no | yes | status |
-| solserver | - | active | no | yes | status |
-| sonsoftheforestserver | - | active | no | yes | status |
-| soulmask | smserver | active | no | yes | status |
-| squad44server | - | active | no | yes | status |
-| squadserver | - | active | no | yes | status |
-| ss14server | - | active | no | yes | status |
-| starbound | sbserver | active | no | yes | status |
-| starruptureserver | - | active | no | yes | status |
-| stationeersserver | stserver | active | no | yes | status |
-| staxelserver | - | active | no | yes | status |
-| stnserver | - | active | no | yes | status |
-| stormworksserver | - | active | no | yes | status |
-| subnauticaserver | - | active | no | yes | status |
-| subsistenceserver | - | active | no | yes | status |
-| sunkenlandserver | - | active | no | yes | status |
-| svenserver | - | active | yes | yes | - |
-| teamfortress2 | tf2, tf2server | active | yes | yes | - |
-| terraria.tshock | - | active | yes | yes | - |
-| terraria.vanilla | terrariaserver | active | yes | yes | - |
-| terratechworldsserver | - | active | no | yes | status |
-| tf2cserver | tf2c, tf2classified, tf2classifiedserver | active | yes | yes | - |
-| tfcserver | - | active | yes | yes | - |
-| theforestserver | - | active | no | yes | status |
-| thefrontserver | tfserver | active | no | yes | status |
-| tiserver | - | active | no | yes | status |
-| trackmaniaserver | - | active | no | yes | status |
-| ts3server | - | active | no | yes | status |
-| tsserver | - | active | yes | yes | - |
-| tuserver | - | active | no | yes | status |
-| twserver | - | active | no | yes | status |
-| unturned | untserver | active | no | yes | status |
-| ut2k4server | - | active | no | yes | status |
-| ut3server | - | active | no | yes | status |
-| ut99server | utserver | active | no | yes | status |
-| valheim | vhserver | active | no | yes | status |
-| veinserver | - | active | no | yes | status |
-| vintagestoryserver | vintsserver | active | no | yes | status |
-| vrserver | - | active | no | yes | status |
-| vsserver | - | active | yes | yes | - |
-| warbandserver | - | active | no | yes | status |
-| wetserver | wet | active | no | yes | status |
-| wfserver | - | active | no | yes | status |
-| wreckfestserver | - | active | no | yes | status |
-| wurmserver | - | active | no | yes | status |
-| xntserver | - | active | no | yes | status |
-| zmrserver | - | active | yes | yes | - |
-| zpsserver | - | active | yes | yes | - |
+Runtime verified reflects recorded PASSED tracker evidence; it is not a new validation run.
+Unknown platforms and architectures have no explicit declaration, even when a runtime hook exists.
+
+| Canonical module | Aliases | Support state | Contract complete | Runtime verified | Missing surfaces | Runtime family | Platforms | Architectures | Provider categories |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| abfserver | - | DISABLED | no | no | status | wine-proton | unknown | unknown |  |
+| accserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| acserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ahl2server | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| ahlserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| alienarenaserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| aloftserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| argoserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ark | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| arksurvivalascended | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| arma2coserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| arma3.altislife | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| arma3.desolationredux | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| arma3.epoch | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| arma3.exile | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| arma3.headless | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| arma3.vanilla | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| arma3.wasteland | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| arma3altislifeserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| arma3desolationreduxserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| arma3epochserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| arma3exileserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| arma3headlessserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| arma3server | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| arma3wastelandserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| armarserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| askaserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| astroneerserver | - | ENABLED (BYO) | no | no | status | wine-proton | unknown | unknown |  |
+| atlasserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| atsserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| avserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| bannerlordserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | mixed |
+| battlebitserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-provisioning |
+| battlecryoffreedomserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| bb2server | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| bbserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| bdserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| bf1942server | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| bfvserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| blackops3server | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| blackwakeserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| bmdmserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| bobserver | - | DISABLED | no | no | status | steamcmd-linux | unknown | unknown |  |
+| boserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| brickadiaserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| brokeprotocolserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| bsserver | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| btlserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| btserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ccserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| chivalryserver | cmwserver | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| citadelserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ckserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| cod2server | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| cod4server | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| codserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| coduoserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| codwawserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| colserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| conanexiles | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| counterstrike2 | cs2, cs2server | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| counterstrikeglobaloffensive | csgo, csgoserver | DISABLED | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| craftopiaserver | ctserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| cryofallserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| csczserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| csserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| cssserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| dabserver | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| darkandlightserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| dayofdragonsserver | dodrserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| dayzarma2epochserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| dayzserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| deadmatterserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| deadpolyserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| dmcserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| dodserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| dodsserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| doiserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| dstserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| ducksideserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| dysserver | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| ecoserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| empyrionserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| emserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| enshrouded | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| etlegacyserver | etlserver | ENABLED (BYO) | no | no | status | quake-linux | unknown | unknown |  |
+| ets2server | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| exfilserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| fearthenightserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| fofserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| foundryserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| frozenflameserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| gmodserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| goldeneyesourceserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown | assets |
+| gravserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| groundbranchserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| gtafivemserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-provisioning |
+| hcuserver | hcu | UNKNOWN | no | no | status | steamcmd-linux | unknown | unknown |  |
+| heatserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| hellletlooseserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| hl2dmserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| hldmserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| hldmsserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| hogwarpserver | - | ENABLED (BYO) | no | no | status | wine-proton | unknown | unknown |  |
+| hurtworldserver | hw | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| hzserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| icarusserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| identityserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| insserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| inssserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| interstellarriftserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| iosserver | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |
+| jc2server | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| jc3server | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| jk2server | - | ENABLED (BYO) | no | no | status | quake-linux | unknown | unknown |  |
+| kerbalspaceprogramserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| kf2server | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| kfserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| l4d2server | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| l4dserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| lastoasisserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| lifeisfeudalserver | - | ENABLED (BYO) | no | no | status | wine-proton | unknown | unknown |  |
+| longvinterserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| medievalengineersserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| memoriesofmarsserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| minecraft.bedrock | mcbserver | PASSED | no | yes | status | service-console | unknown | unknown |  |
+| minecraft.bungeecord | - | PASSED | no | yes | status | java | unknown | unknown |  |
+| minecraft.custom | - | ENABLED (BYO) | yes | no | - | java | unknown | unknown |  |
+| minecraft.paper | pmcserver | PASSED | yes | yes | - | java | unknown | unknown |  |
+| minecraft.tekkit | - | ENABLED (BYO) | yes | no | - | java | unknown | unknown |  |
+| minecraft.vanilla | mcserver | PASSED | yes | yes | - | java | unknown | unknown |  |
+| minecraft.velocity | vpmcserver | PASSED | yes | yes | - | java | unknown | unknown |  |
+| minecraft.waterfall | wmcserver | PASSED | yes | yes | - | java | unknown | unknown |  |
+| miscreatedserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| mohaaserver | - | ENABLED (BYO) | no | no | status | quake-linux | unknown | unknown |  |
+| mordserver | mhserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| motortownserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| mtaserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| mumbleserver | - | PASSED | no | yes | status | simple-tcp | unknown | unknown |  |
+| mw3server | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| mxbikesserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| mythofempiresserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| ndserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| necserver | - | PASSED | no | yes | status | java | unknown | unknown |  |
+| nightingale | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| nmrihserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| noonesurvivedserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| notdserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| ns2cserver | - | UNKNOWN | no | no | status | steamcmd-linux | unknown | unknown |  |
+| ns2server | - | UNKNOWN | no | no | status | steamcmd-linux | unknown | unknown |  |
+| nsserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| ohdserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| onsetserver | - | UNKNOWN | no | no | status | steamcmd-linux | unknown | unknown |  |
+| opforserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| outpostzeroserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| palworld | pwserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| pathoftitansserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-token |
+| pcars2server | pc2server | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| pcarserver | pcserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| pixarkserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| police1013server | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| primalcarnageextinctionserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| projectzomboid | pzserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| pvkiiserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| pvrserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| q2server | - | PASSED | no | yes | status | quake-linux | unknown | unknown |  |
+| q3server | - | ENABLED (BYO) | no | no | status | quake-linux | unknown | unknown |  |
+| q4server | - | ENABLED (BYO) | no | no | status | quake-linux | unknown | unknown |  |
+| qlserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| qwserver | - | PASSED | no | yes | status | quake-linux | unknown | unknown |  |
+| readyornotserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| redmserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-provisioning |
+| reignofdwarfserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| reignofkingsserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| remnantsserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| returntomoriaserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| ricochetserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| rimworldtogetherserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ror2server | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| roserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| rs2server | risingstorm2vietnam | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| rtcwserver | - | ENABLED (BYO) | no | no | status | quake-linux | unknown | unknown |  |
+| rust | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| rwserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| saleblazersserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| sampserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| satisfactory | sfserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| sbotsserver | sbots | UNKNOWN | no | no | status | steamcmd-linux | unknown | unknown |  |
+| scpslserver | scpslsmserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| scumserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| seserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| sevendaystodie | sdtdserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| sfcserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| silicaserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| skyrimtogetherrebornserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| smallandserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| sniperelite4server | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| sof2server | - | ENABLED (BYO) | no | no | status | quake-linux | unknown | unknown |  |
+| solserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| sonsoftheforestserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| soulmask | smserver | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| squad44server | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| squadserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ss14server | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| starbound | sbserver | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| starruptureserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| stationeersserver | stserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| staxelserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license |
+| stnserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| stormworksserver | - | ENABLED (BYO) | no | no | status | wine-proton | unknown | unknown |  |
+| subnauticaserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| subsistenceserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| sunkenlandserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| svenserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| teamfortress2 | tf2, tf2server | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| terraria.tshock | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| terraria.vanilla | terrariaserver | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| terratechworldsserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| tf2cserver | tf2c, tf2classified, tf2classifiedserver | UNKNOWN | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| tfcserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  |
+| theforestserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| thefrontserver | tfserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| tiserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-auth |
+| trackmaniaserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ts3server | - | PASSED | no | yes | status | service-console | unknown | unknown |  |
+| tsserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| tuserver | - | UNKNOWN | no | no | status | steamcmd-linux | unknown | unknown |  |
+| twserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license |
+| unturned | untserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ut2k4server | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| ut3server | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  |
+| ut99server | utserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| valheim | vhserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| veinserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| vintagestoryserver | vintsserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| vrserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| vsserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| warbandserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| wetserver | wet | UNKNOWN | no | no | status | quake-linux | unknown | unknown |  |
+| wfserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| wreckfestserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  |
+| wurmserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  |
+| xntserver | - | PASSED | no | yes | status | quake-linux | unknown | unknown |  |
+| zmrserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  |
+| zpsserver | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license |

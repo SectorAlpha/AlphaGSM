@@ -620,7 +620,7 @@ def test_doctor_prints_runtime_report(monkeypatch, capsys):
     monkeypatch.setattr(
         server_module.runtime_module,
         "print_runtime_doctor_report",
-        lambda server: print("Runtime doctor for " + server.name),
+        lambda server, **kwargs: print("Runtime doctor for " + server.name),
     )
 
     srv.doctor()
