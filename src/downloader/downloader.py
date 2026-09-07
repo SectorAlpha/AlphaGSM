@@ -10,6 +10,7 @@ import sys
 from urllib.parse import quote, unquote
 from utils.platform_info import IS_WINDOWS
 from utils.settings import settings
+from utils.state_io import atomic_write_text, state_lock
 
 if not IS_WINDOWS:
     import pwd  # pylint: disable=import-error
@@ -217,40 +218,24 @@ def getpath(module, args):
         else:
             return unquote(path.decode("ascii").strip())
 
-    # Definitely running as correct user now and file not found (yet) but may have other threads updating the file so lock then check again
-
-    while True:
-        try:
-            open(LOCK_PATH, "x")
-        except FileExistsError:
-            time.sleep(1)
-            continue
-        else:
-            break
-    try:
-        # Now locked so no-one else can be changing it
+    # Recheck under the lock: another invocation may have downloaded it while
+    # this one was waiting. Wait up to an hour for large installs; the operating
+    # system releases the lock automatically if the downloader crashes.
+    with state_lock(DB_PATH, timeout=3600):
         path = getpathifexists(module, args)
         if path is not None:
             return path
 
-        # definitely doesn't exist so we need to download it
         path = download(module, args)
-
         sargs = ",".join(quote(a) for a in args)
-
-        try:
-            os.remove(UPDATE_PATH)
-        except FileNotFoundError:
-            pass
-        with open(UPDATE_PATH, "w") as f:
-            with open(DB_PATH, "r") as f2:
-                for l in f2:
-                    f.write(l)
-            f.write(" ".join((module, sargs, path, str(time.time()), str(1))) + "\n")
-        os.rename(UPDATE_PATH, DB_PATH)
+        with open(DB_PATH, "r", encoding="utf-8") as database:
+            contents = database.read()
+        contents += " ".join((module, sargs, path, str(time.time()), str(1))) + "\n"
+        # os.rename cannot replace an existing destination on Windows. The
+        # shared writer fsyncs a same-directory temporary file and os.replace's
+        # the complete database, retaining the old contents on commit failure.
+        atomic_write_text(DB_PATH, contents)
         return path
-    finally:
-        os.remove(LOCK_PATH)
 
 
 def run_download_helper(args):

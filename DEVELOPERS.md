@@ -696,3 +696,45 @@ Minecraft jar metadata/hashes and Steam build IDs; unsupported or unobservable
 fields stay null. This records the installed payload and operation, not a full
 server validation. Modules can expose `get_installation_provenance(server)` for
 additional authoritative evidence through the shared recording path.
+
+### Game-specific platform preflight
+
+Modules can declare `process_platforms` and `process_architectures`, or implement
+`get_platform_requirements(server)` when the selected version/build changes the
+requirements. The hook returns metadata without downloading or changing state:
+
+```python
+def get_platform_requirements(server):
+    return {
+        "process": {"platforms": ["linux"], "architectures": ["x86_64"]},
+        "docker": {"operating_system": "linux"},
+    }
+```
+
+The process declarations describe the hosts on which this AlphaGSM integration
+can run, including any explicitly supported wrapper. Existing
+`supported_platforms`/`supported_architectures` are fallback declarations. Keep
+these separate from host dependencies and provider/configuration checks, which
+continue through their existing shared APIs. A missing declaration is unknown,
+not a claim of support. TF2 now declares Linux process support because its
+current installation/launcher uses `srcds_run` and Linux Steam client libraries;
+this does not describe every upstream TF2 distribution.
+
+`setup` and `update` check declared compatibility before installation. `start` checks it
+before `prestart` and checks the final executable's ELF, PE, Mach-O or shebang
+format immediately before launch. The launcher inspected is the one resolved in
+the server's working directory. Explicit interpreter and Wine/Proton commands
+can run their supported payloads; AlphaGSM does not silently add Wine, WSL or an
+emulator. Undeclared CPU compatibility is not inferred from a successful format
+check. Docker uses the daemon's reported OS, so a Windows desktop with a Linux
+Docker daemon can run Linux containers. The six checked-in runtime families
+require Linux containers; a custom image without an OS declaration stays unknown.
+
+The generated capability inventory records normalized declarations, while
+`doctor --json` reports the current host or daemon compatibility. Add module unit
+coverage when introducing declarations and prove the supported lifecycle in CI.
+
+The shared SteamCMD installation helper currently ships a Linux client and
+rejects non-Linux hosts before creating directories or downloading. A Docker
+game-runtime selection does not relocate the host install hook; use the Linux
+manager container for this provisioning path on other desktop operating systems.

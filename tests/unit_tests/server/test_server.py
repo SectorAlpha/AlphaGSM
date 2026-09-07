@@ -600,6 +600,23 @@ def test_stop_uses_runtime_kill_immediately_for_docker_stop_mode(monkeypatch):
     assert srv.module.calls == []
 
 
+def test_stop_uses_effective_container_console_mode_over_family_default(monkeypatch):
+    srv = make_server()
+    runtime = SimpleNamespace(
+        is_running=MagicMock(side_effect=[True, False]), kill=MagicMock(),
+    )
+    monkeypatch.setattr(server_module.runtime_module, "get_runtime", lambda server: runtime)
+    monkeypatch.setattr(server_module.runtime_module, "resolve_runtime_metadata",
+                        lambda server: {"runtime": "docker", "stop_mode": "docker-stop"})
+    monkeypatch.setattr(server_module.runtime_module, "get_container_spec",
+                        lambda server: {"stop_mode": "exec-console"})
+
+    srv.stop()
+
+    runtime.kill.assert_not_called()
+    assert srv.module.calls == [("do_stop", 0, (), {})]
+
+
 def test_status_connect_and_dump_use_screen_and_output(monkeypatch, capsys):
     srv = make_server()
     monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda name: True)

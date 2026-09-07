@@ -71,6 +71,22 @@ Docker daemon and compatible container architecture. The executable includes
 the repository's runtime image build files so the default image fallback does
 not require a checkout. Initial image builds require network access and space.
 
+## Game compatibility
+
+AlphaGSM checks game-specific OS and processor declarations before installation
+and startup. It also checks the actual executable before launching: Windows
+cannot directly run a Linux ELF server, for example. Choose a supported build
+or a compatible Docker runtime when the check rejects a launch. Wine/Proton
+remains available where the module supports that path on Linux.
+
+Docker compatibility depends on the daemon's OS. A Windows machine using Linux
+containers can run the supported Linux image families; Windows-container mode
+cannot. Games without verified platform declarations remain marked unknown.
+The current TF2 process integration is Linux-only; its Docker path uses Linux
+containers. The shared SteamCMD installer also requires a Linux manager host.
+For those installs on Windows, run AlphaGSM itself in the manager container;
+selecting Docker only for the game does not change where installation runs.
+
 ## Updates and diagnostics
 
 ```bash

@@ -23,6 +23,55 @@ def test_capabilities_normalize_identity_and_keep_missing_platform_support_unkno
     assert result["runtime"] == {"process": True, "docker": False, "family": None}
     assert result["support_state"] == "UNKNOWN"
     assert {"platforms", "architectures", "query_protocols.query"} <= set(result["unknown_fields"])
+    assert result["platform_requirements"] == {
+        "process": {"platforms": None, "architectures": None},
+        "docker": {"operating_system": None},
+    }
+    assert result["hooks"]["get_platform_requirements"] is False
+
+
+def test_process_declarations_preserve_distinct_native_metadata(capsys):
+    def platform_requirements(_server):
+        print("private hook output")
+        return {"docker": {"operating_system": "linux"}}
+
+    server = SimpleNamespace(data={"module": "example"}, module=SimpleNamespace(
+        supported_platforms=("windows",), supported_architectures=("x86_64",),
+        process_platforms=("linux", "windows"), process_architectures=("arm64", "x86_64"),
+        get_platform_requirements=platform_requirements,
+    ))
+    result = capabilities.get_module_capabilities(server, catalog=_catalog())
+    assert result["platforms"] == ["windows"]
+    assert result["architectures"] == ["x86_64"]
+    assert result["platform_requirements"] == {
+        "process": {"platforms": ["linux", "windows"], "architectures": ["arm64", "x86_64"]},
+        "docker": {"operating_system": "linux"},
+    }
+    assert result["hooks"]["get_platform_requirements"] is True
+    assert not capsys.readouterr().out
+
+
+def test_platform_hook_normalizes_aliases_and_overrides_static_process_support():
+    server = SimpleNamespace(data={"module": "example"}, module=SimpleNamespace(
+        process_platforms=("linux",), process_architectures=("x86_64",),
+        get_platform_requirements=lambda server: {
+            "process": {"platforms": ["darwin"], "architectures": ["aarch64"]},
+        },
+    ))
+    result = capabilities.get_module_capabilities(server, catalog=_catalog())
+    assert result["platform_requirements"]["process"] == {"platforms": ["macos"], "architectures": ["arm64"]}
+    assert result["platform_requirements"]["docker"]["operating_system"] is None
+    assert "platform_requirements.docker.operating_system" in result["unknown_fields"]
+
+
+def test_failing_platform_hook_reports_unknown_without_leaking_errors():
+    def failing(_server):
+        raise ValueError("secret hook details")
+    server = SimpleNamespace(data={"module": "example"}, module=SimpleNamespace(get_platform_requirements=failing))
+    result = capabilities.get_module_capabilities(server, catalog=_catalog())
+    assert result["platform_requirements"]["process"]["platforms"] is None
+    assert result["hooks"]["get_platform_requirements"] is True
+    assert "secret hook details" not in json.dumps(result)
 
 
 def test_capabilities_extract_only_declared_metadata_without_installing(capsys):

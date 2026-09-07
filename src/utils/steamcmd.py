@@ -7,6 +7,7 @@ import time
 
 from downloadermodules.url import download as url_download
 from utils.settings import settings
+from utils.platform_info import PLATFORM
 
 # SteamCMD prefers an existing Steam directory, but an explicit configuration
 # must always win regardless of whether that default directory exists.
@@ -135,6 +136,12 @@ def _ensure_steamclient_symlinks():
 def install_steamcmd():
     """Ensure the SteamCMD runtime exists in the configured installation path."""
 
+    if PLATFORM != "linux":
+        raise RuntimeError(
+            "This AlphaGSM installer uses the Linux SteamCMD client. Run AlphaGSM "
+            "in a Linux environment or the manager container; selecting a Docker "
+            "game runtime does not move installation off the host."
+        )
     # if steamcmd dir does not exist, download it
     if not os.path.exists(STEAMCMD_DIR):
         os.makedirs(STEAMCMD_DIR)

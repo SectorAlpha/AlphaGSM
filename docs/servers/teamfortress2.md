@@ -9,9 +9,16 @@ surface behind that validated TF2 server path.
 
 ## Requirements
 
-- `screen`
+The current AlphaGSM process integration requires Linux because it uses
+`srcds_run` and Linux Steam client libraries. Setup rejects incompatible hosts
+before downloading. Docker requires a Linux-container daemon, including when
+Docker runs on a Windows desktop. Installation still uses the Linux SteamCMD
+client on the manager host; run AlphaGSM itself in Linux or in the manager
+container for this setup path.
+
+- Optional `screen` or `tmux`; the subprocess backend is also available
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+- For source installations, Python packages from `requirements-runtime.txt`
 
 ## Quick Start
 

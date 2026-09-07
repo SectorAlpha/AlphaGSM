@@ -61,7 +61,8 @@ jobs:
           if [ "$RUNNER_OS" = Windows ]; then export PYTHONPATH='.;src'; fi
           python -m pytest -q -o timeout=60 tests/unit_tests/screen/test_managed_subprocess.py \
             tests/unit_tests/screen/test_windows_job.py tests/unit_tests/core/test_binary_update.py \
-            tests/unit_tests/core/test_frozen_dispatch.py
+            tests/unit_tests/core/test_frozen_dispatch.py \
+            tests/unit_tests/server/test_platform_support.py tests/unit_tests/server/test_container_platform.py
       - name: Prepare Windows release signing identity
         if: inputs.release && runner.os == 'Windows'
         env:
@@ -123,14 +124,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: binary-evidence-${{ inputs.release && 'release' || 'ci' }}-${{ matrix.platform }}-${{ matrix.arch }}
-          include-hidden-files: true
           path: |
-            binary-evidence/failure-doctor.json
-            binary-evidence/**/*.log
-            binary-evidence/**/*.installation.json
-            binary-docker-evidence/failure-doctor.json
-            binary-docker-evidence/**/*.log
-            binary-docker-evidence/**/*.installation.json
+            binary-evidence/evidence/
+            binary-docker-evidence/evidence/
       - name: Remove temporary signing material
         if: always() && inputs.release && runner.os != 'Linux'
         run: python scripts/sign_release.py cleanup

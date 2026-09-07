@@ -123,7 +123,9 @@ def test_getpath_rechecks_database_after_lock_before_downloading(downloader_modu
     monkeypatch.setattr(downloader_module.os, "getuid", lambda: downloader_module.pwd.getpwnam(downloader_module.USER).pw_uid)
 
     assert downloader_module.getpath("url", ("http://example.com/file",)) == "/downloads/existing"
-    assert not os.path.exists(downloader_module.LOCK_PATH)
+    from utils.state_io import state_lock
+    with state_lock(downloader_module.DB_PATH, timeout=0):
+        pass
 
 
 def test_getpaths_without_module_uses_default_filter(downloader_module):
@@ -227,3 +229,48 @@ def test_download_helper_rejects_missing_module(downloader_module, capsys):
     output = capsys.readouterr()
     assert output.out == ""
     assert "download module is required" in output.err
+
+
+def test_cache_update_replaces_existing_database_with_windows_semantics(downloader_module, monkeypatch):
+    from pathlib import Path
+
+    module = downloader_module
+    original = "url old.jar /downloads/old 1.0 1\n"
+    Path(module.DB_PATH).write_text(original)
+    monkeypatch.setattr(module, "IS_WINDOWS", True)
+    monkeypatch.setattr(module, "download", lambda *_args: "/downloads/new")
+    rename = module.os.rename
+
+    def windows_rename(source, destination):
+        if Path(destination).exists():
+            raise FileExistsError(183, "Cannot create a file when that file already exists")
+        return rename(source, destination)
+
+    monkeypatch.setattr(module.os, "rename", windows_rename)
+    assert module.getpath("url", ["new.jar"]) == "/downloads/new"
+    contents = Path(module.DB_PATH).read_text()
+    assert contents.startswith(original)
+    assert "url new.jar /downloads/new " in contents
+    assert module.getpathifexists("url", ["new.jar"]) == "/downloads/new"
+
+
+def test_cache_commit_failure_keeps_previous_database_and_releases_lock(downloader_module, monkeypatch):
+    from pathlib import Path
+    from utils import state_io
+
+    module = downloader_module
+    original = "url old.jar /downloads/old 1.0 1\n"
+    Path(module.DB_PATH).write_text(original)
+    monkeypatch.setattr(module, "IS_WINDOWS", True)
+    monkeypatch.setattr(module, "download", lambda *_args: "/downloads/new")
+
+    def fail_replace(*_args):
+        raise PermissionError("database replacement denied")
+
+    monkeypatch.setattr(state_io.os, "replace", fail_replace)
+    with pytest.raises(PermissionError, match="replacement denied"):
+        module.getpath("url", ["new.jar"])
+    assert Path(module.DB_PATH).read_text() == original
+    assert not list(Path(module.DB_PATH).parent.glob("*.tmp"))
+    with state_io.state_lock(module.DB_PATH, timeout=0):
+        pass

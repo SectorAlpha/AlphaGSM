@@ -7,6 +7,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -21,6 +30,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -37,6 +55,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -49,6 +76,15 @@
     "canonical_id": "ahl2server",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -61,6 +97,15 @@
     "canonical_id": "ahlserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -75,6 +120,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -89,6 +143,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -103,6 +166,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -117,6 +189,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -131,6 +212,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -145,6 +235,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -159,6 +258,15 @@
     "canonical_id": "arma3.altislife",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -173,6 +281,15 @@
     "canonical_id": "arma3.desolationredux",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -187,6 +304,15 @@
     "canonical_id": "arma3.epoch",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -201,6 +327,15 @@
     "canonical_id": "arma3.exile",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -215,6 +350,15 @@
     "canonical_id": "arma3.headless",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -229,6 +373,15 @@
     "canonical_id": "arma3.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -243,6 +396,15 @@
     "canonical_id": "arma3.wasteland",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -259,6 +421,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -275,6 +446,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -291,6 +471,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -307,6 +496,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -323,6 +521,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -339,6 +546,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -355,6 +571,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -371,6 +596,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -385,6 +619,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -399,6 +642,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -413,6 +665,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -427,6 +688,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -441,6 +711,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -455,6 +734,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "mixed"
@@ -471,6 +759,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-provisioning"
@@ -487,6 +784,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -499,6 +805,15 @@
     "canonical_id": "bb2server",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -511,6 +826,15 @@
     "canonical_id": "bbserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -523,6 +847,15 @@
     "canonical_id": "bdserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -537,6 +870,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -551,6 +893,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -565,6 +916,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -579,6 +939,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -591,6 +960,15 @@
     "canonical_id": "bmdmserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -605,6 +983,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -619,6 +1006,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -635,6 +1031,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -651,6 +1056,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -665,6 +1079,15 @@
     "canonical_id": "bsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -681,6 +1104,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -695,6 +1127,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -707,6 +1148,15 @@
     "canonical_id": "ccserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -723,6 +1173,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -739,6 +1198,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -753,6 +1221,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -767,6 +1244,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -781,6 +1267,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -795,6 +1290,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -809,6 +1313,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -823,6 +1336,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -837,6 +1359,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -851,6 +1382,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -866,6 +1406,15 @@
     "canonical_id": "counterstrike2",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -881,6 +1430,15 @@
     "canonical_id": "counterstrikeglobaloffensive",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -897,6 +1455,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -911,6 +1478,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -923,6 +1499,15 @@
     "canonical_id": "csczserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -935,6 +1520,15 @@
     "canonical_id": "csserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -947,6 +1541,15 @@
     "canonical_id": "cssserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -959,6 +1562,15 @@
     "canonical_id": "dabserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -975,6 +1587,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -991,6 +1612,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1005,6 +1635,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1021,6 +1660,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1037,6 +1685,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1053,6 +1710,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1065,6 +1731,15 @@
     "canonical_id": "dmcserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1077,6 +1752,15 @@
     "canonical_id": "dodserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1089,6 +1773,15 @@
     "canonical_id": "dodsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1101,6 +1794,15 @@
     "canonical_id": "doiserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1115,6 +1817,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1129,6 +1840,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1143,6 +1863,15 @@
     "canonical_id": "dysserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1159,6 +1888,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1173,6 +1911,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1185,6 +1932,15 @@
     "canonical_id": "emserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1199,6 +1955,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1215,6 +1980,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -1229,6 +2003,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1243,6 +2026,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1257,6 +2049,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1269,6 +2070,15 @@
     "canonical_id": "fofserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1283,6 +2093,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1297,6 +2116,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1309,6 +2137,15 @@
     "canonical_id": "gmodserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1323,6 +2160,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "assets"
@@ -1339,6 +2185,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1353,6 +2208,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1367,6 +2231,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-provisioning"
@@ -1385,6 +2258,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1399,6 +2281,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1413,6 +2304,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1427,6 +2327,15 @@
     "canonical_id": "hl2dmserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1439,6 +2348,15 @@
     "canonical_id": "hldmserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1451,6 +2369,15 @@
     "canonical_id": "hldmsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1465,6 +2392,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1481,6 +2417,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1495,6 +2440,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1509,6 +2463,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1523,6 +2486,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1535,6 +2507,15 @@
     "canonical_id": "insserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1549,6 +2530,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1563,6 +2553,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1577,6 +2576,15 @@
     "canonical_id": "iosserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1593,6 +2601,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1607,6 +2624,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1621,6 +2647,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -1635,6 +2670,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1649,6 +2693,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1663,6 +2716,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1677,6 +2739,15 @@
     "canonical_id": "l4d2server",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1689,6 +2760,15 @@
     "canonical_id": "l4dserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1703,6 +2783,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1717,6 +2806,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1731,6 +2829,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1745,6 +2852,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1759,6 +2875,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1775,6 +2900,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "service-console",
@@ -1789,6 +2923,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -1801,6 +2944,15 @@
     "canonical_id": "minecraft.custom",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -1815,6 +2967,15 @@
     "canonical_id": "minecraft.paper",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -1827,6 +2988,15 @@
     "canonical_id": "minecraft.tekkit",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -1841,6 +3011,15 @@
     "canonical_id": "minecraft.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -1855,6 +3034,15 @@
     "canonical_id": "minecraft.velocity",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -1869,6 +3057,15 @@
     "canonical_id": "minecraft.waterfall",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -1883,6 +3080,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -1897,6 +3103,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -1913,6 +3128,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1927,6 +3151,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1943,6 +3176,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -1957,6 +3199,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "simple-tcp",
@@ -1971,6 +3222,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -1987,6 +3247,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2001,6 +3270,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2013,6 +3291,15 @@
     "canonical_id": "ndserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2027,6 +3314,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "java",
@@ -2041,6 +3337,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2053,6 +3358,15 @@
     "canonical_id": "nmrihserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2067,6 +3381,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2081,6 +3404,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2095,6 +3427,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2109,6 +3450,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2121,6 +3471,15 @@
     "canonical_id": "nsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2135,6 +3494,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2149,6 +3517,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2161,6 +3538,15 @@
     "canonical_id": "opforserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2175,6 +3561,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2191,6 +3586,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2205,6 +3609,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-token"
@@ -2223,6 +3636,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -2241,6 +3663,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2255,6 +3686,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2269,6 +3709,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -2285,6 +3734,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2301,6 +3759,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2313,6 +3780,15 @@
     "canonical_id": "pvkiiserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2327,6 +3803,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2341,6 +3826,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -2355,6 +3849,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -2369,6 +3872,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -2383,6 +3895,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2397,6 +3918,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -2411,6 +3941,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2425,6 +3964,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-provisioning"
@@ -2441,6 +3989,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2455,6 +4012,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -2471,6 +4037,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2485,6 +4060,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2497,6 +4081,15 @@
     "canonical_id": "ricochetserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2511,6 +4104,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2525,6 +4127,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -2541,6 +4152,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -2559,6 +4179,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2573,6 +4202,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -2587,6 +4225,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2601,6 +4248,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2615,6 +4271,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2629,6 +4294,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2645,6 +4319,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2661,6 +4344,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2677,6 +4369,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2691,6 +4392,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2705,6 +4415,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2721,6 +4440,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2733,6 +4461,15 @@
     "canonical_id": "sfcserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2747,6 +4484,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2761,6 +4507,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2775,6 +4530,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2789,6 +4553,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2803,6 +4576,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -2817,6 +4599,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2831,6 +4622,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2847,6 +4647,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2861,6 +4670,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2875,6 +4693,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2889,6 +4716,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2905,6 +4741,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2919,6 +4764,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2935,6 +4789,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2949,6 +4812,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -2965,6 +4837,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -2979,6 +4860,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -2993,6 +4883,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3007,6 +4906,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -3021,6 +4929,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -3033,6 +4950,15 @@
     "canonical_id": "svenserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3048,6 +4974,17 @@
     "canonical_id": "teamfortress2",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": [
+          "linux"
+        ]
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3060,6 +4997,15 @@
     "canonical_id": "terraria.tshock",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3074,6 +5020,15 @@
     "canonical_id": "terraria.vanilla",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3088,6 +5043,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -3104,6 +5068,15 @@
     "canonical_id": "tf2cserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3116,6 +5089,15 @@
     "canonical_id": "tfcserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3130,6 +5112,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -3146,6 +5137,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3160,6 +5160,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-auth"
@@ -3176,6 +5185,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3190,6 +5208,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "service-console",
@@ -3202,6 +5229,15 @@
     "canonical_id": "tsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3216,6 +5252,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3230,6 +5275,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"
@@ -3248,6 +5302,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3262,6 +5325,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3276,6 +5348,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3292,6 +5373,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3308,6 +5398,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3322,6 +5421,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3338,6 +5446,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3352,6 +5469,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -3364,6 +5490,15 @@
     "canonical_id": "vsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3378,6 +5513,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -3394,6 +5538,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -3408,6 +5561,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3422,6 +5584,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "wine-proton",
@@ -3436,6 +5607,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3450,6 +5630,15 @@
     "missing_surfaces": [
       "status"
     ],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "quake-linux",
@@ -3462,6 +5651,15 @@
     "canonical_id": "zmrserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
@@ -3474,6 +5672,15 @@
     "canonical_id": "zpsserver",
     "contract_complete": true,
     "missing_surfaces": [],
+    "platform_requirements": {
+      "docker": {
+        "operating_system": null
+      },
+      "process": {
+        "architectures": null,
+        "platforms": null
+      }
+    },
     "platforms": null,
     "provider_categories": [
       "provider-license"

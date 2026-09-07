@@ -13,6 +13,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from server.module_catalog import load_default_module_catalog
+from server import platform_support
 
 
 SCHEMA_VERSION = 1
@@ -20,7 +21,7 @@ INVENTORY_PATH = Path(__file__).with_name("module_capabilities.json")
 HOOKS = (
     "get_start_command", "get_container_spec", "get_runtime_requirements",
     "get_provider_requirements", "get_query_address", "get_info_address",
-    "sync_server_config",
+    "sync_server_config", "get_platform_requirements",
 )
 
 
@@ -55,6 +56,16 @@ def _inspect_hook(server, name):
             return None  # An unconfigured server may not yet have required data.
 
 
+def _platform_requirements(server):
+    """Share lifecycle declaration normalization without inventing host support."""
+    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+        try:
+            return platform_support.normalized_platform_requirements(server)
+        except Exception:  # pylint: disable=broad-exception-caught
+            return {"process": {"platforms": None, "architectures": None},
+                    "docker": {"operating_system": None}}
+
+
 def get_module_capabilities(server, *, catalog=None, support_state=None):
     """Describe declared interfaces and metadata for a configured or new server."""
     catalog = catalog or load_default_module_catalog()
@@ -68,6 +79,7 @@ def get_module_capabilities(server, *, catalog=None, support_state=None):
     family = {"minecraft": "java", "ts3": "service-console"}.get(family, family)
     platforms = _strings(getattr(module, "supported_platforms", requirements.get("platforms")))
     architectures = _strings(getattr(module, "supported_architectures", requirements.get("architectures")))
+    platform_requirements = _platform_requirements(server)
     provider_requirements = _inspect_hook(server, "get_provider_requirements")
     provider_categories = [] if not hooks["get_provider_requirements"] else None
     if isinstance(provider_requirements, (tuple, list)):
@@ -90,12 +102,16 @@ def get_module_capabilities(server, *, catalog=None, support_state=None):
                                      ("runtime.family", family), ("provider_categories", provider_categories))
                if value is None]
     unknown.extend(f"query_protocols.{key}" for key, value in protocols.items() if value is None)
+    unknown.extend(f"platform_requirements.{runtime}.{key}"
+                   for runtime, declarations in platform_requirements.items()
+                   for key, value in declarations.items() if value is None)
     return {
         "schema_version": SCHEMA_VERSION, "module": module_id,
         "support_state": support_state, "platforms": platforms, "architectures": architectures,
         "runtime": {"process": hooks["get_start_command"],
                     "docker": hooks["get_container_spec"] and hooks["get_runtime_requirements"],
                     "family": family},
+        "platform_requirements": platform_requirements,
         "provider_categories": provider_categories,
         "config_sync_keys": _strings(getattr(module, "config_sync_keys", ())),
         "query_protocols": protocols, "hooks": hooks,

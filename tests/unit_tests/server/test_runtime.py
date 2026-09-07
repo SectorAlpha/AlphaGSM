@@ -775,6 +775,8 @@ def test_container_runtime_start_builds_docker_run_command(monkeypatch):
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
         observed.append(cmd)
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             return "existing-image\n" if text else b"existing-image\n"
         return "container-id\n" if text else b"container-id\n"
@@ -783,7 +785,8 @@ def test_container_runtime_start_builds_docker_run_command(monkeypatch):
 
     runtime.start(server)
 
-    assert observed[0][:3] == ["docker", "image", "inspect"]
+    assert observed[0] == ["docker", "info", "--format", "{{.OSType}}"]
+    assert observed[1][:3] == ["docker", "image", "inspect"]
     cmd = observed[-1]
     assert cmd[:4] == ["docker", "run", "-d", "-i"]
     assert "--name" in cmd and "alphagsm-alpha" in cmd
@@ -819,6 +822,8 @@ def test_container_runtime_builds_default_family_image_when_missing(monkeypatch)
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
         observed.append(cmd)
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             raise runtime_module.sp.CalledProcessError(1, cmd, output="missing image")
         return "ok\n" if text else b"ok\n"
@@ -828,12 +833,13 @@ def test_container_runtime_builds_default_family_image_when_missing(monkeypatch)
 
     runtime.start(server)
 
-    assert observed[0][:3] == ["docker", "image", "inspect"]
-    assert observed[1][:2] == ["docker", "build"]
-    assert observed[1][observed[1].index("-t") + 1] == (
+    assert observed[0] == ["docker", "info", "--format", "{{.OSType}}"]
+    assert observed[1][:3] == ["docker", "image", "inspect"]
+    assert observed[2][:2] == ["docker", "build"]
+    assert observed[2][observed[2].index("-t") + 1] == (
         STEAMCMD_RUNTIME_IMAGE
     )
-    assert observed[1][-1] == runtime_module.REPO_ROOT
+    assert observed[2][-1] == runtime_module.REPO_ROOT
     assert observed[-1][:3] == ["docker", "run", "-d"]
 
 
@@ -859,6 +865,8 @@ def test_container_runtime_does_not_build_missing_custom_image(monkeypatch):
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
         observed.append(cmd)
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             raise runtime_module.sp.CalledProcessError(1, cmd, output="missing image")
         return "ok\n" if text else b"ok\n"
@@ -867,7 +875,8 @@ def test_container_runtime_does_not_build_missing_custom_image(monkeypatch):
 
     runtime.start(server)
 
-    assert observed[0][:3] == ["docker", "image", "inspect"]
+    assert observed[0] == ["docker", "info", "--format", "{{.OSType}}"]
+    assert observed[1][:3] == ["docker", "image", "inspect"]
     assert not any(cmd[:2] == ["docker", "build"] for cmd in observed)
     assert observed[-1][:3] == ["docker", "run", "-d"]
 
@@ -1180,21 +1189,26 @@ def test_runtime_doctor_report_includes_process_host_requirement_results(monkeyp
     assert report["host_requirements"][0]["id"] == "java"
 
 
-def test_runtime_doctor_report_includes_docker_runtime_health(monkeypatch):
+@pytest.mark.parametrize('family,stdin_open,stop_mode', [
+    ('simple-tcp', False, 'docker-stop'), ('java', True, 'exec-console'),
+])
+def test_runtime_doctor_report_includes_docker_runtime_health(
+    monkeypatch, family, stdin_open, stop_mode
+):
     _set_runtime_backend(monkeypatch, "docker")
     module = SimpleNamespace(
         get_runtime_requirements=lambda server: {
             "engine": "docker",
-            "family": "simple-tcp",
+            "family": family,
         },
         get_container_spec=lambda server: {
             "container_name": "alphagsm-alpha",
             "image": STEAMCMD_RUNTIME_IMAGE,
-            "runtime_family": "simple-tcp",
+            "runtime_family": family,
             "network_mode": "bridge",
             "stop_mode": "docker-stop",
             "working_dir": "/srv/server",
-            "stdin_open": False,
+            "stdin_open": stdin_open,
             "env": {},
             "mounts": [{"source": "/srv/host", "target": "/srv/server", "mode": "rw"}],
             "ports": [{"host": 25565, "container": 25565, "protocol": "tcp"}],
@@ -1206,7 +1220,7 @@ def test_runtime_doctor_report_includes_docker_runtime_health(monkeypatch):
     monkeypatch.setattr(
         runtime_module.ContainerRuntime,
         "_run_check_output",
-        staticmethod(lambda command, text=False: "25.0.3\n"),
+        staticmethod(lambda command, text=False: "linux\n" if command[:2] == ["docker", "info"] else "25.0.3\n"),
     )
     monkeypatch.setattr(runtime_module.ContainerRuntime, "_image_exists", lambda self, image: True)
     monkeypatch.setattr(
@@ -1224,7 +1238,8 @@ def test_runtime_doctor_report_includes_docker_runtime_health(monkeypatch):
 
     assert report["configured_backend"] == "docker"
     assert report["resolved_runtime"] == "docker"
-    assert report["runtime_family"] == "simple-tcp"
+    assert report["runtime_family"] == family
+    assert report["stop_mode"] == stop_mode
     assert report["docker_cli"] == "25.0.3"
     assert report["image_present"] is True
     assert report["container_state"] == "stopped"
@@ -1282,7 +1297,7 @@ def test_runtime_doctor_reports_opted_in_user_home_and_writable_mount(monkeypatc
     monkeypatch.setattr(
         runtime_module.ContainerRuntime,
         "_run_check_output",
-        staticmethod(lambda command, text=False: "25.0.3\n"),
+        staticmethod(lambda command, text=False: "linux\n" if command[:2] == ["docker", "info"] else "25.0.3\n"),
     )
     monkeypatch.setattr(runtime_module.ContainerRuntime, "_image_exists", lambda self, image: True)
     monkeypatch.setattr(
@@ -1322,7 +1337,7 @@ def test_runtime_doctor_reports_safely_creatable_first_run_home_without_creating
     monkeypatch.setattr(
         runtime_module.ContainerRuntime,
         "_run_check_output",
-        staticmethod(lambda command, text=False: "25.0.3\n"),
+        staticmethod(lambda command, text=False: "linux\n" if command[:2] == ["docker", "info"] else "25.0.3\n"),
     )
     monkeypatch.setattr(runtime_module.ContainerRuntime, "_image_exists", lambda self, image: True)
     monkeypatch.setattr(
@@ -1377,7 +1392,7 @@ def test_runtime_doctor_reports_invalid_host_user_home(
     monkeypatch.setattr(
         runtime_module.ContainerRuntime,
         "_run_check_output",
-        staticmethod(lambda command, text=False: "25.0.3\n"),
+        staticmethod(lambda command, text=False: "linux\n" if command[:2] == ["docker", "info"] else "25.0.3\n"),
     )
     monkeypatch.setattr(runtime_module.ContainerRuntime, "_image_exists", lambda self, image: True)
     monkeypatch.setattr(
@@ -1609,7 +1624,7 @@ def test_runtime_doctor_does_not_report_first_run_home_creatable_without_secure_
     monkeypatch.setattr(
         runtime_module.ContainerRuntime,
         "_run_check_output",
-        staticmethod(lambda command, text=False: "25.0.3\n"),
+        staticmethod(lambda command, text=False: "linux\n" if command[:2] == ["docker", "info"] else "25.0.3\n"),
     )
     monkeypatch.setattr(runtime_module.ContainerRuntime, "_image_exists", lambda self, image: True)
     monkeypatch.setattr(
@@ -1708,6 +1723,8 @@ def test_container_runtime_removes_stale_stopped_container_before_start(monkeypa
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
         observed.append(cmd)
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             return "existing-image\n" if text else b"existing-image\n"
         if cmd[:3] == ["docker", "inspect", "-f"]:
@@ -1759,6 +1776,8 @@ def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypat
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
         observed.append(cmd)
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             return "existing-image\n" if text else b"existing-image\n"
         return "ok\n" if text else b"ok\n"
@@ -1874,6 +1893,8 @@ def test_container_runtime_evaluates_consistent_identity_requirements_once(
 
     def _fake_check_output(command, stderr=None, shell=False, text=False):
         observed.append(command)
+        if command == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if command[:3] == ["docker", "inspect", "-f"]:
             raise runtime_module.RuntimeError("missing")
         return "ok\n" if text else b"ok\n"
@@ -2055,6 +2076,11 @@ def test_container_runtime_checks_existing_state_before_creating_home(monkeypatc
         assert not home_source.exists()
         return True
 
+    def _daemon_info(command, text=False):
+        assert command == ["docker", "info", "--format", "{{.OSType}}"]
+        return "linux"
+
+    monkeypatch.setattr(runtime, "_run_check_output", _daemon_info)
     monkeypatch.setattr(runtime, "_container_running_state", _running_container)
     monkeypatch.setattr(runtime, "_ensure_runtime_image_available", lambda spec: None)
     monkeypatch.setattr(runtime, "_validate_mount_path_identity", lambda spec: None)
@@ -2469,7 +2495,9 @@ def test_container_runtime_uses_disjoint_validated_host_translation_in_argv(
     monkeypatch.setattr(
         runtime,
         "_run_check_output",
-        lambda command, text=False: observed.append(command) or "ok",
+        lambda command, text=False: observed.append(command) or (
+            "linux" if command == ["docker", "info", "--format", "{{.OSType}}"] else "ok"
+        ),
     )
 
     runtime.start(server)
@@ -2622,6 +2650,8 @@ def test_container_runtime_start_rejects_running_same_name_container(monkeypatch
     runtime = runtime_module.ContainerRuntime()
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             return "existing-image\n" if text else b"existing-image\n"
         if cmd[:3] == ["docker", "inspect", "-f"]:
@@ -2707,6 +2737,8 @@ def test_container_runtime_allows_mount_paths_under_manager_identity_root(monkey
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
         observed.append(cmd)
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             return "existing-image\n" if text else b"existing-image\n"
         return "ok\n" if text else b"ok\n"
@@ -3003,6 +3035,8 @@ def test_container_runtime_rewrites_manager_container_mount_sources_to_host_path
 
     def _fake_check_output(cmd, stderr=None, shell=False, text=False):
         observed.append(cmd)
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if cmd[:3] == ["docker", "image", "inspect"]:
             return "existing-image\n" if text else b"existing-image\n"
         return "ok\n" if text else b"ok\n"
@@ -3068,6 +3102,8 @@ def test_container_runtime_carries_single_discovered_mount_mapping_into_docker_a
 
     def _fake_check_output(command, stderr=None, shell=False, text=False):
         observed.append(command)
+        if command == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
         if command[:3] == ["docker", "image", "inspect"]:
             return "existing-image\n" if text else b"existing-image\n"
         return "ok\n" if text else b"ok\n"

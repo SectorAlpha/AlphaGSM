@@ -79,6 +79,26 @@ def test_existing_fifo_path_is_not_followed_or_overwritten(tmp_path, monkeypatch
     assert target.read_text() == 'keep'
 
 
+@pytest.mark.parametrize('inherited_umask', [0o022, 0o027, 0o077])
+def test_console_fifo_privacy_does_not_change_game_file_permissions(
+    tmp_path, monkeypatch, inherited_umask
+):
+    fifo = tmp_path / 'console.fifo'
+    monkeypatch.setattr(runtime_module, 'CONTAINER_CONSOLE_FIFO', str(fifo))
+    command = runtime_module.container_launch_command({
+        'stop_mode': 'exec-console',
+        'command': [sys.executable, '-c',
+                    'from pathlib import Path; '
+                    'Path("logs").mkdir(); Path("logs/latest.log").write_text("ready")'],
+    })
+    result = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True,
+                            cwd=tmp_path, umask=inherited_umask, timeout=3, check=False)
+    assert result.returncode == 0, result.stderr.decode()
+    assert fifo.stat().st_mode & 0o777 == 0o600
+    assert (tmp_path / 'logs').stat().st_mode & 0o777 == 0o777 & ~inherited_umask
+    assert (tmp_path / 'logs/latest.log').stat().st_mode & 0o777 == 0o666 & ~inherited_umask
+
+
 @pytest.mark.parametrize('value', [None, b'stop', 'bad\0input'])
 def test_console_rejects_non_text_and_nul_before_executing_docker(monkeypatch, value):
     monkeypatch.setattr(runtime_module, 'get_container_spec', lambda _: {'stop_mode': 'exec-console', 'container_name': 'fixture'})

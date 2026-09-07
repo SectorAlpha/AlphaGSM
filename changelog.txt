@@ -8,6 +8,15 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-07
+- Compatibility: check game-specific OS/CPU declarations before install/start,
+  reject incompatible native executable formats and Linux SteamCMD installers
+  on unsupported hosts, and verify the Docker daemon
+  OS for declared container families. Declare TF2's current process path Linux-only.
+- CI diagnostics: capture live binary/container evidence before shutdown in a
+  dedicated artifact directory; preserve the game's umask and use the effective
+  container console mode for graceful shutdown.
+- Downloads: fix Windows setup failing with WinError 183 when updating an
+  existing cache database; commit atomically under a crash-released process lock.
 - Binaries: bundle dynamic modules, curated assets, runtime image contexts and
   default settings; validate the copied executable outside the source tree on
   five Linux, macOS and Windows architecture targets in CI.

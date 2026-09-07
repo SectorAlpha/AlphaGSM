@@ -395,3 +395,13 @@ def test_get_autoupdate_script_writes_goldsrc_mod_line(tmp_path, monkeypatch):
         "app_set_config 90 mod dod\n"
         "app_update 90\n"
     )
+
+
+def test_linux_steamcmd_installer_rejects_windows_before_files_or_download(tmp_path, monkeypatch):
+    import pytest
+    monkeypatch.setattr(steamcmd_module, 'PLATFORM', 'windows', raising=False)
+    monkeypatch.setattr(steamcmd_module, 'STEAMCMD_DIR', str(tmp_path / 'steam'))
+    monkeypatch.setattr(steamcmd_module, 'url_download', lambda *a: pytest.fail('must reject before download'))
+    with pytest.raises(RuntimeError, match='Linux.*manager container'):
+        steamcmd_module.install_steamcmd()
+    assert not (tmp_path / 'steam').exists()

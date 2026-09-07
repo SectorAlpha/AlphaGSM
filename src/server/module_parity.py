@@ -27,6 +27,7 @@ class ModuleParityRow:  # pylint: disable=too-many-instance-attributes
     platforms: tuple[str, ...] | None
     architectures: tuple[str, ...] | None
     provider_categories: tuple[str, ...] | None
+    platform_requirements: dict
 
 
 def build_module_parity_rows(*, catalog, repo_root: Path, capability_inventory=None) -> list[ModuleParityRow]:
@@ -65,6 +66,10 @@ def build_module_parity_rows(*, catalog, repo_root: Path, capability_inventory=N
                 platforms=_declared_values(capabilities.get(module_name, {}), "platforms"),
                 architectures=_declared_values(capabilities.get(module_name, {}), "architectures"),
                 provider_categories=_declared_values(capabilities.get(module_name, {}), "provider_categories"),
+                platform_requirements=capabilities.get(module_name, {}).get("platform_requirements", {
+                    "process": {"platforms": None, "architectures": None},
+                    "docker": {"operating_system": None},
+                }),
             )
         )
     return rows
@@ -75,19 +80,24 @@ def _declared_values(capabilities, key):
     return tuple(values) if values is not None else None
 
 
+def _display_declarations(values):
+    return (", ".join(values) or "none") if values is not None else "unknown"
+
+
 def render_markdown_report(rows: list[ModuleParityRow]) -> str:
     lines = [
         "# Module Parity Report",
         "",
         "Runtime verified reflects recorded PASSED tracker evidence; it is not a new validation run.",
         "Unknown platforms and architectures have no explicit declaration, even when a runtime hook exists.",
+        "Native declarations remain separate from process launch requirements and the required Docker image OS.",
         "",
-        "| Canonical module | Aliases | Support state | Contract complete | Runtime verified | Missing surfaces | Runtime family | Platforms | Architectures | Provider categories |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Canonical module | Aliases | Support state | Contract complete | Runtime verified | Missing surfaces | Runtime family | Native platforms | Native architectures | Provider categories | Process platforms | Process architectures | Docker OS |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for row in rows:
         lines.append(
-            "| {name} | {aliases} | {support} | {contract} | {runtime} | {missing} | {family} | {platforms} | {architectures} | {providers} |".format(
+            "| {name} | {aliases} | {support} | {contract} | {runtime} | {missing} | {family} | {platforms} | {architectures} | {providers} | {process_platforms} | {process_architectures} | {docker_os} |".format(
                 name=row.canonical_id,
                 aliases=", ".join(row.aliases) or "-",
                 support=row.support_state,
@@ -95,9 +105,12 @@ def render_markdown_report(rows: list[ModuleParityRow]) -> str:
                 runtime="yes" if row.runtime_verified else "no",
                 missing=", ".join(row.missing_surfaces) or "-",
                 family=row.runtime_family or "unknown",
-                platforms=", ".join(row.platforms) if row.platforms is not None else "unknown",
-                architectures=", ".join(row.architectures) if row.architectures is not None else "unknown",
+                platforms=_display_declarations(row.platforms),
+                architectures=_display_declarations(row.architectures),
                 providers=", ".join(row.provider_categories) if row.provider_categories is not None else "unknown",
+                process_platforms=_display_declarations(row.platform_requirements["process"]["platforms"]),
+                process_architectures=_display_declarations(row.platform_requirements["process"]["architectures"]),
+                docker_os=row.platform_requirements["docker"]["operating_system"] or "unknown",
             )
         )
     lines.append("")

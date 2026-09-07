@@ -26,6 +26,7 @@ import subprocess as sp
 import sys
 
 from server import ServerError
+from server import platform_support
 import screen
 from utils.settings import settings
 from utils.gamemodules import common as gamemodule_common
@@ -1033,6 +1034,18 @@ def get_process_host_dependency_report(server):
 
     report["ok"] = all(item.get("ok", False) for item in report["requirements"])
     return report
+
+
+def assert_platform_requirements(server, phase="run"):
+    """Reject declared game/runtime incompatibility before install or prestart."""
+    metadata = resolve_runtime_metadata(server)
+    if metadata.get("runtime", "process") == "docker":
+        return ContainerRuntime().assert_platform_compatible(server)
+    try:
+        return platform_support.validate_declared_platform(
+            server, windows_compatibility=metadata.get("runtime_family") == "wine-proton")
+    except platform_support.PlatformCompatibilityError as ex:
+        raise RuntimeError("Can't %s server: %s" % (phase, ex)) from ex
 
 
 def assert_host_install_requirements(server, phase="run"):
@@ -2132,6 +2145,14 @@ def get_container_spec(
     return merged
 
 
+def get_stop_mode(server):
+    """Use the same effective Docker stop mode as launch and console input."""
+    metadata = resolve_runtime_metadata(server)
+    if metadata.get("runtime") == "docker":
+        return get_container_spec(server).get("stop_mode", "docker-stop")
+    return metadata.get("stop_mode")
+
+
 def _get_module_runtime_requirements(server):
     """Return normalized module-declared runtime requirements for *server*."""
 
@@ -2183,6 +2204,10 @@ def get_runtime_doctor_report(server):
         report["running"] = False
     else:
         report["running"] = runtime.is_running(server)
+        try:
+            report["platform_support"] = assert_platform_requirements(server, phase="run")
+        except RuntimeError as ex:
+            report["platform_error"] = str(ex)
 
     if runtime_name == "docker":
         host_report = {
@@ -2237,6 +2262,7 @@ def get_runtime_doctor_report(server):
         report["container_spec_error"] = str(ex)
         return report
 
+    report["stop_mode"] = spec.get("stop_mode", "docker-stop")
     report["working_dir"] = spec.get("working_dir", "")
     report["command"] = list(spec.get("command", ()))
     report["mounts"] = copy.deepcopy(spec.get("mounts", []))
@@ -2307,6 +2333,14 @@ def get_runtime_doctor_report(server):
         report["docker_cli_error"] = str(ex)
         return report
 
+    try:
+        report.update(runtime.container_platform_report(spec, server=server))
+    except RuntimeError as ex:
+        report["docker_daemon_error"] = str(ex)
+        return report
+    if "container_platform_error" in report:
+        return report
+
     image = spec.get("image")
     if image:
         report["image_present"] = runtime.image_exists(image)
@@ -2352,6 +2386,11 @@ def print_runtime_doctor_report(server, *, report=None):
     resolved_runtime = report.get("resolved_runtime", "unknown")
     print("Resolved runtime: " + resolved_runtime)
     print("Currently running: " + ("yes" if report.get("running") else "no"))
+    if "platform_error" in report:
+        print("Platform compatibility error: " + report["platform_error"])
+    elif "platform_support" in report:
+        platform_report = report["platform_support"]
+        print("Game platform declaration: " + ("compatible" if platform_report.get("supported") else "unknown"))
 
     host_requirements = report.get("host_requirements") or []
     if host_requirements:
@@ -2470,6 +2509,15 @@ def print_runtime_doctor_report(server, *, report=None):
         print("Docker CLI error: " + report["docker_cli_error"])
         return report
 
+    if "container_os" in report:
+        print("Container OS: " + report["container_os"])
+    if "docker_daemon_os" in report:
+        print("Docker daemon OS: " + report["docker_daemon_os"])
+    for error_key in ("docker_daemon_error", "container_platform_error"):
+        if error_key in report:
+            print("Container platform error: " + report[error_key])
+            return report
+
     if "image_present" in report:
         print("Image present locally: " + ("yes" if report["image_present"] else "no"))
     if "container_state" in report:
@@ -2524,6 +2572,12 @@ class ProcessRuntime(BaseRuntime):
     def start(self, server, *args, **kwargs):
         assert_host_install_requirements(server, phase="start")
         command, cwd = server.module.get_start_command(server, *args, **kwargs)
+        try:
+            platform_support.validate_process_command(
+                server, command, cwd,
+                windows_compatibility=resolve_runtime_metadata(server).get("runtime_family") == "wine-proton")
+        except platform_support.PlatformCompatibilityError as ex:
+            raise RuntimeError(str(ex)) from ex
         screen.start_screen(server.name, command, cwd=cwd)
 
     def is_running(self, server):
@@ -3128,7 +3182,8 @@ def container_launch_command(spec):
         'set -eu; fifo=$1; shift; '
         'command -v mkfifo >/dev/null && command -v cat >/dev/null || '
         '{ echo "exec-console images require sh, mkfifo and cat" >&2; exit 1; }; '
-        'umask 077; mkfifo "$fifo"; exec 3<>"$fifo"; exec 4<&0; '
+        'saved_umask=$(umask); umask 077; mkfifo "$fifo"; umask "$saved_umask"; '
+        'exec 3<>"$fifo"; exec 4<&0; '
         'cat <&4 >&3 & exec "$@" <&3 4<&-'
     )
     return ["sh", "-c", wrapper, "alphagsm-console", CONTAINER_CONSOLE_FIFO, *command]
@@ -3205,6 +3260,47 @@ class ContainerRuntime(BaseRuntime):
             ["docker", "version", "--format", "{{.Client.Version}}"],
             text=True,
         ).strip()
+
+    def container_platform_report(self, spec, *, server=None):
+        """Compare the image OS contract with the selected Docker daemon OS."""
+        linux_families = {
+            "java", "quake-linux", "service-console", "simple-tcp", "steamcmd-linux", "wine-proton",
+        }
+        declared = None
+        if server is not None and getattr(server, "module", None) is not None:
+            from .platform_support import normalized_platform_requirements, PlatformCompatibilityError
+
+            try:
+                declared = normalized_platform_requirements(server)["docker"]["operating_system"]
+            except PlatformCompatibilityError as ex:
+                raise RuntimeError(str(ex)) from ex
+        required = str(declared or spec.get("container_os") or "").strip().lower()
+        if required and required not in {"linux", "windows"}:
+            raise RuntimeError("Unsupported declared container OS: " + required)
+        if not required and canonicalize_runtime_family(spec.get("runtime_family")) in linux_families:
+            required = "linux"
+        daemon = self._run_check_output(["docker", "info", "--format", "{{.OSType}}"], text=True).strip().lower()
+        if daemon not in {"linux", "windows"}:
+            raise RuntimeError("Docker daemon did not report a supported OSType: " + (daemon or "empty response"))
+        report = {"container_os": required or "unknown", "docker_daemon_os": daemon,
+                  "container_os_compatible": required == daemon if required else None}
+        if required and required != daemon:
+            advice = ("Switch Docker Desktop to Linux containers or use a Linux Docker daemon."
+                      if required == "linux" else "Use a Windows-container Docker daemon.")
+            report["container_platform_error"] = (
+                "This server requires %s containers, but the selected Docker daemon runs %s containers. %s"
+                % (required.capitalize(), daemon.capitalize(), advice)
+            )
+        return report
+
+    def assert_platform_compatible(self, server, spec=None):
+        """Reject a known daemon mismatch before setup or container side effects."""
+        if spec is None:
+            spec = resolve_runtime_metadata(server)
+        report = self.container_platform_report(spec, server=server)
+        if "container_platform_error" in report:
+            raise RuntimeError(report["container_platform_error"])
+        return report
 
     def validate_mount_path_identity(self, spec):
         """Public wrapper for bind-mount identity validation."""
@@ -3286,6 +3382,7 @@ class ContainerRuntime(BaseRuntime):
             _ACTIVE_MOUNT_TRANSLATION_SNAPSHOT.reset(snapshot_token)
         if module_requirements.get("run_as_host_user", False):
             _validate_host_visible_host_user_home_overlap(spec)
+        self.assert_platform_compatible(server, spec)
         self._ensure_runtime_image_available(spec)
         container_state = self._container_running_state(spec["container_name"])
         if container_state is False:

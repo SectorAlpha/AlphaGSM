@@ -9,10 +9,12 @@ def test_manual_tag_dispatch_cannot_sign_or_publish():
     assert "if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')" in publish
 
 
-def test_binary_evidence_can_retain_hidden_home_logs_without_uploading_configuration():
+def test_binary_evidence_uploads_only_verifier_owned_outputs():
     text = Path('.github/workflows/binary.yml').read_text()
     evidence = text.split('      - name: Retain acceptance diagnostics', 1)[1].split('      - name:', 1)[0]
-    assert 'include-hidden-files: true' in evidence
-    assert '*.installation.json' in evidence
+    assert 'binary-evidence/evidence/' in evidence
+    assert 'binary-docker-evidence/evidence/' in evidence
+    assert '**' not in evidence
+    assert 'include-hidden-files: true' not in evidence
     assert '*.secrets.json' not in evidence
     assert 'path: binary-evidence/' not in evidence

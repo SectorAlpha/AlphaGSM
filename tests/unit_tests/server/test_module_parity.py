@@ -65,6 +65,25 @@ def test_render_json_report_has_trailing_newline():
     assert output.endswith("\n")
 
 
+def test_report_preserves_process_and_container_platform_declarations():
+    declarations = {"process": {"platforms": ["linux"], "architectures": None},
+                    "docker": {"operating_system": "linux"}}
+    inventory = {"schema_version": 1, "modules": [{
+        "module": "teamfortress2", "platform_requirements": declarations,
+    }]}
+    rows = build_module_parity_rows(
+        catalog=ModuleCatalog(("teamfortress2",), {}, {}), repo_root=Path("."),
+        capability_inventory=inventory,
+    )
+    assert rows[0].platform_requirements == declarations
+    assert rows[0].platforms is None
+    output = render_markdown_report(rows)
+    assert "Process platforms" in output
+    assert "Process architectures" in output
+    assert "Docker OS" in output
+    assert "| linux | unknown | linux |" in output
+
+
 def test_checked_in_module_parity_report_matches_generated_artifacts():
     repo_root = Path(".")
     catalog = load_default_module_catalog()

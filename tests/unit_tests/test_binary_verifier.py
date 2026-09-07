@@ -1,6 +1,7 @@
 """Regression coverage for the artifact acceptance harness isolation."""
 
 import os
+import json
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -57,6 +58,40 @@ def test_artifact_failure_is_not_a_success(tmp_path, monkeypatch):
         runner.run("probe", "create", "gmodserver")
 
 
+def test_command_timeout_keeps_partial_output_in_owned_evidence(tmp_path, monkeypatch):
+    binary = tmp_path / "alphagsm"
+    binary.touch()
+    runner = verify_binary.BinaryRunner(binary, tmp_path / "acceptance")
+
+    def timeout(command, **kwargs):
+        raise subprocess.TimeoutExpired(command, 1, output=b"startup evidence", stderr=b"last error")
+
+    monkeypatch.setattr(verify_binary.subprocess, "run", timeout)
+    with pytest.raises(subprocess.TimeoutExpired):
+        runner.run("binarymc", "start", timeout=1)
+    transcript = (runner.evidence / "commands.log").read_text()
+    assert "startup evidence" in transcript
+    assert "last error" in transcript
+
+
+def test_failure_snapshot_is_not_overwritten_after_stop(tmp_path, monkeypatch):
+    binary = tmp_path / "alphagsm"
+    binary.touch()
+    runner = verify_binary.BinaryRunner(binary, tmp_path / "acceptance")
+    runner.last_server = "binarymc"
+    calls = []
+
+    def run(*args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, '{"before_stop":true}', "")
+
+    monkeypatch.setattr(runner, "run", run)
+    runner.capture_failure()
+    runner.capture_failure()
+    assert len(calls) == 2
+    assert json.loads((runner.evidence / "failure-doctor.json").read_text())["before_stop"]
+
+
 def test_verifier_configuration_uses_normal_user_lookup(tmp_path):
     binary = tmp_path / "alphagsm"
     binary.touch()
@@ -66,6 +101,97 @@ def test_verifier_configuration_uses_normal_user_lookup(tmp_path):
     assert config == expected / "alphagsm.conf"
     assert "backend = subprocess" in config.read_text()
     assert "ALPHAGSM_CONFIG_LOCATION" not in runner.env
+    system_config = (runner.binary.parent / "alphagsm.conf").read_text()
+    assert f"db_path = {expected / 'downloads/db.txt'}" in system_config
+    assert f"target_path = {expected / 'downloads/files'}" in system_config
+
+
+def test_failure_evidence_uses_owned_directory_and_never_scans_server_files(tmp_path, monkeypatch):
+    binary = tmp_path / "alphagsm"
+    binary.touch()
+    runner = verify_binary.BinaryRunner(binary, tmp_path / "acceptance")
+    runner.configure("docker", "subprocess")
+    runner.last_server = "binarymc"
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        output = '{"status":"failed","runtime":{"container_running":true}}' if "doctor" in command else "last console output"
+        return subprocess.CompletedProcess(command, 0, output, "")
+
+    monkeypatch.setattr(verify_binary.subprocess, "run", run)
+    monkeypatch.setattr(Path, "rglob", lambda *args: (_ for _ in ()).throw(AssertionError("must not scan game world")))
+    runner.capture_failure()
+    evidence = runner.work / "evidence"
+    assert json.loads((evidence / "failure-doctor.json").read_text())["runtime"]["container_running"]
+    assert "last console output" in (evidence / "failure-console.log").read_text()
+    assert "last console output" in (evidence / "failure-docker.log").read_text()
+    assert any(command[:4] == ["docker", "logs", "--tail", "100"] for command in calls)
+
+
+def test_lifecycle_captures_failure_before_stopping_container(tmp_path, monkeypatch):
+    binary = tmp_path / "alphagsm"
+    binary.touch()
+    jar = tmp_path / "server.jar"
+    jar.write_bytes(b"fixture")
+    runner = verify_binary.BinaryRunner(binary, tmp_path / "acceptance")
+    events = []
+
+    def run(*args, **kwargs):
+        events.append(args[1])
+        if args[1] == "setup":
+            install = runner.work / "minecraft-server"
+            install.mkdir()
+            for filename in ("minecraft_server.jar", "eula.txt", "server.properties"):
+                (install / filename).touch()
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(runner, "run", run)
+    monkeypatch.setattr(runner, "capture_failure", lambda: events.append("capture"))
+    monkeypatch.setattr(verify_binary, "free_port", lambda: 25565)
+    monkeypatch.setattr(verify_binary, "wait_for_info", lambda *args: (_ for _ in ()).throw(RuntimeError("readiness failed")))
+    with pytest.raises(RuntimeError, match="readiness failed"):
+        verify_binary.verify_lifecycle(runner, jar, "java", 1, "docker", None)
+    assert events.index("capture") < events.index("stop")
+
+
+def test_console_proof_reads_public_logs_without_scanning_root_owned_world(tmp_path, monkeypatch):
+    binary = tmp_path / "alphagsm"
+    binary.touch()
+    jar = tmp_path / "server.jar"
+    jar.write_bytes(b"fixture")
+    runner = verify_binary.BinaryRunner(binary, tmp_path / "acceptance")
+    calls = []
+
+    def run(*args, **kwargs):
+        calls.append(args)
+        if args[1] == "setup":
+            install = runner.work / "minecraft-server"
+            install.mkdir()
+            for filename in ("minecraft_server.jar", "eula.txt", "server.properties"):
+                (install / filename).touch()
+        output = {
+            "status": "Server isn't running" if any(call[1] == "stop" for call in calls) else "Server is running",
+            "query": "Server port is open", "info": "Server info (SLP",
+            "logs": "[Server thread/INFO]: [Server] binary-console-control-confirmed",
+        }.get(args[1], "")
+        return subprocess.CompletedProcess(args, 0, output, "")
+
+    monkeypatch.setattr(runner, "run", run)
+    monkeypatch.setattr(verify_binary, "free_port", lambda: 25565)
+    monkeypatch.setattr(verify_binary, "wait_for_info", lambda *args: None)
+    monkeypatch.setattr(verify_binary.socket, "create_connection", lambda *args, **kwargs:
+                        (_ for _ in ()).throw(ConnectionRefusedError()))
+    monkeypatch.setattr(Path, "rglob", lambda *args: (_ for _ in ()).throw(PermissionError("root-owned world")))
+    verify_binary.verify_lifecycle(runner, jar, "java", 1, "docker", None)
+    assert ("binarymc", "logs", "-n", "100") in calls
+
+
+def test_workflow_uploads_only_owned_evidence_directories():
+    workflow = Path(".github/workflows/binary.yml").read_text()
+    assert "binary-evidence/evidence/" in workflow
+    assert "binary-docker-evidence/evidence/" in workflow
+    assert "binary-docker-evidence/**/*.log" not in workflow
 
 
 def test_windows_updater_probe_boots_the_copied_native_executable(tmp_path, monkeypatch):

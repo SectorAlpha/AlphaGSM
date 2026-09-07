@@ -41,21 +41,48 @@ class BinaryRunner:
         self.home = self.work / "home"
         self.cwd = self.work / "unrelated working directory é"
         self.binary = self.work / "bin with spaces é" / Path(binary).name
-        for path in (self.home, self.cwd, self.binary.parent):
+        self.evidence = self.work / "evidence"
+        for path in (self.home, self.cwd, self.binary.parent, self.evidence):
             path.mkdir(parents=True, exist_ok=True)
         shutil.copy2(binary, self.binary)
         self.env = clean_environment(self.home)
         self.last_server = None
+        self.runtime = None
+        self.userconf = None
+        self._failure_captured = False
+
+    def _write_evidence(self, filename, text, *, append=False):
+        """Write only verifier-owned evidence, without traversing installed content."""
+        try:
+            with (self.evidence / filename).open("a" if append else "w", encoding="utf-8") as handle:
+                handle.write(text)
+        except OSError as exc:
+            print(f"Could not save {filename}: {exc}", flush=True)
+
+    def _record_command(self, command, result):
+        """Keep the CLI transcript in the narrow artifact upload directory."""
+        stdout = result.stdout.decode("utf-8", errors="replace") if isinstance(result.stdout, bytes) else result.stdout
+        stderr = result.stderr.decode("utf-8", errors="replace") if isinstance(result.stderr, bytes) else result.stderr
+        output = f"$ {' '.join(command)}\nexit: {result.returncode}\n{stdout or ''}{stderr or ''}\n"
+        self._write_evidence("commands.log", output, append=True)
 
     def run(self, *args, timeout=120, check=True):
         """Run a separate CLI process, failing on any unexpected command error."""
         command = [str(self.binary), *map(str, args)]
         if len(args) > 1 and not str(args[0]).startswith("-"):
             self.last_server = str(args[0])
-        result = subprocess.run(command, cwd=self.cwd, env=self.env, text=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                timeout=timeout, check=False)
         print(f"$ {self.binary.name} {' '.join(map(str, args))}", flush=True)
+        try:
+            result = subprocess.run(command, cwd=self.cwd, env=self.env, text=True,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    timeout=timeout, check=False)
+        except subprocess.TimeoutExpired as exc:
+            self._record_command(command, subprocess.CompletedProcess(command, "timeout", exc.stdout, exc.stderr))
+            raise
+        except OSError as exc:
+            self._record_command(command, subprocess.CompletedProcess(command, "launch error", "", str(exc)))
+            raise
+        self._record_command(command, result)
         if result.stdout:
             print(result.stdout.rstrip(), flush=True)
         if result.stderr:
@@ -65,17 +92,43 @@ class BinaryRunner:
         return result
 
     def capture_failure(self):
-        """Save and print artifact-native diagnostics before cleaning up failed runs."""
-        if not self.last_server:
+        """Capture live diagnostics once, before stop can remove the container."""
+        if not self.last_server or self._failure_captured:
             return
+        self._failure_captured = True
+        for filename, args in (
+            ("failure-doctor.json", ("doctor", "--json")),
+            ("failure-console.log", ("logs", "-n", "100")),
+        ):
+            try:
+                result = self.run(self.last_server, *args, check=False, timeout=30)
+                self._write_evidence(filename, result.stdout)
+                if result.stderr:
+                    self._write_evidence("capture-errors.log", result.stderr + "\n", append=True)
+            except (OSError, subprocess.SubprocessError) as exc:
+                self._write_evidence("capture-errors.log", f"{filename}: {exc}\n", append=True)
+        if self.runtime == "docker":
+            try:
+                result = subprocess.run(
+                    ["docker", "logs", "--tail", "100", "alphagsm-" + self.last_server],
+                    cwd=self.cwd, env=self.env, capture_output=True, text=True,
+                    timeout=30, check=False,
+                )
+                self._write_evidence("failure-docker.log", (result.stdout or "") + (result.stderr or ""))
+            except (OSError, subprocess.SubprocessError) as exc:
+                self._write_evidence("capture-errors.log", f"Docker logs: {exc}\n", append=True)
+
+    def capture_installation(self, name):
+        """Copy the one known, redacted provenance record without a recursive glob."""
+        if self.userconf is None:
+            return
+        path = self.userconf / "conf" / f"{name}.installation.json"
         try:
-            result = self.run(self.last_server, "doctor", "--json", check=False, timeout=30)
-            (self.work / "failure-doctor.json").write_text(result.stdout, encoding="utf-8")
-        except (OSError, subprocess.SubprocessError) as exc:
-            print(f"Could not collect artifact diagnostics: {exc}", flush=True)
-        for path in list(self.home.rglob("*.log")) + list((self.work / "minecraft-server").rglob("*.log")):
-            print(f"=== {path}: last 100 lines ===", flush=True)
-            print("\n".join(path.read_text(encoding="utf-8", errors="replace").splitlines()[-100:]), flush=True)
+            self._write_evidence("installation.json", path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            self._write_evidence("capture-errors.log", f"Installation provenance: {exc}\n", append=True)
 
     def configure(self, runtime, backend):
         """Use the normal per-user config lookup without config environment overrides."""
@@ -83,12 +136,17 @@ class BinaryRunner:
             "AppData/Local/alphagsm" if os.name == "nt" else ".alphagsm"
         )
         userconf.mkdir(parents=True, exist_ok=True)
+        self.userconf = userconf
+        self.runtime = runtime
         config = userconf / "alphagsm.conf"
-        config.write_text(
+        paths = (
             f"[core]\nalphagsm_path = {userconf}\n"
-            f"[server]\ndatapath = {userconf / 'conf'}\n"
             f"[downloader]\ndb_path = {userconf / 'downloads/db.txt'}\n"
             f"target_path = {userconf / 'downloads/files'}\n"
+        )
+        config.write_text(
+            paths +
+            f"[server]\ndatapath = {userconf / 'conf'}\n"
             f"[runtime]\nbackend = {runtime}\n"
             f"[process]\nbackend = {backend}\n"
             "[docker]\nbackend = subprocess\n"
@@ -96,6 +154,11 @@ class BinaryRunner:
             "sessiontag = AlphaGSM-Binary#\nkeeplogs = 1\n",
             encoding="utf-8",
         )
+        # The existing downloader reads system settings when no shared owner is
+        # configured. A normal sibling config pins those paths without changing
+        # production path semantics or depending on config environment overrides.
+        # Config-free --version/help have already run before this is written.
+        (self.binary.parent / "alphagsm.conf").write_text(paths, encoding="utf-8")
         return config
 
 
@@ -207,6 +270,7 @@ def verify_lifecycle(runner, jar, java, timeout, runtime, image):
     if runtime == "docker" and image:
         runner.run(name, "set", "image", image)
     runner.run(name, "setup", "-n", "-l", port, install, "-u", jar_copy.as_uri(), timeout=timeout)
+    runner.capture_installation(name)
     for filename in ("minecraft_server.jar", "eula.txt", "server.properties"):
         assert (install / filename).exists(), f"Missing setup output: {filename}"
     # Small real worlds keep acceptance practical on native release runners.
@@ -225,12 +289,15 @@ def verify_lifecycle(runner, jar, java, timeout, runtime, image):
         runner.run(name, "send", f"say {marker}")
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
-            logs = list(runner.home.rglob("*.log")) + list(install.rglob("*.log"))
-            if any(marker in path.read_text(encoding="utf-8", errors="replace") for path in logs):
+            logs = runner.run(name, "logs", "-n", "100", check=False, timeout=30)
+            if logs.returncode == 0 and marker in logs.stdout:
                 break
             time.sleep(1)
         else:
             raise RuntimeError("Message command did not reach the live server console")
+    except Exception:
+        runner.capture_failure()
+        raise
     finally:
         runner.run(name, "stop", timeout=timeout, check=sys.exc_info()[0] is None)
     deadline = time.monotonic() + 30
@@ -275,7 +342,11 @@ def main():
             runner.run("--help")
             if os.name == "nt":
                 verify_windows_updater(runner)
+            if os.name != "nt":
+                runner.binary.parent.chmod(0o755)
             runner.configure(args.runtime, args.backend)
+            if os.name != "nt":
+                runner.binary.parent.chmod(0o555)
             verify_resources(runner)
             if not args.resources_only:
                 verify_lifecycle(runner, args.minecraft_jar.resolve(), args.java,

@@ -60,3 +60,17 @@ pylint 10.00/10, actionlint, generated inventory/report freshness, and Linux bin
 compilation/version invocation. Final review added downloader and bulk-dispatch
 regressions; the assembled unit/lint checks passed again before pushing. Real game acceptance,
 Windows-native paths and all remote targets remain pending fresh CI evidence.
+
+## Additional user steering: platform compatibility
+
+- [x] Reject known game-specific OS/CPU incompatibilities before install/start.
+- [x] Check native executable format and preserve explicit Wine/Proton wrappers.
+- [x] Check Docker daemon OS independently of desktop host OS.
+- [ ] Confirm follow-up Windows cache and Docker console/evidence fixes in CI.
+
+Follow-up validation: 7,645 unit tests passed (three platform-specific skips),
+with focused coverage added for human-readable platform diagnostics afterward.
+First CI passed native binary lifecycle on Linux ARM64 and both macOS targets,
+and Linux x86-64 reached successful native lifecycle before its Docker check.
+Windows cache replacement and Docker permissions/evidence defects were reproduced
+and fixed with unit coverage; fresh CI remains the acceptance gate.

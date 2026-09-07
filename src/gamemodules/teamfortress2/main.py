@@ -25,6 +25,8 @@ from .maps import apply_configured_maps, ensure_map_state, tf2_map_command
 from .mods import apply_configured_mods, ensure_mod_state, tf2_mod_command
 
 steam_app_id = 232250
+# This integration installs srcds_run and Linux Steam client libraries.
+process_platforms = ("linux",)
 steam_anonymous_login_possible = True
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 

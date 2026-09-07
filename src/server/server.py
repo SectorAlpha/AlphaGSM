@@ -807,6 +807,11 @@ class Server(object):
             elif command == "doctor":
                 self.doctor(*args, **kwargs)
         elif command in self.module.commands:
+            if command == "update":
+                try:
+                    runtime_module.assert_platform_requirements(self, phase="update")
+                except runtime_module.RuntimeError as ex:
+                    raise ServerError(str(ex)) from ex
             self.module.command_functions[command](self, *args, **kwargs)
             if command == "update":
                 diagnostics_module.record_installation_provenance(self, "update")
@@ -830,6 +835,7 @@ class Server(object):
         self._resolve_setup_port_claims(explicit_keys)
         runtime_module.sync_runtime_metadata(self, save=True)
         try:
+            runtime_module.assert_platform_requirements(self, phase="setup")
             runtime_module.assert_host_install_requirements(self, phase="setup")
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
@@ -844,6 +850,7 @@ class Server(object):
             raise ServerError("Error: Can't start server that is already running")
         self._assert_start_ports_available()
         try:
+            runtime_module.assert_platform_requirements(self, phase="start")
             runtime_module.assert_host_install_requirements(self, phase="start")
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
@@ -866,7 +873,7 @@ class Server(object):
         runtime = runtime_module.get_runtime(self)
         if not runtime.is_running(self):
             raise ServerError("Error: Can't stop a server that isn't running")
-        if runtime_module.resolve_runtime_metadata(self).get("stop_mode") == "docker-stop":
+        if runtime_module.get_stop_mode(self) == "docker-stop":
             try:
                 runtime.kill(self)
             except runtime_module.RuntimeError as ex:

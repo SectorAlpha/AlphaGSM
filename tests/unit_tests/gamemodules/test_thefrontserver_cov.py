@@ -222,7 +222,7 @@ def test_runtime_start_reuses_one_manager_mount_snapshot(tmp_path, monkeypatch):
     monkeypatch.setattr(
         runtime,
         "_run_check_output",
-        lambda command, text=False: observed.append(command) or "ok",
+        lambda command, text=False: observed.append(command) or ("linux" if command[:2] == ["docker", "info"] else "ok"),
     )
 
     runtime.start(server)
