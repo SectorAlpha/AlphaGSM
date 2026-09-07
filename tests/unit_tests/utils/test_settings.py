@@ -131,3 +131,18 @@ def test_utils_settings_reexports_the_singleton():
     public_module = importlib.import_module("utils.settings")
 
     assert public_module.settings is settings_module.settings
+
+
+@pytest.mark.parametrize('bom', [False, True])
+def test_settings_use_utf8_independently_of_windows_default_codepage(tmp_path, monkeypatch, bom):
+    import builtins
+    path = tmp_path / 'settings.conf'
+    path.write_text('[core]\nalphagsm_path = C:/Users/User Name é/AlphaGSM\n',
+                    encoding='utf-8-sig' if bom else 'utf-8')
+    real_open = builtins.open
+    def windows_open(filename, mode='r', **kwargs):
+        kwargs.setdefault('encoding', 'cp1252')
+        return real_open(filename, mode, **kwargs)
+    monkeypatch.setattr(settings_module, 'open', windows_open, raising=False)
+    loaded = settings_module._loadsettings(str(path))
+    assert loaded.getsection('core').get('alphagsm_path') == 'C:/Users/User Name é/AlphaGSM'

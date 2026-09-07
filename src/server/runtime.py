@@ -10,6 +10,7 @@ but Docker is only selected when configuration opts into it.
 
 from __future__ import annotations
 
+from collections import deque
 import copy
 import contextvars
 import ctypes
@@ -2593,12 +2594,20 @@ class ProcessRuntime(BaseRuntime):
         screen.connect_to_screen(server.name)
 
     def show_logs(self, server, lines=50):
+        if not isinstance(lines, int) or lines < 0:
+            raise RuntimeError("Log line count must be a nonnegative integer")
         log_file = screen.logpath(server.name)
         if not os.path.isfile(log_file):
             raise RuntimeError("No log file found at: " + log_file)
-        result = sp.run(["tail", "-n", str(lines), log_file], check=False)
-        if result.returncode != 0:
-            raise RuntimeError("Failed to read log file: " + log_file)
+        if lines == 0:
+            return
+        try:
+            with open(log_file, encoding="utf-8", errors="replace") as handle:
+                recent_lines = deque(handle, maxlen=lines)
+        except OSError as ex:
+            raise RuntimeError("Failed to read log file: " + log_file) from ex
+        for line in recent_lines:
+            print(line, end="")
 
 
 def _resolve_effective_host_user(*, reject_root):

@@ -1524,22 +1524,14 @@ def test_send_raises_if_server_not_running(monkeypatch):
         srv.send("say hello")
 
 
-def test_logs_tails_logfile(monkeypatch, tmp_path):
+def test_logs_tails_logfile(monkeypatch, tmp_path, capsys):
     srv = make_server()
     log_file = tmp_path / "alpha.log"
     log_file.write_text("line1\nline2\nline3\n")
     monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(log_file))
-    ran = []
+    srv.logs(lines=2)
 
-    def fake_run(cmd, check):
-        ran.append(cmd)
-        return type("R", (), {"returncode": 0})()
-
-    monkeypatch.setattr(server_module.sp, "run", fake_run)
-
-    srv.logs(lines=10)
-
-    assert ran == [["tail", "-n", "10", str(log_file)]]
+    assert capsys.readouterr().out == "line2\nline3\n"
 
 
 def test_logs_raises_if_no_log_file(monkeypatch, tmp_path):
@@ -1550,16 +1542,16 @@ def test_logs_raises_if_no_log_file(monkeypatch, tmp_path):
         srv.logs()
 
 
-def test_logs_raises_if_tail_fails(monkeypatch, tmp_path):
+def test_logs_raises_if_log_read_fails(monkeypatch, tmp_path):
     srv = make_server()
     log_file = tmp_path / "alpha.log"
     log_file.write_text("data")
     monkeypatch.setattr(server_module.screen, "logpath", lambda name: str(log_file))
 
-    def fake_run(cmd, check):
-        return type("R", (), {"returncode": 1})()
+    def fail_open(*args, **kwargs):
+        raise PermissionError("access denied")
 
-    monkeypatch.setattr(server_module.sp, "run", fake_run)
+    monkeypatch.setattr("builtins.open", fail_open)
 
     with pytest.raises(server_module.ServerError, match="Failed to read"):
         srv.logs()

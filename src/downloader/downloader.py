@@ -172,21 +172,28 @@ def download(module, args):
     return path
 
 
+def _parse_database_record(line):
+    """Read the legacy five fields while retaining whitespace inside cache paths."""
+    prefix, date, active = line.rsplit(maxsplit=2)
+    module, args, path = prefix.split(maxsplit=2)
+    return module, args, path, date, active
+
+
 def getpathifexists(module, args):
     """Check if a path for the download is already in the database and if so return it else return None"""
     sargs = ",".join(quote(a) for a in args)
     # check if DB_PATH exists, if not make it
     if not os.path.exists(DB_PATH):
-        make_dirs = DB_PATH.rsplit("/", 1)[0]
+        make_dirs = os.path.dirname(DB_PATH) or "."
         try:
             os.makedirs(make_dirs)
         except FileExistsError:
             pass
-        open(DB_PATH, "a").close()
+        open(DB_PATH, "a", encoding="utf-8").close()
         return None
-    with open(DB_PATH, "r") as f:
+    with open(DB_PATH, "r", encoding="utf-8") as f:
         for line in f:
-            lmodule, largs, llocation, ldate, lactive = line.split()
+            lmodule, largs, llocation, ldate, lactive = _parse_database_record(line)
             if int(lactive) and lmodule == module and largs == sargs:
                 return llocation
     return None
@@ -291,9 +298,9 @@ def getpaths(module, sort=None, **filter):
     else:
         filterfn, sortfn = _findmodule(module).getfilter(sort=sort, **filter)
     downloads = []
-    with open(DB_PATH, "r") as f:
+    with open(DB_PATH, "r", encoding="utf-8") as f:
         for line in f:
-            lmodule, largs, llocation, ldate, lactive = line.split()
+            lmodule, largs, llocation, ldate, lactive = _parse_database_record(line)
             largs = [unquote(arg) for arg in largs.split(",")]
             if (module is None or lmodule == module) and filterfn(
                 lmodule, largs, llocation, ldate, lactive
@@ -306,9 +313,9 @@ def getpaths(module, sort=None, **filter):
 
 def getargsforpath(path):
     """Get the module and arguments for a download path or return None if not a valid path"""
-    with open(DB_PATH, "r") as f:
+    with open(DB_PATH, "r", encoding="utf-8") as f:
         for line in f:
-            lmodule, largs, llocation, ldate, lactive = line.split()
+            lmodule, largs, llocation, ldate, lactive = _parse_database_record(line)
             if llocation == path:
                 return (lmodule, [unquote(arg) for arg in largs.split(",")])
     return None

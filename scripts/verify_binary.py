@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Accept a shipped binary from a clean home and unrelated working directory.
 
-This stdlib-only harness can be copied outside the checkout. The CLI is always
-the copied native executable, never a Python script. Supply a downloaded real
+This stdlib-only controller and select_test_port.py can be copied outside the
+checkout. The CLI is always the copied native executable, never a Python script.
+Supply a downloaded real
 Minecraft server jar to exercise setup, persistent console control, and shutdown.
 """
 
@@ -17,6 +18,11 @@ import subprocess
 import sys
 import tempfile
 import time
+
+if __package__:
+    from . import select_test_port
+else:
+    import select_test_port
 
 
 def clean_environment(home, inherited=None):
@@ -38,7 +44,7 @@ class BinaryRunner:
 
     def __init__(self, binary, work):
         self.work = Path(work).resolve()
-        self.home = self.work / "home"
+        self.home = self.work / "home with spaces é"
         self.cwd = self.work / "unrelated working directory é"
         self.binary = self.work / "bin with spaces é" / Path(binary).name
         self.evidence = self.work / "evidence"
@@ -230,17 +236,8 @@ def verify_windows_updater(runner):
 
 
 def free_port():
-    """Find a localhost port available to both protocols used by ownership checks."""
-    for _attempt in range(100):
-        with socket.socket() as tcp, socket.socket(type=socket.SOCK_DGRAM) as udp:
-            tcp.bind(("127.0.0.1", 0))
-            port = tcp.getsockname()[1]
-            try:
-                udp.bind(("127.0.0.1", port))
-            except OSError:
-                continue
-            return port
-    raise RuntimeError("Could not allocate an unused TCP/UDP port")
+    """Use the shared non-ephemeral TCP/UDP loopback and wildcard port probe."""
+    return select_test_port.pick_free_port_group(1)
 
 
 def wait_for_info(runner, name, timeout):

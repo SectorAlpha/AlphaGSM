@@ -28,6 +28,7 @@ settings under `~/.alphagsm` on Linux/macOS or `%LOCALAPPDATA%\alphagsm` on
 Windows. The executable directory can be read-only. An optional `alphagsm.conf`
 beside the executable supplies system defaults; it is not required for first
 run. If you explicitly set `ALPHAGSM_CONFIG_LOCATION`, that file must exist.
+Save configuration files as UTF-8; an optional byte-order mark is accepted.
 
 For example, after installing the Java version required by Minecraft:
 

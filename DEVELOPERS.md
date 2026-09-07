@@ -738,3 +738,9 @@ The shared SteamCMD installation helper currently ships a Linux client and
 rejects non-Linux hosts before creating directories or downloading. A Docker
 game-runtime selection does not relocate the host install hook; use the Linux
 manager container for this provisioning path on other desktop operating systems.
+
+When upgrading an existing source environment that installed the obsolete
+`crontab` distribution, remove that distribution with
+`python -m pip uninstall crontab`, then install `requirements-runtime.txt` again.
+AlphaGSM uses the `python-crontab` distribution's `CronTab` API. A fresh binary or
+fresh environment does not need this cleanup.

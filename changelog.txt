@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-07
+- Portability: preserve Unicode/spaced cache paths, read configuration as UTF-8
+  (with optional BOM), and read process logs without an external tail command.
+- Binary acceptance: use the shared test-port allocator outside ephemeral ranges.
 - Runtime: retain discovery and stopping of legacy subprocess PID-file sessions
   after upgrading to the supervised backend; prevent duplicate starts.
 - Compatibility: check game-specific OS/CPU declarations before install/start,
@@ -19,6 +22,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
   container console mode for graceful shutdown.
 - Downloads: fix Windows setup failing with WinError 183 when updating an
   existing cache database; commit atomically under a crash-released process lock.
+- Downloads: create the cache database's parent directory using native paths,
+  fixing Windows setup permission errors and bare relative database filenames.
 - Binaries: bundle dynamic modules, curated assets, runtime image contexts and
   default settings; validate the copied executable outside the source tree on
   five Linux, macOS and Windows architecture targets in CI.

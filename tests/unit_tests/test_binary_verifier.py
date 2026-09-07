@@ -27,6 +27,23 @@ def test_artifact_environment_removes_checkout_and_python_configuration(tmp_path
     assert "VIRTUAL_ENV" not in env
 
 
+def test_binary_acceptance_uses_shared_non_ephemeral_port_selector(monkeypatch):
+    calls = []
+    monkeypatch.setattr(verify_binary.select_test_port, "pick_free_port_group",
+                        lambda count: calls.append(count) or 15432)
+    assert verify_binary.free_port() == 15432
+    assert calls == [1]
+
+
+def test_verifier_controller_imports_port_selector_when_launched_directly(tmp_path):
+    script = Path(verify_binary.__file__).resolve()
+    env = {key: value for key, value in os.environ.items() if key not in ("PYTHONPATH", "PYTHONHOME")}
+    result = subprocess.run([verify_binary.sys.executable, str(script), "--help"], cwd=tmp_path,
+                            env=env, capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    assert "--minecraft-jar" in result.stdout
+
+
 def test_verifier_executes_copied_artifact_directly(tmp_path, monkeypatch):
     original = tmp_path / "release" / "alphagsm"
     original.parent.mkdir()
@@ -46,6 +63,8 @@ def test_verifier_executes_copied_artifact_directly(tmp_path, monkeypatch):
     assert Path(command[0]).read_bytes() == original.read_bytes()
     assert kwargs["cwd"] == work / "unrelated working directory é"
     assert not any(key.startswith("ALPHAGSM_") for key in kwargs["env"])
+    assert runner.home == work / "home with spaces é"
+    assert kwargs["env"]["HOME"] == str(runner.home)
 
 
 def test_artifact_failure_is_not_a_success(tmp_path, monkeypatch):

@@ -188,7 +188,7 @@ def _loadsettings(filename, parent=None, *, missing_ok=False):
     )
 
     try:
-        with open(filename, "r") as f:
+        with open(filename, "r", encoding="utf-8-sig") as f:
             config.read_file(f)
     except FileNotFoundError as ex:
         if missing_ok and parent is None:
