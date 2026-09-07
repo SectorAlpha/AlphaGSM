@@ -36,6 +36,24 @@ def write_private_json(path, value):
         temporary.unlink(missing_ok=True)
 
 
+def publish_stopped_state(endpoint_path):
+    """Retire the endpoint despite brief Windows status-reader contention."""
+    stopped = {"stopped": True}
+    for attempt in range(20):
+        try:
+            endpoint_path.unlink(missing_ok=True)
+            break
+        except PermissionError as error:
+            # Windows cannot delete this file while another CLI reads it.
+            # A retained endpoint is harmless after the listener has closed;
+            # record persistent contention so the next start can clean it up.
+            if attempt == 19:
+                stopped["endpoint_cleanup_error"] = str(error)
+            else:
+                time.sleep(0.05)
+    write_private_json(endpoint_path.with_name("stopped.json"), stopped)
+
+
 def read_message(connection):
     """Read one newline-delimited JSON object with a strict size limit."""
     payload = bytearray()
@@ -236,8 +254,7 @@ def _serve(request_path):
                 job.close()
         if writer is not None:
             writer.close()
-        endpoint_path.unlink(missing_ok=True)
-        write_private_json(request_path.with_name("stopped.json"), {"stopped": True})
+        publish_stopped_state(endpoint_path)
 
 
 if __name__ == "__main__":

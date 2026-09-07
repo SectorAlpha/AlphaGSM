@@ -214,14 +214,22 @@ def test_windows_console_break_reaches_server(tmp_path):
     try:
         log = Path(backend.logpath("console"))
         deadline = time.monotonic() + 10
-        while "ready" not in log.read_text() and time.monotonic() < deadline:
+        while "ready" not in log.read_text().splitlines() and time.monotonic() < deadline:
             time.sleep(0.05)
-        assert "ready" in log.read_text()
+        contents = log.read_text()
+        assert "ready" in contents.splitlines(), contents
         backend.send_input("console", "\003")
+        deadline = time.monotonic() + 10
         while backend.is_running("console") and time.monotonic() < deadline:
             time.sleep(0.05)
-        assert not backend.is_running("console")
-        assert "graceful break" in log.read_text()
+        stopped = backend._session_path("console") / "stopped.json"
+        while not stopped.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        contents = log.read_text()
+        assert not backend.is_running("console"), contents
+        assert stopped.exists(), contents
+        assert "graceful break" in contents.splitlines(), contents
+        assert "Traceback" not in contents, contents
     finally:
         if backend.is_running("console"):
             backend.kill("console")

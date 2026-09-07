@@ -33,6 +33,18 @@ def test_java_runtime_image_keeps_bootstrap_tools_and_supported_temurin_jres():
     assert missing == []
 
 
+def test_java_runtime_image_uses_utf8_for_native_unicode_cache_paths():
+    """Java's file.encoding alone does not control canonical jar path decoding."""
+    text = JAVA_DOCKERFILE.read_text(encoding="utf-8")
+    environment = {}
+    for line in text.replace("\\\n", " ").splitlines():
+        if line.startswith("ENV "):
+            environment.update(item.split("=", 1) for item in line[4:].split())
+
+    assert environment.get("LANG") == "C.UTF-8"
+    assert environment.get("LC_ALL") == "C.UTF-8"
+
+
 def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
     text = STEAMCMD_LINUX_DOCKERFILE.read_text(encoding="utf-8")
 

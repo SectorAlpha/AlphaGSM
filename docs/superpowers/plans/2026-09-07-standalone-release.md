@@ -74,3 +74,14 @@ First CI passed native binary lifecycle on Linux ARM64 and both macOS targets,
 and Linux x86-64 reached successful native lifecycle before its Docker check.
 Windows cache replacement and Docker permissions/evidence defects were reproduced
 and fixed with unit coverage; fresh CI remains the acceptance gate.
+
+## Final portability follow-up
+
+Local verification passed 7,681 unit tests with four platform-specific skips;
+lint scored 10.00/10 and workflow validation passed. The pending fixes cover
+Windows endpoint-reader contention during shutdown and the Java Docker image's
+native filename encoding for Unicode cache paths. An independent review found
+no blocker in supervisor cleanup. Native game lifecycles passed on Linux
+x86-64/ARM64 and both macOS targets; these two latest fixes still require fresh
+Windows and rebuilt-image Docker CI confirmation. No real integration tests
+were run locally after the user's CI-only instruction.

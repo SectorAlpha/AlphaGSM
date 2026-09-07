@@ -65,6 +65,7 @@ jobs:
             tests/unit_tests/server/test_platform_support.py tests/unit_tests/server/test_container_platform.py \
             tests/unit_tests/downloader/test_database_paths.py tests/unit_tests/server/test_process_logs.py \
             tests/unit_tests/screen/test_managed_legacy.py \
+            tests/unit_tests/screen/test_supervisor_cleanup.py \
             tests/unit_tests/utils/test_settings.py::test_settings_use_utf8_independently_of_windows_default_codepage
       - name: Prepare Windows release signing identity
         if: inputs.release && runner.os == 'Windows'
