@@ -47,6 +47,11 @@ invocations without installing screen or tmux. Its `connect` command displays
 logs; use `send` for console input. Unix cron activation requires cron; Windows
 startup scheduling is not supplied by these binaries.
 
+After an upgrade, subprocess servers started by an older AlphaGSM version
+remain visible and stoppable through their existing PID files. Restart each
+server with the updated manager to enable persistent console input. Until then,
+stopping retains the older backend's signal/kill behavior.
+
 ## Platform coverage
 
 The binary workflow builds and tests these explicit targets using

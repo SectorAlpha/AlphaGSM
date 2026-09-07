@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-07
+- Runtime: retain discovery and stopping of legacy subprocess PID-file sessions
+  after upgrading to the supervised backend; prevent duplicate starts.
 - Compatibility: check game-specific OS/CPU declarations before install/start,
   reject incompatible native executable formats and Linux SteamCMD installers
   on unsupported hosts, and verify the Docker daemon

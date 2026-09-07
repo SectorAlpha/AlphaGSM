@@ -126,9 +126,14 @@ class ManagedSubprocessBackend(SubprocessBackend):
             raise
 
     def send_input(self, name, text):
+        if not self._session_path(name).exists():
+            return super().send_input(name, text)
         self._request(name, "input", text=text)
+        return None
 
     def is_running(self, name):
+        if not self._session_path(name).exists():
+            return super().is_running(name)
         try:
             return bool(self._request(name, "ping")["running"])
         except ProcessError:
@@ -138,20 +143,29 @@ class ManagedSubprocessBackend(SubprocessBackend):
         session = self._session_path(name)
         try:
             with state_lock(session, timeout=5):
+                if not session.exists():
+                    return super().kill(name)
                 self._request(name, "kill")
                 with state_lock(session / "owner", timeout=5):
                     pass
                 shutil.rmtree(session)
         except OSError as error:
             raise ProcessError("Supervisor did not finish shutdown: " + str(error)) from error
+        return None
 
     def list_sessions(self):
         directory = Path(self._log_path)
+        seen = set()
         if directory.exists():
             for request_path in directory.glob(".session-*/request.json"):
                 try:
                     name = json.loads(request_path.read_text(encoding="utf-8"))["name"]
-                    if self.is_running(name):
+                    if name not in seen and self.is_running(name):
+                        seen.add(name)
                         yield name
                 except (OSError, ValueError, KeyError):
                     continue
+        for name in super().list_sessions():
+            if name not in seen:
+                seen.add(name)
+                yield name
