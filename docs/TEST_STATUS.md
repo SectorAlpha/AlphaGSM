@@ -54,6 +54,10 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   Docker lanes. Terraria 1.4.5.8 creates its world and listens, then crashes with
   `ObjectDisposedException` in `DebugNetworkStream` after TCP probes. Those
   Source and Terraria failures remain unresolved; no new game pass is claimed.
+  Source diagnosis now adds native query attempts followed by bounded GDB stack
+  capture in CI. CSS and GMod process passes provide the comparison; Docker
+  sleeping-thread snapshots alone do not establish the cause. Runtime changes
+  remain pending that evidence.
 
 - [PR #36 run 34213901844](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34213901844)
   completed at commit `51ad45e4` with 183 successful and 90 failed checks

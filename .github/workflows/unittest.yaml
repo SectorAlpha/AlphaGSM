@@ -632,6 +632,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
       ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
+      ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
@@ -672,6 +673,7 @@ jobs:
             set -e
             cd '$GITHUB_WORKSPACE'
             export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
+            export ALPHAGSM_DIAGNOSTIC_IMAGE='${ALPHAGSM_DIAGNOSTIC_IMAGE}'
             export PYTHONPATH=.:src
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
@@ -728,6 +730,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
       ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
+      ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
@@ -762,6 +765,7 @@ jobs:
             set -e
             cd '$GITHUB_WORKSPACE'
             export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
+            export ALPHAGSM_DIAGNOSTIC_IMAGE='${ALPHAGSM_DIAGNOSTIC_IMAGE}'
             export PYTHONPATH=.:src
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
@@ -1041,6 +1045,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
       ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
+      ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
@@ -1074,6 +1079,7 @@ jobs:
             set -e
             cd '$GITHUB_WORKSPACE'
             export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
+            export ALPHAGSM_DIAGNOSTIC_IMAGE='${ALPHAGSM_DIAGNOSTIC_IMAGE}'
             export PYTHONPATH=.:src
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1

@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-08
+- CI diagnostics: probe native Source queries on readiness failures and capture
+  bounded native stack traces in an isolated debugger container, preserving
+  the game container's security settings and the original test failure.
 - TeamSpeak 3: pace ServerQuery commands below the default flood limit so
   consecutive readiness, query and info checks do not ban the Docker client.
 - CI: refresh the generated Quake Live capability inventory for factory and

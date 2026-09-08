@@ -554,6 +554,30 @@ Docker diagnostics include exit/OOM state, process wait channels, stdin targets
 and selected Steam log tails; existing redaction applies before logging. They
 exclude process arguments and environments.
 
+For Source readiness failures, CI tries `query` and `info --json` before debugger
+attachment. This separates a missing console marker from an unresponsive engine.
+`ALPHAGSM_DIAGNOSTIC_IMAGE` enables native stack capture using the already-loaded
+integration image (which includes GDB). A temporary container joins only the
+target's PID namespace, has no network, uses a read-only root, drops all
+capabilities except `SYS_PTRACE`, and keeps the default seccomp profile. The game
+container's permissions remain unchanged. GDB skips initialization files,
+auto-loading and debuginfod; it prints stack frames without arguments or locals.
+Each attachment is limited to eight seconds, with at most two Source engine
+processes and thirty seconds for the debugger container. Cleanup removes the
+temporary container even after a Docker CLI timeout. Capture briefly pauses the
+failed engine; native queries therefore happen first. Existing redaction also
+applies to debugger output, and diagnostic failures never replace test failures.
+
+The current Source investigation compares [run 34250522498](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34250522498):
+CSS and GMod process lifecycles passed; Docker still timed out after loading
+Steam libraries. GMod's corrected cwd is `/srv/server`. The Docker snapshots
+show a sleeping engine main thread and successful HTTP connectivity checks,
+but neither proves whether Steam initialization is blocked or the engine is
+running without the expected marker. Missing appinfo caches and early
+`SteamAPI_Init` warnings are observations, not established causes. The next CI
+capture must identify the waiting function and whether native A2S responds
+before changing libraries, networking or runtime permissions.
+
 Keep `ALPHAGSM_MINECRAFT_RELEASE_ID` and `ALPHAGSM_MINECRAFT_SERVER_URL`
 paired and preserve them when switching the CI runner user. The shared Minecraft
 fixture helper uses those pins without consulting the moving latest release;

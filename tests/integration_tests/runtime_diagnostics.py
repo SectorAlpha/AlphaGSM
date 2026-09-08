@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import uuid
 
 
 def collect_process_diagnostics(proc_root="/proc", home_roots=None):
@@ -26,7 +27,7 @@ def collect_process_diagnostics(proc_root="/proc", home_roots=None):
         row = {"pid": int(process.name), "comm": read_text(process / "comm")}
         row["status"] = [
             line for line in read_text(process / "status").splitlines()
-            if line.startswith(("State:", "Uid:", "Threads:"))
+            if line.startswith(("State:", "Uid:", "Threads:", "Seccomp:", "NoNewPrivs:", "CapEff:"))
         ]
         row["wchan"] = read_text(process / "wchan")
         try:
@@ -77,17 +78,48 @@ def collect_process_diagnostics(proc_root="/proc", home_roots=None):
     return {"processes": process_rows, "steam_logs": log_rows, "steam_state": steam_state}
 
 
+def collect_source_stacks(proc_root="/proc"):
+    """Briefly attach to stalled Source engines; omit arguments and locals."""
+
+    results = []
+    for process in sorted(Path(proc_root).glob("[0-9]*"))[:32]:
+        try:
+            name = (process / "comm").read_text().strip()
+        except OSError:
+            continue
+        if name not in ("srcds_linux", "srcds_linux64", "hlds_linux"):
+            continue
+        command = [
+            "gdb", "-q", "-nx", "-nh", "-batch",
+            "-iex", "set auto-load off", "-iex", "set debuginfod enabled off",
+            "-iex", "set print frame-arguments none", "-iex", "set print entry-values no",
+            "-ex", "set sysroot " + str(process / "root"),
+            "-ex", "attach " + process.name,
+            "-ex", "thread apply all bt 12", "-ex", "detach",
+        ]
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, check=False, timeout=8)
+            output = (result.stdout + result.stderr)[-24000:]
+            returncode = result.returncode
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            output, returncode = "Stack capture unavailable: " + type(exc).__name__, 1
+        results.append({"pid": int(process.name), "comm": name, "returncode": returncode, "stack": output})
+        if len(results) == 2:
+            break
+    return results
+
+
 def collect_docker_runtime_diagnostics(container_name, *, run_command=subprocess.run):
     """Return bounded command results, including unavailable/exited containers."""
 
-    def run(command):
+    def run(command, timeout=10):
         try:
-            return run_command(command, capture_output=True, text=True, check=False, timeout=10)
+            return run_command(command, capture_output=True, text=True, check=False, timeout=timeout)
         except subprocess.TimeoutExpired as exc:
             output = exc.stdout or ""
             if isinstance(output, bytes):
                 output = output.decode("utf-8", errors="replace")
-            return subprocess.CompletedProcess(command, 124, output, "Diagnostic timed out after 10s")
+            return subprocess.CompletedProcess(command, 124, output, f"Diagnostic timed out after {timeout}s")
         except OSError as exc:
             return subprocess.CompletedProcess(command, 1, "", f"Diagnostic unavailable: {exc}")
 
@@ -111,4 +143,35 @@ def collect_docker_runtime_diagnostics(container_name, *, run_command=subprocess
         results.append(("Docker process wait states and Steam logs", run([
             "docker", "exec", container_name, "python3", "-c", script,
         ])))
+        image = os.environ.get("ALPHAGSM_DIAGNOSTIC_IMAGE")
+        try:
+            processes = json.loads(results[-1][1].stdout).get("processes", [])
+        except (ValueError, AttributeError):
+            processes = []
+        if image and any(isinstance(row, dict) and row.get("comm") in (
+            "srcds_linux", "srcds_linux64", "hlds_linux"
+        ) for row in processes):
+            results.append(("Docker daemon version", run([
+                "docker", "version", "--format", "{{json .Server}}",
+            ])))
+            script = (
+                "import json, subprocess\nfrom pathlib import Path\n"
+                + inspect.getsource(collect_source_stacks)
+                + "\nprint(json.dumps(collect_source_stacks()))\n"
+            )
+            # Only the short-lived debugger gets ptrace permission. The game
+            # retains its original capabilities, seccomp profile and network.
+            probe_name = "alphagsm-diagnostic-" + uuid.uuid4().hex
+            try:
+                results.append(("Source native stack traces", run([
+                    "docker", "run", "--rm", "--pull", "never", "--name", probe_name,
+                    "--pid", "container:" + container_name, "--network", "none",
+                    "--cap-drop", "ALL", "--cap-add", "SYS_PTRACE",
+                    "--security-opt", "no-new-privileges", "--read-only",
+                    "--tmpfs", "/tmp:rw,noexec,nosuid,size=32m",
+                    "--entrypoint", "python3", image, "-c", script,
+                ], timeout=30)))
+            finally:
+                # Killing a timed-out Docker CLI does not stop its container.
+                run(["docker", "rm", "-f", probe_name])
     return results

@@ -44,6 +44,7 @@ RUN apt-get update -qq \
         jq python3-pip python3-venv \
         docker.io \
         gcc make \
+        gdb \
  && rm -rf /var/lib/apt/lists/*
 
 # screen stores its session sockets in /run/screen.  Ubuntu's tmpfiles.d

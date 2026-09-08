@@ -167,3 +167,29 @@ def test_doctor_capture_returns_the_sanitized_persisted_payload(monkeypatch, tmp
     assert payload == json.loads(next(tmp_path.glob("*.json")).read_text())
     assert payload["runtime"]["container_name"] == "fixture"
     assert "capture-secret" not in repr(payload)
+
+
+def test_source_timeout_attempts_native_queries_before_stack_capture(monkeypatch):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    diagnostics = importlib.import_module("tests.integration_tests.runtime_diagnostics")
+    report = doctor(STOPPED)
+    report["runtime"]["command"] = ["./srcds_run", "-game", "cstrike"]
+    monkeypatch.setattr(helpers, "_capture_doctor_json", lambda *_args: report)
+    calls = []
+
+    def run(_env, _server, command, *args, **kwargs):
+        calls.append((command, args))
+        if command == "query":
+            assert kwargs["timeout"] == 15
+            raise subprocess.TimeoutExpired("query", 15)
+        return subprocess.CompletedProcess([], 0, '{"protocol":"a2s"}', "")
+
+    def collect(_name):
+        calls.append(("stacks", ()))
+        return []
+
+    monkeypatch.setattr(helpers, "run_alphagsm", run)
+    monkeypatch.setattr(diagnostics, "collect_docker_runtime_diagnostics", collect)
+    helpers._dump_alphagsm_runtime_logs({}, "fixture")
+    assert calls[:3] == [("query", ()), ("info", ("--json",)), ("stacks", ())]
+    assert [call[0] for call in calls[-2:]] == ["logs", "doctor"]

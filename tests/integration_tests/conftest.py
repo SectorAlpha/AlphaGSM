@@ -1252,6 +1252,19 @@ def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
 
     report = _capture_doctor_json(env, server_name, "readiness")
     runtime = report.get("runtime", {}) if isinstance(report, dict) else {}
+    if isinstance(runtime, dict) and any(
+        os.path.basename(str(arg)) in (
+            "srcds_run", "srcds_run_64", "srcds_linux", "srcds_linux64", "hlds_run", "hlds_linux"
+        ) for arg in runtime.get("command", [])
+    ):
+        # A missing log marker is not proof that the engine cannot serve queries.
+        # Probe before attaching a debugger, which briefly suspends the target.
+        for command in (("query",), ("info", "--json")):
+            def probe_source(command=command):
+                result = run_alphagsm(env, server_name, *command, timeout=15)
+                log_command_result("alphagsm", result, label="Source " + " ".join(command))
+
+            _run_readiness_diagnostic("Source " + " ".join(command), probe_source)
     if isinstance(runtime, dict) and runtime.get("resolved_runtime") == "docker" and runtime.get("container_name"):
         def dump_docker_processes():
             from tests.integration_tests.runtime_diagnostics import collect_docker_runtime_diagnostics
