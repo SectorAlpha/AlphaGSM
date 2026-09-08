@@ -64,6 +64,7 @@ def test_get_start_command_includes_instance_config_and_queryport(tmp_path):
         "-Port=7777",
         "-QueryPort=27015",
         "-TowerServerINI=ittu.ini",
+        "-nosteamclient",
         "-log",
     ]
     assert cwd == str(tmp_path) + "/"
@@ -83,3 +84,27 @@ def test_get_start_command_requires_executable(tmp_path):
 
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_prestart_stages_bundled_steamclient_next_to_executable(tmp_path):
+    server = DummyServer("ittu")
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    source = tmp_path / "linux64" / "steamclient.so"
+    source.parent.mkdir()
+    source.write_bytes(b"current bundled steam client")
+    destination = tmp_path / "Tower" / "Binaries" / "Linux" / "steamclient.so"
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"outdated steam client")
+
+    mod.prestart(server)
+
+    assert destination.read_bytes() == source.read_bytes()
+    assert not destination.is_symlink()
+
+
+def test_prestart_reports_missing_steamclient(tmp_path):
+    server = DummyServer("ittu")
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+
+    with pytest.raises(ServerError, match="steamclient.so"):
+        mod.prestart(server)

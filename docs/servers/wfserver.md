@@ -62,6 +62,9 @@ alphagsm mywfserver backup
 
 ## Notes
 
+Docker launches include the shared SteamCMD SDK mounts required to load
+`steamclient.so`.
+
 - Module name: `wfserver`
 - Default port: 44400
 

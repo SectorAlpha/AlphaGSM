@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an owned Subnautica installation path for Nitrox.
 echo "Smoke test for subnauticaserver is ENABLED (BYO) - Nitrox requires an owned Subnautica installation path"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

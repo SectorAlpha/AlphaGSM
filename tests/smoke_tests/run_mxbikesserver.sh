@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied dedicated-server archive URL.
 echo "Smoke test for mxbikesserver is ENABLED (BYO) - requires a user-provided dedicated-server archive URL"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

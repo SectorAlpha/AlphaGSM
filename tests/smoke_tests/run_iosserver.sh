@@ -4,7 +4,7 @@
 # branch before setup. Anonymous SteamCMD fails to set those branches, and
 # the public branch still crashes on Linux. See docs/servers/iosserver.md.
 echo "Smoke test for iosserver is ENABLED (AUTH) - authenticate Steam/SteamCMD for app 673990 branch iosoccer2025 or beta before setup; see docs/servers/iosserver.md"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

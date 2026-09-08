@@ -29,6 +29,17 @@ run_alphagsm() {
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
+require_ets2_exports() {
+  local exports_dir="${ALPHAGSM_ETS2_SERVER_PACKAGES_DIR:-}"
+  if [[ -z "$exports_dir" ]]; then
+    echo "SKIPPED: ETS2 is ENABLED (BYO); set ALPHAGSM_ETS2_SERVER_PACKAGES_DIR to owned-client exports containing nonempty server_packages.sii and server_packages.dat" >&2
+    exit 77
+  fi
+  if [[ ! -s "$exports_dir/server_packages.sii" || ! -s "$exports_dir/server_packages.dat" ]]; then
+    echo "Invalid ALPHAGSM_ETS2_SERVER_PACKAGES_DIR: expected nonempty server_packages.sii and server_packages.dat in $exports_dir" >&2
+    exit 1
+  fi
+}
 
 cleanup() {
   set +e
@@ -39,6 +50,7 @@ cleanup() {
 
 trap cleanup EXIT
 
+require_ets2_exports
 require_cmd "$PYTHON_BIN"
 require_cmd screen
 
@@ -76,9 +88,17 @@ echo "Using port: $PORT"
 run_create_or_skip_disabled "$SERVER_NAME" create ets2server
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
+ETS2_HOME="$INSTALL_DIR/.local/share/Euro Truck Simulator 2"
+mkdir -p "$ETS2_HOME"
+cp "$ALPHAGSM_ETS2_SERVER_PACKAGES_DIR/server_packages.sii" "$ETS2_HOME/"
+cp "$ALPHAGSM_ETS2_SERVER_PACKAGES_DIR/server_packages.dat" "$ETS2_HOME/"
+
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "$EXPECTED_PROTOCOL" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

@@ -121,6 +121,20 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Tower Unite server."
 
 
+def prestart(server):
+    """Stage the bundled Steam client beside Tower's executable, as upstream requires."""
+
+    source = os.path.join(server.data["dir"], "linux64", "steamclient.so")
+    destination = os.path.join(_config_dir(server), "steamclient.so")
+    if not os.path.isfile(source):
+        raise ServerError("Tower Unite requires linux64/steamclient.so; run update with validation.")
+    os.makedirs(_config_dir(server), exist_ok=True)
+    if os.path.islink(destination):
+        os.unlink(destination)
+    shutil.copyfile(source, destination)
+    _ensure_instance_config(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Tower Unite dedicated server."""
 
@@ -139,6 +153,7 @@ def get_start_command(server):
             "-MultiHome=0.0.0.0",
             *dynamic_args,
             "-TowerServerINI=%s" % (_config_name(server),),
+            "-nosteamclient",
             "-log",
         ],
         server.data["dir"],

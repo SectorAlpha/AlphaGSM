@@ -2,7 +2,7 @@
 # ENABLED (BYO): set url to a working SA-MP dedicated-server archive or stage
 # samp03svr in <install_dir> before setup/start.
 echo "Smoke test for sampserver requires ENABLED (BYO) input: set url to a working SA-MP dedicated-server archive or stage samp03svr in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

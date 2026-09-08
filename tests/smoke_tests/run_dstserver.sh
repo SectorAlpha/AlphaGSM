@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with operator-supplied Klei token/config.
 echo "Smoke test for dstserver is ENABLED (BYO) - provide cluster_token.txt and cluster config under <install_dir>/<confdir>/<cluster>/ (default <install_dir>/DoNotStarveTogether/<server-name>/)"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

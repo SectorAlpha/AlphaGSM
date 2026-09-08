@@ -41,7 +41,7 @@ pick_free_port_group() {
 require_proton() {
   if ! command -v wine >/dev/null 2>&1; then
     echo "Wine not installed — skipping Windows-binary smoke test (CI)" >&2
-    exit 0
+    exit 77
   fi
 }
 
@@ -52,12 +52,12 @@ require_command_or_skip() {
   local message="${2:-Required command not found: $command_name — skipping smoke test (CI)}"
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "$message" >&2
-    exit 0
+    exit 77
   fi
 }
 
 # run_create_or_skip_disabled SERVER_NAME create MODULE_NAME
-# Runs "alphagsm create" and exits 0 if the module is currently disabled.
+# Runs "alphagsm create" and exits 77 if the module is currently disabled.
 # Call this instead of plain run_alphagsm for the create step so that servers
 # listed in disabled_servers.conf produce a graceful skip rather than a failure.
 run_create_or_skip_disabled() {
@@ -71,12 +71,12 @@ run_create_or_skip_disabled() {
     if is_supported_prerequisite_skip_output "$output_file"; then
       echo "Server module requires supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
       rm -f "$output_file"
-      exit 0
+      exit 77
     fi
     if grep -q 'is currently disabled' "$output_file"; then
       echo "Server module is currently disabled — skipping smoke test (CI)" >&2
       rm -f "$output_file"
-      exit 0
+      exit 77
     fi
     rm -f "$output_file"
     return $rc
@@ -96,7 +96,7 @@ run_setup_or_skip_steamcmd() {
     if is_supported_prerequisite_skip_output "$output_file"; then
       echo "Setup needs supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
       rm -f "$output_file"
-      exit 0
+      exit 77
     fi
     if grep -q 'Recommended free port set:' "$output_file"; then
       local recommendation_line recommended_port
@@ -139,11 +139,6 @@ run_setup_or_skip_steamcmd() {
         fi
       fi
     fi
-    if grep -qE 'Failed to install app|No subscription|Missing configuration|No such file or directory|returned non-zero exit status|Error extracting download|Can.t download file|step::read_patch_meta_from_github::metadata_filter runtime error|jq: error .*Cannot iterate over null|<urlopen error \[Errno 101\] Network is unreachable>|Temporary failure in name resolution' "$output_file"; then
-      echo "Setup failed with known SteamCMD issue — skipping smoke test"
-      rm -f "$output_file"
-      exit 0
-    fi
     rm -f "$output_file"
     return $rc
   fi
@@ -162,7 +157,7 @@ run_alphagsm_or_skip_supported_prereq() {
     if is_supported_prerequisite_skip_output "$output_file"; then
       echo "Command needs supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
       rm -f "$output_file"
-      exit 0
+      exit 77
     fi
     rm -f "$output_file"
     return $rc
@@ -190,12 +185,7 @@ run_start_with_port_retry() {
     if is_supported_prerequisite_skip_output "$output_file"; then
       echo "Start needs supported BYO/auth prerequisites — skipping smoke test (CI)" >&2
       rm -f "$output_file"
-      exit 0
-    fi
-    if grep -qE 'no space left on device|Steamcmd needs 250MB of free disk space to update' "$output_file"; then
-      echo "Start failed due to CI disk exhaustion while staging runtime content — skipping smoke test (CI)" >&2
-      rm -f "$output_file"
-      exit 0
+      exit 77
     fi
     if grep -qE "$PORT_CONFLICT_MARKERS_REGEX" "$output_file" && grep -q 'Recommended free port set:' "$output_file"; then
       recommendation_line=$(grep 'Recommended free port set:' "$output_file" | tail -n 1)
@@ -308,6 +298,23 @@ wait_for_glob_ready_strict() {
   local timeout_seconds="$2"
   local pattern="${3:-ready|started|listening|Done}"
   wait_for_glob_ready "$log_glob" "$timeout_seconds" "$pattern" "required"
+}
+
+# capture_application_logs LOG_PATH [LOG_PATH...]
+# Preserve application logs from mounted server files before cleanup.
+capture_application_logs() {
+  local log_path
+  local found=0
+  for log_path in "$@"; do
+    if [[ -f "$log_path" ]]; then
+      found=1
+      echo "[diagnostic] Application log tail: $log_path" >&2
+      tail -150 "$log_path" >&2 || true
+    fi
+  done
+  if [[ "$found" -eq 0 ]]; then
+    echo "[diagnostic] No application log files found" >&2
+  fi
 }
 
 # capture_runtime_diagnostics SERVER_NAME

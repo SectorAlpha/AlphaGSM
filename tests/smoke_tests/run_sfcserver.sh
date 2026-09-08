@@ -2,7 +2,7 @@
 
 # ENABLED (BYO): supported with an official SourceForts Classic ModDB full-version tree staged locally.
 echo "Smoke test for sfcserver is ENABLED (BYO) - download the official SourceForts Classic full-version archive from ModDB, then stage the extracted sfclassic tree in <install_dir>/sfclassic/ so sfclassic/maps/sf_astrodome.bsp exists."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

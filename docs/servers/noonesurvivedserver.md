@@ -65,8 +65,8 @@ alphagsm mynoonesur backup
 - Default port: `7777`
 - Default query port: `27015`
 - Current supported validation lane on Linux: Docker-backed `wine-proton`
-- On Linux, `query`, `info`, and `info --json` currently use generic `tcp`
-  reachability on the managed game port instead of A2S on `queryport`
+- `query`, `info`, and `info --json` use native Steam A2S on `queryport`,
+  including Linux Wine/Proton launches.
 
 ## Developer Notes
 

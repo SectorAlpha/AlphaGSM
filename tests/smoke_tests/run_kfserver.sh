@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 215360.
 echo "Smoke test for kfserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Killing Floor dedicated server app 215360 before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -508,13 +508,13 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return the TCP endpoint used by the COD: World at War query command."""
+    """Return the native Quake-style UDP status endpoint."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def get_info_address(server):
-    """Return the TCP endpoint used by the COD: World at War info command."""
+    """Return the native status endpoint used by COD: World at War info."""
 
     return get_query_address(server)
 

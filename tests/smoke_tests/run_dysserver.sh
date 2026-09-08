@@ -5,7 +5,7 @@
 # setup; anonymous SteamCMD returns No subscription on that path.
 # See docs/TEST_STATUS.md and docs/servers/dysserver.md for details.
 echo "Smoke test for dysserver requires authenticated Steam or SteamCMD access - see docs/TEST_STATUS.md and docs/servers/dysserver.md"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

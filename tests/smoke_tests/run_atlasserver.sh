@@ -3,7 +3,7 @@
 # ServerGrid.ServerOnly.json, and ServerGrid folder are staged under
 # <install_dir>/ShooterGame/.
 echo "Smoke test for atlasserver requires a staged ATLAS server-grid export - see docs/servers/atlasserver.md"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

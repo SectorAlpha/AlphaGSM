@@ -139,6 +139,7 @@ def test_get_start_command_prefers_shipping_executable(tmp_path):
         "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe",
         "ConanSandbox",
         "-log",
+        "-nosound",
         "-Port=7777",
         "-QueryPort=27015",
         "-MaxPlayers=16",

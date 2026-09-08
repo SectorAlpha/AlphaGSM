@@ -1,6 +1,7 @@
 """Integration test for kf2server."""
 
 import os
+import sys
 
 import pytest
 
@@ -14,12 +15,10 @@ from conftest import (
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     skip_for_known_steamcmd_issue,
-    wait_for_runtime_log_marker,
-    wait_for_a2s_ready,
-    wait_for_tcp_closed,
+    wait_for_info_protocol,
     wait_for_udp_closed,
 )
 from gamemodules.kf2server import steam_app_id
@@ -75,19 +74,8 @@ def test_kf2server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
-
-        # status
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=query_port)
         run_and_assert_ok(env, server_name, "status")
-
-        wait_for_a2s_ready("127.0.0.1", query_port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -113,7 +101,11 @@ def test_kf2server_lifecycle(tmp_path):
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped — check the A2S query port (UDP) since KF2 game traffic is UDP
     wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)

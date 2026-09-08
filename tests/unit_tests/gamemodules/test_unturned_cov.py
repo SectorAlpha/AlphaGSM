@@ -174,3 +174,33 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+def test_install_writes_native_commands_in_server_subdirectory(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=28015, dir=str(tmp_path))
+    mod.install(server)
+    commands_file = tmp_path / "Servers" / server.name / "Server" / "Commands.dat"
+    assert commands_file.read_text() == "Port 28015\n"
+
+
+def test_prestart_preserves_commands_and_replaces_duplicate_port_lines(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=28015, dir=str(tmp_path))
+    commands_file = tmp_path / "Servers" / server.name / "Server" / "Commands.dat"
+    commands_file.parent.mkdir(parents=True)
+    commands_file.write_text("Name My server\nPort 27015\nMap PEI\nport 27017\n")
+    mod.prestart(server)
+    assert commands_file.read_text() == "Name My server\nMap PEI\nPort 28015\n"
+    assert mod.get_query_address(server) == ("127.0.0.1", 28015, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 28015, "a2s")
+    assert "port" in mod.config_sync_keys
+
+
+def test_runtime_claims_query_and_adjacent_gameplay_ports(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=28015, dir=str(tmp_path))
+    requirements = mod.get_runtime_requirements(server)
+    assert {(item["host"], item["protocol"]) for item in requirements["ports"]} == {
+        (28015, "udp"), (28016, "udp")
+    }

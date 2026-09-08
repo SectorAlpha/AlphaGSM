@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied Zombie Master: Reborn content tree.
 echo "Smoke test for zmrserver is ENABLED (BYO) - copy the full Zombie Master: Reborn content tree into <install_dir>/zombie_master_reborn/ so maps/zm_docksofthedead.bsp exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

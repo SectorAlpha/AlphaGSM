@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 228780/225600 shared content.
 echo "Smoke test for bsserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Blade Symphony so shared depot 225601 installs alongside dedicated app 228780 before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -2,7 +2,7 @@
 # ENABLED (BYO): set url to a working Battlefield 1942 dedicated-server archive
 # or stage bf1942_lnxded in <install_dir> before setup/start.
 echo "Smoke test for bf1942server requires ENABLED (BYO) input: set url to a working Battlefield 1942 dedicated-server archive or stage bf1942_lnxded in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

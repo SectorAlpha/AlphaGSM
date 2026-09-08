@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied Action Half-Life mod tree.
 echo "Smoke test for ahlserver is ENABLED (BYO) - copy the full Action Half-Life mod tree into <install_dir>/action/ so maps/ahl_hydro.bsp exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

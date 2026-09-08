@@ -50,7 +50,10 @@ def test_ets2server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = ets2server.get_start_command(server)
 
-    assert cmd == ["./bin/linux_x64/eurotrucks2_server", "-ip", "0.0.0.0", "-port", "27015", "-query_port", "27016"]
+    assert cmd == [
+        "env", "XDG_DATA_HOME=" + str(tmp_path / ".local/share"),
+        "./bin/linux_x64/eurotrucks2_server",
+    ]
     assert cwd == server.data["dir"]
 
 

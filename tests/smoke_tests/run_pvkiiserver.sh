@@ -68,6 +68,10 @@ datapath = $HOME_DIR/conf
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-pvkiiserve-IT#
 keeplogs = 1
+
+# Keep the smoke server awake for real A2S query and info checks.
+[gamemodules.pvkiiserver.servercfg]
+sv_hibernate_when_empty = 0
 EOF
 
 echo "Using install dir: $INSTALL_DIR"
@@ -78,7 +82,10 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'SV_ActivateServer|Server is hibernating|ready'
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

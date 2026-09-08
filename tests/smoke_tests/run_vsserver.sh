@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied Vampire Slayer mod tree.
 echo "Smoke test for vsserver is ENABLED (BYO) - copy the full Vampire Slayer mod tree into <install_dir>/vs/ so maps/vs_frost.bsp exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

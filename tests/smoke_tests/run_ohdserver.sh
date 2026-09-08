@@ -43,7 +43,12 @@ run_alphagsm() {
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 cleanup() {
+  local rc=$?
   set +e
+  if [[ "$rc" -ne 0 && -n "${INSTALL_DIR:-}" ]]; then
+    capture_application_logs "$INSTALL_DIR"/HarshDoorstop/Saved/Logs/*.log "$INSTALL_DIR"/Saved/Logs/*.log
+    capture_runtime_diagnostics "$SERVER_NAME"
+  fi
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
     ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
@@ -92,6 +97,7 @@ echo "Using query port: $QUERY_PORT"
 echo "Using image: $IMAGE"
 
 run_create_or_skip_disabled "$SERVER_NAME" create ohdserver
+run_alphagsm "$SERVER_NAME" set image "$IMAGE"
 run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 run_alphagsm "$SERVER_NAME" set servername "AlphaGSM OHD Smoke"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"

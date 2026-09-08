@@ -3,7 +3,7 @@
 # reachable BattleBit community-server apiendpoint plus provider-side
 # community-server provisioning/approval. See docs/TEST_STATUS.md for details.
 echo "Smoke test for battlebitserver is ENABLED (AUTH) and requires BattleBit community-server provisioning plus apiendpoint details - see docs/TEST_STATUS.md"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

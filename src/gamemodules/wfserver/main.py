@@ -529,23 +529,11 @@ def get_start_command(server):
 def get_runtime_requirements(server):
     """Return Docker runtime metadata for SteamCMD-backed Linux-native servers."""
 
-    requirements = {
-        "engine": "docker",
-        "family": "steamcmd-linux",
-    }
-    if "dir" in server.data:
-        requirements["mounts"] = [
-            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
-        ]
-    if "port" in server.data:
-        requirements["ports"] = [
-            {
-                "host": int(server.data["port"]),
-                "container": int(server.data["port"]),
-                "protocol": "udp",
-            }
-        ]
-    return requirements
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=({"key": "port", "protocol": "udp"},),
+    )
 
 
 def get_container_spec(server):

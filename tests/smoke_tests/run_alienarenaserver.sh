@@ -2,7 +2,7 @@
 # ENABLED (BYO): stage a native Alien Arena dedicated server tree containing
 # crx-dedicated in <install_dir> before setup/start.
 echo "Smoke test for alienarenaserver requires ENABLED (BYO) input: stage a native Alien Arena dedicated server tree containing crx-dedicated in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

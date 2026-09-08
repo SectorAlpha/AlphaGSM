@@ -2,27 +2,26 @@
 
 import json
 import os
+import sys
 
 import pytest
 
 from conftest import (
     alphagsm_env,
     default_runtime_backend,
-    log_command_result,
     pick_free_udp_port,
     require_command_for_runtime,
     resolve_runtime_image,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    run_alphagsm,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     run_and_assert_ok,
     run_setup_with_port_retry,
     wait_for_info_protocol,
-    wait_for_generic_udp_closed,
-    wait_for_udp_open,
+    wait_for_udp_closed,
     write_config,
 )
-from utils.valve_server import detect_query_host
 from gamemodules.conanexiles import steam_app_id
 
 pytestmark = [pytest.mark.integration]
@@ -70,7 +69,6 @@ def test_conanexiles_lifecycle(tmp_path):
     queryport = pick_free_udp_port()
     while queryport == port:
         queryport = pick_free_udp_port()
-    query_host = detect_query_host()
 
     run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
@@ -94,8 +92,7 @@ def test_conanexiles_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_udp_open(query_host, queryport, START_TIMEOUT)
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         run_and_assert_ok(env, server_name, "status")
 
@@ -127,6 +124,9 @@ def test_conanexiles_lifecycle(tmp_path):
             f"Expected managed Conan server name in A2S data: {info_data!r}"
         )
     finally:
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
 
-    wait_for_generic_udp_closed(query_host, queryport, STOP_TIMEOUT)
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)

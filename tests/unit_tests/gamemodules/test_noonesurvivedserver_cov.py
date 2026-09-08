@@ -134,13 +134,13 @@ def test_noonesurvived_runtime_metadata_enables_xvfb_for_docker(tmp_path):
     assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
-def test_query_addresses_use_tcp_on_linux(monkeypatch):
+def test_query_addresses_use_a2s_on_linux(monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     server = DummyServer()
     server.data.update({"port": 7777, "queryport": 27015})
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "tcp")
-    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "tcp")
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
 
 
 def test_get_start_command_missing_exe(tmp_path):

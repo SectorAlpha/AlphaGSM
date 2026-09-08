@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 381690.
 echo "Smoke test for reignofkingsserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Reign of Kings dedicated server app 381690 before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

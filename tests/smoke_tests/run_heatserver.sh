@@ -73,8 +73,7 @@ wait_for_heat_ready() {
   else
     echo "[diagnostic] Heat log directory not found: ${log_dir}" >&2
   fi
-  echo "Heat logs did not show readiness markers in ${timeout_seconds}s — skipping smoke test (CI)" >&2
-  exit 0
+  return 1
 }
 
 require_cmd "$PYTHON_BIN"

@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for current app 317360 content.
 echo "Smoke test for dabserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Double Action: Boogaloo so current app 317360 content can be staged before setup/start; retired dedicated tool app 317800 still crashes on modern Linux."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

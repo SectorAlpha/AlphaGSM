@@ -2,7 +2,7 @@
 # ENABLED (AUTH): Path of Titans needs an Alderon host token for managed
 # AlderonGamesCmd installs, or a staged archive override path.
 echo "Smoke test for pathoftitansserver is ENABLED (AUTH) - set auth_token to an Alderon host account token for AlderonGamesCmd installs, or provide a staged archive override before setup/start"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -2,7 +2,7 @@
 # ENABLED (BYO): stage a native FOUNDRY dedicated server tree containing
 # FoundryDedicatedServer in <install_dir> before setup/start.
 echo "Smoke test for foundryserver requires ENABLED (BYO) input: stage a native FOUNDRY dedicated server tree containing FoundryDedicatedServer in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

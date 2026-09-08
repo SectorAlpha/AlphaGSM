@@ -264,3 +264,12 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+@pytest.mark.parametrize("is_linux", [True, False])
+def test_query_and_info_use_native_a2s_for_both_platforms(monkeypatch, is_linux):
+    server = DummyServer()
+    server.data.update({"port": 27777, "queryport": 27016})
+    monkeypatch.setattr(mod, "IS_LINUX", is_linux)
+    assert mod.get_query_address(server) == ("127.0.0.1", 27016, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27016, "a2s")

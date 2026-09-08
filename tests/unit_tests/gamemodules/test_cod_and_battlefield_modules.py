@@ -156,7 +156,7 @@ def test_codwaw_and_battlefield_commands_build_expected_args(tmp_path):
     assert bfv_cmd == ["./bfvietnam_lnxded", "+statusMonitor", "1", "+map", "operation_hastings", "+port", "15567"]
 
 
-def test_cod_family_query_and_info_use_tcp():
+def test_cod_family_query_and_info_use_declared_protocol():
     for module in (cod2server, cod4server, codserver, coduoserver, codwawserver):
         server = DummyServer(module.__name__)
         server.data["port"] = 28960
@@ -165,5 +165,5 @@ def test_cod_family_query_and_info_use_tcp():
         info_address = module.get_info_address(server)
 
         assert query_address[1] == 28960
-        assert query_address[2] == "tcp"
+        assert query_address[2] == ("quake" if module is codwawserver else "tcp")
         assert info_address == query_address

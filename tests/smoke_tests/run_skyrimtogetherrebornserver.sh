@@ -2,7 +2,7 @@
 # ENABLED (BYO): set url to a working Skyrim Together Reborn server archive or
 # stage SkyrimTogetherServer in <install_dir> before setup/start.
 echo "Smoke test for skyrimtogetherrebornserver requires ENABLED (BYO) input: set url to a working Skyrim Together Reborn server archive or stage SkyrimTogetherServer in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

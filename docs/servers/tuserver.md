@@ -63,6 +63,9 @@ alphagsm mytower backup
 
 ## Notes
 
+AlphaGSM stages the downloaded `linux64/steamclient.so` beside the Tower
+executable and uses the dedicated-server `-nosteamclient` launch flag.
+
 - Module name: `tuserver`
 - Game: Tower Unite
 - Engine: Unreal 4 dedicated server

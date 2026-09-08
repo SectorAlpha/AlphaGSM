@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 416881.
 echo "Smoke test for boserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Blackwake: Overgrowth dedicated server app 416881 before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

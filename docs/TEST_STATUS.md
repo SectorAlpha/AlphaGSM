@@ -43,6 +43,18 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- September 8 smoke/CI repairs correct skip reporting, Source smoke protocol
+  readiness, artifact upload retry, Tower Unite/Warfork Steam library exposure,
+  Conan audio startup, Unturned/STN native ports, and Wine query protocols for
+  Icarus, NOTD, No One Survived and Soulmask. CODWAW now uses its native UDP
+  status protocol. ETS2 tests require real exported client packages. These
+  changes have local unit coverage and await replacement CI lifecycle results.
+  They do not promote any server's support state.
+- Fresh [AHL2 Docker diagnostics](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34280455410/job/102247947798)
+  show a repeated native glibc `sysmalloc` assertion following Steam client
+  initialization. This is distinct from the earlier sleeping-process snapshot;
+  no allocator or Steam launch-flag workaround is established yet.
+
 - [PR #36 run 34250522498](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34250522498)
   at `de6777c4` passed unit tests, lint, coverage and all five binary targets.
   Overall it recorded 177 successful and 92 failed checks, including smoke
@@ -50,7 +62,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   readiness and query, then falls back to TCP on the next info call. Its five
   commands per check exceed the default ServerQuery flood budget when repeated;
   command pacing has unit coverage and awaits CI confirmation. GMod now uses
-  its own launcher but stalls during Steam initialization, like other Source
+  its own launcher but fails to reach readiness, like other Source
   Docker lanes. Terraria 1.4.5.8 creates its world and listens, then crashes with
   `ObjectDisposedException` in `DebugNetworkStream` after TCP probes. Those
   Source and Terraria failures remain unresolved; no new game pass is claimed.

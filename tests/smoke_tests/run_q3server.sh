@@ -77,7 +77,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 if [[ ! -f "$INSTALL_DIR/baseq3/pak0.pk3" ]]; then
   echo "Quake 3 requires licensed baseq3/pak0.pk3 content; CI only downloads the public ioquake3 engine build — skipping smoke test" >&2
-  exit 0
+  exit 77
 fi
 
 run_alphagsm "$SERVER_NAME" start

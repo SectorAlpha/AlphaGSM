@@ -1,6 +1,7 @@
 """Integration test for qwserver."""
 
 import os
+import sys
 
 import pytest
 
@@ -13,11 +14,12 @@ from conftest import (
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_quakeworld_ready,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
+    wait_for_info_protocol,
+    wait_for_generic_udp_closed,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -68,11 +70,10 @@ def test_qwserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_quakeworld_ready("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_info_protocol(env, server_name, "quakeworld", START_TIMEOUT, expected_port=port)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -98,8 +99,13 @@ def test_qwserver_lifecycle(tmp_path):
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
-    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_generic_udp_closed(
+        "127.0.0.1", port, STOP_TIMEOUT, payload=b"\xff\xff\xff\xffstatus\n"
+    )

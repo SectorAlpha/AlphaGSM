@@ -79,17 +79,9 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-set +e
 "$PYTHON_BIN" "$STATUS_HELPER" wait-for-status 127.0.0.1 "$PORT" "$START_TIMEOUT_SECONDS"
-if [[ $? -ne 0 ]]; then
-  echo "Minecraft status helper timed out — skipping smoke test (CI)" >&2
-  exit 0
-fi
-set -e
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
-set +e
 "$PYTHON_BIN" "$STATUS_HELPER" wait-for-closed 127.0.0.1 "$PORT" "$STOP_TIMEOUT_SECONDS"
-set -e
 run_alphagsm "$SERVER_NAME" status

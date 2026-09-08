@@ -53,6 +53,10 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+AlphaGSM writes native settings to `Servers/<serverid>/Server/Commands.dat`.
+The configured base port is used for Steam A2S queries; gameplay uses the next
+UDP port. Open both ports when configuring your firewall.
+
 ## Useful Commands
 
 ```bash

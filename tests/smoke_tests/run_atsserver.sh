@@ -3,7 +3,7 @@
 # from an owned client install are staged under
 # <install_dir>/.local/share/American Truck Simulator/.
 echo "Smoke test for atsserver requires exported ATS server_packages.sii/server_packages.dat - see docs/servers/atsserver.md"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

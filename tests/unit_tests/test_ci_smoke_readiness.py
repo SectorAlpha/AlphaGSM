@@ -9,12 +9,16 @@ from tests.helpers import REPO_ROOT
 
 
 GOLDSRC = ("bdserver", "csserver", "csczserver", "dmcserver", "dodserver",
-           "hldmserver", "ricochetserver", "svenserver", "tfcserver")
+           "hldmserver", "opforserver", "ricochetserver", "svenserver", "tfcserver")
+SOURCE = ("bb2server", "bmdmserver", "ccserver", "counterstrike2", "cssserver",
+          "dodsserver", "doiserver", "emserver", "fofserver", "gmodserver",
+          "hl2dmserver", "hldmsserver", "insserver", "l4dserver", "l4d2server",
+          "nmrihserver", "pvkiiserver", "tf2")
 
 
-@pytest.mark.parametrize("module", GOLDSRC)
+@pytest.mark.parametrize("module", GOLDSRC + SOURCE)
 @pytest.mark.parametrize("query_rc", [0, 1])
-def test_goldsrc_readiness_requires_protocol_response(tmp_path, module, query_rc):
+def test_valve_readiness_requires_protocol_response(tmp_path, module, query_rc):
     script = (REPO_ROOT / f"tests/smoke_tests/run_{module}.sh").read_text()
     lifecycle = script[script.index('run_alphagsm "$SERVER_NAME" start'):]
     log = tmp_path / "server.log"
@@ -25,6 +29,7 @@ SERVER_NAME=test
 START_TIMEOUT_SECONDS=1
 run_alphagsm() { echo "$*" >> "$COMMANDS"; }
 wait_for_ready() { grep -Eq "${3:-ready|started|listening|Done}" "$1"; }
+wait_for_log_ready() { wait_for_ready "$@"; }
 wait_for_info_protocol() { echo "protocol $2" >> "$COMMANDS"; return "$QUERY_RC"; }
 run_stop_or_skip() { echo stop >> "$COMMANDS"; }
 '''

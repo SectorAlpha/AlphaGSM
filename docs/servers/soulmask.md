@@ -4,8 +4,8 @@ This guide covers the `soulmask` module in AlphaGSM.
 
 `soulmask` is currently `PASSED` on the documented Ubuntu 24.04 Linux
 baseline. The checked-in GitHub validation path for this server is
-Docker-first through the shared `wine-proton` runtime, with generic `tcp`
-`query` / `info` on the managed main port.
+Docker-first through the shared `wine-proton` runtime. `query` and `info`
+use Steam A2S on the configured query port.
 
 ## Requirements
 
@@ -65,7 +65,7 @@ alphagsm mysoulmask backup
 - Module name: `soulmask`
 - Default port: `8777`
 - Validated Linux runtime: Docker-backed `wine-proton`
-- Current query/info contract on Linux: generic `tcp` on the managed game port
+- Query/info contract on Linux: Steam A2S on `queryport`
 
 ## Developer Notes
 

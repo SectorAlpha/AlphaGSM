@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 822500.
 echo "Smoke test for hellletlooseserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Hell Let Loose dedicated server app 822500 before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

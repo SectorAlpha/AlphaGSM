@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with original RTCW multiplayer assets.
 echo "Smoke test for rtcwserver is ENABLED (BYO) - requires original RTCW multiplayer assets (main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3)"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

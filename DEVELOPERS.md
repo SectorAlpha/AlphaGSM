@@ -521,8 +521,17 @@ Readiness timeouts and unexpected shutdown failures must fail smoke tests too.
 The shared smoke helpers retain query errors and capture runtime logs/doctor
 output before cleanup can remove the failed server.
 
-GoldSrc smoke runners poll `info --json` for an A2S response before `query` and
-`info`; Source-only log markers are not a GoldSrc readiness contract. Keep the
+Smoke runners return 77 only for an explicit disabled module or unavailable
+provider/owned-asset/host prerequisite. Setup errors, download failures, disk
+exhaustion, readiness timeouts, and shutdown failures remain failures. CI and
+`make smoke-test` display prerequisite skips separately from passes. The smoke
+jobs also publish their result records to the job summary before uploading them.
+Test artifact uploads retry once after a transfer/finalization error; the final
+attempt and the required summary gate still fail if evidence is missing.
+
+GoldSrc and Source smoke runners poll `info --json` for an A2S response before `query` and
+`info`; a console marker alone does not prove protocol readiness. Source smoke
+fixtures disable empty-server hibernation in their temporary config. Keep the
 upstream Source wrapper when available, because it initializes the library search
 path needed by the raw engine binary. Palworld uses its own dedicated-listener
 message as the smoke readiness marker.

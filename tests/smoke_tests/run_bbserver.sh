@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied BrainBread mod tree.
 echo "Smoke test for bbserver is ENABLED (BYO) - copy the full BrainBread mod tree into <install_dir>/brainbread/ so maps/bb_chp4_slaywatch.bsp exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

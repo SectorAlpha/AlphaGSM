@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an authenticated Stormworks dedicated-server install tree.
 echo "Smoke test for stormworksserver is ENABLED (BYO) - install the Stormworks Dedicated Server tool through logged-in Steam or authenticated SteamCMD, then stage that installed server tree into <install_dir>; Steam app 1247090 is only a redirect stub"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied Nuclear Dawn content tree.
 echo "Smoke test for ndserver is ENABLED (BYO) - copy the full Nuclear Dawn content tree into <install_dir>/nucleardawn/ so maps/hydro.bsp exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

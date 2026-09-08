@@ -109,6 +109,18 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def get_query_address(server):
+    """Use Icarus's Steam query port for native and Wine launches."""
+
+    return runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s"
+
+
+def get_info_address(server):
+    """Return the native Steam server info endpoint."""
+
+    return get_query_address(server)
+
+
 def get_start_command(server):
     """Build the command used to launch an Icarus dedicated server."""
 

@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied GRAV dedicated server tree.
 echo "Smoke test for gravserver is ENABLED (BYO) - copy an owned GRAV dedicated server tree into <install_dir>/ so CAGGameServer-Win32-Shipping exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

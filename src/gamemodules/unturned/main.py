@@ -23,6 +23,31 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port",)
+
+
+def sync_server_config(server):
+    """Write the port to the native instance config without losing other commands."""
+
+    server_dir = os.path.join(
+        server.data["dir"], "Servers", server.data.get("serverid", server.name), "Server"
+    )
+    os.makedirs(server_dir, exist_ok=True)
+    commands_dat = os.path.join(server_dir, "Commands.dat")
+    lines = []
+    if os.path.isfile(commands_dat):
+        with open(commands_dat, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+    lines = [line for line in lines if not line.split() or line.split()[0].lower() != "port"]
+    lines.append("Port %s" % server.data.get("port", 27015))
+    with open(commands_dat, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(lines) + "\n")
+
+
+def prestart(server):
+    """Refresh native server commands before launch."""
+
+    sync_server_config(server)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="ServerHelper.sh"):
@@ -70,19 +95,14 @@ def install(server):
     """Download the Unturned server files via SteamCMD."""
 
     _base_install(server)
-    # Write the port to Commands.dat so the server uses the configured port.
-    # Unturned reads startup commands from Servers/<serverid>/Commands.dat.
-    server_dir = os.path.join(server.data["dir"], "Servers", server.data["serverid"])
-    os.makedirs(server_dir, exist_ok=True)
-    commands_dat = os.path.join(server_dir, "Commands.dat")
-    with open(commands_dat, "w") as f:
-        f.write("Port %s\n" % server.data["port"])
+    sync_server_config(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Unturned server files and optionally restart the server."
 
@@ -109,6 +129,18 @@ def do_stop(server, j):
     runtime_module.send_to_server(server, "\nsave\nshutdown\n")
 
 
+def get_query_address(server):
+    """Query Unturned on the base port; gameplay uses the following UDP port."""
+
+    return runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s"
+
+
+def get_info_address(server):
+    """Return Unturned's native Steam query endpoint."""
+
+    return get_query_address(server)
+
+
 def status(server, verbose):
     """Detailed Unturned status is not implemented yet."""
 
@@ -132,18 +164,19 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
+        int_keys=("port",),
         str_keys=("serverid", "launchmode", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'offset': 1, 'protocol': 'udp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'offset': 1, 'protocol': 'udp'}),
         stdin_open=True,
 )

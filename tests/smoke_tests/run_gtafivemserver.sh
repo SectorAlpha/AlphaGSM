@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ENABLED (AUTH): supported with Cfx-backed txAdmin/server-data provisioning.
 echo "Smoke test for gtafivemserver is ENABLED (AUTH) - complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

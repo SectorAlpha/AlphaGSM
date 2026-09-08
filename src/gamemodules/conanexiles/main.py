@@ -284,6 +284,7 @@ def get_start_command(server):
     cmd.extend(
         [
             "-log",
+            "-nosound",
             "-Port={}".format(server.data.get("port", 7777)),
             "-QueryPort={}".format(server.data.get("queryport", 27015)),
             "-MaxPlayers={}".format(server.data.get("maxplayers", 40)),

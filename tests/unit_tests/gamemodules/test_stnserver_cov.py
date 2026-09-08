@@ -57,7 +57,7 @@ def test_sync_server_config_updates_port_config(tmp_path):
 
     mod.sync_server_config(server)
 
-    assert (tmp_path / "Config" / "ServerConfig.txt").read_text() == "Port=9999\n"
+    assert (tmp_path / "Config" / "ServerConfig.txt").read_text() == "ServerPort=9999\nQueryPort=10000\n"
 
 
 def test_sync_server_config_preserves_unknown_config_lines(tmp_path):
@@ -68,13 +68,14 @@ def test_sync_server_config_preserves_unknown_config_lines(tmp_path):
     config_dir = tmp_path / "Config"
     config_dir.mkdir()
     config_path = config_dir / "ServerConfig.txt"
-    config_path.write_text("Name=Alpha\nPort=8888\n", encoding="utf-8")
+    config_path.write_text("Name=Alpha\nServerPort=8888\n", encoding="utf-8")
 
     mod.sync_server_config(server)
 
     assert config_path.read_text(encoding="utf-8").splitlines() == [
         "Name=Alpha",
-        "Port=9999",
+        "ServerPort=9999",
+        "QueryPort=10000",
     ]
 
 
@@ -123,13 +124,13 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
-def test_query_and_info_address_use_game_port(monkeypatch):
+def test_query_and_info_address_use_separate_query_port(monkeypatch):
     server = DummyServer("stn")
     server.data["port"] = "8888"
     monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.11")
 
-    assert mod.get_query_address(server) == ("10.0.0.11", 8888, "a2s")
-    assert mod.get_info_address(server) == ("10.0.0.11", 8888, "a2s")
+    assert mod.get_query_address(server) == ("10.0.0.11", 8889, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.11", 8889, "a2s")
 
 
 def test_get_start_command_missing_exe(tmp_path):

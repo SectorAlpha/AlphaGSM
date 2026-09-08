@@ -122,3 +122,15 @@ def test_get_start_command_requires_executable(tmp_path):
 
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_runtime_requirements_declare_linux_openssl_11():
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 7776, "httpport": 7775})
+    requirements = mod.get_runtime_requirements(server)
+    dependency = next(
+        item for item in requirements["host_dependencies"] if item["id"] == "openssl-1.1"
+    )
+    assert dependency["kind"] == "shared-library"
+    assert dependency["library_names"]["linux"] == "libssl.so.1.1"
+    assert dependency["platforms"] == ["linux"]

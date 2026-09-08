@@ -2,7 +2,7 @@
 # ENABLED (BYO): stage a native Starbound server tree containing
 # linux64/starbound_server in <install_dir> before setup/start.
 echo "Smoke test for starbound requires ENABLED (BYO) input: stage a native Starbound server tree containing linux64/starbound_server in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

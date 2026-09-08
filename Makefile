@@ -240,14 +240,18 @@ SMOKE_TEST ?=
 
 smoke-test:
 	@if [ -n "$(SMOKE_TEST)" ]; then \
-		bash tests/smoke_tests/$(SMOKE_TEST); \
+		if bash "tests/smoke_tests/$(SMOKE_TEST)"; then :; else \
+			rc=$$?; \
+			if [ "$$rc" -eq 77 ]; then echo "SKIPPED: $(SMOKE_TEST)"; else exit $$rc; fi; \
+		fi; \
 	else \
 		failed=0; \
 		for f in tests/smoke_tests/run_*.sh; do \
 			echo ""; \
 			echo "=== $$f ==="; \
 			if bash "$$f"; then :; else \
-				rc=$$?; [ "$$rc" -eq 77 ] || failed=1; \
+				rc=$$?; \
+				if [ "$$rc" -eq 77 ]; then echo "SKIPPED: $$f"; else failed=1; fi; \
 			fi; \
 		done; \
 		exit $$failed; \

@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 115310.
 echo "Smoke test for mw3server is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Modern Warfare 3 dedicated server app 115310 before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

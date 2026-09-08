@@ -8,6 +8,18 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-08
+- Smoke tests: distinguish prerequisite skips from passes, fail operational and
+  shutdown errors, and require native Source queries with awake test fixtures.
+- CI: retain smoke results in job summaries and retry artifact uploads once;
+  missing results still fail the required gate. Supply Onset's OpenSSL 1.1.
+- Server launch: stage Tower Unite's Steam client library beside its executable,
+  disable Conan dedicated-server audio, and expose Warfork's Steam SDK in Docker.
+- Native configuration: apply Unturned's port in its Server/Commands.dat;
+  write Survive the Nights ServerPort and separate QueryPort correctly.
+- Queries: use the native UDP protocols for Call of Duty: World at War, Icarus,
+  Night of the Dead, No One Survived, and Soulmask under Wine as well as Windows.
+- ETS2: require owned-client server package exports before start and synchronize
+  ports in the server's scoped home directory; tests accept staged exports.
 - CI diagnostics: probe native Source queries on readiness failures and capture
   bounded native stack traces in an isolated debugger container, preserving
   the game container's security settings and the original test failure.

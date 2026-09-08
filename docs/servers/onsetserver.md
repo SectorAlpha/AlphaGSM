@@ -4,6 +4,10 @@ This guide covers the `onsetserver` module in AlphaGSM.
 
 ## Requirements
 
+The native Linux server requires the legacy OpenSSL 1.1 runtime (`libssl.so.1.1`),
+which Ubuntu 24.04 does not include by default. AlphaGSM's `steamcmd-linux` Docker
+image includes this dependency.
+
 - `screen`
 - SteamCMD runtime dependencies
 - `openssl` on Linux hosts, matching the upstream Onset dedicated-server guide

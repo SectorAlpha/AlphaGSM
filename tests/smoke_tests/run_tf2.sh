@@ -30,46 +30,6 @@ run_alphagsm() {
 # shellcheck source=tests/smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
-run_alphagsm_capture() {
-  local output_file
-  output_file="$(mktemp)"
-  echo
-  echo "=== alphagsm $* ==="
-  set +e
-  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
-    "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@" >"$output_file" 2>&1
-  local status=$?
-  set -e
-  RUN_CAPTURED_OUTPUT="$(cat "$output_file")"
-  printf '%s\n' "$RUN_CAPTURED_OUTPUT"
-  rm -f "$output_file"
-  return "$status"
-}
-
-wait_for_log_ready() {
-  local log_path="$1"
-  local timeout_seconds="$2"
-  local deadline=$((SECONDS + timeout_seconds))
-  while (( SECONDS < deadline )); do
-    if [[ -f "$log_path" ]] && grep -Eq 'SV_ActivateServer: setting tickrate|Server is hibernating' "$log_path"; then
-      return 0
-    fi
-    sleep 2
-  done
-  echo "TF2 log did not show readiness markers in time: $log_path" >&2
-  return 1
-}
-
-skip_for_known_tf2_setup_issue() {
-  local output="$1"
-  if {
-    [[ "$output" == *"tf/cfg/server.cfg"* ]] && [[ "$output" == *"No such file or directory"* ]]
-  } || [[ "$output" == *"Failed to install app '232250' (Missing configuration)"* ]]; then
-    echo "Skipping TF2 smoke flow: known production setup issue creating tf/cfg/server.cfg after SteamCMD setup."
-    exit 0
-  fi
-}
-
 cleanup() {
   set +e
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
@@ -114,16 +74,15 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using UDP port: $PORT"
 
 run_alphagsm "$SERVER_NAME" create teamfortress2
-if ! run_alphagsm_capture "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"; then
-  skip_for_known_tf2_setup_issue "$RUN_CAPTURED_OUTPUT"
-  exit 1
-fi
+run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 if [[ ! -f "$INSTALL_DIR/srcds_run_64" ]] && [[ ! -f "$INSTALL_DIR/srcds_run" ]]; then
   echo "Expected TF2 launcher not found in $INSTALL_DIR" >&2
   exit 1
 fi
 test -f "$INSTALL_DIR/tf/cfg/server.cfg"
+# Keep the smoke server awake for real A2S query and info checks.
+printf '\nsv_hibernate_when_empty 0\ntf_allow_server_hibernation 0\n' >> "$INSTALL_DIR/tf/cfg/server.cfg"
 
 if [[ -n "$TF2_CURATED_REGISTRY_PATH" ]]; then
   echo "Applying curated TF2 mods from override registry: $TF2_CURATED_REGISTRY_PATH"
@@ -134,8 +93,11 @@ fi
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_log_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
-run_alphagsm "$SERVER_NAME" stop
+run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 run_alphagsm "$SERVER_NAME" status

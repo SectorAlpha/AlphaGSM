@@ -2,7 +2,7 @@
 # ENABLED (BYO): set url to a working Jedi Outcast dedicated-server archive or
 # stage jk2mvded.x86_64 in <install_dir> before setup/start.
 echo "Smoke test for jk2server requires ENABLED (BYO) input: set url to a working Jedi Outcast dedicated-server archive or stage jk2mvded.x86_64 in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

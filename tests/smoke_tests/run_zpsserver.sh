@@ -4,4 +4,4 @@
 # client session. Even with the SteamDB-advertised -steam -secure flags, HLDS
 # reports SteamAPI_IsSteamRunning() missing under the anonymous Docker lane.
 echo "Smoke test for zpsserver is ENABLED (AUTH) - run an authenticated Steam client session alongside app 4523420 before start; see docs/servers/zpsserver.md"
-exit 0
+exit 77

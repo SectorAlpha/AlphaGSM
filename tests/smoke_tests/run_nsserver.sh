@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied Natural Selection mod tree.
 echo "Smoke test for nsserver is ENABLED (BYO) - copy the full Natural Selection mod tree into <install_dir>/ns/ so maps/ns_hera.bsp exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

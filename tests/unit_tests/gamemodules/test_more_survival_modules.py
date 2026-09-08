@@ -120,13 +120,13 @@ def test_notdserver_runtime_metadata_enables_xvfb_for_docker(tmp_path):
     assert spec["env"]["SDL_VIDEODRIVER"] == "x11"
 
 
-def test_notdserver_query_addresses_use_tcp_on_linux(monkeypatch):
+def test_notdserver_query_addresses_use_a2s_on_linux(monkeypatch):
     monkeypatch.setattr(notdserver, "IS_LINUX", True)
     server = DummyServer("notd")
     server.data.update({"port": 7777, "queryport": 27015})
 
-    assert notdserver.get_query_address(server) == ("127.0.0.1", 7777, "tcp")
-    assert notdserver.get_info_address(server) == ("127.0.0.1", 7777, "tcp")
+    assert notdserver.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert notdserver.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
 
 
 def test_more_survival_modules_update_downloads_and_optionally_restart(monkeypatch):

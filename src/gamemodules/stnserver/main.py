@@ -25,14 +25,21 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
-config_sync_keys = ("port",)
+config_sync_keys = ("port", "queryport")
 setting_schema = {
     "port": SettingSpec(
         canonical_key="port",
         description="The game port for the Survive the Nights server.",
         value_type="integer",
         apply_to=("datastore", "native_config"),
-        native_config_key="Port",
+        native_config_key="ServerPort",
+    ),
+    "queryport": SettingSpec(
+        canonical_key="queryport",
+        description="The separate Steam query port for the Survive the Nights server.",
+        value_type="integer",
+        apply_to=("datastore", "native_config"),
+        native_config_key="QueryPort",
     ),
 }
 
@@ -58,6 +65,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Server_Linux_x64"):
         default_port=8888,
         prompt="Please specify the game port to use for this server:",
     )
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -83,7 +91,9 @@ def install(server):
 
 
 def sync_server_config(server):
-    """Write the current port to ServerConfig.txt."""
+    """Write distinct native gameplay and query ports to ServerConfig.txt."""
+
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
 
     config_dir = os.path.join(server.data["dir"], "Config")
     os.makedirs(config_dir, exist_ok=True)
@@ -115,15 +125,17 @@ restart.__doc__ = "Restart the Survive the Nights server."
 
 
 def get_query_address(server):
-    """Survive the Nights exposes A2S on the configured gameplay port."""
+    """Survive the Nights exposes A2S on its separate Steam query port."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s")
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 
 def get_info_address(server):
     """Return the A2S endpoint used by the info command."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s")
+    return get_query_address(server)
 
 
 def get_start_command(server):
@@ -169,18 +181,37 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
+        int_keys=("port", "queryport"),
         str_keys=("configfile", "exe_name", "dir"),
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def get_runtime_requirements(server):
+    """Publish and reserve both native UDP ports."""
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=({"key": "port", "protocol": "udp"},
+                          {"key": "queryport", "protocol": "udp"}),
+    )
+
+
+def get_container_spec(server):
+    """Use the same distinct ports for Docker launches."""
+
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+    return runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({"key": "port", "protocol": "udp"},
+                          {"key": "queryport", "protocol": "udp"}),
         stdin_open=True,
-)
+    )
+
+
+def prestart(server):
+    """Apply repaired native keys to existing installations before startup."""
+
+    sync_server_config(server)

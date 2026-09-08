@@ -1,6 +1,7 @@
 """Integration test for codwawserver."""
 
 import os
+import sys
 
 import pytest
 
@@ -12,12 +13,11 @@ from conftest import (
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
+    wait_for_generic_udp_closed,
 )
 
 pytestmark = pytest.mark.integration
@@ -70,7 +70,7 @@ def test_codwawserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "quake", START_TIMEOUT, expected_port=port)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -78,31 +78,37 @@ def test_codwawserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server port is open" in query_result.stdout
+            "Server is responding (Quake on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "No further details available." in info_result.stdout
+            "Server info (Quake on port" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "quake", (
+            f"Expected quake protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("port") == port, (
-            f"Expected tcp info to report the bound port: {_info_data!r}"
+            f"Expected quake info to report the bound port: {_info_data!r}"
         )
-        assert "latency_ms" in _info_data, (
-            f"Expected tcp info to include latency: {_info_data!r}"
+        assert _info_data.get("players") == 0, (
+            f"Expected no players on the fresh server: {_info_data!r}"
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_generic_udp_closed(
+        "127.0.0.1", port, STOP_TIMEOUT, payload=b"\xff\xff\xff\xffgetstatus\n"
+    )

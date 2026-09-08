@@ -308,6 +308,16 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     family="steamcmd-linux",
+    extra={
+        "host_dependencies": ({
+            "id": "openssl-1.1",
+            "display_name": "OpenSSL 1.1",
+            "kind": "shared-library",
+            "library_names": {"linux": "libssl.so.1.1"},
+            "platforms": ["linux"],
+            "install_hint": "Install the libssl1.1 compatibility package for Onset.",
+        },),
+    },
     port_definitions=(
         {"key": "port", "protocol": "udp"},
         {"key": "queryport", "protocol": "udp"},

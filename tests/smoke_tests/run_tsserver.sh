@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied The Specialists mod tree.
 echo "Smoke test for tsserver is ENABLED (BYO) - copy the full The Specialists mod tree into <install_dir>/ts/ so maps/ts_neobaroque.bsp exists"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -1,6 +1,7 @@
 """Integration test for notdserver."""
 
 import os
+import sys
 
 import pytest
 
@@ -13,15 +14,16 @@ from conftest import (
     require_proton,
     resolve_runtime_image,
     pick_free_tcp_port,
+    pick_free_udp_port,
     run_setup_with_port_retry,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
+    wait_for_udp_closed,
 )
 from gamemodules.notdserver import steam_app_id
 
@@ -73,11 +75,14 @@ def test_notdserver_lifecycle(tmp_path):
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    queryport = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
     if image is not None:
         run_and_assert_ok(env, server_name, "set", "image", image)
+
+    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
 
     # setup
     result, port = run_setup_with_port_retry(
@@ -95,7 +100,7 @@ def test_notdserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -103,28 +108,31 @@ def test_notdserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "TCP ping on port" in query_result.stdout
+            "Server is responding (A2S on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "No further details available." in info_result.stdout
+            "Server info (A2S on port" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("port") == port, (
+        assert _info_data.get("port") == queryport, (
             f"Expected managed port in info JSON: {_info_data!r}"
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)

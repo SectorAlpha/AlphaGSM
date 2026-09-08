@@ -242,3 +242,10 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+def test_query_and_info_use_quake_status_protocol():
+    server = DummyServer()
+    server.data["port"] = 28960
+    assert mod.get_query_address(server) == ("127.0.0.1", 28960, "quake")
+    assert mod.get_info_address(server) == ("127.0.0.1", 28960, "quake")

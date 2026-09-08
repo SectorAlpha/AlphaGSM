@@ -978,7 +978,7 @@ def test_doset_rewrites_real_non_valve_config_file_via_alias(monkeypatch, tmp_pa
     config_dir = tmp_path / "Config"
     config_dir.mkdir()
     config_path = config_dir / "ServerConfig.txt"
-    config_path.write_text("Port=8888\nOtherKey=value\n", encoding="utf-8")
+    config_path.write_text("ServerPort=8888\nOtherKey=value\n", encoding="utf-8")
 
     srv = make_server(
         module=stnserver_module,
@@ -1005,8 +1005,9 @@ def test_doset_rewrites_real_non_valve_config_file_via_alias(monkeypatch, tmp_pa
     srv.doset("gameport", "9999")
 
     assert config_path.read_text(encoding="utf-8").splitlines() == [
-        "Port=9999",
+        "ServerPort=9999",
         "OtherKey=value",
+        "QueryPort=10000",
     ]
     assert srv.data["port"] == 9999
     assert srv.data.saved == 1

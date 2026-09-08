@@ -101,7 +101,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 if [[ ! -f "$INSTALL_DIR/etmain/pak0.pk3" ]]; then
   echo "ET: Legacy requires original Wolfenstein: Enemy Territory etmain/pak0.pk3 assets before the dedicated server can start; setup only installs the public ET: Legacy engine and legacy mod bundle." >&2
-  exit 0
+  exit 77
 fi
 
 run_alphagsm "$SERVER_NAME" start

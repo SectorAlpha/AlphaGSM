@@ -60,12 +60,8 @@ alphagsm myicarusse backup
 
 - Module name: `icarusserver`
 - Default port: 17778
-- Current validation status: PASSED 2026-05-30. Fresh smoke and integration
-  now both pass on the Docker-backed Linux `wine-proton` runtime once
-  AlphaGSM uses the shared in-container Xvfb/software-GL path and treats
-  Icarus' live health surface honestly: `query`, `info`, and `info --json`
-  answer as generic `tcp` on the managed main game port instead of the older
-  stale log-marker and A2S assumptions.
+- Query/info uses native Steam A2S on `queryport` in both process and Docker
+  runtimes. The earlier TCP-only check did not establish game readiness.
 
 ## Developer Notes
 
@@ -76,13 +72,9 @@ alphagsm myicarusse backup
 - **Engine**: Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `2089300`
 
-The validated Linux path now runs through AlphaGSM's Docker-backed
-`wine-proton` runtime image rather than a host `screen` session. Anonymous
-SteamCMD setup for app `2089300` succeeds on the current branch, and the live
-server answers `query`, `info`, and `info --json` as generic `tcp` on the
-managed main port. The older `Saved/Logs/Icarus.log` readiness assumption and
-the stale A2S-style info contract are no longer part of the supported Linux
-path.
+The Linux Docker path uses the shared `wine-proton` runtime image and its
+Xvfb/software-GL support. Anonymous SteamCMD installs app `2089300`.
+Readiness requires the server to answer A2S on the configured query port.
 
 ### Server Configuration
 

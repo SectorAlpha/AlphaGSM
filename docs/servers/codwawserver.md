@@ -63,8 +63,8 @@ alphagsm mycodwawse backup
 - Module name: `codwawserver`
 - Default port: 28960
 - Current supported validation lane on Linux: Docker-backed `steamcmd-linux`
-- `query`, `info`, and `info --json` currently use generic `tcp` reachability
-  on the managed game port
+- `query`, `info`, and `info --json` use the native Quake-style UDP status
+  protocol on the managed game port.
 
 ## Developer Notes
 
@@ -78,9 +78,8 @@ alphagsm mycodwawse backup
 
 - **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
-- **Validated runtime note**: the current focused integration passes on the
-  Docker-backed archive install path using generic `tcp` reachability on the
-  managed game port
+- **Runtime note**: CI requires a native UDP status response for both process
+  and Docker launches; a TCP listener does not establish game readiness.
 - **Template**: See [server-templates/codwawserver/](../server-templates/codwawserver/) if available
 
 ### Maps and Mods

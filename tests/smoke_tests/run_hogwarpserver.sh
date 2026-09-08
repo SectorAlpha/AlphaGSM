@@ -1,7 +1,7 @@
 #\!/usr/bin/env bash
 # ENABLED (BYO): supported with an operator-supplied HogWarp archive URL or staged server tree.
 echo "Smoke test for hogwarpserver is ENABLED (BYO) - set url to a direct HogWarp server archive or stage HogWarpServer.exe in <install_dir> before setup/start"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

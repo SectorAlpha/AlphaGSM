@@ -36,6 +36,8 @@ RUNTIME_AWARE_PROTOCOL_TESTS = {
     "test_nightingale.py": "http_status",
     "test_xntserver.py": "quake",
     "test_ahl2server.py": "tcp",
+    "test_kf2server.py": "a2s",
+    "test_unturned.py": "a2s",
 }
 STRICT_SOURCE_A2S_TESTS = (
     "test_bb2server.py",
@@ -132,7 +134,6 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_insserver.py",
     "test_iosserver.py",
     "test_inssserver.py",
-    "test_kf2server.py",
     "test_l4d2server.py",
     "test_l4dserver.py",
     "test_ndserver.py",
@@ -141,7 +142,6 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_svenserver.py",
     "test_tf2.py",
     "test_squad44server.py",
-    "test_unturned.py",
     "test_frozenflameserver.py",
     "test_minecraft_bungeecord.py",
     "test_minecraft_waterfall.py",

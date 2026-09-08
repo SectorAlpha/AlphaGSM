@@ -1,22 +1,22 @@
 """Integration test for stnserver."""
 
 import os
+import sys
 
 import pytest
 
 from conftest import (
     alphagsm_env,
     default_runtime_backend,
-    log_command_result,
-    pick_free_tcp_port,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
+    pick_free_tcp_port_group,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
     run_and_assert_ok,
-    run_alphagsm,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
     wait_for_udp_closed,
     write_config,
 )
@@ -55,7 +55,7 @@ def test_stnserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(2)
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
@@ -69,7 +69,7 @@ def test_stnserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=port + 1)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -98,7 +98,11 @@ def test_stnserver_lifecycle(tmp_path):
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

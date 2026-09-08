@@ -2,7 +2,7 @@
 # ENABLED (BYO): set url to a working Quake 4 dedicated-server archive or stage
 # q4ded.x86 in <install_dir> before setup/start.
 echo "Smoke test for q4server requires ENABLED (BYO) input: set url to a working Quake 4 dedicated-server archive or stage q4ded.x86 in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

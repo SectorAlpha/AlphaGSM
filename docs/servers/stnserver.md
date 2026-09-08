@@ -50,6 +50,7 @@ alphagsm mystnserve stop
 Setup configures:
 
 - the game port (default 8888)
+- a separate Steam query port (game port + 1 unless explicitly set)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -61,7 +62,7 @@ alphagsm mystnserve backup
 alphagsm mystnserve set port 9999
 ```
 
-`set port` rewrites `Config/ServerConfig.txt` immediately through the schema-backed config-sync path. The shared alias layer also accepts `gameport` for this module.
+`set port` and `set queryport` rewrite `Config/ServerConfig.txt` immediately through the schema-backed config-sync path. The shared alias layer also accepts `gameport` for this module.
 
 ## Notes
 
@@ -81,7 +82,7 @@ alphagsm mystnserve set port 9999
 
 - **Config file**: `Config/ServerConfig.txt`
 - **Template**: See [server-templates/stnserver/](../server-templates/stnserver/) if available
-- **Schema-backed sync**: AlphaGSM keeps `Port=` aligned with `set port`
+- **Schema-backed sync**: AlphaGSM keeps `ServerPort=` aligned with `set port` and `QueryPort=` aligned with `set queryport`
 
 ### Maps and Mods
 

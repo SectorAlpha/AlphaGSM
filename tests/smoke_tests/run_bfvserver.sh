@@ -2,7 +2,7 @@
 # ENABLED (BYO): set url to a working Battlefield Vietnam dedicated-server
 # archive or stage bfvietnam_lnxded in <install_dir> before setup/start.
 echo "Smoke test for bfvserver requires ENABLED (BYO) input: set url to a working Battlefield Vietnam dedicated-server archive or stage bfvietnam_lnxded in <install_dir> before setup/start."
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x
