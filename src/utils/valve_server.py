@@ -486,19 +486,7 @@ def _valve_launcher_candidates(*, engine, default_executable, configured_executa
     elif default_executable:
         candidates.append(default_executable)
 
-    if configured_executable and configured_executable not in candidates:
-        candidates.append(configured_executable)
-    if default_executable and default_executable not in candidates:
-        candidates.append(default_executable)
-
-    ordered = []
-    seen = set()
-    for candidate in candidates:
-        if not candidate or candidate in seen:
-            continue
-        seen.add(candidate)
-        ordered.append(candidate)
-    return ordered
+    return list(dict.fromkeys(candidate for candidate in candidates if candidate))
 
 
 def define_valve_server_module(
@@ -547,11 +535,22 @@ def define_valve_server_module(
 
         configured_executable = server.data.get("exe_name")
         last_error = None
-        for candidate in _valve_launcher_candidates(
+        candidates = _valve_launcher_candidates(
             engine=engine,
             default_executable=executable,
             configured_executable=configured_executable,
-        ):
+        )
+        default_candidates = _valve_launcher_candidates(
+            engine=engine, default_executable=executable, configured_executable=None,
+        )
+        # Mounted games can ship a newer wrapper than the server itself. Try
+        # this installation's launchers before recursively searching content.
+        # Deliberate custom launcher overrides retain their priority.
+        candidates.sort(key=lambda candidate: (
+            candidate in default_candidates
+            and not os.path.isfile(os.path.join(server.data["dir"], candidate))
+        ))
+        for candidate in candidates:
             try:
                 exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(
                     server,

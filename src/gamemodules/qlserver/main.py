@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import re
 import shutil
 
 import screen
@@ -25,7 +26,7 @@ from server.settable_keys import SettingSpec, build_launch_arg_values, build_nat
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.gamemodules import common as gamemodule_common
-from utils.simple_kv_config import rewrite_equals_config
+from utils.state_io import atomic_write_text, state_lock
 
 steam_app_id = 349090
 steam_anonymous_login_possible = True
@@ -69,7 +70,7 @@ command_descriptions["mod"] = (
 )
 command_functions = {}
 max_stop_wait = 1
-config_sync_keys = ("hostname", "startmap")
+config_sync_keys = ("hostname", "startmap", "factory", "bindaddress")
 _quake_launch_schema = gamemodule_common.build_quake_setting_schema(
     port_tokens=("+set", "net_port"),
     hostname_tokens=("+set", "sv_hostname"),
@@ -88,7 +89,7 @@ setting_schema = {
         aliases=("servername",),
         description=_quake_launch_schema["hostname"].description,
         apply_to=("datastore", "launch_args", "native_config"),
-        native_config_key="hostname",
+        native_config_key="sv_hostname",
         launch_arg_tokens=_quake_launch_schema["hostname"].launch_arg_tokens,
     ),
     "servercfg": SettingSpec(
@@ -102,8 +103,20 @@ setting_schema = {
         aliases=_quake_launch_schema["startmap"].aliases,
         description=_quake_launch_schema["startmap"].description,
         apply_to=("datastore", "launch_args", "native_config"),
-        native_config_key="startmap",
-        launch_arg_tokens=_quake_launch_schema["startmap"].launch_arg_tokens,
+        native_config_key="serverstartup",
+        launch_arg_tokens=("+set", "serverstartup"),
+    ),
+    "factory": SettingSpec(
+        canonical_key="factory",
+        description="Quake Live factory used with the startup map (default: ffa).",
+        apply_to=("datastore",),
+    ),
+    "bindaddress": SettingSpec(
+        canonical_key="bindaddress",
+        description="Local IP on which Quake Live listens (default: 0.0.0.0).",
+        apply_to=("datastore", "launch_args", "native_config"),
+        native_config_key="net_ip",
+        launch_arg_tokens=("+set", "net_ip"),
     ),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
@@ -417,6 +430,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="qzeroded.x64"):
             "hostname": "AlphaGSM %s" % (server.name,),
             "startmap": "campgrounds",
             "servercfg": "baseq3/server.cfg",
+            "factory": "ffa",
+            "bindaddress": "0.0.0.0",
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -462,12 +477,52 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def _check_startup_token(_server, value, *_values):
+    """Keep map and factory values to individual native command arguments."""
+
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", str(value)):
+        raise ServerError("Map and factory names must contain only letters, numbers, underscores or hyphens")
+    return str(value)
+
+
+def _startup_command(server, startmap):
+    """Select a map with the factory required by the Steam dedicated server."""
+
+    return "map %s %s" % (
+        _check_startup_token(server, startmap),
+        _check_startup_token(server, server.data.get("factory", "ffa")),
+    )
+
+
+def _rewrite_native_config(config_path, config_values):
+    """Preserve operator settings while replacing managed Quake set commands."""
+
+    legacy_keys = {"hostname": "sv_hostname", "startmap": "serverstartup"}
+    with state_lock(config_path):
+        lines = []
+        if os.path.isfile(config_path):
+            with open(config_path, encoding="utf-8") as handle:
+                for line in handle:
+                    match = re.match(r"\s*(?:(?:set|seta)\s+)?(\w+)(?:\s*=|\s+)", line)
+                    key = match.group(1) if match else None
+                    if legacy_keys.get(key, key) not in config_values:
+                        lines.append(line)
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        for key, value in config_values.items():
+            if any(char in str(value) for char in ("\r", "\n", "\x00")):
+                raise ServerError("Quake Live config values must not contain control characters")
+            quoted = str(value).replace("\\", "\\\\").replace('"', '\\"')
+            lines.append('set %s "%s"\n' % (key, quoted))
+        atomic_write_text(config_path, "".join(lines))
+
+
 def sync_server_config(server):
     """Rewrite managed Quake Live config entries from datastore values."""
 
     _ensure_content_backup(server)
     config_relpath = server.data.get("servercfg", "baseq3/server.cfg")
-    config_path = os.path.join(server.data["dir"], config_relpath)
+    config_path = os.path.join(server.data["dir"], _content_root(server), os.path.basename(config_relpath))
     os.makedirs(os.path.dirname(config_path), exist_ok=True)
     config_values = build_native_config_values(
         server.data,
@@ -475,28 +530,34 @@ def sync_server_config(server):
         defaults={
             "hostname": "AlphaGSM %s" % (server.name,),
             "startmap": "campgrounds",
+            "bindaddress": "0.0.0.0",
         },
         require_explicit_key=True,
         value_transform=lambda spec, current_value: (
-            '"%s"' % (str(current_value),)
-            if spec.canonical_key == "hostname"
+            _startup_command(server, current_value)
+            if spec.canonical_key == "startmap"
             else str(current_value)
         ),
     )
-    rewrite_equals_config(config_path, config_values)
+    _rewrite_native_config(config_path, config_values)
 
 
 def _build_launch_command(server, homepath):
     """Include the bundled Steam API library path used by upstream launchers."""
 
     launch_args = build_launch_arg_values(
-        dict(server.data, dir=homepath),
+        dict(server.data, dir=homepath, bindaddress=server.data.get("bindaddress", "0.0.0.0")),
         setting_schema,
         require_explicit_tokens=True,
-        value_transform=lambda _spec, current_value: str(current_value),
+        value_transform=lambda spec, current_value: (
+            os.path.basename(str(current_value)) if spec.canonical_key == "servercfg"
+            else _startup_command(server, current_value) if spec.canonical_key == "startmap"
+            else str(current_value)
+        ),
     )
     library_dir = "./linux32" if server.data["exe_name"].endswith(".x86") else "./linux64"
-    return ["env", "LD_LIBRARY_PATH=" + library_dir, "./" + server.data["exe_name"], *launch_args]
+    return ["env", "LD_LIBRARY_PATH=" + library_dir, "./" + server.data["exe_name"],
+            "+set", "fs_game", _content_root(server), *launch_args]
 
 
 def get_start_command(server):
@@ -545,15 +606,15 @@ def get_container_spec(server):
 
 
 def get_query_address(server):
-    """Return the Quake UDP query address used by the qlserver module."""
+    """Return the Steam A2S query address used by Quake Live."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s")
 
 
 def get_info_address(server):
-    """Return the Quake UDP info address used by the qlserver module."""
+    """Return the Steam A2S info address used by Quake Live."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "a2s")
 
 
 def do_stop(server, j):
@@ -587,7 +648,8 @@ def checkvalue(server, key, *value):
         *value,
         setting_schema=setting_schema,
         resolved_int_keys=("port",),
-        resolved_str_keys=("hostname", "startmap", "servercfg", "exe_name", "dir"),
+        resolved_str_keys=("hostname", "startmap", "factory", "bindaddress", "servercfg", "exe_name", "dir"),
+        resolved_handlers={"startmap": _check_startup_token, "factory": _check_startup_token},
         backup_module=backup_utils,
     )
 

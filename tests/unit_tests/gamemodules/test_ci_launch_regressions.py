@@ -69,3 +69,25 @@ def test_source_keeps_explicit_launcher_override():
     )
     assert candidates[0] == "custom-launcher"
     assert candidates.index("srcds_run") < candidates.index("srcds_linux64")
+
+
+@pytest.mark.parametrize("configured", ["srcds_run", "srcds_run_64"])
+def test_source_uses_own_launcher_before_mounted_game_content(tmp_path, configured):
+    from gamemodules import gmodserver
+
+    (tmp_path / "srcds_run").touch()
+    content = tmp_path / "_gmod_content" / "tf"
+    content.mkdir(parents=True)
+    (content / "srcds_run_64").touch()
+    server = SimpleNamespace(name="gmod", data={
+        "dir": str(tmp_path), "exe_name": configured, "port": 27015,
+        "startmap": "gm_construct", "server_cfg": "server.cfg", "maxplayers": 16,
+    })
+
+    command, cwd = gmodserver.get_start_command(server)
+
+    assert command[0] == "./srcds_run"
+    assert Path(cwd) == tmp_path
+    spec = gmodserver.get_container_spec(server)
+    assert spec["command"][0] == "./srcds_run"
+    assert spec["working_dir"].rstrip("/") == "/srv/server"

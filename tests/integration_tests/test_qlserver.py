@@ -80,7 +80,7 @@ def test_qlserver_lifecycle(tmp_path):
         wait_for_info_protocol(
             env,
             server_name,
-            "quake",
+            "a2s",
             START_TIMEOUT,
             expected_port=port,
         )
@@ -104,8 +104,8 @@ def test_qlserver_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "quake", (
-            f"Expected quake protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"
@@ -119,7 +119,7 @@ def test_qlserver_lifecycle(tmp_path):
     # verify stopped
     assert_alphagsm_result_ok(stop_result)
     wait_for_generic_udp_closed(
-        "127.0.0.1", port, STOP_TIMEOUT, payload=b"\xff\xff\xff\xffgetstatus\n"
+        "127.0.0.1", port, STOP_TIMEOUT, payload=b"\xff\xff\xff\xffTSource Engine Query\x00"
     )
     final_status = run_and_assert_ok(env, server_name, "status")
     assert "isn't running" in final_status.stdout

@@ -521,6 +521,22 @@ upstream Source wrapper when available, because it initializes the library searc
 path needed by the raw engine binary. Palworld uses its own dedicated-listener
 message as the smoke readiness marker.
 
+Valve launcher discovery tries the installation's own candidates before recursive
+content matches; downloaded GMod mounts must not select a different game's
+working directory. Custom executable overrides retain priority.
+
+`runtime.read_server_logs(server, lines=None)` returns retained console output
+without printing it, using the active process or Docker runtime. TeamSpeak uses
+this to recover first-start ServerQuery credentials, caching them in an
+exclusively created file with mode 0600 for subsequent container launches.
+Authenticated `ts3` info, rather than TCP availability, gates readiness.
+
+Quake Live uses Steam A2S on its game port. Its `servercfg` directory selects
+`fs_game`; `+exec` receives only the filename. Managed config entries use native
+`set` syntax and `serverstartup` selects both map and factory. The factory
+defaults to `ffa`, as illustrated in the [original id Software config](https://github.com/quakelive-server-standards/quakelive-server-standards/blob/master/configs/_id/server.cfg).
+See also the [A2SQuery supported-game table](https://github.com/linKhehe/a2squery/blob/main/docs/source/index.rst#supported-games).
+
 The integration readiness helpers use monotonic deadlines and stop early only
 after two consistent doctor reports confirm the runtime has exited. Failed or
 unknown Docker inspection results do not count as an exit. On failure, bounded

@@ -60,6 +60,10 @@ Setup configures:
 - SteamCMD also downloads common mountable Source content into `_gmod_content/`
 - default configuration and backup settings
 
+Startup prefers the server's own launcher before searching downloaded game
+content. This keeps bundled TF2 launchers from changing the server's working
+directory in process and Docker runtimes.
+
 ## Useful Commands
 
 ```bash

@@ -10,14 +10,13 @@ from conftest import (
     require_command_for_runtime,
     default_runtime_backend,
     pick_free_tcp_port,
-    wait_for_tcp_open,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_runtime_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -76,20 +75,11 @@ def test_ts3server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness — TS3 prints "ServerQuery created" once the query port is live
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["ServerQuery created", "TeamSpeak 3 Server started", "listening", "started"],
-            START_TIMEOUT,
-        )
+        # Require authenticated ServerQuery readiness through the active runtime.
+        wait_for_info_protocol(env, server_name, "ts3", START_TIMEOUT, expected_port=queryport)
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        # TS3 ServerQuery runs on the configured TCP query port; wait until it is accepting
-        wait_for_tcp_open("127.0.0.1", queryport, 300, log_path=log_path)
 
         # query — TS3 ServerQuery protocol
         query_result = run_and_assert_ok(env, server_name, "query")

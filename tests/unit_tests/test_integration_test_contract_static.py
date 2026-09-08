@@ -147,7 +147,6 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_minecraft_waterfall.py",
     "test_rimworldtogetherserver.py",
     "test_scpslserver.py",
-    "test_ts3server.py",
     "test_wurmserver.py",
     "test_wfserver.py",
     "test_ut99server.py",
@@ -1059,6 +1058,16 @@ def test_manager_log_readiness_uses_runtime_neutral_logs_command():
             offenders.append(f"{path}:{node.lineno}: manager log readiness")
 
     assert offenders == []
+
+
+@pytest.mark.parametrize("filename,protocol", [("test_ts3server.py", "ts3"), ("test_qlserver.py", "a2s")])
+def test_voice_and_quake_live_require_native_protocol_readiness(filename, protocol):
+    tree = ast.parse((INTEGRATION_TEST_DIR / filename).read_text(encoding="utf-8"))
+    readiness = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                 and _call_name(node) == "wait_for_info_protocol"]
+    assert len(readiness) == 1
+    assert isinstance(readiness[0].args[2], ast.Constant)
+    assert readiness[0].args[2].value == protocol
 
 
 def test_manager_log_guard_resolves_assigned_home_logs_path():

@@ -78,8 +78,9 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'ServerQuery created|TeamSpeak 3 Server started|listening|started'
 wait_for_info_protocol "$SERVER_NAME" ts3 "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

@@ -3,8 +3,9 @@
 This guide covers the `qlserver` module in AlphaGSM.
 
 `qlserver` retains its existing `ENABLED (BYO)` classification while process and
-Docker startup are revalidated in CI. The latest failure was a missing bundled
-library search path; it did not establish an authentication requirement.
+Docker startup are revalidated in CI. The latest run reached Steam initialization
+but exposed incorrect config loading and query protocol selection; it did not
+establish an authentication requirement.
 Local runs use the process runtime unless you select Docker.
 
 ## Requirements
@@ -70,6 +71,7 @@ alphagsm myqlserver update
 alphagsm myqlserver backup
 alphagsm myqlserver set servername "AlphaGSM QL"
 alphagsm myqlserver set map asylum
+alphagsm myqlserver set factory ca
 ```
 
 `set servername` and `set map` rewrite `baseq3/server.cfg` immediately through the schema-backed config-sync path.
@@ -113,9 +115,12 @@ alphagsm myqlserver mod cleanup
 
 - **Config files**: `baseq3/server.cfg`
 - **Template**: See [server-templates/qlserver/](../server-templates/qlserver/) if available
-- **Schema-backed sync**: AlphaGSM keeps `hostname` and `startmap` aligned with `set`
-- **Current validation**: the bundled Steam API library search path has been
-  corrected; process and Docker lifecycle verification is pending CI
+- **Managed settings**: `hostname`, `startmap`, `factory` and `bindaddress` update
+  native Quake configuration. The default factory is `ffa`; the default bind
+  address is `0.0.0.0` (all local interfaces).
+- **Queries**: `query` and `info` use Steam A2S on the game port.
+- **Current validation**: config loading, startup factory and query corrections
+  have unit coverage; process and Docker lifecycle verification is pending CI.
 
 ### Maps and Mods
 

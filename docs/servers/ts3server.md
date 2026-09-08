@@ -68,9 +68,14 @@ alphagsm myts3serve backup
 - **Location**: `<install_dir>/ts3server`
 - **Engine**: Custom
 
-Smoke and integration validation wait for the TeamSpeak startup log to report
-`ServerQuery created`, then require `alphagsm info --json` to report protocol
-`ts3`.
+Smoke and integration validation require an authenticated ServerQuery response:
+`alphagsm info --json` must report protocol `ts3`.
+
+AlphaGSM reads first-start ServerQuery credentials from the selected runtime's
+logs, including Docker, without displaying them. Recovered credentials are saved
+in `serverquery_admin_password.txt` under the install directory with access
+restricted to its owner, so replacing the container retains query access. Keep
+this file with the server database when moving an installation.
 
 ### Server Configuration
 

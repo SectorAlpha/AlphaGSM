@@ -25,12 +25,12 @@ def lifecycle(monkeypatch):
     monkeypatch.setattr(module, "pick_free_tcp_port", lambda: 27960)
 
     def readiness(_env, name, protocol, timeout, expected_port):
-        assert (name, protocol, timeout, expected_port) == ("itqlserver", "quake", 600, 27960)
+        assert (name, protocol, timeout, expected_port) == ("itqlserver", "a2s", 600, 27960)
         calls.append("readiness")
-        return {"protocol": "quake", "port": 27960, "players": 0}
+        return {"protocol": "a2s", "port": 27960, "players": 0}
 
     def closed(host, port, timeout, payload):
-        assert (host, port, timeout, payload) == ("127.0.0.1", 27960, 90, b"\xff\xff\xff\xffgetstatus\n")
+        assert (host, port, timeout, payload) == ("127.0.0.1", 27960, 90, b"\xff\xff\xff\xffTSource Engine Query\x00")
         calls.append("udp closed")
 
     monkeypatch.setattr(module, "wait_for_info_protocol", readiness, raising=False)
@@ -41,7 +41,7 @@ def lifecycle(monkeypatch):
     def run(_env, _name, command, *args, **_kwargs):
         calls.append(command)
         if command == "info":
-            output = json.dumps({"protocol": "quake", "port": 27960, "players": 0}) if args else "Players: 0"
+            output = json.dumps({"protocol": "a2s", "port": 27960, "players": 0}) if args else "Players: 0"
         elif command == "status":
             output = "Server isn't running" if "stop" in calls else "Server is running"
         else:
@@ -54,7 +54,7 @@ def lifecycle(monkeypatch):
 
 
 @pytest.mark.parametrize("backend", ["process", "docker"])
-def test_lifecycle_checks_real_quake_readiness_and_udp_shutdown(lifecycle, tmp_path, monkeypatch, backend):
+def test_lifecycle_checks_real_a2s_readiness_and_udp_shutdown(lifecycle, tmp_path, monkeypatch, backend):
     module, _helpers, calls, _run = lifecycle
     monkeypatch.setenv("ALPHAGSM_TEST_RUNTIME_BACKEND", backend)
     module.test_qlserver_lifecycle(tmp_path)

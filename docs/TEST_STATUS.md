@@ -43,6 +43,18 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- [PR #36 run 34213901844](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34213901844)
+  completed at commit `51ad45e4` with 183 successful and 90 failed checks
+  (job counts, including rechecks and smoke batches). GMod selected a launcher
+  inside `_gmod_content/tf`; TeamSpeak Docker reached TCP readiness but failed
+  authenticated ServerQuery; Quake Live could not exec `baseq3/server.cfg` and
+  timed out waiting for the older Quake query protocol. Pending fixes prefer
+  install-root Valve launchers, recover TeamSpeak credentials from runtime logs,
+  and use Quake Live's native config/startup syntax and Steam A2S protocol.
+  CSS and related Source Docker Steam-initialization stalls remain unresolved.
+  Local verification is limited to unit tests and lint; no support-state
+  promotion is claimed before replacement CI proves these game lifecycles.
+
 - [PR #36 run 34155516516](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34155516516)
   passed all five binary acceptance targets. Initial integration artifacts contain
   186 passes, 87 failures and 199 skips (down from 113 initial failures in the

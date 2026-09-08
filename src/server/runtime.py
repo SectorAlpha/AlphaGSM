@@ -2562,6 +2562,10 @@ class BaseRuntime:
         """Display recent runtime logs for *server*."""
         raise NotImplementedError
 
+    def read_logs(self, server, lines=50):
+        """Return runtime logs without printing; None requests all retained lines."""
+        raise NotImplementedError
+
 
 class ProcessRuntime(BaseRuntime):
     """Adapter over the existing screen/tmux/subprocess facade."""
@@ -2596,18 +2600,22 @@ class ProcessRuntime(BaseRuntime):
     def show_logs(self, server, lines=50):
         if not isinstance(lines, int) or lines < 0:
             raise RuntimeError("Log line count must be a nonnegative integer")
+        print(self.read_logs(server, lines=lines), end="")
+
+    def read_logs(self, server, lines=50):
+        if lines is not None and (not isinstance(lines, int) or lines < 0):
+            raise RuntimeError("Log line count must be a nonnegative integer or None")
         log_file = screen.logpath(server.name)
         if not os.path.isfile(log_file):
             raise RuntimeError("No log file found at: " + log_file)
         if lines == 0:
-            return
+            return ""
         try:
             with open(log_file, encoding="utf-8", errors="replace") as handle:
                 recent_lines = deque(handle, maxlen=lines)
         except OSError as ex:
             raise RuntimeError("Failed to read log file: " + log_file) from ex
-        for line in recent_lines:
-            print(line, end="")
+        return "".join(recent_lines)
 
 
 def _resolve_effective_host_user(*, reject_root):
@@ -3478,6 +3486,22 @@ class ContainerRuntime(BaseRuntime):
         if result.returncode != 0:
             raise RuntimeError("Failed to read docker logs for: " + spec["container_name"])
 
+    def read_logs(self, server, lines=50):
+        if lines is not None and (not isinstance(lines, int) or lines < 0):
+            raise RuntimeError("Log line count must be a nonnegative integer or None")
+        spec = get_container_spec(server)
+        try:
+            result = sp.run(
+                ["docker", "logs", "--tail", "all" if lines is None else str(lines),
+                 spec["container_name"]],
+                check=False, capture_output=True, text=True, errors="replace", timeout=30,
+            )
+        except (OSError, sp.TimeoutExpired) as ex:
+            raise RuntimeError("Failed to read docker logs for: " + spec["container_name"]) from ex
+        if result.returncode != 0:
+            raise RuntimeError("Failed to read docker logs for: " + spec["container_name"])
+        return result.stdout + result.stderr
+
 
 def get_runtime(server):
     """Return the active runtime for *server*."""
@@ -3510,3 +3534,9 @@ def show_server_logs(server, lines=50):
     """Display recent logs for the selected runtime."""
 
     return get_runtime(server).show_logs(server, lines=lines)
+
+
+def read_server_logs(server, lines=50):
+    """Read logs from the selected runtime without displaying their contents."""
+
+    return get_runtime(server).read_logs(server, lines=lines)

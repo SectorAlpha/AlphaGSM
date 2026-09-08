@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-08
+- Garry's Mod: prefer the server's own launcher before launchers in downloaded
+  game content, preserving process and Docker working directories.
+- TeamSpeak 3: recover ServerQuery credentials from the active runtime's logs
+  and cache them privately so Docker queries survive container recreation.
+- Quake Live: use Steam A2S queries, load configs relative to the game directory,
+  write native set commands, and select startup maps with a factory (default ffa).
+  Bind to all local interfaces by default; bindaddress allows an explicit IP.
 - Source: prefer upstream launch wrappers over raw engine binaries so bundled
   shared-library paths are initialized for process and Docker launches.
 - World creation: Terraria, TShock and Necesse keep native world selection on

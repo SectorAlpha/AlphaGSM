@@ -260,8 +260,8 @@ def get_query_credentials(server):
 
     Checks for the ``serverquery_admin_password.txt`` file written by
     TeamSpeak 3 server 3.13.3+ on first run, then falls back to parsing the
-    admin password from the AlphaGSM screen log (where TS3 prints it at
-    first startup).
+    admin password from the selected runtime's log. Recovered credentials are
+    retained privately so container recreation does not lose them.
     """
     server_dir = pathlib.Path(server.data["dir"])
     # TS3 3.13.3+ writes the admin password to this file on first run.
@@ -271,19 +271,25 @@ def get_query_credentials(server):
         if password:
             return ("serveradmin", password)
 
-    # Fallback: parse the AlphaGSM screen log for the TS3 admin password line.
+    # Fallback: parse the active runtime log for the TS3 admin password line.
     # TS3 prints: loginname= "serveradmin", password= "<pw>" on first startup.
     try:
-        log_file = pathlib.Path(screen.logpath(server.name))
-        if log_file.exists():
-            log_text = log_file.read_text(errors="replace")
-            match = re.search(r'loginname= "serveradmin", password= "([^"]+)"', log_text)
-            if match:
-                return ("serveradmin", match.group(1))
-    except Exception:  # noqa: BLE001
+        log_text = runtime_module.read_server_logs(server, lines=None)
+    except (OSError, runtime_module.RuntimeError):
+        return None
+    match = re.search(r'loginname= "serveradmin", password= "([^"]+)"', log_text)
+    if not match:
+        return None
+    password = match.group(1)
+    try:
+        # Exclusive creation never overwrites an operator's credential file
+        # or follows an existing symlink. Keep the secret out of CLI output.
+        descriptor = os.open(pw_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(password + "\n")
+    except OSError:
         pass
-
-    return None
+    return ("serveradmin", password)
 
 
 def checkvalue(server, key, *value):

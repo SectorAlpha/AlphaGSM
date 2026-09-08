@@ -100,6 +100,9 @@ def test_get_start_command(tmp_path):
         "LD_LIBRARY_PATH=./linux64",
         "./qzeroded.x64",
         "+set",
+        "fs_game",
+        "baseq3",
+        "+set",
         "fs_homepath",
         server.data["dir"],
         "+set",
@@ -110,8 +113,12 @@ def test_get_start_command(tmp_path):
         "test",
         "+exec",
         "test",
-        "+map",
-        "test",
+        "+set",
+        "serverstartup",
+        "map test ffa",
+        "+set",
+        "net_ip",
+        "0.0.0.0",
     ]
     assert cwd == server.data["dir"]
 
@@ -134,6 +141,9 @@ def test_get_start_command_uses_container_paths_for_docker(tmp_path):
         "LD_LIBRARY_PATH=./linux64",
         "./qzeroded.x64",
         "+set",
+        "fs_game",
+        "baseq3",
+        "+set",
         "fs_homepath",
         "/srv/server",
         "+set",
@@ -144,8 +154,12 @@ def test_get_start_command_uses_container_paths_for_docker(tmp_path):
         "test",
         "+exec",
         "test",
-        "+map",
-        "test",
+        "+set",
+        "serverstartup",
+        "map test ffa",
+        "+set",
+        "net_ip",
+        "0.0.0.0",
     ]
     assert cwd == server.data["dir"]
 
@@ -166,6 +180,9 @@ def test_get_container_spec_uses_container_homepath(tmp_path):
         "LD_LIBRARY_PATH=./linux64",
         "./qzeroded.x64",
         "+set",
+        "fs_game",
+        "baseq3",
+        "+set",
         "fs_homepath",
         "/srv/server",
         "+set",
@@ -176,8 +193,12 @@ def test_get_container_spec_uses_container_homepath(tmp_path):
         "test",
         "+exec",
         "server.cfg",
-        "+map",
-        "campgrounds",
+        "+set",
+        "serverstartup",
+        "map campgrounds ffa",
+        "+set",
+        "net_ip",
+        "0.0.0.0",
     ]
 
 
@@ -228,8 +249,9 @@ def test_sync_server_config_updates_quake_live_server_cfg(tmp_path):
     mod.sync_server_config(server)
 
     assert config_path.read_text(encoding="utf-8").splitlines() == [
-        'hostname="AlphaGSM QL Test"',
-        'startmap=asylum',
+        'set sv_hostname "AlphaGSM QL Test"',
+        'set serverstartup "map asylum ffa"',
+        'set net_ip "0.0.0.0"',
     ]
 
 
@@ -301,8 +323,8 @@ def test_checkvalue_hostname():
 
 def test_checkvalue_startmap():
     server = DummyServer()
-    result = mod.checkvalue(server, ("startmap",), "/test/value")
-    assert result == "/test/value"
+    result = mod.checkvalue(server, ("startmap",), "campgrounds")
+    assert result == "campgrounds"
 
 
 def test_checkvalue_servercfg():
