@@ -10,6 +10,7 @@ import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
 from utils.gamemodules.minecraft import messaging as minecraft_messaging
+from utils.gamemodules.minecraft.worlds import java_world_paths
 from utils.gamemodules import common as gamemodule_common
 from utils.gamemodules.minecraft.properties_config import (
     CONFIG_SYNC_KEYS,
@@ -23,6 +24,12 @@ import random
 
 # required tuple
 commands = ("op", "deop")
+
+
+def get_wipe_paths(server):
+    """Return this Java server's configured world directory."""
+
+    return java_world_paths(server)
 
 # required
 # dictionary command_args

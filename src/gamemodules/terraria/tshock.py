@@ -20,6 +20,7 @@ from .common import (
     configure_base,
     do_stop,
     get_tshock_start_command,
+    get_wipe_paths,
     install_archive,
     message,
     resolve_tshock_download,
@@ -112,10 +113,10 @@ def install(server):
         apply_configured_mods(server)
 
 
-def get_start_command(server):
+def get_start_command(server, *, autocreate=False):
     """Build the start command for TShock."""
 
-    return get_tshock_start_command(server)
+    return get_tshock_start_command(server, autocreate=autocreate)
 
 
 def get_query_address(server):
@@ -136,9 +137,13 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     extra={'host_dependencies': ({'id': 'dotnet', 'display_name': '.NET', 'command_key': 'dotnetpath', 'command': 'dotnet'},)},
 )
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
+def get_container_spec(server, *, autocreate=False):
+    """Build the Docker command with the same explicit creation option."""
+
+    return runtime_module.build_container_spec(
+        server,
         family='steamcmd-linux',
-        get_start_command=get_start_command,
+        get_start_command=lambda current: get_start_command(current, autocreate=autocreate),
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-)
+    )

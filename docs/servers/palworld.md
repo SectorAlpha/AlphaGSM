@@ -8,6 +8,9 @@ module exposes the same launch and health contract to both runtimes.
 
 ## Requirements
 
+The smoke runner waits for Palworld's `Running Palworld dedicated server on :`
+message before checking status and stopping the server.
+
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`

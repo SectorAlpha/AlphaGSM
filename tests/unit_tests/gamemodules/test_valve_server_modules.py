@@ -58,7 +58,7 @@ def test_source_module_start_command_prefers_nested_resolved_launcher(tmp_path):
     assert cwd == str(nested_dir)
 
 
-def test_source_module_start_command_prefers_install_tree_srcds_linux64(tmp_path):
+def test_source_module_start_command_keeps_wrapper_over_nested_binary(tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
     server = SimpleNamespace(name="cssalpha", data={})
 
@@ -71,9 +71,9 @@ def test_source_module_start_command_prefers_install_tree_srcds_linux64(tmp_path
 
     cmd, cwd = module.get_start_command(server)
 
-    assert cmd[:4] == ["./srcds_linux64", "-game", "cstrike", "-strictportbind"]
-    assert cwd == str(bin_dir)
-    assert server.data["exe_name"] == "srcds_linux64"
+    assert cmd[:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
+    assert cwd == server.data["dir"]
+    assert server.data["exe_name"] == "srcds_run"
 
 
 def test_goldsrc_module_start_command_prefers_runtime_wrapper(tmp_path):

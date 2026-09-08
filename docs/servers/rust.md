@@ -54,6 +54,15 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+## Resetting the World
+
+Stop the server, then run `alphagsm myrust reset-world` (or `wipe`). AlphaGSM
+lists the world data to delete and asks for confirmation. Add `-Y` to skip the
+prompt. Run `start` afterwards to generate a fresh world.
+
+See [world creation and reset](../world-management.md) for exactly which files
+are removed and the supported layouts.
+
 ## Useful Commands
 
 ```bash

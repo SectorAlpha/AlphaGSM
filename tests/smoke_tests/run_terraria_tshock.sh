@@ -84,7 +84,7 @@ run_create_or_skip_disabled "$SERVER_NAME" create terraria.tshock
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
-run_alphagsm "$SERVER_NAME" start
+run_alphagsm "$SERVER_NAME" start --autocreate
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" query

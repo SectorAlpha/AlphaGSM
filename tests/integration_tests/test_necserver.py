@@ -68,7 +68,7 @@ def test_necserver_lifecycle(tmp_path):
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
 
     # start
-    run_and_assert_ok(env, server_name, "start")
+    run_and_assert_ok(env, server_name, "start", "--autocreate")
 
     try:
         # wait for readiness

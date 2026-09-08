@@ -75,7 +75,7 @@ echo "Using port: $PORT"
 run_create_or_skip_disabled "$SERVER_NAME" create necserver
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
-run_alphagsm "$SERVER_NAME" start
+run_alphagsm "$SERVER_NAME" start --autocreate
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status

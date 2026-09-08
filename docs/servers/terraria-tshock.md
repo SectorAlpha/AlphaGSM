@@ -27,10 +27,10 @@ Run setup:
 alphagsm mytshock setup
 ```
 
-Start it:
+Create its first world and start it:
 
 ```bash
-alphagsm mytshock start
+alphagsm mytshock start --autocreate
 ```
 
 Check it:
@@ -52,6 +52,20 @@ Setup configures:
 - the game port (default 7777)
 - the install directory
 - downloads and extracts the server archive
+
+
+## World Selection and Reset
+
+`start --autocreate` creates the configured world only when it is missing.
+If the world already exists, the option does nothing and startup behaves like
+plain `start`. Use `alphagsm mytshock connect` to answer the native console prompts.
+
+To start over, stop the server and run `alphagsm mytshock reset-world`.
+It lists the world data to delete and asks for confirmation; `-Y` bypasses
+that prompt. `wipe` is an alias for the same operation.
+
+See [world creation and reset](../world-management.md) for settings, supported
+paths, and the full lifecycle.
 
 ## Useful Commands
 

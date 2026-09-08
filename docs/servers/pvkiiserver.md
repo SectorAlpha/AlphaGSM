@@ -6,6 +6,13 @@ This guide covers the `pvkiiserver` module in AlphaGSM.
 
 ## Requirements
 
+AlphaGSM prefers the installed Source launch wrapper so its library search paths
+are set before the dedicated engine loads. Explicit executable overrides are
+still honored.
+If an existing installation saved `srcds_linux64`, use
+`alphagsm mypvkiiser set exe_name srcds_run` before starting it to restore the
+wrapper's library setup (replace `mypvkiiser` with your server name).
+
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`

@@ -480,7 +480,7 @@ def _valve_launcher_candidates(*, engine, default_executable, configured_executa
         candidates.append(configured_executable)
 
     if engine == "source" and default_executable == "srcds_run":
-        candidates.extend(("srcds_linux64", "srcds_run_64", "srcds_run"))
+        candidates.extend(("srcds_run_64", "srcds_run", "srcds_linux64"))
     elif engine == "goldsrc" and default_executable == "hlds_run":
         candidates.extend(("hlds_run", "hlds_linux"))
     elif default_executable:

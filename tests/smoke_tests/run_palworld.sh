@@ -77,7 +77,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_start_with_port_retry "$SERVER_NAME"
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Running Palworld dedicated server on :'
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

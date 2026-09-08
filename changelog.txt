@@ -8,6 +8,18 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-08
+- Source: prefer upstream launch wrappers over raw engine binaries so bundled
+  shared-library paths are initialized for process and Docker launches.
+- World creation: Terraria, TShock and Necesse keep native world selection on
+  plain start; start --autocreate creates only missing worlds and is a no-op
+  when a world exists. Fresh smoke/integration fixtures opt in explicitly.
+- Necesse: persist new-install save data under the install root, with explicit
+  Docker mounts; legacy installs retain their location until datadir is set.
+- World reset: add reset-world as an alias for wipe, preview targets and require
+  confirmation (-Y bypasses it). Add scoped support for Minecraft, Terraria,
+  TShock, Necesse and Rust procedural worlds; preserve configs and plugins.
+- Smoke tests: require A2S readiness for nine GoldSrc servers and recognize
+  Palworld's dedicated-server listening message.
 - Runtime: use the Docker-aware query host for Multi Theft Auto and Operation:
   Harsh Doorstop instead of probing the manager container's loopback address.
 - Java: select Java 25 for Velocity 4.x/current releases and Java 21 for 3.x;

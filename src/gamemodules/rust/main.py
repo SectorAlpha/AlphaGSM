@@ -1,6 +1,8 @@
 """Rust dedicated server lifecycle helpers."""
 
 import os
+from pathlib import Path
+import re
 
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -138,6 +140,21 @@ def get_start_command(server):
         ],
         server.data["dir"],
     )
+
+
+def get_wipe_paths(server):
+    """Return only the configured procedural map, save and rolling save backups."""
+
+    if server.data.get("level", "Procedural Map") != "Procedural Map":
+        raise ServerError("World wipe currently supports Rust's Procedural Map only")
+    directory = Path("server") / "my_server_identity"
+    root = Path(server.data["dir"]) / directory
+    prefix = "proceduralmap.%s.%s" % (server.data["worldsize"], server.data["seed"])
+    pattern = re.compile(re.escape(prefix) + r"(?:\.[^.]+)?\.(?:map|sav)(?:\.\d+)?$")
+    if not root.is_dir():
+        return []
+    return [str(directory / path.name) for path in sorted(root.iterdir())
+            if pattern.fullmatch(path.name)]
 
 
 def do_stop(server, j):

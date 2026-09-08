@@ -15,6 +15,13 @@ from utils.gamemodules.minecraft.jardownload import install_downloaded_jar
 
 import server.runtime as runtime_module
 
+
+def get_wipe_paths(server):
+    """Reset Paper's configured overworld, Nether, and End together."""
+
+    return cust.java_world_paths(server, separate_dimensions=True)
+
+
 commands = commands + ("mod",)
 command_args = command_args.copy()
 command_descriptions = command_descriptions.copy()

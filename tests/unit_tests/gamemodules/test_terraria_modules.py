@@ -218,7 +218,7 @@ def test_terraria_vanilla_start_command_autocreates_missing_world(tmp_path):
         }
     )
 
-    cmd, cwd = vanilla.get_start_command(server)
+    cmd, cwd = vanilla.get_start_command(server, autocreate=True)
 
     assert cmd[0] == "./Linux/TerrariaServer.bin.x86_64"
     assert "-autocreate" in cmd
@@ -244,7 +244,7 @@ def test_terraria_vanilla_start_command_uses_relative_paths_for_docker(tmp_path)
         }
     )
 
-    cmd, cwd = vanilla.get_start_command(server)
+    cmd, cwd = vanilla.get_start_command(server, autocreate=True)
 
     assert cmd == [
         "./Linux/TerrariaServer.bin.x86_64",
@@ -258,6 +258,8 @@ def test_terraria_vanilla_start_command_uses_relative_paths_for_docker(tmp_path)
         "2",
         "-world",
         "Worlds/terra.wld",
+        "-worldname",
+        "terra",
     ]
     assert cwd == str(tmp_path)
 
@@ -276,7 +278,8 @@ def test_tshock_start_command_uses_native_binary(tmp_path):
 
     cmd, cwd = tshock.get_start_command(server)
 
-    assert cmd == ["./TShock.Server", "-port", "7777"]
+    assert cmd[:3] == ["./TShock.Server", "-port", "7777"]
+    assert "-world" not in cmd
     assert cwd == str(tmp_path)
 
 
@@ -295,7 +298,8 @@ def test_tshock_start_command_uses_dotnet_for_legacy_dll(tmp_path):
 
     cmd, cwd = tshock.get_start_command(server)
 
-    assert cmd == ["/usr/bin/dotnet", "TShock.Server.dll", "-port", "7777"]
+    assert cmd[:4] == ["/usr/bin/dotnet", "TShock.Server.dll", "-port", "7777"]
+    assert "-world" not in cmd
     assert cwd == str(tmp_path)
 
 
@@ -354,7 +358,8 @@ def test_tshock_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
     assert requirements["host_dependencies"] == (
         {"id": "dotnet", "display_name": ".NET", "command_key": "dotnetpath", "command": "dotnet"},
     )
-    assert spec["command"] == ["./TShock.Server", "-port", "7778"]
+    assert spec["command"][:3] == ["./TShock.Server", "-port", "7778"]
+    assert "-world" not in spec["command"]
 
 
 def test_tshock_runtime_wrappers_keep_dotnet_dependency_for_legacy_dll(tmp_path):
@@ -376,7 +381,7 @@ def test_tshock_runtime_wrappers_keep_dotnet_dependency_for_legacy_dll(tmp_path)
     assert requirements["host_dependencies"] == (
         {"id": "dotnet", "display_name": ".NET", "command_key": "dotnetpath", "command": "dotnet"},
     )
-    assert spec["command"] == ["/usr/bin/dotnet", "TShock.Server.dll", "-port", "7778"]
+    assert spec["command"][:4] == ["/usr/bin/dotnet", "TShock.Server.dll", "-port", "7778"]
 
 
 def test_tshock_query_and_info_use_tcp(tmp_path):

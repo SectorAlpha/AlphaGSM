@@ -63,7 +63,7 @@ def test_terraria_tshock_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
 
     # start
-    run_and_assert_ok(env, server_name, "start")
+    run_and_assert_ok(env, server_name, "start", "--autocreate")
 
     try:
         wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)

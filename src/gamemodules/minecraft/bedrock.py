@@ -20,8 +20,18 @@ from utils.gamemodules.minecraft.properties_config import (
     build_setting_schema,
 )
 from .custom import updateconfig
+from utils.gamemodules.minecraft.worlds import configured_world_name, validate_world_directories
 
 import server.runtime as runtime_module
+
+
+def get_wipe_paths(server):
+    """Return the configured Bedrock world, preserving other worlds."""
+
+    paths = [os.path.join("worlds", configured_world_name(server, default="Bedrock level"))]
+    validate_world_directories(server, paths)
+    return paths
+
 
 BEDROCK_DOWNLOAD_PAGES = (
     "https://www.minecraft.net/en-us/download/server/bedrock",

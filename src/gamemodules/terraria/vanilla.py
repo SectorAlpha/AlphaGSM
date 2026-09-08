@@ -12,6 +12,7 @@ from .common import (
     configure_base,
     do_stop,
     get_vanilla_start_command,
+    get_wipe_paths,
     install_archive,
     message,
     resolve_terraria_download,
@@ -58,19 +59,23 @@ def install(server):
     install_archive(server)
 
 
-def get_start_command(server):
+def get_start_command(server, *, autocreate=False):
     """Build the start command for Terraria vanilla."""
 
-    return get_vanilla_start_command(server)
+    return get_vanilla_start_command(server, autocreate=autocreate)
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
+def get_container_spec(server, *, autocreate=False):
+    """Build the Docker command with the same explicit creation option."""
+
+    return runtime_module.build_container_spec(
+        server,
         family='steamcmd-linux',
-        get_start_command=get_start_command,
+        get_start_command=lambda current: get_start_command(current, autocreate=autocreate),
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-)
+    )

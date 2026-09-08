@@ -6,6 +6,13 @@ This guide covers the `gmodserver` module in AlphaGSM.
 
 ## Requirements
 
+AlphaGSM prefers the installed `srcds_run_64` or `srcds_run` wrapper so the
+engine can load its bundled shared libraries. An explicit executable override
+continues to take precedence.
+If an existing installation saved `srcds_linux64`, run
+`alphagsm mygmodserv set exe_name srcds_run` before starting it to restore the
+wrapper's library setup.
+
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`

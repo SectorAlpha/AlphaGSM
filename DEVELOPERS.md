@@ -188,8 +188,27 @@ status report:
 | `get_info_address` | `(server)` | Return `(host, port, protocol)` for `info`; protocols: `"a2s"`, `"slp"`, `"tcp"`.  Always add this unless the module uses `define_valve_server_module()`. |
 | `update` | `(server, validate=False, restart=False, ...)` | In-place server update; wire into `commands` / `command_functions` |
 | `restart` | `(server, ...)` | Custom restart logic if the default stop+start is insufficient |
-| `wipe` | `(server)` | Delete world/save data; alternatively set `wipe_paths` attribute |
+| `get_wipe_paths` | `(server)` | Return explicit relative world-data paths for the shared preview/confirmation/deletion flow; fixed `wipe_paths` lists also work |
+| `get_wipe_root` | `(server)` | Optional explicit world-data root (default: install directory), e.g. Necesse's configured `datadir` |
 | `max_stop_wait` | attribute `int` | Max minutes to wait for graceful stop (default 5, capped at 5) |
+
+### World lifecycle options
+
+Keep native interactive world selection available. Terraria/TShock and Necesse
+expose a one-launch `start --autocreate` option for fresh unattended fixtures;
+tests must opt in explicitly. If the configured world path already exists,
+including an unreadable file or symlink, the option produces exactly the plain
+start command. Existence checks use host paths even when building Docker specs.
+Necesse explicitly mounts its data directory and passes the container path to Java.
+Minecraft and Rust already generate missing worlds in their normal launch flow.
+
+`reset-world` and `wipe` share `server.worlds.wipe_worlds`. Module hooks only
+resolve targets; core code validates relative paths, rejects symlinked targets
+and parents, prints the plan, confirms by default (`-Y` / `--yes` bypass),
+rechecks the stopped state and plan, then deletes those targets. Directory
+entries mean recursive removal of their contents. Unpreviewable module `wipe`
+callbacks are no longer executed. Do not return an entire install/config/plugin
+root or guess a native save location. See [world management](docs/world-management.md).
 
 ### Shared mod-support foundation
 
@@ -495,6 +514,12 @@ counts to hide startup crashes, missing libraries, or wrong query endpoints.
 Readiness timeouts and unexpected shutdown failures must fail smoke tests too.
 The shared smoke helpers retain query errors and capture runtime logs/doctor
 output before cleanup can remove the failed server.
+
+GoldSrc smoke runners poll `info --json` for an A2S response before `query` and
+`info`; Source-only log markers are not a GoldSrc readiness contract. Keep the
+upstream Source wrapper when available, because it initializes the library search
+path needed by the raw engine binary. Palworld uses its own dedicated-listener
+message as the smoke readiness marker.
 
 The integration readiness helpers use monotonic deadlines and stop early only
 after two consistent doctor reports confirm the runtime has exited. Failed or

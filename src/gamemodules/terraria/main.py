@@ -16,13 +16,13 @@ def __getattr__(name):
     return getattr(_vanilla_module(), name)
 
 
-def get_start_command(server):
-    return _vanilla_module().get_start_command(server)
+def get_start_command(server, *, autocreate=False):
+    return _vanilla_module().get_start_command(server, autocreate=autocreate)
 
 
 def get_runtime_requirements(server):
     return _vanilla_module().get_runtime_requirements(server)
 
 
-def get_container_spec(server):
-    return _vanilla_module().get_container_spec(server)
+def get_container_spec(server, *, autocreate=False):
+    return _vanilla_module().get_container_spec(server, autocreate=autocreate)

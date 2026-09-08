@@ -17,6 +17,7 @@ from .module_catalog import load_default_module_catalog
 from . import port_manager
 from . import runtime as runtime_module
 from . import diagnostics as diagnostics_module
+from . import worlds as worlds_module
 from .settable_keys import KeyResolutionError, resolve_requested_key
 from .settable_keys import get_effective_aliases
 from .errors import ServerError
@@ -378,6 +379,7 @@ class Server(object):
         "backup",
         "restore",
         "wipe",
+        "reset-world",
         "query",
         "info",
         "doctor",
@@ -516,7 +518,14 @@ class Server(object):
                 ),
             )
         ),
-        "wipe": CmdSpec(),
+        "wipe": CmdSpec(options=(
+            OptSpec("Y", ["yes"], "Delete the listed world data without prompting",
+                    "yes", None, True),
+        )),
+        "reset-world": CmdSpec(options=(
+            OptSpec("Y", ["yes"], "Delete the listed world data without prompting",
+                    "yes", None, True),
+        )),
         "query": CmdSpec(),
         "info": CmdSpec(
             options=(
@@ -569,7 +578,9 @@ class Server(object):
         "The server will be stopped first if it is running.",
         "wipe": "Delete game-world data for supported server types.\n"
         "The server must be stopped before wiping. "
-        "Which files are removed is defined by the game module.",
+        "Lists files before asking for confirmation; -Y skips the prompt.",
+        "reset-world": "Alias for wipe: preview and confirm deletion of game-world data. "
+        "Stop the server first; -Y skips the confirmation prompt.",
         "query": "Query the game server to check whether it is responding.\n"
         "Uses the Source A2S protocol when a query port is configured, "
         "otherwise falls back to a TCP ping on the game port.",
@@ -798,7 +809,7 @@ class Server(object):
                 self.module.backup(self, *args, **kwargs)
             elif command == "restore":
                 self.restore(*args, **kwargs)
-            elif command == "wipe":
+            elif command in ("wipe", "reset-world"):
                 self.wipe(*args, **kwargs)
             elif command == "query":
                 self.query(*args, **kwargs)
@@ -1015,36 +1026,10 @@ class Server(object):
         backup_utils.restore(game_dir, filename)
         print("Restore complete: " + filename)
 
-    def wipe(self, **kwargs):
-        """Delete game-world data for this server.
+    def wipe(self, *, yes=False):
+        """Preview and confirm deletion of module-declared world data."""
 
-        The server must not be running.  The game module must expose a
-        ``wipe_paths`` attribute (list of paths relative to the game
-        directory) or a ``wipe(server)`` callable; otherwise a ServerError
-        is raised.
-        """
-        if runtime_module.check_server_running(self):
-            raise ServerError(
-                "Error: Cannot wipe a running server. Stop it first."
-            )
-        wipe_fn = getattr(self.module, "wipe", None)
-        if callable(wipe_fn):
-            wipe_fn(self)
-            return
-        wipe_paths = getattr(self.module, "wipe_paths", None)
-        if wipe_paths is None:
-            raise ServerError(
-                "Wipe is not supported for this server type."
-            )
-        game_dir = self.data["dir"]
-        for rel_path in wipe_paths:
-            target = os.path.join(game_dir, rel_path)
-            if not os.path.exists(target):
-                continue
-            result = sp.run(["rm", "-rf", target], check=False)
-            if result.returncode != 0:
-                raise ServerError("Failed to remove: " + target)
-            print("Removed: " + target)
+        worlds_module.wipe_worlds(self, yes=yes)
 
     def query(self, **kwargs):
         """Query the game server to check whether it is responding.

@@ -1671,6 +1671,15 @@ def test_restore_raises_for_out_of_range_index(monkeypatch):
 # wipe
 # ---------------------------------------------------------------------------
 
+@pytest.mark.parametrize("command", ["wipe", "reset-world"])
+def test_world_reset_commands_share_dispatch(monkeypatch, command):
+    srv = make_server()
+    calls = []
+    monkeypatch.setattr(srv, "wipe", lambda **kwargs: calls.append(kwargs))
+    srv.run_command(command, yes=True)
+    assert calls == [{"yes": True}]
+
+
 def test_wipe_raises_if_server_running(monkeypatch):
     srv = make_server(data=DummyData({"dir": "/srv/game", "port": "27015"}))
     monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: True)
@@ -1689,7 +1698,7 @@ def test_wipe_raises_if_no_wipe_support(monkeypatch):
         srv.wipe()
 
 
-def test_wipe_calls_module_wipe_callable(monkeypatch):
+def test_wipe_rejects_unpreviewable_module_wipe_callable(monkeypatch):
     calls = []
     module = DummyModule()
     module.wipe = lambda server: calls.append("wipe")
@@ -1697,9 +1706,10 @@ def test_wipe_calls_module_wipe_callable(monkeypatch):
     srv = make_server(module=module, data=DummyData({"dir": "/srv/game", "port": "27015"}))
     monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
 
-    srv.wipe()
+    with pytest.raises(server_module.ServerError, match="not supported"):
+        srv.wipe()
 
-    assert calls == ["wipe"]
+    assert calls == []
 
 
 def test_wipe_removes_wipe_paths(monkeypatch, tmp_path):
@@ -1713,13 +1723,12 @@ def test_wipe_removes_wipe_paths(monkeypatch, tmp_path):
 
     srv = make_server(module=module, data=DummyData({"dir": str(game_dir), "port": "27015"}))
     monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
-    # Allow real sp.run so rm -rf actually runs
-    srv.wipe()
+    srv.wipe(yes=True)
 
     assert not world_dir.exists()
 
 
-def test_wipe_raises_if_rm_fails(monkeypatch, tmp_path):
+def test_wipe_raises_if_removal_fails(monkeypatch, tmp_path):
     game_dir = tmp_path / "game"
     game_dir.mkdir()
     (game_dir / "Saves").mkdir()
@@ -1729,14 +1738,12 @@ def test_wipe_raises_if_rm_fails(monkeypatch, tmp_path):
 
     srv = make_server(module=module, data=DummyData({"dir": str(game_dir), "port": "27015"}))
     monkeypatch.setattr(server_module.screen, "check_screen_exists", lambda n: False)
-    monkeypatch.setattr(
-        server_module.sp,
-        "run",
-        lambda cmd, check: type("R", (), {"returncode": 1})(),
-    )
+    def fail_remove(_path):
+        raise PermissionError("not writable")
+    monkeypatch.setattr(server_module.worlds_module.shutil, "rmtree", fail_remove)
 
     with pytest.raises(server_module.ServerError, match="Failed to remove"):
-        srv.wipe()
+        srv.wipe(yes=True)
 
 
 # ---------------------------------------------------------------------------

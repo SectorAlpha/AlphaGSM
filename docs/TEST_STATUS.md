@@ -54,6 +54,11 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   home path, MTA/OHD query routing, Velocity Java selection and Minecraft fixture
   drift. Readiness fail-fast and bounded Docker process diagnostics will expose
   remaining crashes/stalls in replacement CI. These are not new support states.
+  Additional pending corrections keep Source launch wrappers, explicitly opt
+  fresh Terraria/TShock and Necesse tests into --autocreate, require real GoldSrc
+  A2S smoke readiness, and match
+  Palworld's actual listening message. Local validation of these corrections is
+  limited to unit tests and lint; replacement CI must prove the game lifecycles.
 
 - PR #36 standalone/runtime and CI-integrity changes require fresh CI proof.
   The binary matrix targets Linux x86-64/ARM64, macOS Intel/Apple Silicon and

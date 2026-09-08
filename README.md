@@ -228,6 +228,17 @@ Back the server up:
 ./alphagsm mymc backup
 ```
 
+Start a supported game over with a fresh world:
+
+```bash
+./alphagsm mymc stop
+./alphagsm mymc reset-world
+```
+
+The command shows what will be deleted and asks for confirmation. `wipe` is an
+alias; add `-Y` to skip confirmation. See [world creation and reset](docs/world-management.md)
+for supported games and the first-time `start --autocreate` option.
+
 Update a Steam game server:
 
 ```bash

@@ -36,6 +36,10 @@ command_args = gamemodule_common.build_setup_version_url_command_args(
     "The port for the server to listen on",
     "The directory to install Terraria in",
 )
+command_args["start"] = CmdSpec(options=(
+    OptSpec((), ("autocreate",), "Create the configured world only if it is missing",
+            "autocreate", None, True),
+))
 command_descriptions = {}
 command_functions = {}
 setting_schema = {
@@ -263,11 +267,33 @@ def get_world_path(server):
     return os.path.join(server.data["dir"], "Worlds", server.data["world"])
 
 
-def get_vanilla_start_command(server):
+def get_wipe_paths(server):
+    """Return the configured world and its native backup files."""
+
+    name = server.data.get("world", server.name + ".wld")
+    if not name or not name.lower().endswith(".wld"):
+        raise ServerError("World wipe requires a configured .wld file")
+    world = os.path.join("Worlds", name)
+    return [world, world + ".bak", world + ".bak2"]
+
+
+def _autocreate_world_args(server, autocreate):
+    """Opt into native world creation without changing existing worlds."""
+
+    world = os.path.join("Worlds", server.data.get("world", server.name + ".wld"))
+    if not autocreate or os.path.lexists(os.path.join(server.data["dir"], world)):
+        return []
+    return [
+        "-autocreate", str(server.data.get("worldsize", "2")),
+        "-world", world,
+        "-worldname", server.data.get("worldname", server.name),
+    ]
+
+
+def get_vanilla_start_command(server, *, autocreate=False):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    worldpath = "Worlds" if server.data.get("runtime") == "docker" else os.path.join(server.data["dir"], "Worlds")
     cmd = [
         "./" + server.data["exe_name"],
         "-port",
@@ -275,25 +301,15 @@ def get_vanilla_start_command(server):
         "-maxplayers",
         str(server.data["maxplayers"]),
         "-worldpath",
-        worldpath,
+        "Worlds",
     ]
-    world_path = get_world_path(server)
-    world_path = os.path.join("Worlds", server.data["world"]) if server.data.get("runtime") == "docker" else world_path
-    if os.path.isfile(world_path):
-        cmd.extend(["-world", world_path])
-    else:
-        cmd.extend([
-            "-autocreate",
-            str(server.data["worldsize"]),
-            "-world",
-            world_path,
-        ])
+    cmd.extend(_autocreate_world_args(server, autocreate))
     if server.data.get("serverpassword"):
         cmd.extend(["-password", server.data["serverpassword"]])
     return cmd, server.data["dir"]
 
 
-def get_tshock_start_command(server):
+def get_tshock_start_command(server, *, autocreate=False):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
@@ -302,6 +318,10 @@ def get_tshock_start_command(server):
         cmd = [dotnet, server.data["exe_name"], "-port", str(server.data["port"])]
     else:
         cmd = ["./" + server.data["exe_name"], "-port", str(server.data["port"])]
+    cmd.extend(_autocreate_world_args(server, autocreate))
+    cmd.extend(["-worldpath", "Worlds", "-maxplayers", str(server.data.get("maxplayers", "8"))])
+    if server.data.get("serverpassword"):
+        cmd.extend(["-password", server.data["serverpassword"]])
     return cmd, server.data["dir"]
 
 
