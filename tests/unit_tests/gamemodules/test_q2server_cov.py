@@ -186,6 +186,7 @@ def test_get_start_command(tmp_path):
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "./release/q2ded",
+        "-portable",
         "+set",
         "game",
         "test",
@@ -199,6 +200,21 @@ def test_get_start_command(tmp_path):
         "test",
     ]
     assert cwd == server.data["dir"]
+
+
+def test_container_launch_keeps_yamagi_data_in_writable_install_mount(tmp_path):
+    server = DummyServer()
+    server.data.update({
+        "dir": str(tmp_path), "exe_name": "q2ded", "port": 27910,
+        "gamedir": "baseq2", "hostname": "test", "startmap": "demo1",
+    })
+    (tmp_path / "q2ded").write_bytes(b"mock executable")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["command"][:2] == ["./q2ded", "-portable"]
+    assert spec["working_dir"] == "/srv/server"
+    assert {"source": str(tmp_path), "target": "/srv/server", "mode": "rw"} in spec["mounts"]
 
 
 def test_setting_schema_exposes_q2_launch_tokens():

@@ -7,6 +7,22 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-09-08
+- Runtime: use the Docker-aware query host for Multi Theft Auto and Operation:
+  Harsh Doorstop instead of probing the manager container's loopback address.
+- Java: select Java 25 for Velocity 4.x/current releases and Java 21 for 3.x;
+  preserve an explicit java_major override.
+- Quake: include Quake Live's bundled Steam API library directory in both launch
+  paths; use Yamagi Quake II portable mode to keep writes in the installation.
+- CI: preserve the pinned Minecraft release and URL across runner user changes;
+  shared fixture resolution no longer silently follows a newer upstream release.
+- CI readiness: stop waiting after two confirmed exited-runtime reports, retain
+  original readiness failures during cleanup, and use bounded monotonic polling.
+- CI diagnostics: capture bounded Docker exit/OOM state, process wait channels,
+  stdin targets and selected Steam log tails through the existing redactor.
+- Quake Live validation: remove unconditional startup-error skips so missing
+  runtime libraries and readiness failures remain visible in CI.
+
 2026-09-07
 - Docker: run 12 affected Unreal game modules as the invoking non-root user,
   with a writable private HOME and matching Steam library mounts.

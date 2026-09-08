@@ -152,7 +152,7 @@ def get_start_command(server):
 def get_query_address(server):
     """Return Operation: Harsh Doorstop's validated query endpoint."""
 
-    return ("127.0.0.1", int(server.data["queryport"]), "a2s")
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 
 def get_info_address(server):

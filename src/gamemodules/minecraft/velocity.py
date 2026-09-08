@@ -127,9 +127,10 @@ def _update_velocity_bind_port(toml_path, port):
 def get_runtime_requirements(server):
     java_major = server.data.get("java_major")
     if java_major is None:
-        java_major = runtime_module.infer_minecraft_java_major(
-            server.data.get("version")
-        )
+        # Velocity's proxy version is independent of Minecraft's version scheme.
+        version = str(server.data.get("version") or "latest")
+        major = re.match(r"(\d+)\.", version)
+        java_major = 21 if major and int(major.group(1)) < 4 else 25
     return runtime_module.build_runtime_requirements(
         server,
         family="java",

@@ -1,7 +1,4 @@
-#\!/usr/bin/env bash
-# ENABLED (BYO): supported with owned/authenticated Quake Live access plus server auth/config.
-echo "Smoke test for qlserver is ENABLED (BYO) - anonymous SteamCMD setup is not enough; this lane needs an owned/authenticated Quake Live entitlement plus any required server auth/config"
-exit 0
+#!/usr/bin/env bash
 
 set -Eeuo pipefail
 set -x
@@ -81,7 +78,9 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "quake" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

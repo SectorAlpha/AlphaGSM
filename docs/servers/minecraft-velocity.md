@@ -7,8 +7,12 @@ This guide covers the `minecraft.velocity` module in AlphaGSM.
 ## Requirements
 
 - `screen`
-- Java 21 or compatible runtime
+- Java 25 for Velocity 4.x/current releases; Java 21 for Velocity 3.x
 - Python packages from `requirements.txt`
+
+Docker selects Java from the installed Velocity version, independently of the
+Minecraft game version. An explicit `java_major` setting takes precedence.
+The Java 25 selection fix is awaiting replacement GitHub CI validation.
 
 ## Quick Start
 

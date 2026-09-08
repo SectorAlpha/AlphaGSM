@@ -668,7 +668,7 @@ jobs:
           # uid 1001 matches the GitHub Actions runner user that owns the
           # checked-out workspace, so no chown pass is needed.
           set +e
-          su - gsmuser -c "
+          su --whitelist-environment=ALPHAGSM_MINECRAFT_RELEASE_ID,ALPHAGSM_MINECRAFT_SERVER_URL - gsmuser -c "
             set -e
             cd '$GITHUB_WORKSPACE'
             export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
@@ -758,7 +758,7 @@ jobs:
           fi
           usermod -aG "$sock_gid" gsmuser
           set +e
-          su - gsmuser -c "
+          su --whitelist-environment=ALPHAGSM_MINECRAFT_RELEASE_ID,ALPHAGSM_MINECRAFT_SERVER_URL - gsmuser -c "
             set -e
             cd '$GITHUB_WORKSPACE'
             export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
@@ -1070,7 +1070,7 @@ jobs:
             groupadd -g "$sock_gid" dockerhost
           fi
           usermod -aG "$sock_gid" gsmuser
-          su --whitelist-environment=ALPHAGSM_RECHECK_NODEID - gsmuser -c "
+          su --whitelist-environment=ALPHAGSM_RECHECK_NODEID,ALPHAGSM_MINECRAFT_RELEASE_ID,ALPHAGSM_MINECRAFT_SERVER_URL - gsmuser -c "
             set -e
             cd '$GITHUB_WORKSPACE'
             export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'

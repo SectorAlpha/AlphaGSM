@@ -623,7 +623,7 @@ def get_start_command(server):
         value_transform=lambda _spec, current_value: str(current_value),
     )
     return (
-        ["./" + server.data["exe_name"], *launch_args],
+        ["./" + server.data["exe_name"], "-portable", *launch_args],
         server.data["dir"],
     )
 

@@ -7,6 +7,10 @@ baseline. The checked-in GitHub validation path for this server is
 Docker-first through the shared `steamcmd-linux` runtime, with A2S `query` /
 `info` on the managed `queryport`.
 
+`query` and `info` resolve the runtime's reachable host, including Docker's
+published endpoint when AlphaGSM runs in a separate container. This routing
+correction is awaiting replacement GitHub CI validation.
+
 ## Requirements
 
 - `docker` for the validated branch-local `steamcmd-linux` runtime path

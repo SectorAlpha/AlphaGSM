@@ -2,11 +2,10 @@
 
 This guide covers the `qlserver` module in AlphaGSM.
 
-`qlserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
-baseline. The current GitHub integration lane still exercises both process and
-Docker runtime selection around that owned/authenticated Quake Live
-entitlement plus server-auth/config prerequisite, while local runs remain
-process-backed by default unless you opt into the Docker backend.
+`qlserver` retains its existing `ENABLED (BYO)` classification while process and
+Docker startup are revalidated in CI. The latest failure was a missing bundled
+library search path; it did not establish an authentication requirement.
+Local runs use the process runtime unless you select Docker.
 
 ## Requirements
 
@@ -54,22 +53,15 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
-Quake Live is supported in `ENABLED (BYO)` mode in
-AlphaGSM. The anonymous dedicated payload installs, but the current Linux
-server still exits immediately on startup unless the operator supplies the
-missing upstream requirements.
+Anonymous SteamCMD setup installs the dedicated-server payload. AlphaGSM now
+adds the bundled `linux64` directory to the launcher's library search path so
+`qzeroded.x64` can load `libsteam_api.so`; selecting `qzeroded.x86` uses
+`linux32`. This applies to both process and Docker launches. Keep these
+library directories beside the executable when staging an installation.
 
-In practice, treat the current requirement as:
-
-- an owned/authenticated Quake Live Steam entitlement instead of anonymous-only
-  SteamCMD setup
-- any server-side Quake Live auth/config material your deployment requires
-
-The current blocker is not a missing binary path. `qzeroded.x64` installs, but
-anonymous startup is still not sufficient to reach a queryable dedicated
-server. If you are testing this lane locally, start by authenticating the
-Steam install/update flow with an owned account, then retry the normal
-AlphaGSM lifecycle.
+CI validation of this launcher fix is pending. A missing `libsteam_api.so`
+error occurs before server authentication and should be diagnosed as a
+library-loading problem.
 
 ## Useful Commands
 
@@ -122,9 +114,8 @@ alphagsm myqlserver mod cleanup
 - **Config files**: `baseq3/server.cfg`
 - **Template**: See [server-templates/qlserver/](../server-templates/qlserver/) if available
 - **Schema-backed sync**: AlphaGSM keeps `hostname` and `startmap` aligned with `set`
-- **Current blocker**: anonymous SteamCMD setup alone is not enough; the
-  operator must provide the missing Quake Live authentication/config
-  prerequisites before `start` can succeed
+- **Current validation**: the bundled Steam API library search path has been
+  corrected; process and Docker lifecycle verification is pending CI
 
 ### Maps and Mods
 

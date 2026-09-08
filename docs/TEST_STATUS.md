@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 ## Summary
 
@@ -43,16 +43,17 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
-- [PR #36 run 34140847643](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34140847643)
-  passed all five binary acceptance targets. Its downloaded integration-report
-  snapshot contains 113 initial failures; a later job-status check showed 50
-  failures in 51 completed isolated rechecks. The run was still active when
-  captured, so these are not final totals. Explicit root-refusal logs identify Docker identity defects in twelve
-  modules; fixes also restore Source process query routing and retry transient
-  curated downloads. Smoke timeout/stop failures now stay red. These changes
-  require fresh CI and do not promote any support state. Quake Live's missing
-  `libsteam_api.so`, HL2DM's pre-map startup stall, and the other unresolved
-  lifecycle failures remain open investigations.
+- [PR #36 run 34155516516](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34155516516)
+  passed all five binary acceptance targets. Initial integration artifacts contain
+  186 passes, 87 failures and 199 skips (down from 113 initial failures in the
+  preceding run). Isolated recheck artifacts contain 85 failures and one pass;
+  the remaining Colony Survival recheck also failed in its job log, but GitHub's
+  artifact service timed out after five upload attempts. CSS, HL2DM and DODS
+  passed their process lifecycle checks; their Docker startup stalls remain open.
+  Pending corrections address Quake Live's library path, Quake II's unwritable
+  home path, MTA/OHD query routing, Velocity Java selection and Minecraft fixture
+  drift. Readiness fail-fast and bounded Docker process diagnostics will expose
+  remaining crashes/stalls in replacement CI. These are not new support states.
 
 - PR #36 standalone/runtime and CI-integrity changes require fresh CI proof.
   The binary matrix targets Linux x86-64/ARM64, macOS Intel/Apple Silicon and

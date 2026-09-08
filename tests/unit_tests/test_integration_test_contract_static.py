@@ -149,7 +149,6 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_scpslserver.py",
     "test_ts3server.py",
     "test_wurmserver.py",
-    "test_qlserver.py",
     "test_wfserver.py",
     "test_ut99server.py",
 )

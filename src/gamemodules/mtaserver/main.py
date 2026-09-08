@@ -806,13 +806,13 @@ def postset(server, key, *args, **kwargs):
 def get_query_address(server):
     """Use the built-in MTA HTTP listener for health checks."""
 
-    return ("127.0.0.1", _http_port(server), "tcp")
+    return (runtime_module.resolve_query_host(server), _http_port(server), "tcp")
 
 
 def get_info_address(server):
     """Use the built-in MTA HTTP listener for health checks."""
 
-    return ("127.0.0.1", _http_port(server), "tcp")
+    return (runtime_module.resolve_query_host(server), _http_port(server), "tcp")
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',

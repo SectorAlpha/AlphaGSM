@@ -96,6 +96,8 @@ def test_get_start_command(tmp_path):
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=./linux64",
         "./qzeroded.x64",
         "+set",
         "fs_homepath",
@@ -128,6 +130,8 @@ def test_get_start_command_uses_container_paths_for_docker(tmp_path):
     cmd, cwd = mod.get_start_command(server)
 
     assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=./linux64",
         "./qzeroded.x64",
         "+set",
         "fs_homepath",
@@ -158,6 +162,8 @@ def test_get_container_spec_uses_container_homepath(tmp_path):
     spec = mod.get_container_spec(server)
 
     assert spec["command"] == [
+        "env",
+        "LD_LIBRARY_PATH=./linux64",
         "./qzeroded.x64",
         "+set",
         "fs_homepath",
@@ -173,6 +179,27 @@ def test_get_container_spec_uses_container_homepath(tmp_path):
         "+map",
         "campgrounds",
     ]
+
+
+@pytest.mark.parametrize("exe_name, library_dir", [
+    ("qzeroded.x64", "./linux64"),
+    ("qzeroded.x86", "./linux32"),
+    ("custom-qzeroded.x64", "./linux64"),
+])
+def test_launchers_use_bundled_steam_library_for_selected_binary(tmp_path, exe_name, library_dir):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27960, dir=str(tmp_path), exe_name=exe_name)
+    (tmp_path / exe_name).write_bytes(b"mock executable")
+
+    process_command, process_cwd = mod.get_start_command(server)
+    spec = mod.get_container_spec(server)
+
+    for command in (process_command, spec["command"]):
+        assert command[:3] == ["env", "LD_LIBRARY_PATH=" + library_dir, "./" + exe_name]
+    assert process_cwd == server.data["dir"]
+    assert spec["working_dir"] == "/srv/server"
+    assert process_command[process_command.index("fs_homepath") + 1] == server.data["dir"]
+    assert spec["command"][spec["command"].index("fs_homepath") + 1] == "/srv/server"
 
 
 def test_setting_schema_exposes_quake_live_launch_tokens():

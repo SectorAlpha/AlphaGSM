@@ -496,6 +496,20 @@ Readiness timeouts and unexpected shutdown failures must fail smoke tests too.
 The shared smoke helpers retain query errors and capture runtime logs/doctor
 output before cleanup can remove the failed server.
 
+The integration readiness helpers use monotonic deadlines and stop early only
+after two consistent doctor reports confirm the runtime has exited. Failed or
+unknown Docker inspection results do not count as an exit. On failure, bounded
+Docker diagnostics include exit/OOM state, process wait channels, stdin targets
+and selected Steam log tails; existing redaction applies before logging. They
+exclude process arguments and environments.
+
+Keep `ALPHAGSM_MINECRAFT_RELEASE_ID` and `ALPHAGSM_MINECRAFT_SERVER_URL`
+paired and preserve them when switching the CI runner user. The shared Minecraft
+fixture helper uses those pins without consulting the moving latest release;
+a partial pin fails explicitly. This keeps the fixture aligned with the CI Java
+runtime. Real integration/game/backend acceptance runs in CI for PR #36; local
+validation uses unit tests and static checks.
+
 The GitHub Actions workflow is [`.github/workflows/unittest.yaml`](.github/workflows/unittest.yaml).
 
 The workflow runs for pull requests targeting `master`, scheduled coverage,

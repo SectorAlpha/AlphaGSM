@@ -1,6 +1,7 @@
 """Integration test for qlserver."""
 
 import os
+import sys
 
 import pytest
 
@@ -12,13 +13,14 @@ from conftest import (
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
+    assert_alphagsm_result_ok,
+    capture_alphagsm_stop,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_runtime_log_marker,
-    wait_for_quake_ready,
-    wait_for_tcp_closed,
+    wait_for_info_protocol,
+    wait_for_generic_udp_closed,
 )
 from gamemodules.qlserver import steam_app_id
 
@@ -26,11 +28,6 @@ pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-BYO_SKIP_REASON = (
-    "ENABLED (BYO): Quake Live installs qzeroded.x64, but anonymous SteamCMD startup still "
-    "exits immediately; this lane needs an owned/authenticated Quake Live "
-    "entitlement plus any required server auth/config"
-)
 
 def test_qlserver_lifecycle(tmp_path):
     require_integration_opt_in()
@@ -76,28 +73,20 @@ def test_qlserver_lifecycle(tmp_path):
     log_command_result("alphagsm " + " ".join((server_name, "start")), start_result)
     if start_result.returncode != 0:
         skip_for_known_steamcmd_issue(start_result, app_id=steam_app_id)
-        if (install_dir / "qzeroded.x64").is_file():
-            snippet = "\n".join(
-                part for part in (start_result.stdout, start_result.stderr) if part
-            )[:300].replace("\n", " | ")
-            pytest.skip(f"{BYO_SKIP_REASON}: {snippet}")
     assert start_result.returncode == 0, start_result.stderr or start_result.stdout
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
+        wait_for_info_protocol(
             env,
             server_name,
-            ["ready", "started", "listening", "Done"],
+            "quake",
             START_TIMEOUT,
+            expected_port=port,
         )
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        # Quake Live uses the Quake UDP status protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -123,7 +112,14 @@ def test_qlserver_lifecycle(tmp_path):
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_generic_udp_closed(
+        "127.0.0.1", port, STOP_TIMEOUT, payload=b"\xff\xff\xff\xffgetstatus\n"
+    )
+    final_status = run_and_assert_ok(env, server_name, "status")
+    assert "isn't running" in final_status.stdout

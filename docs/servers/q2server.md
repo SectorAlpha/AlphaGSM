@@ -57,6 +57,11 @@ Setup configures:
 - bootstraps the official Quake II demo `baseq2` data so a fresh install can start anonymously
 - uses `demo1` as the default start map on fresh demo-backed installs
 
+AlphaGSM launches Yamagi with `-portable`, keeping generated server data in
+the installation directory for both process and Docker runtimes. This avoids
+startup failures when the operating-system user's XDG data directory does not
+exist or is not writable. CI validation of this startup fix is pending.
+
 ## Useful Commands
 
 ```bash

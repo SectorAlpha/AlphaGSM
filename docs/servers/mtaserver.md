@@ -7,6 +7,10 @@ baseline. The checked-in GitHub validation path for this server is
 Docker-first through the shared `steamcmd-linux` runtime, with the built-in
 HTTP health surface on `httpport = port + 2` after AlphaGSM disables `ase`.
 
+`query` and `info` resolve the runtime's reachable host, including Docker's
+published endpoint when AlphaGSM runs in a separate container. This routing
+correction is awaiting replacement GitHub CI validation.
+
 ## Requirements
 
 - `docker` for the validated Linux lifecycle

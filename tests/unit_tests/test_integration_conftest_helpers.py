@@ -1445,7 +1445,7 @@ def test_wait_for_info_protocol_preserves_timeout_when_diagnostics_raise(
     log_secret = "info-log-secret"
     runtime_secret = "info-runtime-secret"
 
-    monkeypatch.setattr(helpers.time, "time", _retaining_clock(0.0, 0.0, 10.0))
+    monkeypatch.setattr(helpers.time, "monotonic", _retaining_clock(0.0, 0.0, 10.0))
     monkeypatch.setattr(helpers.time, "sleep", lambda seconds: None)
     monkeypatch.setattr(helpers, "run_alphagsm", lambda *args, **kwargs: result)
     monkeypatch.setattr(
@@ -1582,7 +1582,7 @@ def test_wait_for_info_protocol_clears_secrets_from_timeout_traceback(monkeypatc
         ),
         stderr="",
     )
-    monkeypatch.setattr(helpers.time, "time", _retaining_clock(0.0, 0.0, 10.0))
+    monkeypatch.setattr(helpers.time, "monotonic", _retaining_clock(0.0, 0.0, 10.0))
     monkeypatch.setattr(helpers.time, "sleep", lambda seconds: None)
     monkeypatch.setattr(helpers, "run_alphagsm", lambda *args, **kwargs: result)
     monkeypatch.setattr(helpers, "log_command_result", lambda *args, **kwargs: None)
@@ -3797,7 +3797,7 @@ def test_wait_for_runtime_log_marker_bounds_sleep_and_stops_at_deadline(monkeypa
         stdout="still starting",
         stderr="",
     )
-    timestamps = iter((0.0, 0.0, 0.6, 1.0))
+    timestamps = iter((0.0, 0.0, 0.6, 0.6, 1.0))
     attempts = []
     sleeps = []
 
@@ -3823,7 +3823,9 @@ def test_wait_for_runtime_log_marker_bounds_sleep_and_stops_at_deadline(monkeypa
         )
 
     assert sleeps == [pytest.approx(0.4)]
-    assert len(attempts) == 1
+    assert len(attempts) == 2
+    assert attempts[1][0][2:] == ("doctor", "--json")
+    assert attempts[1][1]["timeout"] == pytest.approx(0.4)
 
 
 def test_wait_for_runtime_log_marker_returns_stderr_marker(monkeypatch):
@@ -3875,15 +3877,17 @@ def test_wait_for_runtime_log_marker_retries_failed_and_empty_polls(monkeypatch)
 
     def _run_alphagsm(*args, **kwargs):
         attempts.append((args, kwargs))
+        if args[2] == "doctor":
+            return subprocess.CompletedProcess(["doctor"], 0, json.dumps({
+                "schema_version": 1, "runtime": {"resolved_runtime": "process", "running": True}
+            }), "")
         outcome = next(polls)
         if isinstance(outcome, subprocess.TimeoutExpired):
             raise outcome
         return outcome
 
-    timestamps = iter((0.0, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0))
-
     def _fake_clock():
-        return next(timestamps)
+        return len(attempts) * 0.5
 
     monkeypatch.setattr(helpers.time, "time", _fake_clock)
     monkeypatch.setattr(helpers.time, "monotonic", _fake_clock)
@@ -3898,7 +3902,7 @@ def test_wait_for_runtime_log_marker_retries_failed_and_empty_polls(monkeypatch)
     )
 
     assert collected == "startup complete\nruntime ready"
-    assert len(attempts) == 4
+    assert [args[2] for args, _kwargs in attempts] == ["logs", "doctor", "logs", "doctor", "logs", "doctor", "logs"]
 
 
 def test_wait_for_runtime_log_marker_logs_last_poll_before_terminal_diagnostics(monkeypatch):
@@ -4015,13 +4019,15 @@ def test_wait_for_info_protocol_retries_matching_protocol_on_wrong_port(monkeypa
         )
     )
     attempts = []
-    timestamps = iter((0.0, 0.0, 1.0))
-
     def _run_alphagsm(*args, **kwargs):
         attempts.append((args, kwargs))
+        if args[2] == "doctor":
+            return subprocess.CompletedProcess(["doctor"], 0, json.dumps({
+                "schema_version": 1, "runtime": {"resolved_runtime": "process", "running": True}
+            }), "")
         return next(results)
 
-    monkeypatch.setattr(helpers.time, "time", lambda: next(timestamps))
+    monkeypatch.setattr(helpers.time, "monotonic", lambda: len(attempts) * 0.5)
     monkeypatch.setattr(helpers.time, "sleep", lambda seconds: None)
     monkeypatch.setattr(helpers, "run_alphagsm", _run_alphagsm)
 
@@ -4034,7 +4040,7 @@ def test_wait_for_info_protocol_retries_matching_protocol_on_wrong_port(monkeypa
     )
 
     assert payload == {"protocol": "udp", "port": 27016}
-    assert len(attempts) == 2
+    assert [args[2] for args, _kwargs in attempts] == ["info", "doctor", "info"]
 
 
 def test_run_and_assert_ok_dumps_runtime_logs_for_failed_lifecycle_command(monkeypatch):

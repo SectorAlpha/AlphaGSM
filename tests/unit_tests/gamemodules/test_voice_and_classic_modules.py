@@ -54,7 +54,7 @@ def test_qlserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = qlserver.get_start_command(server)
 
-    assert cmd[0] == "./qzeroded.x64"
+    assert cmd[:3] == ["env", "LD_LIBRARY_PATH=./linux64", "./qzeroded.x64"]
     assert "net_port" in cmd
     assert "sv_hostname" in cmd
     assert cwd == server.data["dir"]
@@ -83,7 +83,8 @@ def test_qlserver_runtime_requirements_use_steamcmd_linux_family(tmp_path):
         {"host": 27960, "container": 27960, "protocol": "udp"}
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][3] == "/srv/server"
+    assert spec["command"][:3] == ["env", "LD_LIBRARY_PATH=./linux64", "./qzeroded.x64"]
+    assert spec["command"][spec["command"].index("fs_homepath") + 1] == "/srv/server"
 
 
 def test_qlserver_update_downloads_and_optionally_restarts(monkeypatch):

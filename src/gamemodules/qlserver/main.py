@@ -486,23 +486,27 @@ def sync_server_config(server):
     rewrite_equals_config(config_path, config_values)
 
 
+def _build_launch_command(server, homepath):
+    """Include the bundled Steam API library path used by upstream launchers."""
+
+    launch_args = build_launch_arg_values(
+        dict(server.data, dir=homepath),
+        setting_schema,
+        require_explicit_tokens=True,
+        value_transform=lambda _spec, current_value: str(current_value),
+    )
+    library_dir = "./linux32" if server.data["exe_name"].endswith(".x86") else "./linux64"
+    return ["env", "LD_LIBRARY_PATH=" + library_dir, "./" + server.data["exe_name"], *launch_args]
+
+
 def get_start_command(server):
     """Build the command used to launch a Quake Live dedicated server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    launch_data = dict(server.data, dir="/srv/server") if server.data.get("runtime") == "docker" else server.data
-    launch_args = build_launch_arg_values(
-        launch_data,
-        setting_schema,
-        require_explicit_tokens=True,
-        value_transform=lambda _spec, current_value: str(current_value),
-    )
-    return (
-        ["./" + server.data["exe_name"], *launch_args],
-        server.data["dir"],
-    )
+    homepath = "/srv/server" if server.data.get("runtime") == "docker" else server.data["dir"]
+    return _build_launch_command(server, homepath), server.data["dir"]
 
 
 def get_runtime_requirements(server):
@@ -531,18 +535,12 @@ def get_container_spec(server):
     """Return the Docker launch spec for Quake Live."""
 
     requirements = get_runtime_requirements(server)
-    launch_args = build_launch_arg_values(
-        dict(server.data, dir="/srv/server"),
-        setting_schema,
-        require_explicit_tokens=True,
-        value_transform=lambda _spec, current_value: str(current_value),
-    )
     return {
         "working_dir": "/srv/server",
         "stdin_open": True,
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
-        "command": ["./" + server.data["exe_name"], *launch_args],
+        "command": _build_launch_command(server, "/srv/server"),
     }
 
 

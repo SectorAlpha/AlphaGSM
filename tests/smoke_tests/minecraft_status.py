@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import socket
 import struct
@@ -211,6 +212,14 @@ def _wait_for_bedrock_closed(host, port, timeout_seconds):
 
 
 def _latest_release():
+    release_id = os.environ.get("ALPHAGSM_MINECRAFT_RELEASE_ID", "").strip()
+    server_url = os.environ.get("ALPHAGSM_MINECRAFT_SERVER_URL", "").strip()
+    if release_id or server_url:
+        if not (release_id and server_url):
+            print("Set both Minecraft fixture release ID and server URL", file=sys.stderr)
+            return 1
+        print(f"{release_id}\t{server_url}")
+        return 0
     with urllib.request.urlopen(MANIFEST_URL, timeout=30) as response:
         manifest = json.loads(response.read().decode("utf-8"))
 

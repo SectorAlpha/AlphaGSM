@@ -2,8 +2,6 @@ import json
 import os
 from pathlib import Path
 import shutil
-import socket
-import struct
 import subprocess
 import sys
 import time
@@ -12,10 +10,15 @@ import pytest
 
 from conftest import (
     alphagsm_env,
+    assert_alphagsm_result_ok,
+    capture_alphagsm_stop,
     default_runtime_backend,
     effective_runtime_backend,
+    pick_free_tcp_port,
     require_command_for_runtime,
     run_alphagsm,
+    wait_for_info_protocol,
+    wait_for_tcp_closed,
 )
 
 
@@ -38,20 +41,6 @@ def _require_integration_opt_in():
 def _require_command(name):
     if shutil.which(name) is None:
         pytest.skip(f"Required command not available: {name}")
-
-
-def _pick_free_port():
-    for _attempt in range(100):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.bind(("127.0.0.1", 0))
-            port = sock.getsockname()[1]
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_sock:
-            try:
-                udp_sock.bind(("127.0.0.1", port))
-            except OSError:
-                continue
-        return port
-    raise RuntimeError("Could not find a free TCP+UDP port after 100 attempts")
 
 
 def _write_config(
@@ -172,86 +161,6 @@ def _run_setup_with_download_retry(env, *args, timeout=TEST_TIMEOUT_SECONDS, att
     assert last_result.returncode == 0, last_result.stderr or last_result.stdout
 
 
-def _encode_varint(value):
-    buf = bytearray()
-    while True:
-        temp = value & 0x7F
-        value >>= 7
-        if value != 0:
-            temp |= 0x80
-        buf.append(temp)
-        if value == 0:
-            return bytes(buf)
-
-
-def _read_varint(sock):
-    num_read = 0
-    result = 0
-    while True:
-        raw = sock.recv(1)
-        if not raw:
-            raise ConnectionError("Connection closed while reading VarInt")
-        value = raw[0]
-        result |= (value & 0x7F) << (7 * num_read)
-        num_read += 1
-        if num_read > 5:
-            raise ValueError("VarInt too large")
-        if value & 0x80 == 0:
-            return result
-
-
-def _minecraft_status_ping(host, port, timeout=5):
-    with socket.create_connection((host, port), timeout=timeout) as sock:
-        handshake_data = b"".join(
-            [
-                _encode_varint(0),
-                _encode_varint(760),
-                _encode_varint(len(host)),
-                host.encode("utf-8"),
-                struct.pack(">H", port),
-                _encode_varint(1),
-            ]
-        )
-        sock.sendall(_encode_varint(len(handshake_data)) + handshake_data)
-        sock.sendall(_encode_varint(1) + _encode_varint(0))
-
-        _read_varint(sock)
-        packet_id = _read_varint(sock)
-        if packet_id != 0:
-            raise ValueError(f"Unexpected status packet id: {packet_id}")
-        payload_length = _read_varint(sock)
-        payload = b""
-        while len(payload) < payload_length:
-            chunk = sock.recv(payload_length - len(payload))
-            if not chunk:
-                raise ConnectionError("Connection closed while reading status payload")
-            payload += chunk
-    return json.loads(payload.decode("utf-8"))
-
-
-def _wait_for_status(host, port, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    last_error = None
-    while time.time() < deadline:
-        try:
-            return _minecraft_status_ping(host, port, timeout=3)
-        except Exception as ex:  # noqa: BLE001
-            last_error = ex
-            time.sleep(2)
-    raise AssertionError(f"Minecraft server did not respond in time: {last_error}")
-
-
-def _wait_for_port_to_close(host, port, timeout_seconds):
-    deadline = time.time() + timeout_seconds
-    while time.time() < deadline:
-        try:
-            _minecraft_status_ping(host, port, timeout=2)
-        except Exception:  # noqa: BLE001
-            return
-        time.sleep(2)
-    raise AssertionError("Minecraft server still responds after stop timeout")
-
-
 def test_minecraft_vanilla_download_install_and_start(tmp_path):
     _require_integration_opt_in()
     runtime_backend = os.environ.get(
@@ -270,7 +179,7 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
     config_path = tmp_path / "alphagsm-integration.conf"
     wrapper_path = tmp_path / "java-wrapper.sh"
     server_name = "itmc"
-    port = _pick_free_port()
+    port = pick_free_tcp_port()
 
     home_dir.mkdir()
     _write_config(
@@ -306,9 +215,11 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
     _run_and_assert_ok(env, server_name, "start", timeout=60)
 
     try:
-        status = _wait_for_status("127.0.0.1", port, START_TIMEOUT_SECONDS)
-        assert status["version"]["name"]
-        assert release_id.split(".")[0] in status["version"]["name"]
+        status = wait_for_info_protocol(
+            env, server_name, "slp", START_TIMEOUT_SECONDS, expected_port=port
+        )
+        assert status["version"]
+        assert release_id.split(".")[0] in status["version"]
         status_cmd = _run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status_cmd.stdout
 
@@ -346,7 +257,11 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
             f"Expected max-players=20 (Minecraft vanilla default): {_info_data!r}"
         )
     finally:
-        _run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT_SECONDS)
-        _wait_for_port_to_close("127.0.0.1", port, STOP_TIMEOUT_SECONDS)
-        final_status = _run_and_assert_ok(env, server_name, "status")
-        assert "isn't running" in final_status.stdout
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT_SECONDS
+        )
+
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT_SECONDS)
+    final_status = _run_and_assert_ok(env, server_name, "status")
+    assert "isn't running" in final_status.stdout

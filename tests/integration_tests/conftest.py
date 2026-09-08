@@ -924,9 +924,10 @@ def _capture_doctor_json(env, server_name, stage):
             json.dump(payload, handle, indent=2, sort_keys=True)
     except OSError as exc:
         print(_redact_logged_text(f"[diagnostic] Could not save doctor JSON: {exc}"))
+    return payload
 
 
-def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
+def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT, capture_diagnostics=True):
     """Run the selected AlphaGSM CLI and return the CompletedProcess."""
     command = alphagsm_command(env) + list(args)
     working_dir = (
@@ -949,7 +950,7 @@ def run_alphagsm(env, *args, timeout=DEFAULT_TIMEOUT):
             )
         except (subprocess.SubprocessError, OSError) as exc:
             sanitized_error = _sanitized_subprocess_exception(exc)
-        if (sanitized_error is not None or completed_result.returncode != 0) and len(args) >= 2 and args[1] not in {"doctor", "logs"}:
+        if capture_diagnostics and (sanitized_error is not None or completed_result.returncode != 0) and len(args) >= 2 and args[1] not in {"doctor", "logs"}:
             _capture_doctor_json(env, args[0], args[1])
         if sanitized_error is not None:
             raise sanitized_error from None
@@ -1032,6 +1033,62 @@ def run_and_assert_ok(
             result = _redact_subprocess_diagnostic(result)
 
 
+class _ReadinessRuntimeState:
+    """Require consecutive trustworthy stopped reports before ending a wait."""
+
+    def __init__(self):
+        self.previous = None
+        self.confirmations = 0
+        self.last_diagnostic = ""
+
+    @staticmethod
+    def _stopped_identity(payload, server_name):
+        if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+            return None
+        if payload.get("server", server_name) != server_name:
+            return None
+        runtime = payload.get("runtime")
+        if not isinstance(runtime, dict) or runtime.get("running") is not False:
+            return None
+        if any(key.endswith("_error") and value for key, value in runtime.items()):
+            return None
+        backend = runtime.get("resolved_runtime")
+        if backend == "docker":
+            # running=False is also the doctor's initial value on daemon or
+            # inspection failures. Only an inspected stopped container counts.
+            if runtime.get("container_state") != "stopped":
+                return None
+            return backend, runtime.get("container_name", server_name)
+        if backend == "process":
+            return backend, server_name
+        return None
+
+    def poll(self, env, server_name, remaining_seconds):
+        """Return true after two stopped snapshots; unknown evidence resets it."""
+        identity = None
+        try:
+            result = run_alphagsm(env, server_name, "doctor", "--json",
+                                  timeout=min(10, remaining_seconds))
+            self.last_diagnostic = _redact_logged_text(
+                f"returncode: {result.returncode}\n{result.stdout}\n{result.stderr}")
+            if result.returncode == 0:
+                identity = self._stopped_identity(json.loads(result.stdout), server_name)
+        except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            self.last_diagnostic = _redact_logged_text(str(exc))
+        if identity is None:
+            self.confirmations = 0
+        else:
+            self.confirmations = self.confirmations + 1 if identity == self.previous else 1
+        self.previous = identity
+        return self.confirmations >= 2
+
+    def dump(self):
+        """Keep the last sanitized liveness evidence alongside readiness logs."""
+        if self.last_diagnostic:
+            print("[diagnostic] Last readiness doctor --json poll:")
+            print(self.last_diagnostic)
+
+
 def wait_for_info_protocol(
     env,
     server_name,
@@ -1043,29 +1100,50 @@ def wait_for_info_protocol(
 
     if expected_port is not None:
         expected_port = int(expected_port)
-    deadline = time.time() + timeout_seconds
+    deadline = time.monotonic() + timeout_seconds
     last_result = None
     last_data = None
-    while time.time() < deadline:
-        result = run_alphagsm(env, server_name, "info", "--json", timeout=120)
-        last_result = result
-        if result.returncode == 0:
-            try:
-                data = json.loads(result.stdout.strip())
-            except json.JSONDecodeError:
-                data = None
-            else:
-                last_data = data
-                if data.get("protocol") == expected_protocol and (
-                    expected_port is None or data.get("port") == expected_port
-                ):
-                    return data
-        time.sleep(5)
+    runtime_state = _ReadinessRuntimeState()
+    exited = False
+    while True:
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
+        try:
+            result = run_alphagsm(env, server_name, "info", "--json",
+                                  timeout=min(30, remaining_seconds), capture_diagnostics=False)
+        except subprocess.TimeoutExpired as exc:
+            last_result = exc
+        else:
+            last_result = result
+            if result.returncode == 0:
+                try:
+                    data = json.loads(result.stdout.strip())
+                except json.JSONDecodeError:
+                    data = None
+                else:
+                    last_data = data
+                    if isinstance(data, dict) and data.get("protocol") == expected_protocol and (
+                        expected_port is None or data.get("port") == expected_port
+                    ):
+                        return data
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
+        exited = runtime_state.poll(env, server_name, remaining_seconds)
+        if exited:
+            break
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
+        time.sleep(min(5, remaining_seconds))
 
     failure_message = _redact_logged_text(
         f"info --json never returned protocol {expected_protocol!r} "
         f"within {timeout_seconds}s: last payload={last_data!r}"
     )
+    if exited:
+        failure_message = f"Server {server_name} exited before readiness (confirmed by two doctor --json polls)"
     diagnostic_result = _redact_subprocess_diagnostic(last_result)
     result = None
     last_result = None
@@ -1079,12 +1157,9 @@ def wait_for_info_protocol(
             diagnostics=(
                 (
                     "info --json",
-                    lambda: log_command_result(
-                        "alphagsm",
-                        diagnostic_result,
-                        label="alphagsm info --json",
-                    ),
+                    lambda: _dump_runtime_log_poll(diagnostic_result, command="info --json"),
                 ),
+                ("Runtime state", runtime_state.dump),
             ),
         )
     finally:
@@ -1175,7 +1250,16 @@ def _dump_log(log_path, context="", max_lines=150):
 def _dump_alphagsm_runtime_logs(env, server_name, lines=200):
     """Print AlphaGSM-managed console diagnostics for *server_name*."""
 
-    _capture_doctor_json(env, server_name, "readiness")
+    report = _capture_doctor_json(env, server_name, "readiness")
+    runtime = report.get("runtime", {}) if isinstance(report, dict) else {}
+    if isinstance(runtime, dict) and runtime.get("resolved_runtime") == "docker" and runtime.get("container_name"):
+        def dump_docker_processes():
+            from tests.integration_tests.runtime_diagnostics import collect_docker_runtime_diagnostics
+
+            for label, result in collect_docker_runtime_diagnostics(runtime["container_name"]):
+                log_command_result("docker", result, label=label)
+
+        _run_readiness_diagnostic("Docker processes", dump_docker_processes)
     for command_name, command_args in (
         ("logs", (server_name, "logs", "-n", str(lines))),
         ("doctor", (server_name, "doctor")),
@@ -1308,18 +1392,18 @@ def capture_alphagsm_stop(
 _RUNTIME_LOG_MARKER_TAIL_LINES = 10_000
 
 
-def _dump_runtime_log_poll(last_poll):
+def _dump_runtime_log_poll(last_poll, command="logs"):
     """Print the last runtime-log readiness poll with redaction."""
 
     if isinstance(last_poll, subprocess.CompletedProcess):
         log_command_result(
             "alphagsm",
             last_poll,
-            label="alphagsm logs readiness poll",
+            label=f"alphagsm {command} readiness poll",
         )
     elif isinstance(last_poll, subprocess.TimeoutExpired):
         print(
-            "[diagnostic] Last alphagsm logs readiness poll timed out after "
+            f"[diagnostic] Last alphagsm {command} readiness poll timed out after "
             f"{last_poll.timeout}s"
         )
         if last_poll.stdout:
@@ -1327,7 +1411,7 @@ def _dump_runtime_log_poll(last_poll):
         if last_poll.stderr:
             print(_redact_logged_text(last_poll.stderr).rstrip())
     else:
-        print("[diagnostic] No alphagsm logs readiness poll completed")
+        print(f"[diagnostic] No alphagsm {command} readiness poll completed")
 
 
 def _dump_glob_log_timeout(log_dir_path, glob_pattern, markers):
@@ -1374,6 +1458,8 @@ def wait_for_runtime_log_marker(env, server_name, markers, timeout_seconds):
 
     deadline = time.monotonic() + timeout_seconds
     last_poll = None
+    runtime_state = _ReadinessRuntimeState()
+    exited = False
     while True:
         remaining_seconds = deadline - time.monotonic()
         if remaining_seconds <= 0:
@@ -1402,23 +1488,32 @@ def wait_for_runtime_log_marker(env, server_name, markers, timeout_seconds):
         remaining_seconds = deadline - time.monotonic()
         if remaining_seconds <= 0:
             break
+        exited = runtime_state.poll(env, server_name, remaining_seconds)
+        if exited:
+            break
+        remaining_seconds = deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            break
         time.sleep(min(2, remaining_seconds))
 
     diagnostic_poll = _redact_subprocess_diagnostic(last_poll)
     result = None
     last_poll = None
     collected = None
+    failure_message = (f"Server {server_name} exited before readiness (confirmed by two doctor --json polls)"
+                       if exited else f"Runtime logs never showed readiness markers {markers!r} "
+                       f"within {timeout_seconds}s for {server_name}")
     try:
         fail_readiness_timeout(
             env,
             server_name,
-            f"Runtime logs never showed readiness markers {markers!r} "
-            f"within {timeout_seconds}s for {server_name}",
+            failure_message,
             diagnostics=(
                 (
                     "Last runtime-log poll",
                     lambda: _dump_runtime_log_poll(diagnostic_poll),
                 ),
+                ("Runtime state", runtime_state.dump),
             ),
         )
     finally:
