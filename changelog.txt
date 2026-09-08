@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-08
+- CI: refresh the generated Quake Live capability inventory for factory and
+  bindaddress config sync so the module parity check passes.
 - Garry's Mod: prefer the server's own launcher before launchers in downloaded
   game content, preserving process and Docker working directories.
 - TeamSpeak 3: recover ServerQuery credentials from the active runtime's logs

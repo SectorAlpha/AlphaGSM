@@ -8377,6 +8377,8 @@
       "aliases": [],
       "architectures": null,
       "config_sync_keys": [
+        "bindaddress",
+        "factory",
         "hostname",
         "startmap"
       ],

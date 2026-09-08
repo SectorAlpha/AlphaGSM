@@ -141,6 +141,12 @@ Generated parity reporting also works at the canonical-module level:
 - [scripts/generate_module_parity_report.py](scripts/generate_module_parity_report.py)
 - [docs/module_parity_report.md](docs/module_parity_report.md)
 - [docs/module_parity_report.json](docs/module_parity_report.json)
+- [src/server/module_capabilities.json](src/server/module_capabilities.json)
+
+After changing module capabilities such as `config_sync_keys`, run
+`python3 scripts/generate_module_parity_report.py` and commit all generated
+changes. Verify with `python3 scripts/generate_module_parity_report.py --check`;
+CI runs this separately before the unit suite.
 
 Generated server-support tracking is derived from the checked-in integration
 status report:
