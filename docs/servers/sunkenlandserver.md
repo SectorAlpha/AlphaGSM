@@ -59,6 +59,9 @@ alphagsm mysunkenla backup
 
 ## Notes
 
+- Linux process launches require `xvfb-run` to provide the display used during
+  Wine initialization. The shared Wine/Proton Docker image supplies it when
+  using the Docker runtime. This launch correction awaits replacement CI.
 - Module name: `sunkenlandserver`
 - Default port: 27015
 

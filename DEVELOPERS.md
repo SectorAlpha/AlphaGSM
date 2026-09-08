@@ -560,8 +560,11 @@ The integration readiness helpers use monotonic deadlines and stop early only
 after two consistent doctor reports confirm the runtime has exited. Failed or
 unknown Docker inspection results do not count as an exit. On failure, bounded
 Docker diagnostics include exit/OOM state, process wait channels, stdin targets
-and selected Steam log tails; existing redaction applies before logging. They
-exclude process arguments and environments.
+and selected Steam log tails; existing redaction applies before logging.
+Diagnostics also report bounded local TCP listeners and UDP bindings, plus
+allowlisted numeric port arguments to check launcher forwarding. Other process
+arguments and all environment values are excluded. Inaccessible Steam directories
+are recorded as unavailable without aborting the remaining evidence collection.
 
 For Source readiness failures, CI tries `query` and `info --json` before debugger
 attachment. This separates a missing console marker from an unresponsive engine.

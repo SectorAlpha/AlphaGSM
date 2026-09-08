@@ -61,7 +61,7 @@ CONFIG_PATH="$WORK_DIR/alphagsm-argoserver.conf"
 IMAGE="$(resolve_runtime_image)"
 
 mkdir -p "$HOME_DIR"
-PORT="$(pick_free_port)"
+PORT="$(pick_free_port_group 3)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -87,11 +87,12 @@ echo "Using port: $PORT"
 echo "Using image: $IMAGE"
 
 run_create_or_skip_disabled "$SERVER_NAME" create argoserver
+run_alphagsm "$SERVER_NAME" set image "$IMAGE"
 run_alphagsm "$SERVER_NAME" set servername "AlphaGSM Argo Smoke"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info

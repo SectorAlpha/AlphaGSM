@@ -107,11 +107,19 @@ def get_start_command(server):
             str(server.data["servername"]),
         ]
     if IS_LINUX:
+        game_command = cmd
         cmd = proton.wrap_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
+        # Unity still creates a window in batch mode under Wine.
+        wrapper = cmd[:-len(game_command)]
+        cmd = [arg for arg in wrapper if not arg.startswith(("DISPLAY=", "WINEDLLOVERRIDES="))] + game_command
+        cmd = proton.prepend_env_assignments(
+            cmd, WINEDLLOVERRIDES="", SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy",
+        )
+        cmd = ["xvfb-run", "-a", "--server-args=-screen 0 1024x768x24 -nolisten tcp", *cmd]
     return cmd, server.data["dir"]
 
 
@@ -148,11 +156,22 @@ def checkvalue(server, key, *value):
         str_keys=("servername", "exe_name", "dir"),
     )
 
+_DISPLAY_ENV = {
+    "ALPHAGSM_XVFB": "1",
+    "SDL_VIDEODRIVER": "x11",
+    "SDL_AUDIODRIVER": "dummy",
+    "WINEDLLOVERRIDES": "",
+}
+
+
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+    extra_env=_DISPLAY_ENV,
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    extra_env=_DISPLAY_ENV,
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )

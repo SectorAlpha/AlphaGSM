@@ -8,7 +8,9 @@ service.
 
 from __future__ import annotations
 
+import json
 import os
+import sys
 import subprocess
 
 import pytest
@@ -19,19 +21,21 @@ from conftest import (
     alphagsm_env,
     default_runtime_backend,
     effective_runtime_backend,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     pick_free_tcp_port,
+    pick_free_tcp_port_group,
     require_command,
     resolve_runtime_image,
     require_command_for_runtime,
     require_integration_opt_in,
     require_proton,
     require_steamcmd_opt_in,
-    run_alphagsm,
     run_and_assert_ok,
     run_setup_with_port_retry,
     skip_for_known_steamcmd_issue,
-    wait_for_runtime_log_marker,
+    wait_for_info_protocol,
+    wait_for_udp_closed,
     wait_for_tcp_closed,
     write_config,
 )
@@ -95,7 +99,7 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(3)
     db_port = pick_free_tcp_port()
 
     _docker_rm_force(db_container_name)
@@ -130,11 +134,8 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
+        wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port + 2
         )
 
         run_and_assert_ok(env, server_name, "status")
@@ -146,9 +147,15 @@ def test_lifeisfeudalserver_lifecycle(tmp_path):
         assert "Players" in info_result.stdout, info_result.stdout
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        assert '"protocol":' in info_json_result.stdout, info_json_result.stdout
+        info = json.loads(info_json_result.stdout)
+        assert info["protocol"] == "a2s", info
+        assert info["port"] == port + 2, info
     finally:
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
         _docker_rm_force(db_container_name)
 
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", port + 2, STOP_TIMEOUT)
     wait_for_tcp_closed("127.0.0.1", db_port, STOP_TIMEOUT)

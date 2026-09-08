@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 
 ## Summary
 
@@ -42,6 +42,22 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - `counterstrikeglobaloffensive`, `csgo`, and `csgoserver` remain the legacy CS:GO surface backed by Steam app `740` and are disabled.
 
 ## Pending Replacement CI (Not Support States)
+
+- September 9 launch repairs supply ASKA and Sunkenland with Xvfb and preserve
+  Saleblazers' unattended `-headless` configuration launch. Runtime diagnostics
+  now tolerate inaccessible Steam directories and show local listeners and
+  allowlisted numeric port arguments. Replacement CI validation is pending.
+  Heat still exits in `AsyncConsoleReader.set_InputFormat` before startup;
+  Nightingale resets connections to its documented HTTP status port. Neither
+  failure has a verified runtime fix yet.
+- Argo and Life is Feudal now use their native Steam query listeners and claim
+  adjacent ports. Life is Feudal also receives its documented world argument,
+  native world/database configuration, and managed database routing for Docker.
+  These corrections await replacement CI and do not change support states.
+- Colony Survival reaches world creation and Steam registration but its old
+  query endpoint refuses connections. The [upstream 0.17/0.18 config update](https://github.com/pipliz/ColonySurvival/commit/23c8dad2fa7debaf38e802bc6472914bf75f68c0)
+  removed `ServerQueryPort`; older Docker and query-client port maps predate
+  that change. A current listener/protocol still needs CI evidence.
 
 - September 8 smoke/CI repairs correct skip reporting, Source smoke protocol
   readiness, artifact upload retry, Tower Unite/Warfork Steam library exposure,
@@ -121,7 +137,7 @@ support-state tables and do not change the summary counts or record a new pass.
 |------|------|
 | acserver | SteamCMD |
 | ahl2server | SteamCMD (Source) — PASSED; process and Docker lanes use the same runtime-resolved TCP game-port health contract. The current Linux payload does not answer A2S while empty and rejects the hibernation cvar, so integration validates the live TCP endpoint rather than claiming an unavailable A2S surface. |
-| argoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31 on anonymous SteamCMD app `563930`; AlphaGSM launches the shipped `argoserver` binary inside the shared `steamcmd-linux` runtime, syncs `server.cfg` from the managed `servername`, and validates `query`, `info`, and `info --json` on Argo's generic `udp` health surface at the managed main game port. The stale `server` beta override has been removed because current SteamCMD rejects that branch; public-branch revalidation is pending the replacement CI run. |
+| argoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31 on anonymous SteamCMD app `563930`; AlphaGSM launches the shipped `argoserver` binary inside the shared `steamcmd-linux` runtime, syncs `server.cfg` from the managed `servername`, and now validates `query`, `info`, and `info --json` through the native A2S listener on game port plus one. The runtime also claims and publishes both adjacent Steam UDP ports; this correction awaits replacement CI. The stale `server` beta override has been removed because current SteamCMD rejects that branch; public-branch revalidation is pending the replacement CI run. |
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
 | arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the stale generic-TCP/game-port assumption with exact runtime-resolved A2S on the distinct managed UDP `queryport`. The runtime contract claims and publishes game UDP, `game + 1` UDP, and query UDP; launch keeps the map separate from `-port=<game>` and orders optional `ServerPassword` before the final `ServerAdminPassword`. Replacement CI validation is pending; this does not record a new pass. |
 | armarserver | SteamCMD |

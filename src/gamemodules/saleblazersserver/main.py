@@ -271,10 +271,11 @@ def get_start_command(server):
         log_path,
     ]
     if IS_LINUX:
-        # The Xvfb-backed console launch reaches the dedicated listener on
-        # Linux/Wine; batch mode instead fails while creating its window.
+        # The game's headless mode loads the configured lobby automatically;
+        # Xvfb supplies the window Wine still needs during initialization.
         cmd = [
             os.path.basename(server.data["exe_name"]),
+            "-headless",
             "-config",
             config_path,
             "-logFile",

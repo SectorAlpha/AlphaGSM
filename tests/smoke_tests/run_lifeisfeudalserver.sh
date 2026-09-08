@@ -43,7 +43,13 @@ resolve_runtime_image() {
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 cleanup() {
+  local rc=$?
   set +e
+  if [[ "$rc" -ne 0 && -n "${INSTALL_DIR:-}" ]]; then
+    capture_application_logs "$INSTALL_DIR"/logs/*/* "$INSTALL_DIR"/logs/*
+    capture_runtime_diagnostics "$SERVER_NAME"
+    docker logs --tail 150 "$DB_CONTAINER_NAME" 2>&1 || true
+  fi
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
     ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
@@ -60,12 +66,11 @@ WORK_DIR="$(mktemp -d "$WORK_DIR/lif-smoke.XXXXXX")"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/lifeisfeudalserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-lifeisfeudalserver.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-lifeisfeud-IT#$SERVER_NAME.log"
 IMAGE="$(resolve_runtime_image)"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)"
+PORT="$(pick_free_port_group 3)"
 DB_PORT="$(pick_free_port)"
 
 cat > "$CONFIG_PATH" <<EOF
@@ -111,7 +116,7 @@ run_alphagsm "$SERVER_NAME" set db_password alphagsm-lif-secret
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info

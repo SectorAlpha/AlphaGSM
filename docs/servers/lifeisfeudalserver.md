@@ -64,6 +64,22 @@ Setup configures:
 - SteamCMD downloads the server files
 - AlphaGSM copies or refreshes `config_local.cs` from the shipped
   `docs/config_local.cs` template when it is available
+- AlphaGSM starts world 1 and synchronizes its game port in `config/world_1.xml`,
+  preserving the other shipped world settings. Queries use Steam A2S on the
+  game port plus two; all three adjacent ports are claimed together.
+
+The world, database routing, and query corrections await replacement CI
+validation. With `db_mode docker`, AlphaGSM waits for the managed MariaDB
+container to answer SQL before starting the game. A game on Docker's default
+bridge uses the database container's bridge address; a host process uses its
+published database port. Custom Docker networks are not supported for this
+managed database mode.
+
+For a fresh world, let the game create the `lif_1` schema; the managed database
+mode provisions credentials without creating an empty world database. Existing
+database contents are preserved. This follows the [dedicated-server setup guide](https://kb.feudal.tools/knowledge-base/setup-lifyo-dedicated-server-on-ubuntu-linux/).
+The current launch selects world 1; changing `db_name` does not select another
+world, so use `lif_1` for this flow.
 
 ## Bring Your Own Steps
 

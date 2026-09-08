@@ -27,6 +27,7 @@ class DummyServer:
 
 
 def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(askaserver, "IS_LINUX", True)
     wrap_calls = []
 
     def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
@@ -52,7 +53,10 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
 
     cmd, cwd = askaserver.get_start_command(server)
 
-    assert cmd == [
+    assert cmd[0] == "xvfb-run"
+    assert "WINEDLLOVERRIDES=" in cmd
+    assert "SDL_VIDEODRIVER=x11" in cmd
+    assert cmd[cmd.index("AskaServer.exe"):] == [
         "AskaServer.exe",
         "-batchmode",
         "-nographics",

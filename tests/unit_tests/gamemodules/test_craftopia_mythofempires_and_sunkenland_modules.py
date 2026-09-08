@@ -72,6 +72,7 @@ def test_mythofempires_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 
 def test_sunkenland_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(sunkenlandserver, "IS_LINUX", True)
     wrap_calls = []
 
     def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
@@ -94,7 +95,10 @@ def test_sunkenland_get_start_command_builds_expected_args(tmp_path, monkeypatch
 
     cmd, cwd = sunkenlandserver.get_start_command(server)
 
-    assert cmd[0] == "Sunkenland-DedicatedServer.exe"
+    assert cmd[0] == "xvfb-run"
+    assert "WINEDLLOVERRIDES=" in cmd
+    assert "SDL_VIDEODRIVER=x11" in cmd
+    assert "Sunkenland-DedicatedServer.exe" in cmd
     assert "-servername" in cmd
     assert cwd == server.data["dir"]
     assert wrap_calls == [True]

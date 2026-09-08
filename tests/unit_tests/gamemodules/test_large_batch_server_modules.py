@@ -68,7 +68,7 @@ def test_lifeisfeudal_get_start_command_builds_expected_args(tmp_path, monkeypat
 
     cmd, cwd = lifeisfeudalserver.get_start_command(server)
 
-    assert cmd == ["ddctd_cm_yo_server.exe"]
+    assert cmd == ["ddctd_cm_yo_server.exe", "-worldID", "1"]
     assert cwd == server.data["dir"]
 
 

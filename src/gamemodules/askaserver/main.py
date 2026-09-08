@@ -121,21 +121,40 @@ def get_start_command(server):
     if server.data["password"]:
         command.extend(["-Password", server.data["password"]])
     if IS_LINUX:
+        game_command = command
         command = proton.wrap_command(
             command,
             wineprefix=server.data.get("wineprefix"),
             prefer_proton=True,
         )
+        # Unity still creates a window in batch mode under Wine.
+        wrapper = command[:-len(game_command)]
+        command = [arg for arg in wrapper if not arg.startswith(("DISPLAY=", "WINEDLLOVERRIDES="))] + game_command
+        command = proton.prepend_env_assignments(
+            command, WINEDLLOVERRIDES="", SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy",
+        )
+        command = ["xvfb-run", "-a", "--server-args=-screen 0 1024x768x24 -nolisten tcp", *command]
     return (command, server.data["dir"])
 
 
+_DISPLAY_ENV = {
+    "ALPHAGSM_XVFB": "1",
+    "SDL_VIDEODRIVER": "x11",
+    "SDL_AUDIODRIVER": "dummy",
+    "WINEDLLOVERRIDES": "",
+}
+
+
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
+    extra_env=_DISPLAY_ENV,
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
     port_definitions=(("port", "udp"), ("queryport", "udp")),
 )
 get_runtime_requirements.__doc__ = "Return Docker runtime metadata for Wine/Proton-backed servers."
 
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    extra_env=_DISPLAY_ENV,
     get_start_command=get_start_command,
     port_definitions=(("port", "udp"), ("queryport", "udp")),
 )

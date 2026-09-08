@@ -11,6 +11,8 @@ import pytest
 
 
 CASES = (
+    ("argoserver", "a2s", 27016, None),
+    ("lifeisfeudalserver", "a2s", 27017, None),
     ("q2server", "quake2", 27015, b"\xff\xff\xff\xffstatus\n"),
     ("qwserver", "quakeworld", 27015, b"\xff\xff\xff\xffstatus\n"),
     ("unturned", "a2s", 27015, None),
@@ -41,6 +43,8 @@ def lifecycle(request, monkeypatch, tmp_path):
                  "require_command_for_runtime", "require_proton", "write_config"):
         monkeypatch.setattr(module, hook, lambda *_a, **_kw: None, raising=False)
     monkeypatch.setattr(module, "resolve_runtime_image", lambda *_a: "fixture-image", raising=False)
+    monkeypatch.setattr(module, "resolve_steamcmd_linux_runtime_image", lambda: "fixture-image", raising=False)
+    monkeypatch.setattr(module, "_docker_rm_force", lambda _name: None, raising=False)
     monkeypatch.setattr(module, "alphagsm_env", lambda _path: {})
     tcp_ports = iter(range(27015, 27025))
     monkeypatch.setattr(module, "pick_free_tcp_port", lambda: next(tcp_ports), raising=False)
@@ -98,6 +102,8 @@ def lifecycle(request, monkeypatch, tmp_path):
                  "wait_for_udp_open"):
         monkeypatch.setattr(module, hook, lambda *_a, **_kw: pytest.fail("obsolete probe called"),
                             raising=False)
+    if name == "lifeisfeudalserver":
+        monkeypatch.setattr(module, "wait_for_tcp_closed", lambda *_a: calls.append("db-closed"))
     return module, helpers, calls, run
 
 

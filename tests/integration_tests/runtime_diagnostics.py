@@ -13,7 +13,10 @@ import uuid
 
 
 def collect_process_diagnostics(proc_root="/proc", home_roots=None):
-    """Read wait states and selected Steam log tails, never argv or environment."""
+    """Read wait states, numeric port flags and Steam logs; omit other argv and env."""
+
+    import ipaddress
+    import sys
 
     def read_text(path, limit=4096):
         try:
@@ -25,6 +28,17 @@ def collect_process_diagnostics(proc_root="/proc", home_roots=None):
     process_rows = []
     for process in sorted(Path(proc_root).glob("[0-9]*"))[:32]:
         row = {"pid": int(process.name), "comm": read_text(process / "comm")}
+        args = read_text(process / "cmdline").split("\0")
+        row["port_arguments"] = []
+        for index, argument in enumerate(args[:128]):
+            option, separator, value = argument.lower().partition("=")
+            if option not in ("-port", "-queryport", "-statusport", "-serverport",
+                              "+port", "+server.port", "+server.queryport"):
+                continue
+            if not separator:
+                value = args[index + 1] if index + 1 < len(args) else ""
+            if value.isascii() and value.isdigit() and len(value) <= 5 and int(value) <= 65535:
+                row["port_arguments"].append({"option": option, "port": int(value)})
         row["status"] = [
             line for line in read_text(process / "status").splitlines()
             if line.startswith(("State:", "Uid:", "Threads:", "Seccomp:", "NoNewPrivs:", "CapEff:"))
@@ -48,25 +62,32 @@ def collect_process_diagnostics(proc_root="/proc", home_roots=None):
     if home_roots is None:
         home_roots = [os.environ.get("HOME", "/root"), "/root", "/home/alphagsm", "/home/steam"]
     home_roots = list(dict.fromkeys(str(home) for home in home_roots))[:4]
-    steam_state = [
-        {"path": str(Path(home) / relative), "exists": (Path(home) / relative).exists()}
-        for home in home_roots
+    steam_state = []
+    for home in home_roots:
         for relative in (
             ".steam/sdk32/steamclient.so", ".steam/sdk64/steamclient.so",
             ".steam/steam/steamapps/libraryfolders.vdf",
             ".local/share/Steam/steamapps/libraryfolders.vdf",
-        )
-    ]
+        ):
+            path = Path(home) / relative
+            row = {"path": str(path)}
+            try:
+                row["exists"] = path.exists()
+            except OSError as exc:
+                row.update(exists=None, error=str(exc))
+            steam_state.append(row)
     log_rows = []
     seen = set()
     for home in home_roots:
         for relative in (".steam/steam/logs", ".steam/steamcmd/logs", "Steam/logs", ".local/share/Steam/logs"):
             for filename in ("connection_log.txt", "console_log.txt", "stderr.txt", "appinfo_log.txt"):
                 path = Path(home) / relative / filename
-                if len(log_rows) >= 8 or str(path) in seen or not path.is_file():
+                if len(log_rows) >= 8 or str(path) in seen:
                     continue
                 seen.add(str(path))
                 try:
+                    if not path.is_file():
+                        continue
                     with path.open("rb") as handle:
                         handle.seek(0, os.SEEK_END)
                         handle.seek(max(0, handle.tell() - 8192))
@@ -75,7 +96,36 @@ def collect_process_diagnostics(proc_root="/proc", home_roots=None):
                 except OSError as exc:
                     tail = f"unavailable: {exc}"
                 log_rows.append({"path": str(path), "tail": tail})
-    return {"processes": process_rows, "steam_logs": log_rows, "steam_state": steam_state}
+    sockets = {}
+    remaining = 128
+    for protocol in ("tcp", "tcp6", "udp", "udp6"):
+        table = {"listeners": []}
+        sockets[protocol] = table
+        try:
+            with (Path(proc_root) / "net" / protocol).open(encoding="ascii") as handle:
+                # Limit input as well as output; only local addresses are retained.
+                lines = handle.read(65536).splitlines()[1:513]
+            for line in lines:
+                fields = line.split()
+                if remaining == 0:
+                    break
+                if len(fields) < 4 or (protocol.startswith("tcp") and fields[3] != "0A"):
+                    continue
+                try:
+                    address, port = fields[1].split(":")
+                    port = int(port, 16)
+                    packed = b"".join(int(address[index:index + 8], 16).to_bytes(4, sys.byteorder)
+                                      for index in range(0, len(address), 8))
+                    address = str(ipaddress.ip_address(packed))
+                except (ValueError, OverflowError):
+                    continue
+                if port:
+                    table["listeners"].append({"address": address, "port": port, "state": fields[3]})
+                    remaining -= 1
+        except OSError as exc:
+            table["error"] = str(exc)
+    return {"processes": process_rows, "steam_logs": log_rows, "steam_state": steam_state,
+            "sockets": sockets}
 
 
 def collect_source_stacks(proc_root="/proc"):

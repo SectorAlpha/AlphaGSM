@@ -1,6 +1,7 @@
 """Keep transient artifact failures recoverable without losing required evidence."""
 
 from pathlib import Path
+import re
 
 
 def test_test_artifact_upload_retries_once_and_preserves_final_failure():
@@ -35,3 +36,18 @@ def test_smoke_results_survive_in_step_summary_before_artifact_upload():
         upload = job.split('- name: Upload smoke test results', 1)[1]
         assert 'uses: ./.github/actions/upload-test-artifact' in upload
         assert 'if-no-files-found: error' in upload
+
+
+def test_expensive_rechecks_stop_when_the_workflow_is_cancelled():
+    """Superseded matrices must release the workflow concurrency slot."""
+    workflow = Path('.github/workflows/unittest.yaml').read_text()
+    jobs = dict(re.findall(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:|\Z)',
+                           workflow, re.MULTILINE | re.DOTALL))
+    for name in ('collect-integration-rechecks', 'integration-flake-recheck'):
+        condition = re.search(r'^    if: (.+)$', jobs[name], re.MULTILINE).group(1)
+        assert '!cancelled()' in condition
+        assert 'always()' not in condition
+    assert "needs.collect-integration-rechecks.outputs.has_rechecks == 'true'" in jobs['integration-flake-recheck']
+    # The required final report and diagnostic uploads still run after failure.
+    assert '    if: always()' in jobs['summarize-tests']
+    assert '        if: always()' in jobs['integration-flake-recheck']

@@ -112,7 +112,7 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == str(exe_path.parent)
 
 
-def test_get_start_command_linux_uses_xvfb_console_launch(tmp_path, monkeypatch):
+def test_get_start_command_linux_uses_headless_config_launch(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     monkeypatch.setattr(mod, "_wrap_linux_command", lambda cmd, wineprefix=None: list(cmd))
     server = DummyServer()
@@ -126,6 +126,7 @@ def test_get_start_command_linux_uses_xvfb_console_launch(tmp_path, monkeypatch)
 
     assert cmd == [
         "Saleblazers.exe",
+        "-headless",
         "-config",
         "../DedicatedServerConfig.json",
         "-logFile",

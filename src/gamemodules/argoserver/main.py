@@ -12,6 +12,12 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 563930
 steam_anonymous_login_possible = True
+_PORT_DEFINITIONS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "port", "offset": 2, "protocol": "udp"},
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -135,13 +141,13 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return Argo's generic UDP game-port health surface."""
+    """Return the Steam query endpoint, which Argo binds at game port + 1."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]) + 1, "a2s")
 
 
 def get_info_address(server):
-    """Return the same UDP endpoint used by Argo's info command."""
+    """Return the same A2S endpoint used by Argo's query command."""
 
     return get_query_address(server)
 
@@ -183,14 +189,21 @@ def checkvalue(server, key, *value):
         return str(value[0])
     raise ServerError("Unsupported key")
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def get_runtime_requirements(server):
+    """Declare game, Steam query, and Steam master traffic ports together."""
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
+    return runtime_module.build_runtime_requirements(
+        server, family="steamcmd-linux", port_definitions=_PORT_DEFINITIONS,
+    )
+
+
+def get_container_spec(server):
+    """Publish Argo's Steam query endpoint alongside the game port."""
+
+    return runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=_PORT_DEFINITIONS,
         stdin_open=True,
-)
+    )

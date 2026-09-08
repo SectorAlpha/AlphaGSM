@@ -1044,7 +1044,7 @@ jobs:
   collect-integration-rechecks:
     runs-on: ubuntu-latest
     needs: [classify-changes, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-integration-test]
-    if: always()
+    if: ${{ !cancelled() }}
     outputs:
       matrix: ${{ steps.collect.outputs.matrix }}
       has_rechecks: ${{ steps.collect.outputs.has_rechecks }}
@@ -1066,7 +1066,7 @@ jobs:
   integration-flake-recheck:
     runs-on: ${{ fromJson(matrix.runner_class == 'heavy' && (vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') || '["ubuntu-latest"]') }}
     needs: [collect-integration-rechecks, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
-    if: always() && needs.collect-integration-rechecks.outputs.has_rechecks == 'true'
+    if: ${{ !cancelled() && needs.collect-integration-rechecks.outputs.has_rechecks == 'true' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.collect-integration-rechecks.outputs.matrix) }}

@@ -185,3 +185,39 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+@pytest.mark.parametrize("value", ["DISPLAY=secret", "WINEDLLOVERRIDES=literal"])
+def test_linux_launch_enables_virtual_display(tmp_path, monkeypatch, value):
+    import importlib
+    real_proton = importlib.import_module("utils.proton")
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod.proton, "prepend_env_assignments", real_proton.prepend_env_assignments)
+    monkeypatch.setenv("WINEDLLOVERRIDES", "winex11.drv=")
+    monkeypatch.setenv("SDL_VIDEODRIVER", "offscreen")
+    monkeypatch.setattr(mod.proton, "wrap_command", lambda command, **kwargs: [
+        "env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "wine", *command,
+    ])
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / server.data["exe_name"]).touch()
+    server.data["servername"] = value
+
+    command, _cwd = mod.get_start_command(server)
+
+    assert command[:2] == ["xvfb-run", "-a"]
+    assert "DISPLAY=" not in command
+    assert "WINEDLLOVERRIDES=" in command
+    assert "SDL_VIDEODRIVER=x11" in command
+    assert "SDL_AUDIODRIVER=dummy" in command
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in command
+    assert server.data["exe_name"] in command
+    assert command.count(value) == 1
+
+
+def test_docker_runtime_enables_virtual_display():
+    server = DummyServer()
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""

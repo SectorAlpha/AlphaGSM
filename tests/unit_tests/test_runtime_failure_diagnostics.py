@@ -36,6 +36,22 @@ def test_process_probe_captures_wait_state_without_command_or_environment(tmp_pa
     assert "never-read" not in json.dumps(result)
 
 
+def test_process_probe_retains_only_allowlisted_numeric_port_arguments(tmp_path):
+    process = tmp_path / "31"
+    process.mkdir()
+    (process / "cmdline").write_bytes(
+        b"server\0-StatusPort=26984\0-QueryPort=27015\0+server.port\00007777\0"
+        b"+server.queryport\0never-read\0-password=never-read\0-port=65536\0"
+    )
+    result = _helpers().collect_process_diagnostics(proc_root=tmp_path, home_roots=[])
+    assert result["processes"][0]["port_arguments"] == [
+        {"option": "-statusport", "port": 26984},
+        {"option": "-queryport", "port": 27015},
+        {"option": "+server.port", "port": 7777},
+    ]
+    assert "never-read" not in json.dumps(result)
+
+
 def test_process_probe_bounds_logs_and_ignores_steam_credentials(tmp_path):
     helpers = _helpers()
     home = tmp_path / "home"
@@ -54,6 +70,51 @@ def test_process_probe_bounds_logs_and_ignores_steam_credentials(tmp_path):
         "path": str(home / ".steam/steam/steamapps/libraryfolders.vdf"),
         "exists": False,
     } in result["steam_state"]
+
+
+def test_process_probe_retains_evidence_when_other_home_is_inaccessible(tmp_path, monkeypatch):
+    home = tmp_path / "private"
+    original_stat = Path.stat
+
+    def stat(path, *args, **kwargs):
+        if path.is_relative_to(home):
+            raise PermissionError("private home")
+        return original_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", stat)
+    result = _helpers().collect_process_diagnostics(proc_root=tmp_path / "proc", home_roots=[home])
+    assert result["processes"] == []
+    assert all(row["exists"] is None for row in result["steam_state"])
+    assert all("private home" in row["error"] for row in result["steam_state"])
+
+
+def test_process_probe_lists_only_local_listeners_and_bound_udp_ports(tmp_path):
+    net = tmp_path / "net"
+    net.mkdir()
+    (net / "tcp").write_text(
+        "sl local_address rem_address st\n"
+        "0: 00000000:1F90 00000000:0000 0A secret-not-copied\n"
+        "1: 0100007F:1234 08080808:0050 01 secret-not-copied\n"
+    )
+    (net / "tcp6").write_text("sl local_address rem_address st\n")
+    (net / "udp").write_text("sl local_address rem_address st\n0: 0100007F:6978 00000000:0000 07\n")
+    result = _helpers().collect_process_diagnostics(proc_root=tmp_path, home_roots=[])
+    assert result["sockets"]["tcp"]["listeners"] == [
+        {"address": "0.0.0.0", "port": 8080, "state": "0A"},
+    ]
+    assert result["sockets"]["udp"]["listeners"] == [
+        {"address": "127.0.0.1", "port": 27000, "state": "07"},
+    ]
+    assert "error" in result["sockets"]["udp6"]
+    assert "secret-not-copied" not in json.dumps(result)
+
+
+def test_process_probe_bounds_socket_tables_and_handles_malformed_rows(tmp_path):
+    net = tmp_path / "net"
+    net.mkdir()
+    (net / "tcp").write_text("header\ninvalid row\n" + "0: 00000000:1F90 00000000:0000 0A\n" * 300)
+    result = _helpers().collect_process_diagnostics(proc_root=tmp_path, home_roots=[])
+    assert len(result["sockets"]["tcp"]["listeners"]) == 128
 
 
 def test_stopped_container_retains_exit_evidence_without_exec():

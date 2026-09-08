@@ -1,6 +1,7 @@
 """Integration test for argoserver."""
 
 import os
+import sys
 
 import pytest
 
@@ -10,17 +11,16 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command_for_runtime,
     resolve_steamcmd_linux_runtime_image,
-    pick_free_udp_port,
+    pick_free_tcp_port_group,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     skip_for_known_steamcmd_issue,
     run_setup_with_port_retry,
     wait_for_info_protocol,
-    wait_for_udp_open,
-    wait_for_generic_udp_closed,
+    wait_for_udp_closed,
 )
 from gamemodules.argoserver import steam_app_id
 
@@ -59,7 +59,7 @@ def test_argoserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_udp_port()
+    port = pick_free_tcp_port_group(3)
 
     run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
@@ -78,30 +78,32 @@ def test_argoserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_udp_open("127.0.0.1", port, START_TIMEOUT)
-        wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT, expected_port=port)
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=port + 1)
 
         run_and_assert_ok(env, server_name, "status")
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server port is open" in query_result.stdout
+            "Server is responding" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "No further details available." in info_result.stdout
+            "Players" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "udp", (
-            f"Expected udp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data["port"] == port, (
-            f"Expected reported info port {port}: {_info_data!r}"
+        assert _info_data["port"] == port + 1, (
+            f"Expected reported info port {port + 1}: {_info_data!r}"
         )
     finally:
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
 
-    wait_for_generic_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

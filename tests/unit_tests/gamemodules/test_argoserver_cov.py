@@ -151,12 +151,12 @@ def test_get_start_command(tmp_path):
     assert "-autoinit" not in cmd
 
 
-def test_query_and_info_addresses_use_udp_game_port():
+def test_query_and_info_addresses_use_a2s_query_port():
     server = DummyServer()
     server.data["port"] = 2302
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 2302, "udp")
-    assert mod.get_info_address(server) == ("127.0.0.1", 2302, "udp")
+    assert mod.get_query_address(server) == ("127.0.0.1", 2303, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 2303, "a2s")
 
 
 def test_get_start_command_missing_exe(tmp_path):

@@ -1,6 +1,7 @@
 """Life is Feudal: Your Own dedicated server lifecycle helpers."""
 
 import getpass
+import ipaddress
 import os
 import re
 import shutil
@@ -21,6 +22,11 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 320850
 steam_anonymous_login_possible = True
+_PORT_DEFINITIONS = tuple(
+    {"key": "port", "offset": offset, "protocol": protocol}
+    for offset in (0, 1, 2)
+    for protocol in ("udp", "tcp")
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -33,7 +39,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
-config_sync_keys = ("db_host", "db_port", "db_name", "db_user", "db_password")
+config_sync_keys = ("port", "db_host", "db_port", "db_name", "db_user", "db_password")
 setting_schema = {
     "db_mode": SettingSpec(
         canonical_key="db_mode",
@@ -87,11 +93,9 @@ setting_schema = {
 _MANAGED_CONFIG_FOOTER = """
 
 // Managed by AlphaGSM when no upstream docs/config_local.cs template is present.
-$DatabaseAddress = "{db_address}";
-$DatabaseName = "{db_name}";
-$DatabaseUser = "{db_user}";
-$DatabasePassword = "{db_credential}";
-$rootPassword = "{db_credential}";
+$cm_config::DB::Connect::server = "{db_address}";
+$cm_config::DB::Connect::user = "{db_user}";
+$cm_config::DB::Connect::password = "{db_credential}";
 """.lstrip()
 _MANAGED_DB_IMAGE = "mariadb:10.3"
 
@@ -107,8 +111,6 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ddctd_cm_yo_server.
     gamemodule_common.set_server_defaults(
         server,
         {
-            "queryport": "28001",
-            "rconport": "28002",
             "db_mode": "local",
             "db_host": "127.0.0.1",
             "db_port": 3306,
@@ -193,6 +195,25 @@ def _docs_mysql_config_path(server):
 
 
 def _database_address(server):
+    if _normalize_db_mode(server.data.get("db_mode", "local")) == "docker":
+        metadata = runtime_module.resolve_runtime_metadata(server)
+        network = metadata.get("network_mode", "bridge")
+        if metadata.get("runtime") == "docker" and network != "host":
+            if network != "bridge":
+                raise ServerError("Managed Life is Feudal database requires bridge or host networking")
+            name = _managed_db_container_name(server)
+            if _docker_container_running(name):
+                result = _run_docker(
+                    "inspect", "-f", "{{.NetworkSettings.Networks.bridge.IPAddress}}", name,
+                    check=False,
+                )
+                try:
+                    address = ipaddress.IPv4Address(result.stdout.strip())
+                except ipaddress.AddressValueError as exc:
+                    raise ServerError("Could not resolve managed MariaDB bridge address") from exc
+                if result.returncode != 0 or address.is_unspecified or address.is_loopback:
+                    raise ServerError("Could not resolve managed MariaDB bridge address")
+                return f"{address}:3306"
     return f'{server.data.get("db_host", "127.0.0.1")}:{int(server.data.get("db_port", 3306))}'
 
 
@@ -280,14 +301,22 @@ def _managed_database_ready(container_name, password):
     return False, last_detail
 
 
-def _ensure_managed_root_grants(container_name, password):
-    sql_password = str(password).replace("'", "''")
+def _ensure_managed_root_grants(container_name, password, *, db_user="root", db_name="lif_1"):
+    sql_password = str(password).replace("\\", "\\\\").replace("'", "''")
     sql = (
         "CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '{password}'; "
         "ALTER USER 'root'@'%' IDENTIFIED BY '{password}'; "
         "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; "
-        "FLUSH PRIVILEGES;"
     ).format(password=sql_password)
+    if db_user.lower() != "root":
+        sql_user = db_user.replace("\\", "\\\\").replace("'", "''")
+        sql_database = db_name.replace("`", "``")
+        sql += (
+            f"CREATE USER IF NOT EXISTS '{sql_user}'@'%' IDENTIFIED BY '{sql_password}'; "
+            f"ALTER USER '{sql_user}'@'%' IDENTIFIED BY '{sql_password}'; "
+            f"GRANT ALL PRIVILEGES ON `{sql_database}`.* TO '{sql_user}'@'%'; "
+        )
+    sql += "FLUSH PRIVILEGES;"
     last_detail = ""
     for client_binary in ("mariadb", "mysql"):
         result = _run_docker(
@@ -346,9 +375,8 @@ def _ensure_managed_database(server):
         )
 
     container_name = _managed_db_container_name(server)
-    if _docker_container_running(container_name):
-        return
-    if _docker_container_exists(container_name):
+    running = _docker_container_running(container_name)
+    if not running and _docker_container_exists(container_name):
         result = _run_docker("start", container_name, check=False)
         if result.returncode != 0:
             raise ServerError(
@@ -356,12 +384,20 @@ def _ensure_managed_database(server):
                     container_name, (result.stderr or result.stdout).strip()
                 )
             )
-    else:
+    elif not running:
         os.makedirs(_managed_db_data_dir(server), exist_ok=True)
-        db_user = str(server.data.get("db_user", "root")).strip() or "root"
-        db_name = str(server.data.get("db_name", "lif_1")).strip() or "lif_1"
         db_port = int(server.data.get("db_port", 3306))
         config_path = _prepare_managed_db_config(server)
+        mounts = [
+            {"source": _managed_db_data_dir(server), "target": "/var/lib/mysql", "mode": "rw"}
+        ]
+        if config_path is not None:
+            mounts.append({
+                "source": config_path,
+                "target": "/etc/mysql/conf.d/lif-mariadb.cnf",
+                "mode": "ro",
+            })
+        mounts = runtime_module.validate_mount_path_identity(mounts)
         command = [
             "run",
             "-d",
@@ -369,31 +405,13 @@ def _ensure_managed_database(server):
             container_name,
             "-p",
             f"127.0.0.1:{db_port}:3306",
-            "-v",
-            f"{_managed_db_data_dir(server)}:/var/lib/mysql",
-            "-e",
-            f"MYSQL_DATABASE={db_name}",
             "-e",
             f"MYSQL_ROOT_PASSWORD={password}",
             "-e",
             "MYSQL_ROOT_HOST=%",
         ]
-        if config_path is not None:
-            command.extend(
-                [
-                    "-v",
-                    f"{config_path}:/etc/mysql/conf.d/lif-mariadb.cnf:ro",
-                ]
-            )
-        if db_user.lower() != "root":
-            command.extend(
-                [
-                    "-e",
-                    f"MYSQL_USER={db_user}",
-                    "-e",
-                    f"MYSQL_PASSWORD={password}",
-                ]
-            )
+        for mount in mounts:
+            command.extend(["-v", f'{mount["source"]}:{mount["target"]}:{mount["mode"]}'])
         command.append(_MANAGED_DB_IMAGE)
         result = _run_docker(*command, check=False)
         if result.returncode != 0:
@@ -408,7 +426,13 @@ def _ensure_managed_database(server):
     while time.time() < deadline:
         ready, detail = _managed_database_ready(container_name, password)
         if ready:
-            _ensure_managed_root_grants(container_name, password)
+            # The dedicated-server setup requires native world bootstrap to
+            # create its own schema instead of precreating MYSQL_DATABASE.
+            _ensure_managed_root_grants(
+                container_name, password,
+                db_user=str(server.data.get("db_user", "root")).strip() or "root",
+                db_name=str(server.data.get("db_name", "lif_1")).strip() or "lif_1",
+            )
             return
         last_error = detail or "database bootstrap still in progress"
         time.sleep(1)
@@ -439,8 +463,35 @@ def _replace_named_config_value(text, names, value):
     return text, total_matches
 
 
+def _sync_world_config(server):
+    """Preserve the shipped world settings while applying the managed game port."""
+
+    if "port" not in server.data:
+        return
+    target = os.path.join(server.data["dir"], "config", "world_1.xml")
+    source = target if os.path.isfile(target) else os.path.join(
+        server.data["dir"], "docs", "default_world_config.xml"
+    )
+    if not os.path.isfile(source):
+        raise ServerError("Life is Feudal world_1.xml and docs/default_world_config.xml are missing")
+    with open(source, encoding="utf-8") as handle:
+        text = handle.read()
+    text, matches = re.subn(
+        r"(<port>)[^<]*(</port>)",
+        lambda match: f'{match[1]}{int(server.data["port"])}{match[2]}',
+        text,
+    )
+    if matches != 1:
+        raise ServerError("Life is Feudal world config must contain one <port> setting")
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    with open(target, "w", encoding="utf-8") as handle:
+        handle.write(text)
+
+
 def sync_server_config(server):
-    """Write or refresh the Life is Feudal database config_local.cs file."""
+    """Refresh native world and database settings from the datastore."""
+
+    _sync_world_config(server)
 
     target_path = _config_local_path(server)
     source_path = _docs_config_local_path(server)
@@ -465,13 +516,18 @@ def sync_server_config(server):
         ],
     }
 
-    total_matches = 0
     for names, replacement in replacements.items():
-        text, matches = _replace_named_config_value(text, names, replacement)
-        total_matches += matches
+        text, _matches = _replace_named_config_value(text, names, replacement)
 
-    if total_matches == 0 and "Managed by AlphaGSM" not in text:
-        text = text.rstrip() + "\n\n" + _MANAGED_CONFIG_FOOTER.format(**managed_values)
+    # Older AlphaGSM fallbacks used aliases that the native server never reads.
+    # Add any absent native assignments without replacing operator customizations.
+    for field, value in (
+        ("server", managed_values["db_address"]),
+        ("user", managed_values["db_user"]),
+        ("password", managed_values["db_credential"]),
+    ):
+        if not re.search(rf"^\s*\$cm_config::DB::Connect::{field}\s*=", text, re.MULTILINE):
+            text = text.rstrip() + f'\n$cm_config::DB::Connect::{field} = "{value}";\n'
 
     os.makedirs(server.data["dir"], exist_ok=True)
     # Life is Feudal reads these database credentials directly from
@@ -526,9 +582,14 @@ def _assert_database_endpoint_available(server):
 def prestart(server):
     """Sync config and ensure the chosen database mode is ready."""
 
-    sync_server_config(server)
-    if _normalize_db_mode(server.data.get("db_mode", "local")) == "docker":
+    managed_database = _normalize_db_mode(server.data.get("db_mode", "local")) == "docker"
+    if managed_database:
         _ensure_managed_database(server)
+    sync_server_config(server)
+    if managed_database and runtime_module.resolve_runtime_metadata(server).get("runtime") == "docker":
+        # SQL readiness was checked inside the sidecar. The manager can itself
+        # be containerized, where its loopback is not the Docker host's loopback.
+        return
     _assert_database_endpoint_available(server)
 
 
@@ -538,7 +599,7 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"]]
+    cmd = [server.data["exe_name"], "-worldID", "1"]
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
@@ -592,11 +653,27 @@ def checkvalue(server, key, *value):
         raw_str_keys=("exe_name", "dir"),
     )
 
-get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def get_query_address(server):
+    """Query the Steam listener, which follows the native world port by two."""
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'rconport', 'protocol': 'udp'}, {'key': 'rconport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+    return runtime_module.resolve_query_host(server), int(server.data["port"]) + 2, "a2s"
+
+
+def get_info_address(server):
+    """Use the native Steam query endpoint for server information."""
+
+    return get_query_address(server)
+
+
+def get_runtime_requirements(server):
+    """Declare all three adjacent native world ports for Docker."""
+
+    return proton.get_runtime_requirements(server, port_definitions=_PORT_DEFINITIONS)
+
+
+def get_container_spec(server):
+    """Build the Wine/Proton launch spec with the native world port group."""
+
+    return proton.get_container_spec(
+        server, get_start_command, port_definitions=_PORT_DEFINITIONS,
+    )

@@ -16,7 +16,7 @@ SOURCE = ("bb2server", "bmdmserver", "ccserver", "counterstrike2", "cssserver",
           "nmrihserver", "pvkiiserver", "tf2")
 
 
-@pytest.mark.parametrize("module", GOLDSRC + SOURCE)
+@pytest.mark.parametrize("module", GOLDSRC + SOURCE + ("argoserver", "lifeisfeudalserver"))
 @pytest.mark.parametrize("query_rc", [0, 1])
 def test_valve_readiness_requires_protocol_response(tmp_path, module, query_rc):
     script = (REPO_ROOT / f"tests/smoke_tests/run_{module}.sh").read_text()
