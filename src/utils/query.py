@@ -629,6 +629,9 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
     TeamSpeak 3 server 3.13+ where anonymous ServerQuery connections no longer
     receive elevated permissions.
 
+    Commands are paced below the default ten-commands-per-three-seconds flood
+    limit, including the first command so consecutive CLI checks remain safe.
+
     Raises :class:`QueryError` on connection failure, unexpected banner, or
     malformed response.
     """
@@ -649,6 +652,9 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
                 return buf.decode("utf-8", errors="replace").strip()
 
     def _send(cmd):
+        # Docker queries need not originate from the exempt loopback address.
+        # Include login and quit, and leave headroom above the 300ms minimum.
+        time.sleep(0.35)
         conn.sendall((cmd + "\n").encode("utf-8"))
 
     def _read_until_ok():

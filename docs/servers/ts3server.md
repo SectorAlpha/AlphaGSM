@@ -77,6 +77,11 @@ in `serverquery_admin_password.txt` under the install directory with access
 restricted to its owner, so replacing the container retains query access. Keep
 this file with the server database when moving an installation.
 
+Queries pace their commands to respect TeamSpeak's default flood limit. A health
+check takes about two seconds, allowing consecutive `query` and `info` calls
+from Docker without requiring an exemption from flood protection. Concurrent
+query clients or stricter custom limits still need coordinated polling.
+
 ### Server Configuration
 
 - **Config files**: `ts3server.ini`

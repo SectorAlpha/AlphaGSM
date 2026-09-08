@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-08
+- TeamSpeak 3: pace ServerQuery commands below the default flood limit so
+  consecutive readiness, query and info checks do not ban the Docker client.
 - CI: refresh the generated Quake Live capability inventory for factory and
   bindaddress config sync so the module parity check passes.
 - Garry's Mod: prefer the server's own launcher before launchers in downloaded

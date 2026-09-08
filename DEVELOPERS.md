@@ -536,6 +536,10 @@ without printing it, using the active process or Docker runtime. TeamSpeak uses
 this to recover first-start ServerQuery credentials, caching them in an
 exclusively created file with mode 0600 for subsequent container launches.
 Authenticated `ts3` info, rather than TCP availability, gates readiness.
+ServerQuery sends are spaced by 350ms, including login and quit. The initial
+delay also separates sequential CLI sessions. This respects the default ten
+commands per three seconds without changing the server's flood protection;
+see the [TS3 exporter implementation notes](https://github.com/hikhvar/ts3exporter#channel-metrics).
 
 Quake Live uses Steam A2S on its game port. Its `servercfg` directory selects
 `fs_game`; `+exec` receives only the filename. Managed config entries use native

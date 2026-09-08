@@ -43,6 +43,18 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- [PR #36 run 34250522498](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34250522498)
+  at `de6777c4` passed unit tests, lint, coverage and all five binary targets.
+  Overall it recorded 177 successful and 92 failed checks, including smoke
+  batches and isolated game rechecks. TeamSpeak Docker now passes authenticated
+  readiness and query, then falls back to TCP on the next info call. Its five
+  commands per check exceed the default ServerQuery flood budget when repeated;
+  command pacing has unit coverage and awaits CI confirmation. GMod now uses
+  its own launcher but stalls during Steam initialization, like other Source
+  Docker lanes. Terraria 1.4.5.8 creates its world and listens, then crashes with
+  `ObjectDisposedException` in `DebugNetworkStream` after TCP probes. Those
+  Source and Terraria failures remain unresolved; no new game pass is claimed.
+
 - [PR #36 run 34213901844](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34213901844)
   completed at commit `51ad45e4` with 183 successful and 90 failed checks
   (job counts, including rechecks and smoke batches). GMod selected a launcher
