@@ -153,7 +153,6 @@ Notes:
 - [x] reignofdwarfserver
 - [x] sunkenlandserver
 - [x] theforestserver
-- [x] askaserver
 - [x] blackops3server
 - [x] pixarkserver
 - [x] remnantsserver
@@ -167,6 +166,7 @@ Notes:
 
 ## Supported Now
 
+- [x] askaserver
 - [x] gtafivemserver
 - [x] arma2coserver
 - [x] arma3server

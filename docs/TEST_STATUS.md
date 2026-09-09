@@ -11,8 +11,8 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED | 141 |
-| ENABLED (AUTH) | 48 |
+| PASSED | 140 |
+| ENABLED (AUTH) | 49 |
 | ENABLED (BYO) | 45 |
 | DISABLED | 3 |
 | SKIPPED | 0 |
@@ -82,12 +82,12 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   retaining existing mode/map/admin settings and using the configured Steam
   query port for readiness. The XML layout is backed by publisher guidance and
   maintained server implementations; replacement CI must confirm the A2S reply.
-- September 9 launch repairs supply ASKA and Sunkenland with Xvfb and preserve
+- September 9 launch repairs supply Sunkenland with Xvfb and preserve
   Saleblazers' unattended `-headless` configuration launch. Runtime diagnostics
   now tolerate inaccessible Steam directories and show local listeners and
   allowlisted numeric port arguments. Replacement CI validation is pending.
-  Heat still exits in `AsyncConsoleReader.set_InputFormat` before startup and
-  does not yet have a verified runtime fix.
+  Heat's console now uses its prior Wine-first interactive terminal contract
+  after Proton and detached input crashed in `AsyncConsoleReader.set_InputFormat`.
 - Argo and Life is Feudal now use their native Steam query listeners and claim
   adjacent ports. Life is Feudal also receives its documented world argument,
   native world/database configuration, and managed database routing for Docker.
@@ -305,7 +305,6 @@ support-state tables and do not change the summary counts or record a new pass.
 | reignofdwarfserver | Docker runtime (Wine/Proton) — PASSED; the live payload exposes generic TCP on the managed game port rather than A2S on `queryport`, so CI waits for AlphaGSM's TCP `info --json` surface. The forced host-Proton process exited during the 2026-07-16 full run, so CI keeps one Docker-default lifecycle. |
 | sunkenlandserver | SteamCMD (Wine/Proton) — PASSED; Linux launches use Xvfb and `query`, `info`, plus `info --json` use the validated TCP health surface on the managed game port |
 | theforestserver | SteamCMD (Wine/Proton) — PASSED; AlphaGSM writes the native `server-data/Server.cfg`, keeps saves under `server-data/saves`, launches the Windows Unity server under Xvfb with the required config/save path arguments, claims and publishes the managed game, query, and Steam communication ports, and validates A2S on `queryport` |
-| askaserver | SteamCMD (Wine) |
 | blackops3server | Docker runtime (Wine/Proton) — PASSED; the current branch follows the shipped unranked server launch shape without the ineffective custom `-port` switch, maps the managed three-port group to fixed container ports `27015..27017`, and combines `CreateDedicatedModsLobby: ready!` with AlphaGSM generic UDP query/info. The 2026-07-16 server reached readiness and answered AlphaGSM's UDP probe; the stale test assertion expecting A2S wording now matches the declared generic UDP output. CI runs one Docker-default heavy lifecycle; replacement validation is pending. |
 | pixarkserver | SteamCMD (Wine) |
 | remnantsserver | Docker runtime (Wine/Proton) — PASSED; AlphaGSM launches `RemSurvivalServer.exe` and validates generic TCP health on the managed game port because the current payload did not answer A2S on `queryport`. The forced process lane exited during the 2026-07-16 run, so CI now keeps one Docker-default lifecycle and no longer requires the install-tree log before AlphaGSM readiness. Both process and Docker contracts now explicitly select Proton. |
@@ -317,13 +316,14 @@ support-state tables and do not change the summary counts or record a new pass.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (48)
+## ENABLED (AUTH) (49)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
 
 | Test | Type |
 |------|------|
+| askaserver | Steam game-server login token generated for ASKA app `1898300` and stored as `authenticationtoken` before start |
 | gtafivemserver | txAdmin/server-data provisioning plus Cfx license key |
 | arma2coserver | authenticated Steam/SteamCMD entitlement for Arma 2: Combined Operations dedicated server app `33935` |
 | arma3server | authenticated Steam/SteamCMD entitlement for Arma 3 dedicated server app `233780` |

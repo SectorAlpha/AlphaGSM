@@ -11,6 +11,7 @@ from server import ServerError
 from utils.platform_info import IS_LINUX
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from utils.simple_kv_config import rewrite_spaced_equals_config
 
 steam_app_id = 3246670
 steam_anonymous_login_possible = True
@@ -25,11 +26,30 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the ASKA dedicated server.",
 )
 command_functions = {}
+config_sync_keys = (
+    "port",
+    "queryport",
+    "servername",
+    "displayname",
+    "password",
+    "authenticationtoken",
+    "region",
+)
 setting_schema = {
     "password": SettingSpec(
         canonical_key="password",
         description="Password required to join the server.",
         secret=True,
+    ),
+    "authenticationtoken": SettingSpec(
+        canonical_key="authenticationtoken",
+        aliases=("gslt", "authentication_token"),
+        description="Steam game-server login token generated for ASKA app 1898300.",
+        secret=True,
+    ),
+    "region": SettingSpec(
+        canonical_key="region",
+        description="Steam matchmaking region used to list the server.",
     ),
 }
 max_stop_wait = 1
@@ -51,6 +71,8 @@ def configure(server, ask, port=None, dir=None, *, exe_name="AskaServer.exe"):
             "password": "",
             "maxplayers": "4",
             "queryport": "27016",
+            "authenticationtoken": "",
+            "region": "default",
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -62,7 +84,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="AskaServer.exe"):
         server,
         ask,
         port,
-        default_port=27015,
+        default_port=7777,
         prompt="Please specify the port to use for this server:",
     )
     gamemodule_common.configure_install_dir(
@@ -75,13 +97,47 @@ def configure(server, ask, port=None, dir=None, *, exe_name="AskaServer.exe"):
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+_base_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
 )
-install.__doc__ = "Download the ASKA server files via SteamCMD."
+_base_install.__doc__ = "Download the ASKA server files via SteamCMD."
+
+
+def _properties_path(server):
+    return os.path.join(server.data["dir"], "server properties.txt")
+
+
+def sync_server_config(server):
+    """Write AlphaGSM settings to ASKA's current properties-file contract."""
+
+    server_dir = server.data.get("dir")
+    if not server_dir:
+        return
+    properties_path = _properties_path(server)
+    if not os.path.isfile(properties_path):
+        return
+    rewrite_spaced_equals_config(
+        properties_path,
+        {
+            "display name": server.data["displayname"],
+            "server name": server.data["servername"],
+            "password": server.data.get("password", ""),
+            "steam game port": int(server.data["port"]),
+            "steam query port": int(server.data["queryport"]),
+            "authentication token": server.data.get("authenticationtoken", ""),
+            "region": server.data.get("region", "default"),
+        },
+    )
+
+
+def install(server):
+    """Download ASKA and restore managed properties overwritten by SteamCMD."""
+
+    _base_install(server)
+    sync_server_config(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -89,10 +145,43 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
 )
 
 
 restart = gamemodule_common.make_restart_hook()
+
+
+def get_provider_requirements(server):
+    """Declare ASKA's Steam game-server login token requirement."""
+
+    return [
+        {
+            "provider": "steam",
+            "kind": "token",
+            "keys": ("authenticationtoken",),
+            "required_for": ("start",),
+            "support_category": "provider-token",
+            "summary": "a Steam game-server login token generated for ASKA app 1898300",
+            "actions": (
+                "Generate a token for app 1898300 at Steam Game Server Account Management",
+                "Set authenticationtoken to that token before starting ASKA",
+            ),
+            "docs_slug": "askaserver",
+        }
+    ]
+
+
+def prestart(server):
+    """Validate authentication and refresh the current ASKA properties file."""
+
+    gamemodule_common.validate_provider_requirements(
+        "askaserver",
+        server,
+        phase="start",
+        requirements=get_provider_requirements(server),
+    )
+    sync_server_config(server)
 
 
 def get_start_command(server):
@@ -101,25 +190,19 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    gamemodule_common.validate_provider_requirements(
+        "askaserver",
+        server,
+        phase="start",
+        requirements=get_provider_requirements(server),
+    )
     command = [
         server.data["exe_name"],
         "-batchmode",
         "-nographics",
-        "-logFile",
-        "./server.log",
-        "-Port",
-        str(server.data["port"]),
-        "-QueryPort",
-        str(server.data["queryport"]),
-        "-ServerName",
-        server.data["servername"],
-        "-DisplayName",
-        server.data["displayname"],
-        "-MaxPlayers",
-        str(server.data["maxplayers"]),
+        "-propertiesPath",
+        "server properties.txt",
     ]
-    if server.data["password"]:
-        command.extend(["-Password", server.data["password"]])
     if IS_LINUX:
         game_command = command
         command = proton.wrap_command(
@@ -135,6 +218,18 @@ def get_start_command(server):
         )
         command = ["xvfb-run", "-a", "--server-args=-screen 0 1024x768x24 -nolisten tcp", *command]
     return (command, server.data["dir"])
+
+
+def get_query_address(server):
+    """Return ASKA's configured Steam A2S endpoint."""
+
+    return runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s"
+
+
+def get_info_address(server):
+    """Use the configured Steam query endpoint for server information."""
+
+    return get_query_address(server)
 
 
 _DISPLAY_ENV = {
@@ -191,5 +286,5 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port", "queryport", "maxplayers"),
-        str_keys=("servername", "displayname", "password", "exe_name", "dir"),
+        str_keys=("servername", "displayname", "password", "authenticationtoken", "region", "exe_name", "dir"),
     )

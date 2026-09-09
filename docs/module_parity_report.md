@@ -32,7 +32,7 @@ Native declarations remain separate from process launch requirements and the req
 | arma3server | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license | unknown | unknown | unknown |
 | arma3wastelandserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license | unknown | unknown | unknown |
 | armarserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
-| askaserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
+| askaserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-token | unknown | unknown | unknown |
 | astroneerserver | - | ENABLED (BYO) | no | no | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
 | atlasserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | atsserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |

@@ -1,4 +1,8 @@
-from utils.simple_kv_config import rewrite_equals_config, rewrite_space_config
+from utils.simple_kv_config import (
+    rewrite_equals_config,
+    rewrite_spaced_equals_config,
+    rewrite_space_config,
+)
 
 
 def test_rewrite_equals_config_preserves_unknown_lines_and_appends_new_keys(tmp_path):
@@ -31,6 +35,27 @@ def test_rewrite_equals_config_preserves_literal_backreference_like_value(tmp_pa
     )
 
     assert config_path.read_text(encoding="utf-8").splitlines() == [r"motd=\1"]
+
+
+def test_rewrite_spaced_equals_config_updates_multiword_keys(tmp_path):
+    config_path = tmp_path / "server properties.txt"
+    config_path.write_text(
+        "// ASKA settings\n"
+        "server name = Old Name\n"
+        "authentication token =\n",
+        encoding="utf-8",
+    )
+
+    rewrite_spaced_equals_config(
+        str(config_path),
+        {"server name": "New Name", "authentication token": "token"},
+    )
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        "// ASKA settings",
+        "server name = New Name",
+        "authentication token = token",
+    ]
 
 
 def test_rewrite_space_config_rewrites_single_token_values_and_appends_missing_keys(tmp_path):

@@ -1300,16 +1300,24 @@
     {
       "aliases": [],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "authenticationtoken",
+        "displayname",
+        "password",
+        "port",
+        "queryport",
+        "region",
+        "servername"
+      ],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
-        "get_provider_requirements": false,
-        "get_query_address": false,
+        "get_provider_requirements": true,
+        "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "askaserver",
       "platform_requirements": {
@@ -1322,7 +1330,9 @@
         }
       },
       "platforms": null,
-      "provider_categories": [],
+      "provider_categories": [
+        "provider-token"
+      ],
       "query_protocols": {
         "info": null,
         "query": null
@@ -1333,7 +1343,7 @@
         "process": true
       },
       "schema_version": 1,
-      "support_state": "PASSED",
+      "support_state": "ENABLED (AUTH)",
       "unknown_fields": [
         "architectures",
         "platform_requirements.docker.operating_system",

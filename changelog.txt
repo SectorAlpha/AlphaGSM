@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- ASKA: follow the current `server properties.txt` and `-propertiesPath`
+  launch contract, synchronize the managed identity and ports after updates,
+  and report its required Steam GSLT as `ENABLED (AUTH)` before start.
 - Terraria: query vanilla servers with a framed native connection handshake
   instead of opening and abandoning a TCP socket, avoiding the 1.4.5.8
   `DebugNetworkStream` crash while still proving protocol-level readiness.

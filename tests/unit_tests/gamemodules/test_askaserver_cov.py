@@ -100,8 +100,73 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     server.data["servername"] = "test"
+    server.data["authenticationtoken"] = "token"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "AskaServer.exe",
+        "-batchmode",
+        "-nographics",
+        "-propertiesPath",
+        "server properties.txt",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_sync_server_config_uses_current_properties_contract(tmp_path):
+    config_path = tmp_path / "server properties.txt"
+    config_path.write_text(
+        "// managed by the upstream template\n"
+        "display name = old\n"
+        "server name = old\n"
+        "password =\n"
+        "steam game port = 7777\n"
+        "steam query port = 27015\n"
+        "authentication token =\n"
+        "region = default\n",
+        encoding="utf-8",
+    )
+    server = DummyServer("aska")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "displayname": "Alpha ASKA",
+            "servername": "alpha-aska",
+            "password": "join-secret",
+            "port": 7788,
+            "queryport": 27016,
+            "authenticationtoken": "gslt-secret",
+            "region": "europe",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    contents = config_path.read_text(encoding="utf-8")
+    assert "// managed by the upstream template" in contents
+    assert "display name = Alpha ASKA" in contents
+    assert "server name = alpha-aska" in contents
+    assert "password = join-secret" in contents
+    assert "steam game port = 7788" in contents
+    assert "steam query port = 27016" in contents
+    assert "authentication token = gslt-secret" in contents
+    assert "region = europe" in contents
+
+
+def test_get_start_command_requires_steam_server_token(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer("aska")
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    (tmp_path / server.data["exe_name"]).touch()
+
+    with pytest.raises(ServerError, match="authenticationtoken"):
+        mod.get_start_command(server)
+
+
+def test_provider_requirement_declares_steam_gslt():
+    requirements = mod.get_provider_requirements(DummyServer("aska"))
+
+    assert requirements[0]["keys"] == ("authenticationtoken",)
+    assert requirements[0]["support_category"] == "provider-token"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -230,6 +295,7 @@ def test_linux_launch_enables_virtual_display(tmp_path, monkeypatch, value):
     (tmp_path / server.data["exe_name"]).touch()
     server.data["servername"] = value
     server.data["password"] = value
+    server.data["authenticationtoken"] = "token"
 
     command, _cwd = mod.get_start_command(server)
 
@@ -240,7 +306,7 @@ def test_linux_launch_enables_virtual_display(tmp_path, monkeypatch, value):
     assert "SDL_AUDIODRIVER=dummy" in command
     assert "WINEDLLOVERRIDES=winex11.drv=" not in command
     assert server.data["exe_name"] in command
-    assert command.count(value) == 2
+    assert value not in command
 
 
 def test_docker_runtime_enables_virtual_display():

@@ -35,6 +35,12 @@ LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
 
+@pytest.mark.skip(
+    reason=(
+        "ENABLED (AUTH): ASKA installs anonymously, but start requires a Steam "
+        "game-server login token generated for app 1898300 and stored as authenticationtoken"
+    )
+)
 def test_askaserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()

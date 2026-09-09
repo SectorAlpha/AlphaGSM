@@ -2,12 +2,16 @@
 
 This guide covers the `askaserver` module in AlphaGSM.
 
-`askaserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`askaserver` is `ENABLED (AUTH)`. The dedicated server installs anonymously,
+but Steam requires a game-server login token generated for ASKA app `1898300`
+before the server can start and appear in matchmaking.
 
 ## Requirements
 
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- A [Steam game-server login token](https://steamcommunity.com/dev/managegameservers)
+  generated for app `1898300`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -24,9 +28,10 @@ Run setup:
 alphagsm myaskaserv setup
 ```
 
-Start it:
+Store the token, then start the server:
 
 ```bash
+alphagsm myaskaserv set authenticationtoken YOUR_GSLT
 alphagsm myaskaserv start
 ```
 
@@ -46,7 +51,8 @@ alphagsm myaskaserv stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 7777)
+- the Steam query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -59,11 +65,15 @@ alphagsm myaskaserv backup
 
 ## Notes
 
+- AlphaGSM writes the server identity, password, ports, region, and token to
+  the upstream `server properties.txt` file and launches with
+  `-propertiesPath "server properties.txt"`.
 - Linux process launches require `xvfb-run` to provide the display used during
   Wine initialization. The shared Wine/Proton Docker image supplies it when
-  using the Docker runtime. This launch correction awaits replacement CI.
+  using the Docker runtime.
 - Module name: `askaserver`
-- Default port: 27016
+- Default game port: 7777
+- Default query port: 27015
 
 ## Developer Notes
 
@@ -76,7 +86,7 @@ alphagsm myaskaserv backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `server properties.txt`
 - **Max players**: `4`
 - **Template**: See [server-templates/askaserver/](../server-templates/askaserver/) if available
 

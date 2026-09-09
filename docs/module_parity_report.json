@@ -631,10 +631,12 @@
       }
     },
     "platforms": null,
-    "provider_categories": [],
+    "provider_categories": [
+      "provider-token"
+    ],
     "runtime_family": "wine-proton",
-    "runtime_verified": true,
-    "support_state": "PASSED"
+    "runtime_verified": false,
+    "support_state": "ENABLED (AUTH)"
   },
   {
     "aliases": [],

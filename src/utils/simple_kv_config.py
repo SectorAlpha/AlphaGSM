@@ -7,6 +7,7 @@ from utils.state_io import atomic_write_text, state_lock
 
 
 _EQUALS_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(.*?)(\s*)\Z")
+_SPACED_EQUALS_PATTERN = re.compile(r"\s*([^#=\n\r]+?)\s*=(.*?)(\s*)\Z")
 _SPACE_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)[ ](?:[ \t]*(.*?))?(\s*)\Z")
 _SPACE_SINGLE_TOKEN_PATTERN = re.compile(r"\s*([^ \t\n\r\f\v#]\S*) (\S*)(\s*)\Z")
 
@@ -53,6 +54,18 @@ def rewrite_equals_config(filename, config_values, encoding="utf-8"):
         config_values,
         pattern=_EQUALS_PATTERN,
         separator="=",
+        encoding=encoding,
+    )
+
+
+def rewrite_spaced_equals_config(filename, config_values, encoding="utf-8"):
+    """Rewrite equals-delimited config entries whose keys may contain spaces."""
+
+    _rewrite_key_value_config(
+        filename,
+        config_values,
+        pattern=_SPACED_EQUALS_PATTERN,
+        separator=" = ",
         encoding=encoding,
     )
 
