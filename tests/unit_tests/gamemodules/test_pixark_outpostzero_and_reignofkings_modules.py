@@ -111,6 +111,7 @@ def test_outpostzero_runtime_requirements_use_wine_proton_family(tmp_path, monke
     assert requirements["family"] == "wine-proton"
     assert requirements["ports"] == [
         {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7778, "container": 7778, "protocol": "udp"},
         {"host": 27015, "container": 27015, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"

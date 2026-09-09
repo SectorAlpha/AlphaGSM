@@ -85,7 +85,7 @@ def test_onsetserver_lifecycle(tmp_path):
         run_and_assert_ok(env, server_name, "status")
 
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert "Server is responding" in query_result.stdout
+        assert "Server port is open" in query_result.stdout
 
         info_result = run_and_assert_ok(env, server_name, "info")
         assert "Protocol" in info_result.stdout

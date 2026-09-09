@@ -115,7 +115,6 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_tfcserver.py",
     "test_trackmaniaserver.py",
     "test_valheim.py",
-    "test_ahl2server.py",
     "test_bb2server.py",
     "test_bsserver.py",
     "test_ccserver.py",

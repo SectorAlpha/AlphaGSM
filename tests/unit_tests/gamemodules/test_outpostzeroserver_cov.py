@@ -179,7 +179,7 @@ def test_do_stop():
     mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 
 
-def test_query_and_info_address_use_udp_game_port_on_linux(monkeypatch):
+def test_query_and_info_address_use_adjacent_udp_discovery_port_on_linux(monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     monkeypatch.setattr(
         mod.runtime_module,
@@ -190,8 +190,22 @@ def test_query_and_info_address_use_udp_game_port_on_linux(monkeypatch):
     server.data["port"] = 7777
     server.data["queryport"] = 27015
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "udp")
-    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "udp")
+    assert mod.get_query_address(server) == ("127.0.0.1", 7778, "udp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 7778, "udp")
+
+
+def test_runtime_contract_claims_adjacent_udp_discovery_port():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/outpostzero/"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert {
+        (entry["host"], entry["protocol"])
+        for entry in requirements["ports"]
+    } >= {(7777, "udp"), (7778, "udp"), (27015, "udp")}
 
 
 def test_query_and_info_address_use_queryport_a2s_off_linux(monkeypatch):

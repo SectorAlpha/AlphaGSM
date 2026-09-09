@@ -18,8 +18,10 @@ with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMoc
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
-    mod.configure(server, ask=False, port=8766, dir=str(tmp_path))
-    assert server.data['port'] == 8766
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    assert server.data['port'] == 27015
+    assert int(server.data['steamport']) == 8766
+    assert int(server.data['queryport']) == 27016
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -92,7 +94,68 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["exe_name"] = "TheForestDedicatedServer.exe"
     (tmp_path / "TheForestDedicatedServer.exe").write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "TheForestDedicatedServer.exe",
+        "-batchmode",
+        "-nosteamclient",
+        "-nographics",
+        "-configfilepath",
+        "./server-data/Server.cfg",
+        "-savefolderpath",
+        "./server-data/saves",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_sync_server_config_writes_required_native_paths_and_ports(tmp_path):
+    server = DummyServer("forest")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28015,
+            "queryport": 28016,
+            "steamport": 28017,
+            "servername": "AlphaGSM forest",
+            "maxplayers": 8,
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    config_path = tmp_path / "server-data" / "Server.cfg"
+    config_text = config_path.read_text(encoding="utf-8")
+    assert "serverIP 0.0.0.0:28015" in config_text
+    assert "serverGamePort 28015" in config_text
+    assert "serverQueryPort 28016" in config_text
+    assert "serverSteamPort 28017" in config_text
+    assert "serverName AlphaGSM forest" in config_text
+    assert (tmp_path / "server-data" / "saves").is_dir()
+
+
+def test_query_and_runtime_contract_use_managed_ports(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="172.18.0.5"),
+    )
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28015,
+            "queryport": 28016,
+            "steamport": 28017,
+        }
+    )
+
+    assert mod.get_query_address(server) == ("172.18.0.5", 28016, "a2s")
+    assert mod.get_info_address(server) == ("172.18.0.5", 28016, "a2s")
+    requirements = mod.get_runtime_requirements(server)
+    assert {
+        (entry["host"], entry["protocol"])
+        for entry in requirements["ports"]
+    } >= {(28015, "udp"), (28016, "udp"), (28017, "udp")}
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
 
 
 def test_get_start_command_missing_exe(tmp_path):

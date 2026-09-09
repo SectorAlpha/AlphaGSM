@@ -15,7 +15,7 @@ from conftest import (
     resolve_runtime_image,
     require_command_for_runtime,
     require_proton,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
     run_setup_with_port_retry,
     write_config,
     alphagsm_env,
@@ -80,7 +80,7 @@ def test_outpostzeroserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(2)
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
@@ -123,7 +123,7 @@ def test_outpostzeroserver_lifecycle(tmp_path):
             server_name,
             "udp",
             START_TIMEOUT,
-            expected_port=port,
+            expected_port=port + 1,
         )
 
         # status
@@ -147,12 +147,12 @@ def test_outpostzeroserver_lifecycle(tmp_path):
         assert _info_data["protocol"] == info_payload["protocol"], (
             f"Expected udp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("port") == port, (
-            f"Expected game-port UDP readiness on fresh server: {_info_data!r}"
+        assert _info_data.get("port") == port + 1, (
+            f"Expected adjacent UDP discovery readiness on fresh server: {_info_data!r}"
         )
     finally:
         # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

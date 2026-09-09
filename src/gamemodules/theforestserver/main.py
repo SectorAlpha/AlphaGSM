@@ -14,6 +14,19 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 556450
 steam_anonymous_login_possible = True
+DEFAULT_PORT = 27015
+DEFAULT_QUERYPORT = 27016
+DEFAULT_STEAMPORT = 8766
+DEFAULT_MAXPLAYERS = 8
+_SERVER_DATA_DIR = "server-data"
+_CONFIG_FILE = "Server.cfg"
+_SAVE_DIR = "saves"
+_XVFB_SERVER_ARGS = "-screen 0 1024x768x24 -nolisten tcp"
+_PORT_DEFINITIONS = tuple(
+    {"key": key, "protocol": protocol}
+    for key in ("port", "queryport", "steamport")
+    for protocol in ("udp", "tcp")
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -26,6 +39,13 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = (
+    "port",
+    "queryport",
+    "steamport",
+    "servername",
+    "maxplayers",
+)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="TheForestDedicatedServer.exe"):
@@ -36,17 +56,25 @@ def configure(server, ask, port=None, dir=None, *, exe_name="TheForestDedicatedS
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-    gamemodule_common.set_server_defaults(server, {"queryport": "27016"})
+    gamemodule_common.set_server_defaults(
+        server,
+        {
+            "queryport": str(DEFAULT_QUERYPORT),
+            "steamport": str(DEFAULT_STEAMPORT),
+            "servername": "AlphaGSM %s" % (server.name,),
+            "maxplayers": str(DEFAULT_MAXPLAYERS),
+        },
+    )
     gamemodule_common.ensure_backup_config(
         server,
-        backupfiles=["Server.cfg", "ds"],
-        targets=["Server.cfg", "ds"],
+        backupfiles=[_SERVER_DATA_DIR],
+        targets=[_SERVER_DATA_DIR],
     )
     gamemodule_common.configure_port(
         server,
         ask,
         port,
-        default_port=8766,
+        default_port=DEFAULT_PORT,
         prompt="Please specify the game port to use for this server:",
     )
     gamemodule_common.configure_install_dir(
@@ -59,10 +87,60 @@ def configure(server, ask, port=None, dir=None, *, exe_name="TheForestDedicatedS
     return gamemodule_common.finalize_configure(server)
 
 
+def _server_data_path(server, *parts):
+    """Return a path inside the managed Forest data directory."""
+
+    return os.path.join(server.data["dir"], _SERVER_DATA_DIR, *parts)
+
+
+def sync_server_config(server):
+    """Write the native Forest config and create its save directory."""
+
+    config_path = _server_data_path(server, _CONFIG_FILE)
+    save_path = _server_data_path(server, _SAVE_DIR)
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    os.makedirs(save_path, exist_ok=True)
+    config_lines = (
+        "serverIP 0.0.0.0:{port}",
+        "serverSteamPort {steamport}",
+        "serverGamePort {port}",
+        "serverQueryPort {queryport}",
+        "serverName {servername}",
+        "serverPlayers {maxplayers}",
+        "serverPassword",
+        "serverPasswordAdmin",
+        "serverSteamAccount",
+        "enableVAC off",
+        "serverAutoSaveInterval 15",
+        "difficulty Normal",
+        "initType Continue",
+        "slot 1",
+        "showLogs on",
+        "veganMode off",
+        "vegetarianMode off",
+        "resetHolesMode off",
+        "treeRegrowMode on",
+        "allowBuildingDestruction on",
+        "allowEnemiesCreativeMode off",
+        "allowCheats off",
+    )
+    values = {
+        "port": int(server.data.get("port", DEFAULT_PORT)),
+        "queryport": int(server.data.get("queryport", DEFAULT_QUERYPORT)),
+        "steamport": int(server.data.get("steamport", DEFAULT_STEAMPORT)),
+        "servername": str(server.data.get("servername", server.name)),
+        "maxplayers": int(server.data.get("maxplayers", DEFAULT_MAXPLAYERS)),
+    }
+    with open(config_path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(line.format(**values) for line in config_lines))
+        handle.write("\n")
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 install.__doc__ = "Download The Forest server files via SteamCMD."
@@ -72,6 +150,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
 update.__doc__ = "Update The Forest server files and optionally restart the server."
@@ -81,18 +160,75 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart The Forest server."
 
 
+def prestart(server):
+    """Refresh native configuration before launching The Forest."""
+
+    sync_server_config(server)
+
+
+def get_query_address(server):
+    """Return The Forest's Steam query endpoint."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
+
+
+def get_info_address(server):
+    """Return the same endpoint used by the query command."""
+
+    return get_query_address(server)
+
+
+def _wrap_linux_command(command, wineprefix=None):
+    """Run the Unity server under the virtual display it requires."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    wrapped = [
+        token
+        for token in wrapped
+        if token not in ("DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=")
+    ]
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+        WINEDLLOVERRIDES="",
+    )
+    return [
+        "xvfb-run",
+        "-a",
+        "--server-args=" + _XVFB_SERVER_ARGS,
+        *wrapped,
+    ]
+
+
 def get_start_command(server):
     """Build the command used to launch The Forest server."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    cmd = [server.data["exe_name"], "-batchmode", "-nosteamclient", "-nographics"]
+    cmd = [
+        server.data["exe_name"],
+        "-batchmode",
+        "-nosteamclient",
+        "-nographics",
+        "-configfilepath",
+        "./{}/{}".format(_SERVER_DATA_DIR, _CONFIG_FILE),
+        "-savefolderpath",
+        "./{}/{}".format(_SERVER_DATA_DIR, _SAVE_DIR),
+    ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
         )
     return cmd, server.data["dir"]
 
@@ -126,15 +262,21 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port", "queryport"),
-        str_keys=("exe_name", "dir"),
+        int_keys=("port", "queryport", "steamport", "maxplayers"),
+        str_keys=("servername", "exe_name", "dir"),
     )
 
+
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=_PORT_DEFINITIONS,
+    prefer_proton=True,
+    extra_env={"ALPHAGSM_XVFB": "1"},
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    port_definitions=_PORT_DEFINITIONS,
+    prefer_proton=True,
+    extra_env={"ALPHAGSM_XVFB": "1"},
 )

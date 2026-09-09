@@ -51,7 +51,7 @@ LOG_PATH="$INSTALL_DIR/WindowsServer/SurvivalGame/Saved/Logs/SurvivalGame.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)" 
+PORT="$(pick_free_port_group 2)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -80,7 +80,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" "Match State Changed from WaitingToStart to InProgress"
-wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS" "$((PORT + 1))"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info

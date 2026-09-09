@@ -113,12 +113,22 @@ def test_theforest_get_start_command_builds_expected_args(tmp_path, monkeypatch)
 
     cmd, cwd = theforestserver.get_start_command(server)
 
-    assert cmd[0] == "TheForestDedicatedServer.exe"
+    assert cmd[:4] == [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        "env",
+    ]
+    assert "SDL_VIDEODRIVER=x11" in cmd
+    assert "SDL_AUDIODRIVER=dummy" in cmd
+    assert "TheForestDedicatedServer.exe" in cmd
     assert "-nosteamclient" in cmd
+    assert "-configfilepath" in cmd
+    assert "-savefolderpath" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_more_large_batch_updates_download_and_optionally_restart(monkeypatch):
+def test_more_large_batch_updates_download_and_optionally_restart(monkeypatch, tmp_path):
     pce = DummyServer("pce")
     pce.data["dir"] = "/srv/pce/"
     moria = DummyServer("moria")
@@ -128,7 +138,7 @@ def test_more_large_batch_updates_download_and_optionally_restart(monkeypatch):
     ttw = DummyServer("ttw")
     ttw.data["dir"] = "/srv/ttw/"
     forest = DummyServer("forest")
-    forest.data["dir"] = "/srv/forest/"
+    forest.data["dir"] = str(tmp_path / "forest") + "/"
     calls = []
 
     monkeypatch.setattr(
@@ -148,5 +158,5 @@ def test_more_large_batch_updates_download_and_optionally_restart(monkeypatch):
     assert ("/srv/moria/", 3349480, True, False) in calls
     assert ("/srv/sale/", 3099600, True, False) in calls
     assert ("/srv/ttw/", 2533070, True, False) in calls
-    assert ("/srv/forest/", 556450, True, False) in calls
+    assert (forest.data["dir"], 556450, True, False) in calls
     assert pce.start_calls == 1

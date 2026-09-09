@@ -48,6 +48,7 @@ alphagsm myoutpostz stop
 Setup configures:
 
 - the game port (default 7777)
+- the adjacent game-client/discovery port (default 7778)
 - the Steam query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
@@ -67,8 +68,9 @@ alphagsm myoutpostz backup
 - Default start map: `RedPlanet`
 - Default port: 7777
 - Default query port: 27015
-- On Linux/Proton, AlphaGSM `query`, `info`, and `info --json` use generic `udp`
-  on the managed game port after the world reaches `InProgress`.
+- On Linux/Proton, AlphaGSM claims and publishes both documented game-client
+  ports. `query`, `info`, and `info --json` use generic `udp` on the adjacent
+  discovery port (`port + 1`) after the world reaches `InProgress`.
 
 ## Developer Notes
 

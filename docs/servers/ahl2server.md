@@ -2,7 +2,7 @@
 
 This guide covers the `ahl2server` module in AlphaGSM.
 
-`ahl2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend. The current Linux payload does not expose a working empty-server A2S surface, so final `query`, `info`, and `info --json` checks use the runtime-resolved TCP game port consistently in both backends. Replacement validation of this corrected contract is pending.
+`ahl2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend. The current Linux payload does not expose a working empty-server A2S surface or the usual Source log markers, so readiness, `query`, `info`, and `info --json` use the runtime-resolved TCP game port consistently in both backends.
 
 ## Requirements
 

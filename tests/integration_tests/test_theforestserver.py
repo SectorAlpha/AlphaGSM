@@ -11,14 +11,14 @@ from conftest import (
     assert_alphagsm_result_ok,
     capture_alphagsm_stop,
     default_runtime_backend,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
     require_command_for_runtime,
     require_integration_opt_in,
     require_proton,
     require_steamcmd_opt_in,
     run_and_assert_ok,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_udp_closed,
     write_config,
 )
@@ -42,6 +42,11 @@ def test_theforestserver_lifecycle(tmp_path):
         runtime_backend=runtime_backend,
         module_name=module_name,
     )
+    require_command_for_runtime(
+        "xvfb-run",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -57,15 +62,20 @@ def test_theforestserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(3)
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "queryport", str(port + 1))
+    run_and_assert_ok(env, server_name, "set", "steamport", str(port + 2))
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+
+    native_config = install_dir / "server-data" / "Server.cfg"
+    assert native_config.is_file(), f"Expected setup to create {native_config}"
 
     dump_result = run_and_assert_ok(env, server_name, "dump")
     query_port = int(json.loads(dump_result.stdout)["queryport"])
@@ -75,17 +85,14 @@ def test_theforestserver_lifecycle(tmp_path):
         # start
         run_and_assert_ok(env, server_name, "start")
 
-        # The Forest writes its Steam CM log to logs/connection_log_27015.txt
-        # (port 27015 is the hardcoded game-server Steam auth port).
-        # "[Logged On" appears when Steam auth succeeds and the server is ready.
-        server_log = install_dir / "logs" / "connection_log_27015.txt"
-        wait_for_log_marker(
-            server_log,
-            ["[Logged On"],
+        info_data = wait_for_info_protocol(
+            env,
+            server_name,
+            "a2s",
             START_TIMEOUT,
-            env=env,
-            server_name=server_name,
+            expected_port=query_port,
         )
+        assert info_data["port"] == query_port
 
         # status
         run_and_assert_ok(env, server_name, "status")

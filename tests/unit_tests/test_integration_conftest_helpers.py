@@ -227,6 +227,7 @@ def _game_lifecycle_contract(source, function_name, game):
         "capture_alphagsm_stop",
         "pytest",
         "run_and_assert_ok",
+        "wait_for_info_protocol",
         "wait_for_udp_closed",
     }
     trusted_imports = {name: 0 for name in trusted_names}
@@ -495,20 +496,17 @@ def _game_lifecycle_contract(source, function_name, game):
         readiness_index = _required_direct(
             protected,
             lambda call: (
-                _is_named_call(call, "wait_for_log_marker")
-                and len(call.args) == 3
-                and _name(call.args[0], "server_log")
-                and isinstance(call.args[1], ast.List)
-                and len(call.args[1].elts) == 1
-                and _argument(call.args[1].elts[0], ("constant", "[Logged On"))
-                and _name(call.args[2], "START_TIMEOUT")
-                and len(call.keywords) == 2
-                and _name(call.keywords[0].value, "env")
-                and call.keywords[0].arg == "env"
-                and _name(call.keywords[1].value, "server_name")
-                and call.keywords[1].arg == "server_name"
+                _is_named_call(call, "wait_for_info_protocol")
+                and len(call.args) == 4
+                and _name(call.args[0], "env")
+                and _name(call.args[1], "server_name")
+                and _argument(call.args[2], ("constant", "a2s"))
+                and _name(call.args[3], "START_TIMEOUT")
+                and len(call.keywords) == 1
+                and call.keywords[0].arg == "expected_port"
+                and _name(call.keywords[0].value, "query_port")
             ),
-            None,
+            "info_data",
         )
         readiness_indices = (readiness_index,)
     ordered = (
@@ -2515,8 +2513,8 @@ def test_game_lifecycle_ast_contract_requires_direct_unconditional_flow(
             "test_theforestserver.py",
             "test_theforestserver_lifecycle",
             "forest",
-            "        wait_for_log_marker(",
-            "        if False:\n            wait_for_log_marker(",
+            "        info_data = wait_for_info_protocol(",
+            "        if False:\n            info_data = wait_for_info_protocol(",
         ),
         (
             "test_theforestserver.py",

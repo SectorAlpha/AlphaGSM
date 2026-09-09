@@ -18,7 +18,6 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_runtime_log_marker,
     wait_for_tcp_open,
     wait_for_tcp_closed,
 )
@@ -70,21 +69,16 @@ def test_ahl2server_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
+        # The current payload does not emit the usual Source readiness markers,
+        # but it exposes the module's declared TCP health endpoint once ready.
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["SV_ActivateServer", "Connection to Steam servers successful", "VAC secure mode"],
-            START_TIMEOUT,
+        info_data = wait_for_info_protocol(
+            env, server_name, "tcp", START_TIMEOUT, expected_port=port
         )
 
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        info_data = wait_for_info_protocol(
-            env, server_name, "tcp", START_TIMEOUT, expected_port=port
-        )
         assert info_data["protocol"] == "tcp"
         wait_for_tcp_open("127.0.0.1", port, 600, log_path=log_path)
 

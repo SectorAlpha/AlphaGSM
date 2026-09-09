@@ -8,6 +8,15 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- The Forest: write the native server configuration and managed save path,
+  launch the Windows Unity server under Xvfb with explicit config/save
+  arguments, publish its complete port set, and use its A2S query port for
+  lifecycle readiness.
+- Outpost Zero: claim both documented game-client UDP ports and query the
+  adjacent discovery listener on game port plus one after world startup.
+- Integration and smoke tests: align Onset assertions with its declared TCP
+  probe output and let Action: Source use its live TCP endpoint for readiness
+  when the current payload emits no standard Source startup marker.
 - Conan Exiles: replace the crashing Wine/XAudio lane with the official native
   Linux Steam depot and shared `steamcmd-linux` runtime. Migrate missing legacy
   WindowsServer settings and `Game.db`, claim the hardcoded pinger port, and run

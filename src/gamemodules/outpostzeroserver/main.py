@@ -21,6 +21,11 @@ DEFAULT_QUERYPORT = 27015
 DEFAULT_MAXPLAYERS = 16
 DEFAULT_STARTMAP = "RedPlanet"
 _CLIENT_STEAM_APP_ID = "677480"
+_PORT_DEFINITIONS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "queryport", "protocol": "udp"},
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -185,7 +190,11 @@ def get_query_address(server):
     """Return the effective query address for Outpost Zero."""
 
     if IS_LINUX:
-        return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+        return (
+            runtime_module.resolve_query_host(server),
+            int(server.data["port"]) + 1,
+            "udp",
+        )
     return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 
@@ -222,14 +231,14 @@ def get_start_command(server):
 
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-    port_definitions=(("port", "udp"), ("queryport", "udp")),
+    port_definitions=_PORT_DEFINITIONS,
 )
 get_runtime_requirements.__doc__ = "Return Docker runtime metadata for Wine/Proton-backed servers."
 
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
-    port_definitions=(("port", "udp"), ("queryport", "udp")),
+    port_definitions=_PORT_DEFINITIONS,
 )
 get_container_spec.__doc__ = "Return the Docker launch spec for Outpost Zero."
 

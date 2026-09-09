@@ -357,12 +357,13 @@ capture_container_process_diagnostics() {
   done
 }
 
-# wait_for_info_protocol SERVER_NAME EXPECTED_PROTOCOL TIMEOUT_SECONDS
-# Polls ``info --json`` until it reports the expected protocol.
+# wait_for_info_protocol SERVER_NAME EXPECTED_PROTOCOL TIMEOUT_SECONDS [EXPECTED_PORT]
+# Polls ``info --json`` until it reports the expected protocol and optional port.
 wait_for_info_protocol() {
   local server_name="$1"
   local expected_protocol="$2"
   local timeout_seconds="$3"
+  local expected_port="${4:-}"
   local deadline=$((SECONDS + timeout_seconds))
   local last_output=""
   local last_rc=0
@@ -374,12 +375,13 @@ wait_for_info_protocol() {
     )"
     last_rc=$?
     set -e
-    if [[ $last_rc -eq 0 ]] && EXPECTED_PROTOCOL="$expected_protocol" INFO_JSON_PAYLOAD="$last_output" "${PYTHON_BIN:-python3}" - <<'PY'
+    if [[ $last_rc -eq 0 ]] && EXPECTED_PROTOCOL="$expected_protocol" EXPECTED_PORT="$expected_port" INFO_JSON_PAYLOAD="$last_output" "${PYTHON_BIN:-python3}" - <<'PY'
 import json
 import os
 import sys
 
 expected_protocol = os.environ["EXPECTED_PROTOCOL"]
+expected_port = os.environ.get("EXPECTED_PORT", "")
 payload = os.environ.get("INFO_JSON_PAYLOAD", "").strip()
 
 try:
@@ -387,14 +389,16 @@ try:
 except json.JSONDecodeError:
     sys.exit(1)
 
-sys.exit(0 if data.get("protocol") == expected_protocol else 1)
+protocol_matches = data.get("protocol") == expected_protocol
+port_matches = not expected_port or data.get("port") == int(expected_port)
+sys.exit(0 if protocol_matches and port_matches else 1)
 PY
     then
       return 0
     fi
     sleep 5
   done
-  echo "[diagnostic] info --json did not report protocol ${expected_protocol} in ${timeout_seconds}s" >&2
+  echo "[diagnostic] info --json did not report protocol ${expected_protocol}${expected_port:+ on port ${expected_port}} in ${timeout_seconds}s" >&2
   if [[ -n "$last_output" ]]; then
     echo "[diagnostic] Last info --json payload: $last_output" >&2
   else

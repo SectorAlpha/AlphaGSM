@@ -2,11 +2,13 @@
 
 This guide covers the `theforestserver` module in AlphaGSM.
 
-`theforestserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`theforestserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. Linux launches use Wine or Proton under Xvfb. AlphaGSM manages the native configuration and save paths for both process and Docker runtimes.
 
 ## Requirements
 
 - `screen`
+- Wine or Proton-GE on Linux
+- `xvfb-run` on Linux process runtimes
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -46,9 +48,13 @@ alphagsm mythefores stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the Steam query port (default 27016)
+- the Steam communication port (default 8766)
 - the install directory
 - SteamCMD downloads the server files
+- the managed native configuration at `server-data/Server.cfg`
+- the persistent save directory at `server-data/saves/`
 
 ## Useful Commands
 
@@ -60,7 +66,10 @@ alphagsm mythefores backup
 ## Notes
 
 - Module name: `theforestserver`
-- Default port: 27016
+- Default game port: 27015
+- Default query port: 27016
+- Default Steam communication port: 8766
+- AlphaGSM `query`, `info`, and `info --json` use A2S on the managed query port.
 
 ## Developer Notes
 
@@ -73,7 +82,8 @@ alphagsm mythefores backup
 
 ### Server Configuration
 
-- **Config files**: `Server.cfg`
+- **Config file**: `server-data/Server.cfg`
+- **Save directory**: `server-data/saves/`
 - **Template**: See [server-templates/theforestserver/](../server-templates/theforestserver/) if available
 
 ### Maps and Mods

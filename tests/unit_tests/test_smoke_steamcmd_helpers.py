@@ -63,3 +63,10 @@ def test_info_timeout_captures_runtime_before_cleanup(tmp_path):
     )
     assert result.returncode != 0
     assert evidence.read_text().splitlines() == ["testserver doctor", "testserver logs -n 200"]
+
+
+def test_info_wait_can_require_the_exact_reported_port():
+    helpers = HELPERS_PATH.read_text(encoding="utf-8")
+
+    assert 'local expected_port="${4:-}"' in helpers
+    assert 'data.get("port") == int(expected_port)' in helpers
