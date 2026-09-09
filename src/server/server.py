@@ -1041,6 +1041,8 @@ class Server(object):
         ``"quakeworld"`` (QuakeWorld UDP), ``"quake2"`` (Quake II UDP), ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"bedrock"`` (Minecraft Bedrock RakNet UDP ping),
         ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"udp"`` (generic UDP reachability),
+        ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
+        (authenticated Source RCON),
         ``"http_status"`` (JSON ``/status`` endpoint), or ``"tcp"``.
         """
         from utils import query as query_utils
@@ -1209,6 +1211,32 @@ class Server(object):
                     "Server does not appear to be responding: " + str(exc)
                 )
 
+        if protocol == "soldat":
+            try:
+                soldat = query_utils.soldat_info(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Soldat status on port {port}): "
+                    "map={map!r}  players={players}".format(port=port, **soldat)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Server does not appear to be responding: " + str(exc))
+
+        if protocol == "source_rcon":
+            try:
+                result = query_utils.source_rcon_info(
+                    host, port, self.data.get("adminpassword", ""), timeout=10.0
+                )
+                players = result.get("players")
+                print(
+                    "Server is responding (Source RCON on port {}): players={}".format(
+                        port, "?" if players is None else players
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Server does not appear to be responding: " + str(exc))
+
         if protocol == "ut3":
             try:
                 query_utils.ut3_status(host, port, timeout=10.0)
@@ -1297,6 +1325,8 @@ class Server(object):
         (Quake3/QFusion UDP getstatus), ``"quakeworld"`` (QuakeWorld UDP status), ``"quake2"`` (Quake II UDP status),
         ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
+        ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
+        (authenticated Source RCON),
         ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
         ``/status`` endpoint), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
@@ -1479,6 +1509,43 @@ class Server(object):
                 # Default heuristic: fall through to TCP
                 host = runtime_module.resolve_query_host(self)
                 port = self.data["port"]
+
+        if protocol == "soldat":
+            try:
+                parsed = query_utils.soldat_info(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "soldat", "port": port, **parsed}))
+                    return
+                print(
+                    "Server info (Soldat status on port {port}):\n"
+                    "  Map         : {map}\n"
+                    "  Players     : {players}".format(port=port, **parsed)
+                )
+                if parsed.get("gamemode"):
+                    print("  Gamemode    : " + parsed["gamemode"])
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "source_rcon":
+            try:
+                result = query_utils.source_rcon_info(
+                    host, port, self.data.get("adminpassword", ""), timeout=10.0
+                )
+                payload = {"protocol": "source_rcon", "port": port, **result}
+                if as_json:
+                    print(json.dumps(payload))
+                    return
+                players = result.get("players")
+                print(
+                    "Server info (Source RCON on port {}):\n"
+                    "  Players     : {}".format(
+                        port, "unknown" if players is None else players
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "quake2":
             try:

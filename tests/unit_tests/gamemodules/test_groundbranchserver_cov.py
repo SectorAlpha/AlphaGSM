@@ -98,18 +98,18 @@ def test_get_start_command(tmp_path, monkeypatch):
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "GroundBranchServer-Win64-Shipping.exe",
-        "-Port=27015",
-        "-QueryPort=27015",
-        "-MaxPlayers=27015",
+        "?MaxPlayers=27015",
+        "Port=27015",
+        "QueryPort=27015",
         "-log",
     ]
     assert cwd == server.data["dir"]
 
 
 def test_setting_schema_exposes_groundbranch_launch_formats():
-    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
-    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
-    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["port"].launch_arg_format == "Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "QueryPort={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "?MaxPlayers={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -198,3 +198,37 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+def test_native_launch_uses_url_player_option_before_port_settings(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer()
+    server.data.update(dir=str(tmp_path), exe_name="GroundBranchServer-Win64-Shipping.exe",
+                       port=19000, queryport=19001, maxplayers=12)
+    (tmp_path / server.data["exe_name"]).touch()
+    command, _cwd = mod.get_start_command(server)
+    assert command == [server.data["exe_name"], "?MaxPlayers=12", "Port=19000",
+                       "QueryPort=19001", "-log"]
+
+
+def test_declared_a2s_endpoint_uses_runtime_host_and_query_port(monkeypatch):
+    server = DummyServer()
+    server.data.update(port=19000, queryport=19001)
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda server: "192.0.2.7")
+    assert mod.get_query_address(server) == ("192.0.2.7", 19001, "a2s")
+    assert mod.get_info_address(server) == ("192.0.2.7", 19001, "a2s")
+
+
+def test_runtime_builders_publish_only_native_udp_listeners(monkeypatch):
+    server = DummyServer()
+    requirements = MagicMock(return_value={})
+    spec = MagicMock(return_value={})
+    monkeypatch.setattr(mod.proton, "get_runtime_requirements", requirements)
+    monkeypatch.setattr(mod.proton, "get_container_spec", spec)
+    mod.get_runtime_requirements(server)
+    mod.get_container_spec(server)
+    for call in (requirements.call_args, spec.call_args):
+        assert call.kwargs["port_definitions"] == (
+            {"key": "queryport", "protocol": "udp"},
+            {"key": "port", "protocol": "udp"},
+        )

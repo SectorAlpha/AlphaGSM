@@ -45,7 +45,12 @@ source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 
 cleanup() {
+  local rc=$?
   set +e
+  if [[ "$rc" -ne 0 && -n "${INSTALL_DIR:-}" ]]; then
+    capture_application_logs "$INSTALL_DIR"/Saved/Logs/*.log "$INSTALL_DIR"/*/Saved/Logs/*.log
+    capture_runtime_diagnostics "$SERVER_NAME"
+  fi
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
     ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
@@ -101,7 +106,7 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "quake" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json

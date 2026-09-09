@@ -104,7 +104,7 @@
         "get_container_spec": true,
         "get_info_address": false,
         "get_platform_requirements": false,
-        "get_provider_requirements": false,
+        "get_provider_requirements": true,
         "get_query_address": false,
         "get_runtime_requirements": true,
         "get_start_command": true,
@@ -121,7 +121,9 @@
         }
       },
       "platforms": null,
-      "provider_categories": [],
+      "provider_categories": [
+        "provider-license"
+      ],
       "query_protocols": {
         "info": null,
         "query": null
@@ -132,7 +134,7 @@
         "process": true
       },
       "schema_version": 1,
-      "support_state": "PASSED",
+      "support_state": "ENABLED (AUTH)",
       "unknown_fields": [
         "architectures",
         "platform_requirements.docker.operating_system",
@@ -462,8 +464,8 @@
       "platforms": null,
       "provider_categories": [],
       "query_protocols": {
-        "info": null,
-        "query": null
+        "info": "source_rcon",
+        "query": "source_rcon"
       },
       "runtime": {
         "docker": true,
@@ -477,9 +479,7 @@
         "platform_requirements.docker.operating_system",
         "platform_requirements.process.architectures",
         "platform_requirements.process.platforms",
-        "platforms",
-        "query_protocols.info",
-        "query_protocols.query"
+        "platforms"
       ]
     },
     {
@@ -2964,7 +2964,7 @@
       },
       "runtime": {
         "docker": true,
-        "family": "wine-proton",
+        "family": "steamcmd-linux",
         "process": true
       },
       "schema_version": 1,
@@ -4748,10 +4748,10 @@
       "config_sync_keys": [],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
         "get_provider_requirements": false,
-        "get_query_address": false,
+        "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
         "sync_server_config": false
@@ -7893,7 +7893,9 @@
       ],
       "architectures": null,
       "config_sync_keys": [
-        "port"
+        "port",
+        "queryport",
+        "steamport"
       ],
       "hooks": {
         "get_container_spec": true,
@@ -9618,16 +9620,21 @@
     {
       "aliases": [],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "maxplayers",
+        "port",
+        "queryport",
+        "servername"
+      ],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
         "get_provider_requirements": false,
-        "get_query_address": false,
+        "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "silicaserver",
       "platform_requirements": {
@@ -9856,16 +9863,20 @@
     {
       "aliases": [],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "hostname",
+        "maxplayers",
+        "port"
+      ],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
         "get_provider_requirements": false,
-        "get_query_address": false,
+        "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "solserver",
       "platform_requirements": {

@@ -726,15 +726,17 @@ def test_run_and_assert_ok_redacts_assertion_message(monkeypatch):
         GeneratorExit,
     ),
 )
+@pytest.mark.parametrize("command", ["status", "start", "send"])
 def test_run_and_assert_ok_preserves_exact_command_failure_when_diagnostic_raises(
     monkeypatch,
     capsys,
     diagnostic_exception,
+    command,
 ):
     helpers = importlib.import_module("tests.integration_tests.conftest")
     diagnostic_secret = "runtime-diagnostic-secret"
     result = subprocess.CompletedProcess(
-        args=["alphagsm", "ittestserver", "status"],
+        args=["alphagsm", "ittestserver", command],
         returncode=1,
         stdout="",
         stderr="command failed",
@@ -763,7 +765,7 @@ def test_run_and_assert_ok_preserves_exact_command_failure_when_diagnostic_raise
 
     surfaced = None
     try:
-        helpers.run_and_assert_ok({}, "ittestserver", "status")
+        helpers.run_and_assert_ok({}, "ittestserver", command)
     except BaseException as exc:  # noqa: BLE001 - control paths are the contract
         surfaced = exc
     else:
@@ -773,6 +775,21 @@ def test_run_and_assert_ok_preserves_exact_command_failure_when_diagnostic_raise
     captured = capsys.readouterr().out
     assert diagnostic_secret not in captured
     assert "AWS_SECRET_ACCESS_KEY=<redacted>" in captured
+
+
+@pytest.mark.parametrize("command,returncode", [("send", 0), ("setup", 1), ("create", 1)])
+def test_command_diagnostics_do_not_probe_success_or_installation_failures(monkeypatch, command, returncode):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    result = subprocess.CompletedProcess(["alphagsm", "fixture", command], returncode, "result", "")
+    monkeypatch.setattr(helpers, "run_alphagsm", lambda *_a, **_kw: result)
+    diagnostics = []
+    monkeypatch.setattr(helpers, "_dump_alphagsm_runtime_logs", lambda *_a, **_kw: diagnostics.append(True))
+    if returncode:
+        with pytest.raises(AssertionError, match="result"):
+            helpers.run_and_assert_ok({}, "fixture", command, allow_known_steamcmd_skip=False)
+    else:
+        helpers.run_and_assert_ok({}, "fixture", command)
+    assert diagnostics == []
 
 
 def test_run_and_assert_ok_clears_raw_failure_state_from_traceback(monkeypatch):

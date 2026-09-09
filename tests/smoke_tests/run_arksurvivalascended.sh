@@ -46,7 +46,12 @@ source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 
 cleanup() {
+  local rc=$?
   set +e
+  if [[ "$rc" -ne 0 && -n "${INSTALL_DIR:-}" ]]; then
+    capture_application_logs "$INSTALL_DIR"/ShooterGame/Saved/Logs/*.log
+    capture_runtime_diagnostics "$SERVER_NAME"
+  fi
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
     ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
@@ -67,10 +72,10 @@ LOG_PATH="$INSTALL_DIR/ShooterGame/Saved/Logs/ShooterGame.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port_group 2)"
-QUERYPORT="$(pick_free_port)"
-while [[ "$QUERYPORT" -eq "$PORT" || "$QUERYPORT" -eq "$((PORT + 1))" ]]; do
-  QUERYPORT="$(pick_free_port)"
+PORT="$(pick_free_port)"
+RCONPORT="$(pick_free_port)"
+while [[ "$RCONPORT" -eq "$PORT" ]]; do
+  RCONPORT="$(pick_free_port)"
 done
 
 cat > "$CONFIG_PATH" <<EOF
@@ -99,16 +104,16 @@ EOF
 
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
-echo "Using query port: $QUERYPORT"
+echo "Using RCON port: $RCONPORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create arksurvivalascended
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
-run_alphagsm "$SERVER_NAME" set queryport "$QUERYPORT"
+run_alphagsm "$SERVER_NAME" set rconport "$RCONPORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_start_with_port_retry "$SERVER_NAME"
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "source_rcon" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info

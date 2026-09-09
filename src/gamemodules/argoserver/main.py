@@ -18,6 +18,7 @@ _PORT_DEFINITIONS = (
     {"key": "port", "offset": 1, "protocol": "udp"},
     {"key": "port", "offset": 2, "protocol": "udp"},
 )
+port_claim_definitions = _PORT_DEFINITIONS
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(

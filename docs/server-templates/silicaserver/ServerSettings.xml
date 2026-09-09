@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
+<NetworkServerSettings GamePort="26900" QueryPort="26901" ServerName="AlphaGSM Silica" CurrentGameMode="MP_Strategy" Singleplayer="false" PasswordProtected="false" ServerPassword="">
+  <GameModeSettings GameMode="MP_Strategy" CurrentMap="MonumentValley" MapList="MonumentValley" MaxPlayers="64" />
+</NetworkServerSettings>

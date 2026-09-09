@@ -190,8 +190,8 @@ status report:
 | `config_sync_keys` | module-level `tuple[str, ...]` | List datastore keys that should auto-sync into native game config files |
 | `sync_server_config` | `(server)` | Rewrite the native config file from datastore-backed values |
 | `list_setting_values` | `(server, canonical_key)` | Return enumerable values for schema-backed keys such as maps |
-| `get_query_address` | `(server)` | Return `(host, port, protocol)` for `query`; protocols: `"a2s"`, `"quake"`, `"ts3"`, `"tcp"` |
-| `get_info_address` | `(server)` | Return `(host, port, protocol)` for `info`; protocols: `"a2s"`, `"slp"`, `"tcp"`.  Always add this unless the module uses `define_valve_server_module()`. |
+| `get_query_address` | `(server)` | Return `(host, port, protocol)` for `query`; protocols include `"a2s"`, `"quake"`, `"source_rcon"`, `"ts3"`, and `"tcp"` |
+| `get_info_address` | `(server)` | Return `(host, port, protocol)` for `info`; protocols include `"a2s"`, `"slp"`, `"source_rcon"`, and `"tcp"`. Always add this unless the module uses `define_valve_server_module()`. |
 | `update` | `(server, validate=False, restart=False, ...)` | In-place server update; wire into `commands` / `command_functions` |
 | `restart` | `(server, ...)` | Custom restart logic if the default stop+start is insufficient |
 | `get_wipe_paths` | `(server)` | Return explicit relative world-data paths for the shared preview/confirmation/deletion flow; fixed `wipe_paths` lists also work |
@@ -565,6 +565,28 @@ Diagnostics also report bounded local TCP listeners and UDP bindings, plus
 allowlisted numeric port arguments to check launcher forwarding. Other process
 arguments and all environment values are excluded. Inaccessible Steam directories
 are recorded as unavailable without aborting the remaining evidence collection.
+Failed `send` commands collect the same bounded runtime evidence as failed start
+commands, covering servers that exit before the readiness polling loop begins.
+
+Classic Soldat uses the fixed file-server request for `logs/gamestat.txt` on TCP
+game port + 10. The `soldat` query protocol requires the transfer terminator and
+valid player-count/map fields, caps replies at 64 KiB, and bounds the whole
+exchange by one monotonic deadline. It exposes no raw file or player-list data.
+`solserver` synchronizes `[GAME] Logging` and `[NETWORK] Allow_Download` together
+with its managed game settings; see the [maintained query implementation](https://github.com/gamedig/node-gamedig/blob/master/protocols/soldat.js).
+
+ARK: Survival Ascended uses authenticated Source RCON `ListPlayers` for
+readiness and information. ASA's old Steam query port is deprecated; declare
+and publish the RCON TCP port and keep the admin password secret. ASA does not
+reliably send Source's normal multipart terminator, so the query helper collects
+fragments through a short quiet window while enforcing one overall deadline and
+a 1 MiB response limit.
+
+Modules can declare `port_claim_definitions` for auxiliary native listeners that
+must be claimed in both process and Docker runtimes. A port definition's
+`default` applies only when its datastore key is absent; an explicit `None`
+continues to omit the mapping. Project CARS uses this to retain its native
+Steam authentication port for older records without mutating their datastore.
 
 For Source readiness failures, CI tries `query` and `info --json` before debugger
 attachment. This separates a missing console marker from an unresponsive engine.

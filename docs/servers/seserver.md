@@ -2,7 +2,16 @@
 
 This guide covers the `seserver` module in AlphaGSM.
 
-`seserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`seserver` retains its prior `PASSED` support classification. Replacement CI
+run `34289635472` exposed a Docker launch path outside the mounted server
+installation. AlphaGSM now passes `Z:\srv\server` as Wine's data directory;
+process launches retain the host installation path. Replacement lifecycle
+validation is pending.
+
+Keen's [dedicated-server guide](https://www.spaceengineersgame.com/dedicated-servers/)
+defines `-path` as the directory used to load configuration and store server
+files. In Docker, this directory maps to the AlphaGSM installation on the host,
+so configuration, saves, and logs remain accessible there.
 
 ## Requirements
 

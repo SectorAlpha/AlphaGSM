@@ -1,6 +1,7 @@
 """Integration test for silicaserver."""
 
 import os
+import sys
 
 import pytest
 
@@ -13,12 +14,13 @@ from conftest import (
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
+    run_setup_with_port_retry,
+    resolve_steamcmd_linux_runtime_image,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_runtime_log_marker,
-    wait_for_tcp_closed,
+    wait_for_udp_closed,
 )
 from gamemodules.silicaserver import steam_app_id
 
@@ -56,35 +58,31 @@ def test_silicaserver_lifecycle(tmp_path):
     )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    queryport = pick_free_tcp_port()
+    while queryport == port:
+        queryport = pick_free_tcp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "image", resolve_steamcmd_linux_runtime_image())
+    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
+    run_and_assert_ok(env, server_name, "set", "servername", "AlphaGSM Silica IT")
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result, port = run_setup_with_port_retry(
+        env, server_name, port, install_dir, timeout=3600
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
-
-    port = pick_free_tcp_port()
-    run_and_assert_ok(env, server_name, "set", "port", str(port))
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        # Wait on AlphaGSM's declared info surface before issuing direct query/info commands.
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -105,12 +103,16 @@ def test_silicaserver_lifecycle(tmp_path):
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
+        assert _info_data.get("port") == queryport, _info_data
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)

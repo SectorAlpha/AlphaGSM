@@ -12,6 +12,7 @@ MYTH_OF_EMPIRES_SMOKE = Path("tests/smoke_tests/run_mythofempiresserver.sh")
 BLACK_OPS_3_SMOKE = Path("tests/smoke_tests/run_blackops3server.sh")
 SNIPER_ELITE_4_SMOKE = Path("tests/smoke_tests/run_sniperelite4server.sh")
 COD_SERVER_SMOKE = Path("tests/smoke_tests/run_codserver.sh")
+CONAN_EXILES_SMOKE = Path("tests/smoke_tests/run_conanexiles.sh")
 RETURN_TO_MORIA_SMOKE = Path("tests/smoke_tests/run_returntomoriaserver.sh")
 ASA_SMOKE = Path("tests/smoke_tests/run_arksurvivalascended.sh")
 ASTRONEER_SMOKE = Path("tests/smoke_tests/run_astroneerserver.sh")
@@ -67,6 +68,14 @@ def test_nightingale_smoke_uses_official_http_status_surface():
     assert 'wait_for_info_protocol "$SERVER_NAME" "tcp"' not in text
 
 
+def test_nightingale_smoke_allows_slow_first_world_bootstrap_and_captures_logs():
+    text = NIGHTINGALE_SMOKE.read_text(encoding="utf-8")
+
+    assert 'START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"' in text
+    assert 'capture_application_logs "$INSTALL_DIR"/NWX/Saved/Logs/*.log' in text
+    assert 'capture_runtime_diagnostics "$SERVER_NAME"' in text
+
+
 def test_myth_of_empires_smoke_uses_docker_runtime_and_a2s_info():
     text = MYTH_OF_EMPIRES_SMOKE.read_text(encoding="utf-8")
 
@@ -110,6 +119,15 @@ def test_codserver_smoke_skips_before_start_when_byo_map_content_is_missing():
     assert text.index(map_check) < text.index('run_alphagsm "$SERVER_NAME" start')
 
 
+def test_conan_exiles_smoke_uses_native_linux_runtime_and_reserves_pinger_port():
+    text = CONAN_EXILES_SMOKE.read_text(encoding="utf-8")
+
+    assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX" in text
+    assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON" not in text
+    assert 'PORT="$(pick_free_port_group 2)"' in text
+    assert "backend = docker" in text
+
+
 def test_return_to_moria_smoke_supports_current_and_legacy_status_paths():
     text = RETURN_TO_MORIA_SMOKE.read_text(encoding="utf-8")
 
@@ -130,18 +148,18 @@ def test_return_to_moria_smoke_wakes_the_enabled_console_after_start():
     assert text.index(start) < text.index(wake)
 
 
-def test_asa_smoke_uses_distinct_udp_game_pair_and_a2s_query_port():
+def test_asa_smoke_uses_udp_game_pair_and_authenticated_rcon():
     text = ASA_SMOKE.read_text(encoding="utf-8")
 
     assert "backend = docker" in text
-    assert 'PORT="$(pick_free_port_group 2)"' in text
-    assert 'QUERYPORT="$(pick_free_port)"' in text
-    assert 'while [[ "$QUERYPORT" -eq "$PORT" || "$QUERYPORT" -eq "$((PORT + 1))" ]]' in text
-    set_queryport = 'run_alphagsm "$SERVER_NAME" set queryport "$QUERYPORT"'
+    assert 'PORT="$(pick_free_port)"' in text
+    assert 'RCONPORT="$(pick_free_port)"' in text
+    assert 'while [[ "$RCONPORT" -eq "$PORT" ]]' in text
+    set_queryport = 'run_alphagsm "$SERVER_NAME" set rconport "$RCONPORT"'
     setup = 'run_setup_or_skip_steamcmd "$SERVER_NAME" setup'
     assert set_queryport in text
     assert text.index(set_queryport) < text.index(setup)
-    assert 'wait_for_info_protocol "$SERVER_NAME" "a2s"' in text
+    assert 'wait_for_info_protocol "$SERVER_NAME" "source_rcon"' in text
     assert 'wait_for_info_protocol "$SERVER_NAME" "tcp"' not in text
 
 

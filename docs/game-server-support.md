@@ -23,7 +23,6 @@ Notes:
 
 ## Supported Now
 
-- [x] acserver
 - [x] ahl2server
 - [x] argoserver
 - [x] ark
@@ -195,6 +194,7 @@ Notes:
 - [x] brickadiaserver
 - [x] interstellarriftserver
 - [x] twserver
+- [x] acserver
 - [x] accserver
 - [x] boserver
 - [x] deadmatterserver

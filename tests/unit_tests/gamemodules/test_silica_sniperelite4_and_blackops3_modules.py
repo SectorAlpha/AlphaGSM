@@ -42,8 +42,8 @@ def test_silica_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = silicaserver.get_start_command(server)
 
-    assert cmd[0] == "./Silica.x86_64"
-    assert "-queryport" in cmd
+    assert cmd == ["env", f"HOME={tmp_path}/.alphagsm-home", "./Silica.x86_64",
+                   "-batchmode", "-nographics"]
     assert cwd == server.data["dir"]
 
 

@@ -59,6 +59,11 @@ alphagsm mypcarserv backup
 
 ## Notes
 
+- Docker publishes the native Steam query port as well as the game port.
+  The query port defaults to game port + 1; `set queryport` updates both native
+  configuration and port claims. This correction awaits replacement CI.
+- `steamport` controls the native Steam authentication port (default UDP 8766),
+  which is also claimed and published. Older server records retain that default.
 - Module name: `pcarserver`
 - Default port: 27015
 - Validated support: PASSED 2026-05-23 via the standard smoke runner and focused integration lifecycle, both using `info --json` protocol `a2s` on the derived query port (`port + 1`).

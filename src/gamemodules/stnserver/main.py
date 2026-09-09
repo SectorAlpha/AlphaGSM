@@ -1,6 +1,7 @@
 """Survive the Nights dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -97,6 +98,7 @@ def sync_server_config(server):
 
     config_dir = os.path.join(server.data["dir"], "Config")
     os.makedirs(config_dir, exist_ok=True)
+    _seed_shipped_config(server, config_dir)
     config_path = os.path.join(
         server.data["dir"],
         server.data.get("configfile", "Config/ServerConfig.txt"),
@@ -109,6 +111,39 @@ def sync_server_config(server):
         value_transform=lambda _spec, current_value: str(int(current_value)),
     )
     rewrite_equals_config(config_path, config_values)
+
+
+def _seed_shipped_config(server, config_dir):
+    """Copy the server's required template files without replacing operator edits."""
+
+    install_dir = server.data["dir"]
+    payload_names = (
+        server.data.get("exe_name", "Server_Linux_x64") + "_Data",
+        "STN_Dedicated_Server_Data",
+    )
+    for payload_name in dict.fromkeys(payload_names):
+        template_dir = os.path.join(
+            install_dir,
+            payload_name,
+            "StreamingAssets",
+            "Config_Template",
+        )
+        if not os.path.isdir(template_dir):
+            continue
+        for source_root, directory_names, file_names in os.walk(template_dir):
+            relative_root = os.path.relpath(source_root, template_dir)
+            destination_root = (
+                config_dir
+                if relative_root == "."
+                else os.path.join(config_dir, relative_root)
+            )
+            os.makedirs(destination_root, exist_ok=True)
+            for directory_name in directory_names:
+                os.makedirs(os.path.join(destination_root, directory_name), exist_ok=True)
+            for file_name in file_names:
+                destination = os.path.join(destination_root, file_name)
+                if not os.path.exists(destination):
+                    shutil.copy2(os.path.join(source_root, file_name), destination)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(

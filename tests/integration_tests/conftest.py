@@ -1016,6 +1016,7 @@ def run_and_assert_ok(
                 "info",
                 "stop",
                 "restart",
+                "send",
             }:
                 server_name = args[0]
                 _run_readiness_diagnostic(

@@ -27,6 +27,7 @@ _PORT_DEFINITIONS = tuple(
     for offset in (0, 1, 2)
     for protocol in ("udp", "tcp")
 )
+port_claim_definitions = _PORT_DEFINITIONS
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(

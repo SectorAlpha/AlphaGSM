@@ -10,7 +10,7 @@ from conftest import (
     require_steamcmd_opt_in,
     require_command,
     resolve_runtime_image,
-    pick_free_tcp_port_group,
+    pick_free_tcp_port,
     pick_free_udp_port,
     run_setup_with_port_retry,
     write_config,
@@ -20,7 +20,7 @@ from conftest import (
     log_command_result,
     wait_for_info_protocol,
     wait_for_generic_udp_closed,
-    wait_for_udp_closed,
+    wait_for_tcp_closed,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -58,15 +58,15 @@ def test_arksurvivalascended_lifecycle(tmp_path):
         module_name="arksurvivalascended",
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port_group(2)
-    queryport = pick_free_udp_port()
-    while queryport in (port, port + 1):
-        queryport = pick_free_udp_port()
+    port = pick_free_udp_port()
+    rconport = pick_free_tcp_port()
+    while rconport == port:
+        rconport = pick_free_tcp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "arksurvivalascended")
     run_and_assert_ok(env, server_name, "set", "image", image)
-    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
+    run_and_assert_ok(env, server_name, "set", "rconport", str(rconport))
 
     # setup
     _setup_result, port = run_setup_with_port_retry(
@@ -77,7 +77,7 @@ def test_arksurvivalascended_lifecycle(tmp_path):
         timeout=SETUP_TIMEOUT,
     )
     dump_result = run_and_assert_ok(env, server_name, "dump")
-    queryport = int(json.loads(dump_result.stdout)["queryport"])
+    rconport = int(json.loads(dump_result.stdout)["rconport"])
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -87,9 +87,9 @@ def test_arksurvivalascended_lifecycle(tmp_path):
         info_data = wait_for_info_protocol(
             env,
             server_name,
-            "a2s",
+            "source_rcon",
             START_TIMEOUT,
-            expected_port=queryport,
+            expected_port=rconport,
         )
 
         # status
@@ -97,24 +97,24 @@ def test_arksurvivalascended_lifecycle(tmp_path):
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert f"Server is responding (A2S on port {queryport})" in query_result.stdout, (
+        assert f"Server is responding (Source RCON on port {rconport})" in query_result.stdout, (
             f"Unexpected query output: {query_result.stdout!r}"
         )
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert f"Server info (A2S on port {queryport}):" in info_result.stdout, (
+        assert f"Server info (Source RCON on port {rconport}):" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
 
         # info --json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_json = json.loads(info_json_result.stdout.strip())
-        assert info_json["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {info_json!r}"
+        assert info_json["protocol"] == "source_rcon", (
+            f"Expected source_rcon protocol in info JSON: {info_json!r}"
         )
-        assert info_json["port"] == queryport, (
-            f"Expected query port {queryport} in info JSON: {info_json!r}"
+        assert info_json["port"] == rconport, (
+            f"Expected RCON port {rconport} in info JSON: {info_json!r}"
         )
         assert info_data["protocol"] == info_json["protocol"]
         assert info_data["port"] == info_json["port"]
@@ -125,6 +125,5 @@ def test_arksurvivalascended_lifecycle(tmp_path):
 
     # verify stopped
     assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
-    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", rconport, STOP_TIMEOUT)
     wait_for_generic_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
-    wait_for_generic_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

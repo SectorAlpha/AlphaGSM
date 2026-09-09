@@ -24,14 +24,15 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
-config_sync_keys = ("port",)
+config_sync_keys = ("port", "queryport", "steamport")
+port_claim_definitions = ({"key": "steamport", "default": 8766, "protocol": "udp"},)
 
 
 def _resolve_query_port(server):
     return int(server.data.get("queryport") or (int(server.data["port"]) + 1))
 
 
-def _write_server_config(path, *, server_name, host_port, query_port):
+def _write_server_config(path, *, server_name, host_port, query_port, steam_port):
     lines = [
         'logLevel : "info"',
         "name : {}".format(json.dumps("AlphaGSM {}".format(server_name))),
@@ -39,7 +40,7 @@ def _write_server_config(path, *, server_name, host_port, query_port):
         'password : ""',
         "maxPlayerCount : 16",
         'bindIP : ""',
-        "steamPort : 8766",
+        "steamPort : {}".format(steam_port),
         "hostPort : {}".format(host_port),
         "queryPort : {}".format(query_port),
         "allowEmptyJoin : true",
@@ -51,6 +52,7 @@ def _write_server_config(path, *, server_name, host_port, query_port):
 def sync_server_config(server):
     """Write the managed Project CARS server.cfg from datastore values."""
 
+    gamemodule_common.set_server_defaults(server, {"steamport": 8766})
     configfile = server.data.get("configfile", "server.cfg")
     config_path = os.path.join(server.data["dir"], configfile)
     os.makedirs(os.path.dirname(config_path) or server.data["dir"], exist_ok=True)
@@ -62,6 +64,7 @@ def sync_server_config(server):
         server_name=server.name,
         host_port=host_port,
         query_port=query_port,
+        steam_port=int(server.data["steamport"]),
     )
 
     canonical_config_path = os.path.join(server.data["dir"], "server.cfg")
@@ -71,6 +74,7 @@ def sync_server_config(server):
             server_name=server.name,
             host_port=host_port,
             query_port=query_port,
+            steam_port=int(server.data["steamport"]),
         )
 
 
@@ -82,7 +86,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="DedicatedServerCmd"
         steam_app_id=steam_app_id,
         steam_anonymous_login_possible=steam_anonymous_login_possible,
     )
-    gamemodule_common.set_server_defaults(server, {"configfile": "server.cfg"})
+    gamemodule_common.set_server_defaults(server, {"configfile": "server.cfg", "steamport": 8766})
     gamemodule_common.ensure_backup_config(
         server,
         backupfiles=["server.cfg", "lua"],
@@ -180,18 +184,31 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
+        int_keys=("port", "queryport", "steamport"),
         str_keys=("configfile", "exe_name", "dir"),
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def _port_definitions(server):
+    query = {"key": "queryport", "protocol": "udp"}
+    if not server.data.get("queryport"):
+        query = {"key": "port", "offset": 1, "protocol": "udp"}
+    return ({"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "tcp"},
+            *port_claim_definitions, query)
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
-)
+
+def get_runtime_requirements(server):
+    """Declare the native game and A2S query ports for both runtimes."""
+
+    return runtime_module.build_runtime_requirements(
+        server, family="steamcmd-linux", port_definitions=_port_definitions(server),
+    )
+
+
+def get_container_spec(server):
+    """Publish the same query endpoint used by server.cfg and info."""
+
+    return runtime_module.build_container_spec(
+        server, family="steamcmd-linux", get_start_command=get_start_command,
+        port_definitions=_port_definitions(server), stdin_open=True,
+    )

@@ -50,7 +50,7 @@ alphagsm myarksurvi stop
 Setup configures:
 
 - the game port (default `7777`)
-- a distinct A2S query port (default `27015`)
+- the authenticated TCP RCON port (default `27020`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -65,10 +65,13 @@ alphagsm myarksurvi backup
 
 - Module name: `arksurvivalascended`
 - Default game port: `7777`
-- Default query port: `27015`
+- Default RCON port: `27020`
 - `query`, `info`, and `info --json` resolve the selected runtime host and use
-  exact A2S on the managed query port
-- The runtime claims and publishes game UDP, `game + 1` UDP, and query UDP
+  an authenticated Source RCON `ListPlayers` request
+- The runtime claims and publishes game UDP and RCON TCP
+- Fresh instances receive a generated RCON admin password. AlphaGSM replaces
+  the historical public `alphagsm` default before enabling RCON while preserving
+  passwords explicitly chosen by the operator.
 - Current correction status: replacement GitHub validation pending
 
 ## Developer Notes
@@ -84,13 +87,17 @@ The documented Linux path runs through AlphaGSM's Docker-backed
 `wine-proton` runtime image rather than a host `screen` session. Anonymous
 SteamCMD setup for app `2430930` succeeds on the current branch. The module
 delegates Docker launch to the shared Proton runtime builder, then queries the
-runtime-resolved host through A2S on the distinct managed query port.
+runtime-resolved host through RCON. Survival Ascended does not use Survival
+Evolved's old Steam query port; the maintained
+[jsknnr server image](https://github.com/jsknnr/ark-ascended-server#ports)
+documents game UDP and RCON TCP as its network surface.
 
-The launch keeps the map as the leading travel value, passes the game port as
-`-port=<game>`, and leaves `Port` out of the map URL. When configured,
+The launch keeps the map as the leading travel value, enables RCON in the map
+URL, passes the game port as `-port=<game>`, and leaves `Port` out of the map URL. When configured,
 `ServerPassword` appears before the final `ServerAdminPassword`. The runtime
-publishes the game port and its adjacent UDP port as well as the distinct UDP
-query port.
+publishes the game port and the distinct TCP RCON port. AlphaGSM retains old
+`queryport` values in existing records for compatibility but no longer launches,
+claims, or queries that deprecated endpoint.
 
 ### Server Configuration
 

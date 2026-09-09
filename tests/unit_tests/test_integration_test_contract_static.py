@@ -13,7 +13,7 @@ DISABLED_SERVERS_PATH = Path("disabled_servers.conf")
 SPECIAL_CASES = {"test_archive_backed_installs.py"}
 SS14_INTEGRATION_TEST = INTEGRATION_TEST_DIR / "test_ss14server.py"
 RUNTIME_AWARE_PROTOCOL_TESTS = {
-    "test_arksurvivalascended.py": "a2s",
+    "test_arksurvivalascended.py": "source_rcon",
     "test_astroneerserver.py": "udp",
     "test_ns2server.py": "a2s",
     "test_ns2cserver.py": "a2s",
@@ -111,9 +111,7 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_necserver.py",
     "test_opforserver.py",
     "test_projectzomboid.py",
-    "test_silicaserver.py",
     "test_smallandserver.py",
-    "test_solserver.py",
     "test_tfcserver.py",
     "test_trackmaniaserver.py",
     "test_valheim.py",
@@ -3207,8 +3205,8 @@ def test_ns2_guard_requires_query_response_assertion():
 def test_asa_and_astroneer_assert_stop_after_finally_before_shutdown_checks():
     shutdown_helpers = {
         "test_arksurvivalascended.py": {
-            "wait_for_udp_closed",
             "wait_for_generic_udp_closed",
+            "wait_for_tcp_closed",
         },
         "test_astroneerserver.py": {"wait_for_generic_udp_closed"},
     }

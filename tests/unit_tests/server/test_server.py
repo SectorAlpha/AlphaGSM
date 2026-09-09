@@ -1,5 +1,6 @@
 import json
 import sys
+import types
 from importlib import import_module
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -1939,6 +1940,40 @@ def test_query_uses_explicit_ut3_protocol(monkeypatch, capsys):
     assert "UT3/GameSpy4" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("command,as_json", [("query", False), ("info", False), ("info", True)])
+@pytest.mark.parametrize("fails", [False, True])
+def test_soldat_dispatch_uses_native_file_query_without_tcp_fallback(monkeypatch, capsys, command, as_json, fails):
+    import utils
+    import utils.query as query_utils
+
+    module = DummyModule()
+    module.get_query_address = lambda _server: ("192.0.2.4", 23083, "soldat")
+    module.get_info_address = module.get_query_address
+    srv = make_server(module=module, data=DummyData({"port": 23073}))
+    native = MagicMock(return_value={"players": 2, "map": "ctf_Ash", "gamemode": "Capture the Flag"})
+    if fails:
+        native.side_effect = query_utils.QueryError("incomplete Soldat response")
+    fake_query = SimpleNamespace(
+        QueryError=query_utils.QueryError,
+        soldat_info=native,
+        tcp_ping=MagicMock(side_effect=AssertionError("must not fall back to TCP")),
+    )
+    monkeypatch.setattr(utils, "query", fake_query)
+    if fails:
+        with pytest.raises(server_module.ServerError, match="incomplete Soldat response"):
+            getattr(srv, command)(**({"as_json": as_json} if command == "info" else {}))
+    else:
+        getattr(srv, command)(**({"as_json": as_json} if command == "info" else {}))
+        output = capsys.readouterr().out
+        if as_json:
+            assert json.loads(output) == {"protocol": "soldat", "port": 23083, "players": 2,
+                                          "map": "ctf_Ash", "gamemode": "Capture the Flag"}
+        else:
+            assert "Soldat" in output and "ctf_Ash" in output and "2" in output
+    native.assert_called_once_with("192.0.2.4", 23083, timeout=10.0)
+    fake_query.tcp_ping.assert_not_called()
+
+
 def test_query_uses_explicit_http_status_protocol(monkeypatch, capsys):
     module = DummyModule()
     module.get_query_address = lambda server: ("10.0.0.4", 7788, "http_status")
@@ -2262,6 +2297,56 @@ def test_info_uses_explicit_ut3_protocol(monkeypatch, capsys):
     data = _json.loads(capsys.readouterr().out.strip())
     assert data["protocol"] == "ut3"
     assert data["port"] == 6500
+
+
+def test_query_uses_authenticated_source_rcon_without_printing_password(monkeypatch, capsys):
+    import utils
+
+    module = DummyModule()
+    module.get_query_address = lambda server: ("127.0.0.1", 27020, "source_rcon")
+    srv = make_server(
+        module=module,
+        data=DummyData({"port": 7777, "adminpassword": "query-secret", "rconport": 27020}),
+    )
+    calls = []
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.source_rcon_info = lambda host, port, password, timeout=10.0: (
+        calls.append((host, port, password, timeout)) or {"players": 0}
+    )
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    output = capsys.readouterr().out
+    assert calls == [("127.0.0.1", 27020, "query-secret", 10.0)]
+    assert "Source RCON on port 27020" in output
+    assert "query-secret" not in output
+
+
+def test_info_json_uses_source_rcon_player_count(monkeypatch, capsys):
+    import utils
+
+    module = DummyModule()
+    module.get_info_address = lambda server: ("127.0.0.1", 27020, "source_rcon")
+    srv = make_server(
+        module=module,
+        data=DummyData({"port": 7777, "adminpassword": "secret", "rconport": 27020}),
+    )
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.source_rcon_info = lambda *_args, **_kwargs: {"players": 3}
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    assert json.loads(capsys.readouterr().out) == {
+        "protocol": "source_rcon",
+        "port": 27020,
+        "players": 3,
+    }
 
 
 def test_info_uses_explicit_http_status_protocol(monkeypatch, capsys):

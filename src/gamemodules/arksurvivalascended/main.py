@@ -1,6 +1,7 @@
 """ARK: Survival Ascended dedicated server lifecycle helpers."""
 
 import os
+import secrets
 
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -37,8 +38,14 @@ setting_schema = {
         description="Password required to join the server.",
         secret=True,
     ),
+    "rconport": SettingSpec(
+        canonical_key="rconport",
+        description="TCP port used by the authenticated RCON service.",
+    ),
 }
 max_stop_wait = 1
+ignored_port_keys = ("queryport",)
+_INSECURE_DEFAULT_ADMIN_PASSWORDS = ("", "alphagsm")
 
 
 def _container_runtime_env(_server):
@@ -61,18 +68,33 @@ def _launch_session_name(server):
     return str(server.data["sessionname"]).replace(" ", "_")
 
 
+def _ensure_secure_rcon_password(server, *, persist=True):
+    """Replace missing historical RCON defaults with a per-instance secret."""
+
+    current = str(server.data.get("adminpassword") or "")
+    if current not in _INSECURE_DEFAULT_ADMIN_PASSWORDS:
+        return current
+    current = secrets.token_urlsafe(24)
+    server.data["adminpassword"] = current
+    save = getattr(server.data, "save", None)
+    if persist and callable(save):
+        save()
+    return current
+
+
 def _build_map_args(server):
     """Build the ASA travel argument shared by process and Docker runtimes."""
 
     options = [
         "listen",
         "SessionName=%s" % (_launch_session_name(server),),
-        "QueryPort=%s" % (server.data["queryport"],),
         "MaxPlayers=%s" % (server.data["maxplayers"],),
+        "RCONEnabled=True",
+        "RCONPort=%s" % (server.data.get("rconport", 27020),),
     ]
     if server.data["serverpassword"]:
         options.append("ServerPassword=%s" % (server.data["serverpassword"],))
-    options.append("ServerAdminPassword=%s" % (server.data["adminpassword"],))
+    options.append("ServerAdminPassword=%s" % (_ensure_secure_rcon_password(server),))
     return "%s?%s" % (server.data["map"], "?".join(options))
 
 
@@ -96,12 +118,12 @@ def configure(
         {
             "map": "TheIsland_WP",
             "sessionname": "AlphaGSM %s" % (server.name,),
-            "adminpassword": "alphagsm",
             "serverpassword": "",
             "maxplayers": "70",
-            "queryport": "27015",
+            "rconport": "27020",
         },
     )
+    _ensure_secure_rcon_password(server, persist=False)
     gamemodule_common.ensure_backup_config(
         server,
         backupfiles=["ShooterGame/Saved", "ShooterGame/Saved/Config/WindowsServer"],
@@ -146,18 +168,24 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the ARK: Survival Ascended server."
 
 
+def prestart(server):
+    """Migrate missing or historical public RCON passwords before launch."""
+
+    _ensure_secure_rcon_password(server)
+
+
 def get_query_address(server):
-    """Return ASA's Steam A2S query address."""
+    """Return ASA's authenticated Source RCON address."""
 
     return (
         runtime_module.resolve_query_host(server),
-        int(server.data["queryport"]),
-        "a2s",
+        int(server.data.get("rconport", 27020)),
+        "source_rcon",
     )
 
 
 def get_info_address(server):
-    """Return the A2S address used by the info command."""
+    """Return the Source RCON address used by the info command."""
 
     return get_query_address(server)
 
@@ -214,14 +242,13 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port", "queryport", "maxplayers"),
+        int_keys=("port", "queryport", "rconport", "maxplayers"),
         str_keys=("map", "sessionname", "adminpassword", "serverpassword", "exe_name", "dir"),
     )
 
 port_claim_definitions = (
     {"key": "port", "protocol": "udp"},
-    {"key": "port", "offset": 1, "protocol": "udp"},
-    {"key": "queryport", "protocol": "udp"},
+    {"key": "rconport", "default": 27020, "protocol": "tcp"},
 )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(

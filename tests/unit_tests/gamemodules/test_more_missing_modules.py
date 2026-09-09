@@ -29,25 +29,27 @@ class DummyServer:
 
 def test_conanexiles_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("conan")
-    exe_dir = tmp_path / "ConanSandbox" / "Binaries" / "Win64"
+    exe_dir = tmp_path / "ConanSandbox" / "Binaries" / "Linux"
     exe_dir.mkdir(parents=True)
-    exe = exe_dir / "ConanSandboxServer-Win64-Shipping.exe"
+    exe = exe_dir / "ConanSandboxServer-Linux-Shipping"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe",
+            "exe_name": "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping",
             "map": "ConanSandbox",
             "maxplayers": 40,
             "port": 7777,
             "queryport": 27015,
+            "rconport": 27020,
         }
     )
 
-    with patch.object(conanexiles, "IS_LINUX", False):
-        cmd, cwd = conanexiles.get_start_command(server)
+    cmd, cwd = conanexiles.get_start_command(server)
 
-    assert cmd[0] == "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
+    assert cmd[0] == (
+        "./ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
     assert "-Port=7777" in cmd
     assert cwd == server.data["dir"]
 
@@ -76,6 +78,8 @@ def test_arksurvivalascended_get_start_command_builds_expected_args(tmp_path, mo
     cmd, cwd = arksurvivalascended.get_start_command(server)
 
     assert cmd[0] == "ArkAscendedServer.exe"
+    assert "RCONEnabled=True?RCONPort=27020" in cmd[1]
+    assert "QueryPort=" not in cmd[1]
     assert "-server" in cmd
     assert cwd == str(exe_dir)
 
@@ -109,17 +113,27 @@ def test_more_missing_modules_update_downloads_and_optionally_restart(monkeypatc
     night.data["dir"] = "/srv/night/"
     calls = []
 
+    def fake_download(
+        path,
+        app_id,
+        anon,
+        validate=True,
+        force_windows=False,
+        force_platform=None,
+    ):
+        calls.append((path, app_id, anon, validate, force_windows, force_platform))
+
     monkeypatch.setattr(
         conanexiles.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
+        fake_download,
     )
 
     conanexiles.update(conan, validate=True, restart=True)
     arksurvivalascended.update(asa, validate=False, restart=False)
     nightingale.update(night, validate=False, restart=False)
 
-    assert ("/srv/conan/", 443030, True, True) in calls
-    assert ("/srv/asa/", 2430930, True, False) in calls
-    assert ("/srv/night/", 3796810, True, False) in calls
+    assert ("/srv/conan/", 443030, True, True, False, "linux") in calls
+    assert ("/srv/asa/", 2430930, True, False, True, None) in calls
+    assert ("/srv/night/", 3796810, True, False, False, None) in calls
     assert conan.start_calls == 1

@@ -2785,7 +2785,7 @@ def test_selected_docker_sensitive_integration_tests_wait_on_declared_info_surfa
         Path("tests/integration_tests/test_medievalengineersserver.py"): "tcp",
         Path("tests/integration_tests/test_memoriesofmarsserver.py"): "a2s",
         Path("tests/integration_tests/test_silicaserver.py"): "a2s",
-        Path("tests/integration_tests/test_solserver.py"): "a2s",
+        Path("tests/integration_tests/test_solserver.py"): "soldat",
     }
 
     for path, protocol in expected_protocols.items():

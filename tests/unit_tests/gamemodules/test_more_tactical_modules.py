@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import gamemodules.acserver as acserver
 import gamemodules.mordserver as mordserver
 import gamemodules.pvrserver as pvrserver
@@ -76,6 +78,9 @@ def test_pvrserver_query_addresses_use_fixed_status_port():
 
 
 def test_tactical_modules_update_downloads_and_optionally_restart(monkeypatch):
+    configured = MagicMock()
+    configured.user.getsection.return_value.getsection.return_value.get.return_value = "entitled-user"
+    monkeypatch.setattr(acserver, "settings", configured)
     ac = DummyServer("ac")
     ac.data["dir"] = "/srv/ac/"
     mord = DummyServer("mord")
@@ -87,14 +92,14 @@ def test_tactical_modules_update_downloads_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         acserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, **kwargs: calls.append((path, app_id, anon, validate)),
     )
 
     acserver.update(ac, validate=True, restart=True)
     mordserver.update(mord, validate=False, restart=False)
     pvrserver.update(pvr, validate=False, restart=False)
 
-    assert ("/srv/ac/", 302550, True, True) in calls
+    assert ("/srv/ac/", 302550, False, True) in calls
     assert ("/srv/mord/", 629800, True, False) in calls
     assert ("/srv/pvr/", 622970, True, False) in calls
     assert ac.start_calls == 1

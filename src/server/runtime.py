@@ -288,15 +288,16 @@ def infer_port_definitions(server, family=None):
 
 
 def build_port_specs(server, port_definitions):
-    """Return normalized port mappings for the requested server data keys."""
+    """Normalize port mappings; dict defaults apply only to absent data keys."""
 
     ports = []
     for definition in port_definitions or ():
         if isinstance(definition, dict):
             key = definition.get("key")
-            if key not in server.data or server.data[key] is None:
+            value = server.data.get(key, definition.get("default"))
+            if value is None:
                 continue
-            base_port = int(server.data[key])
+            base_port = int(value)
             offset = int(definition.get("offset", 0))
             host_port = base_port + offset
             container_port = int(definition.get("container", host_port))

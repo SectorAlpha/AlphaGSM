@@ -79,6 +79,69 @@ def test_sync_server_config_preserves_unknown_config_lines(tmp_path):
     ]
 
 
+def test_sync_server_config_seeds_missing_shipped_config_without_overwriting(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+    template_dir = (
+        tmp_path
+        / "STN_Dedicated_Server_Data"
+        / "StreamingAssets"
+        / "Config_Template"
+    )
+    template_dir.mkdir(parents=True)
+    (template_dir / "ServerConfig.txt").write_text(
+        "Name=Template\nServerPort=8888\n", encoding="utf-8"
+    )
+    (template_dir / "TpPresets.json").write_text(
+        '{"presets": []}\n', encoding="utf-8"
+    )
+    streamlabs = template_dir / "StreamLabs"
+    streamlabs.mkdir()
+    (streamlabs / "StreamLabsCommands.json").write_text("{}\n", encoding="utf-8")
+    config_dir = tmp_path / "Config"
+    config_dir.mkdir()
+    (config_dir / "ServerConfig.txt").write_text(
+        "Name=Operator\nServerPort=7777\n", encoding="utf-8"
+    )
+
+    mod.sync_server_config(server)
+
+    assert (config_dir / "TpPresets.json").read_text(encoding="utf-8") == (
+        '{"presets": []}\n'
+    )
+    assert (config_dir / "StreamLabs" / "StreamLabsCommands.json").read_text(
+        encoding="utf-8"
+    ) == "{}\n"
+    assert (config_dir / "ServerConfig.txt").read_text(encoding="utf-8").splitlines() == [
+        "Name=Operator",
+        "ServerPort=9999",
+        "QueryPort=10000",
+    ]
+
+
+def test_sync_server_config_supports_current_linux_payload_directory(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+    template_dir = (
+        tmp_path
+        / "Server_Linux_x64_Data"
+        / "StreamingAssets"
+        / "Config_Template"
+    )
+    template_dir.mkdir(parents=True)
+    (template_dir / "TpPresets.json").write_text(
+        '{"presets": []}\n', encoding="utf-8"
+    )
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "Config" / "TpPresets.json").is_file()
+
+
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

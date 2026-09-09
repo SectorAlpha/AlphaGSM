@@ -4,13 +4,14 @@ import os
 
 import utils.steamcmd as steamcmd
 from server import ServerError
+from utils.settings import settings
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 302550
-steam_anonymous_login_possible = True
+steam_anonymous_login_possible = False
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -63,20 +64,59 @@ def configure(server, ask, port=None, dir=None, *, exe_name="acServer"):
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": True},
 )
-install.__doc__ = "Download the Assetto Corsa server files via SteamCMD."
+
+def get_provider_requirements(server):
+    """Declare the Steam account entitlement required to download app 302550."""
+
+    return [{
+        "provider": "steam",
+        "kind": "entitlement",
+        "keys": (),
+        "required_for": ("setup", "update"),
+        "support_category": "provider-license",
+        "summary": "authenticated SteamCMD access to Assetto Corsa server app 302550",
+        "actions": (
+            "Set username in [downloader.steamcmd] to an entitled Steam account and complete Steam Guard authentication",
+            "Use the shared SteamCMD password setting when required; do not store credentials in server datastore settings",
+        ),
+        "docs_slug": "acserver",
+    }]
 
 
-update = gamemodule_common.make_steamcmd_update_hook(
+def _validate_steam_auth(server, phase):
+    username = settings.user.getsection("downloader").getsection("steamcmd").get("username")
+    if str(username or "").strip() and str(username).strip().lower() != "anonymous":
+        return
+    gamemodule_common.validate_provider_requirements(
+        "acserver", server, phase=phase, requirements=get_provider_requirements(server),
+    )
+
+
+def install(server):
+    """Download the entitled server payload using the shared SteamCMD login."""
+
+    _validate_steam_auth(server, "setup")
+    _install(server)
+
+
+_update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    download_kwargs={"force_windows": True},
 )
-update.__doc__ = "Update the Assetto Corsa server files and optionally restart the server."
+
+def update(server, validate=False, restart=False):
+    """Validate Steam credentials before stopping and updating the server."""
+
+    _validate_steam_auth(server, "update")
+    _update(server, validate=validate, restart=restart)
 
 
 restart = gamemodule_common.make_restart_hook()

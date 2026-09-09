@@ -210,9 +210,16 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
     extra_env=_container_runtime_env,
 )
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
-    port_definitions=({"key": "port", "protocol": "udp"},),
-    extra_env=_container_runtime_env,
-    working_dir=CONTAINER_WORKING_DIR,
-)
+def get_container_spec(server):
+    """Keep the Wine data directory inside the mounted installation."""
+
+    spec = proton.get_container_spec(
+        server, get_start_command,
+        port_definitions=({"key": "port", "protocol": "udp"},),
+        extra_env=_container_runtime_env(server),
+        working_dir=CONTAINER_WORKING_DIR,
+    )
+    # Wine's Z: drive maps the container filesystem, not the manager's host.
+    path_index = spec["command"].index("-path") + 1
+    spec["command"][path_index] = "Z:" + proton.CONTAINER_SERVER_DIR.replace("/", "\\")
+    return spec

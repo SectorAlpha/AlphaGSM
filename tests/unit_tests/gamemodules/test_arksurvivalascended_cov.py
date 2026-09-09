@@ -19,8 +19,35 @@ with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMoc
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
-    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    with patch.object(mod.secrets, "token_urlsafe", return_value="unique-rcon-secret"):
+        mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data["adminpassword"] == "unique-rcon-secret"
+
+
+@pytest.mark.parametrize("legacy_password", [None, "", "alphagsm"])
+def test_prestart_replaces_missing_or_legacy_rcon_password(legacy_password, monkeypatch):
+    server = DummyServer("asa")
+    if legacy_password is not None:
+        server.data["adminpassword"] = legacy_password
+    monkeypatch.setattr(mod.secrets, "token_urlsafe", lambda _length: "new-secret")
+
+    mod.prestart(server)
+
+    assert server.data["adminpassword"] == "new-secret"
+    assert server.data.saved == 1
+
+
+def test_prestart_preserves_operator_rcon_password(monkeypatch):
+    server = DummyServer("asa")
+    server.data["adminpassword"] = "operator-secret"
+    generate = MagicMock(side_effect=AssertionError("must preserve operator secret"))
+    monkeypatch.setattr(mod.secrets, "token_urlsafe", generate)
+
+    mod.prestart(server)
+
+    assert server.data["adminpassword"] == "operator-secret"
+    assert server.data.saved == 0
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -34,6 +61,7 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
     server.data["map"] = "test"
     server.data["maxplayers"] = 27015
     server.data["queryport"] = 27015
+    server.data["rconport"] = 27020
     server.data["serverpassword"] = "test"
     server.data["sessionname"] = "test"
     mod.configure(server, ask=True)
@@ -110,7 +138,7 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cmd == [
         "ArkAscendedServer.exe",
         (
-            "test?listen?SessionName=test?QueryPort=27015?MaxPlayers=27015"
+            "test?listen?SessionName=test?MaxPlayers=27015?RCONEnabled=True?RCONPort=27020"
             "?ServerPassword=test?ServerAdminPassword=test"
         ),
         "-port=27015",
@@ -120,27 +148,48 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == str(exe_path.parent)
 
 
-def test_query_info_and_runtime_ports_use_udp_game_pair_and_a2s_query(monkeypatch):
+def test_query_info_and_runtime_ports_use_udp_game_pair_and_rcon(monkeypatch):
     server = DummyServer("asa")
-    server.data.update({"port": 7777, "queryport": 27015})
+    server.data.update({"port": 7777, "queryport": 27015, "rconport": 27020})
     monkeypatch.setattr(
         mod.runtime_module,
         "resolve_query_host",
         lambda current: "10.0.0.9",
     )
 
-    assert mod.get_query_address(server) == ("10.0.0.9", 27015, "a2s")
-    assert mod.get_info_address(server) == ("10.0.0.9", 27015, "a2s")
+    assert mod.get_query_address(server) == ("10.0.0.9", 27020, "source_rcon")
+    assert mod.get_info_address(server) == ("10.0.0.9", 27020, "source_rcon")
     assert mod.port_claim_definitions == (
         {"key": "port", "protocol": "udp"},
-        {"key": "port", "offset": 1, "protocol": "udp"},
-        {"key": "queryport", "protocol": "udp"},
+        {"key": "rconport", "default": 27020, "protocol": "tcp"},
     )
     assert mod.get_runtime_requirements(server)["ports"] == [
         {"host": 7777, "container": 7777, "protocol": "udp"},
-        {"host": 7778, "container": 7778, "protocol": "udp"},
-        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27020, "container": 27020, "protocol": "tcp"},
     ]
+
+
+def test_legacy_queryport_is_not_claimed_after_rcon_migration(monkeypatch):
+    from server.port_manager import collect_claim_set
+
+    server = DummyServer("asa")
+    server.module = mod
+    server.data.update(
+        {
+            "port": 7777,
+            "queryport": 27015,
+            "rconport": 27020,
+            "runtime": {"backend": "process"},
+        }
+    )
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda _server: "127.0.0.1")
+
+    claims = collect_claim_set(server)
+    ports = {endpoint.port for endpoint in claims.endpoints}
+
+    assert 7777 in ports
+    assert 27020 in ports
+    assert 27015 not in ports
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -152,6 +201,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
+    server.data["rconport"] = 27020
     server.data["serverpassword"] = "test"
     server.data["sessionname"] = "test"
     with pytest.raises(ServerError):
@@ -202,8 +252,8 @@ def test_get_container_spec_delegates_windows_executable_to_proton_runtime(tmp_p
     assert spec["command"] == [
         "./ArkAscendedServer.exe",
         (
-            "TheIsland_WP?listen?SessionName=AlphaGSM_asa?QueryPort=27015"
-            "?MaxPlayers=70?ServerAdminPassword=test"
+            "TheIsland_WP?listen?SessionName=AlphaGSM_asa?MaxPlayers=70"
+            "?RCONEnabled=True?RCONPort=27020?ServerAdminPassword=test"
         ),
         "-port=7777",
         "-server",
@@ -211,8 +261,7 @@ def test_get_container_spec_delegates_windows_executable_to_proton_runtime(tmp_p
     ]
     assert spec["ports"] == [
         {"host": 7777, "container": 7777, "protocol": "udp"},
-        {"host": 7778, "container": 7778, "protocol": "udp"},
-        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 27020, "container": 27020, "protocol": "tcp"},
     ]
     assert spec["env"]["ALPHAGSM_WINEPREFIX"] == (
         proton_module.CONTAINER_SERVER_DIR + "/.alphagsm-wineprefix"

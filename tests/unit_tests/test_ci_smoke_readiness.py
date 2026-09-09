@@ -16,11 +16,20 @@ SOURCE = ("bb2server", "bmdmserver", "ccserver", "counterstrike2", "cssserver",
           "nmrihserver", "pvkiiserver", "tf2")
 
 
-@pytest.mark.parametrize("module", GOLDSRC + SOURCE + ("argoserver", "lifeisfeudalserver"))
+@pytest.mark.parametrize("module", GOLDSRC + SOURCE + (
+    "argoserver", "lifeisfeudalserver", "groundbranchserver", "solserver", "pcarserver",
+    "notdserver", "noonesurvivedserver", "icarusserver", "soulmask", "codwawserver",
+    "arksurvivalascended",
+    ))
 @pytest.mark.parametrize("query_rc", [0, 1])
-def test_valve_readiness_requires_protocol_response(tmp_path, module, query_rc):
+def test_smoke_readiness_requires_protocol_response(tmp_path, module, query_rc):
     script = (REPO_ROOT / f"tests/smoke_tests/run_{module}.sh").read_text()
-    lifecycle = script[script.index('run_alphagsm "$SERVER_NAME" start'):]
+    start = (
+        'run_start_with_port_retry "$SERVER_NAME"'
+        if module == "arksurvivalascended"
+        else 'run_alphagsm "$SERVER_NAME" start'
+    )
+    lifecycle = script[script.index(start):]
     log = tmp_path / "server.log"
     log.write_text("Connection to Steam servers successful.\nVAC secure mode is activated.\n")
     commands = tmp_path / "commands"
@@ -28,6 +37,7 @@ def test_valve_readiness_requires_protocol_response(tmp_path, module, query_rc):
 SERVER_NAME=test
 START_TIMEOUT_SECONDS=1
 run_alphagsm() { echo "$*" >> "$COMMANDS"; }
+run_start_with_port_retry() { echo "$1 start" >> "$COMMANDS"; }
 wait_for_ready() { grep -Eq "${3:-ready|started|listening|Done}" "$1"; }
 wait_for_log_ready() { wait_for_ready "$@"; }
 wait_for_info_protocol() { echo "protocol $2" >> "$COMMANDS"; return "$QUERY_RC"; }
@@ -38,9 +48,15 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
                                      QUERY_RC=str(query_rc)), check=False)
     calls = commands.read_text().splitlines()
     assert (result.returncode == 0) == (query_rc == 0)
-    assert "protocol a2s" in calls
+    protocol = {
+        "solserver": "soldat",
+        "codwawserver": "quake",
+        "arksurvivalascended": "source_rcon",
+    }.get(module, "a2s")
+    protocol_call = f"protocol {protocol}"
+    assert protocol_call in calls
     if query_rc == 0:
-        assert calls.index("protocol a2s") < calls.index("test query") < calls.index("stop")
+        assert calls.index(protocol_call) < calls.index("test query") < calls.index("stop")
         assert "test info --json" in calls
 
 

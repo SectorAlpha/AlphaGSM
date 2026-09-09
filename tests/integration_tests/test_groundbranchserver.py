@@ -1,23 +1,24 @@
 """Integration test for groundbranchserver."""
 
 import os
+import sys
 
 import pytest
 
 from conftest import (
     alphagsm_env,
     default_runtime_backend,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     pick_free_tcp_port,
     require_command_for_runtime,
     resolve_runtime_image,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     run_setup_with_port_retry,
-    run_alphagsm,
     run_and_assert_ok,
     wait_for_info_protocol,
-    wait_for_tcp_closed,
+    wait_for_udp_closed,
     write_config,
 )
 
@@ -89,7 +90,7 @@ def test_groundbranchserver_lifecycle(tmp_path):
             # lane does not guarantee the screen log contract.
             print(f"[diagnostic] Ground Branch game log path: {game_log}")
 
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         run_and_assert_ok(env, server_name, "status")
 
@@ -114,6 +115,9 @@ def test_groundbranchserver_lifecycle(tmp_path):
             f"Expected reported query port {queryport}: {info_data!r}"
         )
     finally:
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
 
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)

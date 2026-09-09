@@ -2,11 +2,11 @@
 
 This guide covers the `conanexiles` module in AlphaGSM.
 
-Status: `PASSED` on Linux through the shared Docker `wine-proton` runtime.
+Status: enabled on native Linux; replacement CI validation is pending.
 
 ## Requirements
 
-- Docker if you want the validated Linux runtime path
+- Docker if you want the shared `steamcmd-linux` runtime path
 - SteamCMD access for app `443030` (anonymous download works)
 - Python packages from `requirements.txt`
 
@@ -51,15 +51,16 @@ Setup configures:
 - the main game port, default `7777/udp`
 - the dedicated query port, default `27015/udp`
 - the install directory
-- the shipped Windows dedicated payload, which AlphaGSM runs on Linux through the shared `wine-proton` runtime
+- the official native Linux dedicated-server payload
+- Conan's hardcoded pinger port at the game port plus one
 
 ## Config Files
 
 AlphaGSM manages the normal Conan Exiles server config layout under:
 
-- `<install_dir>/ConanSandbox/Saved/Config/WindowsServer/Engine.ini`
-- `<install_dir>/ConanSandbox/Saved/Config/WindowsServer/Game.ini`
-- `<install_dir>/ConanSandbox/Saved/Config/WindowsServer/ServerSettings.ini`
+- `<install_dir>/ConanSandbox/Saved/Config/LinuxServer/Engine.ini`
+- `<install_dir>/ConanSandbox/Saved/Config/LinuxServer/Game.ini`
+- `<install_dir>/ConanSandbox/Saved/Config/LinuxServer/ServerSettings.ini`
 
 Checked-in starter templates live under [docs/server-templates/conanexiles/](../server-templates/conanexiles/).
 
@@ -70,9 +71,15 @@ AlphaGSM keeps these values aligned automatically:
 - `servername` -> `Engine.ini` `[OnlineSubsystem] ServerName`
 - `maxplayers` -> `Game.ini` `[/Script/Engine.GameSession] MaxPlayers`
 
+When upgrading an existing Wine-based installation, AlphaGSM copies missing
+settings from the old `WindowsServer` directory and renames the legacy
+`Saved/Game.db` database to the lowercase filename expected by Linux. Existing
+native files always win.
+
 ## Runtime Contract
 
-- Preferred executable on Linux: `ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe`
+- Preferred executable: `ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping`
+- Container family: `steamcmd-linux`
 - Query surface: A2S on the managed `queryport`
 - Default map: `ConanSandbox`
 

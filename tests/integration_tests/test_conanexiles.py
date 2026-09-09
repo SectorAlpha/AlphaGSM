@@ -9,6 +9,7 @@ import pytest
 from conftest import (
     alphagsm_env,
     default_runtime_backend,
+    pick_free_tcp_port_group,
     pick_free_udp_port,
     require_command_for_runtime,
     resolve_runtime_image,
@@ -30,8 +31,10 @@ STOP_TIMEOUT = 90
 SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 module_name = "conanexiles"
-LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
-PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
+LOCAL_STEAMCMD_LINUX_IMAGE = "alphagsm-steamcmd-linux-runtime:local"
+PUBLISHED_STEAMCMD_LINUX_IMAGE = (
+    "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
+)
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)
@@ -51,9 +54,9 @@ def test_conanexiles_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itconan" + tmp_path.name.replace("_", "")[-8:])[:15]
     image = resolve_runtime_image(
-        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
-        LOCAL_WINE_PROTON_IMAGE,
-        PUBLISHED_WINE_PROTON_IMAGE,
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX",
+        LOCAL_STEAMCMD_LINUX_IMAGE,
+        PUBLISHED_STEAMCMD_LINUX_IMAGE,
     )
 
     write_config(
@@ -65,9 +68,9 @@ def test_conanexiles_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_udp_port()
+    port = pick_free_tcp_port_group(2)
     queryport = pick_free_udp_port()
-    while queryport == port:
+    while queryport in (port, port + 1):
         queryport = pick_free_udp_port()
 
     run_and_assert_ok(env, server_name, "create", module_name)

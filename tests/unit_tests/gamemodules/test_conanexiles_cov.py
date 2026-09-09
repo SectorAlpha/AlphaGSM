@@ -26,7 +26,22 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data["port"] == 7777
-    assert server.data["exe_name"] == "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
+    assert server.data["exe_name"] == (
+        "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
+
+
+def test_configure_migrates_obsolete_windows_executable(tmp_path):
+    server = DummyServer()
+    server.data["exe_name"] = (
+        "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
+    )
+
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+
+    assert server.data["exe_name"] == (
+        "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -53,10 +68,16 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
+    server.data["exe_name"] = (
+        "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
     server.data["Steam_AppID"] = 443030
     server.data["Steam_anonymous_login_possible"] = True
-    mod.install(server)
+    with patch.object(mod.steamcmd, "download") as download:
+        mod.install(server)
+
+    assert download.call_args.kwargs["force_platform"] == "linux"
+    assert "force_windows" not in download.call_args.kwargs
 
 
 def test_update_with_restart(tmp_path):
@@ -105,15 +126,47 @@ def test_sync_server_config(tmp_path):
 
     mod.sync_server_config(server)
 
-    engine_text = (tmp_path / "ConanSandbox" / "Saved" / "Config" / "WindowsServer" / "Engine.ini").read_text(encoding="utf-8")
-    game_text = (tmp_path / "ConanSandbox" / "Saved" / "Config" / "WindowsServer" / "Game.ini").read_text(encoding="utf-8")
-    server_settings_text = (tmp_path / "ConanSandbox" / "Saved" / "Config" / "WindowsServer" / "ServerSettings.ini").read_text(encoding="utf-8")
+    config_dir = tmp_path / "ConanSandbox" / "Saved" / "Config" / "LinuxServer"
+    engine_text = (config_dir / "Engine.ini").read_text(encoding="utf-8")
+    game_text = (config_dir / "Game.ini").read_text(encoding="utf-8")
+    server_settings_text = (config_dir / "ServerSettings.ini").read_text(
+        encoding="utf-8"
+    )
 
     assert "Port=7777" in engine_text
     assert "GameServerQueryPort=27015" in engine_text
     assert "ServerName=AlphaGSM Conan" in engine_text
     assert "MaxPlayers=24" in game_text
     assert "[ServerSettings]" in server_settings_text
+
+
+def test_sync_server_config_migrates_legacy_windows_files_and_database(tmp_path):
+    server = DummyServer("conan")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 7777,
+            "queryport": 27015,
+            "maxplayers": 24,
+            "servername": "AlphaGSM Conan",
+        }
+    )
+    saved_dir = tmp_path / "ConanSandbox" / "Saved"
+    windows_dir = saved_dir / "Config" / "WindowsServer"
+    windows_dir.mkdir(parents=True)
+    (windows_dir / "Engine.ini").write_text(
+        "[OnlineSubsystem]\nServerPassword=preserved\n", encoding="utf-8"
+    )
+    (saved_dir / "Game.db").write_text("world", encoding="utf-8")
+
+    mod.sync_server_config(server)
+
+    linux_dir = saved_dir / "Config" / "LinuxServer"
+    assert "ServerPassword=preserved" in (linux_dir / "Engine.ini").read_text(
+        encoding="utf-8"
+    )
+    assert (saved_dir / "game.db").read_text(encoding="utf-8") == "world"
+    assert not (saved_dir / "Game.db").exists()
 
 
 def test_sync_server_config_no_dir_is_noop():
@@ -125,21 +178,28 @@ def test_sync_server_config_no_dir_is_noop():
 def test_get_start_command_prefers_shipping_executable(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    exe = tmp_path / "ConanSandbox" / "Binaries" / "Win64" / "ConanSandboxServer-Win64-Shipping.exe"
+    exe = (
+        tmp_path
+        / "ConanSandbox"
+        / "Binaries"
+        / "Linux"
+        / "ConanSandboxServer-Linux-Shipping"
+    )
     exe.parent.mkdir(parents=True)
     exe.write_text("")
-    server.data["exe_name"] = "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe"
+    server.data["exe_name"] = (
+        "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
     server.data["map"] = "ConanSandbox"
     server.data["maxplayers"] = 16
     server.data["port"] = 7777
     server.data["queryport"] = 27015
-    with patch.object(mod, "IS_LINUX", False):
-        cmd, cwd = mod.get_start_command(server)
+    cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe",
+        "./ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping",
         "ConanSandbox",
         "-log",
-        "-nosound",
+        "-console",
         "-Port=7777",
         "-QueryPort=27015",
         "-MaxPlayers=16",
@@ -147,19 +207,99 @@ def test_get_start_command_prefers_shipping_executable(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_get_start_command_accepts_wrapper_fallback(tmp_path):
+def test_get_start_command_accepts_native_wrapper_fallback(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    exe = tmp_path / "ConanSandboxServer.exe"
+    exe = tmp_path / "ConanSandboxServer.sh"
     exe.write_text("")
-    server.data["exe_name"] = "ConanSandboxServer.exe"
+    server.data["exe_name"] = "ConanSandboxServer.sh"
     server.data["map"] = "ConanSandbox"
     server.data["maxplayers"] = 16
     server.data["port"] = 7777
     server.data["queryport"] = 27015
-    with patch.object(mod, "IS_LINUX", False):
-        cmd, _cwd = mod.get_start_command(server)
-    assert cmd[0] == "ConanSandboxServer.exe"
+    cmd, _cwd = mod.get_start_command(server)
+    assert cmd[0] == "./ConanSandboxServer.sh"
+
+
+def test_get_start_command_ignores_retained_legacy_windows_executable(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": (
+                "ConanSandbox/Binaries/Win64/"
+                "ConanSandboxServer-Win64-Shipping.exe"
+            ),
+            "map": "ConanSandbox",
+            "maxplayers": 16,
+            "port": 7777,
+            "queryport": 27015,
+        }
+    )
+    windows = tmp_path / server.data["exe_name"]
+    windows.parent.mkdir(parents=True)
+    windows.write_text("")
+    native = (
+        tmp_path
+        / "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
+    native.parent.mkdir(parents=True)
+    native.write_text("")
+
+    command, _cwd = mod.get_start_command(server)
+
+    assert command[0] == (
+        "./ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
+
+
+def test_port_claims_derive_pinger_from_current_or_overridden_game_port(tmp_path):
+    from server.port_manager import collect_claim_set
+
+    server = DummyServer("conan")
+    server.module = mod
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 19000,
+            "pingerport": 18001,
+            "queryport": 27015,
+            "runtime": {"backend": "process"},
+        }
+    )
+
+    claims = collect_claim_set(server)
+    overridden = collect_claim_set(server, overrides={"port": 20000})
+
+    assert 19001 in {endpoint.port for endpoint in claims.endpoints}
+    assert 18001 not in {endpoint.port for endpoint in claims.endpoints}
+    assert 20001 in {endpoint.port for endpoint in overridden.endpoints}
+    assert 19001 not in {endpoint.port for endpoint in overridden.endpoints}
+
+
+def test_runtime_contract_uses_native_steamcmd_linux_family(tmp_path):
+    server = DummyServer("conan")
+    server.data.update(
+        {"dir": str(tmp_path) + "/", "port": 7777, "queryport": 27015}
+    )
+    exe = (
+        tmp_path
+        / "ConanSandbox"
+        / "Binaries"
+        / "Linux"
+        / "ConanSandboxServer-Linux-Shipping"
+    )
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    server.data["exe_name"] = (
+        "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["family"] == "steamcmd-linux"
+    assert spec["command"][0].endswith("ConanSandboxServer-Linux-Shipping")
 
 
 def test_setting_schema_launch_formats():

@@ -444,6 +444,26 @@ def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
     ]
 
 
+@pytest.mark.parametrize(
+    "data, expected_ports",
+    [
+        ({}, [{"host": 27020, "container": 27020, "protocol": "tcp"}]),
+        ({"rconport": 28020}, [{"host": 28020, "container": 28020, "protocol": "tcp"}]),
+        ({"rconport": None}, []),
+    ],
+)
+def test_proton_port_definition_default_only_applies_when_key_is_absent(data, expected_ports):
+    server = DummyServer(data=data)
+
+    requirements = proton_module.get_runtime_requirements(
+        server,
+        port_definitions=({"key": "rconport", "default": 27020, "protocol": "tcp"},),
+    )
+
+    assert requirements.get("ports", []) == expected_ports
+    assert server.data == data
+
+
 def test_get_container_spec_recovers_when_host_runtime_wrapper_is_unavailable():
     server = DummyServer(
         data={

@@ -8,7 +8,7 @@ Native declarations remain separate from process launch requirements and the req
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | abfserver | - | DISABLED | no | no | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
 | accserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license | unknown | unknown | unknown |
-| acserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
+| acserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license | unknown | unknown | unknown |
 | ahl2server | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | ahlserver | - | ENABLED (BYO) | yes | no | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | alienarenaserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
@@ -65,7 +65,7 @@ Native declarations remain separate from process launch requirements and the req
 | coduoserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | codwawserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | colserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
-| conanexiles | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
+| conanexiles | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | counterstrike2 | cs2, cs2server | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | counterstrikeglobaloffensive | csgo, csgoserver | DISABLED | yes | no | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | craftopiaserver | ctserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |

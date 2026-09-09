@@ -75,6 +75,8 @@ alphagsm myonset backup
 - Default executable: `<install_dir>/start_linux.sh`
 - Config file: `<install_dir>/server_config.json`
 - AlphaGSM starts the server with `--config <install_dir>/server_config.json`
+- AlphaGSM adds the install root to `LD_LIBRARY_PATH` so the launcher can load
+  the bundled `libsteam_api.so`
 - AlphaGSM probes `query` and `info` over A2S on `port - 1`, following the upstream Valve server-query documentation reference
 - The generated config defaults to the documented `sandbox` package and a private `masterlist=false` profile
 

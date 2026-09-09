@@ -11,11 +11,11 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED   | 142      |
-| ENABLED (AUTH) | 47 |
+| PASSED | 141 |
+| ENABLED (AUTH) | 48 |
 | ENABLED (BYO) | 45 |
-| DISABLED | 3      |
-| SKIPPED  | 0      |
+| DISABLED | 3 |
+| SKIPPED | 0 |
 
 ## Environment Coverage
 
@@ -43,13 +43,45 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Conan Exiles now installs the official native Linux depot and runs through
+  the shared `steamcmd-linux` family. The previous Windows server reached
+  startup under Wine but crashed in `xaudio2_9.dll` even with `-nosound`.
+  Existing WindowsServer settings and the legacy save database migrate only
+  when native targets are absent. Replacement lifecycle validation is pending.
+- Onset now exposes its install root to the native loader so the bundled
+  `libsteam_api.so` resolves. Survive the Nights now copies required missing
+  files such as `TpPresets.json` from its shipped configuration templates while
+  preserving operator files. Nightingale's first bootstrap reached level and
+  navigation loading after the old five-minute deadline, so smoke validation
+  now allows ten minutes and retains application/runtime diagnostics. These
+  corrections await replacement CI lifecycle validation.
+- ARK: Survival Ascended now enables and publishes its TCP RCON service for
+  `query` and `info`. Its prior A2S timeout was a protocol mismatch: current ASA
+  uses EOS and documents the old query port as deprecated. Fresh and legacy
+  instances receive a private generated password before RCON is exposed, while
+  operator-defined credentials are preserved. Space Engineers now passes its
+  mounted container path to `-path` instead of a host-only path.
+  Both corrections await replacement CI lifecycle validation.
+- The Icarus, Night of the Dead, No One Survived and Soulmask smoke runners now
+  require native A2S replies; CODWAW requires its Quake status reply. Failed
+  runners retain application/runtime logs before cleanup. TCP readiness could
+  previously accept a Docker proxy even when the game had exited.
+- Further September 9 repairs correct Soldat's root-user exit, native player
+  limit/configuration and status query; publish Project CARS' query port; apply
+  Ground Branch's documented launch syntax; and provide Battle Cry of Freedom's
+  Wine display. Failed `send` commands now capture bounded runtime diagnostics.
+  BCoF's native port settings remain unverified. These changes have unit coverage
+  and await CI lifecycle validation; no support state is promoted.
+- Silica now synchronizes its native XML under an isolated persistent home,
+  retaining existing mode/map/admin settings and using the configured Steam
+  query port for readiness. The XML layout is backed by publisher guidance and
+  maintained server implementations; replacement CI must confirm the A2S reply.
 - September 9 launch repairs supply ASKA and Sunkenland with Xvfb and preserve
   Saleblazers' unattended `-headless` configuration launch. Runtime diagnostics
   now tolerate inaccessible Steam directories and show local listeners and
   allowlisted numeric port arguments. Replacement CI validation is pending.
-  Heat still exits in `AsyncConsoleReader.set_InputFormat` before startup;
-  Nightingale resets connections to its documented HTTP status port. Neither
-  failure has a verified runtime fix yet.
+  Heat still exits in `AsyncConsoleReader.set_InputFormat` before startup and
+  does not yet have a verified runtime fix.
 - Argo and Life is Feudal now use their native Steam query listeners and claim
   adjacent ports. Life is Feudal also receives its documented world argument,
   native world/database configuration, and managed database routing for Docker.
@@ -61,7 +93,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 - September 8 smoke/CI repairs correct skip reporting, Source smoke protocol
   readiness, artifact upload retry, Tower Unite/Warfork Steam library exposure,
-  Conan audio startup, Unturned/STN native ports, and Wine query protocols for
+  Unturned/STN native ports, and Wine query protocols for
   Icarus, NOTD, No One Survived and Soulmask. CODWAW now uses its native UDP
   status protocol. ETS2 tests require real exported client packages. These
   changes have local unit coverage and await replacement CI lifecycle results.
@@ -131,15 +163,14 @@ support-state tables and do not change the summary counts or record a new pass.
 | ns2server | Process and Docker lifecycle revalidation of the corrected install-root launcher, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 | ns2cserver | Process and Docker lifecycle revalidation of the corrected `ia32` working directory, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 
-## PASSED (143)
+## PASSED (141)
 
 | Test | Type |
 |------|------|
-| acserver | SteamCMD |
 | ahl2server | SteamCMD (Source) — PASSED; process and Docker lanes use the same runtime-resolved TCP game-port health contract. The current Linux payload does not answer A2S while empty and rejects the hibernation cvar, so integration validates the live TCP endpoint rather than claiming an unavailable A2S surface. |
 | argoserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31 on anonymous SteamCMD app `563930`; AlphaGSM launches the shipped `argoserver` binary inside the shared `steamcmd-linux` runtime, syncs `server.cfg` from the managed `servername`, and now validates `query`, `info`, and `info --json` through the native A2S listener on game port plus one. The runtime also claims and publishes both adjacent Steam UDP ports; this correction awaits replacement CI. The stale `server` beta override has been removed because current SteamCMD rejects that branch; public-branch revalidation is pending the replacement CI run. |
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
-| arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the stale generic-TCP/game-port assumption with exact runtime-resolved A2S on the distinct managed UDP `queryport`. The runtime contract claims and publishes game UDP, `game + 1` UDP, and query UDP; launch keeps the map separate from `-port=<game>` and orders optional `ServerPassword` before the final `ServerAdminPassword`. Replacement CI validation is pending; this does not record a new pass. |
+| arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the deprecated Steam query-port assumption with authenticated Source RCON `ListPlayers` on managed TCP `rconport`. The runtime contract claims and publishes game UDP and RCON TCP; launch enables RCON and keeps the admin password out of query output. Replacement CI validation is pending; this does not record a new pass. |
 | armarserver | SteamCMD |
 | avserver | SteamCMD |
 | archive_backed_installs | Archive |
@@ -152,7 +183,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ccserver | SteamCMD (Source) |
 | citadelserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; anonymous SteamCMD app `489650` and the native Linux payload remain supported, with the validated health contract now declared honestly as generic TCP on the managed game port because the configured queryport did not answer A2S in replacement CI validation. |
 | colserver | SteamCMD |
-| conanexiles | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh smoke, formal integration, and direct shipping-exe probe now all prove the old missing-Linux-binary row was stale. Anonymous SteamCMD app `443030` installs a real Windows dedicated payload, AlphaGSM launches `ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe` inside the shared `wine-proton` runtime, syncs `Engine.ini` / `Game.ini` under `ConanSandbox/Saved/Config/WindowsServer/`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the old fake native-Linux contract |
+| conanexiles | Docker runtime (SteamCMD Linux) — the official native Linux depot replaces the Wine path that crashed in `xaudio2_9.dll` during current CI. AlphaGSM launches `ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping`, syncs settings under `ConanSandbox/Saved/Config/LinuxServer/`, claims the hardcoded pinger at game port plus one, and retains A2S on the managed `queryport`. Replacement CI validation is pending; this does not record a new pass. |
 | counterstrike2 | SteamCMD (Source 2) — PASSED 2026-04-08 |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
@@ -279,7 +310,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (47)
+## ENABLED (AUTH) (48)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -313,6 +344,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | brickadiaserver | authenticated Steam/SteamCMD entitlement for Brickadia dedicated server app `3017590` |
 | interstellarriftserver | authenticated Steam/SteamCMD entitlement for Interstellar Rift dedicated server app `363360` |
 | twserver | authenticated Steam/SteamCMD entitlement for server app `380840` |
+| acserver | authenticated SteamCMD entitlement for Assetto Corsa dedicated server app `302550`; the Windows depot also contains the native Linux server |
 | accserver | authenticated Steam/SteamCMD entitlement for Assetto Corsa Competizione dedicated server app `1430110` |
 | boserver | authenticated Steam/SteamCMD entitlement for Blackwake: Overgrowth dedicated server app `416881` |
 | deadmatterserver | authenticated Steam/SteamCMD entitlement for Dead Matter dedicated server app `1110990` |
@@ -334,7 +366,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
 | zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |
 
-## ENABLED (BYO) (44)
+## ENABLED (BYO) (45)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive

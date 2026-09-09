@@ -72,7 +72,7 @@ def test_groundbranch_get_start_command_builds_expected_args(tmp_path, monkeypat
     cmd, cwd = groundbranchserver.get_start_command(server)
 
     assert cmd[0] == "GroundBranchServer-Win64-Shipping.exe"
-    assert "-QueryPort=27015" in cmd
+    assert "QueryPort=27015" in cmd
     assert cwd == server.data["dir"]
     assert wrap_calls == [True]
 

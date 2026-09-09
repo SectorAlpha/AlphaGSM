@@ -37,7 +37,7 @@ def test_battlecryoffreedom_get_start_command_builds_expected_args(tmp_path, mon
 
     cmd, cwd = battlecryoffreedomserver.get_start_command(server)
 
-    assert cmd[0] == "BCoF.exe"
+    assert cmd[-4] == "BCoF.exe"
     assert "-server" in cmd
     assert cwd == server.data["dir"]
 

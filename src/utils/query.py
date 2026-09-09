@@ -10,6 +10,8 @@ Provides query strategies:
 * :func:`bedrock_info` — Minecraft Bedrock RakNet unconnected ping.
 * :func:`slp_info` — Minecraft Server List Ping.
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
+* :func:`soldat_info` — classic Soldat file-server status query over TCP.
+* :func:`source_rcon_info` — authenticated Source RCON ``ListPlayers`` query.
 * :func:`http_json` — HTTP JSON endpoint query.
 * :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
@@ -17,12 +19,13 @@ Provides query strategies:
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
 ``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``,
-``"http_status"``, ``"udp"``, or ``"tcp"``.  When that hook
+``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"udp"``, or ``"tcp"``.  When that hook
 is absent the caller falls back to a TCP ping on the main port.
 """
 
 import bz2
 import json
+import re
 import socket
 import struct
 import time
@@ -30,7 +33,7 @@ import urllib.error
 import urllib.request
 
 __all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping",
-           "ts3_serverinfo", "http_json"]
+           "ts3_serverinfo", "soldat_info", "source_rcon_info", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
 _A2S_PAYLOAD = b"\x54Source Engine Query\x00"
@@ -54,6 +57,167 @@ _BEDROCK_CLIENT_GUID = 0x1337C0DE12345678
 
 class QueryError(OSError):
     """Raised when a query attempt fails or returns an unexpected result."""
+
+
+def soldat_info(host, port, timeout=5.0):
+    """Read classic Soldat's fixed gamestat file from its TCP file port.
+
+    Require the complete ENDFILES terminator plus player count and map fields.
+    Limit the entire exchange to one deadline and at most 64 KiB of response;
+    do not return player names or raw file contents.
+    """
+
+    deadline = time.monotonic() + timeout
+
+    def remaining_time():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise QueryError("Soldat query timed out")
+        return remaining
+
+    data = bytearray()
+    limit = 65536
+    try:
+        with socket.create_connection((host, int(port)), timeout=remaining_time()) as sock:
+            sock.settimeout(remaining_time())
+            sock.sendall(b"STARTFILES\r\nlogs/gamestat.txt\r\nENDFILES\r\n")
+            while not data.endswith(b"ENDFILES\r\n"):
+                if len(data) >= limit:
+                    raise QueryError("Soldat response exceeds 64 KiB limit")
+                sock.settimeout(remaining_time())
+                chunk = sock.recv(min(4096, limit - len(data)))
+                remaining_time()
+                if not chunk:
+                    raise QueryError("Soldat response ended before ENDFILES")
+                data.extend(chunk)
+                if len(data) > limit:
+                    raise QueryError("Soldat response exceeds 64 KiB limit")
+    except QueryError:
+        raise
+    except OSError as exc:
+        raise QueryError("Soldat query failed: " + str(exc)) from exc
+
+    # The file-transfer wrapper varies across classic versions. Validate the
+    # documented gamestat fields without assuming an additional opening header.
+    text = data.decode("utf-8", errors="replace")
+    players = re.search(r"(?m)^[ \t]*Players:[ \t]*([0-9]+)[ \t]*\r?$", text)
+    map_name = re.search(r"(?m)^[ \t]*Map:[ \t]*([^\r\n]+)", text)
+    if not players or not map_name or not map_name[1].strip():
+        raise QueryError("Soldat response is missing valid Players or Map fields")
+    try:
+        count = int(players[1])
+    except ValueError as exc:
+        raise QueryError("Soldat response has an invalid player count") from exc
+    result = {"players": count, "map": map_name[1].strip()}
+    gamemode = re.search(r"(?m)^[ \t]*Gamemode:[ \t]*([^\r\n]+)", text)
+    if gamemode and gamemode[1].strip():
+        result["gamemode"] = gamemode[1].strip()
+    return result
+
+
+def source_rcon_info(host, port, password, timeout=5.0):
+    """Authenticate to Source RCON and return a bounded player count.
+
+    ARK: Survival Ascended exposes RCON rather than the Steam A2S endpoint used
+    by Survival Evolved.  The response body is intentionally reduced to a
+    count so player names and the configured password never reach manager
+    output or diagnostic JSON. ASA omits the standard multipart sentinel, so
+    fragments are collected until a short quiet window inside one deadline.
+    """
+
+    if not password:
+        raise QueryError("Source RCON password is not configured")
+
+    deadline = time.monotonic() + timeout
+
+    def remaining_time():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise QueryError("Source RCON query timed out")
+        return remaining
+
+    def packet(request_id, packet_type, body):
+        encoded = body.encode("utf-8")
+        payload = struct.pack("<ii", request_id, packet_type) + encoded + b"\x00\x00"
+        return struct.pack("<i", len(payload)) + payload
+
+    def recv_exact(sock, length):
+        chunks = bytearray()
+        while len(chunks) < length:
+            sock.settimeout(remaining_time())
+            chunk = sock.recv(length - len(chunks))
+            remaining_time()
+            if not chunk:
+                raise QueryError("Source RCON response ended unexpectedly")
+            chunks.extend(chunk)
+        return bytes(chunks)
+
+    def recv_packet(sock, initial_header=b""):
+        header = initial_header + recv_exact(sock, 4 - len(initial_header))
+        size = struct.unpack("<i", header)[0]
+        if size < 10 or size > 1024 * 1024:
+            raise QueryError("Source RCON returned an invalid packet length")
+        payload = recv_exact(sock, size)
+        if not payload.endswith(b"\x00\x00"):
+            raise QueryError("Source RCON returned malformed packet framing")
+        request_id, packet_type = struct.unpack("<ii", payload[:8])
+        body = payload[8:-2].decode("utf-8", errors="replace")
+        return request_id, packet_type, body, size
+
+    try:
+        with socket.create_connection(
+            (host, int(port)), timeout=remaining_time()
+        ) as sock:
+            sock.settimeout(remaining_time())
+            sock.sendall(packet(1, 3, password))
+            authenticated = False
+            for _ in range(4):
+                request_id, packet_type, _body, _size = recv_packet(sock)
+                if request_id == -1:
+                    raise QueryError("Source RCON authentication failed")
+                if request_id == 1 and packet_type == 2:
+                    authenticated = True
+                    break
+            if not authenticated:
+                raise QueryError("Source RCON did not confirm authentication")
+
+            sock.settimeout(remaining_time())
+            sock.sendall(packet(2, 2, "ListPlayers"))
+            response_parts = []
+            response_size = 0
+            for _ in range(4096):
+                if response_parts:
+                    sock.settimeout(min(0.05, remaining_time()))
+                    try:
+                        initial_header = sock.recv(4)
+                    except socket.timeout:
+                        break
+                    remaining_time()
+                    if not initial_header:
+                        break
+                else:
+                    initial_header = b""
+                request_id, packet_type, response_body, packet_size = recv_packet(
+                    sock, initial_header
+                )
+                if request_id != 2 or packet_type != 0:
+                    raise QueryError("Source RCON returned an unexpected command response")
+                response_size += packet_size
+                if response_size > 1024 * 1024:
+                    raise QueryError("Source RCON response exceeds 1 MiB limit")
+                response_parts.append(response_body)
+            else:
+                raise QueryError("Source RCON response has too many packets")
+            body = "".join(response_parts)
+    except QueryError:
+        raise
+    except OSError as exc:
+        raise QueryError("Source RCON query failed: " + str(exc)) from exc
+
+    if "no players connected" in body.lower():
+        return {"players": 0}
+    players = len(re.findall(r"(?m)^\s*\d+\.\s+", body))
+    return {"players": players if players else None}
 
 
 def _recv_a2s_packet(sock):

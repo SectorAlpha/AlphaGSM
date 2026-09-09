@@ -15,6 +15,10 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 476400
 steam_anonymous_login_possible = True
+_PORT_DEFINITIONS = (
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "port", "protocol": "udp"},
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -28,7 +32,12 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 command_functions = {}
 max_stop_wait = 1
 setting_schema = {
-    **gamemodule_common.build_unreal_setting_schema(include_maxplayers=True),
+    **gamemodule_common.build_unreal_setting_schema(
+        include_maxplayers=True,
+        port_format="Port={value}",
+        queryport_format="QueryPort={value}",
+        maxplayers_format="?MaxPlayers={value}",
+    ),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
 
@@ -101,6 +110,8 @@ def get_start_command(server):
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
+    # GROUND BRANCH reads player limits from URL options before engine settings.
+    dynamic_args.sort(key=lambda argument: not argument.startswith("?"))
     cmd = [
             server.data["exe_name"],
             *dynamic_args,
@@ -157,11 +168,27 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+def get_query_address(server):
+    """Query the native Steam UDP listener on the configured query port."""
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+    return runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s"
+
+
+def get_info_address(server):
+    """Use the native Steam endpoint for server information."""
+
+    return get_query_address(server)
+
+
+def get_runtime_requirements(server):
+    """Declare GROUND BRANCH's UDP game and Steam query listeners."""
+
+    return proton.get_runtime_requirements(server, port_definitions=_PORT_DEFINITIONS)
+
+
+def get_container_spec(server):
+    """Build the Wine/Proton runtime spec with the native UDP listeners."""
+
+    return proton.get_container_spec(
+        server, get_start_command, port_definitions=_PORT_DEFINITIONS,
+    )

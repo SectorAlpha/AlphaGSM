@@ -66,6 +66,8 @@ proves:
 - `NWXServer.sh -port=<port> -statusPort=<queryport>`
 - an HTTP listener bound to `0.0.0.0` for container reachability
 - `query`, `info`, and `info --json` through JSON `/status` on `queryport`
+- smoke validation allows ten minutes for first-world generation and navigation
+  data before requiring the HTTP status to report ready
 
 ## Useful Commands
 
@@ -79,7 +81,8 @@ alphagsm mynighting backup
 - Module name: `nightingale`
 - Default port: 7777
 - Default status/query port: 7778
-- The updated HTTP status contract is pending replacement GitHub CI validation.
+- The updated HTTP status contract and first-start timeout are pending replacement
+  GitHub CI validation.
 
 ## Developer Notes
 

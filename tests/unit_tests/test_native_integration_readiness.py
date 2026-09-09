@@ -11,6 +11,10 @@ import pytest
 
 
 CASES = (
+    ("pcarserver", "a2s", 27016, None),
+    ("silicaserver", "a2s", 27016, None),
+    ("solserver", "soldat", 27025, None),
+    ("groundbranchserver", "a2s", 27016, None),
     ("argoserver", "a2s", 27016, None),
     ("lifeisfeudalserver", "a2s", 27017, None),
     ("q2server", "quake2", 27015, b"\xff\xff\xff\xffstatus\n"),
@@ -18,7 +22,7 @@ CASES = (
     ("unturned", "a2s", 27015, None),
     ("pixarkserver", "a2s", 27016, None),
     ("kf2server", "a2s", 28015, None),
-    ("conanexiles", "a2s", 28016, None),
+    ("conanexiles", "a2s", 28015, None),
     ("codwawserver", "quake", 27015, b"\xff\xff\xff\xffgetstatus\n"),
     ("icarusserver", "a2s", 28015, None),
     ("notdserver", "a2s", 28015, None),
@@ -104,11 +108,13 @@ def lifecycle(request, monkeypatch, tmp_path):
                             raising=False)
     if name == "lifeisfeudalserver":
         monkeypatch.setattr(module, "wait_for_tcp_closed", lambda *_a: calls.append("db-closed"))
+    if name == "solserver":
+        monkeypatch.setattr(module, "wait_for_tcp_closed", closed)
     return module, helpers, calls, run
 
 
 @pytest.mark.parametrize("backend", ["process", "docker"])
-def test_lifecycle_uses_native_readiness_and_matching_udp_shutdown(lifecycle, tmp_path, monkeypatch, backend):
+def test_lifecycle_uses_native_readiness_and_matching_shutdown(lifecycle, tmp_path, monkeypatch, backend):
     module, _helpers, calls, _run = lifecycle
     monkeypatch.setenv("ALPHAGSM_TEST_RUNTIME_BACKEND", backend)
     monkeypatch.setattr(module, "runtime_backend", backend, raising=False)

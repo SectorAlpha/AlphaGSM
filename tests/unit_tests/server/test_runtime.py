@@ -3572,3 +3572,12 @@ def test_container_runtime_kill_stops_then_removes_container(monkeypatch):
         ["docker", "stop", "--time", "10", "alphagsm-alpha"],
         ["docker", "rm", "-f", "alphagsm-alpha"],
     ]
+
+
+@pytest.mark.parametrize("data, expected", [({}, 8766), ({"steamport": 28766}, 28766), ({"steamport": None}, None)])
+def test_build_port_specs_optional_default_only_for_absent_key(data, expected):
+    server = DummyServer(data=data.copy())
+    ports = runtime_module.build_port_specs(server, ({"key": "steamport", "default": 8766, "protocol": "udp"},))
+    assert ports == ([] if expected is None else [{"host": expected, "container": expected, "protocol": "udp"}])
+    assert server.data == data
+    assert runtime_module.build_port_specs(DummyServer(data={}), ({"key": "steamport", "protocol": "udp"},)) == []

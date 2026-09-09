@@ -66,6 +66,8 @@ def test_get_start_command_uses_config_flag_and_query_port(tmp_path):
     cmd, cwd = mod.get_start_command(server)
 
     assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=.",
         "./start_linux.sh",
         "--config",
         str(tmp_path / "server_config.json"),
@@ -84,7 +86,13 @@ def test_get_start_command_uses_relative_config_for_docker(tmp_path):
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd == ["./start_linux.sh", "--config", "server_config.json"]
+    assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=.",
+        "./start_linux.sh",
+        "--config",
+        "server_config.json",
+    ]
     assert cwd == str(tmp_path) + "/"
 
 
@@ -100,7 +108,13 @@ def test_get_start_command_prefers_resolved_nested_launcher_for_docker(tmp_path)
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd == ["./start_linux.sh", "--config", "../server_config.json"]
+    assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=..",
+        "./start_linux.sh",
+        "--config",
+        "../server_config.json",
+    ]
     assert cwd == str(nested_dir)
 
 

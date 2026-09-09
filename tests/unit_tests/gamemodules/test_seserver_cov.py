@@ -244,3 +244,18 @@ def test_container_spec_uses_dedicated_working_dir(tmp_path):
     server.data["port"] = 27016
     spec = mod.get_container_spec(server)
     assert spec["working_dir"].endswith("/DedicatedServer64")
+
+
+def test_container_data_path_uses_mounted_install_while_process_keeps_host_path(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update(dir=str(tmp_path), exe_name="DedicatedServer64/SpaceEngineersDedicated.exe", port=27016)
+    exe = tmp_path / server.data["exe_name"]
+    exe.parent.mkdir()
+    exe.touch()
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod.proton, "wrap_command", lambda cmd, **kwargs: list(cmd))
+    process_command, _cwd = mod.get_start_command(server)
+    spec = mod.get_container_spec(server)
+    assert process_command[process_command.index("-path") + 1] == "Z:" + str(tmp_path).replace("/", "\\")
+    assert spec["command"][spec["command"].index("-path") + 1] == "Z:\\srv\\server"
+    assert any(mount["target"] == "/srv/server" for mount in spec["mounts"])

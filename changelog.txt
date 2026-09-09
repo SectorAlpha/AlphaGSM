@@ -8,6 +8,35 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- Conan Exiles: replace the crashing Wine/XAudio lane with the official native
+  Linux Steam depot and shared `steamcmd-linux` runtime. Migrate missing legacy
+  WindowsServer settings and `Game.db`, and claim the hardcoded pinger port.
+- Onset: expose the install root through `LD_LIBRARY_PATH` so the native server
+  can load its bundled Steam API library before startup.
+- Survive the Nights: seed missing native configuration files from the shipped
+  template tree while preserving existing operator edits.
+- Nightingale: allow ten minutes for its first-world bootstrap and retain game
+  and runtime logs when the HTTP readiness check fails.
+- ARK: Survival Ascended: replace its deprecated A2S query-port check with an
+  authenticated, bounded Source RCON player query and publish the managed TCP
+  RCON port. Generate private per-instance credentials before enabling RCON.
+- Space Engineers: map its Docker data/config path to the mounted server tree.
+- Assetto Corsa: require an entitled Steam login and download the dedicated-server
+  depot containing its Linux executable; report missing credentials as ENABLED (AUTH).
+- Smoke tests: use native query readiness for Icarus, Night of the Dead,
+  No One Survived, Soulmask and CODWAW, and capture application logs on failure.
+- Soldat: run Docker servers as the invoking user, apply native INI settings
+  and the -l player-limit flag, and query bounded gamestat replies on game + 10.
+- Project CARS: publish and claim its Steam query and authentication ports;
+  preserve the native authentication default for older server records.
+- Silica: synchronize native ServerSettings.xml in an isolated persistent home,
+  preserving existing game-mode settings and exposing the configured Steam query.
+- Port ownership: include Argo and Life is Feudal's adjacent process listeners.
+- Ground Branch: use documented Port/QueryPort and ?MaxPlayers launch syntax;
+  smoke and integration checks require native A2S replies on the query port.
+- Battle Cry of Freedom: provide a virtual display during Wine initialization.
+- CI diagnostics: capture runtime evidence when a send command fails immediately
+  after launch, preserving the original error.
 - CI: stop superseded integration recheck matrices on cancellation so the next
   commit can start validation without waiting for obsolete game launches.
 - Wine launch: enable Xvfb for ASKA and Sunkenland, and retain Saleblazers'

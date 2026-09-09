@@ -245,6 +245,7 @@ def get_start_command(server):
 
     _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     sync_server_config(server)
+    library_dir = os.path.relpath(server.data["dir"], working_dir).replace("\\", "/")
     config_path = _config_path(server)
     if server.data.get("runtime") == "docker":
         config_path = os.path.relpath(config_path, working_dir).replace("\\", "/")
@@ -252,6 +253,8 @@ def get_start_command(server):
             config_path = "./" + config_path
     return (
         [
+            "env",
+            "LD_LIBRARY_PATH=" + library_dir,
             launcher,
             "--config",
             config_path,

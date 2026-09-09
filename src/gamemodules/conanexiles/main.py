@@ -2,12 +2,11 @@
 
 import configparser
 import os
+import shutil
 
-import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
 from server.settable_keys import SettingSpec
-from utils.platform_info import IS_LINUX
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
@@ -15,7 +14,14 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 443030
 steam_anonymous_login_possible = True
+NATIVE_EXECUTABLE = (
+    "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
+)
 DEFAULT_EXECUTABLES = (
+    NATIVE_EXECUTABLE,
+    "ConanSandboxServer.sh",
+)
+LEGACY_WINDOWS_EXECUTABLES = (
     "ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe",
     "ConanSandboxServer.exe",
 )
@@ -67,27 +73,13 @@ setting_schema = {
 }
 
 
-def _container_runtime_env(_server):
-    """Return Docker runtime env for the shared wine-proton entrypoint."""
-
-    return {
-        "ALPHAGSM_XVFB": "1",
-        "ALPHAGSM_XVFB_DISPLAY": ":99",
-        "ALPHAGSM_XVFB_SERVER_ARGS": "-screen 0 1024x768x24 -nolisten tcp",
-        "SDL_VIDEODRIVER": "x11",
-        "SDL_AUDIODRIVER": "dummy",
-        "WINEDLLOVERRIDES": "",
-        "LIBGL_ALWAYS_SOFTWARE": "1",
-    }
-
-
 def configure(
     server,
     ask,
     port=None,
     dir=None,
     *,
-    exe_name="ConanSandbox/Binaries/Win64/ConanSandboxServer-Win64-Shipping.exe",
+    exe_name=NATIVE_EXECUTABLE,
 ):
     """Collect and store configuration values for a Conan Exiles server."""
 
@@ -123,16 +115,19 @@ def configure(
         dir,
         prompt="Where would you like to install the Conan Exiles server:",
     )
-    gamemodule_common.configure_executable(server, exe_name=exe_name)
+    if server.data.get("exe_name") in LEGACY_WINDOWS_EXECUTABLES:
+        server.data["exe_name"] = exe_name
+    else:
+        gamemodule_common.configure_executable(server, exe_name=exe_name)
     return gamemodule_common.finalize_configure(server)
 
 
 def _resolve_executable_name(server):
-    """Return the real dedicated executable from the installed Windows payload."""
+    """Return the real executable from the installed native Linux payload."""
 
     configured = server.data.get("exe_name")
     candidates = []
-    if configured:
+    if configured and configured not in LEGACY_WINDOWS_EXECUTABLES:
         candidates.append(configured)
     candidates.extend(name for name in DEFAULT_EXECUTABLES if name not in candidates)
 
@@ -143,7 +138,33 @@ def _resolve_executable_name(server):
 
 
 def _settings_dir(server):
-    return os.path.join(server.data["dir"], "ConanSandbox", "Saved", "Config", "WindowsServer")
+    return os.path.join(server.data["dir"], "ConanSandbox", "Saved", "Config", "LinuxServer")
+
+
+def _migrate_native_layout(server):
+    """Preserve legacy Wine settings and saves when selecting the native payload."""
+
+    saved_dir = os.path.join(server.data["dir"], "ConanSandbox", "Saved")
+    legacy_settings_dir = os.path.join(saved_dir, "Config", "WindowsServer")
+    settings_dir = _settings_dir(server)
+    if os.path.isdir(legacy_settings_dir):
+        os.makedirs(settings_dir, exist_ok=True)
+        for filename in ("Engine.ini", "Game.ini", "ServerSettings.ini"):
+            source = os.path.join(legacy_settings_dir, filename)
+            destination = os.path.join(settings_dir, filename)
+            if os.path.isfile(source) and not os.path.exists(destination):
+                shutil.copy2(source, destination)
+
+    legacy_database = os.path.join(saved_dir, "Game.db")
+    native_database = os.path.join(saved_dir, "game.db")
+    if os.path.isfile(legacy_database) and not os.path.exists(native_database):
+        os.replace(legacy_database, native_database)
+
+    if server.data.get("exe_name") in LEGACY_WINDOWS_EXECUTABLES:
+        server.data["exe_name"] = NATIVE_EXECUTABLE
+        save = getattr(server.data, "save", None)
+        if callable(save):
+            save()
 
 
 def _engine_ini_path(server):
@@ -188,6 +209,7 @@ def sync_server_config(server):
     if not server_dir:
         return
 
+    _migrate_native_layout(server)
     settings_dir = _settings_dir(server)
     os.makedirs(settings_dir, exist_ok=True)
 
@@ -236,7 +258,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    download_kwargs={"force_windows": IS_LINUX},
+    download_kwargs={"force_platform": "linux"},
     sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the Conan Exiles server files via SteamCMD."
@@ -246,7 +268,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
-    download_kwargs={"force_windows": IS_LINUX},
+    download_kwargs={"force_platform": "linux"},
     sync_server_config=sync_server_config,
 )
 update.__doc__ = "Update the Conan Exiles server files and optionally restart the server."
@@ -278,24 +300,18 @@ def get_start_command(server):
     """Build the command used to launch a Conan Exiles dedicated server."""
 
     executable = _resolve_executable_name(server)
-    cmd = [executable]
+    cmd = ["./" + executable]
     if server.data.get("map"):
         cmd.append(str(server.data["map"]))
     cmd.extend(
         [
             "-log",
-            "-nosound",
+            "-console",
             "-Port={}".format(server.data.get("port", 7777)),
             "-QueryPort={}".format(server.data.get("queryport", 27015)),
             "-MaxPlayers={}".format(server.data.get("maxplayers", 40)),
         ]
     )
-    if IS_LINUX:
-        cmd = proton.wrap_command(
-            cmd,
-            wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
-        )
     return cmd, server.data["dir"]
 
 
@@ -335,19 +351,32 @@ def checkvalue(server, key, *value):
     )
 
 
-get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-    port_definitions=(
-        {"key": "queryport", "protocol": "udp"},
-        {"key": "port", "protocol": "udp"},
-    ),
-    extra_env=_container_runtime_env,
+_PORT_DEFINITIONS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "queryport", "protocol": "udp"},
 )
+port_claim_definitions = _PORT_DEFINITIONS
+ignored_port_keys = ("pingerport",)
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
-    port_definitions=(
-        {"key": "queryport", "protocol": "udp"},
-        {"key": "port", "protocol": "udp"},
-    ),
-    extra_env=_container_runtime_env,
-)
+
+def get_runtime_requirements(server):
+    """Return the native Linux server's runtime and complete UDP port set."""
+
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=_PORT_DEFINITIONS,
+    )
+
+
+def get_container_spec(server):
+    """Build the native Linux container launch specification."""
+
+    return runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
+        get_start_command=get_start_command,
+        port_definitions=_PORT_DEFINITIONS,
+        stdin_open=True,
+    )

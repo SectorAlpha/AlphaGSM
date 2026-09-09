@@ -53,6 +53,8 @@ Setup configures:
 - a separate Steam query port (game port + 1 unless explicitly set)
 - the install directory
 - SteamCMD downloads the server files
+- AlphaGSM copies missing files from the server's shipped `Config_Template`
+  tree into `Config` and preserves files already edited by the operator
 
 ## Useful Commands
 
@@ -83,6 +85,8 @@ alphagsm mystnserve set port 9999
 - **Config file**: `Config/ServerConfig.txt`
 - **Template**: See [server-templates/stnserver/](../server-templates/stnserver/) if available
 - **Schema-backed sync**: AlphaGSM keeps `ServerPort=` aligned with `set port` and `QueryPort=` aligned with `set queryport`
+- **First setup**: required files such as `TpPresets.json`, user permissions,
+  and StreamLabs defaults are seeded from the installed server payload
 
 ### Maps and Mods
 

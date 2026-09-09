@@ -59,6 +59,10 @@ alphagsm mybattlecr backup
 
 ## Notes
 
+- Linux process launches require `xvfb-run` during Wine initialization; the
+  shared Wine/Proton Docker image supplies the matching virtual display.
+  This correction awaits CI. Native port configuration still needs verification
+  against the shipped `ServerConfiguration.ini` and launcher.
 - Module name: `battlecryoffreedomserver`
 - Default port: 8263
 

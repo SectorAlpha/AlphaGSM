@@ -52,7 +52,7 @@ def test_solserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = solserver.get_start_command(server)
 
-    assert cmd == ["./soldatserver", "-p", "23073", "-maxplayers", "16"]
+    assert cmd == ["./soldatserver", "-c", "soldat.ini", "-p", "23073", "-l", "16"]
     assert cwd == server.data["dir"]
 
 
