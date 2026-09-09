@@ -79,7 +79,7 @@ def install(server, *, eula=False):
     server.data.setdefault("mod_cache_dirname", "minecraft-velocity")
     server.data.setdefault("mod_label", "Velocity")
     install_downloaded_jar(server)
-    proxy_base.install(server)
+    proxy_base.install(server, configure_listener=False)
     # Velocity uses velocity.toml instead of config.yml - update its bind address.
     server_dir = server.data.get("dir")
     if not server_dir:

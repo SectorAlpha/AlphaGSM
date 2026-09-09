@@ -53,6 +53,10 @@ Setup configures:
 - the game port (default 25565)
 - the install directory
 
+On first setup, AlphaGSM starts Velocity briefly to generate `velocity.toml`
+and then writes the selected port to its `bind` setting. It does not create or
+require BungeeCord's `config.yml`.
+
 ## Useful Commands
 
 ```bash
@@ -92,7 +96,7 @@ alphagsm myvelocity mod cleanup
 
 - **Config file**: `velocity.toml`
 - **Key settings** (in `velocity.toml`):
-  - `server-port` — Game port (default 25565)
+  - `bind` — Listen address and game port (default 25565)
   - `motd` — Message of the day
   - `max-players` — Maximum players
   - `level-seed` — World generation seed

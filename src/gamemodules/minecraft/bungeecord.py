@@ -172,7 +172,7 @@ def configure(
     return (), {}
 
 
-def install(server, *, eula=False):
+def install(server, *, eula=False, configure_listener=True):
     """Install or validate the Bungeecord server files for this server."""
     if not os.path.isdir(server.data["dir"]):
         os.makedirs(server.data["dir"])
@@ -185,6 +185,18 @@ def install(server, *, eula=False):
                 mcjar
             )
         )
+    if configure_listener:
+        _configure_bungee_listener(server)
+    ensure_mod_state(server)
+    if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
+        apply_configured_mods(server)
+    else:
+        server.data.save()
+
+
+def _configure_bungee_listener(server):
+    """Generate and update the BungeeCord-family listener configuration."""
+
     config_file = os.path.join(server.data["dir"], "config.yml")
     if _read_usable_proxy_config(config_file) is None:
         javapath = server.data.get("javapath", "java")
@@ -220,11 +232,6 @@ def install(server, *, eula=False):
             "Proxy did not generate a usable config.yml with a listener host"
         )
     _update_bungee_host_port(config_file, server.data.get("port", 25565))
-    ensure_mod_state(server)
-    if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
-        apply_configured_mods(server)
-    else:
-        server.data.save()
 
 
 def _read_usable_proxy_config(config_path):

@@ -166,7 +166,9 @@ def test_paper_and_proxy_installs_delegate_to_shared_download_helper(monkeypatch
     monkeypatch.setattr(
         velocity.proxy_base,
         "install",
-        lambda server_obj: calls.append(("install", server_obj.name)),
+        lambda server_obj, **kwargs: calls.append(
+            ("install", server_obj.name, kwargs)
+        ),
     )
     monkeypatch.setattr(
         waterfall,
@@ -179,5 +181,45 @@ def test_paper_and_proxy_installs_delegate_to_shared_download_helper(monkeypatch
     waterfall.install(DummyServer("waterfall"))
 
     assert ("install", "paper", True) in calls
-    assert ("install", "velocity") in calls
-    assert ("install", "waterfall") in calls
+    assert ("install", "velocity", {"configure_listener": False}) in calls
+    assert ("install", "waterfall", {}) in calls
+
+
+def test_velocity_install_does_not_require_bungeecord_config(tmp_path, monkeypatch):
+    server = DummyServer("velocity")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "velocity.jar",
+            "download_name": "velocity.jar",
+            "url": "https://example.invalid/velocity.jar",
+            "current_url": "https://example.invalid/velocity.jar",
+            "port": 31234,
+        }
+    )
+    (tmp_path / "velocity.jar").write_text("", encoding="utf-8")
+
+    class FakeProc:
+        def __init__(self, *args, **kwargs):
+            (tmp_path / "velocity.toml").write_text(
+                'bind = "0.0.0.0:25577"\n', encoding="utf-8"
+            )
+
+        def poll(self):
+            return None
+
+        def terminate(self):
+            return None
+
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(velocity.sp, "Popen", FakeProc)
+    monkeypatch.setattr(velocity.proxy_base, "_CONFIG_GENERATION_TIMEOUT", 0)
+
+    velocity.install(server)
+
+    assert not (tmp_path / "config.yml").exists()
+    assert (tmp_path / "velocity.toml").read_text(encoding="utf-8") == (
+        'bind = "0.0.0.0:31234"\n'
+    )
