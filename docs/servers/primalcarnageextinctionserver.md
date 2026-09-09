@@ -10,7 +10,7 @@ contract feeding A2S `query` / `info` on the managed `queryport`.
 
 ## Requirements
 
-- `screen`
+- `screen` and `xvfb-run`
 - Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
@@ -85,6 +85,8 @@ AlphaGSM now launches the dedicated binary as `PrimalCarnageServer.exe
 PC-Docks?...?bIsDedicated=true -seekfreeloadingserver -log` and still wraps it
 with `xvfb-run` on Linux. Focused validation also kept the claimed-port retry
 path for the default `queryport` conflict on `27015`.
+The process wrapper explicitly enables Wine's X11 driver inside that virtual
+display, including when the parent environment disables it.
 
 With the corrected argv, the server now writes `PrimalCarnageGame/Logs/Launch.log`,
 loads `PC-Docks`, binds the UDP game/query ports, answers A2S on `queryport`,

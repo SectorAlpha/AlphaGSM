@@ -11,7 +11,7 @@ GitHub Actions run is green.
 
 ## Requirements
 
-- `screen`
+- `screen` and `xvfb-run`
 - Wine or Proton-GE on Linux hosts
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
@@ -91,7 +91,8 @@ confirming the helper listener. On Linux hosts AlphaGSM launches Saleblazers
 through `xvfb-run` with SDL `x11` video, dummy audio, software GL
 (`LIBGL_ALWAYS_SOFTWARE=1`), and the game's `-headless` option to load the
 configured lobby unattended, without Unity's `-batchmode` or `-nographics`
-flags. The batch-mode window path fails before the
+flags. The wrapper explicitly re-enables Wine's X11 driver so an inherited
+headless environment cannot disable the virtual display. The batch-mode window path fails before the
 dedicated listener is created under Wine/Proton. AlphaGSM always starts from
 the upstream-required `Default` executable directory and passes the root-owned
 config as `-config ../DedicatedServerConfig.json`, so process and Docker

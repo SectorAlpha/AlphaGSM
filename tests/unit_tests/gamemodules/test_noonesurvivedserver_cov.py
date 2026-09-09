@@ -134,6 +134,39 @@ def test_noonesurvived_runtime_metadata_enables_xvfb_for_docker(tmp_path):
     assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
+def test_noonesurvived_linux_process_launch_uses_xvfb(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda _name: "/usr/bin/xvfb-run")
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda command, **_kwargs: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *command,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: [
+            cmd[0],
+            *(f"{key}={value}" for key, value in env.items()),
+            *cmd[1:],
+        ],
+    )
+
+    command = mod._wrap_linux_command(["WRSHServer.exe", "-server"])
+
+    assert command[:2] == ["xvfb-run", "-a"]
+    assert "DISPLAY=" not in command
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in command
+    assert "WINEDLLOVERRIDES=" in command
+    assert "SDL_VIDEODRIVER=x11" in command
+    assert "SDL_AUDIODRIVER=dummy" in command
+
+
 @pytest.mark.parametrize(
     "is_linux,expected",
     [

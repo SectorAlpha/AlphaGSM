@@ -9,7 +9,7 @@ This guide covers the `medievalengineersserver` module in AlphaGSM.
 - Docker for the validated Linux runtime path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- Proton compatibility runtime on Linux; bare Wine is not sufficient for the current dedicated server build
+- Proton compatibility runtime and `xvfb-run` on Linux; bare Wine is not sufficient for the current dedicated server build
 
 ## Quick Start
 
@@ -76,7 +76,7 @@ alphagsm mymedieval backup
 
 - **Config files**: `instance-data/MedievalEngineers-Dedicated.cfg`
 - **Template**: See [server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg](../server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg)
-- **Current status**: Supported on the validated Docker `wine-proton` Linux lane. AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, launches `DedicatedServer64/MedievalEngineersDedicated.exe` through the shared Wine/Proton runtime, and the current health surface is generic `tcp` on the managed main port.
+- **Current status**: Supported on the validated Docker `wine-proton` Linux lane. AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, launches `DedicatedServer64/MedievalEngineersDedicated.exe` through the shared Wine/Proton runtime, and the current health surface is generic `tcp` on the managed main port. Host process launches use Xvfb and explicitly enable Wine's X11 driver.
 
 ### Maps and Mods
 

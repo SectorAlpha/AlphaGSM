@@ -7,7 +7,7 @@ Status: PASSED on 2026-05-29
 ## Requirements
 
 - Docker recommended on Linux: branch-local or published `alphagsm-wine-proton-runtime`
-- Host/process fallback: `screen` plus a working Wine/Proton install
+- Host/process fallback: `screen`, `xvfb-run`, and a working Wine/Proton install
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -67,6 +67,8 @@ alphagsm mynoonesur backup
 - Current supported validation lane on Linux: Docker-backed `wine-proton`
 - On Linux Wine/Proton, `query`, `info`, and `info --json` use the validated TCP
   listener on the managed game port; native Windows keeps A2S on `queryport`.
+- Linux process launches use a 24-bit Xvfb display and explicitly enable
+  Wine's X11 driver.
 
 ## Developer Notes
 

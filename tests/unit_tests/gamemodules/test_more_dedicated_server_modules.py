@@ -48,6 +48,7 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
             "displayname": "AlphaGSM aska",
             "maxplayers": 4,
             "password": "",
+            "authenticationtoken": "test-gslt",
         }
     )
 
@@ -60,18 +61,8 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
         "AskaServer.exe",
         "-batchmode",
         "-nographics",
-        "-logFile",
-        "./server.log",
-        "-Port",
-        "27015",
-        "-QueryPort",
-        "27016",
-        "-ServerName",
-        "aska",
-        "-DisplayName",
-        "AlphaGSM aska",
-        "-MaxPlayers",
-        "4",
+        "-propertiesPath",
+        "server properties.txt",
     ]
     assert cwd == server.data["dir"]
     assert wrap_calls == [True]
@@ -102,6 +93,7 @@ def test_askaserver_runtime_requirements_use_wine_proton_family(tmp_path, monkey
             "displayname": "AlphaGSM aska",
             "maxplayers": 4,
             "password": "",
+            "authenticationtoken": "test-gslt",
         }
     )
 

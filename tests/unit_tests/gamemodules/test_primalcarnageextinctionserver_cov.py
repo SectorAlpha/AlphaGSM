@@ -139,6 +139,15 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
             *cmd,
         ],
     )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: [
+            cmd[0],
+            *(f"{key}={value}" for key, value in env.items()),
+            *cmd[1:],
+        ],
+    )
 
     wrapped = mod._wrap_linux_command(["PrimalCarnageServer.exe"])
 
@@ -146,6 +155,9 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         "xvfb-run",
         "-a",
         "env",
+        "WINEDLLOVERRIDES=",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
         "wine",
         "PrimalCarnageServer.exe",
     ]

@@ -52,6 +52,7 @@ def test_motortown_get_start_command_builds_expected_args(tmp_path, monkeypatch)
 
 def test_noonesurvived_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     monkeypatch.setattr(noonesurvivedserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setattr(noonesurvivedserver.shutil, "which", lambda _name: None)
     server = DummyServer("nos")
     exe = tmp_path / "WRSHServer.exe"
     exe.write_text("")

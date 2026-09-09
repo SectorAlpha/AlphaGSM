@@ -9,7 +9,7 @@ This guide covers the `sniperelite4server` module in AlphaGSM.
 - Docker for the validated Linux runtime path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- For local non-Docker launches on Linux: Wine or Proton
+- For local non-Docker launches on Linux: Wine or Proton plus `xvfb-run`
 
 ## Quick Start
 
@@ -92,6 +92,9 @@ alphagsm mysniperel backup
   dedicated server no longer aborts immediately on `default.cfg` lookup. If no
   map rotation is present, AlphaGSM adds `VILLAGE DM` as the minimum startup
   map and preserves any operator-defined rotation entries.
+- **Host process display**: AlphaGSM explicitly enables Wine's X11 driver
+  inside its 24-bit Xvfb display, including under inherited headless CI
+  settings.
 - **Managed directives**: `Server.Name`, `Server.GamePort`,
   `Server.AuthPort`, `Server.UpdatePort`, `Server.LobbyPort`,
   `Settings.MaxPlayers`, and `Server.Host`

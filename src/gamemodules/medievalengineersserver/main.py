@@ -240,6 +240,7 @@ def _wrap_linux_command(command, wineprefix=None):
         wrapped,
         SDL_VIDEODRIVER="x11",
         SDL_AUDIODRIVER="dummy",
+        WINEDLLOVERRIDES="",
         LIBGL_ALWAYS_SOFTWARE="1",
     )
     wrapped = [

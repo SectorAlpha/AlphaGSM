@@ -44,9 +44,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
   by the current MVDSV binary. Build the Quake runtime from the PR and reuse
   its immutable image tag throughout smoke, integration, backend, and isolated
   recheck jobs so those fixes are validated before merge.
-- Windows server runtimes: give Medieval Engineers an Xvfb-backed host Proton
-  launch, and preserve the Wine/Proton image entrypoint inside Return to
-  Moria's interactive Docker console bridge.
+- Windows server runtimes: give Medieval Engineers and No One Survived
+  Xvfb-backed host Proton launches, and preserve the Wine/Proton image
+  entrypoint inside Return to Moria's interactive Docker console bridge.
+  Explicitly re-enable Wine's X11 driver inside the virtual display for
+  Medieval Engineers, No One Survived, Primal Carnage: Extinction,
+  Saleblazers, and Sniper Elite 4 so CI's inherited headless environment
+  cannot disable their process-runtime displays.
 - The Forest: write the native server configuration and managed save path,
   launch the Windows Unity server under Xvfb with explicit config/save
   arguments, publish its complete port set, and use its A2S query port for

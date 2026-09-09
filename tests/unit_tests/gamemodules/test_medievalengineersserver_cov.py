@@ -138,6 +138,7 @@ def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
 
 
 def test_get_start_command_adds_virtual_display_on_linux(tmp_path, monkeypatch):
+    assignments = {}
     monkeypatch.setattr(mod, "IS_LINUX", True)
     shared_wrapper = [
         "env",
@@ -170,7 +171,7 @@ def test_get_start_command_adds_virtual_display_on_linux(tmp_path, monkeypatch):
     monkeypatch.setattr(
         mod.proton,
         "prepend_env_assignments",
-        lambda command, **kwargs: list(display_wrapper),
+        lambda command, **kwargs: assignments.update(kwargs) or list(display_wrapper),
     )
     monkeypatch.setattr(mod.shutil, "which", lambda command: f"/usr/bin/{command}")
     server = DummyServer()
@@ -189,6 +190,7 @@ def test_get_start_command_adds_virtual_display_on_linux(tmp_path, monkeypatch):
         "--server-args=-screen 0 1024x768x24 -nolisten tcp",
         *display_wrapper,
     ]
+    assert assignments["WINEDLLOVERRIDES"] == ""
 
 
 def test_get_start_command_missing_exe(tmp_path):

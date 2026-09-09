@@ -191,6 +191,38 @@ def test_runtime_requirements_enable_xvfb_container_env():
     ]
 
 
+def test_linux_process_launch_overrides_inherited_headless_env(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda _name: "/usr/bin/xvfb-run")
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda command, **_kwargs: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *command,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: [
+            cmd[0],
+            *(f"{key}={value}" for key, value in env.items()),
+            *cmd[1:],
+        ],
+    )
+
+    command = mod._wrap_linux_command(["SniperElite4_Dedicated.exe"])
+
+    assert "DISPLAY=" not in command
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in command
+    assert "WINEDLLOVERRIDES=" in command
+    assert "SDL_VIDEODRIVER=x11" in command
+    assert "SDL_AUDIODRIVER=dummy" in command
+
+
 def test_query_and_info_use_runtime_resolved_main_udp_port():
     server = DummyServer()
     server.data["port"] = 7777

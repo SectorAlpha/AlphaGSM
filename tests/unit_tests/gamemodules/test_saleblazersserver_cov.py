@@ -167,6 +167,7 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         "-a",
         "--server-args=-screen 0 1024x768x24 -nolisten tcp",
         "env",
+        "WINEDLLOVERRIDES=",
         "SDL_VIDEODRIVER=x11",
         "SDL_AUDIODRIVER=dummy",
         "LIBGL_ALWAYS_SOFTWARE=1",

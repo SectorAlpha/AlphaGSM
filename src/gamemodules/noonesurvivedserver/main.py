@@ -1,6 +1,7 @@
 """No One Survived dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import screen
 import utils.proton as proton
@@ -137,6 +138,40 @@ def get_info_address(server):
     return get_query_address(server)
 
 
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap No One Survived with the virtual display required by Wine."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapper = wrapped[:-len(command)]
+    wrapped = [
+        arg
+        for arg in wrapper
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ] + list(command)
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        WINEDLLOVERRIDES="",
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    return [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        *wrapped,
+    ]
+
+
 def get_start_command(server):
     """Build the command used to launch a No One Survived dedicated server."""
 
@@ -156,10 +191,9 @@ def get_start_command(server):
             *dynamic_args,
         ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
         )
     return cmd, server.data["dir"]
 
@@ -209,6 +243,7 @@ def checkvalue(server, key, *value):
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         extra_env=_container_runtime_env,
+        extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
