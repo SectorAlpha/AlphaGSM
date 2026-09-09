@@ -14,7 +14,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
   its root-refusing native binary as the invoking host user in Docker.
 - Onset: expose the install root through `LD_LIBRARY_PATH` so the native server
   can load its bundled Steam API library before startup. Probe its documented
-  query port with the server's actual OGP challenge handshake instead of A2S.
+  HTTP file service because private servers do not answer the advertised UDP
+  query protocols, and reserve all three adjacent ports in lifecycle tests.
 - Survive the Nights: seed missing native configuration files from the shipped
   template tree while preserving existing operator edits.
 - Nightingale: allow ten minutes for its first-world bootstrap, retain game and
@@ -22,7 +23,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
   can reach the native server's loopback-bound `/status` listener.
 - ARK: Survival Ascended: replace its deprecated A2S query-port check with an
   authenticated, bounded Source RCON player query and publish the managed TCP
-  RCON port. Generate private per-instance credentials before enabling RCON.
+  RCON port. Generate private per-instance credentials before enabling RCON,
+  and retry transient first-start RCON resets and timeouts within one deadline.
 - Space Engineers: map its Docker data/config path to the mounted server tree.
   Initialize the shared Wine prefix under Xvfb and fail its VC++ runtime install
   when `vcrun2019` or `vcrun2022` cannot be installed.
@@ -45,6 +47,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Battle Cry of Freedom: provide a virtual display during Wine initialization.
 - CI diagnostics: capture runtime evidence when a send command fails immediately
   after launch, preserving the original error.
+- TShock: resolve GitHub release metadata through the shared authenticated API
+  client so parallel smoke jobs do not exhaust the anonymous rate limit.
 - CI: stop superseded integration recheck matrices on cancellation so the next
   commit can start validation without waiting for obsolete game launches.
 - Wine launch: enable Xvfb for ASKA and Sunkenland, and retain Saleblazers'

@@ -1941,30 +1941,30 @@ def test_query_uses_explicit_ut3_protocol(monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("command,as_json", [("query", False), ("info", True)])
-def test_ogp_dispatch_uses_native_challenge_probe(monkeypatch, capsys, command, as_json):
+def test_http_dispatch_uses_application_probe(monkeypatch, capsys, command, as_json):
     import utils
 
     module = DummyModule()
-    module.get_query_address = lambda _server: ("192.0.2.8", 7776, "ogp")
+    module.get_query_address = lambda _server: ("192.0.2.8", 7775, "http")
     module.get_info_address = module.get_query_address
     srv = make_server(module=module, data=DummyData({"port": 7777}))
     native = MagicMock(return_value=2.25)
-    fake_query = SimpleNamespace(QueryError=OSError, ogp_ping=native)
+    fake_query = SimpleNamespace(QueryError=OSError, http_ping=native)
     monkeypatch.setattr(utils, "query", fake_query)
 
     getattr(srv, command)(**({"as_json": as_json} if command == "info" else {}))
 
-    assert native.call_args.args == ("192.0.2.8", 7776)
+    assert native.call_args.args == ("192.0.2.8", 7775)
     assert native.call_args.kwargs == {"timeout": 10.0}
     output = capsys.readouterr().out
     if as_json:
         assert json.loads(output) == {
-            "protocol": "ogp",
-            "port": 7776,
+            "protocol": "http",
+            "port": 7775,
             "latency_ms": 2.2,
         }
     else:
-        assert "OGP query on port 7776" in output
+        assert "HTTP on port 7775" in output
 
 
 @pytest.mark.parametrize("command,as_json", [("query", False), ("info", False), ("info", True)])
@@ -2338,8 +2338,8 @@ def test_query_uses_authenticated_source_rcon_without_printing_password(monkeypa
     calls = []
     fake_q = types.ModuleType("utils.query")
     fake_q.QueryError = OSError
-    fake_q.source_rcon_info = lambda host, port, password, timeout=10.0: (
-        calls.append((host, port, password, timeout)) or {"players": 0}
+    fake_q.source_rcon_info = lambda host, port, password, **kwargs: (
+        calls.append((host, port, password, kwargs)) or {"players": 0}
     )
     monkeypatch.setattr(utils, "query", fake_q)
     monkeypatch.setitem(sys.modules, "utils.query", fake_q)
@@ -2347,7 +2347,14 @@ def test_query_uses_authenticated_source_rcon_without_printing_password(monkeypa
     srv.query()
 
     output = capsys.readouterr().out
-    assert calls == [("127.0.0.1", 27020, "query-secret", 10.0)]
+    assert calls == [
+        (
+            "127.0.0.1",
+            27020,
+            "query-secret",
+            {"timeout": 30.0, "retries": 2, "retry_delay": 2.0},
+        )
+    ]
     assert "Source RCON on port 27020" in output
     assert "query-secret" not in output
 

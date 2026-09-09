@@ -86,6 +86,21 @@ def test_resolve_tshock_download_picks_zip_asset(monkeypatch):
     assert url == "http://example.com/tshock.zip"
 
 
+def test_tshock_release_metadata_uses_shared_authenticated_reader(monkeypatch):
+    observed = []
+    payload = {"tag_name": "v6.1.0", "assets": []}
+    monkeypatch.setattr(
+        terraria_common_impl.github_releases,
+        "read_json",
+        lambda url: observed.append(url) or payload,
+    )
+
+    assert terraria_common_impl._read_json(
+        terraria_common_impl.TSHOCK_LATEST_RELEASE_API
+    ) == payload
+    assert observed == [terraria_common_impl.TSHOCK_LATEST_RELEASE_API]
+
+
 def test_resolve_tshock_download_prefers_linux_x64_asset(monkeypatch):
     monkeypatch.setattr(
         terraria_common_impl,

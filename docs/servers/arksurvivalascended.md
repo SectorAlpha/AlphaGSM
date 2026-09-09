@@ -68,6 +68,8 @@ alphagsm myarksurvi backup
 - Default RCON port: `27020`
 - `query`, `info`, and `info --json` resolve the selected runtime host and use
   an authenticated Source RCON `ListPlayers` request
+- RCON queries retry transient first-start resets and timeouts within one
+  30-second deadline; authentication and protocol errors fail immediately
 - The runtime claims and publishes game UDP and RCON TCP
 - Fresh instances receive a generated RCON admin password. AlphaGSM replaces
   the historical public `alphagsm` default before enabling RCON while preserving

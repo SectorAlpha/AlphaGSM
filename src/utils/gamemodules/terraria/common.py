@@ -5,7 +5,6 @@ intended to live under `utils.gamemodules` so other modules can import
 shared helpers without depending on `src/gamemodules`.
 """
 
-import json
 import os
 import re
 import shutil
@@ -17,6 +16,7 @@ from server import ServerError
 from server.settable_keys import SettingSpec
 import server.runtime as runtime_module
 from utils import backups as backup_utils
+from utils import github_releases
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.gamemodules import common as gamemodule_common
 
@@ -51,14 +51,8 @@ setting_schema = {
 }
 
 
-def _read_text(url):
-    request = urllib.request.Request(url, headers={"User-Agent": HTTP_USER_AGENT})
-    with urllib.request.urlopen(request) as response:
-        return response.read().decode("utf-8")
-
-
 def _read_json(url):
-    return json.loads(_read_text(url))
+    return github_releases.read_json(url)
 
 
 def _version_to_tag(version):

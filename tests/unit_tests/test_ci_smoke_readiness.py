@@ -56,7 +56,7 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
         "noonesurvivedserver": "tcp",
         "codwawserver": "quake",
         "arksurvivalascended": "source_rcon",
-        "onsetserver": "ogp",
+        "onsetserver": "http",
     }.get(module, "a2s")
     protocol_call = f"protocol {protocol}"
     assert protocol_call in calls

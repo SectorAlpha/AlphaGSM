@@ -1040,7 +1040,7 @@ class Server(object):
         ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP),
         ``"quakeworld"`` (QuakeWorld UDP), ``"quake2"`` (Quake II UDP), ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"bedrock"`` (Minecraft Bedrock RakNet UDP ping),
-        ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"ogp"`` (Open Game Protocol),
+        ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"http"`` (HTTP response),
         ``"udp"`` (generic UDP reachability),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
         (authenticated Source RCON),
@@ -1226,7 +1226,12 @@ class Server(object):
         if protocol == "source_rcon":
             try:
                 result = query_utils.source_rcon_info(
-                    host, port, self.data.get("adminpassword", ""), timeout=10.0
+                    host,
+                    port,
+                    self.data.get("adminpassword", ""),
+                    timeout=30.0,
+                    retries=2,
+                    retry_delay=2.0,
                 )
                 players = result.get("players")
                 print(
@@ -1248,11 +1253,11 @@ class Server(object):
                     "Server does not appear to be responding: " + str(exc)
                 )
 
-        if protocol == "ogp":
+        if protocol == "http":
             try:
-                ms = query_utils.ogp_ping(host, port, timeout=10.0)
+                ms = query_utils.http_ping(host, port, timeout=10.0)
                 print(
-                    "Server is responding (OGP query on port {} - {:.1f} ms).".format(
+                    "Server is responding (HTTP on port {} - {:.1f} ms).".format(
                         port, ms
                     )
                 )
@@ -1342,7 +1347,7 @@ class Server(object):
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
         (authenticated Source RCON),
-        ``"ogp"`` (Open Game Protocol challenge handshake),
+        ``"http"`` (HTTP response),
         ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
         ``/status`` endpoint), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
@@ -1546,7 +1551,12 @@ class Server(object):
         if protocol == "source_rcon":
             try:
                 result = query_utils.source_rcon_info(
-                    host, port, self.data.get("adminpassword", ""), timeout=10.0
+                    host,
+                    port,
+                    self.data.get("adminpassword", ""),
+                    timeout=30.0,
+                    retries=2,
+                    retry_delay=2.0,
                 )
                 payload = {"protocol": "source_rcon", "port": port, **result}
                 if as_json:
@@ -1688,14 +1698,14 @@ class Server(object):
             except query_utils.QueryError as exc:
                 raise ServerError("Info query failed: " + str(exc))
 
-        if protocol == "ogp":
+        if protocol == "http":
             try:
-                ms = query_utils.ogp_ping(host, port, timeout=10.0)
+                ms = query_utils.http_ping(host, port, timeout=10.0)
                 if as_json:
                     print(
                         json.dumps(
                             {
-                                "protocol": "ogp",
+                                "protocol": "http",
                                 "port": port,
                                 "latency_ms": round(ms, 1),
                             }
@@ -1703,8 +1713,8 @@ class Server(object):
                     )
                     return
                 print(
-                    "Server info (OGP query on port {}):\n"
-                    "  Protocol    : OGP\n"
+                    "Server info (HTTP on port {}):\n"
+                    "  Protocol    : HTTP\n"
                     "  Latency     : {:.1f} ms".format(port, ms)
                 )
                 return

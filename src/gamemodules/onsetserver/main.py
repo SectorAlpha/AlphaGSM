@@ -229,13 +229,13 @@ restart.__doc__ = "Restart the Onset server."
 
 
 def get_query_address(server):
-    """Onset exposes OGP queries on the documented query port."""
+    """Probe Onset's documented HTTP file service."""
 
-    return runtime_module.resolve_query_host(server), _query_port(server), "ogp"
+    return runtime_module.resolve_query_host(server), _http_port(server), "http"
 
 
 def get_info_address(server):
-    """Return the OGP address used by the info command."""
+    """Return the HTTP file-service address used by the info command."""
 
     return get_query_address(server)
 

@@ -50,8 +50,9 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   when native targets are absent. Docker now runs the root-refusing binary as
   the invoking host user. Replacement lifecycle validation is pending.
 - Onset now exposes its install root to the native loader so the bundled
-  `libsteam_api.so` resolves and uses its real OGP challenge response for
-  readiness. Survive the Nights now copies required missing
+  `libsteam_api.so` resolves and uses the documented HTTP file service for
+  readiness after the private UDP query listener did not answer A2S or OGP.
+  Survive the Nights now copies required missing
   files such as `TpPresets.json` from its shipped configuration templates while
   preserving operator files. Nightingale's first bootstrap reached level and
   navigation loading after the old five-minute deadline, so smoke validation

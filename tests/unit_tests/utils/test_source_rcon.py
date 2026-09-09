@@ -124,3 +124,56 @@ def test_source_rcon_rejects_oversized_multipart_response(monkeypatch):
 
     with pytest.raises(query.QueryError, match="1 MiB"):
         query.source_rcon_info("host", 27020, "secret")
+
+
+def test_source_rcon_retries_transient_socket_failures_within_one_deadline(monkeypatch):
+    class ResetSocket(_Socket):
+        def recv(self, _length):
+            raise ConnectionResetError("peer is still starting")
+
+    sockets = iter(
+        [
+            ResetSocket([]),
+            _Socket(
+                [
+                    _packet(1, 2, ""),
+                    _packet(2, 0, "No Players Connected"),
+                ]
+            ),
+        ]
+    )
+    sleeps = []
+    monkeypatch.setattr(
+        query.socket,
+        "create_connection",
+        lambda *_args, **_kwargs: next(sockets),
+    )
+    monkeypatch.setattr(query.time, "sleep", sleeps.append)
+
+    result = query.source_rcon_info(
+        "host",
+        27020,
+        "secret",
+        timeout=30.0,
+        retries=2,
+        retry_delay=2.0,
+    )
+
+    assert result == {"players": 0}
+    assert sleeps == [2.0]
+
+
+def test_source_rcon_does_not_retry_authentication_failures(monkeypatch):
+    calls = []
+
+    def connect(*_args, **_kwargs):
+        calls.append(True)
+        return _Socket([_packet(-1, 2, "")])
+
+    monkeypatch.setattr(query.socket, "create_connection", connect)
+
+    with pytest.raises(query.QueryError, match="authentication failed"):
+        query.source_rcon_info(
+            "host", 27020, "wrong", retries=2, retry_delay=2.0
+        )
+    assert len(calls) == 1

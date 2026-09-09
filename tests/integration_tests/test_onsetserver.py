@@ -9,7 +9,7 @@ from conftest import (
     alphagsm_env,
     default_runtime_backend,
     log_command_result,
-    pick_free_tcp_port,
+    pick_free_tcp_port_group,
     require_command_for_runtime,
     require_integration_opt_in,
     require_steamcmd_opt_in,
@@ -17,7 +17,7 @@ from conftest import (
     run_and_assert_ok,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_udp_closed,
+    wait_for_tcp_closed,
     write_config,
 )
 from gamemodules.onsetserver import steam_app_id
@@ -55,7 +55,7 @@ def test_onsetserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port(min_port=7779)
+    port = pick_free_tcp_port_group(3) + 2
 
     run_and_assert_ok(env, server_name, "create", module_name)
 
@@ -74,7 +74,13 @@ def test_onsetserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "ogp", START_TIMEOUT)
+        wait_for_info_protocol(
+            env,
+            server_name,
+            "http",
+            START_TIMEOUT,
+            expected_port=port - 2,
+        )
 
         run_and_assert_ok(env, server_name, "status")
 
@@ -86,8 +92,9 @@ def test_onsetserver_lifecycle(tmp_path):
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "ogp", info_data
+        assert info_data["protocol"] == "http", info_data
+        assert info_data["port"] == port - 2, info_data
     finally:
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
-    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", port - 2, STOP_TIMEOUT)

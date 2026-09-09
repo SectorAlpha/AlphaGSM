@@ -136,47 +136,37 @@ def test_udp_ping_raises_on_socket_error(monkeypatch):
         query_module.udp_ping("127.0.0.1", 27015)
 
 
-def test_ogp_ping_accepts_challenge_response(monkeypatch):
-    challenge = b"\x78\x56\x34\x12"
-    valid = b"\xff\xff\xff\xffOGP\x00\x07\xff\x03" + challenge
-    sock = _FakeUDPSocket(response=valid)
-    monkeypatch.setattr(query_module.socket, "socket", lambda *a, **kw: sock)
+def test_http_ping_accepts_http_error_response(monkeypatch):
+    calls = []
 
-    ms = query_module.ogp_ping("127.0.0.1", 7776)
+    def respond(request, timeout):
+        calls.append((request, timeout))
+        raise query_module.urllib.error.HTTPError(
+            request.full_url,
+            404,
+            "not found",
+            {},
+            None,
+        )
+
+    monkeypatch.setattr(query_module.urllib.request, "urlopen", respond)
+
+    ms = query_module.http_ping("127.0.0.1", 7775, timeout=3.0)
 
     assert ms >= 0.0
-    assert sock.sent == [(b"\xff\xff\xff\xffOGP\x00\x03\x01\x00", ("127.0.0.1", 7776))]
+    assert calls[0][0].full_url == "http://127.0.0.1:7775/"
+    assert calls[0][0].get_method() == "HEAD"
+    assert calls[0][1] == 3.0
 
 
-@pytest.mark.parametrize(
-    "response",
-    [
-        b"not-ogp",
-        b"\xff\xff\xff\xffOGP\x00\x07\x01\x03\x78\x56\x34\x12",
-        b"\xff\xff\xff\xffOGP\x00\x07\xff\x01\x78\x56\x34\x12",
-        b"\xff\xff\xff\xffOGP\x00\x08\xff\x03\x78\x56\x34\x12",
-    ],
-)
-def test_ogp_ping_rejects_malformed_challenge_response(monkeypatch, response):
-    monkeypatch.setattr(
-        query_module.socket,
-        "socket",
-        lambda *a, **kw: _FakeUDPSocket(response=response),
-    )
+def test_http_ping_wraps_network_errors(monkeypatch):
+    def fail(_request, timeout):
+        raise query_module.urllib.error.URLError("refused")
 
-    with pytest.raises(query_module.QueryError, match="Unexpected OGP"):
-        query_module.ogp_ping("127.0.0.1", 7776)
+    monkeypatch.setattr(query_module.urllib.request, "urlopen", fail)
 
-
-def test_ogp_ping_wraps_socket_errors(monkeypatch):
-    monkeypatch.setattr(
-        query_module.socket,
-        "socket",
-        lambda *a, **kw: _FakeUDPSocket(raise_on_send=OSError("refused")),
-    )
-
-    with pytest.raises(query_module.QueryError, match="OGP query failed"):
-        query_module.ogp_ping("127.0.0.1", 7776)
+    with pytest.raises(query_module.QueryError, match="HTTP query failed"):
+        query_module.http_ping("127.0.0.1", 7775)
 
 
 def test_ut3_status_returns_response_on_valid_reply(monkeypatch):
