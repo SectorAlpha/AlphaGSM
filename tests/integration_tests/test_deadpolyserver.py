@@ -8,7 +8,7 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command_for_runtime,
+    require_command,
     default_runtime_backend,
     resolve_runtime_image,
     pick_free_tcp_port,
@@ -46,11 +46,7 @@ def test_deadpolyserver_lifecycle(tmp_path):
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
     module_name = "deadpolyserver"
-    require_command_for_runtime(
-        "docker",
-        runtime_backend=runtime_backend,
-        module_name=module_name,
-    )
+    require_command("docker")
     image = resolve_runtime_image(
         "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
         LOCAL_WINE_PROTON_IMAGE,
