@@ -82,7 +82,6 @@ Notes:
 - [x] minecraft_velocity
 - [x] minecraft_waterfall
 - [x] medievalengineersserver
-- [x] memoriesofmarsserver
 - [x] miscreatedserver
 - [x] codwawserver
 - [x] mumbleserver
@@ -269,6 +268,7 @@ Notes:
 - [ ] abfserver
 - [ ] bobserver
 - [ ] counterstrikeglobaloffensive
+- [ ] memoriesofmarsserver
 
 ## Waiting On Prerequisites Or Validation
 

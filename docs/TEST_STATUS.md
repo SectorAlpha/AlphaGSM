@@ -11,10 +11,10 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED | 140 |
+| PASSED | 139 |
 | ENABLED (AUTH) | 49 |
 | ENABLED (BYO) | 45 |
-| DISABLED | 3 |
+| DISABLED | 4 |
 | SKIPPED | 0 |
 
 ## Environment Coverage
@@ -170,7 +170,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ns2server | Process and Docker lifecycle revalidation of the corrected install-root launcher, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 | ns2cserver | Process and Docker lifecycle revalidation of the corrected `ia32` working directory, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 
-## PASSED (141)
+## PASSED (140)
 
 | Test | Type |
 |------|------|
@@ -234,7 +234,6 @@ support-state tables and do not change the summary counts or record a new pass.
 | minecraft_velocity | Direct download |
 | minecraft_waterfall | Direct download |
 | medievalengineersserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; anonymous SteamCMD setup for app `367970` completes, AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, and validates `query`, `info`, and `info --json` on the generic `tcp` health surface at the managed game port. The host Proton path now uses Xvfb as the Docker path already did, preventing the dedicated server's immediate window-handle crash. |
-| memoriesofmarsserver | SteamCMD |
 | miscreatedserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; the supported Linux path reads `user/server.log` and uses generic `tcp` health on the managed main port. CI now keeps one Docker-default lifecycle rather than duplicating an unproven host-Proton lane. |
 | codwawserver | Docker runtime — PASSED 2026-05-30; AlphaGSM drives the archive-backed install through the shared `steamcmd-linux` runtime and validates `query`, `info`, plus `info --json` through the native Quake-style UDP status protocol on the managed game port |
 | mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke use the shared `simple-tcp` Docker runtime because upstream does not publish an anonymous standalone Linux server binary. Process mode remains available for operators with a host `mumble-server`/`murmurd` package, but CI keeps one Docker-default lifecycle. |
@@ -427,13 +426,14 @@ URLs.
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
 | zmrserver | staged Zombie Master: Reborn content tree |
 
-## DISABLED (3)
+## DISABLED (4)
 
 | Test | Reason |
 |------|--------|
 | abfserver | Windows-only SteamCMD app 2857200 is now staged with the forced-Windows payload and shared Wine/Proton runtime; remains disabled pending fresh GitHub Docker lifecycle validation. |
 | bobserver | Prior CI runs timed out while downloading SteamCMD app 882430; the integration test now allows 30 minutes, uses the documented `LinuxServer/BeastsOfBermudaServer.sh` launcher path and arguments, and no longer permanently skips the failure, but the module remains disabled pending fresh GitHub CI validation. |
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
+| memoriesofmarsserver | 505 Games shut down Memories of Mars online multiplayer on 2024-06-25. Fresh process and Docker runs reach the retired LIMBIC session service, fail to resolve `agclxre5zl.execute-api.eu-central-1.amazonaws.com`, report `Could not create session`, and crash before opening a query listener. |
 
 ## SKIPPED (0)
 

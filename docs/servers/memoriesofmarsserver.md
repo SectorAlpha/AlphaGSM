@@ -2,7 +2,11 @@
 
 This guide covers the `memoriesofmarsserver` module in AlphaGSM.
 
-`memoriesofmarsserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The GitHub integration lane exercises process and Docker runtimes. Validation of the Docker host-user change is pending CI; local runs use the process runtime unless you select Docker.
+`memoriesofmarsserver` is disabled. [505 Games shut down Memories of Mars
+online multiplayer on June 25, 2024](https://support.505games.com/support/solutions/articles/150000182159-thanks-for-the-memories),
+and the retired dedicated server still depends on the removed LIMBIC session
+backend. Current process and Docker launches fail to create a session and crash
+before opening a query listener.
 
 ## Requirements
 
@@ -13,6 +17,10 @@ For Docker, run AlphaGSM as a normal user with Docker access. The server rejects
 - Python packages from `requirements.txt`
 
 ## Quick Start
+
+Creation is blocked with the retirement reason. The commands below document
+the historical lifecycle and will apply only if an upstream-compatible server
+becomes available again.
 
 Create the server:
 
