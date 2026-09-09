@@ -78,13 +78,13 @@ def test_codwawserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding (Quake on port" in query_result.stdout
+            "Server is responding (Quake status on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Server info (Quake on port" in info_result.stdout
+            "Server info (Quake status on port" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json

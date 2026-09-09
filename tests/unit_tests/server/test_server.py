@@ -2122,7 +2122,7 @@ def test_info_uses_runtime_resolved_host_without_module_hook(monkeypatch, capsys
     import utils
     import sys, types
 
-    srv = make_server(data=DummyData({"port": 27015}))
+    srv = make_server(data=DummyData({"port": "27015"}))
     fake_q = types.ModuleType("utils.query")
     fake_q.QueryError = OSError
     calls = []

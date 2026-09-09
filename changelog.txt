@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- Query reporting: normalize configured port strings before protocol probes and
+  JSON output. Align Exfil, Sunkenland, and Battle Cry of Freedom with their
+  observed TCP health surfaces, and correct stale COD: World at War protocol
+  labels in lifecycle tests.
 - The Forest: write the native server configuration and managed save path,
   launch the Windows Unity server under Xvfb with explicit config/save
   arguments, publish its complete port set, and use its A2S query port for

@@ -2,7 +2,7 @@
 
 This guide covers the `exfilserver` module in AlphaGSM.
 
-`exfilserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The GitHub integration lane exercises process and Docker runtimes. Validation of the Docker host-user change is pending CI; local runs use the process runtime unless you select Docker.
+`exfilserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The GitHub integration lane exercises process and Docker runtimes. Docker runs the server as the invoking host user because the executable rejects root.
 
 ## Requirements
 
@@ -48,7 +48,8 @@ alphagsm myexfilser stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the Steam query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -62,7 +63,10 @@ alphagsm myexfilser backup
 ## Notes
 
 - Module name: `exfilserver`
-- Default port: 27015
+- Default game port: 7777
+- Default query port: 27015
+- `query`, `info`, and `info --json` use the validated TCP health surface on
+  the managed game port.
 
 ## Developer Notes
 

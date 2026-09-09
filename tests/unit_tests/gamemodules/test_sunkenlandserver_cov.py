@@ -221,3 +221,16 @@ def test_docker_runtime_enables_virtual_display():
 
     assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
     assert requirements["env"]["WINEDLLOVERRIDES"] == ""
+
+
+def test_query_and_info_use_managed_tcp_port(monkeypatch):
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="172.18.0.5"),
+    )
+    server = DummyServer()
+    server.data["port"] = 28015
+
+    assert mod.get_query_address(server) == ("172.18.0.5", 28015, "tcp")
+    assert mod.get_info_address(server) == ("172.18.0.5", 28015, "tcp")

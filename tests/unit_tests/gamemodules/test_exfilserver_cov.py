@@ -120,6 +120,19 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_query_and_info_use_managed_tcp_port(monkeypatch):
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="172.18.0.5"),
+    )
+    server = DummyServer()
+    server.data["port"] = 28015
+
+    assert mod.get_query_address(server) == ("172.18.0.5", 28015, "tcp")
+    assert mod.get_info_address(server) == ("172.18.0.5", 28015, "tcp")
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)

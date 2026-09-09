@@ -26,9 +26,12 @@ RUNTIME_AWARE_PROTOCOL_TESTS = {
     "test_ricochetserver.py": "a2s",
     "test_bmdmserver.py": "a2s",
     "test_empyrionserver.py": "tcp",
+    "test_exfilserver.py": "tcp",
+    "test_battlecryoffreedomserver.py": "tcp",
     "test_readyornotserver.py": "udp",
     "test_reignofdwarfserver.py": "tcp",
     "test_remnantsserver.py": "tcp",
+    "test_sunkenlandserver.py": "tcp",
     "test_returntomoriaserver.py": "udp",
     "test_bdserver.py": "a2s",
     "test_blackops3server.py": "udp",
@@ -94,7 +97,6 @@ CANONICAL_MODULE_IDS = {
 }
 RUNTIME_LOG_READINESS_TESTS = (
     "test_avserver.py",
-    "test_battlecryoffreedomserver.py",
     "test_btlserver.py",
     "test_btserver.py",
     "test_csczserver.py",
@@ -102,7 +104,6 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_dayofdragonsserver.py",
     "test_dmcserver.py",
     "test_dodserver.py",
-    "test_exfilserver.py",
     "test_hldmserver.py",
     "test_memoriesofmarsserver.py",
     "test_minecraft_paper.py",

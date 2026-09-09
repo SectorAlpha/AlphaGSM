@@ -106,6 +106,18 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """Return Exfil's validated TCP health endpoint."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+
+
+def get_info_address(server):
+    """Return the same endpoint used by the query command."""
+
+    return get_query_address(server)
+
+
 def do_stop(server, j):
     """Stop Exfil by interrupting the foreground server process."""
 

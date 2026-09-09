@@ -1057,6 +1057,7 @@ class Server(object):
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
             _explicit = False
+        port = int(port)
 
         if protocol == "a2s":
             wake_hook = _get_a2s_wake_hook(self.module)
@@ -1112,7 +1113,7 @@ class Server(object):
                     # giving up — useful for UE4/other games in Docker CI where
                     # UDP may be unreliable but a TCP game port is still open.
                     try:
-                        _game_port = self.data["port"]
+                        _game_port = int(self.data["port"])
                         _ms = query_utils.tcp_ping(host, _game_port)
                         print(
                             "Server port is open (TCP ping on port {} \u2014 {:.1f} ms).".format(
@@ -1127,7 +1128,7 @@ class Server(object):
                     )
                 # Default heuristic: fall back to TCP ping on the main game port.
                 host = runtime_module.resolve_query_host(self)
-                port = self.data["port"]
+                port = int(self.data["port"])
                 protocol = "tcp"
 
         if protocol == "http_status":
@@ -1352,6 +1353,7 @@ class Server(object):
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
             _explicit = False
+        port = int(port)
 
         if protocol == "bedrock":
             try:
@@ -1490,7 +1492,7 @@ class Server(object):
                     # A2S failed on the dedicated query port — try TCP on the
                     # game port before giving up.
                     try:
-                        _game_port = self.data["port"]
+                        _game_port = int(self.data["port"])
                         _ms = query_utils.tcp_ping(host, _game_port)
                         if as_json:
                             print(
@@ -1514,7 +1516,7 @@ class Server(object):
                     raise ServerError("Info query failed: " + str(exc))
                 # Default heuristic: fall through to TCP
                 host = runtime_module.resolve_query_host(self)
-                port = self.data["port"]
+                port = int(self.data["port"])
 
         if protocol == "soldat":
             try:

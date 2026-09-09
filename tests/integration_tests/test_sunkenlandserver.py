@@ -17,9 +17,8 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.sunkenlandserver import steam_app_id
 
@@ -70,12 +69,12 @@ def test_sunkenlandserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = install_dir / "server.log"
-        wait_for_log_marker(
-            log_path,
-            ["Server started", "Listening", "listening on", "port", "online"],
+        info_data = wait_for_info_protocol(
+            env,
+            server_name,
+            "tcp",
             START_TIMEOUT,
+            expected_port=port,
         )
 
         # status
@@ -84,24 +83,24 @@ def test_sunkenlandserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            "Server port is open" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "Server port is open" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+        assert _info_data.get("port") == port, (
+            f"Expected the managed game port in info JSON: {_info_data!r}"
         )
     finally:
         # stop
