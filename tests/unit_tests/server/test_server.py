@@ -1797,7 +1797,7 @@ def test_query_uses_runtime_resolved_host_without_module_hook(monkeypatch, capsy
 
     srv.query()
 
-    assert calls == [("172.18.0.1", "27015")]
+    assert calls == [("172.18.0.1", 27015)]
     assert "A2S" in capsys.readouterr().out
 
 
