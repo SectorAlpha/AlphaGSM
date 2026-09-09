@@ -9,9 +9,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
 
 2026-09-09
 - Query reporting: normalize configured port strings before protocol probes and
-  JSON output. Align Exfil, Sunkenland, and Battle Cry of Freedom with their
-  observed TCP health surfaces, and correct stale COD: World at War protocol
-  labels in lifecycle tests.
+  JSON output. Align Sunkenland and Battle Cry of Freedom with their observed
+  TCP health surfaces, use Exfil's logged UDP game listener for readiness and
+  health checks, and correct stale COD: World at War protocol labels in
+  lifecycle tests.
 - Source integration tests: use AlphaGSM's successful A2S `info --json`
   response as readiness for BrainBread 2, Counter-Strike: Source, Fistful of
   Frags, Garry's Mod, Insurgency, Left 4 Dead 2, and PVKII when Docker logs

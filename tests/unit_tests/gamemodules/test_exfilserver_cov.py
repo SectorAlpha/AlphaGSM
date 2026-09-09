@@ -120,7 +120,7 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_query_and_info_use_managed_tcp_port(monkeypatch):
+def test_query_and_info_use_managed_udp_port(monkeypatch):
     monkeypatch.setattr(
         mod.runtime_module,
         "resolve_query_host",
@@ -129,8 +129,20 @@ def test_query_and_info_use_managed_tcp_port(monkeypatch):
     server = DummyServer()
     server.data["port"] = 28015
 
-    assert mod.get_query_address(server) == ("172.18.0.5", 28015, "tcp")
-    assert mod.get_info_address(server) == ("172.18.0.5", 28015, "tcp")
+    assert mod.get_query_address(server) == ("172.18.0.5", 28015, "udp")
+    assert mod.get_info_address(server) == ("172.18.0.5", 28015, "udp")
+
+
+def test_runtime_claims_only_observed_udp_ports():
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 27015})
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["ports"] == [
+        {"host": 27015, "container": 27015, "protocol": "udp"},
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+    ]
 
 
 def test_do_stop():

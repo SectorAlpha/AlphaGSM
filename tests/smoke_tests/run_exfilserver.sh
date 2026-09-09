@@ -30,7 +30,12 @@ source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 
 cleanup() {
+  local rc=$?
   set +e
+  if [[ "$rc" -ne 0 && -n "${LOG_PATH:-}" ]]; then
+    capture_application_logs "$LOG_PATH"
+    capture_runtime_diagnostics "$SERVER_NAME"
+  fi
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
     ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
@@ -45,6 +50,7 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/exfilserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-exfilserver.conf"
+LOG_PATH="$HOME_DIR/logs/AlphaGSM-exfilserve-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -76,7 +82,8 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS" "$PORT"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" "IpNetDriver listening on port ${PORT}"
+wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS" "$PORT"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info

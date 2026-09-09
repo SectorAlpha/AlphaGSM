@@ -65,7 +65,7 @@ alphagsm myexfilser backup
 - Module name: `exfilserver`
 - Default game port: 7777
 - Default query port: 27015
-- `query`, `info`, and `info --json` use the validated TCP health surface on
+- `query`, `info`, and `info --json` use the validated UDP health surface on
   the managed game port.
 
 ## Developer Notes

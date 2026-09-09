@@ -107,9 +107,13 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return Exfil's validated TCP health endpoint."""
+    """Return Exfil's validated UDP game endpoint."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["port"]),
+        "udp",
+    )
 
 
 def get_info_address(server):
@@ -153,16 +157,22 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
+
+port_claim_definitions = (
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "port", "protocol": "udp"},
+)
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+    family="steamcmd-linux",
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
+    port_definitions=port_claim_definitions,
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        stdin_open=True,
+    family="steamcmd-linux",
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
+    get_start_command=get_start_command,
+    port_definitions=port_claim_definitions,
+    stdin_open=True,
 )

@@ -19,7 +19,7 @@ SOURCE = ("bb2server", "bmdmserver", "ccserver", "counterstrike2", "cssserver",
 @pytest.mark.parametrize("module", GOLDSRC + SOURCE + (
     "argoserver", "lifeisfeudalserver", "groundbranchserver", "solserver", "pcarserver",
     "notdserver", "noonesurvivedserver", "icarusserver", "soulmask", "codwawserver",
-    "arksurvivalascended", "onsetserver",
+    "arksurvivalascended", "onsetserver", "exfilserver",
     ))
 @pytest.mark.parametrize("query_rc", [0, 1])
 def test_smoke_readiness_requires_protocol_response(tmp_path, module, query_rc):
@@ -36,6 +36,7 @@ def test_smoke_readiness_requires_protocol_response(tmp_path, module, query_rc):
         "VAC secure mode is activated.\n"
         "Server loaded. Entering simulation...\n"
         "GameNetDriver SteamSocketsNetDriver_1 started listening on 27015\n"
+        "LogNet: IpNetDriver listening on port 27015\n"
     )
     commands = tmp_path / "commands"
     prelude = '''set -Eeuo pipefail
@@ -63,6 +64,7 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
         "arksurvivalascended": "source_rcon",
         "onsetserver": "tcp",
         "groundbranchserver": "udp",
+        "exfilserver": "udp",
     }.get(module, "a2s")
     protocol_call = f"protocol {protocol}"
     assert protocol_call in calls
