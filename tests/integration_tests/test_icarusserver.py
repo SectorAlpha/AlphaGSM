@@ -20,7 +20,7 @@ from conftest import (
     capture_alphagsm_stop,
     assert_alphagsm_result_ok,
     wait_for_info_protocol,
-    wait_for_udp_closed,
+    wait_for_tcp_closed,
 )
 
 pytestmark = [pytest.mark.integration]
@@ -87,7 +87,9 @@ def test_icarusserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
+        wait_for_info_protocol(
+            env, server_name, "tcp", START_TIMEOUT, expected_port=port
+        )
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -95,24 +97,24 @@ def test_icarusserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding (A2S on port" in query_result.stdout
+            "TCP ping on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Server info (A2S on port" in info_result.stdout
+            "No further details available." in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("port") == queryport, (
-            f"Expected query-port A2S readiness on fresh server: {_info_data!r}"
+        assert _info_data.get("port") == port, (
+            f"Expected game-port TCP readiness on fresh server: {_info_data!r}"
         )
     finally:
         # stop
@@ -122,4 +124,4 @@ def test_icarusserver_lifecycle(tmp_path):
 
     # verify stopped
     assert_alphagsm_result_ok(stop_result)
-    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

@@ -45,7 +45,6 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/onset-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-onset.conf"
-EXPECTED_PROTOCOL="a2s"
 
 mkdir -p "$HOME_DIR"
 
@@ -81,8 +80,10 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "$EXPECTED_PROTOCOL" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "ogp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

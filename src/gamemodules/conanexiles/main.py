@@ -358,6 +358,7 @@ _PORT_DEFINITIONS = (
 )
 port_claim_definitions = _PORT_DEFINITIONS
 ignored_port_keys = ("pingerport",)
+_RUNTIME_EXTRA = {"run_as_host_user": True, "container_home": "/home/alphagsm"}
 
 
 def get_runtime_requirements(server):
@@ -367,6 +368,7 @@ def get_runtime_requirements(server):
         server,
         family="steamcmd-linux",
         port_definitions=_PORT_DEFINITIONS,
+        extra=_RUNTIME_EXTRA,
     )
 
 
@@ -379,4 +381,5 @@ def get_container_spec(server):
         get_start_command=get_start_command,
         port_definitions=_PORT_DEFINITIONS,
         stdin_open=True,
+        extra=_RUNTIME_EXTRA,
     )

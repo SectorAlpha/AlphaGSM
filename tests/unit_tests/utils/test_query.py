@@ -17,6 +17,7 @@ class _FakeUDPSocket:
     def __init__(self, response=None, raise_on_send=None):
         self._response = response
         self._raise_on_send = raise_on_send
+        self.sent = []
 
     def __enter__(self):
         return self
@@ -30,6 +31,7 @@ class _FakeUDPSocket:
     def sendto(self, data, addr):
         if self._raise_on_send:
             raise self._raise_on_send
+        self.sent.append((data, addr))
 
     def connect(self, addr):
         pass
@@ -132,6 +134,49 @@ def test_udp_ping_raises_on_socket_error(monkeypatch):
 
     with pytest.raises(query_module.QueryError, match="UDP ping failed"):
         query_module.udp_ping("127.0.0.1", 27015)
+
+
+def test_ogp_ping_accepts_challenge_response(monkeypatch):
+    challenge = b"\x78\x56\x34\x12"
+    valid = b"\xff\xff\xff\xffOGP\x00\x07\xff\x03" + challenge
+    sock = _FakeUDPSocket(response=valid)
+    monkeypatch.setattr(query_module.socket, "socket", lambda *a, **kw: sock)
+
+    ms = query_module.ogp_ping("127.0.0.1", 7776)
+
+    assert ms >= 0.0
+    assert sock.sent == [(b"\xff\xff\xff\xffOGP\x00\x03\x01\x00", ("127.0.0.1", 7776))]
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        b"not-ogp",
+        b"\xff\xff\xff\xffOGP\x00\x07\x01\x03\x78\x56\x34\x12",
+        b"\xff\xff\xff\xffOGP\x00\x07\xff\x01\x78\x56\x34\x12",
+        b"\xff\xff\xff\xffOGP\x00\x08\xff\x03\x78\x56\x34\x12",
+    ],
+)
+def test_ogp_ping_rejects_malformed_challenge_response(monkeypatch, response):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=response),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected OGP"):
+        query_module.ogp_ping("127.0.0.1", 7776)
+
+
+def test_ogp_ping_wraps_socket_errors(monkeypatch):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(raise_on_send=OSError("refused")),
+    )
+
+    with pytest.raises(query_module.QueryError, match="OGP query failed"):
+        query_module.ogp_ping("127.0.0.1", 7776)
 
 
 def test_ut3_status_returns_response_on_valid_reply(monkeypatch):

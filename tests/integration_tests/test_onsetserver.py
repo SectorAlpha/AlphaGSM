@@ -74,7 +74,7 @@ def test_onsetserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "ogp", START_TIMEOUT)
 
         run_and_assert_ok(env, server_name, "status")
 
@@ -86,7 +86,7 @@ def test_onsetserver_lifecycle(tmp_path):
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "a2s", info_data
+        assert info_data["protocol"] == "ogp", info_data
     finally:
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 

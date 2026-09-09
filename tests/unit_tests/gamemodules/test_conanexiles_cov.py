@@ -299,7 +299,11 @@ def test_runtime_contract_uses_native_steamcmd_linux_family(tmp_path):
     spec = mod.get_container_spec(server)
 
     assert requirements["family"] == "steamcmd-linux"
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
     assert spec["command"][0].endswith("ConanSandboxServer-Linux-Shipping")
+    assert spec["run_as_host_user"] is True
+    assert spec["container_home"] == "/home/alphagsm"
 
 
 def test_setting_schema_launch_formats():

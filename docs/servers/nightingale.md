@@ -6,7 +6,8 @@ This guide covers the `nightingale` module in AlphaGSM.
 baseline. The checked-in GitHub validation path for this server is
 Docker-first through the shared `steamcmd-linux` runtime. The current branch
 uses Nightingale's official HTTP `/status` endpoint for `query` / `info` on
-the managed status port.
+the managed status port. Its Docker launch uses host networking because the
+current native server keeps that status listener on container loopback.
 
 ## Requirements
 
@@ -64,7 +65,8 @@ proves:
 - non-root container execution with the Steam bootstrap mounted into
   `~/.steam/sdk64/steamclient.so`
 - `NWXServer.sh -port=<port> -statusPort=<queryport>`
-- an HTTP listener bound to `0.0.0.0` for container reachability
+- host networking so the server's loopback-bound HTTP status listener remains
+  reachable to AlphaGSM
 - `query`, `info`, and `info --json` through JSON `/status` on `queryport`
 - smoke validation allows ten minutes for first-world generation and navigation
   data before requiring the HTTP status to report ready
@@ -81,8 +83,8 @@ alphagsm mynighting backup
 - Module name: `nightingale`
 - Default port: 7777
 - Default status/query port: 7778
-- The updated HTTP status contract and first-start timeout are pending replacement
-  GitHub CI validation.
+- Nightingale retains the documented listener override in its launch arguments;
+  current Linux builds still expose `/status` only through loopback in CI.
 
 ## Developer Notes
 

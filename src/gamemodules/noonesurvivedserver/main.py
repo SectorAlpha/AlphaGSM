@@ -126,6 +126,8 @@ restart = gamemodule_common.make_restart_hook()
 def get_query_address(server):
     """Return the validated runtime query surface for No One Survived."""
 
+    if IS_LINUX:
+        return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
     return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 

@@ -155,6 +155,16 @@ def test_wine_proton_runtime_image_keeps_ci_wine_and_proton_stack():
     assert missing == []
 
 
+def test_wine_proton_runtime_installs_vcrun_with_a_display_and_fails_closed():
+    text = WINE_PROTON_DOCKERFILE.read_text(encoding="utf-8")
+
+    assert "Xvfb :99" in text
+    assert "export DISPLAY=:99" in text
+    assert "export WINEDLLOVERRIDES=" in text
+    assert "winetricks -q --force vcrun2019 || true" not in text
+    assert "winetricks -q --force vcrun2022 || true" not in text
+
+
 def test_proton_images_copy_architecture_asset_selector():
     text = WINE_PROTON_DOCKERFILE.read_text(encoding="utf-8")
 

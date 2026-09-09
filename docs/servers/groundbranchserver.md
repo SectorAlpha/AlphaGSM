@@ -59,9 +59,10 @@ alphagsm mygroundbr backup
 
 ## Notes
 
-- AlphaGSM uses the dedicated server's documented `Port=`, `QueryPort=`, and
-  `?MaxPlayers=` options. Both game and Steam query ports use UDP; `query` and
-  `info` use A2S on the configured query port. Replacement CI is pending.
+- AlphaGSM uses the dedicated server's documented `MultiHome=0.0.0.0`, `Port=`,
+  `QueryPort=`, and `?MaxPlayers=` options. Both game and Steam query ports use
+  UDP; `query` and `info` use A2S on the configured query port. Replacement CI
+  is pending.
   See the [developer's server guide](https://steamcommunity.com/sharedfiles/filedetails/?id=1449083065).
 - Module name: `groundbranchserver`
 - Default port: 27015

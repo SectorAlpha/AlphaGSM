@@ -178,7 +178,7 @@ def get_runtime_requirements(server):
             {"key": "queryport", "protocol": "tcp"},
         ),
         mounts=mounts,
-        extra={"stop_mode": "docker-stop"},
+        extra={"stop_mode": "docker-stop", "network_mode": "host"},
     )
 
 
@@ -195,7 +195,8 @@ def get_container_spec(server):
         "tty": False,
         "env": requirements.get("env", {}),
         "mounts": requirements.get("mounts", []),
-        "ports": requirements.get("ports", []),
+        "network_mode": "host",
+        "ports": [],
         "command": [
             "sh",
             "-lc",

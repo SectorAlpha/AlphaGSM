@@ -228,6 +228,8 @@ def test_get_container_spec_runs_as_non_root(tmp_path):
     spec = mod.get_container_spec(server)
 
     assert spec["working_dir"] == "/srv/server"
+    assert spec["network_mode"] == "host"
+    assert spec["ports"] == []
     assert spec["stdin_open"] is True
     assert spec["tty"] is False
     assert {
@@ -254,7 +256,7 @@ def test_get_container_spec_runs_as_non_root(tmp_path):
     assert "BindAddress=0.0.0.0" in shell_command
 
 
-def test_runtime_requirements_publish_game_udp_and_status_tcp():
+def test_runtime_requirements_claim_game_udp_and_status_tcp_on_host_network():
     server = DummyServer()
     server.data.update({"port": 7777, "queryport": 7778})
 
@@ -264,6 +266,7 @@ def test_runtime_requirements_publish_game_udp_and_status_tcp():
         {"host": 7777, "container": 7777, "protocol": "udp"},
         {"host": 7778, "container": 7778, "protocol": "tcp"},
     ]
+    assert requirements["network_mode"] == "host"
 
 
 def test_runtime_requirements_use_docker_stop_for_noninteractive_container():

@@ -201,6 +201,8 @@ def get_start_command(server):
 def get_query_address(server):
     """Return the effective query surface for Soulmask."""
 
+    if IS_LINUX:
+        return (runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp")
     return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
 
 

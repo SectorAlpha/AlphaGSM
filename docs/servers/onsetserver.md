@@ -77,7 +77,8 @@ alphagsm myonset backup
 - AlphaGSM starts the server with `--config <install_dir>/server_config.json`
 - AlphaGSM adds the install root to `LD_LIBRARY_PATH` so the launcher can load
   the bundled `libsteam_api.so`
-- AlphaGSM probes `query` and `info` over A2S on `port - 1`, following the upstream Valve server-query documentation reference
+- AlphaGSM probes `query` and `info` on `port - 1` with Onset's Open Game
+  Protocol challenge handshake, which verifies an application-level reply
 - The generated config defaults to the documented `sandbox` package and a private `masterlist=false` profile
 
 ## Developer Notes

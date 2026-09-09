@@ -24,10 +24,10 @@ CASES = (
     ("kf2server", "a2s", 28015, None),
     ("conanexiles", "a2s", 28015, None),
     ("codwawserver", "quake", 27015, b"\xff\xff\xff\xffgetstatus\n"),
-    ("icarusserver", "a2s", 28015, None),
-    ("notdserver", "a2s", 28015, None),
-    ("noonesurvivedserver", "a2s", 28015, None),
-    ("soulmask", "a2s", 28015, None),
+    ("icarusserver", "tcp", 27015, None),
+    ("notdserver", "tcp", 27015, None),
+    ("noonesurvivedserver", "tcp", 27015, None),
+    ("soulmask", "tcp", 27015, None),
     ("ets2server", "a2s", 28015, None),
     ("stnserver", "a2s", 27016, None),
 )
@@ -68,14 +68,29 @@ def lifecycle(request, monkeypatch, tmp_path):
     def run(_env, _name, command, *args, **_kwargs):
         calls.append(command)
         if command == "info":
-            output = json.dumps({"protocol": protocol, "port": query_port, "players": 0,
-                                 "name": "AlphaGSM Conan IT", "map": "fixture"}) if args else (
-                "Server info (A2S on port) Server info (Quake on port)\n"
-                "Name        : AlphaGSM Conan IT\nPlayers     : 0/16"
-            )
+            if args:
+                output = json.dumps(
+                    {
+                        "protocol": protocol,
+                        "port": query_port,
+                        "players": 0,
+                        "name": "AlphaGSM Conan IT",
+                        "map": "fixture",
+                    }
+                )
+            elif protocol == "tcp":
+                output = "TCP ping on port\nNo further details available."
+            else:
+                output = (
+                    "Server info (A2S on port) Server info (Quake on port)\n"
+                    "Name        : AlphaGSM Conan IT\nPlayers     : 0/16"
+                )
         elif command == "query":
-            label = "Quake" if protocol == "quake" else "A2S"
-            output = f"Server is responding ({label} on port)"
+            if protocol == "tcp":
+                output = "TCP ping on port"
+            else:
+                label = "Quake" if protocol == "quake" else "A2S"
+                output = f"Server is responding ({label} on port)"
         elif command == "status":
             output = "Server isn't running" if "stop" in calls else "Server is running"
         else:
@@ -109,6 +124,14 @@ def lifecycle(request, monkeypatch, tmp_path):
     if name == "lifeisfeudalserver":
         monkeypatch.setattr(module, "wait_for_tcp_closed", lambda *_a: calls.append("db-closed"))
     if name == "solserver":
+        monkeypatch.setattr(module, "wait_for_tcp_closed", closed)
+    if name == "soulmask":
+        monkeypatch.setattr(module, "wait_for_tcp_closed", closed)
+    if name == "icarusserver":
+        monkeypatch.setattr(module, "wait_for_tcp_closed", closed)
+    if name == "notdserver":
+        monkeypatch.setattr(module, "wait_for_tcp_closed", closed)
+    if name == "noonesurvivedserver":
         monkeypatch.setattr(module, "wait_for_tcp_closed", closed)
     return module, helpers, calls, run
 

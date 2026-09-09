@@ -110,8 +110,10 @@ restart = gamemodule_common.make_restart_hook()
 
 
 def get_query_address(server):
-    """Use Icarus's Steam query port for native and Wine launches."""
+    """Return the validated health surface for the current platform."""
 
+    if IS_LINUX:
+        return runtime_module.resolve_query_host(server), int(server.data["port"]), "tcp"
     return runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s"
 
 

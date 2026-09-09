@@ -32,6 +32,13 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 command_functions = {}
 max_stop_wait = 1
 setting_schema = {
+    "bindaddress": SettingSpec(
+        canonical_key="bindaddress",
+        description="The IP address used for the game and Steam query listeners.",
+        apply_to=("datastore", "launch_args"),
+        launch_arg_format="MultiHome={value}",
+        examples=("0.0.0.0",),
+    ),
     **gamemodule_common.build_unreal_setting_schema(
         include_maxplayers=True,
         port_format="Port={value}",
@@ -53,6 +60,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="GroundBranch/Binari
     gamemodule_common.set_server_defaults(
         server,
         {
+            "bindaddress": "0.0.0.0",
             "queryport": "27015",
             "maxplayers": "16",
         },
@@ -104,8 +112,10 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
+    launch_data = dict(server.data)
+    launch_data.setdefault("bindaddress", "0.0.0.0")
     dynamic_args = build_launch_arg_values(
-        server.data,
+        launch_data,
         setting_schema,
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
@@ -164,7 +174,7 @@ def checkvalue(server, key, *value):
         *value,
         setting_schema=setting_schema,
         resolved_int_keys=("port", "queryport", "maxplayers"),
-        resolved_str_keys=("exe_name", "dir"),
+        resolved_str_keys=("bindaddress", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 

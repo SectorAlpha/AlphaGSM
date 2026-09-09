@@ -13,13 +13,14 @@ Provides query strategies:
 * :func:`soldat_info` — classic Soldat file-server status query over TCP.
 * :func:`source_rcon_info` — authenticated Source RCON ``ListPlayers`` query.
 * :func:`http_json` — HTTP JSON endpoint query.
+* :func:`ogp_ping` — Open Game Protocol challenge handshake.
 * :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
 ``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``,
-``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"udp"``, or ``"tcp"``.  When that hook
+``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"ogp"``, ``"udp"``, or ``"tcp"``.  When that hook
 is absent the caller falls back to a TCP ping on the main port.
 """
 
@@ -32,7 +33,7 @@ import time
 import urllib.error
 import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "ogp_ping", "udp_ping", "tcp_ping",
            "ts3_serverinfo", "soldat_info", "source_rcon_info", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -586,6 +587,40 @@ def udp_ping(host, port, timeout=2.0, payload=b"\x00"):
     except OSError as exc:
         raise QueryError("UDP ping failed: " + str(exc)) from exc
     return (time.time() - start) * 1000.0
+
+
+def ogp_ping(host, port, timeout=2.0):
+    """Complete the OGP challenge request used to identify a live server.
+
+    Open Game Protocol servers answer an intentionally incomplete query with
+    an error packet containing a challenge number. Validating that framed
+    response proves that the application is answering on the query port.
+    """
+
+    request = b"\xff\xff\xff\xffOGP\x00\x03\x01\x00"
+    started = time.monotonic()
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(request, (host, int(port)))
+            response, _ = sock.recvfrom(65535)
+    except OSError as exc:
+        raise QueryError("OGP query failed: " + str(exc)) from exc
+
+    prefix = b"\xff\xff\xff\xffOGP\x00"
+    if len(response) < 15 or not response.startswith(prefix):
+        raise QueryError("Unexpected OGP challenge response")
+    header_size = response[8]
+    packet_type = response[9]
+    header_flags = response[10]
+    if (
+        header_size != 7
+        or len(response) != len(prefix) + header_size
+        or packet_type != 0xFF
+        or header_flags & 0x03 != 0x03
+    ):
+        raise QueryError("Unexpected OGP challenge response")
+    return (time.monotonic() - started) * 1000.0
 
 
 def quake_status(host, port, timeout=2.0):

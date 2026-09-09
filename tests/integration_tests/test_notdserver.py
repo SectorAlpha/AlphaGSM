@@ -23,7 +23,7 @@ from conftest import (
     assert_alphagsm_result_ok,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_udp_closed,
+    wait_for_tcp_closed,
 )
 from gamemodules.notdserver import steam_app_id
 
@@ -100,7 +100,7 @@ def test_notdserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
+        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT, expected_port=port)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -108,23 +108,23 @@ def test_notdserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding (A2S on port" in query_result.stdout
+            "TCP ping on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Server info (A2S on port" in info_result.stdout
+            "TCP ping on port" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("port") == queryport, (
+        assert _info_data.get("port") == port, (
             f"Expected managed port in info JSON: {_info_data!r}"
         )
     finally:
@@ -135,4 +135,4 @@ def test_notdserver_lifecycle(tmp_path):
 
     # verify stopped
     assert_alphagsm_result_ok(stop_result)
-    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

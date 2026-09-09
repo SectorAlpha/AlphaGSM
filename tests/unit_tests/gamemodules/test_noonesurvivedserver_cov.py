@@ -134,13 +134,20 @@ def test_noonesurvived_runtime_metadata_enables_xvfb_for_docker(tmp_path):
     assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
 
 
-def test_query_addresses_use_a2s_on_linux(monkeypatch):
-    monkeypatch.setattr(mod, "IS_LINUX", True)
+@pytest.mark.parametrize(
+    "is_linux,expected",
+    [
+        (True, ("127.0.0.1", 7777, "tcp")),
+        (False, ("127.0.0.1", 27015, "a2s")),
+    ],
+)
+def test_query_addresses_use_validated_platform_protocol(monkeypatch, is_linux, expected):
+    monkeypatch.setattr(mod, "IS_LINUX", is_linux)
     server = DummyServer()
     server.data.update({"port": 7777, "queryport": 27015})
 
-    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
-    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_missing_exe(tmp_path):

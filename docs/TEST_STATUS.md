@@ -47,14 +47,17 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   the shared `steamcmd-linux` family. The previous Windows server reached
   startup under Wine but crashed in `xaudio2_9.dll` even with `-nosound`.
   Existing WindowsServer settings and the legacy save database migrate only
-  when native targets are absent. Replacement lifecycle validation is pending.
+  when native targets are absent. Docker now runs the root-refusing binary as
+  the invoking host user. Replacement lifecycle validation is pending.
 - Onset now exposes its install root to the native loader so the bundled
-  `libsteam_api.so` resolves. Survive the Nights now copies required missing
+  `libsteam_api.so` resolves and uses its real OGP challenge response for
+  readiness. Survive the Nights now copies required missing
   files such as `TpPresets.json` from its shipped configuration templates while
   preserving operator files. Nightingale's first bootstrap reached level and
   navigation loading after the old five-minute deadline, so smoke validation
-  now allows ten minutes and retains application/runtime diagnostics. These
-  corrections await replacement CI lifecycle validation.
+  now allows ten minutes, retains application/runtime diagnostics, and uses
+  host networking to reach the native server's loopback-bound HTTP status
+  listener. These corrections await replacement CI lifecycle validation.
 - ARK: Survival Ascended now enables and publishes its TCP RCON service for
   `query` and `info`. Its prior A2S timeout was a protocol mismatch: current ASA
   uses EOS and documents the old query port as deprecated. Fresh and legacy
@@ -62,13 +65,14 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   operator-defined credentials are preserved. Space Engineers now passes its
   mounted container path to `-path` instead of a host-only path.
   Both corrections await replacement CI lifecycle validation.
-- The Icarus, Night of the Dead, No One Survived and Soulmask smoke runners now
-  require native A2S replies; CODWAW requires its Quake status reply. Failed
-  runners retain application/runtime logs before cleanup. TCP readiness could
-  previously accept a Docker proxy even when the game had exited.
+- CODWAW requires its Quake status reply. Night of the Dead, No One Survived,
+  Icarus, and Soulmask retain their previously validated generic TCP health
+  surfaces on the managed game port because their current Linux/Wine servers do
+  not answer A2S. Failed runners retain application/runtime logs before cleanup.
 - Further September 9 repairs correct Soldat's root-user exit, native player
   limit/configuration and status query; publish Project CARS' query port; apply
-  Ground Branch's documented launch syntax; and provide Battle Cry of Freedom's
+  Ground Branch's documented launch and wildcard bind syntax; and provide
+  Battle Cry of Freedom's
   Wine display. Failed `send` commands now capture bounded runtime diagnostics.
   BCoF's native port settings remain unverified. These changes have unit coverage
   and await CI lifecycle validation; no support state is promoted.
@@ -94,8 +98,9 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - September 8 smoke/CI repairs correct skip reporting, Source smoke protocol
   readiness, artifact upload retry, Tower Unite/Warfork Steam library exposure,
   Unturned/STN native ports, and Wine query protocols for
-  Icarus, NOTD, No One Survived and Soulmask. CODWAW now uses its native UDP
-  status protocol. ETS2 tests require real exported client packages. These
+  NOTD and No One Survived. Icarus and Soulmask continue to use their validated
+  generic TCP health surfaces. CODWAW now uses its native UDP status protocol.
+  ETS2 tests require real exported client packages. These
   changes have local unit coverage and await replacement CI lifecycle results.
   They do not promote any server's support state.
 - Fresh [AHL2 Docker diagnostics](https://github.com/SectorAlpha/AlphaGSM/actions/runs/34280455410/job/102247947798)
@@ -183,7 +188,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ccserver | SteamCMD (Source) |
 | citadelserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; anonymous SteamCMD app `489650` and the native Linux payload remain supported, with the validated health contract now declared honestly as generic TCP on the managed game port because the configured queryport did not answer A2S in replacement CI validation. |
 | colserver | SteamCMD |
-| conanexiles | Docker runtime (SteamCMD Linux) — the official native Linux depot replaces the Wine path that crashed in `xaudio2_9.dll` during current CI. AlphaGSM launches `ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping`, syncs settings under `ConanSandbox/Saved/Config/LinuxServer/`, claims the hardcoded pinger at game port plus one, and retains A2S on the managed `queryport`. Replacement CI validation is pending; this does not record a new pass. |
+| conanexiles | Docker runtime (SteamCMD Linux) — the official native Linux depot replaces the Wine path that crashed in `xaudio2_9.dll` during current CI. AlphaGSM launches `ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping` as the invoking host user because the binary refuses root, syncs settings under `ConanSandbox/Saved/Config/LinuxServer/`, claims the hardcoded pinger at game port plus one, and retains A2S on the managed `queryport`. Replacement CI validation is pending; this does not record a new pass. |
 | counterstrike2 | SteamCMD (Source 2) — PASSED 2026-04-08 |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |

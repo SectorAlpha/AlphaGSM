@@ -80,6 +80,8 @@ native files always win.
 
 - Preferred executable: `ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping`
 - Container family: `steamcmd-linux`
+- Docker runs the native server as the invoking host user because the binary
+  refuses root privileges
 - Query surface: A2S on the managed `queryport`
 - Default map: `ConanSandbox`
 

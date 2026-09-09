@@ -19,7 +19,7 @@ SOURCE = ("bb2server", "bmdmserver", "ccserver", "counterstrike2", "cssserver",
 @pytest.mark.parametrize("module", GOLDSRC + SOURCE + (
     "argoserver", "lifeisfeudalserver", "groundbranchserver", "solserver", "pcarserver",
     "notdserver", "noonesurvivedserver", "icarusserver", "soulmask", "codwawserver",
-    "arksurvivalascended",
+    "arksurvivalascended", "onsetserver",
     ))
 @pytest.mark.parametrize("query_rc", [0, 1])
 def test_smoke_readiness_requires_protocol_response(tmp_path, module, query_rc):
@@ -50,8 +50,13 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
     assert (result.returncode == 0) == (query_rc == 0)
     protocol = {
         "solserver": "soldat",
+        "soulmask": "tcp",
+        "icarusserver": "tcp",
+        "notdserver": "tcp",
+        "noonesurvivedserver": "tcp",
         "codwawserver": "quake",
         "arksurvivalascended": "source_rcon",
+        "onsetserver": "ogp",
     }.get(module, "a2s")
     protocol_call = f"protocol {protocol}"
     assert protocol_call in calls

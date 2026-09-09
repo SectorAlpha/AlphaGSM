@@ -21,7 +21,7 @@ from conftest import (
     assert_alphagsm_result_ok,
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
-    wait_for_udp_closed,
+    wait_for_tcp_closed,
 )
 from gamemodules.soulmask import steam_app_id
 
@@ -89,34 +89,36 @@ def test_soulmask_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        _info_data = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        _info_data = wait_for_info_protocol(
+            env, server_name, "tcp", START_TIMEOUT, expected_port=port
         )
-        assert _info_data.get("port") == queryport, (
-            f"Expected Soulmask A2S readiness on the managed query port: {_info_data!r}"
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data.get("port") == port, (
+            f"Expected Soulmask TCP readiness on the managed game port: {_info_data!r}"
         )
 
         run_and_assert_ok(env, server_name, "status")
 
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding (A2S on port" in query_result.stdout
+            "TCP ping on port" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Server info (A2S on port" in info_result.stdout
+            "TCP ping on port" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "tcp", (
+            f"Expected tcp protocol in info JSON: {_info_data!r}"
         )
-        assert _info_data.get("port") == queryport, (
-            f"Expected Soulmask A2S readiness on the managed query port: {_info_data!r}"
+        assert _info_data.get("port") == port, (
+            f"Expected Soulmask TCP readiness on the managed game port: {_info_data!r}"
         )
     finally:
         stop_result = capture_alphagsm_stop(
@@ -124,4 +126,4 @@ def test_soulmask_lifecycle(tmp_path):
         )
 
     assert_alphagsm_result_ok(stop_result)
-    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)

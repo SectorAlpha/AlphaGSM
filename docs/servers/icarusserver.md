@@ -2,7 +2,11 @@
 
 This guide covers the `icarusserver` module in AlphaGSM.
 
-`icarusserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`icarusserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane exercises both process and Docker
+runtime selection, while local runs remain process-backed unless you opt into
+Docker. On Linux/Wine, `query` and `info` use the validated generic TCP health
+surface on the managed game port.
 
 ## Requirements
 
@@ -60,8 +64,7 @@ alphagsm myicarusse backup
 
 - Module name: `icarusserver`
 - Default port: 17778
-- Query/info uses native Steam A2S on `queryport` in both process and Docker
-  runtimes. The earlier TCP-only check did not establish game readiness.
+- Query/info uses generic TCP on the managed game port under Linux/Wine.
 
 ## Developer Notes
 
@@ -73,8 +76,9 @@ alphagsm myicarusse backup
 - **SteamCMD App ID**: `2089300`
 
 The Linux Docker path uses the shared `wine-proton` runtime image and its
-Xvfb/software-GL support. Anonymous SteamCMD installs app `2089300`.
-Readiness requires the server to answer A2S on the configured query port.
+Xvfb/software-GL support. Anonymous SteamCMD installs app `2089300`. Current
+Linux/Wine launches open the game port but do not provide a stable A2S reply on
+the configured query port, so AlphaGSM reports the live TCP health surface.
 
 ### Server Configuration
 

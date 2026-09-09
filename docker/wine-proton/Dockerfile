@@ -40,13 +40,25 @@ RUN dpkg --add-architecture i386 \
 # package, whose shared curl-config path conflicts with the amd64 package.
 RUN ln -sf libcurl.so.4 /usr/lib/i386-linux-gnu/libcurl.so
 
-RUN wineboot --init \
-    && winetricks -q win10 \
-    && (winetricks -q --force corefonts || true) \
-    && (winetricks -q --force vcrun2019 || true) \
-    && (winetricks -q --force vcrun2022 || true) \
-    && (wineserver --kill || true) \
-    && rm -rf /tmp/wine-*
+RUN set -eu; \
+    export DISPLAY=:99; \
+    export WINEDLLOVERRIDES=; \
+    Xvfb :99 -screen 0 1024x768x16 -nolisten tcp >/tmp/alphagsm-xvfb.log 2>&1 & \
+    xvfb_pid=$!; \
+    trap 'kill "${xvfb_pid}" >/dev/null 2>&1 || true' EXIT; \
+    attempt=0; \
+    while [ ! -S /tmp/.X11-unix/X99 ]; do \
+        attempt=$((attempt + 1)); \
+        [ "${attempt}" -lt 100 ] || { cat /tmp/alphagsm-xvfb.log; exit 1; }; \
+        sleep 0.1; \
+    done; \
+    wineboot --init; \
+    winetricks -q win10; \
+    (winetricks -q --force corefonts || true); \
+    winetricks -q --force vcrun2019; \
+    winetricks -q --force vcrun2022; \
+    wineserver --kill || true; \
+    rm -rf /tmp/wine-* /tmp/alphagsm-xvfb.log
 
 RUN wget -q \
         "https://dl.winehq.org/wine/wine-mono/8.1.0/wine-mono-8.1.0-x86.msi" \

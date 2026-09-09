@@ -20,6 +20,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['bindaddress'] == '0.0.0.0'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -99,6 +100,7 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cmd == [
         "GroundBranchServer-Win64-Shipping.exe",
         "?MaxPlayers=27015",
+        "MultiHome=0.0.0.0",
         "Port=27015",
         "QueryPort=27015",
         "-log",
@@ -107,6 +109,7 @@ def test_get_start_command(tmp_path, monkeypatch):
 
 
 def test_setting_schema_exposes_groundbranch_launch_formats():
+    assert mod.setting_schema["bindaddress"].launch_arg_format == "MultiHome={value}"
     assert mod.setting_schema["port"].launch_arg_format == "Port={value}"
     assert mod.setting_schema["queryport"].launch_arg_format == "QueryPort={value}"
     assert mod.setting_schema["maxplayers"].launch_arg_format == "?MaxPlayers={value}"
@@ -207,7 +210,7 @@ def test_native_launch_uses_url_player_option_before_port_settings(tmp_path, mon
                        port=19000, queryport=19001, maxplayers=12)
     (tmp_path / server.data["exe_name"]).touch()
     command, _cwd = mod.get_start_command(server)
-    assert command == [server.data["exe_name"], "?MaxPlayers=12", "Port=19000",
+    assert command == [server.data["exe_name"], "?MaxPlayers=12", "MultiHome=0.0.0.0", "Port=19000",
                        "QueryPort=19001", "-log"]
 
 

@@ -73,8 +73,8 @@ def test_get_start_command_uses_config_flag_and_query_port(tmp_path):
         str(tmp_path / "server_config.json"),
     ]
     assert cwd == str(tmp_path) + "/"
-    assert mod.get_query_address(server) == ("127.0.0.1", 7776, "a2s")
-    assert mod.get_info_address(server) == ("127.0.0.1", 7776, "a2s")
+    assert mod.get_query_address(server) == ("127.0.0.1", 7776, "ogp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 7776, "ogp")
 
 
 def test_get_start_command_uses_relative_config_for_docker(tmp_path):

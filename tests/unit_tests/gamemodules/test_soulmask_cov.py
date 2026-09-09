@@ -213,15 +213,15 @@ def test_get_start_command_uses_proton_on_linux(tmp_path, monkeypatch):
     assert cwd == server.data["dir"]
 
 
-def test_get_query_and_info_address_use_a2s_queryport_on_linux(monkeypatch):
+def test_get_query_and_info_address_use_tcp_main_port_on_linux(monkeypatch):
     server = DummyServer("soul")
     server.data["port"] = "8777"
     server.data["queryport"] = "27016"
     monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.12")
     monkeypatch.setattr(mod, "IS_LINUX", True)
 
-    assert mod.get_query_address(server) == ("10.0.0.12", 27016, "a2s")
-    assert mod.get_info_address(server) == ("10.0.0.12", 27016, "a2s")
+    assert mod.get_query_address(server) == ("10.0.0.12", 8777, "tcp")
+    assert mod.get_info_address(server) == ("10.0.0.12", 8777, "tcp")
 
 
 def test_setting_schema_launch_formats():
