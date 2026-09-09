@@ -149,7 +149,7 @@ def test_lifecycle_uses_native_readiness_and_matching_shutdown(lifecycle, tmp_pa
     monkeypatch.setattr(module, "runtime_backend", backend, raising=False)
     next(value for key, value in vars(module).items() if key.startswith("test_"))(tmp_path)
     assert calls.index("start") < calls.index("readiness") < calls.index("query")
-    if module.module_name == "groundbranchserver":
+    if getattr(module, "module_name", None) == "groundbranchserver":
         assert calls.index("start") < calls.index("log-readiness") < calls.index("readiness")
     assert calls.index("query") < calls.index("stop") < calls.index("closed")
 
