@@ -2891,8 +2891,8 @@
     "platforms": null,
     "provider_categories": [],
     "runtime_family": "steamcmd-linux",
-    "runtime_verified": true,
-    "support_state": "PASSED"
+    "runtime_verified": false,
+    "support_state": "DISABLED"
   },
   {
     "aliases": [

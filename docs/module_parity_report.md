@@ -130,7 +130,7 @@ Native declarations remain separate from process launch requirements and the req
 | lifeisfeudalserver | - | ENABLED (BYO) | no | no | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
 | longvinterserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | medievalengineersserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
-| memoriesofmarsserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
+| memoriesofmarsserver | - | DISABLED | no | no | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | minecraft.bedrock | mcbserver | PASSED | no | yes | status | service-console | unknown | unknown |  | unknown | unknown | unknown |
 | minecraft.bungeecord | - | PASSED | no | yes | status | java | unknown | unknown |  | unknown | unknown | unknown |
 | minecraft.custom | - | ENABLED (BYO) | yes | no | - | java | unknown | unknown |  | unknown | unknown | unknown |
