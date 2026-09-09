@@ -75,8 +75,16 @@ def test_q2server_runtime_requirements_use_quake_linux_family(tmp_path):
     assert requirements["ports"] == [
         {"host": 27910, "container": 27910, "protocol": "udp"}
     ]
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert requirements["env"]["HOME"] == "/home/alphagsm"
+    assert any(
+        mount["target"] == "/home/alphagsm"
+        for mount in requirements["mounts"]
+    )
     assert spec["working_dir"] == "/srv/server"
     assert spec["command"][0] == "./release/q2ded"
+    assert spec["run_as_host_user"] is True
 
 
 def test_qwserver_configure_sets_expected_defaults(tmp_path):
@@ -140,8 +148,16 @@ def test_qwserver_runtime_requirements_use_quake_linux_family(tmp_path):
     assert requirements["ports"] == [
         {"host": 27500, "container": 27500, "protocol": "udp"}
     ]
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert requirements["env"]["HOME"] == "/home/alphagsm"
+    assert any(
+        mount["target"] == "/home/alphagsm"
+        for mount in requirements["mounts"]
+    )
     assert spec["working_dir"] == "/srv/server"
     assert spec["command"][0] == "./mvdsv"
+    assert spec["run_as_host_user"] is True
 
 
 def test_rtcwserver_get_start_command_builds_expected_args(tmp_path):

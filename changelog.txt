@@ -19,6 +19,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Warfork tests: use the live Quake `info --json` response for readiness in
   smoke and integration coverage, and verify shutdown against the UDP query
   surface instead of relying on console markers or an unrelated TCP port.
+- Quake Docker runtime: run Quake II and QuakeWorld as the invoking host user
+  so Quake II accepts startup, and include the `libcurl.so.4` runtime required
+  by the current MVDSV binary.
+- Windows server runtimes: give Medieval Engineers an Xvfb-backed host Proton
+  launch, and preserve the Wine/Proton image entrypoint inside Return to
+  Moria's interactive Docker console bridge.
 - The Forest: write the native server configuration and managed save path,
   launch the Windows Unity server under Xvfb with explicit config/save
   arguments, publish its complete port set, and use its A2S query port for

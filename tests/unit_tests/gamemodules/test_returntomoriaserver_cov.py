@@ -306,7 +306,10 @@ def test_container_spec_prefers_proton_and_preserves_launch_contract(tmp_path):
     spec = mod.get_container_spec(server)
 
     assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
-    assert spec["command"] == ["./MoriaServer.exe"]
+    assert spec["command"] == [
+        "/usr/local/bin/alphagsm-wine-proton-entrypoint",
+        "./MoriaServer.exe",
+    ]
     assert spec["working_dir"] == "/srv/server"
     assert spec["stop_mode"] == "exec-console"
     assert spec["stdin_open"] is True

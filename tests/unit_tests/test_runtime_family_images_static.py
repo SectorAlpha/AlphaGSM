@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 JAVA_DOCKERFILE = Path("docker/java/Dockerfile")
+QUAKE_LINUX_DOCKERFILE = Path("docker/quake-linux/Dockerfile")
 SIMPLE_TCP_DOCKERFILE = Path("docker/simple-tcp/Dockerfile")
 STEAMCMD_LINUX_DOCKERFILE = Path("docker/steamcmd-linux/Dockerfile")
 WINE_PROTON_DOCKERFILE = Path("docker/wine-proton/Dockerfile")
@@ -43,6 +44,12 @@ def test_java_runtime_image_uses_utf8_for_native_unicode_cache_paths():
 
     assert environment.get("LANG") == "C.UTF-8"
     assert environment.get("LC_ALL") == "C.UTF-8"
+
+
+def test_quake_linux_runtime_keeps_quakeworld_libcurl_available():
+    text = QUAKE_LINUX_DOCKERFILE.read_text(encoding="utf-8")
+
+    assert "libcurl4t64" in text
 
 
 def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():

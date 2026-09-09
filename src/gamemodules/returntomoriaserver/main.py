@@ -21,6 +21,7 @@ steam_anonymous_login_possible = True
 DEFAULT_PORT = 7777
 DEFAULT_WORLD_NAME = "Dedicated Server World"
 PREFER_PROTON = True
+WINE_PROTON_ENTRYPOINT = "/usr/local/bin/alphagsm-wine-proton-entrypoint"
 
 
 def _container_runtime_env(_server):
@@ -300,7 +301,7 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
     stdin_open=True,
 )
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
+_build_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
     port_definitions=({"key": "port", "protocol": "udp"},),
     prefer_proton=PREFER_PROTON,
@@ -309,3 +310,11 @@ get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     stdin_open=True,
     tty=True,
 )
+
+
+def get_container_spec(server):
+    """Return a console-enabled Proton spec that still invokes the image entrypoint."""
+
+    spec = _build_container_spec(server)
+    spec["command"] = [WINE_PROTON_ENTRYPOINT, *spec["command"]]
+    return spec

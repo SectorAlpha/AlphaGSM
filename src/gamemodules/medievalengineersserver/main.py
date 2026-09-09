@@ -1,6 +1,7 @@
 """Medieval Engineers dedicated server lifecycle helpers."""
 
 import os
+import shutil
 import xml.etree.ElementTree as ET
 
 import utils.proton as proton
@@ -225,6 +226,38 @@ def prestart(server):
     sync_server_config(server)
 
 
+def _wrap_linux_command(command, wineprefix=None):
+    """Wrap Medieval Engineers for a headless Linux process launch."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    wrapped = [
+        arg
+        for arg in wrapped
+        if not (
+            arg.startswith("DISPLAY=")
+            or arg.startswith("WINEDLLOVERRIDES=")
+        )
+    ]
+    return [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        *wrapped,
+    ]
+
+
 def get_start_command(server):
     """Build the command used to launch a Medieval Engineers dedicated server."""
 
@@ -241,10 +274,9 @@ def get_start_command(server):
         str(server.data["port"]),
     ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
         )
     return cmd, working_dir
 
@@ -293,6 +325,7 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         prefer_proton=True,
         extra_env=_container_runtime_env,
+        extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(

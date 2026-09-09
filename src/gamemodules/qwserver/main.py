@@ -610,37 +610,25 @@ def get_start_command(server):
 def get_runtime_requirements(server):
     """Return Docker runtime metadata for native Linux Quake-family servers."""
 
-    requirements = {
-        "engine": "docker",
-        "family": "quake-linux",
-    }
-    if "dir" in server.data:
-        requirements["mounts"] = [
-            {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
-        ]
-    if "port" in server.data:
-        requirements["ports"] = [
-            {
-                "host": int(server.data["port"]),
-                "container": int(server.data["port"]),
-                "protocol": "udp",
-            }
-        ]
-    return requirements
+    return runtime_module.build_runtime_requirements(
+        server,
+        family="quake-linux",
+        port_definitions=({"key": "port", "protocol": "udp"},),
+        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
+    )
 
 
 def get_container_spec(server):
     """Return the Docker launch spec for QuakeWorld."""
 
-    cmd, _cwd = get_start_command(server)
-    requirements = get_runtime_requirements(server)
-    return {
-        "working_dir": "/srv/server",
-        "stdin_open": True,
-        "mounts": requirements.get("mounts", []),
-        "ports": requirements.get("ports", []),
-        "command": cmd,
-    }
+    return runtime_module.build_container_spec(
+        server,
+        family="quake-linux",
+        get_start_command=get_start_command,
+        port_definitions=({"key": "port", "protocol": "udp"},),
+        stdin_open=True,
+        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
+    )
 
 
 def get_query_address(server):

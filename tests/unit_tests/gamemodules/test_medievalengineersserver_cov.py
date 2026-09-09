@@ -137,7 +137,7 @@ def test_get_start_command_prefers_proton_on_linux(tmp_path, monkeypatch):
     )
 
 
-def test_get_start_command_reuses_shared_wrapped_command_on_linux(tmp_path, monkeypatch):
+def test_get_start_command_adds_virtual_display_on_linux(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", True)
     shared_wrapper = [
         "env",
@@ -152,6 +152,27 @@ def test_get_start_command_reuses_shared_wrapped_command_on_linux(tmp_path, monk
         "MedievalEngineersDedicated.exe",
     ]
     monkeypatch.setattr(mod.proton, "wrap_command", lambda *args, **kwargs: list(shared_wrapper))
+    display_wrapper = [
+        "env",
+        "-u",
+        "TMPDIR",
+        "-u",
+        "TMP",
+        "-u",
+        "TEMP",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "proton",
+        "run",
+        "MedievalEngineersDedicated.exe",
+    ]
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda command, **kwargs: list(display_wrapper),
+    )
+    monkeypatch.setattr(mod.shutil, "which", lambda command: f"/usr/bin/{command}")
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "DedicatedServer64/MedievalEngineersDedicated.exe"
@@ -162,7 +183,12 @@ def test_get_start_command_reuses_shared_wrapped_command_on_linux(tmp_path, monk
 
     cmd, _cwd = mod.get_start_command(server)
 
-    assert cmd == shared_wrapper
+    assert cmd == [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        *display_wrapper,
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):
