@@ -16,6 +16,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
   response as readiness for BrainBread 2, Counter-Strike: Source, Fistful of
   Frags, Garry's Mod, Insurgency, Left 4 Dead 2, and PVKII when Docker logs
   omit the traditional startup markers.
+- Warfork tests: use the live Quake `info --json` response for readiness in
+  smoke and integration coverage, and verify shutdown against the UDP query
+  surface instead of relying on console markers or an unrelated TCP port.
 - The Forest: write the native server configuration and managed save path,
   launch the Windows Unity server under Xvfb with explicit config/save
   arguments, publish its complete port set, and use its A2S query port for

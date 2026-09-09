@@ -1,6 +1,7 @@
 """Integration test for wfserver."""
 
 import os
+import sys
 
 import pytest
 
@@ -9,17 +10,15 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
-    pick_free_tcp_port,
-    wait_for_quake_ready,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_runtime_log_marker,
-    wait_for_tcp_closed,
-    wait_for_udp_closed,
+    wait_for_info_protocol,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
+    wait_for_generic_udp_closed,
 )
 from gamemodules.wfserver import steam_app_id
 
@@ -56,7 +55,7 @@ def test_wfserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
@@ -71,18 +70,15 @@ def test_wfserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
+        ready_info = wait_for_info_protocol(
+            env, server_name, "quake", START_TIMEOUT, expected_port=port
+        )
+        assert ready_info.get("players") == 0, (
+            f"Expected 0 players on fresh server: {ready_info!r}"
         )
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -108,7 +104,16 @@ def test_wfserver_lifecycle(tmp_path):
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_generic_udp_closed(
+        "127.0.0.1",
+        port,
+        STOP_TIMEOUT,
+        payload=b"\xff\xff\xff\xffgetstatus\n",
+    )

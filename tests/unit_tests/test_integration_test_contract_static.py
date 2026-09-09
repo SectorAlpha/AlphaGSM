@@ -48,6 +48,7 @@ RUNTIME_AWARE_PROTOCOL_TESTS = {
     "test_ahl2server.py": "tcp",
     "test_kf2server.py": "a2s",
     "test_unturned.py": "a2s",
+    "test_wfserver.py": "quake",
 }
 STRICT_SOURCE_A2S_TESTS = (
     "test_bb2server.py",
@@ -146,7 +147,6 @@ RUNTIME_LOG_READINESS_TESTS = (
     "test_rimworldtogetherserver.py",
     "test_scpslserver.py",
     "test_wurmserver.py",
-    "test_wfserver.py",
     "test_ut99server.py",
 )
 
