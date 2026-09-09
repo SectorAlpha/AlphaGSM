@@ -3,9 +3,8 @@
 This guide covers the `icarusserver` module in AlphaGSM.
 
 `icarusserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
-baseline. The current GitHub integration lane exercises both process and Docker
-runtime selection, while local runs remain process-backed unless you opt into
-Docker. On Linux/Wine, `query` and `info` use the validated generic TCP health
+baseline. GitHub validation uses the supported Docker `wine-proton` runtime.
+On Linux/Wine, `query` and `info` use the validated generic TCP health
 surface on the managed game port.
 
 ## Requirements

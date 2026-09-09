@@ -2,11 +2,10 @@
 
 This guide covers the `seserver` module in AlphaGSM.
 
-`seserver` retains its prior `PASSED` support classification. Replacement CI
-run `34289635472` exposed a Docker launch path outside the mounted server
-installation. AlphaGSM now passes `Z:\srv\server` as Wine's data directory;
-process launches retain the host installation path. Replacement lifecycle
-validation is pending.
+`seserver` retains its prior `PASSED` support classification. GitHub
+validation uses the supported Docker `wine-proton` runtime. AlphaGSM passes
+`Z:\srv\server` as Wine's data directory so the dedicated server reads and
+writes inside the mounted installation.
 
 Keen's [dedicated-server guide](https://www.spaceengineersgame.com/dedicated-servers/)
 defines `-path` as the directory used to load configuration and store server

@@ -12,6 +12,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
   runs confirmed that the retired binary still requires the LIMBIC session
   backend that disappeared with 505 Games' June 25, 2024 multiplayer sunset;
   it now fails to create a session and crashes before opening a listener.
+- CI runtime routing: keep Colony Survival, DeadPoly, Fear the Night, HumanitZ,
+  Icarus, Night of the Dead, Outpost Zero, PixARK, Space Engineers, Soulmask,
+  StarRupture, and Subsistence on their validated Docker runtime paths. The
+  September 9 full matrix completed those Docker lifecycles but its extra
+  forced host-process rechecks stalled or exited before their health surfaces.
 - ASKA: follow the current `server properties.txt` and `-propertiesPath`
   launch contract, synchronize the managed identity and ports after updates,
   and report its required Steam GSLT as `ENABLED (AUTH)` before start.

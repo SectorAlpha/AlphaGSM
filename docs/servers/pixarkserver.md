@@ -2,11 +2,11 @@
 
 This guide covers the `pixarkserver` module in AlphaGSM.
 
-`pixarkserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`pixarkserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. GitHub validation uses the supported Docker Wine/Proton runtime.
 
 ## Requirements
 
-- `screen`
+- Docker with the shared Wine/Proton runtime
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 

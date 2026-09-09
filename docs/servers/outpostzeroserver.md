@@ -4,10 +4,11 @@ This guide covers the `outpostzeroserver` module in AlphaGSM.
 
 Status: PASSED on 2026-05-29
 
+The validated Linux path uses the shared Docker `wine-proton` runtime.
+
 ## Requirements
 
-- `screen`
-- Wine or Proton-GE on Linux
+- Docker with the shared Wine/Proton runtime
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 

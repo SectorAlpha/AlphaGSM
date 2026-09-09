@@ -3280,3 +3280,37 @@ def test_pr_event_still_routes_docs_only_diff(monkeypatch):
     routing = load_routing_module()
     monkeypatch.setattr(routing, 'git_changed_files', lambda *args, **kwargs: ['README.md'])
     assert routing.build_outputs_for_event('pull_request', 'base', 'head')['game_test_mode'] == 'skip'
+
+
+@pytest.mark.parametrize(
+    "test_name",
+    [
+        "colserver",
+        "deadpolyserver",
+        "fearthenightserver",
+        "hzserver",
+        "icarusserver",
+        "notdserver",
+        "outpostzeroserver",
+        "pixarkserver",
+        "seserver",
+        "soulmask",
+        "starruptureserver",
+        "subsistenceserver",
+    ],
+)
+def test_docker_validated_servers_do_not_repeat_unproven_process_lanes(test_name):
+    routing = load_routing_module()
+    test_path = f"tests/integration_tests/test_{test_name}.py"
+
+    matrix = routing.build_integration_matrix([test_path], repo_root=Path("."))
+
+    assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
+    assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS
+    assert matrix["include"] == [
+        {
+            "batch": 1,
+            "files": test_path,
+            "label": test_name,
+        }
+    ]
