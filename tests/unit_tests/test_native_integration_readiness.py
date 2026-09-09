@@ -82,14 +82,14 @@ def lifecycle(request, monkeypatch, tmp_path):
                 output = f"{protocol.upper()} ping on port\nNo further details available."
             else:
                 output = (
-                    "Server info (A2S on port) Server info (Quake on port)\n"
+                    "Server info (A2S on port) Server info (Quake status on port)\n"
                     "Name        : AlphaGSM Conan IT\nPlayers     : 0/16"
                 )
         elif command == "query":
             if protocol in ("tcp", "udp"):
                 output = f"{protocol.upper()} ping on port"
             else:
-                label = "Quake" if protocol == "quake" else "A2S"
+                label = "Quake status" if protocol == "quake" else "A2S"
                 output = f"Server is responding ({label} on port)"
         elif command == "status":
             output = "Server isn't running" if "stop" in calls else "Server is running"

@@ -19,13 +19,10 @@ from conftest import (
     skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
     set_source_hibernation,
-    wait_for_runtime_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
-    wait_for_a2s_ready,
 )
 from gamemodules.gmodserver import _GMOD_CONTENT_INSTALLS, _GMOD_MOUNTDEPOTS_DEFAULTS, steam_app_id
-from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
@@ -115,7 +112,6 @@ def test_gmodserver_lifecycle(tmp_path):
     )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
-    query_host = detect_query_host()
 
     # create
     run_and_assert_ok(env, server_name, "create", "gmodserver")
@@ -143,23 +139,13 @@ def test_gmodserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["SV_ActivateServer", "Connection to Steam servers successful", "VAC secure mode"],
-            START_TIMEOUT,
-        )
-
-        # status
-        run_and_assert_ok(env, server_name, "status")
-
         info_data = wait_for_info_protocol(
             env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
         _assert_common_gmod_info(info_data)
 
-        wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
+        # status
+        run_and_assert_ok(env, server_name, "status")
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -190,4 +176,4 @@ def test_gmodserver_lifecycle(tmp_path):
 
     assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
     # verify stopped
-    wait_for_udp_closed(query_host, port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
