@@ -952,7 +952,7 @@ jobs:
             --junit-xml=backend-process-results.xml \
             -v
       - name: Backend Docker Integration Tests (active matrix cases)
-        if: always()
+        if: ${{ always() && !cancelled() }}
         env:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
           ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}

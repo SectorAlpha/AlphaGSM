@@ -55,8 +55,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
   rewriting its listener port, and capture startup diagnostics in smoke tests.
 - Velocity: generate and rewrite `velocity.toml` without entering the
   BungeeCord-only `config.yml` bootstrap path.
-- CI: stop superseded integration recheck matrices on cancellation so the next
-  commit can start validation without waiting for obsolete game launches.
+- CI: stop superseded integration recheck matrices and backend Docker suites on
+  cancellation so the next commit can start validation without waiting for
+  obsolete game launches.
 - Wine launch: enable Xvfb for ASKA and Sunkenland, and retain Saleblazers'
   unattended -headless configuration launch on Linux.
 - Argo: query its native Steam listener on game port plus one and publish the

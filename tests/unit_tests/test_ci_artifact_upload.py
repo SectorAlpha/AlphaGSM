@@ -51,3 +51,19 @@ def test_expensive_rechecks_stop_when_the_workflow_is_cancelled():
     # The required final report and diagnostic uploads still run after failure.
     assert '    if: always()' in jobs['summarize-tests']
     assert '        if: always()' in jobs['integration-flake-recheck']
+
+
+def test_cancelled_backend_job_does_not_start_docker_integration_suite():
+    """A superseded process lane must not launch the expensive Docker lane."""
+
+    workflow = Path('.github/workflows/unittest.yaml').read_text()
+    backend_job = workflow.split('  backend-integration-test:', 1)[1].split(
+        '\n  windows-minecraft-integration:', 1
+    )[0]
+    docker_step = backend_job.split(
+        '- name: Backend Docker Integration Tests (active matrix cases)', 1
+    )[1].split('\n      - name:', 1)[0]
+
+    condition = re.search(r'^        if: (.+)$', docker_step, re.MULTILINE).group(1)
+    assert 'always()' in condition
+    assert '!cancelled()' in condition
