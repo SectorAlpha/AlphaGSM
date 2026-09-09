@@ -533,8 +533,8 @@ def sync_server_config(server):
     os.makedirs(server.data["dir"], exist_ok=True)
     # Life is Feudal reads these database credentials directly from
     # config_local.cs, so this native-config write must remain plaintext.
-    with open(target_path, "w", encoding="utf-8") as handle:  # lgtm[py/clear-text-storage-sensitive-data]
-        handle.write(text)
+    with open(target_path, "w", encoding="utf-8") as handle:
+        handle.write(text)  # lgtm[py/clear-text-storage-sensitive-data]
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
