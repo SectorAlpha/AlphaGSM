@@ -35,6 +35,7 @@ def test_smoke_readiness_requires_protocol_response(tmp_path, module, query_rc):
         "Connection to Steam servers successful.\n"
         "VAC secure mode is activated.\n"
         "Server loaded. Entering simulation...\n"
+        "GameNetDriver SteamSocketsNetDriver_1 started listening on 27015\n"
     )
     commands = tmp_path / "commands"
     prelude = '''set -Eeuo pipefail
@@ -49,7 +50,7 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
 '''
     result = subprocess.run(["bash", "-c", prelude + lifecycle], capture_output=True,
                             env=dict(os.environ, LOG_PATH=str(log), COMMANDS=str(commands),
-                                     QUERY_RC=str(query_rc)), check=False)
+                                     QUERY_RC=str(query_rc), PORT="27015"), check=False)
     calls = commands.read_text().splitlines()
     assert (result.returncode == 0) == (query_rc == 0)
     protocol = {
@@ -61,6 +62,7 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
         "codwawserver": "quake",
         "arksurvivalascended": "source_rcon",
         "onsetserver": "tcp",
+        "groundbranchserver": "udp",
     }.get(module, "a2s")
     protocol_call = f"protocol {protocol}"
     assert protocol_call in calls

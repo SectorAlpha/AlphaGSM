@@ -27,6 +27,7 @@ from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
+from utils.github_releases import authenticated_subprocess_env
 
 UT99_INSTALLER_URL = (
     "https://raw.githubusercontent.com/OldUnreal/FullGameInstallers/master/Linux/install-ut99.sh"
@@ -534,6 +535,7 @@ def install(server):
                 input="y\n",
                 text=True,
                 check=True,
+                env=authenticated_subprocess_env(),
             )
             _sync_installed_layout(server)
             server.data["current_url"] = server.data["url"]

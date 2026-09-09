@@ -10,6 +10,17 @@ from server import ServerError
 HTTP_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
 
 
+def authenticated_subprocess_env():
+    """Return an environment that exposes AlphaGSM's token to GitHub-aware tools."""
+
+    env = os.environ.copy()
+    if not (env.get("GITHUB_TOKEN") or env.get("GH_TOKEN")):
+        token = env.get("ALPHAGSM_GITHUB_TOKEN")
+        if token:
+            env["GITHUB_TOKEN"] = token
+    return env
+
+
 def read_json(url):
     """Fetch and parse JSON from a URL using AlphaGSM's user agent."""
 

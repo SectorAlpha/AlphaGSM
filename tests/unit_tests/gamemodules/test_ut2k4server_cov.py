@@ -82,6 +82,9 @@ def test_install_installer_runs_non_interactive(tmp_path, monkeypatch):
     monkeypatch.setattr(mod.shutil, "which", lambda cmd: "/usr/bin/7z")
     monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(download_dir))
     monkeypatch.setattr(mod.sp, "run", lambda *args, **kwargs: run_calls.append((args, kwargs)))
+    monkeypatch.setenv("ALPHAGSM_GITHUB_TOKEN", "ci-token")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
 
     mod.install(server)
 
@@ -90,6 +93,7 @@ def test_install_installer_runs_non_interactive(tmp_path, monkeypatch):
     assert kwargs["input"] == "y\n"
     assert kwargs["text"] is True
     assert kwargs["check"] is True
+    assert kwargs["env"]["GITHUB_TOKEN"] == "ci-token"
 
 
 def test_get_runtime_requirements_declares_7z_host_dependency_for_installer(tmp_path):

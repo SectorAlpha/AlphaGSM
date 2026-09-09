@@ -79,6 +79,9 @@ def test_install_installer_accepts_terms_non_interactively(tmp_path, monkeypatch
     monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/7z")
     monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(installer_root))
     monkeypatch.setattr(mod.os, "chmod", lambda *_args, **_kwargs: None)
+    monkeypatch.setenv("ALPHAGSM_GITHUB_TOKEN", "ci-token")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
 
     calls = []
 
@@ -95,6 +98,7 @@ def test_install_installer_accepts_terms_non_interactively(tmp_path, monkeypatch
     assert kwargs["check"] is True
     assert kwargs["input"] == "y\n"
     assert kwargs["text"] is True
+    assert kwargs["env"]["GITHUB_TOKEN"] == "ci-token"
 
 def test_install_installer_updates_exe_name_to_installed_binary(tmp_path, monkeypatch):
     server = DummyServer()

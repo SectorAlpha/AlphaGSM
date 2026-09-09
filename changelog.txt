@@ -42,13 +42,15 @@ Historical detail lives in git history. Keep this file focused on release-facing
   preserving existing game-mode settings and exposing the configured Steam query.
 - Port ownership: include Argo and Life is Feudal's adjacent process listeners.
 - Ground Branch: use documented MultiHome/Port/QueryPort and ?MaxPlayers launch
-  syntax so the Wine container exposes both listeners; smoke and integration
-  checks require native A2S replies on the query port.
+  syntax, then validate the exact SteamSockets `GameNetDriver` ready marker and
+  managed UDP game port because the Proton build does not expose local A2S.
 - Battle Cry of Freedom: provide a virtual display during Wine initialization.
 - CI diagnostics: capture runtime evidence when a send command fails immediately
   after launch, preserving the original error.
 - TShock: resolve GitHub release metadata through the shared authenticated API
   client so parallel smoke jobs do not exhaust the anonymous rate limit.
+- Unreal Tournament 99/2004: pass AlphaGSM's GitHub token to the OldUnreal
+  installers so their patch metadata requests remain authenticated in CI.
 - CI: stop superseded integration recheck matrices on cancellation so the next
   commit can start validation without waiting for obsolete game launches.
 - Wine launch: enable Xvfb for ASKA and Sunkenland, and retain Saleblazers'

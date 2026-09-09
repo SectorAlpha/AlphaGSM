@@ -42,7 +42,8 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     mod.configure(server, ask=True)
 
 
-def test_install(tmp_path):
+def test_install(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.steamcmd, "download", MagicMock())
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "GroundBranchServer-Win64-Shipping.exe"
@@ -51,7 +52,8 @@ def test_install(tmp_path):
     mod.install(server)
 
 
-def test_update_with_restart(tmp_path):
+def test_update_with_restart(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.steamcmd, "download", MagicMock())
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 476400
@@ -61,7 +63,8 @@ def test_update_with_restart(tmp_path):
     assert server._started
 
 
-def test_update_no_restart(tmp_path):
+def test_update_no_restart(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.steamcmd, "download", MagicMock())
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 476400
@@ -71,7 +74,8 @@ def test_update_no_restart(tmp_path):
     assert not server._started
 
 
-def test_update_stop_exception(tmp_path):
+def test_update_stop_exception(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.steamcmd, "download", MagicMock())
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 476400
@@ -214,12 +218,12 @@ def test_native_launch_uses_url_player_option_before_port_settings(tmp_path, mon
                        "QueryPort=19001", "-log"]
 
 
-def test_declared_a2s_endpoint_uses_runtime_host_and_query_port(monkeypatch):
+def test_declared_udp_endpoint_uses_runtime_host_and_game_port(monkeypatch):
     server = DummyServer()
     server.data.update(port=19000, queryport=19001)
     monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda server: "192.0.2.7")
-    assert mod.get_query_address(server) == ("192.0.2.7", 19001, "a2s")
-    assert mod.get_info_address(server) == ("192.0.2.7", 19001, "a2s")
+    assert mod.get_query_address(server) == ("192.0.2.7", 19000, "udp")
+    assert mod.get_info_address(server) == ("192.0.2.7", 19000, "udp")
 
 
 def test_runtime_builders_publish_only_native_udp_listeners(monkeypatch):

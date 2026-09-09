@@ -57,3 +57,22 @@ def test_read_json_omits_authorization_without_token(monkeypatch):
     )
 
     assert observed["request"].get_header("Authorization") is None
+
+
+def test_subprocess_env_exposes_alphagsm_token_as_github_token(monkeypatch):
+    monkeypatch.setenv("ALPHAGSM_GITHUB_TOKEN", "ci-token")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    env = github_releases.authenticated_subprocess_env()
+
+    assert env["GITHUB_TOKEN"] == "ci-token"
+
+
+def test_subprocess_env_preserves_explicit_github_token(monkeypatch):
+    monkeypatch.setenv("ALPHAGSM_GITHUB_TOKEN", "ci-token")
+    monkeypatch.setenv("GITHUB_TOKEN", "explicit-token")
+
+    env = github_releases.authenticated_subprocess_env()
+
+    assert env["GITHUB_TOKEN"] == "explicit-token"

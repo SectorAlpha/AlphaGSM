@@ -14,7 +14,7 @@ CASES = (
     ("pcarserver", "a2s", 27016, None),
     ("silicaserver", "a2s", 27016, None),
     ("solserver", "soldat", 27025, None),
-    ("groundbranchserver", "a2s", 27016, None),
+    ("groundbranchserver", "udp", 27015, None),
     ("argoserver", "a2s", 27016, None),
     ("lifeisfeudalserver", "a2s", 27017, None),
     ("q2server", "quake2", 27015, b"\xff\xff\xff\xffstatus\n"),
@@ -78,16 +78,16 @@ def lifecycle(request, monkeypatch, tmp_path):
                         "map": "fixture",
                     }
                 )
-            elif protocol == "tcp":
-                output = "TCP ping on port\nNo further details available."
+            elif protocol in ("tcp", "udp"):
+                output = f"{protocol.upper()} ping on port\nNo further details available."
             else:
                 output = (
                     "Server info (A2S on port) Server info (Quake on port)\n"
                     "Name        : AlphaGSM Conan IT\nPlayers     : 0/16"
                 )
         elif command == "query":
-            if protocol == "tcp":
-                output = "TCP ping on port"
+            if protocol in ("tcp", "udp"):
+                output = f"{protocol.upper()} ping on port"
             else:
                 label = "Quake" if protocol == "quake" else "A2S"
                 output = f"Server is responding ({label} on port)"
@@ -121,6 +121,12 @@ def lifecycle(request, monkeypatch, tmp_path):
                  "wait_for_udp_open"):
         monkeypatch.setattr(module, hook, lambda *_a, **_kw: pytest.fail("obsolete probe called"),
                             raising=False)
+    if name == "groundbranchserver":
+        def groundbranch_log_ready(_path, markers, _timeout, **_kwargs):
+            assert markers == (f"started listening on {query_port}",)
+            calls.append("log-readiness")
+
+        monkeypatch.setattr(module, "wait_for_log_marker", groundbranch_log_ready)
     if name == "lifeisfeudalserver":
         monkeypatch.setattr(module, "wait_for_tcp_closed", lambda *_a: calls.append("db-closed"))
     if name == "solserver":
@@ -143,6 +149,8 @@ def test_lifecycle_uses_native_readiness_and_matching_shutdown(lifecycle, tmp_pa
     monkeypatch.setattr(module, "runtime_backend", backend, raising=False)
     next(value for key, value in vars(module).items() if key.startswith("test_"))(tmp_path)
     assert calls.index("start") < calls.index("readiness") < calls.index("query")
+    if module.module_name == "groundbranchserver":
+        assert calls.index("start") < calls.index("log-readiness") < calls.index("readiness")
     assert calls.index("query") < calls.index("stop") < calls.index("closed")
 
 

@@ -72,9 +72,10 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   not answer A2S. Failed runners retain application/runtime logs before cleanup.
 - Further September 9 repairs correct Soldat's root-user exit, native player
   limit/configuration and status query; publish Project CARS' query port; apply
-  Ground Branch's documented launch and wildcard bind syntax; and provide
-  Battle Cry of Freedom's
-  Wine display. Failed `send` commands now capture bounded runtime diagnostics.
+  Ground Branch's documented launch and wildcard bind syntax, then validate its
+  current SteamSockets game listener because Proton does not expose local A2S;
+  and provide Battle Cry of Freedom's Wine display. Failed `send` commands now
+  capture bounded runtime diagnostics.
   BCoF's native port settings remain unverified. These changes have unit coverage
   and await CI lifecycle validation; no support state is promoted.
 - Silica now synchronizes its native XML under an isolated persistent home,
@@ -299,7 +300,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | battlecryoffreedomserver | SteamCMD (Proton) |
 | ckserver | SteamCMD |
 | enshrouded | Docker runtime (Wine/Proton) — PASSED; AlphaGSM now treats `enshrouded_server.json` as authoritative, syncs `name` and `queryPort`, preserves unrelated generated settings, and defaults `queryPort` to the managed port `15637` rather than the stale `port + 1` value. The 2026-07-16 bulk process lane completed query/info but left the Wine child answering after its `screen` session was killed; because Enshrouded had been explicitly Docker-validated rather than process-validated, CI now keeps one Docker-default heavy lifecycle. Replacement CI validation is pending. |
-| groundbranchserver | SteamCMD (Proton) |
+| groundbranchserver | SteamCMD (Proton) — replacement CI validation pending; smoke and integration require the real `GameNetDriver` ready marker before checking AlphaGSM's generic UDP game-port health surface because the current SteamSockets build does not expose local A2S on `QueryPort` |
 | mythofempiresserver | Docker runtime (Wine/Proton) — PASSED; the current branch keeps the module's A2S query contract runtime-agnostic, resolves the Docker-reachable host, and replaces the host-only `MOE.log` readiness wait with AlphaGSM `info --json` on `queryport`. CI now runs this large install as one Docker-default heavy lifecycle; replacement validation is pending. |
 | reignofdwarfserver | Docker runtime (Wine/Proton) — PASSED; the live payload exposes generic TCP on the managed game port rather than A2S on `queryport`, so CI waits for AlphaGSM's TCP `info --json` surface. The forced host-Proton process exited during the 2026-07-16 full run, so CI keeps one Docker-default lifecycle. |
 | sunkenlandserver | SteamCMD (Proton) |

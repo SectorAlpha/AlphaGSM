@@ -179,13 +179,13 @@ def checkvalue(server, key, *value):
     )
 
 def get_query_address(server):
-    """Query the native Steam UDP listener on the configured query port."""
+    """Probe the SteamSockets game listener on the configured game port."""
 
-    return runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s"
+    return runtime_module.resolve_query_host(server), int(server.data["port"]), "udp"
 
 
 def get_info_address(server):
-    """Use the native Steam endpoint for server information."""
+    """Use the validated SteamSockets game endpoint for server information."""
 
     return get_query_address(server)
 

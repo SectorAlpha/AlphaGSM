@@ -17,8 +17,9 @@ from conftest import (
     require_steamcmd_opt_in,
     run_setup_with_port_retry,
     run_and_assert_ok,
+    wait_for_log_marker,
     wait_for_info_protocol,
-    wait_for_udp_closed,
+    wait_for_generic_udp_closed,
     write_config,
 )
 
@@ -84,23 +85,25 @@ def test_groundbranchserver_lifecycle(tmp_path):
 
     try:
         game_log = install_dir / "GroundBranch" / "Saved" / "Logs" / "GroundBranch.log"
-        if game_log.exists():
-            # Keep the existing game log path in diagnostics when present, but
-            # trust the live query surface for readiness because the Docker
-            # lane does not guarantee the screen log contract.
-            print(f"[diagnostic] Ground Branch game log path: {game_log}")
+        wait_for_log_marker(
+            game_log,
+            (f"started listening on {port}",),
+            START_TIMEOUT,
+            env=env,
+            server_name=server_name,
+        )
 
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
+        wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT, expected_port=port)
 
         run_and_assert_ok(env, server_name, "status")
 
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert "Server is responding" in query_result.stdout, (
+        assert "UDP ping on port" in query_result.stdout, (
             f"Unexpected query output: {query_result.stdout!r}"
         )
 
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert "Players     : 0/" in info_result.stdout, (
+        assert "UDP ping on port" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
 
@@ -108,11 +111,11 @@ def test_groundbranchserver_lifecycle(tmp_path):
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {info_data!r}"
+        assert info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {info_data!r}"
         )
-        assert info_data.get("port") == queryport, (
-            f"Expected reported query port {queryport}: {info_data!r}"
+        assert info_data.get("port") == port, (
+            f"Expected reported game port {port}: {info_data!r}"
         )
     finally:
         stop_result = capture_alphagsm_stop(
@@ -120,4 +123,4 @@ def test_groundbranchserver_lifecycle(tmp_path):
         )
 
     assert_alphagsm_result_ok(stop_result)
-    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_generic_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
