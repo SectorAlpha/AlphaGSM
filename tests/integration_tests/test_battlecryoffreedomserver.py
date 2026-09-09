@@ -6,13 +6,10 @@ import pytest
 
 from conftest import (
     default_runtime_backend,
-    effective_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
     resolve_runtime_image,
-    require_command_for_runtime,
-    require_proton,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -39,21 +36,8 @@ def test_battlecryoffreedomserver_lifecycle(tmp_path):
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
     module_name = "battlecryoffreedomserver"
-    selected_runtime_backend = effective_runtime_backend(
-        runtime_backend,
-        module_name=module_name,
-    )
-    require_command_for_runtime(
-        "screen",
-        runtime_backend=runtime_backend,
-        module_name=module_name,
-    )
-    image = None
-    if selected_runtime_backend == "process":
-        require_proton()
-    else:
-        require_command("docker")
-        image = resolve_runtime_image(
+    require_command("docker")
+    image = resolve_runtime_image(
         "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
         LOCAL_WINE_PROTON_IMAGE,
         PUBLISHED_WINE_PROTON_IMAGE,
@@ -77,8 +61,7 @@ def test_battlecryoffreedomserver_lifecycle(tmp_path):
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
-    if image is not None:
-        run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))

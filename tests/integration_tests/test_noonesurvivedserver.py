@@ -7,11 +7,9 @@ import pytest
 
 from conftest import (
     default_runtime_backend,
-    effective_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    require_proton,
     resolve_runtime_image,
     pick_free_tcp_port,
     pick_free_udp_port,
@@ -44,20 +42,12 @@ PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:
 def test_noonesurvivedserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    selected_runtime_backend = effective_runtime_backend(
-        runtime_backend,
-        module_name=module_name,
+    require_command("docker")
+    image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_WINE_PROTON_IMAGE,
+        PUBLISHED_WINE_PROTON_IMAGE,
     )
-    image = None
-    if selected_runtime_backend == "process":
-        require_proton()
-    else:
-        require_command("docker")
-        image = resolve_runtime_image(
-            "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
-            LOCAL_WINE_PROTON_IMAGE,
-            PUBLISHED_WINE_PROTON_IMAGE,
-        )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -79,8 +69,7 @@ def test_noonesurvivedserver_lifecycle(tmp_path):
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
-    if image is not None:
-        run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
 
     # setup

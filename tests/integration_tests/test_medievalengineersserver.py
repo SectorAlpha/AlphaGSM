@@ -8,7 +8,7 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     default_runtime_backend,
-    require_command_for_runtime,
+    require_command,
     resolve_runtime_image,
     pick_free_tcp_port,
     run_setup_with_port_retry,
@@ -42,9 +42,7 @@ module_name = "medievalengineersserver"
 def test_medievalengineersserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command_for_runtime(
-        "docker", runtime_backend=runtime_backend, module_name=module_name
-    )
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()

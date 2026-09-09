@@ -87,20 +87,13 @@ STRICT_GOLDSRC_A2S_TESTS = (
 )
 REQUIRED_TOP_LEVEL_IMPORTS = {
     "test_lifeisfeudalserver.py": (("subprocess", None),),
-    "test_noonesurvivedserver.py": (
-        ("effective_runtime_backend", "conftest"),
-        ("require_proton", "conftest"),
-    ),
     "test_notdserver.py": (
         ("effective_runtime_backend", "conftest"),
         ("require_proton", "conftest"),
     ),
     "test_outpostzeroserver.py": (("wait_for_info_protocol", "conftest"),),
 }
-WINE_PROTON_RUNTIME_TESTS = (
-    "test_noonesurvivedserver.py",
-    "test_notdserver.py",
-)
+WINE_PROTON_RUNTIME_TESTS = ("test_notdserver.py",)
 CANONICAL_MODULE_IDS = {
     "test_terraria_vanilla.py": "terraria.vanilla",
     "test_satisfactory.py": "satisfactory",

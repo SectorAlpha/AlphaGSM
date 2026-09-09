@@ -1191,7 +1191,7 @@ def test_battlecryoffreedomserver_moves_out_of_docker_enablement_backlog():
     assert "tests/integration_tests/test_battlecryoffreedomserver.py" not in backlog
 
 
-def test_battlecryoffreedomserver_builds_process_and_docker_dual_lanes():
+def test_battlecryoffreedomserver_builds_one_docker_default_lane():
     routing = load_routing_module()
 
     matrix = routing.build_integration_matrix(
@@ -1203,14 +1203,7 @@ def test_battlecryoffreedomserver_builds_process_and_docker_dual_lanes():
         {
             "batch": 1,
             "files": "tests/integration_tests/test_battlecryoffreedomserver.py",
-            "label": "battlecryoffreedomserver-process",
-            "runtime_backend": "process",
-        },
-        {
-            "batch": 2,
-            "files": "tests/integration_tests/test_battlecryoffreedomserver.py",
-            "label": "battlecryoffreedomserver-docker",
-            "runtime_backend": "docker",
+            "label": "battlecryoffreedomserver",
         },
     ]
 
@@ -3296,24 +3289,36 @@ def test_pr_event_still_routes_docs_only_diff(monkeypatch):
     "test_name",
     [
         "colserver",
+        "battlecryoffreedomserver",
         "deadpolyserver",
         "fearthenightserver",
+        "heatserver",
         "hzserver",
         "icarusserver",
+        "medievalengineersserver",
+        "noonesurvivedserver",
         "notdserver",
         "outpostzeroserver",
         "pixarkserver",
+        "primalcarnageextinctionserver",
+        "saleblazersserver",
         "seserver",
+        "sniperelite4server",
         "soulmask",
         "starruptureserver",
         "subsistenceserver",
+        "sunkenlandserver",
     ],
 )
 def test_docker_validated_servers_do_not_repeat_unproven_process_lanes(test_name):
     routing = load_routing_module()
     test_path = f"tests/integration_tests/test_{test_name}.py"
 
-    matrix = routing.build_integration_matrix([test_path], repo_root=Path("."))
+    matrix = routing.build_integration_matrix(
+        [test_path],
+        repo_root=Path("."),
+        heavy_only=routing.is_heavy_integration_test(test_path),
+    )
 
     assert test_path in routing.DOCKER_DEFAULT_RUNTIME_TESTS
     assert test_path not in routing.PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS

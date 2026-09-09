@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- CI runtime routing: run Battle Cry of Freedom, Heat, Medieval Engineers, No
+  One Survived, Primal Carnage: Extinction, Saleblazers, Sniper Elite 4, and
+  Sunkenland on their validated Docker paths instead of repeating host Proton
+  lanes that do not reach the games' readiness surfaces on GitHub runners.
 - CI system dependencies: remove volatile preinstalled Chrome and Microsoft apt
   sources before refreshing Ubuntu package indexes in smoke and backend jobs.
 - Windows dedicated servers: disable Proton-GE's optional Xalia controller UI,
