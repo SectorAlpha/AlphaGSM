@@ -16,6 +16,7 @@ CONAN_EXILES_SMOKE = Path("tests/smoke_tests/run_conanexiles.sh")
 RETURN_TO_MORIA_SMOKE = Path("tests/smoke_tests/run_returntomoriaserver.sh")
 ASA_SMOKE = Path("tests/smoke_tests/run_arksurvivalascended.sh")
 ASTRONEER_SMOKE = Path("tests/smoke_tests/run_astroneerserver.sh")
+WATERFALL_SMOKE = Path("tests/smoke_tests/run_minecraft_waterfall.sh")
 STEAMCMD_HELPERS = Path("tests/smoke_tests/steamcmd_helpers.sh")
 WORKFLOW = Path(".github/workflows/unittest.yaml")
 
@@ -50,6 +51,14 @@ def test_palworld_smoke_uses_shared_start_retry_contract():
 
     assert 'run_start_with_port_retry "$SERVER_NAME"' in text
     assert 'run_alphagsm "$SERVER_NAME" start' not in text
+
+
+def test_waterfall_smoke_captures_startup_diagnostics():
+    text = WATERFALL_SMOKE.read_text(encoding="utf-8")
+
+    assert "local rc=$?" in text
+    assert 'capture_application_logs "$LOG_PATH"' in text
+    assert 'capture_runtime_diagnostics "$SERVER_NAME"' in text
 
 
 def test_ss14_smoke_supports_byo_archive_url_and_standard_prerequisite_skip():

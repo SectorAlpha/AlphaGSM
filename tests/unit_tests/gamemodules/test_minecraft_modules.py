@@ -427,6 +427,7 @@ def test_bungeecord_configure_install_and_checkvalue(tmp_path, monkeypatch):
 
     args, kwargs = bungeecord.configure(server, ask=False, dir=str(tmp_path))
     (tmp_path / "BungeeCord.jar").write_text("")
+    (tmp_path / "config.yml").write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
     bungeecord.install(server)
 
     assert args == ()
@@ -543,6 +544,7 @@ def test_bungeecord_install_downloads_configured_jar(tmp_path, monkeypatch):
         (Path(current_server.data["dir"]) / current_server.data["exe_name"]).write_text("")
 
     monkeypatch.setattr(bungeecord, "install_downloaded_jar", fake_install_downloaded_jar)
+    (tmp_path / "config.yml").write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
 
     bungeecord.install(server)
 
@@ -570,9 +572,11 @@ def test_bungeecord_install_waits_for_generated_config_and_rewrites_port(tmp_pat
 
         def poll(self):
             self.poll_count += 1
-            if self.poll_count == 3:
+            if self.poll_count == 1:
+                config_path.write_text("", encoding="utf-8")
+            elif self.poll_count == 2:
                 config_path.write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
-            return None if self.poll_count < 4 else 0
+            return None
 
         def terminate(self):
             return None

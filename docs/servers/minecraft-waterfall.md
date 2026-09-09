@@ -86,9 +86,10 @@ alphagsm mywaterfal mod cleanup
 
 ### Server Configuration
 
-- **Config file**: `config.yml`
+- **Config file**: `config.yml`. On first setup AlphaGSM waits for Waterfall to
+  finish writing a usable listener configuration before applying the managed port.
 - **Key settings** (in `config.yml`):
-  - `server-port` — Game port (default 25565)
+  - `listeners[].host` — Proxy listen address and port (default 25565)
   - `motd` — Message of the day
   - `max-players` — Maximum players
   - `level-seed` — World generation seed

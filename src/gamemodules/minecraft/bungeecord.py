@@ -64,6 +64,7 @@ command_args["setup"] = command_args["setup"].combine(
 # Regex to locate the first listener's host line in config.yml
 _BUNGEE_HOST_RE = re.compile(r'^(\s*host:\s*)(\S+):(\d+)', re.MULTILINE)
 _CONFIG_GENERATION_TIMEOUT = 120
+_CONFIG_STABILITY_INTERVAL = 0.25
 ALLOWED_PROXY_PLUGIN_DESTINATIONS = ("plugins",)
 DEFAULT_PROXY_MOD_CACHE_DIRNAME = "minecraft-bungeecord"
 VELOCITY_PROXY_MOD_CACHE_DIRNAME = "minecraft-velocity"
@@ -185,7 +186,7 @@ def install(server, *, eula=False):
             )
         )
     config_file = os.path.join(server.data["dir"], "config.yml")
-    if not os.path.isfile(config_file):
+    if _read_usable_proxy_config(config_file) is None:
         javapath = server.data.get("javapath", "java")
         print("Running server briefly to generate config.yml …")
         proc = sp.Popen(
@@ -195,11 +196,17 @@ def install(server, *, eula=False):
             stderr=sp.DEVNULL,
         )
         deadline = time.time() + _CONFIG_GENERATION_TIMEOUT
+        stable_content = None
         try:
-            while time.time() < deadline and not os.path.isfile(config_file):
+            while time.time() < deadline:
+                content = _read_usable_proxy_config(config_file)
+                if content is not None:
+                    if content == stable_content:
+                        break
+                    stable_content = content
                 if proc.poll() is not None:
                     break
-                time.sleep(0.5)
+                time.sleep(_CONFIG_STABILITY_INTERVAL)
         finally:
             if proc.poll() is None:
                 proc.terminate()
@@ -208,13 +215,27 @@ def install(server, *, eula=False):
                 except sp.TimeoutExpired:
                     proc.kill()
                     proc.wait()
-    if os.path.isfile(config_file):
-        _update_bungee_host_port(config_file, server.data.get("port", 25565))
+    if _read_usable_proxy_config(config_file) is None:
+        raise ServerError(
+            "Proxy did not generate a usable config.yml with a listener host"
+        )
+    _update_bungee_host_port(config_file, server.data.get("port", 25565))
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
     else:
         server.data.save()
+
+
+def _read_usable_proxy_config(config_path):
+    """Return complete listener configuration text, or ``None`` while unavailable."""
+
+    try:
+        with open(config_path, "r") as config_handle:
+            content = config_handle.read()
+    except OSError:
+        return None
+    return content if _BUNGEE_HOST_RE.search(content) else None
 
 
 def _update_bungee_host_port(config_path, port):
