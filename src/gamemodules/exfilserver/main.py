@@ -107,12 +107,12 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """Return Exfil's validated UDP game endpoint."""
+    """Return Exfil's Steam query endpoint."""
 
     return (
         runtime_module.resolve_query_host(server),
-        int(server.data["port"]),
-        "udp",
+        int(server.data["queryport"]),
+        "a2s",
     )
 
 

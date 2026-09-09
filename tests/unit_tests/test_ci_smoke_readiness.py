@@ -51,7 +51,8 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
 '''
     result = subprocess.run(["bash", "-c", prelude + lifecycle], capture_output=True,
                             env=dict(os.environ, LOG_PATH=str(log), COMMANDS=str(commands),
-                                     QUERY_RC=str(query_rc), PORT="27015"), check=False)
+                                     QUERY_RC=str(query_rc), PORT="27015",
+                                     QUERY_PORT="27016"), check=False)
     calls = commands.read_text().splitlines()
     assert (result.returncode == 0) == (query_rc == 0)
     protocol = {
@@ -64,7 +65,7 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
         "arksurvivalascended": "source_rcon",
         "onsetserver": "tcp",
         "groundbranchserver": "udp",
-        "exfilserver": "udp",
+        "exfilserver": "a2s",
     }.get(module, "a2s")
     protocol_call = f"protocol {protocol}"
     assert protocol_call in calls

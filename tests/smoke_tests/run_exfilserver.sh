@@ -55,6 +55,10 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-exfilserve-IT#$SERVER_NAME.log"
 mkdir -p "$HOME_DIR"
 
 PORT="$(pick_free_port)" 
+QUERY_PORT="$(pick_free_port)"
+while [[ "$QUERY_PORT" == "$PORT" ]]; do
+  QUERY_PORT="$(pick_free_port)"
+done
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -76,14 +80,16 @@ EOF
 
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
+echo "Using query port: $QUERY_PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create exfilserver
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" "IpNetDriver listening on port ${PORT}"
-wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS" "$PORT"
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS" "$QUERY_PORT"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info

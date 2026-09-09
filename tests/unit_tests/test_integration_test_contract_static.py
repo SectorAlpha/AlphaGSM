@@ -33,7 +33,7 @@ RUNTIME_AWARE_PROTOCOL_TESTS = {
     "test_ricochetserver.py": "a2s",
     "test_bmdmserver.py": "a2s",
     "test_empyrionserver.py": "tcp",
-    "test_exfilserver.py": "udp",
+    "test_exfilserver.py": "a2s",
     "test_battlecryoffreedomserver.py": "tcp",
     "test_readyornotserver.py": "udp",
     "test_reignofdwarfserver.py": "tcp",

@@ -65,8 +65,8 @@ alphagsm myexfilser backup
 - Module name: `exfilserver`
 - Default game port: 7777
 - Default query port: 27015
-- `query`, `info`, and `info --json` use the validated UDP health surface on
-  the managed game port.
+- `query`, `info`, and `info --json` use Exfil's Steam A2S query port after
+  the game reaches its logged `IpNetDriver` readiness marker.
 
 ## Developer Notes
 
