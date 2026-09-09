@@ -171,11 +171,12 @@ jobs:
   smoke-test-standard:
     runs-on: ubuntu-latest
     if: needs.discover-smoke-tests.outputs.has_standard_tests == 'true'
-    needs: [discover-smoke-tests, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [discover-smoke-tests, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-smoke-tests.outputs.standard_matrix) }}
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
@@ -290,11 +291,12 @@ jobs:
   smoke-test-heavy:
     runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') }}
     if: needs.discover-smoke-tests.outputs.has_heavy_tests == 'true'
-    needs: [discover-smoke-tests, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [discover-smoke-tests, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-smoke-tests.outputs.heavy_matrix) }}
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
@@ -554,6 +556,47 @@ jobs:
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
 
+  build-quake-linux-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute quake-linux runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(sha256sum docker/quake-linux/Dockerfile | cut -c1-12)
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-quake-linux-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push quake-linux runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/quake-linux/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
   build-java-runtime:
     runs-on: ubuntu-latest
     needs: [unit-test, lint, coverage]
@@ -653,7 +696,7 @@ jobs:
   integration-test-standard:
     runs-on: ubuntu-latest
     if: needs.discover-integration-tests.outputs.has_standard_tests == 'true'
-    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.standard_matrix) }}
@@ -666,6 +709,7 @@ jobs:
       ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
@@ -714,6 +758,7 @@ jobs:
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
             export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP='${ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
@@ -751,7 +796,7 @@ jobs:
   integration-test-heavy:
     runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') }}
     if: needs.discover-integration-tests.outputs.has_heavy_tests == 'true'
-    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-integration-tests.outputs.heavy_matrix) }}
@@ -764,6 +809,7 @@ jobs:
       ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
@@ -806,6 +852,7 @@ jobs:
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
             export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP='${ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
@@ -899,10 +946,11 @@ jobs:
 
   backend-integration-test:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [unit-test, lint, coverage, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     env:
       ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
@@ -956,13 +1004,14 @@ jobs:
         env:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
           ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
           ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
           ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
           ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-java-runtime.outputs.image }}
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="${{ needs.build-java-runtime.outputs.image }}"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="ghcr.io/${owner}/alphagsm-quake-linux-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="${{ needs.build-quake-linux-runtime.outputs.image }}"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE="ghcr.io/${owner}/alphagsm-service-console-runtime:latest"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="${{ needs.build-simple-tcp-runtime.outputs.image }}"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX="${{ needs.build-steamcmd-linux-runtime.outputs.image }}"
@@ -1065,7 +1114,7 @@ jobs:
 
   integration-flake-recheck:
     runs-on: ${{ fromJson(matrix.runner_class == 'heavy' && (vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') || '["ubuntu-latest"]') }}
-    needs: [collect-integration-rechecks, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    needs: [collect-integration-rechecks, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     if: ${{ !cancelled() && needs.collect-integration-rechecks.outputs.has_rechecks == 'true' }}
     strategy:
       fail-fast: false
@@ -1079,6 +1128,7 @@ jobs:
       ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
       ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
       ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
@@ -1120,6 +1170,7 @@ jobs:
             export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend }}'
             export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP='${ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
             export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
@@ -1151,7 +1202,7 @@ jobs:
 
   summarize-tests:
     runs-on: ubuntu-latest
-    needs: [build, lint, unit-test, coverage, binary-build-smoke, classify-changes, discover-smoke-tests, discover-integration-tests, build-integration-image, build-java-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-smoke-test, backend-integration-test, windows-minecraft-integration, macos-minecraft-integration, collect-integration-rechecks, integration-flake-recheck]
+    needs: [build, lint, unit-test, coverage, binary-build-smoke, classify-changes, discover-smoke-tests, discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-smoke-test, backend-integration-test, windows-minecraft-integration, macos-minecraft-integration, collect-integration-rechecks, integration-flake-recheck]
     if: always()
     steps:
       - name: Checkout AlphaGSM code

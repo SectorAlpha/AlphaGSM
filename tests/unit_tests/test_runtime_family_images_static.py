@@ -52,6 +52,22 @@ def test_quake_linux_runtime_keeps_quakeworld_libcurl_available():
     assert "libcurl4t64" in text
 
 
+def test_pr_workflow_builds_and_reuses_branch_local_quake_linux_runtime():
+    text = PR_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "  build-quake-linux-runtime:" in text
+    assert "file: docker/quake-linux/Dockerfile" in text
+    assert (
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: "
+        "${{ needs.build-quake-linux-runtime.outputs.image }}"
+    ) in text
+    assert (
+        'export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="${{ '
+        'needs.build-quake-linux-runtime.outputs.image }}"'
+    ) in text
+    assert "alphagsm-quake-linux-runtime:latest" not in text
+
+
 def test_steamcmd_linux_runtime_image_keeps_ci_runtime_libraries():
     text = STEAMCMD_LINUX_DOCKERFILE.read_text(encoding="utf-8")
 

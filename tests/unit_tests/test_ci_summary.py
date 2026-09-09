@@ -13,8 +13,9 @@ from tests.helpers import REPO_ROOT
 REQUIRED = (
     'build lint unit-test coverage binary-build-smoke classify-changes '
     'discover-smoke-tests discover-integration-tests build-integration-image '
-    'build-java-runtime build-simple-tcp-runtime build-steamcmd-linux-runtime '
-    'build-wine-proton-runtime backend-smoke-test backend-integration-test '
+    'build-java-runtime build-quake-linux-runtime build-simple-tcp-runtime '
+    'build-steamcmd-linux-runtime build-wine-proton-runtime backend-smoke-test '
+    'backend-integration-test '
     'windows-minecraft-integration macos-minecraft-integration collect-integration-rechecks'
 ).split()
 LANES = ('smoke_standard', 'smoke_heavy', 'integration_standard', 'integration_heavy')

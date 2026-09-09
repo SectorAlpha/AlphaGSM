@@ -21,7 +21,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
   surface instead of relying on console markers or an unrelated TCP port.
 - Quake Docker runtime: run Quake II and QuakeWorld as the invoking host user
   so Quake II accepts startup, and include the `libcurl.so.4` runtime required
-  by the current MVDSV binary.
+  by the current MVDSV binary. Build the Quake runtime from the PR and reuse
+  its immutable image tag throughout smoke, integration, backend, and isolated
+  recheck jobs so those fixes are validated before merge.
 - Windows server runtimes: give Medieval Engineers an Xvfb-backed host Proton
   launch, and preserve the Wine/Proton image entrypoint inside Return to
   Moria's interactive Docker console bridge.
