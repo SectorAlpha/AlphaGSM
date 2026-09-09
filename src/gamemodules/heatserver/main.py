@@ -271,11 +271,11 @@ def _wrap_linux_command(command, wineprefix=None):
     wrapped = proton.wrap_command(
         command,
         wineprefix=wineprefix,
-        prefer_proton=True,
+        prefer_proton=False,
     )
     wrapped = proton.prepend_env_assignments(
         wrapped,
-        TERM="dumb",
+        TERM="screen",
     )
     if shutil.which("xvfb-run") is None:
         return wrapped
@@ -357,10 +357,15 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_env={"TERM": "screen"},
         extra_host_dependencies=(proton.xvfb_host_dependency(),),
+        stdin_open=True,
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_env={"TERM": "screen"},
+        stdin_open=True,
+        tty=True,
 )

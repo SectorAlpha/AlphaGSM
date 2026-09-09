@@ -56,6 +56,10 @@ Setup configures:
 - the managed native configuration at `server-data/Server.cfg`
 - the persistent save directory at `server-data/saves/`
 
+You may set `queryport` and `steamport` after `create` and before `setup`.
+AlphaGSM preserves those values and writes `Server.cfg` once the install
+directory exists.
+
 ## Useful Commands
 
 ```bash

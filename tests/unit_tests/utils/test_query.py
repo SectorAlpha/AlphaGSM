@@ -110,6 +110,69 @@ def test_tcp_ping_raises_on_connection_error(monkeypatch):
         query_module.tcp_ping("127.0.0.1", 27015)
 
 
+def test_terraria_info_sends_framed_handshake_and_reads_response(monkeypatch):
+    class _FakeTerrariaSocket:
+        def __init__(self):
+            self.sent = []
+            self.response = bytearray(b"\x03\x00\x02")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def settimeout(self, _timeout):
+            pass
+
+        def sendall(self, payload):
+            self.sent.append(payload)
+
+        def recv(self, size):
+            chunk = bytes(self.response[:size])
+            del self.response[:size]
+            return chunk
+
+    sock = _FakeTerrariaSocket()
+    monkeypatch.setattr(
+        query_module.socket,
+        "create_connection",
+        lambda addr, timeout: sock,
+    )
+
+    result = query_module.terraria_info("127.0.0.1", 7777)
+
+    assert sock.sent == [b"\x0d\x00\x01\x09Terraria0"]
+    assert result == {"response": "disconnect"}
+
+
+def test_terraria_info_rejects_unexpected_response(monkeypatch):
+    class _FakeTerrariaSocket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def settimeout(self, _timeout):
+            pass
+
+        def sendall(self, _payload):
+            pass
+
+        def recv(self, size):
+            return b"\x03\x00\xff"[:size]
+
+    monkeypatch.setattr(
+        query_module.socket,
+        "create_connection",
+        lambda addr, timeout: _FakeTerrariaSocket(),
+    )
+
+    with pytest.raises(query_module.QueryError, match="unexpected response type"):
+        query_module.terraria_info("127.0.0.1", 7777)
+
+
 def test_udp_ping_returns_positive_latency_on_silent_listener(monkeypatch):
     class _SilentUDPSocket(_FakeUDPSocket):
         def recv(self, bufsize):

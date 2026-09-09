@@ -111,6 +111,30 @@ def test_setting_schema_launch_formats():
     assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
 
 
+def test_query_surface_and_container_publish_the_a2s_port(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Binaries/Win64/KFGameSteamServer.bin.x86_64",
+            "port": 7777,
+            "queryport": 27015,
+            "startmap": "KF-BioticsLab",
+            "gametype": "KFGameContent.KFGameInfo_Survival",
+        }
+    )
+    exe_path = tmp_path / server.data["exe_name"]
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_text("")
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert {
+        (entry["host"], entry["container"], entry["protocol"])
+        for entry in mod.get_container_spec(server)["ports"]
+    } >= {(27015, 27015, "udp")}
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

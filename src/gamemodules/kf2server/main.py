@@ -60,6 +60,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/KFGa
             "startmap": "KF-BioticsLab",
             "gametype": "KFGameContent.KFGameInfo_Survival",
             "configsubdir": "KFGame/Config",
+            "queryport": 27015,
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -126,6 +127,22 @@ def get_start_command(server):
     )
 
 
+def get_query_address(server):
+    """Return Killing Floor 2's separate Steam query endpoint."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["queryport"]),
+        "a2s",
+    )
+
+
+def get_info_address(server):
+    """Use the Steam query endpoint for structured server information."""
+
+    return get_query_address(server)
+
+
 def do_stop(server, j):
     """Stop Killing Floor 2 using the standard exit command."""
 
@@ -163,12 +180,12 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}),
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}),
         stdin_open=True,
 )

@@ -1044,7 +1044,8 @@ class Server(object):
         ``"udp"`` (generic UDP reachability),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
         (authenticated Source RCON),
-        ``"http_status"`` (JSON ``/status`` endpoint), or ``"tcp"``.
+        ``"http_status"`` (JSON ``/status`` endpoint), ``"terraria"``
+        (native framed connection handshake), or ``"tcp"``.
         """
         from utils import query as query_utils
 
@@ -1269,6 +1270,20 @@ class Server(object):
                     "Server does not appear to be responding: " + str(exc)
                 )
 
+        if protocol == "terraria":
+            try:
+                query_utils.terraria_info(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Terraria handshake on port {}).".format(
+                        port
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
         if protocol == "ts3":
             get_creds = getattr(self.module, "get_query_credentials", None)
             login_creds = get_creds(self) if callable(get_creds) else None
@@ -1335,7 +1350,8 @@ class Server(object):
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
         (authenticated Source RCON),
         ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
-        ``/status`` endpoint), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
+        ``/status`` endpoint), ``"terraria"`` (native framed connection
+        handshake), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
 
         When *as_json* is ``True`` the result is printed as a JSON object
@@ -1680,6 +1696,24 @@ class Server(object):
                 print(
                     "Server is responding (UT3/GameSpy4 query on port {})."
                     "  No further details available.".format(port)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "terraria":
+            try:
+                result = query_utils.terraria_info(host, port, timeout=10.0)
+                if as_json:
+                    print(
+                        json.dumps(
+                            {"protocol": "terraria", "port": port, **result}
+                        )
+                    )
+                    return
+                print(
+                    "Server info (Terraria handshake on port {}):\n"
+                    "  Response    : {}".format(port, result["response"])
                 )
                 return
             except query_utils.QueryError as exc:

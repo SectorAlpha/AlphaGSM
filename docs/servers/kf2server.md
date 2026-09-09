@@ -61,6 +61,9 @@ alphagsm mykf2serve backup
 
 - Module name: `kf2server`
 - Default port: 7777
+- Default Steam query port: 27015
+- `query` and `info` use the configured A2S query port. Docker publishes this
+  UDP listener separately from the gameplay port.
 
 ## Developer Notes
 

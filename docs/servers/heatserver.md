@@ -78,6 +78,10 @@ AlphaGSM starts the upstream `Server.exe` console directly and the real server
 readiness signal lives under `Logs/Console*.txt` / `Logs/Dedi*.txt`, not a root
 `server.log`.
 
+On Linux, AlphaGSM uses Wine before Proton for this server and supplies an
+interactive console with `TERM=screen`. The upstream asynchronous console
+reader exits during startup when it is attached to a non-interactive terminal.
+
 Current `release_v1` behavior: AlphaGSM bootstraps a missing
 `Configuration/ServerSettings.cfg` by running the upstream first-launch config
 generation pass before the real managed start, then rewrites `portNumber`,

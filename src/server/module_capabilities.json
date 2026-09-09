@@ -5791,10 +5791,10 @@
       "config_sync_keys": [],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
         "get_provider_requirements": false,
-        "get_query_address": false,
+        "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
         "sync_server_config": false
@@ -10755,10 +10755,10 @@
       "config_sync_keys": [],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
         "get_provider_requirements": false,
-        "get_query_address": false,
+        "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
         "sync_server_config": false

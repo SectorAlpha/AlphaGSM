@@ -64,6 +64,23 @@ def get_start_command(server, *, autocreate=False):
 
     return get_vanilla_start_command(server, autocreate=autocreate)
 
+
+def get_query_address(server):
+    """Return the native Terraria handshake endpoint."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["port"]),
+        "terraria",
+    )
+
+
+def get_info_address(server):
+    """Return the same native endpoint used by the query command."""
+
+    return get_query_address(server)
+
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),

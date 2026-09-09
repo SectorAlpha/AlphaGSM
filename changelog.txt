@@ -8,6 +8,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- Terraria: query vanilla servers with a framed native connection handshake
+  instead of opening and abandoning a TCP socket, avoiding the 1.4.5.8
+  `DebugNetworkStream` crash while still proving protocol-level readiness.
+- The Forest: defer native config writes until setup establishes the install
+  directory, so operators and lifecycle tests can select query and Steam ports
+  immediately after `create`.
 - Query reporting: normalize configured port strings before protocol probes and
   JSON output. Align Sunkenland and Battle Cry of Freedom with their observed
   TCP health surfaces, use Exfil's logged game listener for startup readiness
@@ -15,8 +21,18 @@ Historical detail lives in git history. Keep this file focused on release-facing
   World at War protocol labels in lifecycle tests.
 - Source integration tests: use AlphaGSM's successful A2S `info --json`
   response as readiness for BrainBread 2, Counter-Strike: Source, Fistful of
-  Frags, Garry's Mod, Insurgency, Left 4 Dead 2, and PVKII when Docker logs
-  omit the traditional startup markers.
+  Frags, Garry's Mod, Insurgency, Left 4 Dead 2, PVKII, Day of Defeat: Source,
+  Day of Infamy, Empires Mod, Half-Life 2: Deathmatch, Half-Life Deathmatch:
+  Source, and No More Room in Hell when Docker logs omit traditional startup
+  markers.
+- Heat: restore the Wine-first Linux launch selected after the earlier Proton
+  crash regression, and keep its console attached to an interactive terminal
+  with `TERM=screen` for both process and Docker runtimes.
+- Killing Floor 2: publish and query the configured UDP Steam query port in
+  Docker instead of falling back to a TCP check on the gameplay port.
+- Smalland and Trackmania: use their declared UDP and XML-RPC TCP health
+  surfaces for readiness instead of waiting for runtime console phrases that
+  the current containers do not emit.
 - Warfork tests: use the live Quake `info --json` response for readiness in
   smoke and integration coverage, and verify shutdown against the UDP query
   surface instead of relying on console markers or an unrelated TCP port.
@@ -71,8 +87,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
   preserving existing game-mode settings and exposing the configured Steam query.
 - Port ownership: include Argo and Life is Feudal's adjacent process listeners.
 - Ground Branch: use documented MultiHome/Port/QueryPort and ?MaxPlayers launch
-  syntax, then validate the exact SteamSockets `GameNetDriver` ready marker and
-  managed UDP game port because the Proton build does not expose local A2S.
+  syntax, then validate the managed UDP game port directly because the Proton
+  build does not expose local A2S or a stable startup-log phrase.
 - Battle Cry of Freedom: provide a virtual display during Wine initialization.
 - CI diagnostics: capture runtime evidence when a send command fails immediately
   after launch, preserving the original error.

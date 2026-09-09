@@ -21,8 +21,6 @@ from conftest import (
     find_source_server_cfg,
     set_source_hibernation,
     assert_source_server_empty,
-    wait_for_runtime_log_marker,
-    wait_for_a2s_ready,
     wait_for_udp_closed,
 )
 from gamemodules.emserver import steam_app_id
@@ -79,24 +77,13 @@ def test_emserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["SV_ActivateServer", "Connection to Steam servers successful", "VAC secure mode"],
-            START_TIMEOUT,
-        )
-
-        # status
-        run_and_assert_ok(env, server_name, "status")
-
         info_data = wait_for_info_protocol(
             env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
         assert_source_server_empty(info_data)
 
-        wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
+        # status
+        run_and_assert_ok(env, server_name, "status")
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

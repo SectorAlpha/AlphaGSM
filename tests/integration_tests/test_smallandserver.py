@@ -9,15 +9,15 @@ from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
-    pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_runtime_log_marker,
-    wait_for_tcp_closed,
+    wait_for_info_protocol,
+    wait_for_udp_closed,
 )
 from gamemodules.smallandserver import steam_app_id
 
@@ -53,7 +53,7 @@ def test_smallandserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
@@ -68,15 +68,8 @@ def test_smallandserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            [
-                "Match State Changed from EnteringMap to WaitingToStart",
-                "Engine is initialized. Leaving FEngineLoop::Init()",
-                "GameSession::RegisterServer",
-            ],
-            START_TIMEOUT,
+        wait_for_info_protocol(
+            env, server_name, "udp", START_TIMEOUT, expected_port=port
         )
 
         # status
@@ -109,4 +102,4 @@ def test_smallandserver_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

@@ -88,7 +88,7 @@ def test_onsetserver_lifecycle(tmp_path):
         assert "Server port is open" in query_result.stdout
 
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert "Protocol" in info_result.stdout
+        assert "Server port is open" in info_result.stdout
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = json.loads(info_json_result.stdout.strip())

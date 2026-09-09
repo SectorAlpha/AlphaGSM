@@ -16,9 +16,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_runtime_log_marker,
-    wait_for_tcp_open,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 
 pytestmark = pytest.mark.integration
@@ -68,7 +66,6 @@ def test_terraria_vanilla_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_runtime_log_marker(
             env,
             server_name,
@@ -79,28 +76,24 @@ def test_terraria_vanilla_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # Vanilla Terraria uses TCP only; wait for the port to accept connections
-        wait_for_tcp_open("127.0.0.1", port, 300, log_path=log_path)
-
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert any(
-            marker in query_result.stdout
-            for marker in ("Server is responding", "Server port is open")
-        ), f"Unexpected query output: {query_result.stdout!r}"
+        assert "Terraria handshake" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
+        )
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert "Server port is open" in info_result.stdout, (
+        assert "Terraria handshake" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
 
-        # info --json — vanilla Terraria falls back to TCP (no A2S support)
+        # info --json uses a framed native handshake rather than an empty TCP probe.
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "terraria", (
+            f"Expected Terraria protocol in info JSON: {_info_data!r}"
         )
     finally:
         # stop

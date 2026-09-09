@@ -63,7 +63,6 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/groundbranchserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-groundbranchserver.conf"
-LOG_PATH="$INSTALL_DIR/GroundBranch/Saved/Logs/GroundBranch.log"
 IMAGE="$(resolve_runtime_image)"
 
 mkdir -p "$HOME_DIR"
@@ -99,7 +98,6 @@ run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" "GameNetDriver .* started listening on ${PORT}"
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query

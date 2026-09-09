@@ -17,7 +17,6 @@ from conftest import (
     require_steamcmd_opt_in,
     run_setup_with_port_retry,
     run_and_assert_ok,
-    wait_for_log_marker,
     wait_for_info_protocol,
     wait_for_generic_udp_closed,
     write_config,
@@ -84,15 +83,6 @@ def test_groundbranchserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        game_log = install_dir / "GroundBranch" / "Saved" / "Logs" / "GroundBranch.log"
-        wait_for_log_marker(
-            game_log,
-            (f"started listening on {port}",),
-            START_TIMEOUT,
-            env=env,
-            server_name=server_name,
-        )
-
         wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT, expected_port=port)
 
         run_and_assert_ok(env, server_name, "status")

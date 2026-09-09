@@ -102,18 +102,19 @@ def test_get_start_command(tmp_path, monkeypatch):
 
 
 def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
+    wrap_calls = []
     monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
     monkeypatch.setattr(
         mod.proton,
         "wrap_command",
-        lambda cmd, wineprefix=None, prefer_proton=False: [
+        lambda cmd, wineprefix=None, prefer_proton=False: wrap_calls.append(
+            {"wineprefix": wineprefix, "prefer_proton": prefer_proton}
+        ) or [
             "env",
             "DISPLAY=",
             "WINEDLLOVERRIDES=winex11.drv=",
-            "STEAM_COMPAT_DATA_PATH=/tmp/proton",
-            "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
-            "/opt/proton/proton",
-            "run",
+            "WINEPREFIX=/tmp/proton",
+            "/usr/bin/wine",
             *cmd,
         ],
     )
@@ -140,14 +141,38 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         "--server-args=-screen 0 1024x768x24 -nolisten tcp",
         "env",
     ]
-    assert "TERM=dumb" in wrapped
+    assert "TERM=screen" in wrapped
     assert "SDL_VIDEODRIVER=x11" in wrapped
     assert "SDL_AUDIODRIVER=dummy" in wrapped
-    assert "STEAM_COMPAT_DATA_PATH=/tmp/proton" in wrapped
-    assert "STEAM_COMPAT_CLIENT_INSTALL_PATH=" in wrapped
+    assert "WINEPREFIX=/tmp/proton" in wrapped
     assert "DISPLAY=" not in wrapped
     assert "WINEDLLOVERRIDES=winex11.drv=" not in wrapped
-    assert wrapped[-4:] == ["/opt/proton/proton", "run", "Server.exe", "-batchmode"]
+    assert wrapped[-3:] == ["/usr/bin/wine", "Server.exe", "-batchmode"]
+    assert wrap_calls == [{"wineprefix": "/tmp/proton", "prefer_proton": False}]
+
+
+def test_container_runtime_preserves_interactive_console_contract():
+    server = DummyServer("heat")
+    server.data.update(
+        {
+            "dir": "/srv/heat",
+            "exe_name": "Server.exe",
+            "port": 27015,
+            "queryport": 27016,
+        }
+    )
+
+    with patch.object(mod, "IS_LINUX", False), patch.object(
+        mod.os.path, "isfile", return_value=True
+    ):
+        requirements = mod.get_runtime_requirements(server)
+        spec = mod.get_container_spec(server)
+
+    assert requirements["env"]["TERM"] == "screen"
+    assert requirements["stdin_open"] is True
+    assert spec["env"]["TERM"] == "screen"
+    assert spec["stdin_open"] is True
+    assert spec["tty"] is True
 
 
 def test_get_start_command_missing_exe(tmp_path):

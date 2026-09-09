@@ -79,10 +79,10 @@ def test_heat_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
     cmd, cwd = heatserver.get_start_command(server)
 
-    assert cmd[:2] == ["env", "TERM=dumb"]
+    assert cmd[:2] == ["env", "TERM=screen"]
     assert cmd[2] == "Server.exe"
     assert cwd == server.data["dir"]
-    assert wrap_calls == [{"wineprefix": None, "prefer_proton": True}]
+    assert wrap_calls == [{"wineprefix": None, "prefer_proton": False}]
 
 
 def test_longvinter_get_start_command_builds_expected_args(tmp_path):

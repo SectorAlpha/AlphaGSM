@@ -132,6 +132,21 @@ def test_sync_server_config_writes_required_native_paths_and_ports(tmp_path):
     assert (tmp_path / "server-data" / "saves").is_dir()
 
 
+def test_sync_server_config_defers_writes_until_setup_sets_directory():
+    server = DummyServer("forest")
+    server.data.update(
+        {
+            "port": 28015,
+            "queryport": 28016,
+            "steamport": 28017,
+            "servername": "AlphaGSM forest",
+            "maxplayers": 8,
+        }
+    )
+
+    assert mod.sync_server_config(server) is None
+
+
 def test_query_and_runtime_contract_use_managed_ports(monkeypatch, tmp_path):
     monkeypatch.setattr(
         mod.runtime_module,

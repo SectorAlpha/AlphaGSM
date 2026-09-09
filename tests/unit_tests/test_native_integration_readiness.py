@@ -121,12 +121,6 @@ def lifecycle(request, monkeypatch, tmp_path):
                  "wait_for_udp_open"):
         monkeypatch.setattr(module, hook, lambda *_a, **_kw: pytest.fail("obsolete probe called"),
                             raising=False)
-    if name == "groundbranchserver":
-        def groundbranch_log_ready(_path, markers, _timeout, **_kwargs):
-            assert markers == (f"started listening on {query_port}",)
-            calls.append("log-readiness")
-
-        monkeypatch.setattr(module, "wait_for_log_marker", groundbranch_log_ready)
     if name == "lifeisfeudalserver":
         monkeypatch.setattr(module, "wait_for_tcp_closed", lambda *_a: calls.append("db-closed"))
     if name == "solserver":
@@ -149,8 +143,6 @@ def test_lifecycle_uses_native_readiness_and_matching_shutdown(lifecycle, tmp_pa
     monkeypatch.setattr(module, "runtime_backend", backend, raising=False)
     next(value for key, value in vars(module).items() if key.startswith("test_"))(tmp_path)
     assert calls.index("start") < calls.index("readiness") < calls.index("query")
-    if getattr(module, "module_name", None) == "groundbranchserver":
-        assert calls.index("start") < calls.index("log-readiness") < calls.index("readiness")
     assert calls.index("query") < calls.index("stop") < calls.index("closed")
 
 

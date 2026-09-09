@@ -96,6 +96,9 @@ def _server_data_path(server, *parts):
 def sync_server_config(server):
     """Write the native Forest config and create its save directory."""
 
+    if not server.data.get("dir"):
+        return
+
     config_path = _server_data_path(server, _CONFIG_FILE)
     save_path = _server_data_path(server, _SAVE_DIR)
     os.makedirs(os.path.dirname(config_path), exist_ok=True)

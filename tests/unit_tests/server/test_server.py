@@ -2143,6 +2143,60 @@ def test_info_uses_runtime_resolved_host_without_module_hook(monkeypatch, capsys
     assert payload == {"protocol": "a2s", "port": 27015}
 
 
+def test_query_uses_terraria_handshake(monkeypatch, capsys):
+    import sys
+    import types
+    import utils
+
+    srv = make_server(data=DummyData({"port": 7777}))
+    srv.module.get_query_address = lambda server: (
+        "127.0.0.1",
+        server.data["port"],
+        "terraria",
+    )
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    calls = []
+    fake_q.terraria_info = lambda host, port, timeout=2.0: calls.append(
+        (host, port, timeout)
+    ) or {"response": "disconnect"}
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.query()
+
+    assert calls == [("127.0.0.1", 7777, 10.0)]
+    assert "Terraria handshake on port 7777" in capsys.readouterr().out
+
+
+def test_info_json_uses_terraria_handshake(monkeypatch, capsys):
+    import sys
+    import types
+    import utils
+
+    srv = make_server(data=DummyData({"port": 7777}))
+    srv.module.get_info_address = lambda server: (
+        "127.0.0.1",
+        server.data["port"],
+        "terraria",
+    )
+    fake_q = types.ModuleType("utils.query")
+    fake_q.QueryError = OSError
+    fake_q.terraria_info = lambda host, port, timeout=2.0: {
+        "response": "disconnect"
+    }
+    monkeypatch.setattr(utils, "query", fake_q)
+    monkeypatch.setitem(sys.modules, "utils.query", fake_q)
+
+    srv.info(as_json=True)
+
+    assert json.loads(capsys.readouterr().out) == {
+        "protocol": "terraria",
+        "port": 7777,
+        "response": "disconnect",
+    }
+
+
 def test_info_falls_back_to_tcp(monkeypatch, capsys):
     """info() falls back to TCP when A2S fails."""
     import utils.query as _ensure_imported  # noqa: F401

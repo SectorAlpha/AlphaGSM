@@ -15,13 +15,17 @@ Provides query strategies:
 * :func:`http_json` — HTTP JSON endpoint query.
 * :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
+* :func:`terraria_info` — framed Terraria connection handshake.
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
 ``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``,
-``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"udp"``, or ``"tcp"``.  When that hook
-is absent the caller falls back to a TCP ping on the main port.
+``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"terraria"``,
+``"udp"``, or ``"tcp"``. When that hook is absent the caller falls back to a
+TCP ping on the main port.
 """
+
+# pylint: disable=too-many-lines
 
 import bz2
 import json
@@ -32,7 +36,7 @@ import time
 import urllib.error
 import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping", "terraria_info",
            "ts3_serverinfo", "soldat_info", "source_rcon_info", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -805,6 +809,59 @@ def tcp_ping(host, port, timeout=2.0):
     except OSError as exc:
         raise QueryError("TCP ping failed: " + str(exc)) from exc
     return (time.monotonic() - t0) * 1000
+
+
+def terraria_info(host, port, timeout=2.0):
+    """Probe a Terraria listener with a complete connection handshake.
+
+    Terraria treats every accepted TCP socket as a game client. Opening and
+    immediately closing one can crash current vanilla servers in
+    ``DebugNetworkStream``. Send a correctly framed connection request with a
+    deliberately unsupported protocol version, then read the complete server
+    response before closing. A disconnect, slot assignment, or password
+    challenge proves that the listener speaks Terraria's native protocol.
+    """
+
+    version = b"Terraria0"
+    request = (
+        struct.pack("<HB", 4 + len(version), 1)
+        + bytes((len(version),))
+        + version
+    )
+
+    def recv_exact(sock, length):
+        data = bytearray()
+        while len(data) < length:
+            chunk = sock.recv(length - len(data))
+            if not chunk:
+                raise QueryError("Terraria response ended unexpectedly")
+            data.extend(chunk)
+        return bytes(data)
+
+    try:
+        with socket.create_connection((host, int(port)), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+            sock.sendall(request)
+            header = recv_exact(sock, 3)
+            packet_length, response_type = struct.unpack("<HB", header)
+            if packet_length < 3 or packet_length > 65535:
+                raise QueryError("Terraria returned an invalid packet length")
+            recv_exact(sock, packet_length - 3)
+    except QueryError:
+        raise
+    except OSError as exc:
+        raise QueryError("Terraria query failed: " + str(exc)) from exc
+
+    responses = {
+        2: "disconnect",
+        3: "continue",
+        37: "password",
+    }
+    if response_type not in responses:
+        raise QueryError(
+            "Terraria returned unexpected response type {}".format(response_type)
+        )
+    return {"response": responses[response_type]}
 
 
 def _ts3_unescape(value):

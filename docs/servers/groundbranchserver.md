@@ -62,8 +62,7 @@ alphagsm mygroundbr backup
 - AlphaGSM uses the dedicated server's documented `MultiHome=0.0.0.0`, `Port=`,
   `QueryPort=`, and `?MaxPlayers=` options. Both game and Steam query ports use
   UDP. Current SteamSockets builds under Proton do not expose a local A2S reply,
-  so `query` and `info` probe the configured game port after startup confirms
-  the engine's `GameNetDriver` listener.
+  so `query`, `info`, and readiness checks probe the configured game port.
   See the [developer's server guide](https://steamcommunity.com/sharedfiles/filedetails/?id=1449083065).
 - Module name: `groundbranchserver`
 - Default port: 27015

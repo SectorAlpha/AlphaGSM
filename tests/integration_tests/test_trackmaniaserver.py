@@ -16,7 +16,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_runtime_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
 )
 
@@ -67,11 +67,8 @@ def test_trackmaniaserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
+        wait_for_info_protocol(
+            env, server_name, "tcp", START_TIMEOUT, expected_port=port
         )
 
         # status

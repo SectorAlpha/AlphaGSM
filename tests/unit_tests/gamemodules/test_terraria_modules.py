@@ -348,6 +348,27 @@ def test_terraria_vanilla_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
     assert spec["command"][0] == "./Linux/TerrariaServer.bin.x86_64"
 
 
+def test_vanilla_query_uses_terraria_handshake(monkeypatch):
+    server = DummyServer("terraria")
+    server.data["port"] = 7777
+    monkeypatch.setattr(
+        vanilla.runtime_module,
+        "resolve_query_host",
+        lambda _server: "172.18.0.9",
+    )
+
+    assert vanilla.get_query_address(server) == (
+        "172.18.0.9",
+        7777,
+        "terraria",
+    )
+    assert vanilla.get_info_address(server) == (
+        "172.18.0.9",
+        7777,
+        "terraria",
+    )
+
+
 def test_tshock_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
     server = DummyServer("shock")
     binary_path = tmp_path / "TShock.Server"

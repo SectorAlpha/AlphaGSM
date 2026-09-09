@@ -33,6 +33,8 @@ Check it:
 
 ```bash
 alphagsm myvanilla status
+alphagsm myvanilla query
+alphagsm myvanilla info
 ```
 
 Stop it:
@@ -73,6 +75,8 @@ alphagsm myvanilla backup
 
 - Module name: `terraria.vanilla`
 - Default port: 27015
+- `query` and `info` use a framed Terraria connection handshake. This avoids
+  the empty TCP connections that can crash current vanilla servers.
 
 ## Developer Notes
 
