@@ -170,6 +170,8 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
         "WINEDLLOVERRIDES=",
         "SDL_VIDEODRIVER=x11",
         "SDL_AUDIODRIVER=dummy",
+        "SteamAppId=1419850",
+        "SteamGameId=1419850",
         "LIBGL_ALWAYS_SOFTWARE=1",
         "wine",
         "Default/Saleblazers.exe",
@@ -210,6 +212,7 @@ def test_sync_server_config_writes_dedicated_server_json(tmp_path):
     assert options["Lobby_HostName"] == "AlphaGSM Test"
     assert options["Lobby_Password"] == "secret"
     assert options["Lobby_Capacity"] == "12"
+    assert (tmp_path / "Default" / "steam_appid.txt").read_text(encoding="ascii") == "1419850\n"
 
 
 def test_prestart_refreshes_dedicated_config(tmp_path):

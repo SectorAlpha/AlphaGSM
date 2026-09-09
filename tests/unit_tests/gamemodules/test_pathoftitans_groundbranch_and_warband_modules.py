@@ -56,6 +56,7 @@ def test_groundbranch_get_start_command_builds_expected_args(tmp_path, monkeypat
         return list(cmd)
 
     monkeypatch.setattr(groundbranchserver.proton, "wrap_command", fake_wrap_command)
+    monkeypatch.setattr(groundbranchserver.shutil, "which", lambda _name: None)
     server = DummyServer("gb")
     exe = tmp_path / "GroundBranchServer-Win64-Shipping.exe"
     exe.write_text("")

@@ -236,13 +236,6 @@ def _wrap_linux_command(command, wineprefix=None):
     )
     if shutil.which("xvfb-run") is None:
         return wrapped
-    wrapped = proton.prepend_env_assignments(
-        wrapped,
-        SDL_VIDEODRIVER="x11",
-        SDL_AUDIODRIVER="dummy",
-        WINEDLLOVERRIDES="",
-        LIBGL_ALWAYS_SOFTWARE="1",
-    )
     wrapped = [
         arg
         for arg in wrapped
@@ -251,6 +244,13 @@ def _wrap_linux_command(command, wineprefix=None):
             or arg.startswith("WINEDLLOVERRIDES=")
         )
     ]
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+        WINEDLLOVERRIDES="",
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
     return [
         "xvfb-run",
         "-a",

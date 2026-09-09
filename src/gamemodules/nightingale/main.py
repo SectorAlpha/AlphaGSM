@@ -139,6 +139,20 @@ def get_info_address(server):
     return get_query_address(server)
 
 
+def get_http_status_payload(server):
+    """Read Nightingale's loopback-only status API from its Docker namespace."""
+
+    metadata = runtime_module.resolve_runtime_metadata(server)
+    if metadata.get("runtime") != "docker":
+        return None
+    gamemodule_common.sync_derived_port(server, "queryport", offset=1)
+    return runtime_module.read_container_http_json(
+        server,
+        int(server.data["queryport"]),
+        "/status",
+    )
+
+
 def checkvalue(server, key, *value):
     """Validate supported Nightingale datastore edits."""
 

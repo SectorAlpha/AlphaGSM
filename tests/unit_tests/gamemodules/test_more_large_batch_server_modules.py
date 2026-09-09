@@ -50,6 +50,8 @@ def test_primalcarnage_get_start_command_builds_expected_args(tmp_path, monkeypa
         "PC-Docks?game=PrimalCarnageGame.PCTeamDeathMatchGame?Port=7777?PeerPort=7778?QueryPort=27015?bIsDedicated=true",
         "-seekfreeloadingserver",
         "-log",
+        "-stdout",
+        "-FullStdOutLogOutput",
     ]
     assert cwd == str(tmp_path / "Binaries" / "Win64")
 

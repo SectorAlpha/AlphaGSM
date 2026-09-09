@@ -178,12 +178,14 @@ _DISPLAY_ENV = {
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
     extra_env=_DISPLAY_ENV,
+    prefer_proton=True,
     extra_host_dependencies=(proton.xvfb_host_dependency(),),
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     extra_env=_DISPLAY_ENV,
+    prefer_proton=True,
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )

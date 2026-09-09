@@ -144,6 +144,7 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
     assert "TERM=screen" in wrapped
     assert "SDL_VIDEODRIVER=x11" in wrapped
     assert "SDL_AUDIODRIVER=dummy" in wrapped
+    assert "WINEDLLOVERRIDES=" in wrapped
     assert "WINEPREFIX=/tmp/proton" in wrapped
     assert "DISPLAY=" not in wrapped
     assert "WINEDLLOVERRIDES=winex11.drv=" not in wrapped
@@ -169,8 +170,11 @@ def test_container_runtime_preserves_interactive_console_contract():
         spec = mod.get_container_spec(server)
 
     assert requirements["env"]["TERM"] == "screen"
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
     assert requirements["stdin_open"] is True
     assert spec["env"]["TERM"] == "screen"
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
     assert spec["stdin_open"] is True
     assert spec["tty"] is True
 

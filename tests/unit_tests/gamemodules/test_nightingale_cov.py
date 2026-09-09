@@ -289,3 +289,21 @@ def test_query_hooks_use_runtime_resolved_status_endpoint(monkeypatch):
     expected = ("172.18.0.10", 7778, "http_status")
     assert mod.get_query_address(server) == expected
     assert mod.get_info_address(server) == expected
+
+
+def test_http_status_payload_is_read_inside_docker_container(monkeypatch):
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 7778})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_runtime_metadata",
+        lambda current: {"runtime": "docker"},
+    )
+    read_status = MagicMock(return_value={"status": "ready", "player_count": 0})
+    monkeypatch.setattr(mod.runtime_module, "read_container_http_json", read_status)
+
+    assert mod.get_http_status_payload(server) == {
+        "status": "ready",
+        "player_count": 0,
+    }
+    read_status.assert_called_once_with(server, 7778, "/status")

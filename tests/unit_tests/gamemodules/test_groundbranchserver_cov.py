@@ -112,6 +112,53 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert cwd == server.data["dir"]
 
 
+def test_linux_launch_uses_xvfb_and_proton_without_xalia(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run")
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, **_kwargs: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "PROTON_USE_XALIA=0",
+            "proton",
+            "run",
+            *cmd,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: [
+            cmd[0],
+            *(f"{key}={value}" for key, value in env.items()),
+            *cmd[1:],
+        ],
+    )
+    server = DummyServer()
+    server.data.update(
+        dir=str(tmp_path),
+        exe_name="GroundBranchServer-Win64-Shipping.exe",
+        port=7777,
+        queryport=27015,
+        maxplayers=16,
+    )
+    (tmp_path / server.data["exe_name"]).touch()
+
+    command, _cwd = mod.get_start_command(server)
+
+    assert command[:4] == [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        "env",
+    ]
+    assert "WINEDLLOVERRIDES=" in command
+    assert "PROTON_USE_XALIA=0" in command
+
+
 def test_setting_schema_exposes_groundbranch_launch_formats():
     assert mod.setting_schema["bindaddress"].launch_arg_format == "MultiHome={value}"
     assert mod.setting_schema["port"].launch_arg_format == "Port={value}"

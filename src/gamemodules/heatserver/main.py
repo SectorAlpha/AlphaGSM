@@ -33,6 +33,7 @@ command_functions = {}
 max_stop_wait = 1
 config_sync_keys = ("port", "queryport", "maxplayers", "startmap")
 _BOOTSTRAP_CONFIG_TIMEOUT_SECONDS = 120
+_XVFB_SERVER_ARGS = "-screen 0 1024x768x24 -nolisten tcp"
 _DEFAULT_SERVER_SETTINGS_TEMPLATE = """version = '5'
 
 # -- Server --
@@ -273,31 +274,44 @@ def _wrap_linux_command(command, wineprefix=None):
         wineprefix=wineprefix,
         prefer_proton=False,
     )
-    wrapped = proton.prepend_env_assignments(
-        wrapped,
-        TERM="screen",
-    )
     if shutil.which("xvfb-run") is None:
-        return wrapped
-    wrapped = proton.prepend_env_assignments(
-        wrapped,
-        SDL_VIDEODRIVER="x11",
-        SDL_AUDIODRIVER="dummy",
-    )
+        return proton.prepend_env_assignments(wrapped, TERM="screen")
+    wrapper = wrapped[:-len(command)]
     wrapped = [
         arg
-        for arg in wrapped
+        for arg in wrapper
         if not (
             arg.startswith("DISPLAY=")
             or arg.startswith("WINEDLLOVERRIDES=")
         )
-    ]
+    ] + list(command)
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        TERM="screen",
+        WINEDLLOVERRIDES="",
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
     return [
         "xvfb-run",
         "-a",
-        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        f"--server-args={_XVFB_SERVER_ARGS}",
         *wrapped,
     ]
+
+
+def _container_runtime_env(_server):
+    """Return the display and console environment required by Heat."""
+
+    return {
+        "TERM": "screen",
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": _XVFB_SERVER_ARGS,
+        "WINEDLLOVERRIDES": "",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+    }
 
 
 def get_start_command(server):
@@ -357,7 +371,7 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        extra_env={"TERM": "screen"},
+        extra_env=_container_runtime_env,
         extra_host_dependencies=(proton.xvfb_host_dependency(),),
         stdin_open=True,
 )
@@ -365,7 +379,7 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-        extra_env={"TERM": "screen"},
+        extra_env=_container_runtime_env,
         stdin_open=True,
         tty=True,
 )

@@ -292,8 +292,22 @@ def _query_robust_status_payload(query_utils, host, port):
     return used_host, merged
 
 
-def _query_http_status_payload(query_utils, host, port):
+def _query_http_status_payload(query_utils, host, port, server=None):
     """Return a generic JSON status payload from ``/status``."""
+
+    if server is not None:
+        payload_hook = _get_module_hook(server.module, "get_http_status_payload")
+        if payload_hook is not None:
+            try:
+                payload = payload_hook(server)
+            except (OSError, RuntimeError, ValueError) as exc:
+                raise query_utils.QueryError(str(exc)) from exc
+            if payload is not None:
+                if not isinstance(payload, MappingABC):
+                    raise query_utils.QueryError(
+                        "Module HTTP status hook returned a non-object payload"
+                    )
+                return "127.0.0.1", dict(payload)
 
     return _query_http_json_candidates(
         query_utils,
@@ -1138,6 +1152,7 @@ class Server(object):
                     query_utils,
                     host,
                     port,
+                    server=self,
                 )
                 print(
                     "Server is responding (HTTP status API on port {port}): "
@@ -1614,6 +1629,7 @@ class Server(object):
                     query_utils,
                     host,
                     port,
+                    server=self,
                 )
                 if as_json:
                     print(json.dumps({"protocol": "http_status", "port": port, **result}))

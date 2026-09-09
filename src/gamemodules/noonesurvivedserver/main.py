@@ -64,6 +64,7 @@ def _container_runtime_env(_server):
         "SDL_VIDEODRIVER": "x11",
         "SDL_AUDIODRIVER": "dummy",
         "WINEDLLOVERRIDES": "",
+        "PROTON_USE_XALIA": "0",
         "LIBGL_ALWAYS_SOFTWARE": "1",
     }
 
@@ -162,6 +163,7 @@ def _wrap_linux_command(command, wineprefix=None):
         WINEDLLOVERRIDES="",
         SDL_VIDEODRIVER="x11",
         SDL_AUDIODRIVER="dummy",
+        PROTON_USE_XALIA="0",
         LIBGL_ALWAYS_SOFTWARE="1",
     )
     return [
@@ -243,6 +245,7 @@ def checkvalue(server, key, *value):
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         extra_env=_container_runtime_env,
+        prefer_proton=True,
         extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
@@ -250,4 +253,5 @@ get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         extra_env=_container_runtime_env,
+        prefer_proton=True,
 )

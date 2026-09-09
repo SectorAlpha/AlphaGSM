@@ -15,6 +15,8 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 336400
 steam_anonymous_login_possible = True
+CLIENT_STEAM_APP_ID = "321360"
+XVFB_SERVER_ARGS = "-screen 0 1024x768x24 -nolisten tcp"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -121,8 +123,25 @@ def _wrap_linux_command(command, wineprefix=None):
         WINEDLLOVERRIDES="",
         SDL_VIDEODRIVER="x11",
         SDL_AUDIODRIVER="dummy",
+        SteamAppId=CLIENT_STEAM_APP_ID,
+        SteamGameId=CLIENT_STEAM_APP_ID,
     )
-    return ["xvfb-run", "-a", *wrapped]
+    return ["xvfb-run", "-a", f"--server-args={XVFB_SERVER_ARGS}", *wrapped]
+
+
+def _container_runtime_env(_server):
+    """Return the display and Steam identity required by Primal Carnage."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": XVFB_SERVER_ARGS,
+        "WINEDLLOVERRIDES": "",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "SteamAppId": CLIENT_STEAM_APP_ID,
+        "SteamGameId": CLIENT_STEAM_APP_ID,
+    }
 
 
 def get_query_address(server):
@@ -151,6 +170,8 @@ def get_start_command(server):
         _build_server_map_url(server),
         "-seekfreeloadingserver",
         "-log",
+        "-stdout",
+        "-FullStdOutLogOutput",
     ]
     if IS_LINUX:
         cmd = _wrap_linux_command(
@@ -195,10 +216,12 @@ def checkvalue(server, key, *value):
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        extra_env=_container_runtime_env,
         extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
+        extra_env=_container_runtime_env,
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
 )

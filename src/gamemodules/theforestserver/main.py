@@ -28,6 +28,19 @@ _PORT_DEFINITIONS = tuple(
     for protocol in ("udp", "tcp")
 )
 
+
+def _container_runtime_env(_server):
+    """Enable the virtual display required by the Unity server."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": _XVFB_SERVER_ARGS,
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+        "WINEDLLOVERRIDES": "",
+    }
+
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The game port to use for The Forest server",
@@ -273,7 +286,7 @@ def checkvalue(server, key, *value):
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
     port_definitions=_PORT_DEFINITIONS,
     prefer_proton=True,
-    extra_env={"ALPHAGSM_XVFB": "1"},
+    extra_env=_container_runtime_env,
     extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
@@ -281,5 +294,5 @@ get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command,
     port_definitions=_PORT_DEFINITIONS,
     prefer_proton=True,
-    extra_env={"ALPHAGSM_XVFB": "1"},
+    extra_env=_container_runtime_env,
 )

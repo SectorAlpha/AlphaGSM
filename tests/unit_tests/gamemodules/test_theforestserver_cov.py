@@ -171,6 +171,8 @@ def test_query_and_runtime_contract_use_managed_ports(monkeypatch, tmp_path):
         for entry in requirements["ports"]
     } >= {(28015, "udp"), (28016, "udp"), (28017, "udp")}
     assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
 
 
 def test_get_start_command_missing_exe(tmp_path):

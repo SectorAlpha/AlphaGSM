@@ -130,8 +130,10 @@ def test_noonesurvived_runtime_metadata_enables_xvfb_for_docker(tmp_path):
 
     assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
     assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["PROTON_USE_XALIA"] == "0"
     assert spec["env"]["ALPHAGSM_XVFB"] == "1"
     assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+    assert spec["env"]["PROTON_USE_XALIA"] == "0"
 
 
 def test_noonesurvived_linux_process_launch_uses_xvfb(monkeypatch):
@@ -165,6 +167,7 @@ def test_noonesurvived_linux_process_launch_uses_xvfb(monkeypatch):
     assert "WINEDLLOVERRIDES=" in command
     assert "SDL_VIDEODRIVER=x11" in command
     assert "SDL_AUDIODRIVER=dummy" in command
+    assert "PROTON_USE_XALIA=0" in command
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,7 @@
 """GROUND BRANCH dedicated server lifecycle helpers."""
 
 import os
+import shutil
 
 import utils.proton as proton
 import utils.steamcmd as steamcmd
@@ -19,6 +20,7 @@ _PORT_DEFINITIONS = (
     {"key": "queryport", "protocol": "udp"},
     {"key": "port", "protocol": "udp"},
 )
+_XVFB_SERVER_ARGS = "-screen 0 1024x768x24 -nolisten tcp"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -106,6 +108,44 @@ update = gamemodule_common.make_steamcmd_update_hook(
 restart = gamemodule_common.make_restart_hook()
 
 
+def _wrap_linux_command(command, wineprefix=None):
+    """Run the Unreal server under the virtual display Proton requires."""
+
+    wrapped = proton.wrap_command(
+        command,
+        wineprefix=wineprefix,
+        prefer_proton=True,
+    )
+    if shutil.which("xvfb-run") is None:
+        return wrapped
+    wrapper = wrapped[:-len(command)]
+    wrapped = [
+        arg
+        for arg in wrapper
+        if not arg.startswith(("DISPLAY=", "WINEDLLOVERRIDES="))
+    ] + list(command)
+    wrapped = proton.prepend_env_assignments(
+        wrapped,
+        WINEDLLOVERRIDES="",
+        SDL_VIDEODRIVER="x11",
+        SDL_AUDIODRIVER="dummy",
+    )
+    return ["xvfb-run", "-a", f"--server-args={_XVFB_SERVER_ARGS}", *wrapped]
+
+
+def _container_runtime_env(_server):
+    """Return Docker display settings matching the process launch."""
+
+    return {
+        "ALPHAGSM_XVFB": "1",
+        "ALPHAGSM_XVFB_DISPLAY": ":99",
+        "ALPHAGSM_XVFB_SERVER_ARGS": _XVFB_SERVER_ARGS,
+        "WINEDLLOVERRIDES": "",
+        "SDL_VIDEODRIVER": "x11",
+        "SDL_AUDIODRIVER": "dummy",
+    }
+
+
 def get_start_command(server):
     """Build the command used to launch a GROUND BRANCH dedicated server."""
 
@@ -128,10 +168,9 @@ def get_start_command(server):
             "-log",
         ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = _wrap_linux_command(
             cmd,
             wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
         )
     return cmd, server.data["dir"]
 
@@ -193,12 +232,22 @@ def get_info_address(server):
 def get_runtime_requirements(server):
     """Declare GROUND BRANCH's UDP game and Steam query listeners."""
 
-    return proton.get_runtime_requirements(server, port_definitions=_PORT_DEFINITIONS)
+    return proton.get_runtime_requirements(
+        server,
+        port_definitions=_PORT_DEFINITIONS,
+        prefer_proton=True,
+        extra_env=_container_runtime_env(server),
+        extra_host_dependencies=(proton.xvfb_host_dependency(),),
+    )
 
 
 def get_container_spec(server):
     """Build the Wine/Proton runtime spec with the native UDP listeners."""
 
     return proton.get_container_spec(
-        server, get_start_command, port_definitions=_PORT_DEFINITIONS,
+        server,
+        get_start_command,
+        port_definitions=_PORT_DEFINITIONS,
+        prefer_proton=True,
+        extra_env=_container_runtime_env(server),
     )

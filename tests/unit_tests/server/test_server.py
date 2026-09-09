@@ -2001,6 +2001,29 @@ def test_query_uses_explicit_http_status_protocol(monkeypatch, capsys):
     assert "HTTP status API" in capsys.readouterr().out
 
 
+def test_query_uses_module_http_status_payload_hook(monkeypatch, capsys):
+    module = DummyModule()
+    module.get_query_address = lambda server: ("127.0.0.1", 7788, "http_status")
+    module.get_http_status_payload = lambda server: {
+        "status": "ready",
+        "player_count": 0,
+        "player_names": [],
+    }
+    srv = make_server(module=module, data=DummyData({"port": 7777, "queryport": 7788}))
+
+    import utils.query as query_utils
+
+    monkeypatch.setattr(
+        query_utils,
+        "http_json",
+        MagicMock(side_effect=AssertionError("direct HTTP query should not run")),
+    )
+
+    srv.query()
+
+    assert "HTTP status API" in capsys.readouterr().out
+
+
 def test_query_retries_a2s_after_wake_hook(monkeypatch, capsys):
     import utils.query as _ensure_imported  # noqa: F401
     import utils

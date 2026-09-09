@@ -26,6 +26,11 @@ HEADLESS_ENV = {
     "DISPLAY": "",
     "WINEDLLOVERRIDES": "winex11.drv=",
 }
+PROTON_HEADLESS_ENV = {
+    # Proton-GE's optional controller UI helper requires a display and can
+    # abort otherwise-valid dedicated-server launches before the game binds.
+    "PROTON_USE_XALIA": "0",
+}
 SANITIZED_TEMP_VARS = ("TMPDIR", "TMP", "TEMP")
 
 # ---------------------------------------------------------------------------
@@ -143,6 +148,7 @@ def wrap_command(command, wineprefix=None, prefer_proton=False):
         return prepend_env_unsets([
             "env",
             *_HEADLESS,
+            *["%s=%s" % item for item in PROTON_HEADLESS_ENV.items()],
             f"STEAM_COMPAT_DATA_PATH={compat_dir}",
             "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
             proton,
@@ -161,6 +167,7 @@ def wrap_command(command, wineprefix=None, prefer_proton=False):
         return prepend_env_unsets([
             "env",
             *_HEADLESS,
+            *["%s=%s" % item for item in PROTON_HEADLESS_ENV.items()],
             f"STEAM_COMPAT_DATA_PATH={compat_dir}",
             "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
             proton,
@@ -373,6 +380,8 @@ def get_runtime_requirements(
     env = dict(HEADLESS_ENV)
     env["ALPHAGSM_WINEPREFIX"] = wineprefix
     env["ALPHAGSM_PREFER_PROTON"] = "1" if prefer_proton else "0"
+    if prefer_proton:
+        env.update(PROTON_HEADLESS_ENV)
     if extra_env:
         env.update({key: str(value) for key, value in extra_env.items()})
 

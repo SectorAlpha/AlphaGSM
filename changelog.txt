@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- Windows dedicated servers: disable Proton-GE's optional Xalia controller UI,
+  preserve X11 access under Xvfb, and align process and Docker display settings
+  for Battle Cry of Freedom, Ground Branch, Heat, Medieval Engineers, No One
+  Survived, Sniper Elite 4, Sunkenland, and The Forest. Supply the required
+  client Steam identities for Primal Carnage: Extinction and Saleblazers.
+- Nightingale: query its loopback-only HTTP status endpoint from inside the
+  managed Docker container so lifecycle checks work across container namespaces.
 - Memories of Mars: disable new server creation after fresh process and Docker
   runs confirmed that the retired binary still requires the LIMBIC session
   backend that disappeared with 505 Games' June 25, 2024 multiplayer sunset;

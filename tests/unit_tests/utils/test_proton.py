@@ -144,6 +144,7 @@ def test_wrap_command_prefers_proton_when_requested(tmp_path, monkeypatch):
     assert str(proton_exe) in result
     assert "run" in result
     assert "/usr/bin/wine" not in result
+    assert "PROTON_USE_XALIA=0" in result
 
 
 def test_wrap_command_preserves_trailing_args(monkeypatch):
@@ -386,6 +387,7 @@ def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
     ]
     assert requirements["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/wineprefix"
     assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["env"]["PROTON_USE_XALIA"] == "0"
     assert requirements["stop_mode"] == "exec-console"
     assert requirements["stdin_open"] is True
     assert requirements["host_dependencies"][0]["id"] == "wine-proton"

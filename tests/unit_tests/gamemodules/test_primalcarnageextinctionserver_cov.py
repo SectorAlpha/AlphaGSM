@@ -119,6 +119,8 @@ def test_get_start_command_linux_uses_default_wine_path(tmp_path, monkeypatch):
             "PC-Docks?game=PrimalCarnageGame.PCTeamDeathMatchGame?Port=7777?PeerPort=7778?QueryPort=27015?bIsDedicated=true",
             "-seekfreeloadingserver",
             "-log",
+            "-stdout",
+            "-FullStdOutLogOutput",
         ],
     )
     assert kwargs == {"wineprefix": None}
@@ -154,13 +156,33 @@ def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
     assert wrapped == [
         "xvfb-run",
         "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
         "env",
         "WINEDLLOVERRIDES=",
         "SDL_VIDEODRIVER=x11",
         "SDL_AUDIODRIVER=dummy",
+        "SteamAppId=321360",
+        "SteamGameId=321360",
         "wine",
         "PrimalCarnageServer.exe",
     ]
+
+
+def test_runtime_metadata_enables_xvfb_and_client_steam_identity(tmp_path):
+    server = DummyServer("primal")
+    server.data.update(
+        dir=str(tmp_path),
+        exe_name="Binaries/Win64/PrimalCarnageServer.exe",
+        port=7777,
+        queryport=27015,
+    )
+    (tmp_path / "Binaries/Win64").mkdir(parents=True)
+    (tmp_path / server.data["exe_name"]).touch()
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SteamAppId"] == "321360"
 
 
 def test_get_start_command_missing_exe(tmp_path):

@@ -2000,6 +2000,39 @@ def resolve_query_host(server, default="127.0.0.1"):
     return default
 
 
+def read_container_http_json(server, port, path):
+    """Read a loopback-only HTTP JSON endpoint inside a managed container."""
+
+    metadata = resolve_runtime_metadata(server)
+    if metadata.get("runtime") != "docker":
+        raise RuntimeError("Server is not using the Docker runtime")
+    container_name = metadata.get("container_name")
+    if not container_name:
+        raise RuntimeError("Docker runtime has no container name")
+    url = "http://127.0.0.1:{}{}".format(int(port), path)
+    script = (
+        "import sys,urllib.request;"
+        "response=urllib.request.urlopen(sys.argv[1],timeout=10);"
+        "sys.stdout.buffer.write(response.read())"
+    )
+    try:
+        output = sp.check_output(
+            ["docker", "exec", container_name, "python3", "-c", script, url],
+            stderr=sp.STDOUT,
+            shell=False,
+            text=True,
+            timeout=15,
+        )
+        payload = json.loads(output)
+    except (OSError, sp.SubprocessError, ValueError) as exc:
+        raise RuntimeError(
+            "Unable to read container HTTP endpoint {}".format(url)
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("Container HTTP endpoint returned a non-object payload")
+    return payload
+
+
 def handles_set_key(key):
     """Return whether *key* should be validated by the runtime layer."""
 

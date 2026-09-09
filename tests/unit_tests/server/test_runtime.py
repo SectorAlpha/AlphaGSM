@@ -3550,6 +3550,28 @@ def test_resolve_query_host_falls_back_for_server_stubs_without_name(monkeypatch
     assert runtime_module.resolve_query_host(server) == "127.0.0.1"
 
 
+def test_read_container_http_json_executes_loopback_query(monkeypatch):
+    _set_runtime_backend(monkeypatch, "docker")
+    server = DummyServer(
+        data={"runtime": "docker", "container_name": "alphagsm-night"}
+    )
+    observed = []
+
+    def _fake_check_output(command, **kwargs):
+        observed.append((command, kwargs))
+        return '{"status":"ready","player_count":0}'
+
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+
+    payload = runtime_module.read_container_http_json(server, 7778, "/status")
+
+    assert payload == {"status": "ready", "player_count": 0}
+    command, kwargs = observed[0]
+    assert command[:3] == ["docker", "exec", "alphagsm-night"]
+    assert command[-1] == "http://127.0.0.1:7778/status"
+    assert kwargs["timeout"] == 15
+
+
 def test_container_runtime_kill_stops_then_removes_container(monkeypatch):
     server = DummyServer(
         data={

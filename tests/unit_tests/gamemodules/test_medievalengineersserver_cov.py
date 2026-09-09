@@ -193,6 +193,37 @@ def test_get_start_command_adds_virtual_display_on_linux(tmp_path, monkeypatch):
     assert assignments["WINEDLLOVERRIDES"] == ""
 
 
+def test_wrap_linux_command_replaces_headless_wine_driver_override(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda command: f"/usr/bin/{command}")
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda *args, **kwargs: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "proton",
+            "run",
+            "MedievalEngineersDedicated.exe",
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda command, **kwargs: [
+            "env",
+            *(f"{key}={value}" for key, value in kwargs.items()),
+            *list(command)[1:],
+        ],
+    )
+
+    command = mod._wrap_linux_command(["MedievalEngineersDedicated.exe"])
+
+    assert "DISPLAY=" not in command
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in command
+    assert command.count("WINEDLLOVERRIDES=") == 1
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"

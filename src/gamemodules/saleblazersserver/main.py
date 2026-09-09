@@ -17,6 +17,7 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 3099600
 steam_anonymous_login_possible = True
+CLIENT_STEAM_APP_ID = "1419850"
 DEFAULT_PORT = 27015
 STATUS_PORT_OFFSET = 1
 XVFB_SERVER_ARGS = "-screen 0 1024x768x24 -nolisten tcp"
@@ -110,6 +111,13 @@ def _config_path(server):
     return os.path.join(server.data["dir"], "DedicatedServerConfig.json")
 
 
+def _steam_appid_path(server):
+    """Return the Steam client app-id path beside the game executable."""
+
+    executable_dir = os.path.dirname(server.data.get("exe_name", "Default/Saleblazers.exe"))
+    return os.path.join(server.data["dir"], executable_dir, "steam_appid.txt")
+
+
 def _status_port(server):
     """Return the observed Saleblazers UDP status port."""
 
@@ -170,6 +178,10 @@ def sync_server_config(server):
     with open(config_path, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
         handle.write("\n")
+    steam_appid_path = _steam_appid_path(server)
+    os.makedirs(os.path.dirname(steam_appid_path), exist_ok=True)
+    with open(steam_appid_path, "w", encoding="ascii") as handle:
+        handle.write(CLIENT_STEAM_APP_ID + "\n")
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
@@ -202,6 +214,8 @@ def _wrap_linux_command(command, wineprefix=None):
     )
     wrapped = proton.prepend_env_assignments(
         wrapped,
+        SteamAppId=CLIENT_STEAM_APP_ID,
+        SteamGameId=CLIENT_STEAM_APP_ID,
         LIBGL_ALWAYS_SOFTWARE="1",
     )
     if shutil.which("xvfb-run") is None:
@@ -234,6 +248,8 @@ def _container_runtime_env(_server):
         "SDL_VIDEODRIVER": "x11",
         "SDL_AUDIODRIVER": "dummy",
         "WINEDLLOVERRIDES": "",
+        "SteamAppId": CLIENT_STEAM_APP_ID,
+        "SteamGameId": CLIENT_STEAM_APP_ID,
         "LIBGL_ALWAYS_SOFTWARE": "1",
     }
 
