@@ -2,7 +2,6 @@
 
 import os
 import sys
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -630,17 +629,3 @@ def test_sidecar_fails_before_docker_run_when_manager_path_is_unmapped(tmp_path,
         mod._ensure_managed_database(server)
 
     docker.assert_not_called()
-
-
-def test_native_plaintext_credential_sink_has_codeql_suppression():
-    source = Path(mod.__file__).with_name("main.py").read_text(encoding="utf-8")
-    lines = source.splitlines()
-    sink_index = next(
-        index
-        for index, line in reversed(list(enumerate(lines)))
-        if "handle.write(text)" in line
-    )
-
-    assert lines[sink_index - 1].strip() == (
-        "# codeql[py/clear-text-storage-sensitive-data]"
-    )

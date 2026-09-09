@@ -534,7 +534,6 @@ def sync_server_config(server):
     # Life is Feudal reads these database credentials directly from
     # config_local.cs, so this native-config write must remain plaintext.
     with open(target_path, "w", encoding="utf-8") as handle:
-        # codeql[py/clear-text-storage-sensitive-data]
         handle.write(text)
 
 
