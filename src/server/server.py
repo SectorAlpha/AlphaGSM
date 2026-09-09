@@ -1040,7 +1040,7 @@ class Server(object):
         ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP),
         ``"quakeworld"`` (QuakeWorld UDP), ``"quake2"`` (Quake II UDP), ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"bedrock"`` (Minecraft Bedrock RakNet UDP ping),
-        ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"http"`` (HTTP response),
+        ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"udp"`` (generic UDP reachability),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
         (authenticated Source RCON),
@@ -1253,20 +1253,6 @@ class Server(object):
                     "Server does not appear to be responding: " + str(exc)
                 )
 
-        if protocol == "http":
-            try:
-                ms = query_utils.http_ping(host, port, timeout=10.0)
-                print(
-                    "Server is responding (HTTP on port {} - {:.1f} ms).".format(
-                        port, ms
-                    )
-                )
-                return
-            except query_utils.QueryError as exc:
-                raise ServerError(
-                    "Server does not appear to be responding: " + str(exc)
-                )
-
         if protocol == "bedrock":
             try:
                 bedrock_info = query_utils.bedrock_info(host, port, timeout=10.0)
@@ -1347,7 +1333,6 @@ class Server(object):
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
         (authenticated Source RCON),
-        ``"http"`` (HTTP response),
         ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
         ``/status`` endpoint), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
@@ -1693,29 +1678,6 @@ class Server(object):
                 print(
                     "Server is responding (UT3/GameSpy4 query on port {})."
                     "  No further details available.".format(port)
-                )
-                return
-            except query_utils.QueryError as exc:
-                raise ServerError("Info query failed: " + str(exc))
-
-        if protocol == "http":
-            try:
-                ms = query_utils.http_ping(host, port, timeout=10.0)
-                if as_json:
-                    print(
-                        json.dumps(
-                            {
-                                "protocol": "http",
-                                "port": port,
-                                "latency_ms": round(ms, 1),
-                            }
-                        )
-                    )
-                    return
-                print(
-                    "Server info (HTTP on port {}):\n"
-                    "  Protocol    : HTTP\n"
-                    "  Latency     : {:.1f} ms".format(port, ms)
                 )
                 return
             except query_utils.QueryError as exc:

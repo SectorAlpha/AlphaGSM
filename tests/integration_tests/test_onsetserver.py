@@ -77,7 +77,7 @@ def test_onsetserver_lifecycle(tmp_path):
         wait_for_info_protocol(
             env,
             server_name,
-            "http",
+            "tcp",
             START_TIMEOUT,
             expected_port=port - 2,
         )
@@ -92,7 +92,7 @@ def test_onsetserver_lifecycle(tmp_path):
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "http", info_data
+        assert info_data["protocol"] == "tcp", info_data
         assert info_data["port"] == port - 2, info_data
     finally:
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))

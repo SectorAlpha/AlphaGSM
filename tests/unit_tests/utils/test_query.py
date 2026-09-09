@@ -136,39 +136,6 @@ def test_udp_ping_raises_on_socket_error(monkeypatch):
         query_module.udp_ping("127.0.0.1", 27015)
 
 
-def test_http_ping_accepts_http_error_response(monkeypatch):
-    calls = []
-
-    def respond(request, timeout):
-        calls.append((request, timeout))
-        raise query_module.urllib.error.HTTPError(
-            request.full_url,
-            404,
-            "not found",
-            {},
-            None,
-        )
-
-    monkeypatch.setattr(query_module.urllib.request, "urlopen", respond)
-
-    ms = query_module.http_ping("127.0.0.1", 7775, timeout=3.0)
-
-    assert ms >= 0.0
-    assert calls[0][0].full_url == "http://127.0.0.1:7775/"
-    assert calls[0][0].get_method() == "HEAD"
-    assert calls[0][1] == 3.0
-
-
-def test_http_ping_wraps_network_errors(monkeypatch):
-    def fail(_request, timeout):
-        raise query_module.urllib.error.URLError("refused")
-
-    monkeypatch.setattr(query_module.urllib.request, "urlopen", fail)
-
-    with pytest.raises(query_module.QueryError, match="HTTP query failed"):
-        query_module.http_ping("127.0.0.1", 7775)
-
-
 def test_ut3_status_returns_response_on_valid_reply(monkeypatch):
     valid = b"\x00\x01\x02\x03\x04response"
     monkeypatch.setattr(

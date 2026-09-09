@@ -31,7 +31,11 @@ def test_smoke_readiness_requires_protocol_response(tmp_path, module, query_rc):
     )
     lifecycle = script[script.index(start):]
     log = tmp_path / "server.log"
-    log.write_text("Connection to Steam servers successful.\nVAC secure mode is activated.\n")
+    log.write_text(
+        "Connection to Steam servers successful.\n"
+        "VAC secure mode is activated.\n"
+        "Server loaded. Entering simulation...\n"
+    )
     commands = tmp_path / "commands"
     prelude = '''set -Eeuo pipefail
 SERVER_NAME=test
@@ -56,7 +60,7 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
         "noonesurvivedserver": "tcp",
         "codwawserver": "quake",
         "arksurvivalascended": "source_rcon",
-        "onsetserver": "http",
+        "onsetserver": "tcp",
     }.get(module, "a2s")
     protocol_call = f"protocol {protocol}"
     assert protocol_call in calls

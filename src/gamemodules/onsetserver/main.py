@@ -229,13 +229,13 @@ restart.__doc__ = "Restart the Onset server."
 
 
 def get_query_address(server):
-    """Probe Onset's documented HTTP file service."""
+    """Probe Onset's documented TCP file-service listener."""
 
-    return runtime_module.resolve_query_host(server), _http_port(server), "http"
+    return runtime_module.resolve_query_host(server), _http_port(server), "tcp"
 
 
 def get_info_address(server):
-    """Return the HTTP file-service address used by the info command."""
+    """Return the TCP file-service address used by the info command."""
 
     return get_query_address(server)
 

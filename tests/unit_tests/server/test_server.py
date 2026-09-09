@@ -1940,33 +1940,6 @@ def test_query_uses_explicit_ut3_protocol(monkeypatch, capsys):
     assert "UT3/GameSpy4" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("command,as_json", [("query", False), ("info", True)])
-def test_http_dispatch_uses_application_probe(monkeypatch, capsys, command, as_json):
-    import utils
-
-    module = DummyModule()
-    module.get_query_address = lambda _server: ("192.0.2.8", 7775, "http")
-    module.get_info_address = module.get_query_address
-    srv = make_server(module=module, data=DummyData({"port": 7777}))
-    native = MagicMock(return_value=2.25)
-    fake_query = SimpleNamespace(QueryError=OSError, http_ping=native)
-    monkeypatch.setattr(utils, "query", fake_query)
-
-    getattr(srv, command)(**({"as_json": as_json} if command == "info" else {}))
-
-    assert native.call_args.args == ("192.0.2.8", 7775)
-    assert native.call_args.kwargs == {"timeout": 10.0}
-    output = capsys.readouterr().out
-    if as_json:
-        assert json.loads(output) == {
-            "protocol": "http",
-            "port": 7775,
-            "latency_ms": 2.2,
-        }
-    else:
-        assert "HTTP on port 7775" in output
-
-
 @pytest.mark.parametrize("command,as_json", [("query", False), ("info", False), ("info", True)])
 @pytest.mark.parametrize("fails", [False, True])
 def test_soldat_dispatch_uses_native_file_query_without_tcp_fallback(monkeypatch, capsys, command, as_json, fails):

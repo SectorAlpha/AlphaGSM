@@ -13,14 +13,13 @@ Provides query strategies:
 * :func:`soldat_info` — classic Soldat file-server status query over TCP.
 * :func:`source_rcon_info` — authenticated Source RCON ``ListPlayers`` query.
 * :func:`http_json` — HTTP JSON endpoint query.
-* :func:`http_ping` — HTTP response probe.
 * :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
 ``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``,
-``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"http"``, ``"udp"``, or ``"tcp"``.  When that hook
+``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"udp"``, or ``"tcp"``.  When that hook
 is absent the caller falls back to a TCP ping on the main port.
 """
 
@@ -33,7 +32,7 @@ import time
 import urllib.error
 import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "http_ping", "udp_ping", "tcp_ping",
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping",
            "ts3_serverinfo", "soldat_info", "source_rcon_info", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
@@ -608,33 +607,6 @@ def http_json(host, port, path, timeout=5.0):
         return json.loads(payload)
     except json.JSONDecodeError as exc:
         raise QueryError("HTTP JSON query failed for {}: invalid JSON response".format(url)) from exc
-
-
-def http_ping(host, port, path="/", timeout=5.0):
-    """Return latency after receiving any valid HTTP response.
-
-    HTTP error status codes still prove that the application answered. Network
-    failures and responses that cannot be parsed as HTTP remain query errors.
-    """
-
-    path = str(path)
-    if not path.startswith("/"):
-        path = "/" + path
-    url = "http://{}:{}{}".format(_format_http_host(host), int(port), path)
-    request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "AlphaGSM"},
-        method="HEAD",
-    )
-    started = time.monotonic()
-    try:
-        with urllib.request.urlopen(request, timeout=timeout):
-            pass
-    except urllib.error.HTTPError:
-        pass
-    except (OSError, ValueError, urllib.error.URLError) as exc:
-        raise QueryError("HTTP query failed for {}: {}".format(url, exc)) from exc
-    return (time.monotonic() - started) * 1000.0
 
 
 def udp_ping(host, port, timeout=2.0, payload=b"\x00"):

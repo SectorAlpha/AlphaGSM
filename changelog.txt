@@ -14,8 +14,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
   its root-refusing native binary as the invoking host user in Docker.
 - Onset: expose the install root through `LD_LIBRARY_PATH` so the native server
   can load its bundled Steam API library before startup. Probe its documented
-  HTTP file service because private servers do not answer the advertised UDP
-  query protocols, and reserve all three adjacent ports in lifecycle tests.
+  loaded marker and documented TCP file listener because private servers do
+  not answer the advertised UDP queries, and reserve all three adjacent ports.
 - Survive the Nights: seed missing native configuration files from the shipped
   template tree while preserving existing operator edits.
 - Nightingale: allow ten minutes for its first-world bootstrap, retain game and
