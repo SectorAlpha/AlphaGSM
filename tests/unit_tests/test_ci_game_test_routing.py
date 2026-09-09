@@ -3229,6 +3229,16 @@ def test_unittest_workflow_keeps_backend_and_cross_platform_jobs_unconditional()
     assert "needs: [unit-test, lint, coverage]" in text
 
 
+def test_unittest_workflow_removes_volatile_runner_apt_sources():
+    text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    cleanup_pattern = (
+        "packages\\.microsoft\\.com|azure-cli|microsoft-prod|"
+        "dl\\.google\\.com|google-chrome"
+    )
+
+    assert text.count(cleanup_pattern) == 4
+
+
 def test_unittest_workflow_frees_runner_disk_before_linux_smoke_batches():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 

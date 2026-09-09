@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-09
+- CI system dependencies: remove volatile preinstalled Chrome and Microsoft apt
+  sources before refreshing Ubuntu package indexes in smoke and backend jobs.
 - Windows dedicated servers: disable Proton-GE's optional Xalia controller UI,
   preserve X11 access under Xvfb, and align process and Docker display settings
   for Battle Cry of Freedom, Ground Branch, Heat, Medieval Engineers, No One

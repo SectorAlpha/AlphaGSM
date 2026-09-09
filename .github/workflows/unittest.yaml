@@ -204,7 +204,7 @@ jobs:
       - name: Install system dependencies
         run: |
           for apt_source in /etc/apt/sources.list.d/*; do
-            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod' "$apt_source"; then
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
               sudo rm -f "$apt_source"
             fi
           done
@@ -325,7 +325,7 @@ jobs:
       - name: Install system dependencies
         run: |
           for apt_source in /etc/apt/sources.list.d/*; do
-            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod' "$apt_source"; then
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
               sudo rm -f "$apt_source"
             fi
           done
@@ -909,7 +909,7 @@ jobs:
       - name: Install tmux
         run: |
           for apt_source in /etc/apt/sources.list.d/*; do
-            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod' "$apt_source"; then
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
               sudo rm -f "$apt_source"
             fi
           done
@@ -970,7 +970,7 @@ jobs:
       - name: Install tmux
         run: |
           for apt_source in /etc/apt/sources.list.d/*; do
-            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod' "$apt_source"; then
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
               sudo rm -f "$apt_source"
             fi
           done
