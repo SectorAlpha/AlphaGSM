@@ -13,6 +13,18 @@ AlphaGSM can:
 - update it
 - back it up
 
+The everyday flow is always the same:
+
+| Step | What you type | What happens |
+| --- | --- | --- |
+| Create | `./alphagsm mymc create minecraft.vanilla` | AlphaGSM remembers this server |
+| Setup | `./alphagsm mymc setup` | Files are downloaded and configured |
+| Launch | `./alphagsm mymc start` | The dedicated server starts |
+| Verify | `./alphagsm mymc status` | You can see that it is running |
+
+Then `stop`, `backup`, or `update` as needed. Pick a game from
+[the server guides](docs/README.md) if you want the exact module name.
+
 It can run directly on the host, or optionally run as a Docker "manager"
 container that launches Docker-backed game-server containers through the host
 daemon.
@@ -173,6 +185,12 @@ Counter-Strike 2:
 
 ```bash
 ./alphagsm mycs2 create counterstrike2
+```
+
+Palworld:
+
+```bash
+./alphagsm mypalworld create palworld
 ```
 
 ### 4. Run setup
@@ -419,6 +437,8 @@ If you want examples that show the exact order of commands that work in this rep
 ```bash
 bash ./tests/smoke_tests/run_minecraft_vanilla.sh
 bash ./tests/smoke_tests/run_tf2.sh
+bash ./tests/smoke_tests/run_palworld.sh
+bash ./tests/smoke_tests/run_hl2dmserver.sh
 ```
 
 These scripts are useful because they show a full real flow:
@@ -435,10 +455,28 @@ These scripts are useful because they show a full real flow:
 - [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md)
 - [Run AlphaGSM In Docker](docs/docker-manager.md)
 - [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)
+- [Palworld Guide](docs/servers/palworld.md)
+- [Half-Life 2: Deathmatch Guide](docs/servers/hl2dmserver.md)
 - [Team Fortress 2 Guide](docs/servers/team-fortress-2.md)
 - [CS:GO Guide](docs/servers/counter-strike-global-offensive.md)
 
-The GitHub wiki can also be updated automatically from these files when changes are pushed to `master`.
+## Adding A New Game Server
+
+Operators do not add games by editing a config file. Each game is a module in
+the AlphaGSM source tree.
+
+If you want to contribute a new dedicated server, start here:
+
+- [Adding A Game Server](docs/adding-a-game-server.md) — short path plus the
+  technical contract
+- [Developer Guide](DEVELOPERS.md) — architecture, hooks, tests, and CI
+
+Copy a similar working module (Palworld for custom SteamCMD, HL2DM for Source,
+Minecraft Vanilla for Java), keep the same `create` / `setup` / `start` /
+`query` / `info` / `stop` commands, and land unit, integration, and smoke
+coverage in the same change.
+
+The GitHub wiki is published from these files when changes land on `master`.
 
 ## If You Are A Developer
 

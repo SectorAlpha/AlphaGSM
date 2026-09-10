@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-10
+- Docs: add an Adding A Game Server guide for operators and module authors,
+  reshape the documentation index and wiki home around the create/setup/launch
+  /verify flow, and refresh Palworld and HL2DM server guides.
 - Game modules: validate explicitly versioned module interfaces before runtime
   hook inference. Unversioned modules keep the existing loading path. Version 1
   checks callable lifecycle and Docker hooks plus declared config-sync keys; it

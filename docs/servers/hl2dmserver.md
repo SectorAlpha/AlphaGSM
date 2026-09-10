@@ -2,44 +2,26 @@
 
 This guide covers the `hl2dmserver` module in AlphaGSM.
 
-`hl2dmserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+`hl2dmserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub integration exercises both process and Docker. Local runs stay
+on the host process path unless you opt into Docker.
 
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- `screen` (host/process path)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`) on the host path
 - Python packages from `requirements.txt`
 
 ## Quick Start
 
-Create the server:
-
 ```bash
-alphagsm myhl2dmser create hl2dmserver
-```
-
-Run setup:
-
-```bash
-alphagsm myhl2dmser setup
-```
-
-Start it:
-
-```bash
-alphagsm myhl2dmser start
-```
-
-Check it:
-
-```bash
-alphagsm myhl2dmser status
-```
-
-Stop it:
-
-```bash
-alphagsm myhl2dmser stop
+alphagsm myhl2dm create hl2dmserver
+alphagsm myhl2dm setup
+alphagsm myhl2dm start
+alphagsm myhl2dm status
+alphagsm myhl2dm query
+alphagsm myhl2dm info
+alphagsm myhl2dm stop
 ```
 
 ## Setup Details
@@ -47,22 +29,28 @@ alphagsm myhl2dmser stop
 Setup configures:
 
 - the game port (default 27015)
+- client and SourceTV ports
 - the install directory
-- the executable name
+- the executable name (`srcds_run`)
 - SteamCMD downloads the server files
-- default configuration and backup settings
+- default `hl2mp/cfg/server.cfg` and backup settings
+
+`query` and `info` speak A2S. A hibernating server is not treated as ready;
+AlphaGSM keeps the dedicated server queryable for those checks.
 
 ## Useful Commands
 
 ```bash
-alphagsm myhl2dmser update
-alphagsm myhl2dmser backup
+alphagsm myhl2dm update
+alphagsm myhl2dm backup
 ```
 
 ## Notes
 
 - Module name: `hl2dmserver`
-- Default port: 27015
+- Default map: `dm_lockdown`
+- Default port: 27015 (UDP and TCP)
+- Query/info protocol: A2S
 
 ## Developer Notes
 

@@ -28,6 +28,40 @@ Keep repository docs split by audience and preferred operator path:
 - [DEVELOPERS.md](DEVELOPERS.md) is for implementation details, contracts,
   architecture, and contributor-facing guidance.
 
+## Adding A New Game Server
+
+The operator-facing walkthrough lives in
+[docs/adding-a-game-server.md](docs/adding-a-game-server.md). Use that page as
+the contribution entry point. This section is the technical checklist.
+
+A new top-level game is a package under `src/gamemodules/<module_id>/` with
+`__init__.py` as the public import surface and `main.py` as the implementation.
+Users then run the same commands they already know: `create`, `setup`, `start`,
+`status`, `query`, `info`, `stop`.
+
+Copy the closest working module:
+
+- Palworld — custom SteamCMD download plus game-specific settings layout
+- HL2DM — `define_valve_server_module()` plus shared runtime port constants
+- Minecraft Vanilla — Java runtime family
+
+Set `module_contract_version = 1` on the public surface so AlphaGSM can reject
+malformed hook exports before runtime inference. Version 1 does not prove that
+the dedicated server starts.
+
+A module is incomplete until it lands with:
+
+- required lifecycle and Docker hooks on the public import surface
+- unit tests under `tests/unit_tests/`
+- an integration test under `tests/integration_tests/test_<module>.py` that
+  drives AlphaGSM commands through create, setup, start, readiness, status,
+  query, info, info --json, and stop
+- a smoke runner under `tests/smoke_tests/run_<module>.sh`
+- `docs/servers/<module_id>.md`, a changelog entry, and a tracker update once
+  the lifecycle is actually proven
+
+Do not treat hibernation, TCP fallback, or a skipped timeout as a pass.
+
 At runtime, the user-facing call path is:
 
 1. `./alphagsm ...`
@@ -353,11 +387,11 @@ Static enforcement lives in `tests/unit_tests/test_runtime_contract_static.py`, 
 
 ### Representative implementations
 
-- [src/gamemodules/minecraft/vanilla.py](src/gamemodules/minecraft/vanilla.py)
-- [src/gamemodules/teamfortress2/__init__.py](src/gamemodules/teamfortress2/__init__.py)
-- [src/gamemodules/projectzomboid.py](src/gamemodules/projectzomboid.py)
-- [src/gamemodules/counterstrikeglobaloffensive.py](src/gamemodules/counterstrikeglobaloffensive.py)
-- [src/gamemodules/readyornotserver.py](src/gamemodules/readyornotserver.py) — example with `get_query_address` and `get_info_address`
+- [src/gamemodules/palworld/](src/gamemodules/palworld/) — custom SteamCMD install composition
+- [src/gamemodules/hl2dmserver/](src/gamemodules/hl2dmserver/) — Valve family plus explicit Docker ports
+- [src/gamemodules/minecraft/vanilla.py](src/gamemodules/minecraft/vanilla.py) — Java family
+- [src/gamemodules/teamfortress2/](src/gamemodules/teamfortress2/) — Source family with curated addons
+- [src/gamemodules/readyornotserver/](src/gamemodules/readyornotserver/) — example with `get_query_address` and `get_info_address`
 
 ## Datastore Model
 

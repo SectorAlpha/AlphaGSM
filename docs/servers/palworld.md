@@ -3,48 +3,34 @@
 This guide covers the `palworld` module in AlphaGSM.
 
 `palworld` is currently `PASSED` on the documented Ubuntu 24.04 Linux
-baseline. GitHub integration keeps process and Docker coverage, while the game
-module exposes the same launch and health contract to both runtimes.
+baseline. GitHub integration keeps process and Docker coverage. The same
+create / setup / start / query / stop commands work on both runtimes.
 
 ## Requirements
+
+- `screen` (host/process path)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`) on the host path
+- Python packages from `requirements.txt`
 
 The smoke runner waits for Palworld's `Running Palworld dedicated server on :`
 message before checking status and stopping the server.
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
-
 ## Quick Start
-
-Create the server:
 
 ```bash
 alphagsm mypalworld create palworld
-```
-
-Run setup:
-
-```bash
 alphagsm mypalworld setup
-```
-
-Start it:
-
-```bash
 alphagsm mypalworld start
-```
-
-Check it:
-
-```bash
 alphagsm mypalworld status
+alphagsm mypalworld query
+alphagsm mypalworld info
+alphagsm mypalworld stop
 ```
 
-Stop it:
+Community (public lobby) mode:
 
 ```bash
-alphagsm mypalworld stop
+alphagsm mypalworld setup --community
 ```
 
 ## Setup Details
@@ -54,6 +40,8 @@ Setup configures:
 - the game port (default 8211)
 - the install directory
 - SteamCMD downloads the server files
+- AlphaGSM copies `DefaultPalWorldSettings.ini` into the Linux dedicated
+  settings path on first install
 - AlphaGSM passes only Palworld's documented `-port=<port>` network argument;
   there is no separate managed query-port argument
 
@@ -68,8 +56,9 @@ alphagsm mypalworld backup
 
 - Module name: `palworld`
 - Default port: 8211
-- Network protocol: UDP
-- `query`, `info`, and `info --json` use generic UDP health on the game port
+- Network protocol: UDP on the game port
+- `query`, `info`, and `info --json` use generic UDP health. That proves the
+  dedicated port is open; it does not return a rich player/map listing.
 
 ## Developer Notes
 
