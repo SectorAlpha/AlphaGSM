@@ -207,6 +207,7 @@ def test_help_groups_lifecycle_commands_and_points_at_docs():
     assert "Backup and worlds" in text
     assert "github.com/SectorAlpha/AlphaGSM" in text
     assert "wiki.sector-alpha.net" not in text
+    assert text.count("self-update") == 1
     assert text.index("Lifecycle") < text.index("  setup")
     assert text.index("  setup") < text.index("  backup")
 

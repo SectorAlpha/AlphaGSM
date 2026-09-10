@@ -717,8 +717,6 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
             file=file,
         )
         print(file=file)
-        _print_command_shorthelp("self-update", None, file)
-        print(file=file)
         _print_grouped_command_help(server, file)
     else:
         #  if we have a command, return help relating to the command to the
