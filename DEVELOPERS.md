@@ -810,6 +810,16 @@ When behaviour changes:
 
 The repository is the source of truth. The wiki is a published mirror generated from tracked docs by `scripts/publish_wiki.sh`.
 
+Regenerate per-game `set` tables with:
+
+```bash
+PYTHONPATH=.:src python3 scripts/sync_server_guide_settings.py
+```
+
+SteamCMD account login is not implemented yet. The public TODO is
+[docs/steamcmd-auth.md](docs/steamcmd-auth.md). Local design notes under
+`docs/superpowers/` are gitignored and are not part of the published docs.
+
 ## Repo Automation Files
 
 Repo-local automation guidance now lives in:

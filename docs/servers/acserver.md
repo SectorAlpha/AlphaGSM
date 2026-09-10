@@ -86,6 +86,23 @@ alphagsm myacserver backup
 - Module name: `acserver`
 - Default game port: 9600
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create acserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

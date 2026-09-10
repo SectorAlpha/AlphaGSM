@@ -72,6 +72,27 @@ alphagsm mymemories backup
 - Module name: `memoriesofmarsserver`
 - Default port: 27015
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create memoriesofmarsserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

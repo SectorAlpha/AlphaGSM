@@ -69,6 +69,31 @@ alphagsm mycounters backup
 - Current status: disabled in automated testing. SteamCMD app `740` installs a legacy CS:GO dedicated-server build that now receives `MasterRequestRestart` and shuts itself down while hibernating.
 - Valve's current CS2 dedicated-server flow uses app `730` and is exposed separately through [`counterstrike2`](counterstrike2.md).
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create counterstrikeglobaloffensive`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `de_dust2`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `16`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM CS:GO Server`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -102,6 +102,32 @@ alphagsm myqlserver mod cleanup
 - Module name: `qlserver`
 - Default port: 27960
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create qlserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | Local IP on which Quake Live listens (default: 0.0.0.0). |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `factory` | — | string | Quake Live factory used with the startup map (default: ffa). |
+| `homepath` | — | string | Launch-only homepath for Quake Live. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `servercfg` | — | string | Server config file to exec on startup. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

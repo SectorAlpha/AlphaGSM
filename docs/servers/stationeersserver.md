@@ -69,6 +69,24 @@ alphagsm mystatione backup
 - Default update port: `27015/udp`
 - AlphaGSM query/info contract: generic `udp` on the managed game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create stationeersserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `serverpassword` | sv_password, password | string | Password required to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

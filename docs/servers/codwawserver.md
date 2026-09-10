@@ -66,6 +66,31 @@ alphagsm mycodwawse backup
 - `query`, `info`, and `info --json` use the native Quake-style UDP status
   protocol on the managed game port.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create codwawserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `download_name` | — | string | Cached archive filename. |
+| `exe_name` | — | string | Server executable filename. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `moddir` | — | string | The active Call of Duty: World at War mod directory. Example: `baseq3`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+| `url` | — | string | Download URL for the server archive. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

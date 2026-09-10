@@ -67,6 +67,28 @@ alphagsm mymotortow backup
 - Module name: `motortownserver`
 - Default port: 27015
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create motortownserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | The game port for the server. |
+| `queryport` | — | integer | The query port for the server. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

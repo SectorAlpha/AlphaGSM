@@ -118,3 +118,16 @@ alphagsm '*' status
 
 `*` means every server for the current user. `username/server` runs as that
 user through `sudo` when permitted.
+
+## Not implemented yet
+
+These show up in older design notes. They are **not** commands today:
+
+| Idea | What it would do | Status |
+| --- | --- | --- |
+| SteamCMD auth profiles | `alphagsm steam-auth login` so AUTH-gated Steam apps can `setup` | Planned. See [SteamCMD Auth Profiles](steamcmd-auth.md) |
+| Server export / import | Pack one server's datastore + user data and recreate it on another machine | Not built. `backup` / `restore` stay on the same install directory |
+
+There is no `alphagsm export` or `alphagsm import`. To move a server, back it
+up, copy the install tree yourself, `create` on the new host, and restore or
+re-run `setup`.

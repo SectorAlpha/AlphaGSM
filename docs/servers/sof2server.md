@@ -45,6 +45,23 @@ alphagsm mysof2 start
 - Query/info protocol: `quake` on the game port
 - Executable: `./sof2ded`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create sof2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 - AlphaGSM follows LinuxGSM's launch defaults for `sof2ded`, including `sv_punkbuster 0`, `dedicated 2`, `net_ip`, `net_port`, `+exec base/<server-name>.cfg`, and the default map `mp_shop`.

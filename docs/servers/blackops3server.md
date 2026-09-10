@@ -71,6 +71,27 @@ alphagsm myblackops backup
   UDP `query` / `info` on the managed base port.
 - The active Docker smoke and integration correction is pending replacement CI.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create blackops3server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `18`. |
+| `port` | gameport | integer | The game port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

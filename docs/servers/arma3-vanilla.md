@@ -65,6 +65,24 @@ alphagsm myvanilla backup
 - Module name: `arma3.vanilla`
 - Default port: 27015
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create arma3.vanilla`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `servername` | hostname, name | string | The public hostname written to server.cfg. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

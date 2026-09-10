@@ -68,6 +68,30 @@ Docker launches include the shared SteamCMD SDK mounts required to load
 - Module name: `wfserver`
 - Default port: 44400
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create wfserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | The hosted IP address to bind for launch. Example: `0.0.0.0`. |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `fs_game` | — | string | The active game/mod directory. Example: `baseq3`. |
+| `hostname` | servername, name | string | The advertised server name. Example: `AlphaGSM Arena`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. Example: `q3dm17`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

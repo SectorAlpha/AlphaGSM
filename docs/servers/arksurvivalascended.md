@@ -76,6 +76,26 @@ alphagsm myarksurvi backup
   passwords explicitly chosen by the operator.
 - Current correction status: replacement GitHub validation pending
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create arksurvivalascended`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Server admin password. Stored as a secret. |
+| `rconport` | — | string | TCP port used by the authenticated RCON service. |
+| `serverpassword` | sv_password, password | string | Password required to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

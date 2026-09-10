@@ -79,6 +79,24 @@ alphagsm mygravserv backup
 - Module name: `gravserver`
 - Default port: 7777
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create gravserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Server admin password. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

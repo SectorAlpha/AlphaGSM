@@ -67,6 +67,29 @@ alphagsm mymw3serve backup
 - Module name: `mw3server`
 - Default port: 27016
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create mw3server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `maxplayers` | users | integer | The maximum number of players. |
+| `port` | gameport | integer | The game port for the server. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

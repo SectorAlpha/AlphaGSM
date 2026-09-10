@@ -62,6 +62,30 @@ alphagsm mypixarkse backup
 - Module name: `pixarkserver`
 - Default port: 27015
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create pixarkserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The startup map. |
+| `maxplayers` | users | integer | The maximum number of players. |
+| `port` | gameport | integer | The game port for the server. |
+| `queryport` | — | integer | The query port for the server. |
+| `servername` | hostname, name | string | The advertised server name. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

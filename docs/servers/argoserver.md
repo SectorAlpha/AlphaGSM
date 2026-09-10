@@ -77,6 +77,24 @@ alphagsm myargoserv backup
 - Default executable: `argoserver`
 - Default world: `empty`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create argoserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `servername` | hostname, name | string | The public hostname written to server.cfg. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

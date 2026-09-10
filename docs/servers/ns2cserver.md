@@ -81,6 +81,32 @@ alphagsm myns2c backup
 - Web admin is enabled by default on `httpport` `8080`
 - Current correction status: replacement GitHub validation pending
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ns2cserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `httppassword` | — | string | Web admin password. |
+| `httpport` | — | integer | Web admin port. |
+| `httpuser` | — | string | Web admin username. |
+| `maxplayers` | users | integer | Maximum allowed players. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `servername` | hostname, name | string | The advertised server name. |
+| `startmap` | map, gamemap, level, world | string | Startup map. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

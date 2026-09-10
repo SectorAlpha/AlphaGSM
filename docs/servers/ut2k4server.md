@@ -97,6 +97,23 @@ alphagsm myut2k4ser mod cleanup
 - the current stop path may fall back to AlphaGSM's managed kill after the
   graceful shutdown window if the UT2004 console does not exit on `stop`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ut2k4server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

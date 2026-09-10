@@ -45,6 +45,23 @@ alphagsm mymohaa start
 - Query/info protocol: `udp` reachability on the game port
 - Executable: `./mohaa_lnxded`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create mohaaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 - AlphaGSM follows LinuxGSM's launch defaults for `mohaa_lnxded`, including `fs_basepath`, `fs_outputpath`, `dedicated 2`, `net_ip`, `net_port`, the default map `dm/mohdm1`, and `+exec main/<server-name>.cfg`.

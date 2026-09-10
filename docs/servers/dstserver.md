@@ -103,6 +103,23 @@ alphagsm mydstserve backup
 - Module name: `dstserver`
 - Default port: 10999
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create dstserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

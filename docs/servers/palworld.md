@@ -65,6 +65,23 @@ alphagsm mypalworld backup
 - `query`, `info`, and `info --json` use generic UDP health. That proves the
   dedicated port is open; it does not return a rich player/map listing.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create palworld`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

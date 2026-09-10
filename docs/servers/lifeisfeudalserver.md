@@ -115,6 +115,29 @@ alphagsm mylifeisfe backup
 - Module name: `lifeisfeudalserver`
 - Default port: 28001
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create lifeisfeudalserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `db_host` | databasehost, mysqlhost, mariadbhost | string | Hostname or IP address for the Life is Feudal MySQL/MariaDB service. Example: `127.0.0.1`. |
+| `db_mode` | databasemode | string | Whether Life is Feudal should use a locally managed database or an AlphaGSM-managed Docker MariaDB. Example: `local`. |
+| `db_name` | database, databasename | string | Database/schema name used by Life is Feudal. Example: `lif_1`. |
+| `db_password` | databasepassword, mysqlpassword, mariadbpassword | string | Database password used by Life is Feudal. Stored as a secret. |
+| `db_port` | databaseport, mysqlport, mariadbport | integer | TCP port for the Life is Feudal MySQL/MariaDB service. Example: `3306`. |
+| `db_user` | databaseuser, mysqluser, mariadbuser | string | Database login used by Life is Feudal. Example: `root`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

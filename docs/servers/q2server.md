@@ -82,6 +82,33 @@ If you later add the full retail `baseq2/pak0.pak` content, you can switch to re
 - Default port: 27910
 - Fresh-install default map: `demo1`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create q2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `download_mode` | — | string | How the server should be installed. |
+| `download_name` | — | string | Cached archive filename. |
+| `exe_name` | — | string | Server executable filename. |
+| `gamedir` | game | string | The active Quake 2 game directory. Example: `baseq3`. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+| `url` | — | string | Download URL for the server archive. |
+| `version` | — | string | Requested upstream release version. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

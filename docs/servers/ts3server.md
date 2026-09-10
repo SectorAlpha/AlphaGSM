@@ -60,6 +60,23 @@ alphagsm myts3serve backup
 - Module name: `ts3server`
 - Default port: 10011
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ts3server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -67,6 +67,28 @@ alphagsm mylongvint backup
 - `query`, `info`, and `info --json` use generic UDP reachability on the main
   game port, not a separate A2S `queryport`.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create longvinterserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | Maximum allowed players. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `servername` | hostname, name | string | Configured public server name. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

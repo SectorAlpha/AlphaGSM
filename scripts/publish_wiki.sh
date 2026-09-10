@@ -119,6 +119,7 @@ Create, set up, start, check, update, and back up game servers on the host or in
 | Everyday commands (backup, restore, console, boot) | [[Commands]] |
 | Install mods (TF2, Source, plugins) | [[Installing Mods]] |
 | Update a game or AlphaGSM | [[Updating]] |
+| SteamCMD login (not implemented yet) | [[Steamcmd Auth]] |
 | Add a new game to AlphaGSM | [[Adding A Game Server]] |
 | Change AlphaGSM itself | [[Developers]] |
 

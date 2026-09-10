@@ -84,6 +84,28 @@ alphagsm mypvrserve backup
 - Default game port: 7777
 - Default status/query helper port: 8177
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create pvrserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | Initial map or workshop scenario. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `queryport` | — | integer | Derived status-helper port (game port + 400). |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

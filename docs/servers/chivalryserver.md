@@ -69,6 +69,23 @@ alphagsm mychivalry backup
 - Default query port: 27015
 - Current validation status: AlphaGSM now repairs the missing `PhysXUpdateLoader.so` alias, launches from the correct Linux working directory, syncs the managed `Port`/`PeerPort`/`QueryPort` values into `PCServer-UDKEngine.ini`, and exposes the install-root Steam library paths so the Linux binary can locate the shipped `steamclient.so`, but anonymous Linux startup still aborts in `SteamAPI_Init()` / `SteamAPI_IsSteamRunning()` before any working A2S `query`/`info` path appears.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create chivalryserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

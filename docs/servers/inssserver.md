@@ -66,6 +66,31 @@ alphagsm myinssserv backup
 - Default game port: 27131
 - Default query port: `port + 1`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create inssserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `gslt` | — | string | Optional game server login token. |
+| `hostname` | servername, name | string | Server hostname shown in the browser. |
+| `mapcycle` | — | string | Initial scenario or mapcycle entry. |
+| `maxplayers` | users | integer | Maximum allowed players. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `queryport` | — | integer | Steam query port. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

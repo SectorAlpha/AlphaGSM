@@ -65,6 +65,29 @@ alphagsm myzpsserve backup
 - Default port: `27015`
 - Current status: `ENABLED (AUTH)`. SteamCMD app `4523420` stages the current GoldSrc dedicated payload, and the dedicated launch contract now matches SteamDB (`hlds_run -game zp -steam -secure`), but the validated Linux lane still expects a real authenticated Steam client session. Fresh Docker probes still stop at `SteamAPI_IsSteamRunning() did not locate a running instance of Steam` / `SteamAPI_Init() failed; create pipe failed` before A2S readiness.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create zpsserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `zph_industry`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `20`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM Zombie Panic!`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

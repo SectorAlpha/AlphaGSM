@@ -68,6 +68,37 @@ alphagsm mysoulmask backup
 - Validated Linux runtime: Docker-backed `wine-proton`
 - Query/info contract on Linux: generic TCP on the managed game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create soulmask`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Administrator password. Stored as a secret. |
+| `backupinterval` | — | integer | Backup interval in seconds. |
+| `bindaddress` | — | string | Hosted IP address to bind for launch. |
+| `dir` | — | string | Install directory for the server. |
+| `echoport` | — | integer | Echo service port. |
+| `exe_name` | — | string | Server executable filename. |
+| `level` | — | string | The startup world or map. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `mods` | — | string | Optional mod list. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+| `savinginterval` | — | integer | Autosave interval in seconds. |
+| `servername` | hostname, name | string | The advertised server name. Example: `AlphaGSM Server`. |
+| `serverpassword` | sv_password, password | string | Server password. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

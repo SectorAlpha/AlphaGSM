@@ -72,6 +72,23 @@ alphagsm myempyrion backup
 - AlphaGSM `query`, `info`, and `info --json` use the live STCP TCP listener on `port + 3`
 - Upstream `dedicated.yaml` still documents `30004` as `Tel_Port`; AlphaGSM does not rely on that fixed legacy value for runtime readiness
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create empyrionserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

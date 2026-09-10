@@ -97,6 +97,32 @@ alphagsm myetlegacy mod cleanup
 - Module name: `etlegacyserver`
 - Default port: 27960
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create etlegacyserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `configfile` | — | string | Server config file to exec on startup. |
+| `dir` | — | string | Install directory for the server. |
+| `download_name` | — | string | Cached archive filename. |
+| `exe_name` | — | string | Server executable filename. |
+| `fs_game` | — | string | The active game/mod directory. Example: `baseq3`. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `port` | gameport | integer | The game port for the server. |
+| `url` | — | string | Download URL for the server archive. |
+| `version` | — | string | Requested upstream release version. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

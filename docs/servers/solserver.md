@@ -73,6 +73,23 @@ alphagsm mysolserve backup
 - Native status queries require a complete, valid response; a TCP connection
   alone does not establish readiness. See the [query client requirements](https://github.com/gamedig/node-gamedig/blob/master/GAMES_LIST.md#soldat).
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create solserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

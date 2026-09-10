@@ -49,6 +49,23 @@ alphagsm myut3 start
 - Default query port: `6500`
 - Query/info protocol: `ut3` (Unreal3/GameSpy4 reachability probe)
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ut3server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 - AlphaGSM expects the server executable at `Binaries/ut3` relative to the install root.

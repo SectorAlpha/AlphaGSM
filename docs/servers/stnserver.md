@@ -71,6 +71,25 @@ alphagsm mystnserve set port 9999
 - Module name: `stnserver`
 - Default port: 8888
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create stnserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `port` | gameport | integer | The game port for the Survive the Nights server. |
+| `queryport` | — | integer | The separate Steam query port for the Survive the Nights server. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

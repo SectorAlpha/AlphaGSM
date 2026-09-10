@@ -104,6 +104,30 @@ alphagsm mytiserver dump
 - Default query port: `7778`
 - Default executable: `TheIsleServer.sh`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create tiserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `eos_client_id` | — | string | Epic Online Services dedicated server client ID. Stored as a secret. |
+| `eos_client_secret` | — | string | Epic Online Services dedicated server client secret. Stored as a secret. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The startup map. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

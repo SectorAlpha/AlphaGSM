@@ -74,6 +74,24 @@ alphagsm myvalheim backup
 - `query`, `info`, and `info --json` use generic UDP health on the primary
   game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create valheim`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `serverpassword` | sv_password, password | string | Password required to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

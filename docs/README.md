@@ -28,6 +28,7 @@ with `update`.
 | See which games currently pass | [Game Server Support Tracker](game-server-support.md) |
 | Install TF2 / Source mods or Minecraft plugins | [Installing Mods](installing-mods.md) |
 | Update a game or AlphaGSM itself | [Updating Servers And AlphaGSM](updating.md) |
+| SteamCMD login for AUTH-gated games | [SteamCMD Auth Profiles](steamcmd-auth.md) (not implemented yet) |
 | Add or change a game module | [Adding A Game Server](adding-a-game-server.md) |
 | Work on AlphaGSM internals | [Developer Guide](../DEVELOPERS.md) |
 
@@ -312,6 +313,7 @@ Popular starting points:
 - [Adding A Game Server](adding-a-game-server.md)
 - [Installing Mods](installing-mods.md)
 - [Updating Servers And AlphaGSM](updating.md)
+- [SteamCMD Auth Profiles](steamcmd-auth.md)
 - [Game Server Support Tracker](game-server-support.md)
 - [Platform Support](platform-support.md)
 - [Manual Download Fallbacks](manual-download-fallbacks.md)

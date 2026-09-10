@@ -117,6 +117,30 @@ alphagsm mybattlebi set apitoken YOUR_OPTIONAL_API_TOKEN
 - Default game port: `29992`
 - Default executable: `BattleBit.exe`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create battlebitserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `apiendpoint` | — | string | BattleBit community server API endpoint in host:port form. |
+| `apitoken` | — | string | Optional BattleBit community server API token. Stored as a secret. |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. |
+| `port` | gameport | integer | The game port for the BattleBit community server. |
+| `servername` | name, hostname | string | The advertised BattleBit community server name. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -75,6 +75,25 @@ alphagsm mytwserver set servername "AlphaGSM Teeworlds Server"
 - Module name: `twserver`
 - Default port: 8303
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create twserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `port` | gameport | integer | The UDP/TCP game port Teeworlds listens on. |
+| `servername` | hostname, name | string | The advertised server name. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

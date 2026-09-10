@@ -74,6 +74,23 @@ alphagsm myss14serv backup
 - GitHub integration and smoke coverage accept
   `ALPHAGSM_SS14_SERVER_URL` to validate a supplied archive end to end.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ss14server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

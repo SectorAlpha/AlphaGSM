@@ -70,6 +70,23 @@ alphagsm mymiscreat backup
   reachability on the managed game port instead of the older stale A2S probe
   on `port + 1`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create miscreatedserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

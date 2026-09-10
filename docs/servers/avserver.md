@@ -70,6 +70,23 @@ alphagsm myavserver backup
 - AlphaGSM `query` and `info` use generic UDP reachability on the Steam query port
 - The `administration` datastore key is optional and maps to Avorion's `--admin` CLI argument, not an `admin.xml` file path
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create avserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

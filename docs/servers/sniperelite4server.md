@@ -72,6 +72,27 @@ alphagsm mysniperel backup
   `wine-proton` runtime; the corrected four-port/config contract is pending
   the replacement GitHub CI run
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create sniperelite4server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. |
+| `port` | gameport | integer | The game port for the server. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

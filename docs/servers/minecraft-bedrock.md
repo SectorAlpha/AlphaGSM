@@ -77,6 +77,29 @@ alphagsm mybedrock set servername "AlphaGSM Bedrock Server"
 - Default port: 19132
 - Fresh Docker-backed support was revalidated on 2026-05-30 with `query`, `info`, `info --json`, and clean stop all passing on the shared `service-console` runtime family.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create minecraft.bedrock`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `difficulty` | — | string | The world difficulty. Example: `easy`. |
+| `gamemode` | — | string | The default game mode. Example: `survival`. |
+| `map` | gamemap, level, world, startmap, worldname | string | The selected world or level name. Example: `Bedrock level`. |
+| `maxplayers` | users | integer | The maximum number of players allowed on the server. Example: `10`. |
+| `port` | gameport | integer | The port the Bedrock server listens on. Example: `19132`. |
+| `servername` | hostname, name | string | The server name shown in Bedrock server listings. Example: `AlphaGSM Bedrock Server`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

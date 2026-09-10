@@ -81,6 +81,35 @@ alphagsm myonset backup
   marker and a TCP connection to the documented file service at `port - 2`
 - The generated config defaults to the documented `sandbox` package and a private `masterlist=false` profile
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create onsetserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `gamemode` | — | string | The short description shown for the server. |
+| `ipaddress` | — | string | The bind address written to server_config.json. |
+| `iplimit` | — | integer | Maximum simultaneous connections per IP. |
+| `maxplayers` | users | integer | Maximum players allowed on the server. |
+| `password` | — | string | Optional join password. Stored as a secret. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `servername` | hostname, name | string | The advertised Onset server name. |
+| `servername_short` | — | string | The short server name used for rich presence. |
+| `timeout` | — | integer | Client timeout in milliseconds. |
+| `website_url` | — | string | The homepage URL advertised by the server. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

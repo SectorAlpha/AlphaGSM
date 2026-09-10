@@ -10,7 +10,7 @@ env
 .coverage
 coverage.xml
 nohup.out
-docs/superpowers/*
+docs/superpowers/
 build/
 dist-binary/
 /run_details.txt

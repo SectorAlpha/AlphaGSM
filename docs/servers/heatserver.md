@@ -65,6 +65,23 @@ alphagsm myheatserv backup
 - Default game port: 27015
 - Default query port: 27016
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create heatserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

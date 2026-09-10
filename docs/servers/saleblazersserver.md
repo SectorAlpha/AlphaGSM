@@ -73,6 +73,27 @@ alphagsm mysaleblaz backup
 - Default helper port: 27016 (`port + 1`)
 - Current validation status: pending the current GitHub Actions rerun. AlphaGSM starts the upstream executable from `<install_dir>/Default`, passes the managed root config as `-config ../DedicatedServerConfig.json`, runs it under `xvfb-run` plus SDL `x11`, dummy audio, and software GL, and treats the live helper surface as generic `udp` on `port + 1`. The current readiness markers are `Server hosted on port ...` and `Connected to Console Window!`, and `query`, `info`, and `info --json` must all pass on the derived helper port.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create saleblazersserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `maxplayers` | users | integer | Maximum number of players allowed on the server. Example: `8`. |
+| `port` | gameport | integer | The primary game port for the server. Example: `27015`. |
+| `servername` | hostname, name | string | The public lobby name for the dedicated server. Example: `AlphaGSM Test`. |
+| `serverpassword` | sv_password, password | string | Optional password required to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

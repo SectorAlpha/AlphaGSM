@@ -73,6 +73,23 @@ alphagsm mywurmserv backup
 - During install AlphaGSM seeds root-level `Adventure` and `Creative` world folders from `dist/` on fresh SteamCMD installs
 - AlphaGSM `query` and `info` use generic TCP reachability on the game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create wurmserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

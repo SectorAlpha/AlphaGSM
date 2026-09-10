@@ -111,3 +111,20 @@ alphagsm mygoldeneye stop
 - Docker family: `steamcmd-linux`
 - Process and Docker use the same `srcds_run -game gesource` game command
 - Generic in-game broadcast messages are not currently supported
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create goldeneyesourceserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->

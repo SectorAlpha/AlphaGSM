@@ -107,6 +107,29 @@ alphagsm mycustom set exe_name paper-1.21.1.jar
 - Module name: `minecraft.custom`
 - Default port: 25565
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create minecraft.custom`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `difficulty` | — | string | The world difficulty. Example: `easy`. |
+| `gamemode` | — | string | The default game mode. Example: `survival`. |
+| `map` | gamemap, level, world, startmap, worldname | string | The selected world or level name. Example: `world`. |
+| `maxplayers` | users | integer | The maximum number of players allowed on the server. Example: `20`. |
+| `port` | gameport | integer | The port the server listens on. Example: `25565`. |
+| `servername` | hostname, name | string | The server name shown in the client list. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

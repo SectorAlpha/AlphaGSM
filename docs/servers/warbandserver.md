@@ -70,6 +70,23 @@ alphagsm mywarbands backup
 - Headless Linux runs use `xvfb-run` when it is available so Wine can create the minimal virtual display Warband expects at startup.
 - Smoke and integration readiness now wait on `info --json` reporting protocol `tcp`, because the dedicated server does not emit reliable startup markers into the outer screen log and AlphaGSM currently observes Warband through generic TCP reachability.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create warbandserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

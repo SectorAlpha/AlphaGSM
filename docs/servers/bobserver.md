@@ -69,6 +69,24 @@ alphagsm mybobserve backup
 - Default game port: 7777
 - Default query port: 27015
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create bobserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `password` | — | string | Password required to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

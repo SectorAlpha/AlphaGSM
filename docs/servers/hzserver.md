@@ -88,3 +88,26 @@ alphagsm myhzserver backup
 - Module name: `hzserver`
 - SteamCMD app id: `2728330`
 - Supported Linux path: Docker `wine-proton`
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create hzserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. |
+| `port` | gameport | integer | The game port for the server. |
+| `queryport` | — | integer | The query port for the server. |
+| `servername` | hostname, name | string | The advertised server name. |
+
+<!-- alphagsm-server-variables:end -->

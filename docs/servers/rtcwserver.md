@@ -93,6 +93,32 @@ alphagsm myrtcwserv mod cleanup
 - Module name: `rtcwserver`
 - Default port: 27960
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create rtcwserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `download_name` | — | string | Cached archive filename. |
+| `exe_name` | — | string | Server executable filename. |
+| `fs_game` | — | string | The active game/mod directory. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+| `url` | — | string | Download URL for the server archive. |
+| `version` | — | string | Requested upstream release version. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -71,6 +71,30 @@ alphagsm mycitadels backup
 - Default query port: `27015`
 - Supported Linux health contract: `query`, `info`, and `info --json` use TCP on the managed game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create citadelserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The startup map. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+| `servername` | hostname, name | string | The advertised server name. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

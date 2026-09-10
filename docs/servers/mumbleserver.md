@@ -74,6 +74,28 @@ alphagsm mymumblese backup
 - Module name: `mumbleserver`
 - Default port: 64738
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create mumbleserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `database` | — | string | Path to the SQLite database file used by the server. Example: `mumble-server.sqlite`. |
+| `maxplayers` | users | integer | Maximum number of simultaneous users allowed on the server. Example: `100`. |
+| `port` | gameport | integer | The port the server listens on. Example: `64738`. |
+| `serverpassword` | sv_password, password | string | Password required for administrative or restricted access. Stored as a secret. |
+| `welcometext` | — | string | Welcome message shown to connecting users. Example: `Welcome to AlphaGSM Mumble`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

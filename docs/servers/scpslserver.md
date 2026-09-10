@@ -77,6 +77,27 @@ alphagsm myscpslser backup
 - AlphaGSM seeds `home/.config/SCP Secret Laboratory/` inside the server install so the EULA/config wizard stays noninteractive
 - Query is enabled in the generated gameplay config, and `query_port_shift` is derived from the current `queryport - port`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create scpslserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `contactemail` | email | string | The public contact email shown in the server browser. Example: `ops@example.com`. |
+| `queryport` | — | integer | The query port used to derive the SCP:SL query-port shift. Example: `7778`. |
+| `rconpassword` | querypassword, query_administrator_password, rconpass | string | The administrator password used by the query/admin surface. Stored as a secret. Example: `changeme`. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM SCP:SL Server`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

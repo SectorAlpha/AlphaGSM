@@ -91,6 +91,27 @@ alphagsm mysevenday mod cleanup
   launch and publishes the same set in Docker.
 - On very long SteamCMD setups, refreshing the claimed port just before `start` avoids a stale free-port selection from the earlier setup step.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create sevendaystodie`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `maxplayers` | users | integer | Maximum allowed players. |
+| `port` | gameport | integer | The game port to use for this server. |
+| `servername` | hostname, name | string | The advertised server name. |
+| `serverpassword` | sv_password, password | string | Optional join password. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

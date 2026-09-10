@@ -95,6 +95,23 @@ alphagsm mypathofti set url https://example.invalid/pathoftitans-server.zip
 - Module name: `pathoftitansserver`
 - Default port: 7777
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create pathoftitansserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

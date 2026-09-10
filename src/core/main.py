@@ -148,7 +148,7 @@ def main(name, args):
     #  If command is "help" and servers contains just the wild card server
     #  ("/") then show help for commands common to all servers.
     if len(servers) == 1 and servers[0] == ("*", "*") and cmd == "help":
-        help(name, None, *args, file=stdout)
+        help(name, None, *args, file=stdout, full_help=not args)
         return 0
 
     #  Now we modify the server list even more.
@@ -598,6 +598,63 @@ def _run_multi_windows(name, servers, args):
     return 0 if not failures else next(iter(failures)) if len(failures) == 1 else 10
 
 
+HELP_COMMAND_GROUPS = (
+    ("Lifecycle", ("setup", "start", "stop", "restart", "kill")),
+    ("Check", ("status", "query", "info", "doctor")),
+    ("Console", ("send", "message", "connect", "logs")),
+    ("Settings", ("set", "dump")),
+    ("Backup and worlds", ("backup", "restore", "wipe", "reset-world")),
+    ("Start on boot", ("activate", "deactivate")),
+)
+
+
+def _print_command_shorthelp(command, server, file):
+    """Print one command's short usage line from a server or the defaults."""
+    if command == "self-update":
+        cmdparse.shorthelp(
+            command,
+            self_update.SELF_UPDATE_DESCRIPTION,
+            self_update.SELF_UPDATE_CMDSPEC,
+            file=file,
+        )
+        return
+    if server is None:
+        cmdparse.shorthelp(
+            command,
+            Server.default_command_descriptions.get(command, None),
+            Server.default_command_args[command],
+            file=file,
+        )
+        return
+    cmdparse.shorthelp(
+        command,
+        server.get_command_description(command),
+        server.get_command_args(command),
+        file=file,
+    )
+
+
+def _print_grouped_command_help(server, file):
+    """Print default commands in operator groups, then any extra module commands."""
+    listed = set()
+    commands = Server.default_commands if server is None else server.get_commands()
+    for title, group in HELP_COMMAND_GROUPS:
+        present = [command for command in group if command in commands]
+        if not present:
+            continue
+        print(title + ":", file=file)
+        for command in present:
+            _print_command_shorthelp(command, server, file)
+            listed.add(command)
+        print(file=file)
+    extras = [command for command in commands if command not in listed]
+    if extras:
+        print("Game extras:", file=file)
+        for command in extras:
+            _print_command_shorthelp(command, server, file)
+        print(file=file)
+
+
 def help(name, server, cmd=None, *, file=stderr, full_help=False):
     """
     The help function, which lists all of the commands used in AlphaGSM
@@ -614,7 +671,8 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
     if cmd is None:
         if full_help:
             print(
-                "The Sector-Alpha Game Server Management Script (AlphaGSM)", file=file
+                "AlphaGSM — create, set up, start, check, and stop game servers.",
+                file=file,
             )
         print(file=file)
         print(name, "SERVER COMMAND [ARGS...]", file=file)
@@ -622,25 +680,25 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         if full_help:
             print(
                 dedent("""
-                SERVER is the server or servers to process. If a server is
-                specified as username/server then we use sudo to run as the
-                relevant user. This is always possible as root but is up to sudo
-                otherwise and may prompt for a password. The server can be the
-                special forms "*", which means apply to all the current user's
-                servers ("username/*" works too), or "*/*" which means run on a
-                command dependent definition of "all servers". This last form is
-                only available for a very limited set of commands.
+                Everyday flow: create → setup → start → status/query/info → stop.
+
+                SERVER is the server or servers to process. username/server runs
+                as that user through sudo when permitted. "*" is every server
+                for the current user. "*/*" is a command-dependent "all servers"
+                form used by a few commands such as help.
 
                 If the second calling form is specified there must be EXACTLY
                 COUNT servers specified.
-             
+
+                Longer operator guides: README.md, docs/commands.md,
+                docs/installing-mods.md, and docs/updating.md.
             """),
                 file=file,
             )
 
+        print("Top-level commands:", file=file)
         print(
             dedent("""
-        The available commands are:
           help [COMMAND] : Print a help message. Without a command print
                            this message or with a command print detailed help
                            for that command.
@@ -655,33 +713,13 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            way.
           self-update [OPTION]... : Check for a newer AlphaGSM release and
                            apply it when supported.
-        """),
+        """).rstrip(),
             file=file,
         )
-
-        #  if there is no server, then return a default set of server commands
-        #  that are typical of every game server
-        if server is None:
-            cmdparse.shorthelp(
-                "self-update",
-                self_update.SELF_UPDATE_DESCRIPTION,
-                self_update.SELF_UPDATE_CMDSPEC,
-                file=file,
-            )
-            for cmd in Server.default_commands:
-                cmdparse.shorthelp(
-                    cmd,
-                    Server.default_command_descriptions.get(cmd, None),
-                    Server.default_command_args[cmd],
-                )
-        #  otherwise return the commands specific to the server.
-        else:
-            for cmd in server.get_commands():
-                cmdparse.shorthelp(
-                    cmd,
-                    server.get_command_description(cmd),
-                    server.get_command_args(cmd),
-                )
+        print(file=file)
+        _print_command_shorthelp("self-update", None, file)
+        print(file=file)
+        _print_grouped_command_help(server, file)
     else:
         #  if we have a command, return help relating to the command to the
         #  specific command
@@ -719,17 +757,13 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         print(
             dedent("""
             AlphaGSM Copyright (C) 2016-2026 by Sector Alpha.
-            Licensed under GPL v3.0. See the LISCENCE file for details.
+            Licensed under GPL v3.0. See the LICENSE file for details.
             Developed by Cosmosquark and Staircase27. See the CREDITS file for a
             full list of contributors.
 
-            A command line tool to download, manage and maintain game servers
-            using simple and similar commands. See the README.md,
-            DEVELOPERS.md, and changelog.txt for more details. Hosted and maintained on our
-            github page https://github.com/SectorAlpha/AlphaGSM. Raise any issues
-            or ask any questions on our github page, or contact
-            cosmosquark@sector-alpha.net. Additionally check out the project
-            wiki at http://wiki.sector-alpha.net/index.php?title=AlphaGSM
+            Source and issues: https://github.com/SectorAlpha/AlphaGSM
+            Docs: README.md, docs/commands.md, DEVELOPERS.md
+            Contact: cosmosquark@sector-alpha.net
         """),
             file=file,
         )

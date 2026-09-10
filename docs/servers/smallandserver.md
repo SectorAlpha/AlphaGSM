@@ -64,6 +64,29 @@ alphagsm mysmalland backup
 - Module name: `smallandserver`
 - Default port: 7777
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create smallandserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `servername` | hostname, name | string | Configured public server name. |
+| `serverpassword` | sv_password, password | string | Optional join password. Stored as a secret. |
+| `worldname` | world, map, gamemap, levelname | string | Configured persistent world name. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

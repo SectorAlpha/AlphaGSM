@@ -86,6 +86,25 @@ alphagsm myatlasser backup
 - Default game port: 57555
 - Default query port: 57561
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create atlasserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Server admin password. Stored as a secret. |
+| `serverpassword` | sv_password, password | string | Password required to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

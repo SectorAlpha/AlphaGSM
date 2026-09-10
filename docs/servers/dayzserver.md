@@ -71,6 +71,28 @@ alphagsm mydayzserv set queryport 2303
 - Module name: `dayzserver`
 - Default port: 2302
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create dayzserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Optional DayZ admin password. Stored as a secret. |
+| `hostname` | servername, name | string | The advertised DayZ server name. |
+| `maxplayers` | users | integer | Maximum allowed players. |
+| `queryport` | — | integer | Steam query port. |
+| `serverpassword` | sv_password, password | string | Optional join password. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

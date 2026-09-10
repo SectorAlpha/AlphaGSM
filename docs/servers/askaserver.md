@@ -75,6 +75,26 @@ alphagsm myaskaserv backup
 - Default game port: 7777
 - Default query port: 27015
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create askaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `authenticationtoken` | gslt | string | Steam game-server login token generated for ASKA app 1898300. Stored as a secret. |
+| `password` | — | string | Password required to join the server. Stored as a secret. |
+| `region` | — | string | Steam matchmaking region used to list the server. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

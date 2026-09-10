@@ -67,6 +67,23 @@ alphagsm myrwserver backup
 - Query/info TCP port: `server port - 1` (default `4254`)
 - AlphaGSM support status: `PASSED` on the native Linux branch
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create rwserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -68,6 +68,23 @@ alphagsm myecoserve backup
 - `query`, `info`, and `info --json` use Eco's live generic `tcp` surface on the managed main port
 - The current validated stop path may fall back to AlphaGSM's built-in forced kill after the normal grace period if Eco ignores the generic console shutdown command
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ecoserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

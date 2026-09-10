@@ -68,6 +68,23 @@ alphagsm mypcarserv backup
 - Default port: 27015
 - Validated support: PASSED 2026-05-23 via the standard smoke runner and focused integration lifecycle, both using `info --json` protocol `a2s` on the derived query port (`port + 1`).
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create pcarserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

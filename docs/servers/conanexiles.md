@@ -96,3 +96,27 @@ alphagsm myconan set maxplayers 16
 alphagsm myconan update
 alphagsm myconan backup
 ```
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create conanexiles`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The map to load when the Conan Exiles server starts. |
+| `maxplayers` | users | integer | The maximum number of players. |
+| `port` | gameport | integer | The main Conan Exiles game port. |
+| `queryport` | — | integer | The Conan Exiles dedicated query port. |
+| `servername` | hostname, name | string | The advertised Conan Exiles server name. |
+
+<!-- alphagsm-server-variables:end -->

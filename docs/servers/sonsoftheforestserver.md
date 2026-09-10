@@ -78,6 +78,23 @@ alphagsm mysonsofth backup
 - GitHub CI routes this as one Docker-default heavy lifecycle; it does not
   duplicate the currently failing forced host-process Wine lane
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create sonsoftheforestserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -74,6 +74,27 @@ executable and uses the dedicated-server `-nosteamclient` launch flag.
 - Launch args include `-MultiHome=0.0.0.0`, `-Port`, `-QueryPort`, and `-TowerServerINI=<server_name>.ini`
 - AlphaGSM probes `query` and `info` over A2S on the configured `queryport`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create tuserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 - Default config template, when present: `<install_dir>/Tower/Binaries/Linux/TowerServer.ini`

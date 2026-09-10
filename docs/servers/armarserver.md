@@ -74,6 +74,29 @@ alphagsm myarmarser backup
 - Module name: `armarserver`
 - Default port: 2001
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create armarserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Password used for administrative access. Stored as a secret. |
+| `bindaddress` | — | string | IP address the server binds its A2S listener to. Example: `0.0.0.0`. |
+| `map` | scenario, scenarioid, gamemap, startmap, level, worldname | string | The selected scenario file used by the server. Example: `{ECC61978EDCC2B5A}Missions/23_Campaign.conf`. |
+| `maxplayers` | users | integer | Maximum number of players allowed on the server. Example: `8`. |
+| `port` | gameport | integer | The primary game port. Example: `2001`. |
+| `queryport` | — | integer | The A2S query port. Example: `2002`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

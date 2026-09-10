@@ -197,6 +197,20 @@ def test_run_one_returns_error_codes_for_parse_and_run_failures(monkeypatch):
     assert main_module.run_one("alphagsm", (None, "alpha"), "status", []) == 3
 
 
+def test_help_groups_lifecycle_commands_and_points_at_docs():
+    output = StringIO()
+    main_module.help("alphagsm", None, file=output, full_help=True)
+    text = output.getvalue()
+    assert "create, set up, start, check, and stop game servers" in text
+    assert "docs/commands.md" in text
+    assert "Lifecycle" in text
+    assert "Backup and worlds" in text
+    assert "github.com/SectorAlpha/AlphaGSM" in text
+    assert "wiki.sector-alpha.net" not in text
+    assert text.index("Lifecycle") < text.index("  setup")
+    assert text.index("  setup") < text.index("  backup")
+
+
 def test_main_handles_help_banned_names_and_multi_server_paths(monkeypatch):
     monkeypatch.setattr(main_module, "help", lambda *args, **kwargs: None)
     monkeypatch.setattr(main_module, "expand_server_star", lambda user, tag, cmd: [(user, tag)])

@@ -8,6 +8,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-10
+- CLI: group `alphagsm --help` into lifecycle/check/console/settings/backup
+  sections and point at the operator docs. Bare `--help` now prints the full
+  overview.
+- Docs: generate per-game `set` variable tables on server guides, add a
+  SteamCMD auth-profile TODO, and stop tracking local `docs/superpowers/`
+  design notes in git.
 - Docs: add an everyday-commands guide covering restore, kill, activate,
   console send/connect/logs, server listing, TF2 custom maps, and AUTH/BYO
   support labels.

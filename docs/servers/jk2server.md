@@ -93,6 +93,31 @@ alphagsm myjk2serve set url https://example.invalid/jk2-dedicated.tar.gz
 - Module name: `jk2server`
 - Default port: 28070
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create jk2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `download_name` | — | string | Cached archive filename. |
+| `exe_name` | — | string | Server executable filename. |
+| `fs_game` | — | string | The active game/mod directory. Example: `baseq3`. |
+| `hostname` | servername, name | string | The advertised server name. Example: `AlphaGSM Arena`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. Example: `q3dm17`. |
+| `url` | — | string | Download URL for the server archive. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

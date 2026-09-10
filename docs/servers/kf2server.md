@@ -65,6 +65,30 @@ alphagsm mykf2serve backup
 - `query` and `info` use the configured A2S query port. Docker publishes this
   UDP listener separately from the gameplay port.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create kf2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `configsubdir` | — | string | Relative config directory. |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `gametype` | — | string | Game mode class to start. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `queryport` | — | integer | Steam query port. |
+| `startmap` | map, gamemap, level, world | string | Starting map name. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -105,6 +105,23 @@ alphagsm mybannerlo backup
 - Default port: `7210`
 - Default executable: `bin/Linux64_Shipping_Server/TaleWorlds.Starter.DotNetCore.Linux.dll`
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create bannerlordserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

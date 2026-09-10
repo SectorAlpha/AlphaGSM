@@ -71,6 +71,23 @@ alphagsm myfearthen backup
 - Current CI status: passed on 2026-05-29. Fresh smoke and focused integration now pass on the Linux/Proton process-backed path.
 - AlphaGSM `query`, `info`, and `info --json` currently use generic `udp` reachability on the managed game port for Linux/Wine-Proton runs because the dedicated server still does not expose a working A2S listener on the configured `queryport`.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create fearthenightserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

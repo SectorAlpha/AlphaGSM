@@ -72,6 +72,23 @@ alphagsm mybattlecr backup
 - `query`, `info`, and `info --json` use the validated TCP health surface on
   the managed game port.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create battlecryoffreedomserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

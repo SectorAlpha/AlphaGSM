@@ -65,6 +65,23 @@ alphagsm myhurtworl backup
 - Default query port: `12872`
 - Validated Linux support path: native Linux dedicated payload on the shared `steamcmd-linux` runtime image
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create hurtworldserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

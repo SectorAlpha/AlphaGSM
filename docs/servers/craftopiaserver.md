@@ -73,6 +73,28 @@ alphagsm mycraftopi backup
 - AlphaGSM seeds `ServerSetting.ini` because the Linux dedicated server reads its actual host settings from the ini file rather than the CLI flags
 - AlphaGSM `query` and `info` use generic UDP reachability on the main game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create craftopiaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | IP address the server binds to. Example: `0.0.0.0`. |
+| `map` | worldname, gamemap, startmap, level | string | The selected Craftopia world name. Example: `AlphaGSM World`. |
+| `maxplayers` | users | integer | Maximum number of players allowed on the server. Example: `8`. |
+| `port` | gameport | integer | The primary game port. Example: `8787`. |
+| `serverpassword` | sv_password, password | string | Password required for joining the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

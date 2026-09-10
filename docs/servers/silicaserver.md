@@ -74,6 +74,24 @@ alphagsm mysilicase backup
   follows the [publisher's server setup guidance](https://silicagame.com/news/update_0818)
   and the [server configuration template](https://github.com/Casraw/silica-docker-server/blob/51ddf5bd2c99ca98915a1b8247eacb370806e35a/ServerSettings.template.xml).
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create silicaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `servername` | hostname, name | string | Name advertised by the Silica server. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -86,6 +86,31 @@ AlphaGSM keeps these upstream config keys in sync inside `server_config.cfg`:
 - Main game port default: `33540`
 - Query/info contract on validated Linux lane: generic `tcp` on the managed main game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create wreckfestserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players allowed on the server. |
+| `port` | gameport | integer | The main game port for the Wreckfest server. |
+| `queryport` | — | integer | The Steam query port for the Wreckfest server. |
+| `servername` | hostname, name | string | The advertised Wreckfest server name. |
+| `serverpassword` | sv_password, password | string | Password required to join the Wreckfest server. Stored as a secret. |
+| `steamport` | — | integer | The Steam networking port for the Wreckfest server. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -68,6 +68,28 @@ alphagsm myexfilser backup
 - `query`, `info`, and `info --json` use Exfil's Steam A2S query port after
   the game reaches its logged `IpNetDriver` readiness marker.
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create exfilserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File

@@ -27,6 +27,26 @@ alphagsm myhcu stop
 - Default port: `7777`
 - Query/info protocol: `udp` on the game port
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create hcuserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 - AlphaGSM installs the Linux dedicated payload through SteamCMD anonymous login.

@@ -71,6 +71,24 @@ alphagsm myrimworld backup
 - Module name: `rimworldtogetherserver`
 - Default port: 25555
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create rimworldtogetherserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `port` | gameport | integer | The game port used by the RimWorld Together server. Example: `25555`. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File
