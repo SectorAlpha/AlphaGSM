@@ -64,6 +64,9 @@ Restore stops the server first. `reset-world` / `wipe` delete **world data
 only**, with a confirmation prompt (`-Y` skips it). See
 [World creation and reset](world-management.md).
 
+To copy a server onto another machine, back it up, copy the install tree,
+`create` on the new host, then restore or re-run `setup`.
+
 ## Start on boot
 
 ```bash
@@ -105,7 +108,7 @@ states besides a plain pass:
 
 - **PASSED** — AlphaGSM can provision and run it on the documented Linux path
 - **ENABLED (AUTH)** — you still need a Steam login, license key, token, or similar
-- **ENABLED (BYO)** — you still supply owned files, an export, or a download URL
+- **ENABLED (BYO)** — you still supply owned files, staged game assets, or a download URL
 
 `DISABLED` means AlphaGSM will refuse `create` for that module.
 
@@ -121,13 +124,6 @@ user through `sudo` when permitted.
 
 ## Not implemented yet
 
-These show up in older design notes. They are **not** commands today:
-
-| Idea | What it would do | Status |
-| --- | --- | --- |
-| SteamCMD auth profiles | `alphagsm steam-auth login` so AUTH-gated Steam apps can `setup` | Planned. See [SteamCMD Auth Profiles](steamcmd-auth.md) |
-| Server export / import | Pack one server's datastore + user data and recreate it on another machine | Not built. `backup` / `restore` stay on the same install directory |
-
-There is no `alphagsm export` or `alphagsm import`. To move a server, back it
-up, copy the install tree yourself, `create` on the new host, and restore or
-re-run `setup`.
+SteamCMD auth profiles (`alphagsm steam-auth login`) are planned so AUTH-gated
+Steam apps can `setup`. They are **not** a command today. See
+[SteamCMD Auth Profiles](steamcmd-auth.md).

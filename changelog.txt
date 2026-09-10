@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-10
+- Docs: stop tracking the internal improvement roadmap in git, document
+  copying a server as backup then create/restore or setup on the new host,
+  and describe BYO prerequisites as staged game assets.
 - CLI: group `alphagsm --help` into lifecycle/check/console/settings/backup
   sections and point at the operator docs. Bare `--help` now prints the full
   overview.

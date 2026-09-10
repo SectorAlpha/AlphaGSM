@@ -11,6 +11,7 @@ env
 coverage.xml
 nohup.out
 docs/superpowers/
+docs/improvement-roadmap.md
 build/
 dist-binary/
 /run_details.txt

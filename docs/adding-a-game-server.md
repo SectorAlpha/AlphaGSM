@@ -192,7 +192,7 @@ make test
 
 `PASSED` means the lifecycle self-provisions in CI.
 `ENABLED (AUTH)` means provider credentials/tokens/licenses are still required.
-`ENABLED (BYO)` means the operator must supply owned files, exports, or URLs.
+`ENABLED (BYO)` means the operator must supply owned files, staged game assets, or URLs.
 
 ## Checklist
 
