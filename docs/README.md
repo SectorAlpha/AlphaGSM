@@ -22,6 +22,7 @@ with `update`.
 | I want to… | Read |
 | --- | --- |
 | Get AlphaGSM installed | [Getting Started](../README.md) |
+| See every command (`restore`, `kill`, `activate`, `send`, …) | [Everyday Commands](commands.md) |
 | Run AlphaGSM itself in Docker | [Run AlphaGSM In Docker](docker-manager.md) |
 | Keep AlphaGSM on the host, run games in Docker | [Run Docker-Backed Servers From Host AlphaGSM](docker-runtime-host.md) |
 | See which games currently pass | [Game Server Support Tracker](game-server-support.md) |
@@ -307,6 +308,7 @@ Popular starting points:
 
 ## Other Guides
 
+- [Everyday Commands](commands.md)
 - [Adding A Game Server](adding-a-game-server.md)
 - [Installing Mods](installing-mods.md)
 - [Updating Servers And AlphaGSM](updating.md)

@@ -67,6 +67,20 @@ alphagsm mytf2 mod cleanup
 
 Cleanup does not delete the rest of the TF2 install.
 
+### Custom maps
+
+TF2 custom maps use the same desired-state idea:
+
+```bash
+alphagsm mytf2 map add curated cp_granary_pro_rc8
+alphagsm mytf2 map apply
+alphagsm mytf2 map list
+```
+
+Checked-in map families currently include competitive maps such as
+`cp_granary_pro_rc8`, `koth_product_rcx`, and `pl_vigil_rc10`. Files land under
+`tf/maps/`.
+
 ## Same commands on other games
 
 HL2DM, Garry's Mod, Left 4 Dead 2, and other Source wrappers use the same

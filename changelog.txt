@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-10
+- Docs: add an everyday-commands guide covering restore, kill, activate,
+  console send/connect/logs, server listing, TF2 custom maps, and AUTH/BYO
+  support labels.
 - Docs: add operator guides for installing mods (TF2 as the worked example)
   and for updating game servers plus the AlphaGSM binary or git checkout.
 - Docs: add an Adding A Game Server guide for operators and module authors,

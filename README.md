@@ -232,6 +232,9 @@ state AlphaGSM will use:
 ./alphagsm mymc stop
 ```
 
+The full command list, including restore, kill, activate, send, logs, and
+listing servers, is [Everyday Commands](docs/commands.md).
+
 ## Commands You Will Probably Use Often
 
 Send a message:
@@ -458,6 +461,7 @@ These scripts are useful because they show a full real flow:
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Everyday Commands](docs/commands.md)
 - [Installing Mods](docs/installing-mods.md)
 - [Updating Servers And AlphaGSM](docs/updating.md)
 - [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md)

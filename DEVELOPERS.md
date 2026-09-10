@@ -121,20 +121,16 @@ Store per-server config examples under `docs/server-templates/<module_name>/`.
 
 The shared command contract is defined in [src/server/server.py](src/server/server.py).
 
-Default commands:
+Default commands (see [docs/commands.md](docs/commands.md) for the operator
+wording):
 
-- `setup`
-- `start`
-- `stop`
-- `activate`
-- `deactivate`
-- `status`
-- `message`
-- `connect`
-- `dump`
-- `set`
-- `backup`
-- `doctor`
+- `setup`, `start`, `stop`, `restart`, `kill`
+- `activate`, `deactivate`
+- `status`, `query`, `info`, `doctor`
+- `send`, `message`, `connect`, `logs`
+- `set`, `dump`
+- `backup`, `restore`
+- `wipe`, `reset-world`
 
 Game modules extend this model by exporting module-level data:
 
