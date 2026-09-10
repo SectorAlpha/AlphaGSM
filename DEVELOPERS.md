@@ -120,6 +120,63 @@ module import surface. The full specification lives in
 [src/server/gamemodules.py](src/server/gamemodules.py). The skill-level
 checklist lives in [skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
 
+Modules may opt into structural validation by setting
+`module_contract_version = 1` on the public import surface. Unversioned modules
+keep the existing loading path. Version 1 is checked before legacy runtime-hook
+inference and proves that required hooks are directly exported callables and
+that declared config-sync keys are well formed. It does not prove native config
+completeness, provider credentials, signatures, or that the server can start.
+
+Ownership of game-module behaviour stays split:
+
+| Owner | Responsibility |
+| --- | --- |
+| Manager | Command sequencing, persistence, port ownership, provider/platform enforcement, runtime selection, and lifecycle error handling. |
+| Shared operation | A bounded action such as downloading files, rewriting a particular config format, or constructing a runtime spec. |
+| Family builder | Defaults and behavior proven equivalent across an engine family. |
+| Game module | Select operations, order them, validate game-specific values, and implement engine/install/runtime exceptions. |
+
+Extract a shared helper only when both the successful semantics and the error
+behaviour are shared. Keep small duplication when stop/restart sequencing,
+config rewrites, or game-specific layout work differ. An exception can replace
+a whole hook or call shared operations in a custom order; it must not require a
+new global flag, and shared helpers must not branch on canonical game IDs.
+
+Palworld is the custom-install example: it calls the reusable SteamCMD download
+operation, then prepares `PalWorldSettings.ini` itself. It does not wrap the
+generic install factory, because that factory also owns optional config sync
+and post-download callbacks that Palworld does not use.
+
+```python
+def install(server):
+    os.makedirs(server.data["dir"], exist_ok=True)
+    installers.download_steamcmd(
+        server,
+        steamcmd_module=steamcmd,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
+    _finalize_install_layout(server)
+```
+
+Half-Life 2: Deathmatch is the family-composition example: it keeps
+`define_valve_server_module()`, combines addon commands, and declares shared
+runtime constants once for both Docker wrappers.
+
+```python
+module_contract_version = 1
+RUNTIME_FAMILY = "steamcmd-linux"
+PORT_DEFINITIONS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
+    {"key": "clientport", "protocol": "udp"},
+    {"key": "sourcetvport", "protocol": "udp"},
+)
+```
+
+Keep `define_valve_server_module()` for Valve-family defaults. Do not replace it
+with a universal builder, base-class hierarchy, mixin system, or hook event bus.
+
 For top-level game modules, keep the implementation in `main.py` and reserve
 `__init__.py` for the canonical re-export surface.
 

@@ -29,6 +29,15 @@ MODULE = define_valve_server_module(
     enable_map_validation=True,
 )
 
+module_contract_version = 1
+RUNTIME_FAMILY = "steamcmd-linux"
+PORT_DEFINITIONS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
+    {"key": "clientport", "protocol": "udp"},
+    {"key": "sourcetvport", "protocol": "udp"},
+)
+
 
 def load_curated_registry():
     override = os.environ.get("ALPHAGSM_HL2DM_CURATED_MODS_PATH")
@@ -72,13 +81,13 @@ backup = MODULE.backup
 checkvalue = MODULE.checkvalue
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
+        family=RUNTIME_FAMILY,
+        port_definitions=PORT_DEFINITIONS,
 )
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
+        family=RUNTIME_FAMILY,
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
+        port_definitions=PORT_DEFINITIONS,
         stdin_open=True,
 )

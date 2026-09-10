@@ -12,6 +12,7 @@ import os
 from server import ServerError
 from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.gamemodules import installers
 
 
 STANDARD_UPDATE_VALIDATE_OPTION = OptSpec(
@@ -690,12 +691,13 @@ def make_steamcmd_install_hook(
     def install(server):
         resolved_download_kwargs = _resolve_optional_mapping(download_kwargs, server) or {}
         os.makedirs(server.data["dir"], exist_ok=True)
-        steamcmd_module.download(
-            server.data["dir"],
-            steam_app_id,
-            steam_anonymous_login_possible,
+        installers.download_steamcmd(
+            server,
+            steamcmd_module=steamcmd_module,
+            steam_app_id=steam_app_id,
+            steam_anonymous_login_possible=steam_anonymous_login_possible,
             validate=validate,
-            **resolved_download_kwargs,
+            download_kwargs=resolved_download_kwargs,
         )
         if sync_server_config is not None:
             sync_if_install_present(server, sync_server_config)
