@@ -12,6 +12,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
   hook inference. Unversioned modules keep the existing loading path. Version 1
   checks callable lifecycle and Docker hooks plus declared config-sync keys; it
   does not prove a working server.
+- Game modules: expose a reusable SteamCMD download operation and use it from
+  the existing install factory. Palworld now composes that download with its
+  own settings-layout step instead of wrapping the generic install hook.
+- HL2DM: opt into contract version 1 and declare the shared SteamCMD Linux
+  runtime family and port set once for both Docker wrappers.
 
 2026-09-09
 - CI runtime routing: run Battle Cry of Freedom, Heat, Medieval Engineers, No

@@ -32,6 +32,25 @@ def test_hl2dm_public_surface_satisfies_contract():
     validate_module_contract("hl2dmserver", hl2dm)
 
 
+@pytest.mark.parametrize("name", ("palworld", "hl2dmserver"))
+def test_loader_accepts_versioned_pilots(name):
+    from server import server as server_module
+
+    resolved, module = server_module.find_module(name)
+    assert resolved == name
+    assert module.module_contract_version == 1
+    validate_module_contract(resolved, module)
+
+
+@pytest.mark.parametrize("name", ("minecraft.vanilla", "teamfortress2"))
+def test_loader_keeps_unversioned_regression_modules(name):
+    from server import server as server_module
+
+    resolved, module = server_module.find_module(name)
+    assert resolved == name
+    assert getattr(module, "module_contract_version", None) is None
+
+
 def test_hl2dm_runtime_wrappers_share_the_declared_ports(monkeypatch):
     import server.runtime as runtime_module
 
