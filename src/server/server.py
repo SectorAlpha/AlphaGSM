@@ -21,6 +21,7 @@ from . import worlds as worlds_module
 from .settable_keys import KeyResolutionError, resolve_requested_key
 from .settable_keys import get_effective_aliases
 from .errors import ServerError
+from .module_contract import validate_module_contract
 from importlib import import_module
 import screen
 import time
@@ -346,6 +347,7 @@ def _findmodule(name):
         module = import_module(SERVERMODULEPACKAGE + name)
     except ImportError as ex:
         raise ServerError("Can't find module: " + name, ex)
+    validate_module_contract(name, module)
     runtime_module.ensure_runtime_hooks(module)
     return name, module
 

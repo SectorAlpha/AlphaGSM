@@ -9,6 +9,31 @@ The attributes and functions that can be specified in a gamemodule are
 documented below grouped by the functionality they relate to. All functions and
 attributes are required unless explicitly states.
 
+Module contract version:
+    Attributes:
+        module_contract_version [OPTIONAL]: integer opt-in for structural
+            validation of the public import surface. Unversioned modules keep
+            the existing loading path. Version 1 is the only supported value
+            and proves structure only: it does not execute hooks, connect to
+            providers, inspect installed files, infer runtime support, or
+            require identical Python signatures. Custom configure/install
+            arguments remain legal. Version 1 checks:
+                - each of configure, install, get_start_command, checkvalue,
+                  do_stop, status, message, backup, get_runtime_requirements,
+                  and get_container_spec is a callable public attribute
+                - optional hooks, when declared, are callable: prestart,
+                  poststart, postset, sync_server_config,
+                  get_provider_requirements, get_query_address,
+                  get_info_address, get_platform_requirements, and
+                  list_setting_values
+                - config_sync_keys (or the legacy set_sync_keys alias) is a
+                  collection of nonempty strings when present
+                - a nonempty sync-key collection requires a callable
+                  sync_server_config
+            Direct public exports are required. A family namespace such as
+            MODULE does not satisfy a missing public hook. An unsupported or
+            non-integer version is rejected before runtime-hook inference.
+
 
 Commands:
     This section documents the attributes related to providing commands for the

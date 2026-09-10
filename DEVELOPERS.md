@@ -120,6 +120,13 @@ module import surface. The full specification lives in
 [src/server/gamemodules.py](src/server/gamemodules.py). The skill-level
 checklist lives in [skills/server-lifecycle/SKILL.md](skills/server-lifecycle/SKILL.md).
 
+Modules may opt into structural validation by setting
+`module_contract_version = 1` on the public import surface. Unversioned modules
+keep the existing loading path. Version 1 is checked before legacy runtime-hook
+inference and proves that required hooks are directly exported callables and
+that declared config-sync keys are well formed. It does not prove native config
+completeness, provider credentials, signatures, or that the server can start.
+
 For top-level game modules, keep the implementation in `main.py` and reserve
 `__init__.py` for the canonical re-export surface.
 
