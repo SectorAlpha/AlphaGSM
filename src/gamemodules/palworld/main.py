@@ -10,9 +10,11 @@ from utils.cmdparse.cmdspec import OptSpec
 
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
+from utils.gamemodules import installers
 
 steam_app_id = 2394010
 steam_anonymous_login_possible = True
+module_contract_version = 1
 ROOT_EXECUTABLES = (
     os.path.join("Pal", "Binaries", "Linux", "PalServer-Linux-Shipping"),
     "PalServer.sh",
@@ -198,17 +200,15 @@ def _finalize_install_layout(server):
         shutil.copy2(default_settings, active_settings)
 
 
-_base_install = gamemodule_common.make_steamcmd_install_hook(
-    steamcmd_module=steamcmd,
-    steam_app_id=steam_app_id,
-    steam_anonymous_login_possible=steam_anonymous_login_possible,
-)
-
-
 def install(server):
-    """Download the Palworld server files and prepare the settings file."""
-
-    _base_install(server)
+    """Download Palworld and prepare its game-specific settings layout."""
+    os.makedirs(server.data["dir"], exist_ok=True)
+    installers.download_steamcmd(
+        server,
+        steamcmd_module=steamcmd,
+        steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=steam_anonymous_login_possible,
+    )
     _finalize_install_layout(server)
 
 
