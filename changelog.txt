@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-10
+- CLI: print `alphagsm --help` with ASCII arrows so the Windows standalone
+  binary does not crash under the default cp1252 console encoding.
 - Docs: stop tracking the internal improvement roadmap in git, document
   copying a server as backup then create/restore or setup on the new host,
   and describe BYO prerequisites as staged game assets.

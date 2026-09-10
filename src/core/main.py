@@ -680,7 +680,7 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         if full_help:
             print(
                 dedent("""
-                Everyday flow: create → setup → start → status/query/info → stop.
+                Everyday flow: create -> setup -> start -> status/query/info -> stop.
 
                 SERVER is the server or servers to process. username/server runs
                 as that user through sudo when permitted. "*" is every server

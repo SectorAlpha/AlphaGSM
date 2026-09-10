@@ -210,6 +210,7 @@ def test_help_groups_lifecycle_commands_and_points_at_docs():
     assert text.count("self-update") == 1
     assert text.index("Lifecycle") < text.index("  setup")
     assert text.index("  setup") < text.index("  backup")
+    text.encode("cp1252")
 
 
 def test_main_handles_help_banned_names_and_multi_server_paths(monkeypatch):
