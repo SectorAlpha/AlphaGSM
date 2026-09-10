@@ -49,8 +49,12 @@ alphagsm mytf2 update
 alphagsm mytf2 update -r
 ```
 
+`-r` restarts after the SteamCMD update. See
+[Updating Servers And AlphaGSM](../updating.md).
+
 ## Mod Sources
 
+The full copy-paste walkthrough is [Installing Mods](../installing-mods.md).
 TF2 mod installs distinguish between AlphaGSM-owned manifest entries and
 external provider ids.
 
@@ -71,6 +75,7 @@ external provider ids.
 Examples:
 
 ```bash
+alphagsm mytf2 mod add manifest metamod
 alphagsm mytf2 mod add manifest sourcemod
 alphagsm mytf2 mod add gamebanana 12345
 alphagsm mytf2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight

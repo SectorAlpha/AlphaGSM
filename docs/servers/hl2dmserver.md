@@ -42,8 +42,12 @@ AlphaGSM keeps the dedicated server queryable for those checks.
 
 ```bash
 alphagsm myhl2dm update
+alphagsm myhl2dm update -r
 alphagsm myhl2dm backup
 ```
+
+See [Updating Servers And AlphaGSM](../updating.md) and
+[Installing Mods](../installing-mods.md).
 
 ## Notes
 

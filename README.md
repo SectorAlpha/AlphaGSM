@@ -264,6 +264,9 @@ Update a Steam game server:
 ./alphagsm mytf2 update -r
 ```
 
+`-r` restarts afterwards. `-v` validates the Steam files. The full guide is
+[Updating Servers And AlphaGSM](docs/updating.md).
+
 TF2 mod sources are split into AlphaGSM-owned manifest entries and external
 provider ids:
 
@@ -278,9 +281,12 @@ provider ids:
   than TF2-only catalogs. TF2 is just one module using them here.
 - `curated` is still accepted as a compatibility alias for `manifest`.
 
+The copy-paste TF2 walkthrough is [Installing Mods](docs/installing-mods.md).
+
 Examples:
 
 ```bash
+./alphagsm mytf2 mod add manifest metamod
 ./alphagsm mytf2 mod add manifest sourcemod
 ./alphagsm mytf2 mod add gamebanana 12345
 ./alphagsm mytf2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
@@ -452,6 +458,8 @@ These scripts are useful because they show a full real flow:
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Installing Mods](docs/installing-mods.md)
+- [Updating Servers And AlphaGSM](docs/updating.md)
 - [Run Docker-Backed Servers From Host AlphaGSM](docs/docker-runtime-host.md)
 - [Run AlphaGSM In Docker](docs/docker-manager.md)
 - [Minecraft Vanilla Guide](docs/servers/minecraft-vanilla.md)

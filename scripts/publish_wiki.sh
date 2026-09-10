@@ -116,6 +116,8 @@ Create, set up, start, check, update, and back up game servers on the host or in
 | --- | --- |
 | Install AlphaGSM and run my first server | [[Getting Started]] |
 | Pick a game and copy the commands | [[Docs]] |
+| Install mods (TF2, Source, plugins) | [[Installing Mods]] |
+| Update a game or AlphaGSM | [[Updating]] |
 | Add a new game to AlphaGSM | [[Adding A Game Server]] |
 | Change AlphaGSM itself | [[Developers]] |
 

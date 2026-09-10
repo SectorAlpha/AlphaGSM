@@ -80,34 +80,33 @@ alphagsm myteamfort set rconpassword secret
 
 ```bash
 alphagsm myteamfort update
+alphagsm myteamfort update -r
 alphagsm myteamfort backup
 ```
 
-## Curated Mod Support
+`-r` restarts after the SteamCMD update. `-v` validates the files. See
+[Updating Servers And AlphaGSM](../updating.md).
 
-AlphaGSM now has a TF2-first curated server-side mod foundation for
-package-backed installs that land inside the normal TF2 server tree.
+## Installing Mods
 
-Use the curated workflow to declare the desired mod set and then reconcile it:
+The supported path is AlphaGSM's checked-in `manifest` list. Add what you want,
+then apply it. The full operator guide is
+[Installing Mods](../installing-mods.md).
 
 ```bash
-alphagsm myteamfort mod add curated sourcemod
+alphagsm myteamfort mod add manifest metamod
+alphagsm myteamfort mod add manifest sourcemod
 alphagsm myteamfort mod apply
+alphagsm myteamfort mod list
 ```
 
-Notes:
+`sourcemod` can be pinned to a registry channel such as `1.12`. `curated` is
+still accepted as an alias for `manifest`. Files land under `tf/addons/` and
+`tf/cfg/`. `mod cleanup` removes only AlphaGSM-owned addon files.
 
-- `sourcemod` is the main curated example and can be pinned to an explicit channel when the registry exposes one, for example `alphagsm myteamfort mod add curated sourcemod 1.12`.
-- The checked-in TF2 curated registry also carries package-backed metadata for `metamod`, so the same workflow applies there when you want MetaMod first.
-- `mod apply` is the point where AlphaGSM reconciles the desired curated entries into the TF2 install and keeps ownership tracking on AlphaGSM-managed files.
-
-## Workshop Status
-
-Workshop support is still experimental.
-
-- You can record a desired workshop item with `alphagsm myteamfort mod add workshop <numeric_id>`.
-- Workshop apply/download is not yet verified for TF2, so treat workshop entries as desired-state groundwork rather than a supported install path today.
-- Expect the curated path to be the supported operator flow for now.
+GameBanana and Mod DB ids/URLs are also accepted. Workshop `mod add` records a
+desired item, but Workshop apply is still experimental for TF2 — prefer
+`manifest`.
 
 ## Notes
 

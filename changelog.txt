@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-09-10
+- Docs: add operator guides for installing mods (TF2 as the worked example)
+  and for updating game servers plus the AlphaGSM binary or git checkout.
 - Docs: add an Adding A Game Server guide for operators and module authors,
   reshape the documentation index and wiki home around the create/setup/launch
   /verify flow, and refresh Palworld and HL2DM server guides.

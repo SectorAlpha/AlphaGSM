@@ -95,6 +95,9 @@ selecting Docker only for the game does not change where installation runs.
 
 ## Updates and diagnostics
 
+The operator walkthrough for game-server `update` and AlphaGSM `self-update`
+is [Updating Servers And AlphaGSM](updating.md).
+
 ```bash
 ./alphagsm self-update --check
 ./alphagsm self-update

@@ -49,8 +49,13 @@ Setup configures:
 
 ```bash
 alphagsm mypalworld update
+alphagsm mypalworld update -r
 alphagsm mypalworld backup
 ```
+
+`-r` restarts after the SteamCMD update. See
+[Updating Servers And AlphaGSM](../updating.md). Palworld has no AlphaGSM
+`mod` command.
 
 ## Notes
 
