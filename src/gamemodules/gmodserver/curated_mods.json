@@ -1,0 +1,60 @@
+{
+  "families": {
+    "metamod": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://www.metamodsource.net/latest.php?version=1.12&os=linux",
+          "hosts": ["www.metamodsource.net", "metamodsource.net"],
+          "archive_type": "tar.gz",
+          "destinations": ["addons", "cfg"]
+        }
+      }
+    },
+    "sourcemod": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://www.sourcemod.net/latest.php?version=1.12&os=linux",
+          "hosts": ["www.sourcemod.net", "sourcemod.net"],
+          "archive_type": "tar.gz",
+          "destinations": ["addons", "cfg"]
+        }
+      }
+    },
+    "ulib": {
+      "default": "2.71",
+      "releases": {
+        "2.71": {
+          "url": "https://ulyssesmod.net/archive/ULib/ulib-v2_71.zip",
+          "hosts": ["ulyssesmod.net"],
+          "archive_type": "zip",
+          "destinations": ["addons"]
+        }
+      }
+    },
+    "ulx": {
+      "default": "3.81",
+      "releases": {
+        "3.81": {
+          "url": "https://ulyssesmod.net/archive/ulx/ulx-v3_81.zip",
+          "hosts": ["ulyssesmod.net"],
+          "archive_type": "zip",
+          "destinations": ["addons"],
+          "dependencies": ["ulib"]
+        }
+      }
+    },
+    "advdupe2": {
+      "default": "v20201205",
+      "releases": {
+        "v20201205": {
+          "url": "https://github.com/wiremod/advdupe2/releases/download/v20201205/advdupe2.gma",
+          "hosts": ["github.com"],
+          "archive_type": "single",
+          "destinations": ["addons"]
+        }
+      }
+    }
+  }
+}

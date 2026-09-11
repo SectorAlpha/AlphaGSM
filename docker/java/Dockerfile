@@ -1,5 +1,9 @@
 FROM ubuntu:24.04
 
+# Java's native filename encoding follows the locale, even on Java 21+.
+# Cached jars may resolve through symlinks into Unicode home directories.
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -qq \

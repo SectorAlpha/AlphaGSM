@@ -1,8 +1,8 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for foundryserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+# ENABLED (BYO): stage a native FOUNDRY dedicated server tree containing
+# FoundryDedicatedServer in <install_dir> before setup/start.
+echo "Smoke test for foundryserver requires ENABLED (BYO) input: stage a native FOUNDRY dedicated server tree containing FoundryDedicatedServer in <install_dir> before setup/start."
+exit 77
 
 set -Eeuo pipefail
 set -x

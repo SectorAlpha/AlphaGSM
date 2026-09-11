@@ -2,6 +2,11 @@
 
 This guide covers the `unturned` module in AlphaGSM.
 
+`unturned` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane
+validates both process and Docker runtimes for this module, while local runs
+remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -48,6 +53,10 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+AlphaGSM writes native settings to `Servers/<serverid>/Server/Commands.dat`.
+The configured base port is used for Steam A2S queries; gameplay uses the next
+UDP port. Open both ports when configuring your firewall.
+
 ## Useful Commands
 
 ```bash
@@ -59,6 +68,23 @@ alphagsm myunturned backup
 
 - Module name: `unturned`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create unturned`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

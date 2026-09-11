@@ -1,47 +1,74 @@
 # Integration Tests
 
 This directory is reserved for slow, side-effectful tests that exercise real
-downloads, installs, and process startup.
+downloads, installs, and AlphaGSM-managed server startup.
 
-These tests are intentionally separate from the default `tests/` suite so the
-normal unit test run stays fast and deterministic.
+These tests are intentionally separate from the default unit suite so normal
+`tests/` runs stay fast and deterministic.
 
-## Test Status
+## Status Tracking
 
-See [TEST_STATUS.md](../docs/TEST_STATUS.md) for the current pass/fail/skip/disabled
-state of every integration test. Agents must update that file after each test
-run.
-
-Run them with:
-
-```bash
-PYTHONPATH=src pytest tests/integration_tests
-```
+See [docs/TEST_STATUS.md](../../docs/TEST_STATUS.md) for the checked-in support
+state of each server. Agents should keep that tracker aligned with what GitHub
+CI has actually proven.
 
 The direct runner-style smoke checks live separately under `tests/smoke_tests/`.
 
-Run the Minecraft pytest integration test with:
+## Runtime Policy
+
+Integration tests that consult `ALPHAGSM_TEST_RUNTIME_BACKEND` now default
+through `default_runtime_backend()` in
+[conftest.py](./conftest.py):
+
+- local/default runs stay process-first
+- GitHub Actions uses module-aware `auto`
+- explicit `ALPHAGSM_TEST_RUNTIME_BACKEND=process|docker|auto` still overrides
+  the default
+
+That means repository integration tests can stay runtime-agnostic while GitHub
+CI exercises Docker-capable modules through their declared runtime contracts.
+
+## Running Locally
+
+Run a specific test only when you actually intend to perform a real
+download/install/start cycle:
 
 ```bash
 ALPHAGSM_RUN_INTEGRATION=1 PYTHONPATH=src pytest tests/integration_tests/test_minecraft_vanilla.py
 ```
 
-Requirements for the Minecraft integration:
+Or a whole subset:
 
-- outbound network access
-- `java`
-- `screen`
+```bash
+ALPHAGSM_RUN_INTEGRATION=1 PYTHONPATH=src pytest tests/integration_tests
+```
 
-Current target:
+Many tests also require extra opt-ins such as SteamCMD auth, BYO archives, or
+runtime-specific host tooling.
 
-- Vanilla Minecraft end-to-end setup through `alphagsm`:
-  download the official server jar, install into a temporary directory, start
-  the server under `screen`, ping it over the Minecraft status protocol, and
-  stop it cleanly.
-- Team Fortress 2 end-to-end setup through `alphagsm`:
-  download the dedicated server via SteamCMD, start it, verify it responds to a
-  Source query, and stop it cleanly.
-- Archive-backed install flows through `alphagsm`:
-  download and install real archive/release assets for modules like `etlegacyserver`
-  and `cod2server`, then verify the expected server binaries land in the install
-  directory.
+## CI-First Validation
+
+For the current Docker-runtime enablement campaign, GitHub CI is the primary
+proof surface for integration behavior. In particular:
+
+- Docker-capable modules should be validated in GitHub Actions, not assumed
+  from local process runs
+- broad red batches should be triaged from workflow logs and uploaded test
+  artifacts before changing contracts
+- protocol-sensitive lanes like A2S should be treated as unresolved until
+  GitHub CI proves them green under the intended runtime
+- after the primary smoke, backend, and integration jobs finish, CI rechecks
+  each failed integration node once on a fresh runner with the original
+  `auto`, Docker, or process runtime selection
+- a recovered recheck is reported as `FLAKY RECOVERED` and is temporarily
+  non-blocking, while a missing, skipped, or failed recheck remains
+  release-blocking; the first failure is never overwritten
+
+## Current Coverage Goals
+
+- AlphaGSM lifecycle coverage through `create`, `setup`, `start`, readiness,
+  `query`, `info`, and `stop`
+- runtime-contract coverage for Docker-capable modules without baking
+  process-versus-Docker branching into the test logic
+- archive-backed, SteamCMD-backed, and BYO install flows staying truthful to
+  the real supported environments

@@ -1,23 +1,27 @@
 """Integration test for counterstrikeglobaloffensive."""
 
+import json
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
-    pick_free_tcp_port,
+    require_command_for_runtime,
+    default_runtime_backend,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_tcp_closed,
+    wait_for_runtime_log_marker,
     wait_for_udp_closed,
 )
 from gamemodules.counterstrikeglobaloffensive import steam_app_id
+from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
@@ -29,7 +33,15 @@ STOP_TIMEOUT = 90
 def test_counterstrikeglobaloffensive_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "counterstrikeglobaloffensive"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -37,12 +49,19 @@ def test_counterstrikeglobaloffensive_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itcounterstrik"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
+    query_host = detect_query_host()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "counterstrikeglobaloffensive")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -54,9 +73,9 @@ def test_counterstrikeglobaloffensive_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )
@@ -77,9 +96,8 @@ def test_counterstrikeglobaloffensive_lifecycle(tmp_path):
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
-        import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        _info_data = json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "a2s", (
             f"Expected a2s protocol in info JSON: {_info_data!r}"
         )
@@ -91,4 +109,4 @@ def test_counterstrikeglobaloffensive_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed(query_host, port, STOP_TIMEOUT)

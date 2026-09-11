@@ -1,14 +1,63 @@
 # AlphaGSM Documentation
 
-This folder is for people who want help running a specific server.
+AlphaGSM is a command-line manager for dedicated game servers. The same four
+steps work for every supported game:
 
-If you are not sure where to start, pick your server below and follow that guide.
+| Step | Command | What it does |
+| --- | --- | --- |
+| Create | `alphagsm <name> create <module>` | Register the server |
+| Setup | `alphagsm <name> setup` | Download files and write config |
+| Launch | `alphagsm <name> start` | Run it on the host or in Docker |
+| Verify | `status` / `query` / `info` | Confirm it is actually up |
+
+Stop with `alphagsm <name> stop`. Back up with `backup`. Update Steam games
+with `update`.
+
+**If you just want to run a game**, pick a guide below and copy the commands.
+**If you want to add a game to AlphaGSM**, use
+[Adding A Game Server](adding-a-game-server.md).
+
+## Start here
+
+| I want to… | Read |
+| --- | --- |
+| Get AlphaGSM installed | [Getting Started](../README.md) |
+| See every command (`restore`, `kill`, `activate`, `send`, …) | [Everyday Commands](commands.md) |
+| Run AlphaGSM itself in Docker | [Run AlphaGSM In Docker](docker-manager.md) |
+| Keep AlphaGSM on the host, run games in Docker | [Run Docker-Backed Servers From Host AlphaGSM](docker-runtime-host.md) |
+| See which games currently pass | [Game Server Support Tracker](game-server-support.md) |
+| Install TF2 / Source mods or Minecraft plugins | [Installing Mods](installing-mods.md) |
+| Update a game or AlphaGSM itself | [Updating Servers And AlphaGSM](updating.md) |
+| SteamCMD login for AUTH-gated games | [SteamCMD Auth Profiles](steamcmd-auth.md) (not implemented yet) |
+| Add or change a game module | [Adding A Game Server](adding-a-game-server.md) |
+| Work on AlphaGSM internals | [Developer Guide](../DEVELOPERS.md) |
+
+## Project Reports
+
+- [Module Parity Report](module_parity_report.md)
+- [Platform Support](platform-support.md)
+- [Test Status](TEST_STATUS.md)
+- [Manual Download Fallbacks](manual-download-fallbacks.md)
 
 ## Deployment Guides
 
+- [Run Docker-Backed Servers From Host AlphaGSM](docker-runtime-host.md)
 - [Run AlphaGSM In Docker](docker-manager.md)
+- [Standalone Binaries](standalone-binaries.md)
+- [World creation and reset](world-management.md)
 
 ## Server Guides
+
+Popular starting points:
+
+- [Minecraft Vanilla](servers/minecraft-vanilla.md)
+- [Team Fortress 2](servers/teamfortress2.md)
+- [Palworld](servers/palworld.md)
+- [Half-Life 2: Deathmatch](servers/hl2dmserver.md)
+
+<details>
+<summary>All server guides</summary>
+
 
 - [Abiotic Factor](servers/abfserver.md)
 - [Assetto Corsa Competizione](servers/accserver.md)
@@ -256,8 +305,15 @@ If you are not sure where to start, pick your server below and follow that guide
 - [Zombie Master: Reborn](servers/zmrserver.md)
 - [Zombie Panic! Source](servers/zpsserver.md)
 
+</details>
+
 ## Other Guides
 
+- [Everyday Commands](commands.md)
+- [Adding A Game Server](adding-a-game-server.md)
+- [Installing Mods](installing-mods.md)
+- [Updating Servers And AlphaGSM](updating.md)
+- [SteamCMD Auth Profiles](steamcmd-auth.md)
 - [Game Server Support Tracker](game-server-support.md)
 - [Platform Support](platform-support.md)
 - [Manual Download Fallbacks](manual-download-fallbacks.md)

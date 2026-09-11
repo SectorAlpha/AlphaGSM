@@ -17,6 +17,7 @@
 
 .PHONY: all install python deps system-libs wine proton wine-proton config lint test coverage integration-test smoke-test help
 
+
 # Read the pinned Python version from .python-version (e.g. 3.10.13)
 PYTHON_VERSION_FULL := $(shell cat .python-version 2>/dev/null | tr -d '[:space:]')
 PYTHON_MAJOR_MINOR  := $(shell echo "$(PYTHON_VERSION_FULL)" | cut -d. -f1,2)
@@ -45,7 +46,7 @@ help:
 	@echo "  make lint          Run the pylint quality gate"
 	@echo "  make test          Run the unit test suite"
 	@echo "  make coverage      Run the unit coverage report"
-	@echo "  make integration-test  Run the integration test suite (needs SteamCMD + ALPHAGSM_WORK_DIR)"
+	@echo "  make integration-test  Run the integration test suite (uses $$ALPHAGSM_WORK_DIR or $(DEFAULT_INTEGRATION_WORK_DIR) if present)"
 	@echo "  make smoke-test    Run all smoke tests in tests/smoke_tests/"
 	@echo ""
 	@echo "  Python version: $(PYTHON_VERSION_FULL)"
@@ -209,15 +210,21 @@ coverage:
 IT_TEST ?=
 
 integration-test:
-	@if [ -z "$$ALPHAGSM_WORK_DIR" ]; then \
-		echo "ERROR: ALPHAGSM_WORK_DIR is not set."; \
+	@workdir="$$ALPHAGSM_WORK_DIR"; \
+	if [ -z "$$workdir" ] && [ -d "$(DEFAULT_INTEGRATION_WORK_DIR)" ]; then \
+		workdir="$(DEFAULT_INTEGRATION_WORK_DIR)"; \
+	fi; \
+	if [ -z "$$workdir" ]; then \
+		echo "ERROR: ALPHAGSM_WORK_DIR is not set and the default release work dir is unavailable."; \
 		echo "       Export it to a directory with enough free space (~50 GB):"; \
-		echo "         export ALPHAGSM_WORK_DIR=/mnt/data/gsm-work"; \
+		echo "         export ALPHAGSM_WORK_DIR=$(DEFAULT_INTEGRATION_WORK_DIR)"; \
 		echo "         make integration-test"; \
 		exit 1; \
-	fi
+	fi; \
+	echo "Using integration work dir: $$workdir"; \
 	ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
-	TMPDIR="$$ALPHAGSM_WORK_DIR" \
+	ALPHAGSM_WORK_DIR="$$workdir" \
+	TMPDIR="$$workdir" \
 	PYTHONPATH=.:src \
 	bash run_integration_tests.sh $(IT_TEST)
 
@@ -233,11 +240,19 @@ SMOKE_TEST ?=
 
 smoke-test:
 	@if [ -n "$(SMOKE_TEST)" ]; then \
-		bash tests/smoke_tests/$(SMOKE_TEST); \
+		if bash "tests/smoke_tests/$(SMOKE_TEST)"; then :; else \
+			rc=$$?; \
+			if [ "$$rc" -eq 77 ]; then echo "SKIPPED: $(SMOKE_TEST)"; else exit $$rc; fi; \
+		fi; \
 	else \
+		failed=0; \
 		for f in tests/smoke_tests/run_*.sh; do \
 			echo ""; \
 			echo "=== $$f ==="; \
-			bash "$$f" || true; \
+			if bash "$$f"; then :; else \
+				rc=$$?; \
+				if [ "$$rc" -eq 77 ]; then echo "SKIPPED: $$f"; else failed=1; fi; \
+			fi; \
 		done; \
+		exit $$failed; \
 	fi

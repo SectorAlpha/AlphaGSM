@@ -27,7 +27,7 @@ class DummyServer:
 
 
 def test_pixark_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(pixarkserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(pixarkserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("pixark")
     exe = tmp_path / "PixARKServer.exe"
     exe.write_text("")
@@ -50,7 +50,7 @@ def test_pixark_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
 
 def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(outpostzeroserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(outpostzeroserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("opz")
     exe = tmp_path / "OutpostZeroServer.exe"
     exe.write_text("")
@@ -58,6 +58,7 @@ def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatc
         {
             "dir": str(tmp_path) + "/",
             "exe_name": "OutpostZeroServer.exe",
+            "startmap": "RedPlanet",
             "port": 7777,
             "queryport": 27015,
             "maxplayers": 16,
@@ -68,7 +69,9 @@ def test_outpostzero_get_start_command_builds_expected_args(tmp_path, monkeypatc
     cmd, cwd = outpostzeroserver.get_start_command(server)
 
     assert cmd[0] == "OutpostZeroServer.exe"
+    assert cmd[1] == "RedPlanet"
     assert "-ServerName=AlphaGSM opz" in cmd
+    assert cmd[-1] == "-log"
     assert cwd == server.data["dir"]
 
 
@@ -93,6 +96,7 @@ def test_outpostzero_runtime_requirements_use_wine_proton_family(tmp_path, monke
         {
             "dir": str(tmp_path) + "/",
             "exe_name": "WindowsServer/SurvivalGameServer.exe",
+            "startmap": "RedPlanet",
             "port": 7777,
             "queryport": 27015,
             "maxplayers": 16,
@@ -107,14 +111,21 @@ def test_outpostzero_runtime_requirements_use_wine_proton_family(tmp_path, monke
     assert requirements["family"] == "wine-proton"
     assert requirements["ports"] == [
         {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7778, "container": 7778, "protocol": "udp"},
         {"host": 27015, "container": 27015, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "WindowsServer/SurvivalGameServer.exe"
+    assert spec["command"][0] == "./WindowsServer/SurvivalGameServer.exe"
 
 
 def test_reignofkings_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(reignofkingsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(reignofkingsserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("rok")
     exe = tmp_path / "Server.exe"
     exe.write_text("")
@@ -135,6 +146,7 @@ def test_reignofkings_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert "-worldname" in cmd
     assert "rokworld" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_pixark_outpostzero_and_reignofkings_update_downloads_and_optionally_restart(monkeypatch):

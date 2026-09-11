@@ -5,42 +5,23 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.astroneerserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.astroneerserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8777, dir=str(tmp_path))
     assert server.data['port'] == 8777
+    assert server.data["registration_publicip"] == ""
+    assert "publicip" not in server.data
+    assert server.data["exe_name"] == "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -70,6 +51,164 @@ def test_install(tmp_path):
     server.data["Steam_AppID"] = 728470
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
+
+
+def test_sync_server_config_writes_official_astroneer_ini_files(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "127.0.0.1",
+            "registration_publicip": "8.8.8.8",
+            "ownername": "AlphaOwner",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    config_dir = tmp_path / "Astro" / "Saved" / "Config" / "WindowsServer"
+    assert (config_dir / "Engine.ini").read_text(encoding="utf-8") == (
+        "[URL]\n"
+        "Port=28777\n"
+        "\n"
+        "[SystemSettings]\n"
+        "net.AllowEncryption=False\n"
+    )
+    assert (config_dir / "AstroServerSettings.ini").read_text(
+        encoding="utf-8"
+    ) == (
+        "PublicIP=8.8.8.8\n"
+        "OwnerName=AlphaOwner\n"
+        "OwnerGuid=0\n"
+    )
+    assert mod.config_sync_keys == ("port", "registration_publicip", "ownername")
+
+
+def test_sync_server_config_rewrites_generated_astroneer_server_settings(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "203.0.113.10",
+            "registration_publicip": "8.8.8.8",
+            "ownername": "AlphaOwner",
+        }
+    )
+    config_dir = tmp_path / "Astro" / "Saved" / "Config" / "WindowsServer"
+    config_dir.mkdir(parents=True)
+    settings_path = config_dir / "AstroServerSettings.ini"
+    settings_path.write_text(
+        "[/Script/Astro.AstroServerSettings]\n"
+        "PublicIP=\n"
+        "ServerName=\n"
+        "OwnerName=\n"
+        "OwnerGuid=0\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    settings = settings_path.read_text(encoding="utf-8")
+    assert "[/Script/Astro.AstroServerSettings]\n" in settings
+    assert "PublicIP=8.8.8.8\n" in settings
+    assert "OwnerName=AlphaOwner\n" in settings
+    assert "OwnerGuid=0\n" in settings
+
+
+def test_sync_server_config_keeps_blank_astroneer_registration_values_unset(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "",
+            "registration_publicip": "",
+            "ownername": "",
+        }
+    )
+    config_dir = tmp_path / "Astro" / "Saved" / "Config" / "WindowsServer"
+    config_dir.mkdir(parents=True)
+    settings_path = config_dir / "AstroServerSettings.ini"
+    settings_path.write_text(
+        "[/Script/Astro.AstroServerSettings]\n"
+        "PublicIP=\n"
+        "OwnerName=\n"
+        "OwnerGuid=0\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    settings = settings_path.read_text(encoding="utf-8")
+    assert "PublicIP=\n" in settings
+    assert "OwnerName=AlphaGSM\n" in settings
+
+
+def test_sync_server_config_uses_legacy_publicip_when_registration_ip_is_absent(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "8.8.4.4",
+            "ownername": "AlphaOwner",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    settings_path = (
+        tmp_path
+        / "Astro"
+        / "Saved"
+        / "Config"
+        / "WindowsServer"
+        / "AstroServerSettings.ini"
+    )
+    assert "PublicIP=8.8.4.4\n" in settings_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("registration_publicip", ("", "127.0.0.1", "192.168.1.10"))
+def test_prestart_rejects_missing_or_nonpublic_registration_ip(
+    tmp_path, registration_publicip
+):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "registration_publicip": registration_publicip,
+        }
+    )
+
+    with pytest.raises(ServerError, match="registration_publicip"):
+        mod.prestart(server)
+
+
+def test_prestart_accepts_a_public_registration_ip(tmp_path):
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 28777,
+            "publicip": "127.0.0.1",
+            "registration_publicip": "8.8.8.8",
+        }
+    )
+
+    mod.prestart(server)
+
+    settings_path = (
+        tmp_path
+        / "Astro"
+        / "Saved"
+        / "Config"
+        / "WindowsServer"
+        / "AstroServerSettings.ini"
+    )
+    assert "PublicIP=8.8.8.8\n" in settings_path.read_text(encoding="utf-8")
 
 
 def test_update_with_restart(tmp_path):
@@ -108,14 +247,33 @@ def test_restart():
     assert server._started
 
 
-def test_get_start_command(tmp_path, monkeypatch):
+def test_get_start_command_prefers_shipping_executable_for_legacy_launcher(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "IS_LINUX", False)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "AstroServer.exe"
     (tmp_path / "AstroServer.exe").write_text("")
+    shipping_exe = "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
+    shipping_path = tmp_path / shipping_exe
+    shipping_path.parent.mkdir(parents=True)
+    shipping_path.write_text("")
+
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+
+    assert cmd == ["AstroServer-Win64-Shipping.exe"]
+    assert cwd == str(shipping_path.parent)
+
+
+def test_get_start_command_keeps_legacy_launcher_until_shipping_payload_exists(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "AstroServer.exe"
+    (tmp_path / "AstroServer.exe").write_text("")
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert cmd == ["AstroServer.exe"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -126,10 +284,57 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_do_stop():
+def test_do_stop(monkeypatch):
     server = DummyServer()
+    send_mock = MagicMock()
+    monkeypatch.setattr(mod.runtime_module, "send_to_server", send_mock)
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    send_mock.assert_called_with(server, "\003")
+
+
+def test_query_info_and_runtime_ports_use_udp_on_main_port(monkeypatch):
+    server = DummyServer()
+    server.data["port"] = 8777
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda current: "10.0.0.8",
+    )
+
+    assert mod.get_query_address(server) == ("10.0.0.8", 8777, "udp")
+    assert mod.get_info_address(server) == ("10.0.0.8", 8777, "udp")
+    assert mod.get_runtime_requirements(server)["ports"] == [
+        {"host": 8777, "container": 8777, "protocol": "udp"},
+    ]
+    assert mod.get_runtime_requirements(server)["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+
+
+def test_container_spec_uses_same_game_command_and_udp_port(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer("astro")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "AstroServer.exe",
+            "port": 8777,
+        }
+    )
+    (tmp_path / "AstroServer.exe").write_text("")
+    shipping_exe = "Astro/Binaries/Win64/AstroServer-Win64-Shipping.exe"
+    shipping_path = tmp_path / shipping_exe
+    shipping_path.parent.mkdir(parents=True)
+    shipping_path.write_text("")
+
+    process_command, _cwd = mod.get_start_command(server)
+    spec = mod.get_container_spec(server)
+
+    assert process_command == ["AstroServer-Win64-Shipping.exe"]
+    assert spec["command"] == ["./AstroServer-Win64-Shipping.exe"]
+    assert spec["working_dir"] == "/srv/server/Astro/Binaries/Win64"
+    assert spec["ports"] == [
+        {"host": 8777, "container": 8777, "protocol": "udp"},
+    ]
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
 
 
 def test_status():
@@ -179,6 +384,12 @@ def test_checkvalue_publicip():
     assert result == "/test/value"
 
 
+def test_checkvalue_registration_publicip():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("registration_publicip",), "/test/value")
+    assert result == "/test/value"
+
+
 def test_checkvalue_ownername():
     server = DummyServer()
     result = mod.checkvalue(server, ("ownername",), "/test/value")
@@ -207,4 +418,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

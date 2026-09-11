@@ -1,93 +1,100 @@
 """Integration test for kerbalspaceprogramserver."""
 
+import json
+import os
+
 import pytest
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(reason="LunaMultiplayer release is Windows-only (PE32+ .exe)"),
-]
-
 from conftest import (
-    require_integration_opt_in,
-    require_command,
-    pick_free_tcp_port,
-    write_config,
     alphagsm_env,
-    run_and_assert_ok,
-    run_alphagsm,
+    default_runtime_backend,
     log_command_result,
-    skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_tcp_closed,
+    pick_free_udp_port,
+    require_command_for_runtime,
+    require_integration_opt_in,
+    run_alphagsm,
+    run_and_assert_ok,
+    wait_for_info_protocol,
     wait_for_udp_closed,
+    write_config,
+    resolve_steamcmd_linux_runtime_image,
 )
+
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
+PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
+module_name = "kerbalspaceprogramserver"
 
 
 def test_kerbalspaceprogramserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    require_command_for_runtime(
+        "docker", runtime_backend=runtime_backend, module_name=module_name
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itkerbalspacep"
+    server_name = ("itksp" + tmp_path.name.replace("_", "")[-10:])[:15]
+    image = resolve_steamcmd_linux_runtime_image()
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        backend="subprocess",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_udp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "kerbalspaceprogramserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+    run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
+        info_data = wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
+        assert info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {info_data!r}"
         )
-
-        # status
+        assert info_data.get("port") == port, (
+            f"Expected managed UDP port in info JSON: {info_data!r}"
+        )
         run_and_assert_ok(env, server_name, "status")
 
-        # query
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert (
-            "Server is responding" in query_result.stdout
-        ), f"Unexpected query output: {query_result.stdout!r}"
-
-        # info
-        info_result = run_and_assert_ok(env, server_name, "info")
-        assert (
-            "Players     : 0/" in info_result.stdout
-        ), f"Unexpected info output: {info_result.stdout!r}"
-
-        # info --json
-        import json as _info_json
-        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert "UDP ping on port" in query_result.stdout, (
+            f"Unexpected query output: {query_result.stdout!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert "No further details available." in info_result.stdout, (
+            f"Unexpected info output: {info_result.stdout!r}"
+        )
+
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        info_json = json.loads(info_json_result.stdout.strip())
+        assert info_json["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {info_json!r}"
+        )
+        assert info_json.get("port") == port, (
+            f"Expected managed UDP port in info JSON: {info_json!r}"
         )
     finally:
-        # stop
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
-    # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

@@ -2,6 +2,12 @@
 
 This guide covers the `counterstrike2` module in AlphaGSM.
 
+`counterstrike2` is currently `PASSED` in the checked-in support tracker on
+the documented Ubuntu 24.04 Linux baseline. Use this module (or its
+`cs2server` alias) for the current CS2 dedicated-server flow; the legacy
+`counterstrikeglobaloffensive` / `csgo` surface remains a separate disabled
+app `740` path.
+
 ```bash
 alphagsm myserver create counterstrike2
 ```
@@ -81,4 +87,29 @@ Setup configures:
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: AlphaGSM can now track provider-id based CS2 server-side mod installs.
+
+## Mod Sources
+
+CS2 currently supports external provider-id mod sources rather than an
+AlphaGSM-owned manifest.
+
+- `gamebanana` means you provide a numeric GameBanana item id and AlphaGSM
+	resolves the current downloadable archive from GameBanana.
+- `moddb` means you provide a canonical Mod DB download or addon page URL and
+	AlphaGSM resolves Mod DB's start-download link when the file is a supported
+	zip or tar archive.
+- `workshop` means you provide a numeric Steam Workshop item id and AlphaGSM
+	tries to download it through SteamCMD.
+- AlphaGSM records the files installed for each CS2 mod entry so `mod cleanup`
+	removes only tracked files and leaves unrelated files alone.
+
+Examples:
+
+```bash
+alphagsm mycs2 mod add gamebanana 12345
+alphagsm mycs2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
+alphagsm mycs2 mod add workshop 1234567890
+alphagsm mycs2 mod apply
+alphagsm mycs2 mod cleanup
+```

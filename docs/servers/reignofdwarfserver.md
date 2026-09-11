@@ -2,9 +2,13 @@
 
 This guide covers the `reignofdwarfserver` module in AlphaGSM.
 
+`reignofdwarfserver` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. GitHub keeps one Docker-default `wine-proton` lifecycle because
+the forced host-Proton process exited before readiness.
+
 ## Requirements
 
-- `screen`
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +48,8 @@ alphagsm myreignofd stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the Steam query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +63,32 @@ alphagsm myreignofd backup
 ## Notes
 
 - Module name: `reignofdwarfserver`
-- Default port: 27015
+- Default game port: 7777
+- Default Steam query port: 27015
+- AlphaGSM supplies Unity's `-batchmode -nographics` launch flags so the
+  dedicated payload does not require a graphical window in either runtime.
+- The Docker Wine/Proton runtime supplies its private Xvfb display
+  automatically when Unity requires one during startup.
+- Integration readiness uses AlphaGSM generic TCP `info --json` on the managed
+  game port; the current payload does not expose a usable A2S endpoint on the
+  configured query port.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create reignofdwarfserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

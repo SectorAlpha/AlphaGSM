@@ -2,7 +2,16 @@
 
 This guide covers the `gmodserver` module in AlphaGSM.
 
+`gmodserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
+
+AlphaGSM prefers the installed `srcds_run_64` or `srcds_run` wrapper so the
+engine can load its bundled shared libraries. An explicit executable override
+continues to take precedence.
+If an existing installation saved `srcds_linux64`, run
+`alphagsm mygmodserv set exe_name srcds_run` before starting it to restore the
+wrapper's library setup.
 
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
@@ -51,6 +60,10 @@ Setup configures:
 - SteamCMD also downloads common mountable Source content into `_gmod_content/`
 - default configuration and backup settings
 
+Startup prefers the server's own launcher before searching downloaded game
+content. This keeps bundled TF2 launchers from changing the server's working
+directory in process and Docker runtimes.
+
 ## Useful Commands
 
 ```bash
@@ -62,6 +75,29 @@ alphagsm mygmodserv backup
 
 - Module name: `gmodserver`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create gmodserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `gm_construct`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `16`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM Garrys Mod`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -98,8 +134,24 @@ alphagsm mygmodserv backup
   and writes default mounts for Counter-Strike: Source, Half-Life 2: Deathmatch,
   and Team Fortress 2.
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM can now manage Garry's Mod addons from checked-in `manifest` entries plus direct `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular admin/plugin stacks such as MetaMod, SourceMod, ULib, ULX, and AdvDupe2. Direct URLs can point at `.gma` files or supported archives; provider-backed sources currently install supported archives only, while checked-in manifest entries can now install either supported archives or single-file `.gma` assets. Garry's Mod addon archives that unpack as a bare addon root are installed under `garrysmod/addons/<family-or-archive-name>/`, so `ulx` can also pull in its checked-in `ulib` dependency automatically. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps its cache/state under `.alphagsm/mods/gmodserver/`.
 - **Map install**: Copy `.bsp` files into `garrysmod/maps/` and add to `garrysmod/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `garrysmod/addons/`.
+
+Examples:
+
+```bash
+alphagsm mygmod mod add manifest metamod
+alphagsm mygmod mod add manifest sourcemod
+alphagsm mygmod mod add manifest ulib
+alphagsm mygmod mod add manifest ulx
+alphagsm mygmod mod add manifest advdupe2
+alphagsm mygmod mod add url https://addons.example.invalid/example-addon.gma
+alphagsm mygmod mod add gamebanana 12345
+alphagsm mygmod mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+alphagsm mygmod mod apply
+alphagsm mygmod mod cleanup
+```
 
 ### Extra Content Notes
 

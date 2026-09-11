@@ -2,9 +2,16 @@
 
 This guide covers the `alienarenaserver` module in AlphaGSM.
 
+`alienarenaserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around that staged-server-tree
+prerequisite, while local runs remain process-backed by default unless you opt
+into the Docker backend.
+
 ## Requirements
 
 - `screen`
+- a native Alien Arena dedicated server tree containing `crx-dedicated`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -21,6 +28,11 @@ Run setup:
 ```bash
 alphagsm myalienare setup
 ```
+
+`alienarenaserver` is supported in `ENABLED (BYO)` mode. The current anonymous
+SteamCMD app does not deliver the native server payload, so before `setup` or
+`start` you should stage a native Alien Arena dedicated server tree containing
+`crx-dedicated` inside your chosen `<install_dir>/`.
 
 Start it:
 
@@ -46,7 +58,15 @@ Setup configures:
 
 - the game port (default 27910)
 - the install directory
-- SteamCMD downloads the server files
+
+Suggested flow:
+
+```bash
+alphagsm myalienare create alienarenaserver
+alphagsm myalienare setup -n 27910 /path/to/alienarena
+# copy crx-dedicated and the rest of the native server tree into /path/to/alienarena/
+alphagsm myalienare start
+```
 
 ## Useful Commands
 
@@ -59,6 +79,29 @@ alphagsm myalienare backup
 
 - Module name: `alienarenaserver`
 - Default port: 27910
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create alienarenaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `game` | — | string | The active Alien Arena game directory. Example: `baseq3`. |
+| `hostname` | servername, name | string | The advertised server name. Example: `AlphaGSM Arena`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. Example: `q3dm17`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -76,6 +119,27 @@ alphagsm myalienare backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<game>/`
+- **Mod directory**: `<install_dir>/<game>/`
 - **Workshop support**: No
+
+## Mod Sources
+
+Alien Arena supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<game>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `game` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm myalienare mod add url https://example.com/mappack.pk3
+alphagsm myalienare mod add url https://example.com/custom-content.zip
+alphagsm myalienare mod apply
+alphagsm myalienare mod cleanup
+```

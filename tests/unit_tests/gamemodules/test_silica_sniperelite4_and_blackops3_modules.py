@@ -42,13 +42,20 @@ def test_silica_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = silicaserver.get_start_command(server)
 
-    assert cmd[0] == "./Silica.x86_64"
-    assert "-queryport" in cmd
+    assert cmd == ["env", f"HOME={tmp_path}/.alphagsm-home", "./Silica.x86_64",
+                   "-batchmode", "-nographics"]
     assert cwd == server.data["dir"]
 
 
 def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(sniperelite4server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(sniperelite4server.proton, "wrap_command", fake_wrap_command)
+    monkeypatch.setattr(sniperelite4server.shutil, "which", lambda _name: None)
     server = DummyServer("se4")
     exe = tmp_path / "SniperElite4_DedicatedServer.exe"
     exe.write_text("")
@@ -64,13 +71,17 @@ def test_sniperelite4_get_start_command_builds_expected_args(tmp_path, monkeypat
 
     cmd, cwd = sniperelite4server.get_start_command(server)
 
-    assert cmd[0] == "SniperElite4_DedicatedServer.exe"
-    assert "-queryport" in cmd
+    assert cmd == [
+        "SniperElite4_DedicatedServer.exe",
+        "exec",
+        "default.cfg",
+    ]
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_blackops3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(blackops3server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(blackops3server.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("bo3")
     exe = tmp_path / "BlackOps3Server.exe"
     exe.write_text("")
@@ -89,6 +100,24 @@ def test_blackops3_get_start_command_builds_expected_args(tmp_path, monkeypatch)
     assert "sv_maxclients" in cmd
     import os
     assert cwd == os.path.join(server.data["dir"], "UnrankedServer")
+
+
+def test_sniperelite4_runtime_metadata_prefers_proton(tmp_path):
+    server = DummyServer("sniper")
+    (tmp_path / "SniperElite4_DedicatedServer.exe").write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "SniperElite4_DedicatedServer.exe",
+            "port": 7777,
+        }
+    )
+
+    requirements = sniperelite4server.get_runtime_requirements(server)
+    spec = sniperelite4server.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
 
 
 def test_silica_and_blackops3_update_downloads_and_optionally_restart(monkeypatch):

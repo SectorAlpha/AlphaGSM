@@ -1,6 +1,8 @@
 """Integration test for xntserver."""
 
+import os
 import re
+import subprocess
 import time
 import pytest
 
@@ -14,8 +16,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_quake_ready,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -24,6 +25,27 @@ pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+LOCAL_DOCKER_IMAGE = "alphagsm-quake-linux-runtime:local"
+PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-quake-linux-runtime:latest"
+
+
+def resolve_quake_linux_runtime_image():
+    """Prefer a branch-local Quake runtime image when available."""
+
+    configured_image = os.environ.get("ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX")
+    if configured_image:
+        return configured_image
+
+    local_image = subprocess.run(
+        ["docker", "image", "inspect", LOCAL_DOCKER_IMAGE],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if local_image.returncode == 0:
+        return LOCAL_DOCKER_IMAGE
+
+    return PUBLISHED_DOCKER_IMAGE
 
 
 def _run_setup_with_port_retry(env, server_name, install_dir, initial_port):
@@ -50,20 +72,29 @@ def _run_setup_with_port_retry(env, server_name, install_dir, initial_port):
 
 def test_xntserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itxntserver"
+    image = resolve_quake_linux_runtime_image()
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        backend="subprocess",
+        runtime_backend="auto",
+        module_name="xntserver",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
     run_and_assert_ok(env, server_name, "create", "xntserver")
+    run_and_assert_ok(env, server_name, "set", "image", image)
 
     # setup
     port = _run_setup_with_port_retry(env, server_name, install_dir, port)
@@ -72,26 +103,17 @@ def test_xntserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
-
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # Xonotic uses the Quake UDP getstatus protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
+        # Xonotic uses the Quake UDP getstatus protocol, not A2S.
+        wait_for_info_protocol(env, server_name, "quake", START_TIMEOUT)
 
         # Give the server additional time to stabilise — it can respond to one
         # Quake probe then crash if a runtime library loads lazily and fails.
-        # Use a full 300s window: Xonotic spends significant time loading
-        # configs and assets, during which it may be temporarily non-responsive.
-        time.sleep(10)
-        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
+        # Recheck through AlphaGSM after the DarkPlaces rate-limit window.
+        time.sleep(15)
+        wait_for_info_protocol(env, server_name, "quake", START_TIMEOUT)
 
         # DarkPlaces (Xonotic's engine) rate-limits getstatus responses by
         # source IP.  Wait long enough for the rate-limit window to expire
@@ -135,3 +157,4 @@ def test_xntserver_lifecycle(tmp_path):
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

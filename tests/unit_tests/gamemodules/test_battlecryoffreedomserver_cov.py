@@ -5,36 +5,15 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.battlecryoffreedomserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.battlecryoffreedomserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -127,7 +106,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -194,3 +173,47 @@ def test_checkvalue_backup():
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
 
+
+@pytest.mark.parametrize("exe_name", ["DISPLAY=custom.exe", "WINEDLLOVERRIDES=custom.exe"])
+def test_linux_launch_overrides_inherited_headless_env(tmp_path, monkeypatch, exe_name):
+    import importlib
+    real_proton = importlib.import_module("utils.proton")
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod.proton, "prepend_env_assignments", real_proton.prepend_env_assignments)
+    monkeypatch.setenv("WINEDLLOVERRIDES", "winex11.drv=")
+    monkeypatch.setenv("SDL_VIDEODRIVER", "offscreen")
+    monkeypatch.setattr(mod.proton, "wrap_command", lambda command, **kwargs: [
+        "env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "wine", *command,
+    ])
+    server = DummyServer()
+    server.data.update({"dir": str(tmp_path), "exe_name": exe_name})
+    (tmp_path / exe_name).touch()
+
+    command, _cwd = mod.get_start_command(server)
+
+    assert command[:2] == ["xvfb-run", "-a"]
+    assert "DISPLAY=" not in command
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in command
+    assert "WINEDLLOVERRIDES=" in command
+    assert "SDL_VIDEODRIVER=x11" in command
+    assert "SDL_AUDIODRIVER=dummy" in command
+    assert command[-4:] == [exe_name, "-batchmode", "-nographics", "-server"]
+
+
+def test_docker_runtime_enables_virtual_display():
+    requirements = mod.get_runtime_requirements(DummyServer())
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
+
+
+def test_query_and_info_use_managed_tcp_port(monkeypatch):
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="172.18.0.5"),
+    )
+    server = DummyServer()
+    server.data["port"] = 28015
+
+    assert mod.get_query_address(server) == ("172.18.0.5", 28015, "tcp")
+    assert mod.get_info_address(server) == ("172.18.0.5", 28015, "tcp")

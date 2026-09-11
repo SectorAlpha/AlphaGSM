@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import gamemodules.acserver as acserver
 import gamemodules.mordserver as mordserver
 import gamemodules.pvrserver as pvrserver
@@ -63,11 +65,22 @@ def test_pvrserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = pvrserver.get_start_command(server)
 
-    assert cmd == ["./PavlovServer.sh", "-PORT=7777", "-QueryPort=9100", "-Map=UGC1664/SND"]
+    assert cmd == ["./PavlovServer.sh", "-PORT=7777", "-Map=UGC1664/SND"]
     assert cwd == server.data["dir"]
 
 
+def test_pvrserver_query_addresses_use_fixed_status_port():
+    server = DummyServer("pvr")
+    server.data.update({"port": 7777, "queryport": "9100"})
+
+    assert pvrserver.get_query_address(server) == ("127.0.0.1", 8177, "udp")
+    assert pvrserver.get_info_address(server) == ("127.0.0.1", 8177, "udp")
+
+
 def test_tactical_modules_update_downloads_and_optionally_restart(monkeypatch):
+    configured = MagicMock()
+    configured.user.getsection.return_value.getsection.return_value.get.return_value = "entitled-user"
+    monkeypatch.setattr(acserver, "settings", configured)
     ac = DummyServer("ac")
     ac.data["dir"] = "/srv/ac/"
     mord = DummyServer("mord")
@@ -79,14 +92,14 @@ def test_tactical_modules_update_downloads_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         acserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, **kwargs: calls.append((path, app_id, anon, validate)),
     )
 
     acserver.update(ac, validate=True, restart=True)
     mordserver.update(mord, validate=False, restart=False)
     pvrserver.update(pvr, validate=False, restart=False)
 
-    assert ("/srv/ac/", 302550, True, True) in calls
+    assert ("/srv/ac/", 302550, False, True) in calls
     assert ("/srv/mord/", 629800, True, False) in calls
     assert ("/srv/pvr/", 622970, True, False) in calls
     assert ac.start_calls == 1

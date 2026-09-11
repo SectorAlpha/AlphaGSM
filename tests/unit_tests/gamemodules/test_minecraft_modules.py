@@ -1,10 +1,17 @@
 import json
+from pathlib import Path
+import subprocess
+from unittest.mock import MagicMock
 
 import pytest
 
 import gamemodules.minecraft.bungeecord as bungeecord
 import gamemodules.minecraft.custom as custom
+import utils.gamemodules.minecraft.properties_config as properties_config
 import gamemodules.minecraft.vanilla as vanilla
+import server.server as server_module
+from server import ServerError
+from utils.simple_kv_config import rewrite_equals_config
 
 html5lib = pytest.importorskip("html5lib")
 import gamemodules.minecraft.tekkit as tekkit
@@ -23,6 +30,14 @@ class DummyServer:
     def __init__(self, name="alpha"):
         self.name = name
         self.data = DummyData()
+
+
+def make_server(module, name="alpha"):
+    server = server_module.Server.__new__(server_module.Server)
+    server.name = name
+    server.module = module
+    server.data = DummyData()
+    return server
 
 
 def test_custom_configure_sets_backup_defaults_and_returns_eula_state(tmp_path):
@@ -79,41 +94,159 @@ def test_custom_install_updates_generated_config_files(tmp_path, monkeypatch):
     server.data.update({"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565})
     (tmp_path / "minecraft_server.jar").write_text("")
     update_calls = []
+    check_call = MagicMock()
 
     monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: update_calls.append((filename, settings)))
-    monkeypatch.setattr(custom.sp, "check_call", lambda *args, **kwargs: 0)
+    monkeypatch.setattr(subprocess, "check_call", check_call)
 
     custom.install(server, eula=True)
 
-    assert update_calls[0][0].endswith("server.properties")
-    assert update_calls[0][1] == {"server-port": "25565"}
-    assert update_calls[1][0].endswith("server.properties")
-    assert update_calls[1][1] == {"server-port": "25565"}
-    assert update_calls[2][0].endswith("eula.txt")
-    assert update_calls[2][1] == {"eula": "true"}
+    assert update_calls == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "25565",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "alpha",
+                "max-players": "20",
+                "motd": "AlphaGSM alpha",
+            },
+        ),
+        (str(tmp_path / "eula.txt"), {"eula": "true"}),
+    ]
+    check_call.assert_not_called()
     assert server.data.saved == 1
 
 
-def test_custom_install_writes_eula_before_first_boot(tmp_path, monkeypatch):
+def test_custom_install_does_not_boot_server_to_generate_settings(tmp_path, monkeypatch):
     server = DummyServer()
-    server.data.update({"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565})
+    server.data.update(
+        {"dir": str(tmp_path), "exe_name": "minecraft_server.jar", "port": 25565}
+    )
     (tmp_path / "minecraft_server.jar").write_text("")
-
-    observed = {}
-
-    def fake_check_call(*args, **kwargs):
-        eula_path = tmp_path / "eula.txt"
-        observed["exists"] = eula_path.exists()
-        observed["content"] = eula_path.read_text(encoding="utf-8") if eula_path.exists() else ""
-        (tmp_path / "server.properties").write_text("server-port=25565\n", encoding="utf-8")
-        return 0
+    check_call = MagicMock()
 
     monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: None)
-    monkeypatch.setattr(custom.sp, "check_call", fake_check_call)
+    monkeypatch.setattr(subprocess, "check_call", check_call)
 
     custom.install(server, eula=True)
 
-    assert observed == {"exists": True, "content": "eula=true\n"}
+    assert (tmp_path / "eula.txt").read_text(encoding="utf-8") == "eula=true\n"
+    check_call.assert_not_called()
+
+
+def test_custom_exposes_schema_metadata_for_native_properties():
+    map_spec = custom.setting_schema["map"]
+    servername_spec = custom.setting_schema["servername"]
+
+    assert custom.config_sync_keys == (
+        "port",
+        "gamemode",
+        "difficulty",
+        "levelname",
+        "maxplayers",
+        "servername",
+    )
+    assert map_spec.canonical_key == "map"
+    assert map_spec.aliases == ("gamemap", "level", "world")
+    assert map_spec.storage_key == "levelname"
+    assert servername_spec.canonical_key == "servername"
+    assert servername_spec.aliases == ()
+
+
+def test_custom_uses_shared_properties_config_contract():
+    assert custom.config_sync_keys == properties_config.CONFIG_SYNC_KEYS
+    assert custom.setting_schema == properties_config.build_setting_schema(
+        port_description="The port the server listens on.",
+        port_example="25565",
+        map_example="world",
+        maxplayers_example="20",
+        servername_description="The server name shown in the client list.",
+        servername_example="AlphaGSM Server",
+    )
+
+
+def test_custom_uses_shared_equals_config_writer():
+    assert custom.updateconfig is rewrite_equals_config
+
+
+def test_custom_doset_servername_updates_motd_and_server_properties(monkeypatch, tmp_path):
+    server = make_server(custom, "java")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 25565,
+            "gamemode": "survival",
+            "difficulty": "easy",
+            "levelname": "world",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Java",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    server.doset("servername", "AlphaGSM Custom")
+
+    assert server.data["servername"] == "AlphaGSM Custom"
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "25565",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "world",
+                "max-players": "20",
+                "motd": "AlphaGSM Custom",
+            },
+        )
+    ]
+
+
+def test_custom_doset_gamemap_updates_levelname_and_server_properties(monkeypatch, tmp_path):
+    server = make_server(custom, "java")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 25565,
+            "gamemode": "survival",
+            "difficulty": "easy",
+            "levelname": "world_one",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Java",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    server.doset("gamemap", "world_two")
+
+    assert server.data["levelname"] == "world_two"
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "25565",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "world_two",
+                "max-players": "20",
+                "motd": "AlphaGSM Java",
+            },
+        )
+    ]
+
+
+def test_custom_install_requires_existing_server_jar(tmp_path):
+    server = DummyServer()
+    server.data.update({"dir": str(tmp_path), "exe_name": "paper.jar", "port": 25565})
+
+    with pytest.raises(custom.ServerError, match="ENABLED \\(BYO\\): minecraft.custom"):
+        custom.install(server)
 
 
 def test_custom_message_sends_tellraw_to_all_players(monkeypatch):
@@ -157,6 +290,54 @@ def test_custom_checkvalue_handles_simple_and_backup_values(monkeypatch):
     assert custom.checkvalue(server, ("exe_name",), "server.jar") == "server.jar"
     assert custom.checkvalue(server, ("TEST",), "value") == "value"
     assert custom.checkvalue(server, ("backup", "profiles", "default"), "x") == ["ok", ("profiles", "default"), ("x",)]
+
+
+def test_custom_checkvalue_accepts_server_properties_keys(monkeypatch):
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {}}, "schedule": []}
+
+    monkeypatch.setattr(custom.backups, "checkdatavalue", lambda data, key, *value: ["ok", key, value])
+
+    assert custom.checkvalue(server, ("port",), "25566") == 25566
+    assert custom.checkvalue(server, ("gamemode",), "creative") == "creative"
+    assert custom.checkvalue(server, ("difficulty",), "hard") == "hard"
+    assert custom.checkvalue(server, ("maxplayers",), "30") == "30"
+    assert custom.checkvalue(server, ("levelname",), "world") == "world"
+    assert custom.checkvalue(server, ("servername",), "AlphaGSM Java") == "AlphaGSM Java"
+
+
+def test_custom_sync_server_config_updates_server_properties(tmp_path, monkeypatch):
+    server = DummyServer("java")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 25570,
+            "gamemode": "creative",
+            "difficulty": "hard",
+            "levelname": "java_world",
+            "maxplayers": "30",
+            "servername": "AlphaGSM Java",
+        }
+    )
+    update_calls = []
+
+    monkeypatch.setattr(custom, "updateconfig", lambda filename, settings: update_calls.append((filename, settings)))
+
+    custom.sync_server_config(server)
+
+    assert update_calls == [
+        (
+            str(tmp_path / "server.properties"),
+                {
+                    "server-port": "25570",
+                    "gamemode": "creative",
+                    "difficulty": "hard",
+                    "level-name": "java_world",
+                    "max-players": "30",
+                    "motd": "AlphaGSM Java",
+                },
+            )
+        ]
 
 
 def test_custom_parsewhen_supports_all_frequencies(monkeypatch):
@@ -235,22 +416,36 @@ def test_custom_runtime_requirements_include_java_mounts_and_ports():
     assert spec["command"][-1] == 'exec java -jar "$ALPHAGSM_SERVER_JAR" nogui'
 
 
-def test_bungeecord_configure_install_and_checkvalue(tmp_path):
+def test_bungeecord_configure_install_and_checkvalue(tmp_path, monkeypatch):
     server = DummyServer()
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
+    monkeypatch.setattr(bungeecord, "install_downloaded_jar", lambda current_server: None)
 
     args, kwargs = bungeecord.configure(server, ask=False, dir=str(tmp_path))
     (tmp_path / "BungeeCord.jar").write_text("")
+    (tmp_path / "config.yml").write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
     bungeecord.install(server)
 
     assert args == ()
     assert kwargs == {}
     assert server.data["dir"] == str(tmp_path)
+    assert server.data["mods"]["desired"]["url"] == []
+    assert server.data["mod_cache_dirname"] == "minecraft-bungeecord"
     assert bungeecord.get_start_command(server) == (["java", "-Xmx256M", "-jar", "BungeeCord.jar"], str(tmp_path))
     assert bungeecord.checkvalue(server, "exe_name", "proxy.jar") == "proxy.jar"
 
 
 def test_bungeecord_configure_uses_runtime_install_dir_helper(monkeypatch):
     server = DummyServer("proxy")
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
 
     observed = {}
 
@@ -273,6 +468,11 @@ def test_bungeecord_configure_uses_runtime_install_dir_helper(monkeypatch):
 def test_bungeecord_configure_replaces_stale_manager_only_install_dir(monkeypatch):
     server = DummyServer("proxy")
     server.data["dir"] = "/root/proxy"
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
 
     observed = {}
 
@@ -292,12 +492,63 @@ def test_bungeecord_configure_replaces_stale_manager_only_install_dir(monkeypatc
     assert server.data["dir"] == "/srv/alphagsm/servers/proxy"
 
 
+def test_bungeecord_resolve_download_uses_latest_successful_build(monkeypatch):
+    monkeypatch.setattr(
+        bungeecord,
+        "_read_json",
+        lambda url: {"lastSuccessfulBuild": {"number": 2069}},
+    )
+
+    version, url = bungeecord.resolve_download()
+
+    assert version == "2069"
+    assert url.endswith("/job/BungeeCord/2069/artifact/bootstrap/target/BungeeCord.jar")
+
+
+def test_bungeecord_configure_sets_download_defaults(tmp_path, monkeypatch):
+    server = DummyServer("proxy")
+    monkeypatch.setattr(
+        bungeecord,
+        "resolve_download",
+        lambda version=None: ("2069", "https://example.invalid/BungeeCord.jar"),
+    )
+
+    bungeecord.configure(server, ask=False, port=25577, dir=str(tmp_path))
+
+    assert server.data["version"] == "2069"
+    assert server.data["url"] == "https://example.invalid/BungeeCord.jar"
+    assert server.data["download_name"] == "BungeeCord.jar"
+    assert server.data["exe_name"] == "BungeeCord.jar"
+
+
 def test_bungeecord_install_requires_existing_jar(tmp_path):
     server = DummyServer()
     server.data.update({"dir": str(tmp_path), "exe_name": "BungeeCord.jar"})
 
     with pytest.raises(bungeecord.ServerError, match="Can't find server jar"):
         bungeecord.install(server)
+
+
+def test_bungeecord_install_downloads_configured_jar(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "BungeeCord.jar",
+            "url": "https://example.invalid/BungeeCord.jar",
+            "download_name": "BungeeCord.jar",
+        }
+    )
+
+    def fake_install_downloaded_jar(current_server):
+        (Path(current_server.data["dir"]) / current_server.data["exe_name"]).write_text("")
+
+    monkeypatch.setattr(bungeecord, "install_downloaded_jar", fake_install_downloaded_jar)
+    (tmp_path / "config.yml").write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
+
+    bungeecord.install(server)
+
+    assert (tmp_path / "BungeeCord.jar").exists()
 
 
 def test_bungeecord_updates_unindented_host_line(tmp_path):
@@ -321,9 +572,11 @@ def test_bungeecord_install_waits_for_generated_config_and_rewrites_port(tmp_pat
 
         def poll(self):
             self.poll_count += 1
-            if self.poll_count == 3:
+            if self.poll_count == 1:
+                config_path.write_text("", encoding="utf-8")
+            elif self.poll_count == 2:
                 config_path.write_text("host: 0.0.0.0:25577\n", encoding="utf-8")
-            return None if self.poll_count < 4 else 0
+            return None
 
         def terminate(self):
             return None
@@ -414,14 +667,18 @@ def test_custom_start_command_passes_explicit_port():
     assert command == ["java", "-jar", "minecraft_server.jar", "nogui", "--port", "25565"]
 
 
-def test_tekkit_runtime_wrappers_use_java_family():
+def test_tekkit_runtime_wrappers_use_java_family(tmp_path):
     server = DummyServer("tekkit")
+    server_dir = tmp_path / "tekkit"
+    server_dir.mkdir()
+    (server_dir / "Tekkit.jar").write_text("", encoding="utf-8")
     server.data.update(
         {
-            "dir": "/srv/tekkit",
+            "dir": str(server_dir),
             "exe_name": "Tekkit.jar",
             "port": 25566,
             "version": "1.12.2",
+            "url": "https://example.com/Tekkit.zip",
         }
     )
 
@@ -541,3 +798,48 @@ def test_tekkit_get_file_url_returns_first_server_download(monkeypatch):
     monkeypatch.setattr(tekkit.html5lib, "parse", lambda file_obj, parser: FakeDom())
 
     assert tekkit.get_file_url("http://example.com/modpack") == "http://example.com/server.zip"
+
+
+def test_tekkit_install_without_url_or_staged_jar_raises_byo(tmp_path):
+    server = DummyServer("tekkit")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Tekkit.jar",
+            "download_name": "Tekkit.zip",
+            "url": None,
+        }
+    )
+
+    with pytest.raises(ServerError, match=r"ENABLED \(BYO\)"):
+        tekkit.install(server)
+
+
+def test_tekkit_install_allows_pre_staged_jar_without_url(tmp_path, monkeypatch):
+    server = DummyServer("tekkit")
+    staged_jar = tmp_path / "Tekkit.jar"
+    staged_jar.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Tekkit.jar",
+            "download_name": "Tekkit.zip",
+            "url": None,
+        }
+    )
+    observed = []
+
+    monkeypatch.setattr(tekkit.cust, "install", lambda server_obj, eula=False: observed.append((server_obj.name, eula)))
+
+    tekkit.install(server)
+
+    assert observed == [("tekkit", False)]
+    assert server.data["current_url"] is None
+
+
+def test_tekkit_get_start_command_missing_staged_jar_raises_byo(tmp_path):
+    server = DummyServer("tekkit")
+    server.data.update({"dir": str(tmp_path), "exe_name": "Tekkit.jar"})
+
+    with pytest.raises(ServerError, match=r"ENABLED \(BYO\)"):
+        tekkit.get_start_command(server)

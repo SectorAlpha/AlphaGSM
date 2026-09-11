@@ -5,34 +5,13 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.hzserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.hzserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -48,7 +27,7 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = "test"
     server.data["Steam_anonymous_login_possible"] = "test"
-    server.data["map"] = "test"
+    server.data["servername"] = "test"
     server.data["queryport"] = 27015
     mod.configure(server, ask=True)
 
@@ -63,7 +42,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "HumanitZServer.sh"
+    server.data["exe_name"] = "HumanitZServer/Binaries/Win64/HumanitZServer-Win64-Shipping.exe"
     server.data["Steam_AppID"] = 2728330
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -108,20 +87,67 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "HumanitZServer.sh"
-    (tmp_path / "HumanitZServer.sh").write_text("")
-    server.data["map"] = "test"
+    exe = tmp_path / "HumanitZServer" / "Binaries" / "Win64" / "HumanitZServer-Win64-Shipping.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    server.data["exe_name"] = "HumanitZServer/Binaries/Win64/HumanitZServer-Win64-Shipping.exe"
     server.data["port"] = 27015
     server.data["queryport"] = 27015
-    cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    server.data["servername"] = "AlphaGSM HZ"
+    with patch.object(mod, "IS_LINUX", False):
+        cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "HumanitZServer/Binaries/Win64/HumanitZServer-Win64-Shipping.exe",
+        "-log",
+        "-port=27015",
+        "-queryport=27015",
+        "-steamservername=AlphaGSM HZ",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_humanitz_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-queryport={value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-steamservername={value}"
+
+
+def test_sync_server_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servername"] = "AlphaGSM HZ"
+    server.data["maxplayers"] = 24
+    config_dir = tmp_path / "HumanitZServer"
+    config_dir.mkdir()
+    ref = config_dir / "REF_GameServerSettings.ini"
+    ref.write_text("[Host Settings]\nServerName=\"HumanitZ [Dedicated]\"\nMaxPlayers=16\n")
+    mod.sync_server_config(server)
+    config_path = config_dir / "GameServerSettings.ini"
+    text = config_path.read_text()
+    assert 'ServerName = "AlphaGSM HZ"' in text
+    assert "MaxPlayers = 24" in text
+
+
+def test_sync_server_config_no_dir_is_noop():
+    server = DummyServer()
+    server.data["servername"] = "AlphaGSM HZ"
+    server.data["maxplayers"] = 24
+    mod.sync_server_config(server)
+
+
+def test_get_query_and_info_address():
+    server = DummyServer()
+    server.data["queryport"] = 27015
+    expected = ("127.0.0.1", 27015, "udp")
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
+        assert mod.get_query_address(server) == expected
+        assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    server.data["map"] = "test"
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     with pytest.raises(ServerError):
@@ -131,7 +157,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -181,10 +207,16 @@ def test_checkvalue_queryport():
     assert result == 12345
 
 
-def test_checkvalue_map():
+def test_checkvalue_maxplayers():
     server = DummyServer()
-    result = mod.checkvalue(server, ("map",), "/test/value")
-    assert result == "/test/value"
+    result = mod.checkvalue(server, ("maxplayers",), "24")
+    assert result == 24
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM HZ")
+    assert result == "AlphaGSM HZ"
 
 
 def test_checkvalue_exe_name():
@@ -203,4 +235,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

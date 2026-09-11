@@ -5,42 +5,23 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.blackwakeserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.blackwakeserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data["gamemode"] == mod.DEFAULT_GAMEMODE
+    assert server.data["servername"] == server.name
+    assert server.data["serverpassword"] == mod.DEFAULT_SERVER_PASSWORD
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -120,6 +101,144 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_query_and_info_address_do_not_branch_on_runtime(monkeypatch):
+    server = DummyServer(name="blackwake-it")
+    server.data.update(
+        {
+            "port": 34238,
+            "queryport": 27016,
+            "runtime": "process",
+        }
+    )
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.14",
+    )
+
+    expected = ("172.18.0.14", 34238, "tcp")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
+
+
+def test_query_and_info_address_use_same_surface_for_docker_runtime(monkeypatch):
+    server = DummyServer(name="blackwake-it")
+    server.data.update({"port": 34238, "queryport": 27016, "runtime": "docker"})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.14",
+    )
+
+    expected = ("172.18.0.14", 34238, "tcp")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
+
+
+def test_sync_server_config_updates_server_cfg(tmp_path):
+    server = DummyServer(name="blackwake-it")
+    server.data.update({
+        "dir": str(tmp_path),
+        "port": 34238,
+        "queryport": 27016,
+        "servername": "AlphaGSM Blackwake",
+        "serverpassword": "alphagsm123",
+        "gamemode": 7,
+    })
+    cfg_path = tmp_path / "Server.cfg"
+    cfg_path.write_text(
+        "serverName=my server\n"
+        "port=25001\n"
+        "sport=27015\n"
+        "password=\n"
+        "useBots=1\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        "serverName=AlphaGSM Blackwake",
+        "port=34238",
+        "sport=27016",
+        "password=alphagsm123",
+        "useBots=0",
+        "gamemode=7",
+    ]
+
+
+def test_checkvalue_serverpassword_requires_min_length():
+    server = DummyServer()
+
+    with pytest.raises(ServerError, match="at least 4 characters"):
+        mod.checkvalue(server, ("serverpassword",), "abc")
+
+    assert mod.checkvalue(server, ("serverpassword",), "alphagsm123") == "alphagsm123"
+
+
+def test_checkvalue_gamemode_range():
+    server = DummyServer()
+
+    with pytest.raises(ServerError, match="between 1 and 8"):
+        mod.checkvalue(server, ("gamemode",), "9")
+
+    assert mod.checkvalue(server, ("gamemode",), "7") == 7
+
+
+def test_wrap_linux_command_uses_xvfb_when_available(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *cmd,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: (
+            [cmd[0], *(f"{key}={value}" for key, value in env.items()), *cmd[1:]]
+            if cmd and cmd[0] == "env"
+            else ["env", *(f"{key}={value}" for key, value in env.items()), *cmd]
+        ),
+    )
+
+    wrapped = mod._wrap_linux_command(["BlackwakeServer.exe", "-batchmode"])
+
+    assert wrapped == [
+        "xvfb-run",
+        "-a",
+        "env",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "wine",
+        "BlackwakeServer.exe",
+        "-batchmode",
+    ]
+
+
+def test_wrap_linux_command_does_not_force_proton(monkeypatch):
+    seen = {}
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+
+    def fake_wrap(cmd, wineprefix=None, prefer_proton=False):
+        seen["prefer_proton"] = prefer_proton
+        return ["env", "wine", *cmd]
+
+    monkeypatch.setattr(mod.proton, "wrap_command", fake_wrap)
+
+    wrapped = mod._wrap_linux_command(["BlackwakeServer.exe", "-batchmode"])
+
+    assert wrapped == ["env", "wine", "BlackwakeServer.exe", "-batchmode"]
+    assert seen["prefer_proton"] is False
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -133,8 +252,14 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
-    mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    sender = MagicMock()
+    original = mod.runtime_module.send_to_server
+    mod.runtime_module.send_to_server = sender
+    try:
+        mod.do_stop(server, 0)
+    finally:
+        mod.runtime_module.send_to_server = original
+    sender.assert_called_once_with(server, "\003")
 
 
 def test_status():
@@ -206,4 +331,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

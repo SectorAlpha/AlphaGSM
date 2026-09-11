@@ -3,6 +3,23 @@ name: AlphaGSM PR
 on:
   pull_request:
     branches: [master]
+  workflow_dispatch:
+  workflow_call:
+  merge_group:
+  schedule:
+    - cron: "0 4 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  ALPHAGSM_MINECRAFT_RELEASE_ID: "1.21.11"
+  ALPHAGSM_MINECRAFT_SERVER_URL: "https://piston-data.mojang.com/v1/objects/64bb6d763bed0a9f1d632ec347938594144943ed/server.jar"
 
 jobs:
   build:
@@ -57,6 +74,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Check canonical module parity report
+        run: |
+          python3 scripts/generate_module_parity_report.py --check
+      - name: Check canonical game server support tracker
+        run: |
+          python3 scripts/generate_game_server_support_tracker.py --check
       - name: AlphaGSM Unit Tests
         run: pytest tests/unit_tests -n auto
 
@@ -90,26 +113,38 @@ jobs:
             --cov-report=xml \
             -q --tb=no
 
+  binary-build-smoke:
+    needs: build
+    uses: ./.github/workflows/binary.yml
+    with:
+      version: ci-${{ github.sha }}
+
   classify-changes:
     runs-on: ubuntu-latest
     outputs:
       game_test_mode: ${{ steps.classify.outputs.game_test_mode }}
-      has_smoke_tests: ${{ steps.classify.outputs.has_smoke_tests }}
-      has_integration_tests: ${{ steps.classify.outputs.has_integration_tests }}
-      smoke_matrix: ${{ steps.classify.outputs.smoke_matrix }}
-      integration_matrix: ${{ steps.classify.outputs.integration_matrix }}
+      has_smoke_standard_tests: ${{ steps.classify.outputs.has_smoke_standard_tests }}
+      has_smoke_heavy_tests: ${{ steps.classify.outputs.has_smoke_heavy_tests }}
+      has_integration_standard_tests: ${{ steps.classify.outputs.has_integration_standard_tests }}
+      has_integration_heavy_tests: ${{ steps.classify.outputs.has_integration_heavy_tests }}
+      smoke_standard_matrix: ${{ steps.classify.outputs.smoke_standard_matrix }}
+      smoke_heavy_matrix: ${{ steps.classify.outputs.smoke_heavy_matrix }}
+      integration_standard_matrix: ${{ steps.classify.outputs.integration_standard_matrix }}
+      integration_heavy_matrix: ${{ steps.classify.outputs.integration_heavy_matrix }}
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Fetch PR base commit
+        if: github.event_name == 'pull_request'
         run: |
           git fetch --no-tags origin "${{ github.event.pull_request.base.sha }}"
       - id: classify
         name: Classify Linux game smoke and integration scope
         run: |
           python3 scripts/ci_game_test_routing.py \
+            --event-name "$GITHUB_EVENT_NAME" \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
             --head-sha "${{ github.event.pull_request.head.sha }}"
 
@@ -117,30 +152,46 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-test, lint, coverage, classify-changes]
     outputs:
-      matrix: ${{ steps.forward.outputs.matrix }}
-      has_tests: ${{ steps.forward.outputs.has_tests }}
+      standard_matrix: ${{ steps.forward.outputs.standard_matrix }}
+      heavy_matrix: ${{ steps.forward.outputs.heavy_matrix }}
+      has_standard_tests: ${{ steps.forward.outputs.has_standard_tests }}
+      has_heavy_tests: ${{ steps.forward.outputs.has_heavy_tests }}
     steps:
       - id: forward
         name: Forward Linux game smoke matrix
         run: |
           echo "Linux game smoke mode: ${{ needs.classify-changes.outputs.game_test_mode }}"
-          echo "Smoke tests selected: ${{ needs.classify-changes.outputs.has_smoke_tests }}"
-          echo 'matrix=${{ needs.classify-changes.outputs.smoke_matrix }}' >> "$GITHUB_OUTPUT"
-          echo 'has_tests=${{ needs.classify-changes.outputs.has_smoke_tests }}' >> "$GITHUB_OUTPUT"
+          echo "Standard smoke tests selected: ${{ needs.classify-changes.outputs.has_smoke_standard_tests }}"
+          echo "Heavy smoke tests selected: ${{ needs.classify-changes.outputs.has_smoke_heavy_tests }}"
+          echo 'standard_matrix=${{ needs.classify-changes.outputs.smoke_standard_matrix }}' >> "$GITHUB_OUTPUT"
+          echo 'heavy_matrix=${{ needs.classify-changes.outputs.smoke_heavy_matrix }}' >> "$GITHUB_OUTPUT"
+          echo 'has_standard_tests=${{ needs.classify-changes.outputs.has_smoke_standard_tests }}' >> "$GITHUB_OUTPUT"
+          echo 'has_heavy_tests=${{ needs.classify-changes.outputs.has_smoke_heavy_tests }}' >> "$GITHUB_OUTPUT"
 
-  smoke-test:
+  smoke-test-standard:
     runs-on: ubuntu-latest
-    if: needs.discover-smoke-tests.outputs.has_tests == 'true'
-    needs: discover-smoke-tests
+    if: needs.discover-smoke-tests.outputs.has_standard_tests == 'true'
+    needs: [discover-smoke-tests, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.discover-smoke-tests.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.discover-smoke-tests.outputs.standard_matrix) }}
     env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
     name: smoke-test (${{ matrix.label }})
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
+      - name: Free runner disk space for large Docker smoke coverage
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/share/swift
+          sudo docker system prune -af || true
+          df -h /
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
@@ -153,7 +204,7 @@ jobs:
       - name: Install system dependencies
         run: |
           for apt_source in /etc/apt/sources.list.d/*; do
-            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod' "$apt_source"; then
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
               sudo rm -f "$apt_source"
             fi
           done
@@ -164,6 +215,26 @@ jobs:
           # lib32*   — 32-bit Steam runtime (Source engine servers: TF2, CS:GO, …)
           # p7zip    — server archives distributed as .7z
           sudo apt-get install -y screen lib32gcc-s1 lib32stdc++6 p7zip-full
+      - name: Install legacy OpenSSL for Onset smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_onsetserver.sh')
+        run: |
+          wget -q https://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb \
+            -O /tmp/alphagsm-libssl1.1.deb
+          sudo dpkg -i /tmp/alphagsm-libssl1.1.deb
+          rm -f /tmp/alphagsm-libssl1.1.deb
+      - name: Install .NET 10 runtime for SS14 smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_ss14server.sh')
+        run: |
+          wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+            -O /tmp/packages-microsoft-prod.deb
+          sudo dpkg -i /tmp/packages-microsoft-prod.deb
+          rm -f /tmp/packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dotnet-runtime-10.0
+      - name: Install Proton-GE for Sons Of The Forest smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_sonsoftheforestserver.sh')
+        run: |
+          bash scripts/install_proton.sh proton
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -173,6 +244,7 @@ jobs:
         run: |
           touch smoke-results.txt
           passed=0
+          skipped=0
           failed=0
           for script in ${{ matrix.scripts }}; do
             echo ""
@@ -183,39 +255,179 @@ jobs:
               echo "PASSED: $script" | tee -a smoke-results.txt
               passed=$((passed + 1))
             else
-              echo "FAILED: $script" | tee -a smoke-results.txt
-              failed=$((failed + 1))
+              rc=$?
+              if [ "$rc" -eq 77 ]; then
+                echo "SKIPPED: $script" | tee -a smoke-results.txt
+                skipped=$((skipped + 1))
+              else
+                echo "FAILED: $script" | tee -a smoke-results.txt
+                failed=$((failed + 1))
+              fi
             fi
           done
+          if [ "$skipped" -gt 0 ]; then
+            echo "$skipped smoke test(s) skipped"
+          fi
           if [ "$failed" -gt 0 ]; then
             echo "$failed smoke test(s) failed"
             exit 1
           fi
+      - name: Summarize smoke results
+        if: always()
+        run: |
+          if [ -f smoke-results.txt ]; then
+            cat smoke-results.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Smoke results were not produced; inspect the setup and test steps." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Upload smoke test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-test-artifact
         with:
-          name: smoke-results-${{ matrix.label }}
+          name: smoke-results-standard-${{ matrix.label }}
           path: smoke-results.txt
+          if-no-files-found: error
+
+  smoke-test-heavy:
+    runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') }}
+    if: needs.discover-smoke-tests.outputs.has_heavy_tests == 'true'
+    needs: [discover-smoke-tests, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-smoke-tests.outputs.heavy_matrix) }}
+    env:
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: ${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONPATH: .:src
+    name: smoke-test (${{ matrix.label }})
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Free runner disk space for large Docker smoke coverage
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /usr/share/swift
+          sudo docker system prune -af || true
+          df -h /
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Install system dependencies
+        run: |
+          for apt_source in /etc/apt/sources.list.d/*; do
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
+              sudo rm -f "$apt_source"
+            fi
+          done
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y screen lib32gcc-s1 lib32stdc++6 p7zip-full
+      - name: Install legacy OpenSSL for Onset smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_onsetserver.sh')
+        run: |
+          wget -q https://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb \
+            -O /tmp/alphagsm-libssl1.1.deb
+          sudo dpkg -i /tmp/alphagsm-libssl1.1.deb
+          rm -f /tmp/alphagsm-libssl1.1.deb
+      - name: Install .NET 10 runtime for SS14 smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_ss14server.sh')
+        run: |
+          wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+            -O /tmp/packages-microsoft-prod.deb
+          sudo dpkg -i /tmp/packages-microsoft-prod.deb
+          rm -f /tmp/packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dotnet-runtime-10.0
+      - name: Install Proton-GE for Sons Of The Forest smoke coverage
+        if: contains(matrix.scripts, 'tests/smoke_tests/run_sonsoftheforestserver.sh')
+        run: |
+          bash scripts/install_proton.sh proton
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: AlphaGSM Smoke Tests
+        run: |
+          touch smoke-results.txt
+          passed=0
+          skipped=0
+          failed=0
+          for script in ${{ matrix.scripts }}; do
+            echo ""
+            echo "========================================"
+            echo "Running: $script"
+            echo "========================================"
+            if bash "./$script"; then
+              echo "PASSED: $script" | tee -a smoke-results.txt
+              passed=$((passed + 1))
+            else
+              rc=$?
+              if [ "$rc" -eq 77 ]; then
+                echo "SKIPPED: $script" | tee -a smoke-results.txt
+                skipped=$((skipped + 1))
+              else
+                echo "FAILED: $script" | tee -a smoke-results.txt
+                failed=$((failed + 1))
+              fi
+            fi
+          done
+          if [ "$skipped" -gt 0 ]; then
+            echo "$skipped smoke test(s) skipped"
+          fi
+          if [ "$failed" -gt 0 ]; then
+            echo "$failed smoke test(s) failed"
+            exit 1
+          fi
+      - name: Summarize smoke results
+        if: always()
+        run: |
+          if [ -f smoke-results.txt ]; then
+            cat smoke-results.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Smoke results were not produced; inspect the setup and test steps." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload smoke test results
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: smoke-results-heavy-${{ matrix.label }}
+          path: smoke-results.txt
+          if-no-files-found: error
 
   discover-integration-tests:
     runs-on: ubuntu-latest
     needs: [unit-test, lint, coverage, classify-changes]
     outputs:
-      matrix: ${{ steps.forward.outputs.matrix }}
-      has_tests: ${{ steps.forward.outputs.has_tests }}
+      standard_matrix: ${{ steps.forward.outputs.standard_matrix }}
+      heavy_matrix: ${{ steps.forward.outputs.heavy_matrix }}
+      has_standard_tests: ${{ steps.forward.outputs.has_standard_tests }}
+      has_heavy_tests: ${{ steps.forward.outputs.has_heavy_tests }}
     steps:
       - id: forward
         name: Forward Linux game integration matrix
         run: |
           echo "Linux game integration mode: ${{ needs.classify-changes.outputs.game_test_mode }}"
-          echo "Integration tests selected: ${{ needs.classify-changes.outputs.has_integration_tests }}"
-          echo 'matrix=${{ needs.classify-changes.outputs.integration_matrix }}' >> "$GITHUB_OUTPUT"
-          echo 'has_tests=${{ needs.classify-changes.outputs.has_integration_tests }}' >> "$GITHUB_OUTPUT"
+          echo "Standard integration tests selected: ${{ needs.classify-changes.outputs.has_integration_standard_tests }}"
+          echo "Heavy integration tests selected: ${{ needs.classify-changes.outputs.has_integration_heavy_tests }}"
+          echo 'standard_matrix=${{ needs.classify-changes.outputs.integration_standard_matrix }}' >> "$GITHUB_OUTPUT"
+          echo 'heavy_matrix=${{ needs.classify-changes.outputs.integration_heavy_matrix }}' >> "$GITHUB_OUTPUT"
+          echo 'has_standard_tests=${{ needs.classify-changes.outputs.has_integration_standard_tests }}' >> "$GITHUB_OUTPUT"
+          echo 'has_heavy_tests=${{ needs.classify-changes.outputs.has_integration_heavy_tests }}' >> "$GITHUB_OUTPUT"
 
   build-integration-image:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage]
+    needs: [unit-test, lint, coverage, build-wine-proton-runtime]
     permissions:
       contents: read
       packages: write
@@ -228,7 +440,13 @@ jobs:
       - name: Compute image tags from content hash
         id: meta
         run: |
-          hash=$(cat .github/docker/integration-env/Dockerfile scripts/install_proton.sh requirements.txt | sha256sum | cut -c1-12)
+          wine_proton_image='${{ needs.build-wine-proton-runtime.outputs.image }}'
+          hash=$(
+            {
+              printf '%s\n' "$wine_proton_image"
+              cat .github/docker/integration-env/Dockerfile requirements.txt
+            } | sha256sum | cut -c1-12
+          )
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           repo="ghcr.io/${owner}/alphagsm-integration-test"
           echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
@@ -250,36 +468,275 @@ jobs:
           context: .
           file: .github/docker/integration-env/Dockerfile
           push: true
+          build-args: |
+            WINE_PROTON_IMAGE=${{ needs.build-wine-proton-runtime.outputs.image }}
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
+  build-steamcmd-linux-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute steamcmd-linux runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(sha256sum docker/steamcmd-linux/Dockerfile | cut -c1-12)
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-steamcmd-linux-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push steamcmd-linux runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/steamcmd-linux/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
+  build-simple-tcp-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute simple-tcp runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(sha256sum docker/simple-tcp/Dockerfile | cut -c1-12)
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-simple-tcp-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push simple-tcp runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/simple-tcp/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
+  build-quake-linux-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute quake-linux runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(sha256sum docker/quake-linux/Dockerfile | cut -c1-12)
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-quake-linux-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push quake-linux runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/quake-linux/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
+  build-java-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute java runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(
+            sha256sum \
+              docker/java/Dockerfile \
+              docker/java/entrypoint.sh \
+            | sha256sum | cut -c1-12
+          )
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-java-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push java runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/java/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.latest }}
+
+  build-wine-proton-runtime:
+    runs-on: ubuntu-latest
+    needs: [unit-test, lint, coverage]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+
+      - name: Compute wine-proton runtime image tags from content hash
+        id: meta
+        run: |
+          hash=$(
+            sha256sum \
+              docker/wine-proton/Dockerfile \
+              docker/wine-proton/entrypoint.sh \
+              scripts/install_proton.sh \
+              scripts/select_proton_asset.py \
+            | sha256sum | cut -c1-12
+          )
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          repo="ghcr.io/${owner}/alphagsm-wine-proton-runtime"
+          echo "image=${repo}:${hash}" >> "$GITHUB_OUTPUT"
+          echo "latest=${repo}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push wine-proton runtime image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/wine-proton/Dockerfile
+          push: true
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
           secrets: |
             gh_token=${{ secrets.GITHUB_TOKEN }}
 
-  integration-test:
+  integration-test-standard:
     runs-on: ubuntu-latest
-    if: needs.discover-integration-tests.outputs.has_tests == 'true'
-    needs: [discover-integration-tests, build-integration-image]
+    if: needs.discover-integration-tests.outputs.has_standard_tests == 'true'
+    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.discover-integration-tests.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.discover-integration-tests.outputs.standard_matrix) }}
     container:
       image: ${{ needs.build-integration-image.outputs.image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
+      ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PYTHONPATH: .:src
       WINEPREFIX: /opt/wine
     name: integration-test (${{ matrix.label }})
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
+      - name: Free runner disk space for large Docker integration coverage
+        run: |
+          df -h /
+          rm -rf /__t/*
+          docker system prune -af || true
+          df -h /
       - name: AlphaGSM Pytest Integration Tests
+        continue-on-error: true
         env:
           ALPHAGSM_RUN_INTEGRATION: "1"
           ALPHAGSM_RUN_STEAMCMD: "1"
         run: |
+          sock_gid="$(stat -c '%g' /var/run/docker.sock)"
+          if ! getent group "$sock_gid" >/dev/null; then
+            groupadd -g "$sock_gid" dockerhost
+          fi
+          usermod -aG "$sock_gid" gsmuser
           # Game servers that refuse to run as root (Insurgency: Sandstorm,
           # Mordhau, Squad, Palworld, Satisfactory, …) require a non-root uid.
           # Run the full pytest session as gsmuser (uid 1001) so every server
@@ -287,33 +744,156 @@ jobs:
           #
           # uid 1001 matches the GitHub Actions runner user that owns the
           # checked-out workspace, so no chown pass is needed.
-          su - gsmuser -c "
+          set +e
+          su --whitelist-environment=ALPHAGSM_MINECRAFT_RELEASE_ID,ALPHAGSM_MINECRAFT_SERVER_URL - gsmuser -c "
             set -e
             cd '$GITHUB_WORKSPACE'
+            export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
+            export ALPHAGSM_DIAGNOSTIC_IMAGE='${ALPHAGSM_DIAGNOSTIC_IMAGE}'
             export PYTHONPATH=.:src
             export ALPHAGSM_RUN_INTEGRATION=1
             export ALPHAGSM_RUN_STEAMCMD=1
+            export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
+            export ALPHAGSM_GITHUB_TOKEN='${ALPHAGSM_GITHUB_TOKEN}'
+            export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
+            export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP='${ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
             export WINEPREFIX=/opt/wine
             export WINEDEBUG=-all
             export WINEDLLOVERRIDES='winex11.drv='
             export SDL_VIDEODRIVER=offscreen
             export SDL_AUDIODRIVER=dummy
             export DISPLAY=
-            pytest -rs --junit-xml=results.xml ${{ matrix.files }}
+            python3 scripts/run_integration_batch_with_retry.py \
+              --no-retry \
+              --results-file results.xml \
+              ${{ matrix.files }}
           "
+          test_exit=$?
+          printf '%s\n' "$test_exit" > exit-code.txt
+          exit "$test_exit"
       - name: Upload integration test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-test-artifact
         with:
-          name: integration-results-${{ matrix.label }}
-          path: results.xml
+          name: integration-results-standard-${{ matrix.label }}
+          if-no-files-found: error
+          path: |
+            results.xml
+            exit-code.txt
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: integration-diagnostics-integration-test-standard-${{ matrix.label }}
+          path: diagnostics/*.json
+          if-no-files-found: ignore
+
+  integration-test-heavy:
+    runs-on: ${{ fromJson(vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') }}
+    if: needs.discover-integration-tests.outputs.has_heavy_tests == 'true'
+    needs: [discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-integration-tests.outputs.heavy_matrix) }}
+    container:
+      image: ${{ needs.build-integration-image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
+      ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: ${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONPATH: .:src
+      WINEPREFIX: /opt/wine
+    name: integration-test (${{ matrix.label }})
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Free runner disk space for large Docker integration coverage
+        run: |
+          df -h /
+          rm -rf /__t/*
+          docker system prune -af || true
+          df -h /
+      - name: AlphaGSM Pytest Integration Tests
+        continue-on-error: true
+        env:
+          ALPHAGSM_RUN_INTEGRATION: "1"
+          ALPHAGSM_RUN_STEAMCMD: "1"
+        run: |
+          sock_gid="$(stat -c '%g' /var/run/docker.sock)"
+          if ! getent group "$sock_gid" >/dev/null; then
+            groupadd -g "$sock_gid" dockerhost
+          fi
+          usermod -aG "$sock_gid" gsmuser
+          set +e
+          su --whitelist-environment=ALPHAGSM_MINECRAFT_RELEASE_ID,ALPHAGSM_MINECRAFT_SERVER_URL - gsmuser -c "
+            set -e
+            cd '$GITHUB_WORKSPACE'
+            export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
+            export ALPHAGSM_DIAGNOSTIC_IMAGE='${ALPHAGSM_DIAGNOSTIC_IMAGE}'
+            export PYTHONPATH=.:src
+            export ALPHAGSM_RUN_INTEGRATION=1
+            export ALPHAGSM_RUN_STEAMCMD=1
+            export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
+            export ALPHAGSM_GITHUB_TOKEN='${ALPHAGSM_GITHUB_TOKEN}'
+            export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend || 'auto' }}'
+            export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP='${ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
+            export ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP='${ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP}'
+            export WINEPREFIX=/opt/wine
+            export WINEDEBUG=-all
+            export WINEDLLOVERRIDES='winex11.drv='
+            export SDL_VIDEODRIVER=offscreen
+            export SDL_AUDIODRIVER=dummy
+            export DISPLAY=
+            python3 scripts/run_integration_batch_with_retry.py \
+              --no-retry \
+              --results-file results.xml \
+              ${{ matrix.files }}
+          "
+          test_exit=$?
+          printf '%s\n' "$test_exit" > exit-code.txt
+          exit "$test_exit"
+      - name: Upload integration test results
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: integration-results-heavy-${{ matrix.label }}
+          if-no-files-found: error
+          path: |
+            results.xml
+            exit-code.txt
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: integration-diagnostics-integration-test-heavy-${{ matrix.label }}
+          path: diagnostics/*.json
+          if-no-files-found: ignore
 
   backend-smoke-test:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage, build-integration-image]
+    needs: [unit-test, lint, coverage, build-java-runtime]
     env:
       PYTHONPATH: .:src
-      ALPHAGSM_BACKEND_DOCKER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE: ${{ needs.build-java-runtime.outputs.image }}
     name: backend-smoke-test
     steps:
       - name: Checkout AlphaGSM code
@@ -329,7 +909,7 @@ jobs:
       - name: Install tmux
         run: |
           for apt_source in /etc/apt/sources.list.d/*; do
-            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod' "$apt_source"; then
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
               sudo rm -f "$apt_source"
             fi
           done
@@ -366,8 +946,14 @@ jobs:
 
   backend-integration-test:
     runs-on: ubuntu-latest
-    needs: [unit-test, lint, coverage, build-integration-image]
+    needs: [unit-test, lint, coverage, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
     env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
       PYTHONPATH: .:src
     name: backend-integration-test
     steps:
@@ -384,7 +970,7 @@ jobs:
       - name: Install tmux
         run: |
           for apt_source in /etc/apt/sources.list.d/*; do
-            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod' "$apt_source"; then
+            if sudo test -f "$apt_source" && sudo grep -qE 'packages\.microsoft\.com|azure-cli|microsoft-prod|dl\.google\.com|google-chrome' "$apt_source"; then
               sudo rm -f "$apt_source"
             fi
           done
@@ -414,19 +1000,22 @@ jobs:
             --junit-xml=backend-process-results.xml \
             -v
       - name: Backend Docker Integration Tests (active matrix cases)
-        if: always()
+        if: ${{ always() && !cancelled() }}
         env:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
-          ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-integration-image.outputs.image }}
-          ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
+          ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
+          ALPHAGSM_MANAGER_SERVER_IMAGE: ${{ needs.build-java-runtime.outputs.image }}
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="ghcr.io/${owner}/alphagsm-java-runtime:latest"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="ghcr.io/${owner}/alphagsm-quake-linux-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_JAVA="${{ needs.build-java-runtime.outputs.image }}"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_QUAKE_LINUX="${{ needs.build-quake-linux-runtime.outputs.image }}"
           export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SERVICE_CONSOLE="ghcr.io/${owner}/alphagsm-service-console-runtime:latest"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="ghcr.io/${owner}/alphagsm-simple-tcp-runtime:latest"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX="ghcr.io/${owner}/alphagsm-steamcmd-linux-runtime:latest"
-          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_WINE_PROTON="ghcr.io/${owner}/alphagsm-wine-proton-runtime:latest"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_SIMPLE_TCP="${{ needs.build-simple-tcp-runtime.outputs.image }}"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_STEAMCMD_LINUX="${{ needs.build-steamcmd-linux-runtime.outputs.image }}"
+          export ALPHAGSM_WRAPPER_DOCKER_IMAGE_WINE_PROTON="${{ needs.build-wine-proton-runtime.outputs.image }}"
           pytest \
             tests/backend_integration_tests/test_backend_docker.py \
             tests/backend_integration_tests/test_backend_docker_manager.py \
@@ -435,12 +1024,19 @@ jobs:
             -v
       - name: Upload backend integration test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-test-artifact
         with:
           name: backend-integration-results-linux
           path: |
             backend-process-results.xml
             backend-docker-results.xml
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: integration-diagnostics-backend
+          path: diagnostics/*.json
+          if-no-files-found: ignore
 
   windows-minecraft-integration:
     runs-on: windows-latest
@@ -494,136 +1090,130 @@ jobs:
           ALPHAGSM_RUN_BACKEND_INTEGRATION: "1"
         run: pytest tests/backend_integration_tests/test_minecraft_macos.py -v
 
+  collect-integration-rechecks:
+    runs-on: ubuntu-latest
+    needs: [classify-changes, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-integration-test]
+    if: ${{ !cancelled() }}
+    outputs:
+      matrix: ${{ steps.collect.outputs.matrix }}
+      has_rechecks: ${{ steps.collect.outputs.has_rechecks }}
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Download integration test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "integration-results-*"
+          path: artifacts
+          merge-multiple: false
+      - name: Collect failed integration cases
+        id: collect
+        env:
+          CI_ROUTING_JSON: ${{ toJson(needs.classify-changes.outputs) }}
+        run: python3 scripts/collect_integration_rechecks.py artifacts --github-output "$GITHUB_OUTPUT"
+
+  integration-flake-recheck:
+    runs-on: ${{ fromJson(matrix.runner_class == 'heavy' && (vars.ALPHAGSM_HEAVY_RUNNER_LABELS_JSON || '["ubuntu-latest"]') || '["ubuntu-latest"]') }}
+    needs: [collect-integration-rechecks, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime]
+    if: ${{ !cancelled() && needs.collect-integration-rechecks.outputs.has_rechecks == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.collect-integration-rechecks.outputs.matrix) }}
+    container:
+      image: ${{ needs.build-integration-image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      ALPHAGSM_DIAGNOSTICS_DIR: ${{ github.workspace }}/diagnostics
+      ALPHAGSM_DIAGNOSTIC_IMAGE: ${{ needs.build-integration-image.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA: ${{ needs.build-java-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX: ${{ needs.build-quake-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP: ${{ needs.build-simple-tcp-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX: ${{ needs.build-steamcmd-linux-runtime.outputs.image }}
+      ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON: ${{ needs.build-wine-proton-runtime.outputs.image }}
+      ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP: ${{ vars.ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP }}
+      ALPHAGSM_RECHECK_NODEID: ${{ matrix.nodeid }}
+      ALPHAGSM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONPATH: .:src
+      WINEPREFIX: /opt/wine
+    name: "integration-recheck (${{ matrix.runtime_backend }}: ${{ matrix.nodeid }})"
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Free runner disk space for isolated integration recheck
+        run: |
+          df -h /
+          rm -rf /__t/*
+          docker system prune -af || true
+          df -h /
+      - name: Recheck failed integration case on a fresh runner
+        env:
+          ALPHAGSM_RUN_INTEGRATION: "1"
+          ALPHAGSM_RUN_STEAMCMD: "1"
+        run: |
+          sock_gid="$(stat -c '%g' /var/run/docker.sock)"
+          if ! getent group "$sock_gid" >/dev/null; then
+            groupadd -g "$sock_gid" dockerhost
+          fi
+          usermod -aG "$sock_gid" gsmuser
+          su --whitelist-environment=ALPHAGSM_RECHECK_NODEID,ALPHAGSM_MINECRAFT_RELEASE_ID,ALPHAGSM_MINECRAFT_SERVER_URL - gsmuser -c "
+            set -e
+            cd '$GITHUB_WORKSPACE'
+            export ALPHAGSM_DIAGNOSTICS_DIR='${ALPHAGSM_DIAGNOSTICS_DIR}'
+            export ALPHAGSM_DIAGNOSTIC_IMAGE='${ALPHAGSM_DIAGNOSTIC_IMAGE}'
+            export PYTHONPATH=.:src
+            export ALPHAGSM_RUN_INTEGRATION=1
+            export ALPHAGSM_RUN_STEAMCMD=1
+            export GITHUB_ACTIONS='${GITHUB_ACTIONS}'
+            export ALPHAGSM_GITHUB_TOKEN='${ALPHAGSM_GITHUB_TOKEN}'
+            export ALPHAGSM_TEST_RUNTIME_BACKEND='${{ matrix.runtime_backend }}'
+            export ALPHAGSM_WORK_DIR='${RUNNER_TEMP}/alphagsm-work'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA='${ALPHAGSM_BACKEND_DOCKER_IMAGE_JAVA}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_QUAKE_LINUX}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP='${ALPHAGSM_BACKEND_DOCKER_IMAGE_SIMPLE_TCP}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX='${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX}'
+            export ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON}'
+            export ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP='${ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP}'
+            export WINEPREFIX=/opt/wine
+            export WINEDEBUG=-all
+            export WINEDLLOVERRIDES='winex11.drv='
+            export SDL_VIDEODRIVER=offscreen
+            export SDL_AUDIODRIVER=dummy
+            export DISPLAY=
+            python3 -m pytest -rs -o junit_logging=all \
+              --junit-xml=recheck-results.xml \
+              \"\$ALPHAGSM_RECHECK_NODEID\"
+          "
+      - name: Upload isolated recheck result
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: integration-recheck-results-${{ matrix.source_artifact }}-${{ strategy.job-index }}
+          if-no-files-found: error
+          path: recheck-results.xml
+      - name: Upload structured failure diagnostics
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: integration-diagnostics-recheck-${{ strategy.job-index }}
+          path: diagnostics/*.json
+          if-no-files-found: ignore
+
   summarize-tests:
     runs-on: ubuntu-latest
-    needs: [smoke-test, integration-test, backend-integration-test]
+    needs: [build, lint, unit-test, coverage, binary-build-smoke, classify-changes, discover-smoke-tests, discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-smoke-test, backend-integration-test, windows-minecraft-integration, macos-minecraft-integration, collect-integration-rechecks, integration-flake-recheck]
     if: always()
     steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
       - name: Download all test results
         uses: actions/download-artifact@v4
         with:
           pattern: "*-results-*"
           path: artifacts
           merge-multiple: false
-      - name: Summarize test results
-        run: |
-          python3 - <<'PYEOF'
-          import glob, sys, xml.etree.ElementTree as ET
-
-          smoke_passed, smoke_failed = [], []
-          int_passed, int_skipped, int_failed = [], [], []
-          backend_passed, backend_skipped, backend_failed = [], [], []
-
-          for txt in sorted(glob.glob("artifacts/smoke-results-*/*.txt")):
-              for line in open(txt):
-                  line = line.strip()
-                  if line.startswith("PASSED: "):
-                      smoke_passed.append(line[8:])
-                  elif line.startswith("FAILED: "):
-                      smoke_failed.append(line[8:])
-
-          for xml_file in sorted(glob.glob("artifacts/integration-results-*/*.xml")):
-              try:
-                  root = ET.parse(xml_file).getroot()
-              except ET.ParseError:
-                  continue
-              for tc in root.iter("testcase"):
-                  name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
-                  skip = tc.find("skipped")
-                  fail = tc.find("failure")
-                  err = tc.find("error")
-                  if skip is not None:
-                      int_skipped.append((name, skip.attrib.get("message", "").split("\n")[0]))
-                  elif fail is not None or err is not None:
-                      node = fail if fail is not None else err
-                      int_failed.append((name, node.attrib.get("message", "").split("\n")[0]))
-                  else:
-                      int_passed.append(name)
-
-          for xml_file in sorted(glob.glob("artifacts/backend-integration-results-*/*.xml")):
-              try:
-                  root = ET.parse(xml_file).getroot()
-              except ET.ParseError:
-                  continue
-              for tc in root.iter("testcase"):
-                  name = tc.attrib.get("classname", "") + "::" + tc.attrib.get("name", "")
-                  skip = tc.find("skipped")
-                  fail = tc.find("failure")
-                  err = tc.find("error")
-                  if skip is not None:
-                      backend_skipped.append((name, skip.attrib.get("message", "").split("\n")[0]))
-                  elif fail is not None or err is not None:
-                      node = fail if fail is not None else err
-                      backend_failed.append((name, node.attrib.get("message", "").split("\n")[0]))
-                  else:
-                      backend_passed.append(name)
-
-          SEP = "=" * 64
-          print(SEP)
-          print("AlphaGSM Test Summary")
-          print(SEP)
-
-          print("\nSMOKE TESTS")
-          print(f"  Passed : {len(smoke_passed)}")
-          print(f"  Failed : {len(smoke_failed)}")
-          if smoke_passed:
-              print("\n  Passed:")
-              for t in smoke_passed:
-                  print(f"    PASS  {t}")
-          if smoke_failed:
-              print("\n  Failed:")
-              for t in smoke_failed:
-                  print(f"    FAIL  {t}")
-
-          print("\nINTEGRATION TESTS")
-          print(f"  Passed  : {len(int_passed)}")
-          print(f"  Skipped : {len(int_skipped)}")
-          print(f"  Failed  : {len(int_failed)}")
-          if int_passed:
-              print("\n  Passed (server launched successfully):")
-              for t in int_passed:
-                  print(f"    PASS  {t}")
-          if int_skipped:
-              print("\n  Skipped:")
-              for t, r in int_skipped:
-                  print(f"    SKIP  {t}")
-                  if r:
-                      print(f"          Reason: {r}")
-          if int_failed:
-              print("\n  Failed:")
-              for t, r in int_failed:
-                  print(f"    FAIL  {t}")
-                  if r:
-                      print(f"          Reason: {r}")
-
-          print("\nBACKEND INTEGRATION TESTS")
-          print(f"  Passed  : {len(backend_passed)}")
-          print(f"  Skipped : {len(backend_skipped)}")
-          print(f"  Failed  : {len(backend_failed)}")
-          if backend_passed:
-              print("\n  Passed:")
-              for t in backend_passed:
-                  print(f"    PASS  {t}")
-          if backend_skipped:
-              print("\n  Skipped:")
-              for t, r in backend_skipped:
-                  print(f"    SKIP  {t}")
-                  if r:
-                      print(f"          Reason: {r}")
-          if backend_failed:
-              print("\n  Failed:")
-              for t, r in backend_failed:
-                  print(f"    FAIL  {t}")
-                  if r:
-                      print(f"          Reason: {r}")
-
-          total_p = len(smoke_passed) + len(int_passed) + len(backend_passed)
-          total_s = len(int_skipped) + len(backend_skipped)
-          total_f = len(smoke_failed) + len(int_failed) + len(backend_failed)
-          print("\n" + SEP)
-          print(f"OVERALL  passed={total_p}  skipped={total_s}  failed={total_f}")
-          print(SEP)
-
-          if total_f > 0:
-              sys.exit(1)
-          PYEOF
+      - name: Validate required jobs and summarize test results
+        env:
+          CI_NEEDS_JSON: ${{ toJson(needs) }}
+        run: python3 scripts/summarize_tests.py artifacts

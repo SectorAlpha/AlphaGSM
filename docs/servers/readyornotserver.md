@@ -2,9 +2,13 @@
 
 This guide covers the `readyornotserver` module in AlphaGSM.
 
+`readyornotserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The supported GitHub path is one Docker-default `wine-proton`
+lifecycle.
+
 ## Requirements
 
-- `screen`
+- Docker
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +48,9 @@ alphagsm myreadyorn stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port written to `ReadyOrNot/Config/ServerConfig.ini` (default `port + 1`)
+- the max player count written to `ReadyOrNot/Config/ServerConfig.ini` (default `16`)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +64,30 @@ alphagsm myreadyorn backup
 ## Notes
 
 - Module name: `readyornotserver`
-- Default port: 27015
+- Default game port: 7777
+- Default query port: `port + 1`
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create readyornotserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -66,14 +95,21 @@ alphagsm myreadyorn backup
 
 - **Executable**: `ReadyOrNotServer.exe`
 - **Location**: `<install_dir>/ReadyOrNotServer.exe`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: UE4 Windows dedicated server via Wine/Proton
 - **SteamCMD App ID**: `950290`
+
+AlphaGSM launches the server with `-log -unattended`, waits for
+`ReadyOrNot/Saved/Logs/ReadyOrNot.log`, and then validates generic UDP
+`query`, `info`, and `info --json` on the managed game port. The current
+EOS-backed tool remained supervised in the 2026-07-16 Docker run but did not
+answer the older A2S query-port contract.
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<install_dir>/ReadyOrNot/Config/ServerConfig.ini`
 - **Max players**: `16`
-- **Template**: See [server-templates/readyornotserver/](../server-templates/readyornotserver/) if available
+- **Managed keys**: `queryport`, `maxplayers`
+- **Template**: See [server-templates/readyornotserver/](../server-templates/readyornotserver/)
 
 ### Maps and Mods
 

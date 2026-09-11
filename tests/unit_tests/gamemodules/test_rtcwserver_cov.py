@@ -5,32 +5,12 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.rtcwserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.github_releases': MagicMock()}):
     import gamemodules.rtcwserver as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -72,12 +52,65 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "iowolfded.x86_64"
     (tmp_path / "iowolfded.x86_64").write_text("")
+    main_dir = tmp_path / "main"
+    main_dir.mkdir()
+    for filename in mod.RTCW_REQUIRED_MULTIPLAYER_ASSETS:
+        (main_dir / filename).write_text("")
     server.data["fs_game"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./iowolfded.x86_64",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_rtcw_launch_tokens():
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["startmap"].aliases == ("map",)
+
+
+def test_sync_server_config_updates_rtcw_server_cfg(tmp_path):
+    server = DummyServer("rtcw")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "fs_game": "main",
+            "hostname": "AlphaGSM rtcw",
+            "startmap": "mp_sub",
+        }
+    )
+    cfg_dir = tmp_path / "main"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nfs_game=osp\nstartmap=mp_beach\nset g_altStopwatchMode 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM rtcw"\n'
+        'fs_game=main\n'
+        'startmap=mp_sub\n'
+        'set g_altStopwatchMode 0\n'
+    )
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -88,6 +121,19 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_requires_original_rtcw_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "iowolfded.x86_64"
+    (tmp_path / "iowolfded.x86_64").write_text("")
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["startmap"] = "test"
+    with pytest.raises(ServerError, match="main/mp_bin.pk3"):
         mod.get_start_command(server)
 
 def test_do_stop():

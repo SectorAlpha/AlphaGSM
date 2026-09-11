@@ -2,7 +2,11 @@
 
 This guide covers the `squad44server` module in AlphaGSM.
 
+`squad44server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The GitHub integration lane exercises process and Docker runtimes. Validation of the Docker host-user change is pending CI; local runs use the process runtime unless you select Docker.
+
 ## Requirements
+
+For Docker, run AlphaGSM as a normal user with Docker access. The server rejects root; its container uses your user and group IDs and a private writable home directory.
 
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
@@ -59,6 +63,23 @@ alphagsm mysquad44s backup
 
 - Module name: `squad44server`
 - Default port: 27165
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create squad44server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

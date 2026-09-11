@@ -1,36 +1,17 @@
 """Full coverage tests for redmserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.redmserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.redmserver as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -81,14 +62,43 @@ def test_install_resolves_download(tmp_path):
     assert server.data['url'] == 'https://example.com/redm.tar.xz'
     assert server.data['version'] == '7777'
 
+def test_get_provider_requirements_declares_cfx_provisioning():
+    server = DummyServer()
+    requirements = mod.get_provider_requirements(server)
+    assert requirements == [
+        {
+            "provider": "cfx",
+            "kind": "provisioning",
+            "keys": (),
+            "required_for": ("start",),
+            "support_category": "provider-provisioning",
+            "summary": "txAdmin/server-data provisioning with server.cfg and a Cfx license key",
+            "actions": (
+                "Complete txAdmin first-run provisioning against the downloaded artifact, or stage a vanilla server-data tree with server.cfg and sv_licenseKey before starting",
+            ),
+            "docs_slug": "redmserver",
+        }
+    ]
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "run.sh"
     (tmp_path / "run.sh").write_text("")
     server.data["port"] = 27015
+    (tmp_path / "server-data").mkdir()
+    (tmp_path / "server-data" / "server.cfg").write_text("sv_licenseKey test\n")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+def test_get_start_command_missing_cfx_provisioning_raises_auth(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "run.sh"
+    (tmp_path / "run.sh").write_text("")
+    server.data["port"] = 27015
+    with pytest.raises(ServerError, match="ENABLED \\(AUTH\\)"):
+        mod.get_start_command(server)
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -101,7 +111,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()
@@ -166,4 +176,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

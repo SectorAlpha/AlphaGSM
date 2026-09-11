@@ -1,82 +1,94 @@
-# Just Cause 2
+# Just Cause 2 Multiplayer
 
 This guide covers the `jc2server` module in AlphaGSM.
 
-## Requirements
-
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+Status: supported on Linux. The validated branch path uses AlphaGSM's shared
+`steamcmd-linux` Docker runtime with the native Linux dedicated server from
+Steam app `261140`. GitHub keeps one Docker-default lifecycle because the
+forced process lane did not expose the managed TCP health surface.
 
 ## Quick Start
 
 Create the server:
 
 ```bash
-alphagsm myjc2serve create jc2server
+alphagsm myjc2server create jc2server
 ```
 
 Run setup:
 
 ```bash
-alphagsm myjc2serve setup
+alphagsm myjc2server setup
 ```
 
 Start it:
 
 ```bash
-alphagsm myjc2serve start
+alphagsm myjc2server start
 ```
 
 Check it:
 
 ```bash
-alphagsm myjc2serve status
+alphagsm myjc2server status
+alphagsm myjc2server query
+alphagsm myjc2server info --json
 ```
 
 Stop it:
 
 ```bash
-alphagsm myjc2serve stop
+alphagsm myjc2server stop
 ```
 
 ## Setup Details
 
 Setup configures:
 
-- the game port (default 7777)
+- the main game port, default `7777`
 - the install directory
-- SteamCMD downloads the server files
+- anonymous SteamCMD download of the dedicated server files
+
+AlphaGSM also keeps the native `config.lua` in sync before `start`, copying
+the shipped `default_config.lua` when the install is first staged.
+
+## Runtime Notes
+
+- Module name: `jc2server`
+- Default executable: `Jcmp-Server`
+- Config file: `<install_dir>/config.lua`
+- SteamCMD App ID: `261140`
+- Default runtime family: `steamcmd-linux`
+
+AlphaGSM also stages the shipped `default_scripts/` tree into `scripts/`
+without overwriting user-provided scripts, so a fresh install has the stock
+server logic available immediately.
+
+## Health Contract
+
+The validated AlphaGSM health surface is generic `tcp` on the managed main
+game port.
 
 ## Useful Commands
 
 ```bash
-alphagsm myjc2serve update
-alphagsm myjc2serve backup
+alphagsm myjc2server update
+alphagsm myjc2server backup
 ```
 
-## Notes
+<!-- alphagsm-server-variables:start -->
 
-- Module name: `jc2server`
-- Default port: 7777
+## Server variables
 
-## Developer Notes
+After `create jc2server`, inspect or change these with `set`:
 
-### Run File
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
 
-- **Executable**: `openjc2-server`
-- **Location**: `<install_dir>/openjc2-server`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `261140`
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
 
-### Server Configuration
-
-- **Config file**: See game module source
-- **Max players**: `64`
-- **Template**: See [server-templates/jc2server/](../server-templates/jc2server/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+<!-- alphagsm-server-variables:end -->

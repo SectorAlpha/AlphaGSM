@@ -13,6 +13,8 @@
 set -euo pipefail
 
 MODE="${1:-full}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROTON_ASSET_SELECTOR="${SCRIPT_DIR}/select_proton_asset.py"
 
 # ---------------------------------------------------------------------------
 # Wine prefix setup — installs required Windows runtimes via winetricks
@@ -110,6 +112,23 @@ install_proton_ge() {
 
     ASSET_URL=""
     RELEASE_API="https://api.github.com/repos/GloriousEggroll/proton-ge-custom/releases/latest"
+    case "$(uname -m)" in
+        x86_64|amd64)
+            PROTON_ARCH="x86_64"
+            ;;
+        aarch64|arm64)
+            PROTON_ARCH="aarch64"
+            ;;
+        *)
+            echo "ERROR: Proton-GE is not supported on host architecture $(uname -m)" >&2
+            return 1
+            ;;
+    esac
+
+    if [ ! -f "$PROTON_ASSET_SELECTOR" ]; then
+        echo "ERROR: Proton-GE asset selector not found: $PROTON_ASSET_SELECTOR" >&2
+        return 1
+    fi
 
     # --- Try gh CLI with retry (pre-installed + pre-authenticated on GitHub Actions).
     # gh avoids the 60 req/h unauthenticated rate limit; retries handle transient
@@ -119,12 +138,10 @@ install_proton_ge() {
         for attempt in 1 2 3; do
             ASSET_URL=$(
                 gh release view --repo GloriousEggroll/proton-ge-custom \
-                    --json assets \
-                    --jq '[.assets[] | select(.name | endswith(".tar.gz")) | .browserDownloadUrl] | first' \
-                    2>&1 || true
+                    --json assets 2>/dev/null |
+                python3 "$PROTON_ASSET_SELECTOR" "$PROTON_ARCH" || true
             )
-            # Strip any error lines gh may have printed to stdout on failure.
-            ASSET_URL=$(echo "${ASSET_URL:-}" | grep '^https://' | head -1 || true)
+            ASSET_URL=$(printf '%s\n' "${ASSET_URL:-}" | grep '^https://' | head -1 || true)
             [ -n "${ASSET_URL:-}" ] && break
             if [ "$attempt" -lt 3 ]; then
                 echo "    Attempt $attempt/3 failed; waiting 15s before retry..." >&2
@@ -145,26 +162,9 @@ install_proton_ge() {
         for attempt in 1 2 3; do
             ASSET_URL=$(
                 curl -s "${AUTH_ARGS[@]}" "$RELEASE_API" |
-                python3 -c "
-import json, sys
-body = sys.stdin.read()
-if not body.strip():
-    print('    Empty response (possibly rate-limited)', file=sys.stderr)
-    sys.exit(1)
-try:
-    data = json.loads(body)
-except json.JSONDecodeError:
-    print(f'    Non-JSON response: {body[:120]!r}', file=sys.stderr)
-    sys.exit(1)
-if 'message' in data:
-    print(f'    API error: {data[\"message\"]}', file=sys.stderr)
-    sys.exit(1)
-for a in data.get('assets', []):
-    if a['name'].endswith('.tar.gz'):
-        print(a['browser_download_url'])
-        break
-" || true
+                python3 "$PROTON_ASSET_SELECTOR" "$PROTON_ARCH" || true
             )
+            ASSET_URL=$(printf '%s\n' "${ASSET_URL:-}" | grep '^https://' | head -1 || true)
             [ -n "${ASSET_URL:-}" ] && break
             if [ "$attempt" -lt 3 ]; then
                 local wait_s=$(( attempt * 30 ))

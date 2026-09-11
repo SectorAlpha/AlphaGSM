@@ -5,32 +5,12 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.etlegacyserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.etlegacyserver as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -60,7 +40,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 
 def test_configure_resolves_download(tmp_path):
     server = DummyServer()
-    with patch.object(mod, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
+    with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
         mod.configure(server, ask=False, port=27960, dir=str(tmp_path))
     assert server.data['url'] == 'https://example.com/etl.tar.gz'
     assert server.data['version'] == '2.83'
@@ -68,32 +48,84 @@ def test_configure_resolves_download(tmp_path):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "etl.x86_64"
+    server.data["exe_name"] = "etlded.x86_64"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
+    server.data["configfile"] = "etl_server.cfg"
+    (tmp_path / "etl_server.cfg").write_text('set sv_hostname "Old Name"\n', encoding="utf-8")
     mod.install(server)
 
 def test_install_resolves_download(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "etl.x86_64"
+    server.data["exe_name"] = "etlded.x86_64"
     server.data["download_name"] = "test.tar.gz"
-    with patch.object(mod, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
+    with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/etl.tar.gz'
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "etl.x86_64"
-    (tmp_path / "etl.x86_64").write_text("")
+    server.data["exe_name"] = "etlded.x86_64"
+    (tmp_path / "etlded.x86_64").write_text("")
+    etmain_dir = tmp_path / "etmain"
+    etmain_dir.mkdir()
+    (etmain_dir / "pak0.pk3").write_text("")
     server.data["configfile"] = "test"
     server.data["fs_game"] = "test"
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./etlded.x86_64",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+set",
+        "dedicated",
+        "2",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_sync_server_config_updates_etlegacy_cfg_values(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "etl_server.cfg"
+    server.data["hostname"] = "AlphaGSM ET Test"
+    server.data["port"] = 27961
+    config_path = tmp_path / "etl_server.cfg"
+    config_path.write_text(
+        'set sv_hostname "Old Name"\n'
+        'set net_port 27960\n'
+        'set sv_maxclients 16\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'set sv_hostname "AlphaGSM ET Test"',
+        'set net_port 27961',
+        'set sv_maxclients 16',
+    ]
+
+
+def test_setting_schema_exposes_etlegacy_launch_tokens():
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["configfile"].launch_arg_tokens == ("+exec",)
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -104,6 +136,19 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_requires_original_et_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "etlded.x86_64"
+    (tmp_path / "etlded.x86_64").write_text("")
+    server.data["configfile"] = "test"
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    with pytest.raises(ServerError, match="etmain/pak0.pk3"):
         mod.get_start_command(server)
 
 def test_do_stop():

@@ -1,40 +1,20 @@
 """Full coverage tests for terratechworldsserver."""
 
-import os
+import json
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
 sys.modules.pop('gamemodules.terratechworldsserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.terratechworldsserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -66,7 +46,13 @@ def test_install(tmp_path):
     server.data["exe_name"] = "TT2Server.exe"
     server.data["Steam_AppID"] = 2533070
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 28015
+    (tmp_path / "dedicated_server_config.json").write_text(
+        json.dumps({"Port": 7777, "SlotCount": 6}),
+        encoding="utf-8",
+    )
     mod.install(server)
+    assert json.loads((tmp_path / "dedicated_server_config.json").read_text(encoding="utf-8"))["Port"] == 28015
 
 
 def test_update_with_restart(tmp_path):
@@ -115,6 +101,105 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_get_start_command_on_linux_uses_shipping_binary(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod, "_wrap_linux_command", lambda cmd, wineprefix=None: list(cmd))
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "TT2Server.exe"
+    shipping_exe = tmp_path / "TT2" / "Binaries" / "Win64" / "TT2Server-Win64-Shipping.exe"
+    shipping_exe.parent.mkdir(parents=True)
+    shipping_exe.write_text("")
+    (tmp_path / "TT2Server.exe").write_text("")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["TT2/Binaries/Win64/TT2Server-Win64-Shipping.exe", "-log"]
+    assert cwd == server.data["dir"]
+
+
+def test_get_query_and_info_address_use_udp_on_game_port():
+    server = DummyServer()
+    server.data["port"] = 17777
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 17777, "udp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 17777, "udp")
+
+
+def test_sync_server_config_updates_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 31337
+    config_path = tmp_path / "dedicated_server_config.json"
+    config_path.write_text(
+        json.dumps({"Port": 7777, "SlotCount": 6}),
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    updated = json.loads(config_path.read_text(encoding="utf-8"))
+    assert updated["Port"] == 31337
+    assert updated["SlotCount"] == 6
+
+
+def test_sync_server_config_missing_file_noops(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 31337
+
+    mod.sync_server_config(server)
+
+
+def test_wrap_linux_command_uses_wine_style_wrapper_software_gl_and_xvfb(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/xvfb-run" if name == "xvfb-run" else None)
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: [
+            "env",
+            "-u", "TMPDIR",
+            "-u", "TMP",
+            "-u", "TEMP",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *cmd,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: (
+            [
+                cmd[0],
+                *cmd[1:7],
+                *(f"{key}={value}" for key, value in env.items()),
+                *cmd[7:],
+            ]
+            if cmd and cmd[0] == "env"
+            else ["env", *(f"{key}={value}" for key, value in env.items()), *cmd]
+        ),
+    )
+
+    wrapped = mod._wrap_linux_command(["TT2Server.exe", "-log"])
+
+    assert wrapped == [
+        "xvfb-run",
+        "-a",
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "wine",
+        "TT2Server.exe",
+        "-log",
+    ]
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -126,7 +211,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -186,4 +271,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

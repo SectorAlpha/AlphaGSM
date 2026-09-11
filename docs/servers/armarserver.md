@@ -2,6 +2,8 @@
 
 This guide covers the `armarserver` module in AlphaGSM.
 
+`armarserver` is currently listed as `PASSED` in the checked-in support tracker on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection around this SteamCMD-backed lifecycle, but the checked-in integration test still carries an upstream install skip note and should be revalidated before treating that tracker row as freshly proven.
+
 ## Requirements
 
 - `screen`
@@ -48,6 +50,18 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+## Structured Settings
+
+AlphaGSM exposes the JSON-backed settings through `set`:
+
+```bash
+alphagsm myarmarser set map "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
+alphagsm myarmarser set adminpassword "super-secret"
+alphagsm myarmarser set bindaddress 0.0.0.0
+```
+
+The `map` setting writes the `scenarioid` field in `configs/server.json`.
+
 ## Useful Commands
 
 ```bash
@@ -59,6 +73,29 @@ alphagsm myarmarser backup
 
 - Module name: `armarserver`
 - Default port: 2001
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create armarserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Password used for administrative access. Stored as a secret. |
+| `bindaddress` | — | string | IP address the server binds its A2S listener to. Example: `0.0.0.0`. |
+| `map` | scenario, scenarioid, gamemap, startmap, level, worldname | string | The selected scenario file used by the server. Example: `{ECC61978EDCC2B5A}Missions/23_Campaign.conf`. |
+| `maxplayers` | users | integer | Maximum number of players allowed on the server. Example: `8`. |
+| `port` | gameport | integer | The primary game port. Example: `2001`. |
+| `queryport` | — | integer | The A2S query port. Example: `2002`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

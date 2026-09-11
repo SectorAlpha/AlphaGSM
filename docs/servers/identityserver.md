@@ -2,9 +2,16 @@
 
 This guide covers the `identityserver` module in AlphaGSM.
 
+`identityserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around that archive-or-staged-tree
+prerequisite, while local runs remain process-backed by default unless you opt
+into the Docker backend.
+
 ## Requirements
 
 - `screen`
+- either a direct Identity server archive URL or a pre-staged Identity server tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +27,13 @@ Run setup:
 ```bash
 alphagsm myidentity setup
 ```
+
+`identityserver` is supported in `ENABLED (BYO)` mode. Before `setup` or
+`start`, either:
+
+- set `url` to a direct Identity server archive, or
+- stage `IdentityServer.x86_64` and the rest of the Identity server files
+  inside your chosen `<install_dir>/`
 
 Start it:
 
@@ -45,19 +59,55 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the server archive when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm myidentity create identityserver
+alphagsm myidentity set url https://example.invalid/identity-server.zip
+alphagsm myidentity setup -n 7777 /path/to/identityserver
+alphagsm myidentity start
+```
+
+Or, if you already have the server files:
+
+```bash
+alphagsm myidentity create identityserver
+alphagsm myidentity setup -n 7777 /path/to/identityserver
+# copy IdentityServer.x86_64 and the rest of the server tree into /path/to/identityserver/
+alphagsm myidentity start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm myidentity update
 alphagsm myidentity backup
+alphagsm myidentity set url https://example.invalid/identity-server.zip
 ```
 
 ## Notes
 
 - Module name: `identityserver`
 - Default port: 7777
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create identityserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

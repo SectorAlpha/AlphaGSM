@@ -2,6 +2,12 @@
 
 This guide covers the `ahlserver` module in AlphaGSM.
 
+`ahlserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection around that owned-mod-content prerequisite, while
+local runs remain process-backed by default unless you opt into the Docker
+backend.
+
 ## Requirements
 
 - `screen`
@@ -21,6 +27,12 @@ Run setup:
 ```bash
 alphagsm myahlserve setup
 ```
+
+`ahlserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide the Action
+Half-Life mod payload. Before `start`, copy a complete owned Action Half-Life
+content tree into `<install_dir>/action/` so
+`<install_dir>/action/maps/ahl_hydro.bsp` exists.
 
 Start it:
 
@@ -50,6 +62,15 @@ Setup configures:
 - SteamCMD downloads the server files
 - default configuration and backup settings
 
+Suggested flow:
+
+```bash
+alphagsm myahlserve create ahlserver
+alphagsm myahlserve setup -n 27015 /path/to/ahlserver
+# copy the full Action Half-Life mod tree into /path/to/ahlserver/action/
+alphagsm myahlserve start
+```
+
 ## Useful Commands
 
 ```bash
@@ -61,6 +82,29 @@ alphagsm myahlserve backup
 
 - Module name: `ahlserver`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ahlserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `ahl_hydro`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `16`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM Action Half-Life`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

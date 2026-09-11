@@ -1,38 +1,18 @@
 """Full coverage tests for vrserver."""
 
-import os
+import json
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.vrserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.vrserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -62,7 +42,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "VRisingServer"
+    server.data["exe_name"] = "VRisingServer.exe"
     server.data["Steam_AppID"] = 1829350
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -107,12 +87,88 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "VRisingServer"
-    (tmp_path / "VRisingServer").write_text("")
+    server.data["exe_name"] = "VRisingServer.exe"
+    (tmp_path / "VRisingServer.exe").write_text("")
     server.data["port"] = 27015
-    server.data["queryport"] = 27015
-    cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    server.data["queryport"] = 27016
+    with patch.object(
+        mod.proton,
+        "wrap_command",
+        side_effect=lambda command, **_kwargs: command,
+    ):
+        cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "VRisingServer.exe",
+        "-persistentDataPath",
+        str(tmp_path / "save-data"),
+        "-serverPort",
+        "27015",
+        "-queryPort",
+        "27016",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_relative_save_path_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "VRisingServer.exe"
+    server.data["runtime"] = "docker"
+    (tmp_path / "VRisingServer.exe").write_text("")
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+    with patch.object(
+        mod.proton,
+        "wrap_command",
+        side_effect=lambda command, **_kwargs: command,
+    ):
+        cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "VRisingServer.exe",
+        "-persistentDataPath",
+        "./save-data",
+        "-serverPort",
+        "27015",
+        "-queryPort",
+        "27016",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_sync_server_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servername"] = "AlphaGSM VR"
+    server.data["port"] = 9876
+    server.data["queryport"] = 9877
+    server.data["maxplayers"] = 24
+
+    mod.sync_server_config(server)
+
+    config_path = tmp_path / "Settings" / "ServerHostSettings.json"
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    assert payload["Name"] == "AlphaGSM VR"
+    assert payload["Port"] == 9876
+    assert payload["QueryPort"] == 9877
+    assert payload["MaxConnectedUsers"] == 24
+
+
+def test_sync_server_config_no_dir_is_noop():
+    server = DummyServer()
+    server.data["servername"] = "AlphaGSM VR"
+    server.data["port"] = 9876
+    server.data["queryport"] = 9877
+    server.data["maxplayers"] = 24
+    mod.sync_server_config(server)
+
+
+def test_get_query_and_info_address():
+    server = DummyServer()
+    server.data["queryport"] = 27016
+    expected = ("127.0.0.1", 27016, "udp")
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
+        assert mod.get_query_address(server) == expected
+        assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -128,7 +184,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -178,6 +234,18 @@ def test_checkvalue_queryport():
     assert result == 12345
 
 
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "40")
+    assert result == 40
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM VR")
+    assert result == "AlphaGSM VR"
+
+
 def test_checkvalue_exe_name():
     server = DummyServer()
     result = mod.checkvalue(server, ("exe_name",), "/test/value")
@@ -194,4 +262,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

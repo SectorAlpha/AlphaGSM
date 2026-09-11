@@ -5,34 +5,13 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.dstserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.dstserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -116,8 +95,27 @@ def test_get_start_command(tmp_path):
     server.data["cluster"] = "test"
     server.data["confdir"] = "test"
     server.data["shard"] = "test"
+    cluster_root = tmp_path / "test" / "test"
+    (cluster_root / "test").mkdir(parents=True)
+    (cluster_root / "cluster_token.txt").write_text("")
+    (cluster_root / "cluster.ini").write_text("")
+    (cluster_root / "test" / "server.ini").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_get_start_command_requires_cluster_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "bin64/dontstarve_dedicated_server_nullrenderer_x64"
+    exe_path = tmp_path / "bin64/dontstarve_dedicated_server_nullrenderer_x64"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["cluster"] = "test"
+    server.data["confdir"] = "test"
+    server.data["shard"] = "Master"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): dstserver"):
+        mod.get_start_command(server)
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -134,7 +132,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -212,4 +210,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

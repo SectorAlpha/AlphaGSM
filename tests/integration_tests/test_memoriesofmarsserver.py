@@ -1,11 +1,14 @@
 """Integration test for memoriesofmarsserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    default_runtime_backend,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -13,10 +16,9 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_a2s_ready,
+    wait_for_runtime_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
-    wait_for_udp_closed,
 )
 from gamemodules.memoriesofmarsserver import steam_app_id
 
@@ -29,20 +31,34 @@ STOP_TIMEOUT = 90
 def test_memoriesofmarsserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itmemoriesofma"
+    module_name = "memoriesofmarsserver"
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "memoriesofmarsserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -54,9 +70,9 @@ def test_memoriesofmarsserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )
@@ -64,8 +80,8 @@ def test_memoriesofmarsserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
-        # Memories of Mars exposes A2S on queryport (game port + 1), not the game port
-        wait_for_a2s_ready("127.0.0.1", port + 1, 600, log_path=log_path)
+        # Wait on AlphaGSM's declared info surface rather than a raw guessed socket.
+        wait_for_info_protocol(env, server_name, "a2s", 600)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")

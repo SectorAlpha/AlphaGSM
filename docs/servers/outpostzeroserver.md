@@ -2,9 +2,13 @@
 
 This guide covers the `outpostzeroserver` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29
+
+The validated Linux path uses the shared Docker `wine-proton` runtime.
+
 ## Requirements
 
-- `screen`
+- Docker with the shared Wine/Proton runtime
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +48,13 @@ alphagsm myoutpostz stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the adjacent game-client/discovery port (default 7778)
+- the Steam query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
+- `WindowsServer/SurvivalGame/Saved/Config/WindowsServer/Game.ini`
+- `WindowsServer/SurvivalGame/Binaries/Win64/steam_appid.txt`
 
 ## Useful Commands
 
@@ -58,7 +66,36 @@ alphagsm myoutpostz backup
 ## Notes
 
 - Module name: `outpostzeroserver`
-- Default port: 27015
+- Default start map: `RedPlanet`
+- Default port: 7777
+- Default query port: 27015
+- On Linux/Proton, AlphaGSM claims and publishes both documented game-client
+  ports. `query`, `info`, and `info --json` use generic `udp` on the adjacent
+  discovery port (`port + 1`) after the world reaches `InProgress`.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create outpostzeroserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+| `servername` | hostname, name | string | The advertised server name. Example: `AlphaGSM Server`. |
+| `startmap` | map, gamemap, level, world | string | The startup world or map. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -71,7 +108,7 @@ alphagsm myoutpostz backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `WindowsServer/SurvivalGame/Saved/Config/WindowsServer/Game.ini`
 - **Max players**: `16`
 - **Template**: See [server-templates/outpostzeroserver/](../server-templates/outpostzeroserver/) if available
 

@@ -27,16 +27,16 @@ class DummyServer:
 
 def test_argoserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("argo")
-    exe = tmp_path / "argo_server_x64"
+    exe = tmp_path / "argoserver"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "argo_server_x64",
+            "exe_name": "argoserver",
             "configfile": "server.cfg",
             "profilesdir": "profiles",
             "port": 2302,
-            "bindaddress": "0.0.0.0",
+            "world": "empty",
             "mod": "",
         }
     )
@@ -44,29 +44,46 @@ def test_argoserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = argoserver.get_start_command(server)
 
     assert cmd == [
-        "./argo_server_x64",
-        "-config",
-        "server.cfg",
-        "-profiles",
-        "profiles",
-        "-port",
-        "2302",
-        "-name",
-        "argo",
-        "-ip",
-        "0.0.0.0",
+        "./argoserver",
+        "-config=server.cfg",
+        "-port=2302",
+        "-profiles=profiles",
+        "-name=argo",
+        "-world=empty",
     ]
     assert cwd == server.data["dir"]
 
 
+def test_argoserver_queries_steam_port_above_game_port():
+    server = DummyServer("argo")
+    server.data["port"] = 2302
+
+    assert argoserver.get_query_address(server) == ("127.0.0.1", 2303, "a2s")
+    assert argoserver.get_info_address(server) == ("127.0.0.1", 2303, "a2s")
+    server.data["port"] = 26000
+    assert argoserver.get_info_address(server) == ("127.0.0.1", 26001, "a2s")
+
+
+def test_argoserver_publishes_steam_query_and_master_ports(tmp_path):
+    server = DummyServer("argo")
+    server.data.update({"port": 26000, "dir": str(tmp_path), "exe_name": "argoserver",
+                        "configfile": "server.cfg", "profilesdir": "profiles",
+                        "world": "empty", "mod": ""})
+    (tmp_path / "argoserver").touch()
+    for spec in (argoserver.get_runtime_requirements(server), argoserver.get_container_spec(server)):
+        ports = {(entry["host"], entry["container"], entry["protocol"]) for entry in spec["ports"]}
+        assert {(26000, 26000, "udp"), (26001, 26001, "udp"), (26002, 26002, "udp")} <= ports
+
+
 def test_bobserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("bob")
-    exe = tmp_path / "BeastsOfBermudaServer.sh"
+    exe = tmp_path / "LinuxServer/BeastsOfBermudaServer.sh"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "BeastsOfBermudaServer.sh",
+            "exe_name": "LinuxServer/BeastsOfBermudaServer.sh",
             "port": 7777,
             "queryport": 7778,
             "servername": "AlphaGSM bob",
@@ -78,15 +95,14 @@ def test_bobserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = bobserver.get_start_command(server)
 
     assert cmd == [
-        "./BeastsOfBermudaServer.sh",
+        "./LinuxServer/BeastsOfBermudaServer.sh",
         "-log",
-        "-port",
-        "7777",
-        "-queryport",
-        "7778",
-        "-servername",
-        "AlphaGSM bob",
-        "-world",
+        "-NoVerifyGC",
+        "-Port=7777",
+        "-QueryPort=7778",
+        "-SessionName",
+        "AlphaGSM_bob",
+        "-MapName",
         "bob",
     ]
     assert cwd == server.data["dir"]
@@ -102,12 +118,14 @@ def test_argo_and_bob_updates_download_and_optionally_restart(monkeypatch):
     monkeypatch.setattr(
         argoserver.steamcmd,
         "download",
-        lambda path, app_id, anon, validate=True: calls.append((path, app_id, anon, validate)),
+        lambda path, app_id, anon, validate=True, **kwargs: calls.append(
+            (path, app_id, anon, validate, kwargs)
+        ),
     )
 
     argoserver.update(argo, validate=True, restart=True)
     bobserver.update(bob, validate=False, restart=False)
 
-    assert ("/srv/argo/", 563930, True, True) in calls
-    assert ("/srv/bob/", 882430, True, False) in calls
+    assert ("/srv/argo/", 563930, True, True, {}) in calls
+    assert ("/srv/bob/", 882430, True, False, {}) in calls
     assert argo.start_calls == 1

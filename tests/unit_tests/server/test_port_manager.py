@@ -84,7 +84,67 @@ def test_collect_claim_set_uses_overrides_when_calling_hooks():
     )
 
 
-def test_collect_claim_set_rebuilds_runtime_ports_from_overrides():
+def test_collect_claim_set_ignores_module_declared_port_keys():
+    module = SimpleNamespace(
+        ignored_port_keys=("queryport",),
+        get_query_address=lambda server: ("127.0.0.1", server.data["port"], "udp"),
+    )
+    server = make_server(
+        "alpha",
+        {"port": 27015, "queryport": 27016},
+        module=module,
+    )
+
+    claim_set = port_manager.collect_claim_set(server)
+
+    ports_by_source = {
+        (endpoint.source_key, endpoint.port)
+        for endpoint in claim_set.endpoints
+        if endpoint.scope == "internal"
+    }
+    assert ("port", 27015) in ports_by_source
+    assert ("queryport", 27016) not in ports_by_source
+
+
+def test_collect_claim_set_includes_module_derived_port_definitions_for_process_runtime():
+    module = SimpleNamespace(
+        port_claim_definitions=(
+            {"key": "port", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "udp", "offset": 1},
+            {"key": "port", "protocol": "udp", "offset": 2},
+            {"key": "port", "protocol": "udp", "offset": 3},
+        ),
+    )
+    server = make_server(
+        "alpha",
+        {
+            "module": "sevendaystodie",
+            "port": 26900,
+            "runtime": "process",
+        },
+        module=module,
+    )
+
+    claim_set = port_manager.collect_claim_set(server)
+    shifted_claim_set = port_manager.collect_claim_set(
+        server,
+        overrides={"port": 27000},
+    )
+
+    assert {
+        endpoint.port
+        for endpoint in claim_set.endpoints
+        if endpoint.scope == "internal"
+    } == {26900, 26901, 26902, 26903}
+    assert {
+        endpoint.port
+        for endpoint in shifted_claim_set.endpoints
+        if endpoint.scope == "internal"
+    } == {27000, 27001, 27002, 27003}
+
+
+def test_collect_claim_set_rebuilds_runtime_ports_from_overrides(monkeypatch):
     module = SimpleNamespace(
         get_container_spec=lambda server: {
             "ports": [
@@ -105,6 +165,11 @@ def test_collect_claim_set_rebuilds_runtime_ports_from_overrides():
         },
         module=module,
     )
+    monkeypatch.setattr(
+        runtime_module,
+        "resolve_runtime_metadata",
+        lambda _server, requirements=None: {"runtime": "docker"},
+    )
 
     claim_set = port_manager.collect_claim_set(server, overrides={"port": 27030})
 
@@ -116,6 +181,52 @@ def test_collect_claim_set_rebuilds_runtime_ports_from_overrides():
 
     assert runtime_ports == [27031]
     assert 27016 not in runtime_ports
+
+
+def test_runtime_port_endpoints_skip_container_spec_for_process_runtime(monkeypatch):
+    module = SimpleNamespace(
+        get_runtime_requirements=lambda _server: {
+            "engine": "docker",
+            "family": "steamcmd-linux",
+        },
+    )
+    server = make_server(
+        "alpha",
+        {
+            "module": "palworld",
+            "port": 8211,
+            "ports": [{"host": 8212, "container": 8212, "protocol": "udp"}],
+        },
+        module=module,
+    )
+
+    monkeypatch.setattr(
+        runtime_module,
+        "resolve_runtime_metadata",
+        lambda _server: {"runtime": "process"},
+    )
+
+    def _unexpected_container_spec(_server):
+        raise AssertionError("process runtime must not build a Docker container spec")
+
+    monkeypatch.setattr(
+        runtime_module,
+        "get_container_spec",
+        _unexpected_container_spec,
+    )
+
+    endpoints = port_manager._runtime_port_endpoints(
+        server,
+        module,
+        {
+            "external_ip": "0.0.0.0",
+            "port": 8211,
+            "ports": [{"host": 8212, "container": 8212, "protocol": "udp"}],
+        },
+        allow_stale_saved_ports=True,
+    )
+
+    assert endpoints == []
 
 
 def test_runtime_port_endpoints_ignores_preinstall_server_errors(monkeypatch):
@@ -185,6 +296,29 @@ def test_resolve_module_name_propagates_unexpected_resolution_errors(monkeypatch
         pass
     else:
         raise AssertionError("ValueError should not be swallowed")
+
+
+def test_resolve_module_name_fallback_uses_catalog(monkeypatch):
+    fake_module = SimpleNamespace(__file__="/tmp/teamfortress2.py")
+
+    class FakeCatalog:
+        def resolve(self, name):
+            assert name == "tf2server"
+            return "teamfortress2"
+
+    def fake_import(name):
+        if name != "gamemodules.teamfortress2":
+            raise ImportError(name)
+        return fake_module
+
+    monkeypatch.setattr(port_manager, "MODULE_CATALOG", FakeCatalog(), raising=False)
+    monkeypatch.setattr(port_manager, "import_module", fake_import)
+    monkeypatch.setattr(port_manager, "SERVERMODULEPACKAGE", "gamemodules.")
+    monkeypatch.setattr(port_manager.runtime_module, "ensure_runtime_hooks", lambda module: None)
+
+    resolved = port_manager._resolve_module_name_fallback("tf2server")
+
+    assert resolved is fake_module
 
 
 def test_detect_conflicts_requires_matching_scope(monkeypatch):

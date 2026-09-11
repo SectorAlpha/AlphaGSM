@@ -25,7 +25,15 @@ class DummyServer:
 
 
 def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(darkandlightserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    monkeypatch.setattr(
+        darkandlightserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: wrap_calls.append(
+            {"wineprefix": wineprefix, "prefer_proton": prefer_proton}
+        ) or list(cmd),
+    )
     server = DummyServer("dnl")
     exe_dir = tmp_path / "DNL" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -49,7 +57,11 @@ def test_darkandlight_get_start_command_builds_expected_args(tmp_path, monkeypat
 
     assert cmd[0] == "DNL/Binaries/Win64/DNLServer.exe"
     assert "DNL_ALL?listen?SessionName=AlphaGSM dnl" in cmd[1]
-    assert cwd == server.data["dir"]
+    assert "-nullRHI" in cmd
+    assert "-log" in cmd
+    assert "-unattended" in cmd
+    assert cwd == str(tmp_path) + "/"
+    assert wrap_calls == [{"wineprefix": None, "prefer_proton": True}]
 
 
 def test_darkandlight_update_downloads_and_optionally_restart(monkeypatch):
@@ -67,3 +79,33 @@ def test_darkandlight_update_downloads_and_optionally_restart(monkeypatch):
 
     assert calls == [("/srv/dnl/", 630230, True, True)]
     assert server.start_calls == 1
+
+
+def test_darkandlight_query_and_info_address_use_game_port_udp_on_linux(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["port"] = "34121"
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(darkandlightserver, "IS_LINUX", True)
+    monkeypatch.setattr(
+        darkandlightserver.runtime_module,
+        "resolve_query_host",
+        lambda current: "10.0.0.10",
+    )
+
+    assert darkandlightserver.get_query_address(server) == ("10.0.0.10", 34121, "udp")
+    assert darkandlightserver.get_info_address(server) == ("10.0.0.10", 34121, "udp")
+
+
+def test_darkandlight_query_and_info_address_use_queryport_a2s_off_linux(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["port"] = "34121"
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(darkandlightserver, "IS_LINUX", False)
+    monkeypatch.setattr(
+        darkandlightserver.runtime_module,
+        "resolve_query_host",
+        lambda current: "10.0.0.10",
+    )
+
+    assert darkandlightserver.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert darkandlightserver.get_info_address(server) == ("10.0.0.10", 27016, "a2s")

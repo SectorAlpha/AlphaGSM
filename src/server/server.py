@@ -13,9 +13,15 @@ import os
 import subprocess as sp
 import copy
 from . import data
+from .module_catalog import load_default_module_catalog
 from . import port_manager
 from . import runtime as runtime_module
+from . import diagnostics as diagnostics_module
+from . import worlds as worlds_module
+from .settable_keys import KeyResolutionError, resolve_requested_key
+from .settable_keys import get_effective_aliases
 from .errors import ServerError
+from .module_contract import validate_module_contract
 from importlib import import_module
 import screen
 import time
@@ -39,20 +45,45 @@ SERVERMODULEPACKAGE = settings.system.getsection("server").get(
     "servermodulespackage", "gamemodules."
 )
 _DISABLED_SERVERS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    runtime_module.REPO_ROOT,
     "disabled_servers.conf",
 )
+_ENABLED_BYO_SERVERS_PATH = os.path.join(
+    runtime_module.REPO_ROOT,
+    "enabled_byo_servers.conf",
+)
+_ENABLED_AUTH_SERVERS_PATH = os.path.join(
+    runtime_module.REPO_ROOT,
+    "enabled_auth_servers.conf",
+)
+MODULE_CATALOG = load_default_module_catalog()
+_ENABLED_BYO_CATEGORY_DESCRIPTIONS = {
+    "assets": "operator-supplied files or installed game content",
+    "auth": "authenticated install access, entitlement, or account credentials",
+    "config": "operator-supplied config, tokens, credentials, or staged data",
+    "url": "a direct download URL or staged artifact override",
+    "export": "client-exported files from an owned game install",
+    "service": "an external local service dependency",
+    "mixed": "operator-managed prerequisites",
+}
+_ENABLED_AUTH_CATEGORY_DESCRIPTIONS = {
+    "provider-auth": "provider-managed credentials or account authentication",
+    "provider-token": "provider-issued runtime token",
+    "provider-license": "provider-issued license or entitlement",
+    "provider-provisioning": "provider-managed setup or provisioning flow",
+    "mixed": "provider-managed prerequisites",
+}
 
 
-def _load_disabled_servers():
-    """Load the disabled servers list from disabled_servers.conf.
+def _load_status_reason_file(path):
+    """Load a tab-separated module->reason mapping file.
 
     Returns a dict mapping module name to reason string.
     """
-    disabled = {}
-    if not os.path.isfile(_DISABLED_SERVERS_PATH):
-        return disabled
-    with open(_DISABLED_SERVERS_PATH, encoding="utf-8") as fh:
+    rows = {}
+    if not os.path.isfile(path):
+        return rows
+    with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -60,8 +91,106 @@ def _load_disabled_servers():
             parts = line.split("\t", 1)
             module_name = parts[0].strip()
             reason = parts[1].strip() if len(parts) > 1 else "No reason given"
-            disabled[module_name] = reason
-    return disabled
+            rows[module_name] = reason
+    return rows
+
+
+def _load_disabled_servers():
+    """Load the disabled servers list from disabled_servers.conf."""
+
+    return _load_status_reason_file(_DISABLED_SERVERS_PATH)
+
+
+def _load_typed_supported_status_file(path, *, default_category="mixed"):
+    """Load a typed supported-status file."""
+    rows = {}
+    if not os.path.isfile(path):
+        return rows
+
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            module_name = parts[0].strip()
+            if len(parts) >= 3:
+                category = parts[1].strip() or default_category
+                reason = "\t".join(parts[2:]).strip() or "No reason given"
+            elif len(parts) == 2:
+                category = default_category
+                reason = parts[1].strip() or "No reason given"
+            else:
+                category = default_category
+                reason = "No reason given"
+            rows[module_name] = {"category": category, "reason": reason}
+    return rows
+
+
+def _load_enabled_byo_servers():
+    """Load the BYO-enabled servers list from enabled_byo_servers.conf."""
+
+    return _load_typed_supported_status_file(
+        _ENABLED_BYO_SERVERS_PATH,
+        default_category="mixed",
+    )
+
+
+def _load_enabled_auth_servers():
+    """Load the AUTH-enabled servers list from enabled_auth_servers.conf."""
+
+    return _load_typed_supported_status_file(
+        _ENABLED_AUTH_SERVERS_PATH,
+        default_category="mixed",
+    )
+
+
+def _normalize_supported_entry(entry, *, default_category="mixed"):
+    """Return a normalized supported-status metadata mapping."""
+
+    if isinstance(entry, MappingABC):
+        category = str(entry.get("category", default_category)).strip() or default_category
+        reason = str(entry.get("reason", "No reason given")).strip() or "No reason given"
+        return {"category": category, "reason": reason}
+    return {"category": default_category, "reason": str(entry).strip() or "No reason given"}
+
+
+def _normalize_enabled_byo_entry(entry):
+    """Return a normalized BYO metadata mapping."""
+
+    return _normalize_supported_entry(entry, default_category="mixed")
+
+
+def _format_enabled_byo_notice(module_name, entry):
+    """Return the standard create-time notice for ENABLED (BYO) modules."""
+
+    metadata = _normalize_enabled_byo_entry(entry)
+    category = metadata["category"]
+    reason = metadata["reason"]
+    category_description = _ENABLED_BYO_CATEGORY_DESCRIPTIONS.get(
+        category,
+        _ENABLED_BYO_CATEGORY_DESCRIPTIONS["mixed"],
+    )
+    return (
+        "ENABLED (BYO): Server module '{}' is supported, but still requires "
+        "{} before setup/start can fully succeed.\nWhat to provide: {}"
+    ).format(module_name, category_description, reason)
+
+
+def _format_enabled_auth_notice(module_name, entry):
+    """Return the standard create-time notice for ENABLED (AUTH) modules."""
+
+    metadata = _normalize_supported_entry(entry, default_category="mixed")
+    category = metadata["category"]
+    reason = metadata["reason"]
+    category_description = _ENABLED_AUTH_CATEGORY_DESCRIPTIONS.get(
+        category,
+        _ENABLED_AUTH_CATEGORY_DESCRIPTIONS["mixed"],
+    )
+    return (
+        "ENABLED (AUTH): Server module '{}' is supported, but still requires "
+        "{} before setup/start can fully succeed.\nWhat to provide: {}"
+    ).format(module_name, category_description, reason)
 
 
 def _get_a2s_wake_hook(module):
@@ -84,6 +213,111 @@ def _get_hibernating_console_info_hook(module):
     return _get_module_hook(module, "get_hibernating_console_info")
 
 
+def _iter_http_query_hosts(preferred_host):
+    """Yield HTTP query host candidates, preferring the module-specified host."""
+
+    seen = set()
+    preferred_host = str(preferred_host)
+    candidates = [preferred_host]
+    if preferred_host == "127.0.0.1":
+        candidates.append("localhost")
+        candidates.append("::1")
+    elif preferred_host == "localhost":
+        candidates.append("127.0.0.1")
+        candidates.append("::1")
+    elif preferred_host == "::1":
+        candidates.append("localhost")
+        candidates.append("127.0.0.1")
+
+    if preferred_host in ("127.0.0.1", "localhost"):
+        try:
+            from utils.valve_server import detect_query_host
+
+            candidates.append(detect_query_host(default=preferred_host))
+        except Exception:
+            pass
+
+    for candidate in candidates:
+        candidate = str(candidate)
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        yield candidate
+
+
+def _query_http_json_candidates(query_utils, host, port, path, timeout=10.0):
+    """Query an HTTP JSON endpoint across local host candidates."""
+
+    errors = []
+    for candidate_host in _iter_http_query_hosts(host):
+        try:
+            payload = query_utils.http_json(candidate_host, port, path, timeout=timeout)
+        except query_utils.QueryError as exc:
+            errors.append("{}: {}".format(candidate_host, exc))
+            continue
+        if not isinstance(payload, MappingABC):
+            raise query_utils.QueryError(
+                "HTTP JSON query failed for {}:{}{}: endpoint returned a non-object JSON payload".format(
+                    candidate_host, port, path
+                )
+            )
+        return candidate_host, dict(payload)
+
+    if errors:
+        raise query_utils.QueryError("; ".join(errors))
+    raise query_utils.QueryError(
+        "HTTP JSON query failed for {}:{}{}".format(host, port, path)
+    )
+
+
+def _query_robust_status_payload(query_utils, host, port):
+    """Return merged RobustToolbox status and info payloads."""
+
+    used_host, status_payload = _query_http_json_candidates(
+        query_utils, host, port, "/status"
+    )
+    merged = dict(status_payload)
+    try:
+        _, info_payload = _query_http_json_candidates(
+            query_utils, used_host, port, "/info"
+        )
+    except query_utils.QueryError:
+        info_payload = {}
+
+    description = info_payload.get("desc")
+    if description not in (None, ""):
+        merged["description"] = description
+    for key in ("connect_address", "auth", "build", "privacy_policy"):
+        if key in info_payload:
+            merged[key] = info_payload[key]
+    return used_host, merged
+
+
+def _query_http_status_payload(query_utils, host, port, server=None):
+    """Return a generic JSON status payload from ``/status``."""
+
+    if server is not None:
+        payload_hook = _get_module_hook(server.module, "get_http_status_payload")
+        if payload_hook is not None:
+            try:
+                payload = payload_hook(server)
+            except (OSError, RuntimeError, ValueError) as exc:
+                raise query_utils.QueryError(str(exc)) from exc
+            if payload is not None:
+                if not isinstance(payload, MappingABC):
+                    raise query_utils.QueryError(
+                        "Module HTTP status hook returned a non-object payload"
+                    )
+                return "127.0.0.1", dict(payload)
+
+    return _query_http_json_candidates(
+        query_utils,
+        host,
+        port,
+        "/status",
+    )
+
+
 def _get_module_hook(module, hook_name):
     """Return a callable hook from a module or its shared MODULE namespace."""
 
@@ -95,35 +329,27 @@ def _get_module_hook(module, hook_name):
 
 
 def _findmodule(name):
-    """Resolve a game module name, following namespace and alias indirection."""
+    """Resolve a game module name through the canonical catalog."""
+
+    requested_name = str(name)
+    name = MODULE_CATALOG.resolve(requested_name)
     disabled = _load_disabled_servers()
-    while True:
-        name = str(name)
-        if name in disabled:
-            raise ServerError(
-                "Server module '" + name + "' is currently disabled: "
-                + disabled[name]
-                + "\nIf you'd like to help fix this, please open an issue or "
-                "submit a pull request."
-            )
-        if len(name) < 2 and all(
-            (len(el) > 0 and el.isalnum()) for el in name.split(".")
-        ):
-            raise ServerError("Invalid module requested: " + self.data["module"])
-        try:
-            module = import_module(SERVERMODULEPACKAGE + name)
-        except ImportError as ex:
-            raise ServerError("Can't find module: " + name, ex)
-        if not hasattr(
-            module, "__file__"
-        ):  # no filesystem path so must be a namespace path
-            name = name + ".DEFAULT"
-            continue
-        try:
-            name = module.ALIAS_TARGET
-        except AttributeError:
-            runtime_module.ensure_runtime_hooks(module)
-            return name, module
+    if name in disabled:
+        raise ServerError(
+            "Server module '" + name + "' is currently disabled: "
+            + disabled[name]
+            + "\nIf you'd like to help fix this, please open an issue or "
+            "submit a pull request."
+        )
+    if len(name) < 2 and all((len(el) > 0 and el.isalnum()) for el in name.split(".")):
+        raise ServerError("Invalid module requested: " + name)
+    try:
+        module = import_module(SERVERMODULEPACKAGE + name)
+    except ImportError as ex:
+        raise ServerError("Can't find module: " + name, ex)
+    validate_module_contract(name, module)
+    runtime_module.ensure_runtime_hooks(module)
+    return name, module
 
 
 def find_module(name):
@@ -169,8 +395,10 @@ class Server(object):
         "backup",
         "restore",
         "wipe",
+        "reset-world",
         "query",
         "info",
+        "doctor",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -248,12 +476,10 @@ class Server(object):
         ),
         "dump": CmdSpec(),
         "set": CmdSpec(
-            requiredarguments=(
-                ArgSpec(
-                    "KEY", "The key to set in the form of dot seperated elements", str
-                ),
-            ),
             optionalarguments=(
+                ArgSpec(
+                    "KEY", "The key to set or inspect in the form of dot seperated elements", str
+                ),
                 ArgSpec(
                     "VALUE",
                     "The value to set. New nodes in the structure will be created as needed. "
@@ -262,6 +488,40 @@ class Server(object):
                 ),
             ),
             repeatable=True,
+            options=(
+                OptSpec(
+                    "l",
+                    ["list"],
+                    "List schema-backed keys for this server",
+                    "list_settings",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "d",
+                    ["describe"],
+                    "Describe the requested key instead of setting it",
+                    "describe",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "V",
+                    ["values"],
+                    "List allowed values for the requested key",
+                    "values",
+                    None,
+                    True,
+                ),
+                OptSpec(
+                    "v",
+                    ["verbose"],
+                    "Show verbose metadata in discovery output",
+                    "verbose",
+                    None,
+                    True,
+                ),
+            ),
         ),
         "backup": CmdSpec(),
         "restore": CmdSpec(
@@ -274,7 +534,14 @@ class Server(object):
                 ),
             )
         ),
-        "wipe": CmdSpec(),
+        "wipe": CmdSpec(options=(
+            OptSpec("Y", ["yes"], "Delete the listed world data without prompting",
+                    "yes", None, True),
+        )),
+        "reset-world": CmdSpec(options=(
+            OptSpec("Y", ["yes"], "Delete the listed world data without prompting",
+                    "yes", None, True),
+        )),
         "query": CmdSpec(),
         "info": CmdSpec(
             options=(
@@ -296,6 +563,9 @@ class Server(object):
                 ),
             )
         ),
+        "doctor": CmdSpec(options=(
+            OptSpec("j", ["json"], "Output a versioned diagnostic JSON report", "as_json", None, True),
+        )),
     }
     default_command_descriptions = {
         "setup": "Setup the game server.\nThis will include processing the required settings,"
@@ -316,7 +586,7 @@ class Server(object):
         "dump": "Dump the servers data store.",
         "set": "Set a parameter in data store to a new value.\nFor keys that index into lists the special entry 'APPEND' my be used to create a new "
         "entry at the end of the list. Also for some keys value 'DELETE' is a value that causes the entry to be deleted.\n\n"
-        "Which values are changable is game module dependent",
+        "Which values are changable is game module dependent.\nUse -l / --list to inspect schema-backed keys, -d / --describe to inspect a key, and -V / --values to list allowed values when a module exposes them.",
         "backup": "Backup the game server",
         "restore": "Restore the game server from a backup.\n"
         "With no argument, lists available backups with their index numbers.\n"
@@ -324,7 +594,9 @@ class Server(object):
         "The server will be stopped first if it is running.",
         "wipe": "Delete game-world data for supported server types.\n"
         "The server must be stopped before wiping. "
-        "Which files are removed is defined by the game module.",
+        "Lists files before asking for confirmation; -Y skips the prompt.",
+        "reset-world": "Alias for wipe: preview and confirm deletion of game-world data. "
+        "Stop the server first; -Y skips the confirmation prompt.",
         "query": "Query the game server to check whether it is responding.\n"
         "Uses the Source A2S protocol when a query port is configured, "
         "otherwise falls back to a TCP ping on the game port.",
@@ -333,6 +605,7 @@ class Server(object):
         "For Source/Steam servers uses A2S_INFO.  Falls back to a TCP ping.\n"
         "Use -j / --json to emit the result as a JSON object.\n"
         "Use -d / --detailed to include extended data (e.g. TeamSpeak 3 channel list).",
+        "doctor": "Print runtime diagnostics for this server, including the effective backend, Docker image/container details, and local runtime health checks.",
     }
 
     def __init__(self, name, module=None):
@@ -345,6 +618,9 @@ class Server(object):
         """
         self.name = name
         if module is not None:
+            truename, self.module = _findmodule(module)
+            auth_reason = _load_enabled_auth_servers().get(truename)
+            byo_reason = _load_enabled_byo_servers().get(truename)
             if not os.path.isdir(DATAPATH):
                 try:
                     os.makedirs(DATAPATH)
@@ -353,12 +629,16 @@ class Server(object):
                         "Data Path doesn't exist and can't create it", DATAPATH
                     )
             self.data = data.JSONDataStore(
-                os.path.join(DATAPATH, name + ".json"), {"module": module}
+                os.path.join(DATAPATH, name + ".json"), {"module": truename}
             )
             try:
                 self.data.save()
             except IOError as ex:
                 raise ServerError("Error saving initial data", ex)
+            if auth_reason:
+                print(_format_enabled_auth_notice(truename, auth_reason))
+            if byo_reason:
+                print(_format_enabled_byo_notice(truename, byo_reason))
         else:
             try:
                 self.data = data.JSONDataStore(os.path.join(DATAPATH, name + ".json"))
@@ -366,7 +646,9 @@ class Server(object):
                 raise ServerError("Error reading data", ex)
         if "module" not in self.data:
             raise ServerError("Invalid data store: No module specified")
-        truename, self.module = _findmodule(self.data["module"])
+        if module is None:
+            truename, self.module = _findmodule(self.data["module"])
+        self._configure_secret_split()
         metadata_changed = runtime_module.sync_runtime_metadata(self, save=False)
         if truename != self.data["module"]:
             print(
@@ -401,6 +683,104 @@ class Server(object):
             else:
                 desc = desc + "\n\n" + extra_desc
         return desc
+
+    def _configure_secret_split(self):
+        """Wire up the secret-key split on the data store once the module is known."""
+        schema = self.get_setting_schema()
+        secret_storage_keys = {
+            spec.storage_key or spec.canonical_key
+            for spec in schema.values()
+            if spec.secret
+        }
+        self.data.set_secret_keys(
+            secret_storage_keys,
+            os.path.join(DATAPATH, self.name + ".secrets.json"),
+        )
+
+    def get_setting_schema(self):
+        """Return the schema-backed settings exposed by the module."""
+        if not hasattr(self.module, "setting_schema"):
+            return {}
+        schema = getattr(self.module, "setting_schema")
+        if isinstance(schema, MappingABC):
+            return schema
+        raise ServerError(
+            "Module setting_schema must be a mapping, got " + type(schema).__name__
+        )
+
+    def _iter_setting_schema_items(self):
+        """Yield schema items in a stable order for discovery output."""
+        schema = self.get_setting_schema()
+        for canonical_key, spec in sorted(
+            schema.items(), key=lambda item: str(item[1].canonical_key)
+        ):
+            yield canonical_key, spec
+
+    def _print_setting_schema_list(self, verbose=False):
+        """Print the schema-backed setting keys exposed by the module."""
+        schema = self.get_setting_schema()
+        if not schema:
+            print("No schema-backed settings are exposed by this server.")
+            return
+        for _, spec in self._iter_setting_schema_items():
+            aliases = ", ".join(get_effective_aliases(spec, schema))
+            line = spec.canonical_key
+            if aliases:
+                line += " (aliases: " + aliases + ")"
+            if spec.description:
+                line += ": " + spec.description
+            if verbose:
+                details = []
+                if spec.storage_key and spec.storage_key != spec.canonical_key:
+                    details.append("storage key=" + spec.storage_key)
+                if spec.value_type:
+                    details.append("type=" + spec.value_type)
+                if spec.apply_to:
+                    details.append("applies to=" + ", ".join(spec.apply_to))
+                if spec.secret:
+                    details.append("secret")
+                if spec.examples:
+                    details.append("examples=" + ", ".join(spec.examples))
+                if details:
+                    line += " [" + "; ".join(details) + "]"
+            print(line)
+
+    def _print_setting_schema_description(self, requested_key):
+        """Print the description for a schema-backed setting key."""
+        resolved = resolve_requested_key(requested_key, self.get_setting_schema())
+        spec = resolved.spec
+        aliases = get_effective_aliases(spec, self.get_setting_schema())
+        print("Requested key: " + resolved.input_key)
+        print("Canonical key: " + resolved.canonical_key)
+        if resolved.storage_key != resolved.canonical_key:
+            print("Storage key: " + resolved.storage_key)
+        if aliases:
+            print("Aliases: " + ", ".join(aliases))
+        if spec.value_type:
+            print("Type: " + spec.value_type)
+        if spec.apply_to:
+            print("Applies to: " + ", ".join(spec.apply_to))
+        print("Secret: " + ("yes" if spec.secret else "no"))
+        if spec.description:
+            print("Description: " + spec.description)
+        if spec.examples:
+            print("Examples: " + ", ".join(spec.examples))
+
+    def _print_setting_schema_values(self, requested_key):
+        """Print allowed values for a schema-backed key if the module exposes them."""
+        resolved = resolve_requested_key(requested_key, self.get_setting_schema())
+        list_values_fn = getattr(self.module, "list_setting_values", None)
+        if not callable(list_values_fn):
+            raise ServerError(
+                "Module does not expose allowed values for '" + resolved.canonical_key + "'"
+            )
+        values = list_values_fn(self, resolved.canonical_key)
+        if values is None:
+            raise ServerError(
+                "Module does not expose allowed values for '" + resolved.canonical_key + "'"
+            )
+        for value in values:
+            print(value)
 
     def run_command(self, command, *args, **kwargs):
         """Run the specified command with the specified arguments on this server
@@ -445,14 +825,23 @@ class Server(object):
                 self.module.backup(self, *args, **kwargs)
             elif command == "restore":
                 self.restore(*args, **kwargs)
-            elif command == "wipe":
+            elif command in ("wipe", "reset-world"):
                 self.wipe(*args, **kwargs)
             elif command == "query":
                 self.query(*args, **kwargs)
             elif command == "info":
                 self.info(*args, **kwargs)
+            elif command == "doctor":
+                self.doctor(*args, **kwargs)
         elif command in self.module.commands:
+            if command == "update":
+                try:
+                    runtime_module.assert_platform_requirements(self, phase="update")
+                except runtime_module.RuntimeError as ex:
+                    raise ServerError(str(ex)) from ex
             self.module.command_functions[command](self, *args, **kwargs)
+            if command == "update":
+                diagnostics_module.record_installation_provenance(self, "update")
         else:
             raise ServerError(
                 "Unknown command '"
@@ -472,8 +861,14 @@ class Server(object):
         runtime_module.sync_runtime_metadata(self, save=True)
         self._resolve_setup_port_claims(explicit_keys)
         runtime_module.sync_runtime_metadata(self, save=True)
+        try:
+            runtime_module.assert_platform_requirements(self, phase="setup")
+            runtime_module.assert_host_install_requirements(self, phase="setup")
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
         self.module.install(self, *args, **kwargs)
         runtime_module.sync_runtime_metadata(self, save=True)
+        diagnostics_module.record_installation_provenance(self, "setup")
 
     def start(self, *args, **kwargs):
         """Start a server. Won't start it if the server is already running."""
@@ -481,6 +876,11 @@ class Server(object):
         if runtime.is_running(self):
             raise ServerError("Error: Can't start server that is already running")
         self._assert_start_ports_available()
+        try:
+            runtime_module.assert_platform_requirements(self, phase="start")
+            runtime_module.assert_host_install_requirements(self, phase="start")
+        except runtime_module.RuntimeError as ex:
+            raise ServerError(str(ex))
         try:
             prestart = self.module.prestart
         except AttributeError:
@@ -500,6 +900,14 @@ class Server(object):
         runtime = runtime_module.get_runtime(self)
         if not runtime.is_running(self):
             raise ServerError("Error: Can't stop a server that isn't running")
+        if runtime_module.get_stop_mode(self) == "docker-stop":
+            try:
+                runtime.kill(self)
+            except runtime_module.RuntimeError as ex:
+                raise ServerError(str(ex))
+            if runtime.is_running(self):
+                raise ServerError("Error can't kill server")
+            return
         jmax = 5
         try:
             jmax = min(jmax, self.module.max_stop_wait)
@@ -580,6 +988,20 @@ class Server(object):
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
 
+    def doctor(self, as_json=False, **kwargs):
+        """Print redacted diagnostics; failed checks produce a nonzero CLI exit."""
+        report = diagnostics_module.get_diagnostic_report(self)
+        if as_json:
+            print(json.dumps(report, sort_keys=True))
+        else:
+            runtime_module.print_runtime_doctor_report(self, report=report["runtime"])
+            print("Status: " + report["status"])
+            for check in report["checks"]:
+                print(check["status"].upper() + " [" + check["category"] + "] " + check["message"])
+        if report["status"] == "failed":
+            raise ServerError("Doctor found failing checks; see the diagnostic report")
+        return report
+
     def restore(self, backup=None, **kwargs):
         """Restore the server from a backup archive.
 
@@ -620,36 +1042,10 @@ class Server(object):
         backup_utils.restore(game_dir, filename)
         print("Restore complete: " + filename)
 
-    def wipe(self, **kwargs):
-        """Delete game-world data for this server.
+    def wipe(self, *, yes=False):
+        """Preview and confirm deletion of module-declared world data."""
 
-        The server must not be running.  The game module must expose a
-        ``wipe_paths`` attribute (list of paths relative to the game
-        directory) or a ``wipe(server)`` callable; otherwise a ServerError
-        is raised.
-        """
-        if runtime_module.check_server_running(self):
-            raise ServerError(
-                "Error: Cannot wipe a running server. Stop it first."
-            )
-        wipe_fn = getattr(self.module, "wipe", None)
-        if callable(wipe_fn):
-            wipe_fn(self)
-            return
-        wipe_paths = getattr(self.module, "wipe_paths", None)
-        if wipe_paths is None:
-            raise ServerError(
-                "Wipe is not supported for this server type."
-            )
-        game_dir = self.data["dir"]
-        for rel_path in wipe_paths:
-            target = os.path.join(game_dir, rel_path)
-            if not os.path.exists(target):
-                continue
-            result = sp.run(["rm", "-rf", target], check=False)
-            if result.returncode != 0:
-                raise ServerError("Failed to remove: " + target)
-            print("Removed: " + target)
+        worlds_module.wipe_worlds(self, yes=yes)
 
     def query(self, **kwargs):
         """Query the game server to check whether it is responding.
@@ -658,8 +1054,14 @@ class Server(object):
         ``(host, port, protocol)`` that is used; otherwise the method falls
         back to a TCP ping on ``server.data["port"]``.  Protocol may be
         ``"a2s"`` (Source/Steam UDP), ``"quake"`` (Quake3/QFusion UDP),
-        ``"ts3"`` (TeamSpeak 3 ServerQuery), ``"udp"`` (generic UDP reachability),
-        or ``"tcp"``.
+        ``"quakeworld"`` (QuakeWorld UDP), ``"quake2"`` (Quake II UDP), ``"ut3"`` (Unreal3/GameSpy4 UDP),
+        ``"bedrock"`` (Minecraft Bedrock RakNet UDP ping),
+        ``"ts3"`` (TeamSpeak 3 ServerQuery),
+        ``"udp"`` (generic UDP reachability),
+        ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
+        (authenticated Source RCON),
+        ``"http_status"`` (JSON ``/status`` endpoint), ``"terraria"``
+        (native framed connection handshake), or ``"tcp"``.
         """
         from utils import query as query_utils
 
@@ -668,10 +1070,11 @@ class Server(object):
             host, port, protocol = get_addr(self)
             _explicit = True
         else:
-            host = "127.0.0.1"
+            host = runtime_module.resolve_query_host(self)
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
             _explicit = False
+        port = int(port)
 
         if protocol == "a2s":
             wake_hook = _get_a2s_wake_hook(self.module)
@@ -727,8 +1130,8 @@ class Server(object):
                     # giving up — useful for UE4/other games in Docker CI where
                     # UDP may be unreliable but a TCP game port is still open.
                     try:
-                        _game_port = self.data["port"]
-                        _ms = query_utils.tcp_ping("127.0.0.1", _game_port)
+                        _game_port = int(self.data["port"])
+                        _ms = query_utils.tcp_ping(host, _game_port)
                         print(
                             "Server port is open (TCP ping on port {} \u2014 {:.1f} ms).".format(
                                 _game_port, _ms
@@ -741,9 +1144,50 @@ class Server(object):
                         "Server does not appear to be responding: " + str(exc)
                     )
                 # Default heuristic: fall back to TCP ping on the main game port.
-                host = "127.0.0.1"
-                port = self.data["port"]
+                host = runtime_module.resolve_query_host(self)
+                port = int(self.data["port"])
                 protocol = "tcp"
+
+        if protocol == "http_status":
+            try:
+                _, status_payload = _query_http_status_payload(
+                    query_utils,
+                    host,
+                    port,
+                    server=self,
+                )
+                print(
+                    "Server is responding (HTTP status API on port {port}): "
+                    "status={status!r}  players={players}".format(
+                        port=port,
+                        status=status_payload.get("status", ""),
+                        players=status_payload.get("player_count", "?"),
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
+        if protocol == "robust_status":
+            try:
+                _, status_payload = _query_http_json_candidates(
+                    query_utils, host, port, "/status"
+                )
+                print(
+                    "Server is responding (Robust status API on port {port}): "
+                    "{name!r}  players={players}".format(
+                        port=port,
+                        name=status_payload.get("name", ""),
+                        players=status_payload.get("players", "?"),
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
 
         if protocol == "quake":
             try:
@@ -752,6 +1196,104 @@ class Server(object):
                     "Server is responding (Quake status on port {port}): "
                     "{name!r}  map={map!r}  "
                     "players={players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
+        if protocol == "quakeworld":
+            try:
+                qinfo = query_utils.quakeworld_status(host, port, timeout=10.0)
+                print(
+                    "Server is responding (QuakeWorld status on port {port}): "
+                    "{name!r}  map={map!r}  "
+                    "players={players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
+        if protocol == "quake2":
+            try:
+                qinfo = query_utils.quake2_status(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Quake II status on port {port}): "
+                    "{name!r}  map={map!r}  "
+                    "players={players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
+        if protocol == "soldat":
+            try:
+                soldat = query_utils.soldat_info(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Soldat status on port {port}): "
+                    "map={map!r}  players={players}".format(port=port, **soldat)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Server does not appear to be responding: " + str(exc))
+
+        if protocol == "source_rcon":
+            try:
+                result = query_utils.source_rcon_info(
+                    host,
+                    port,
+                    self.data.get("adminpassword", ""),
+                    timeout=30.0,
+                    retries=2,
+                    retry_delay=2.0,
+                )
+                players = result.get("players")
+                print(
+                    "Server is responding (Source RCON on port {}): players={}".format(
+                        port, "?" if players is None else players
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Server does not appear to be responding: " + str(exc))
+
+        if protocol == "ut3":
+            try:
+                query_utils.ut3_status(host, port, timeout=10.0)
+                print("Server is responding (UT3/GameSpy4 query on port {}).".format(port))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
+        if protocol == "bedrock":
+            try:
+                bedrock_info = query_utils.bedrock_info(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Bedrock ping on port {port}): "
+                    "{name!r}  map={map!r}  players={players_online}/{players_max}  version={version!r}".format(
+                        port=port, **bedrock_info
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError(
+                    "Server does not appear to be responding: " + str(exc)
+                )
+
+        if protocol == "terraria":
+            try:
+                query_utils.terraria_info(host, port, timeout=10.0)
+                print(
+                    "Server is responding (Terraria handshake on port {}).".format(
+                        port
+                    )
                 )
                 return
             except query_utils.QueryError as exc:
@@ -817,9 +1359,16 @@ class Server(object):
 
         The game module may define ``get_info_address(server)`` returning
         ``(host, port, protocol)`` where *protocol* is ``"slp"`` (Minecraft
-        Server List Ping), ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
-        (Quake3/QFusion UDP getstatus), ``"ts3"`` (TeamSpeak 3 ServerQuery),
-        ``"udp"`` (generic UDP reachability), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
+        Server List Ping), ``"bedrock"`` (Minecraft Bedrock RakNet ping),
+        ``"a2s"`` (Source/Steam A2S_INFO), ``"quake"``
+        (Quake3/QFusion UDP getstatus), ``"quakeworld"`` (QuakeWorld UDP status), ``"quake2"`` (Quake II UDP status),
+        ``"ut3"`` (Unreal3/GameSpy4 UDP),
+        ``"ts3"`` (TeamSpeak 3 ServerQuery),
+        ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
+        (authenticated Source RCON),
+        ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
+        ``/status`` endpoint), ``"terraria"`` (native framed connection
+        handshake), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
         falls back to an A2S query on the game port, then TCP.
 
         When *as_json* is ``True`` the result is printed as a JSON object
@@ -833,10 +1382,35 @@ class Server(object):
             host, port, protocol = get_addr(self)
             _explicit = True
         else:
-            host = "127.0.0.1"
+            host = runtime_module.resolve_query_host(self)
             port = self.data.get("queryport", self.data["port"])
             protocol = "a2s"
             _explicit = False
+        port = int(port)
+
+        if protocol == "bedrock":
+            try:
+                result = query_utils.bedrock_info(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "bedrock", "port": port, **result}))
+                    return
+                lines = [
+                    "Server info (Bedrock ping on port {}):".format(port),
+                    "  Name        : {}".format(result.get("name", "")),
+                    "  Map         : {}".format(result.get("map", "")),
+                    "  Players     : {}/{}".format(
+                        result.get("players_online", "?"),
+                        result.get("players_max", "?"),
+                    ),
+                    "  Version     : {}".format(result.get("version", "")),
+                ]
+                gamemode = result.get("gamemode")
+                if gamemode not in (None, ""):
+                    lines.append("  Game Mode   : {}".format(gamemode))
+                print("\n".join(lines))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "slp":
             try:
@@ -883,6 +1457,7 @@ class Server(object):
                         return
                     print(
                         "Server info (A2S on port {port}):\n"
+                        "  Protocol    : A2S\n"
                         "  Name        : {name}\n"
                         "  Map         : {map}\n"
                         "  Folder      : {folder}\n"
@@ -915,6 +1490,7 @@ class Server(object):
                                 return
                             print(
                                 "Server info (A2S on port {port}):\n"
+                                "  Protocol    : A2S\n"
                                 "  Name        : {name}\n"
                                 "  Map         : {map}\n"
                                 "  Folder      : {folder}\n"
@@ -949,10 +1525,19 @@ class Server(object):
                     # A2S failed on the dedicated query port — try TCP on the
                     # game port before giving up.
                     try:
-                        _game_port = self.data["port"]
-                        _ms = query_utils.tcp_ping("127.0.0.1", _game_port)
+                        _game_port = int(self.data["port"])
+                        _ms = query_utils.tcp_ping(host, _game_port)
                         if as_json:
-                            print(json.dumps({"protocol": "tcp", "port": _game_port, "latency_ms": round(_ms, 1)}))
+                            print(
+                                json.dumps(
+                                    {
+                                        "protocol": "tcp",
+                                        "port": _game_port,
+                                        "latency_ms": round(_ms, 1),
+                                        "a2s_error": str(exc),
+                                    }
+                                )
+                            )
                             return
                         print(
                             "Server port is open (TCP ping on port {} \u2014 {:.1f} ms)."
@@ -963,8 +1548,146 @@ class Server(object):
                         pass
                     raise ServerError("Info query failed: " + str(exc))
                 # Default heuristic: fall through to TCP
-                host = "127.0.0.1"
-                port = self.data["port"]
+                host = runtime_module.resolve_query_host(self)
+                port = int(self.data["port"])
+
+        if protocol == "soldat":
+            try:
+                parsed = query_utils.soldat_info(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "soldat", "port": port, **parsed}))
+                    return
+                print(
+                    "Server info (Soldat status on port {port}):\n"
+                    "  Map         : {map}\n"
+                    "  Players     : {players}".format(port=port, **parsed)
+                )
+                if parsed.get("gamemode"):
+                    print("  Gamemode    : " + parsed["gamemode"])
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "source_rcon":
+            try:
+                result = query_utils.source_rcon_info(
+                    host,
+                    port,
+                    self.data.get("adminpassword", ""),
+                    timeout=30.0,
+                    retries=2,
+                    retry_delay=2.0,
+                )
+                payload = {"protocol": "source_rcon", "port": port, **result}
+                if as_json:
+                    print(json.dumps(payload))
+                    return
+                players = result.get("players")
+                print(
+                    "Server info (Source RCON on port {}):\n"
+                    "  Players     : {}".format(
+                        port, "unknown" if players is None else players
+                    )
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "quake2":
+            try:
+                parsed = query_utils.quake2_status(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "quake2", "port": port, **parsed}))
+                    return
+                print(
+                    "Server info (Quake II status on port {port}):\n"
+                    "  Name        : {name}\n"
+                    "  Map         : {map}\n"
+                    "  Players     : {players}/{max_players}".format(port=port, **parsed)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "quakeworld":
+            try:
+                parsed = query_utils.quakeworld_status(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "quakeworld", "port": port, **parsed}))
+                    return
+                print(
+                    "Server info (QuakeWorld status on port {port}):\n"
+                    "  Name       : {name}\n"
+                    "  Map        : {map}\n"
+                    "  Players    : {players}/{max_players}".format(port=port, **parsed)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "http_status":
+            try:
+                _, result = _query_http_status_payload(
+                    query_utils,
+                    host,
+                    port,
+                    server=self,
+                )
+                if as_json:
+                    print(json.dumps({"protocol": "http_status", "port": port, **result}))
+                    return
+
+                lines = [
+                    "Server info (HTTP status API on port {}):".format(port),
+                    "  Status      : {}".format(result.get("status", "")),
+                    "  Players     : {}".format(result.get("player_count", "?")),
+                ]
+                player_names = result.get("player_names")
+                if isinstance(player_names, list) and player_names:
+                    lines.append(
+                        "  Online      : {}".format(
+                            ", ".join(str(name) for name in player_names)
+                        )
+                    )
+                print("\n".join(lines))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "robust_status":
+            try:
+                _, result = _query_robust_status_payload(query_utils, host, port)
+                if as_json:
+                    print(json.dumps({"protocol": "robust_status", "port": port, **result}))
+                    return
+
+                lines = [
+                    "Server info (Robust status API on port {}):".format(port),
+                    "  Name        : {}".format(result.get("name", "")),
+                    "  Players     : {}".format(result.get("players", "?")),
+                ]
+                description = result.get("description")
+                if description not in (None, ""):
+                    lines.append("  Description : {}".format(description))
+                connect_address = result.get("connect_address")
+                if connect_address not in (None, ""):
+                    lines.append("  Connect     : {}".format(connect_address))
+                auth_mode = result.get("auth", {}).get("mode")
+                if auth_mode not in (None, ""):
+                    lines.append("  Auth        : {}".format(auth_mode))
+                build = result.get("build", {})
+                version = ""
+                if isinstance(build, MappingABC):
+                    version = build.get("version") or build.get("engine_version") or ""
+                if version:
+                    lines.append("  Version     : {}".format(version))
+                tags = result.get("tags")
+                if detailed and isinstance(tags, list) and tags:
+                    lines.append("  Tags        : {}".format(", ".join(str(tag) for tag in tags)))
+                print("\n".join(lines))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
 
         if protocol == "quake":
             try:
@@ -977,6 +1700,38 @@ class Server(object):
                     "  Name       : {name}\n"
                     "  Map        : {map}\n"
                     "  Players    : {players}/{max_players}".format(port=port, **qinfo)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "ut3":
+            try:
+                query_utils.ut3_status(host, port, timeout=10.0)
+                if as_json:
+                    print(json.dumps({"protocol": "ut3", "port": port}))
+                    return
+                print(
+                    "Server is responding (UT3/GameSpy4 query on port {})."
+                    "  No further details available.".format(port)
+                )
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "terraria":
+            try:
+                result = query_utils.terraria_info(host, port, timeout=10.0)
+                if as_json:
+                    print(
+                        json.dumps(
+                            {"protocol": "terraria", "port": port, **result}
+                        )
+                    )
+                    return
+                print(
+                    "Server info (Terraria handshake on port {}):\n"
+                    "  Response    : {}".format(port, result["response"])
                 )
                 return
             except query_utils.QueryError as exc:
@@ -1228,9 +1983,71 @@ class Server(object):
         else:
             data[key[-1]] = value
 
-    def doset(self, key, *args, **kwargs):
-        """Set a value in the data store. The value will be check and post set actions may be run"""
-        types, key = _parsekey(key)
+    def _run_set_sync_hooks(self, key, *args, **kwargs):
+        """Run any module hooks that keep real server config aligned after ``set``."""
+
+        top_level_key = str(key[0]).lower() if key else None
+        sync_fn = getattr(self.module, "sync_server_config", None)
+        if sync_fn is not None:
+            configured_keys = getattr(self.module, "config_sync_keys", None)
+            if configured_keys is None:
+                configured_keys = getattr(self.module, "set_sync_keys", None)
+            if configured_keys is not None:
+                normalized_keys = {str(config_key).lower() for config_key in configured_keys}
+                should_sync = top_level_key in normalized_keys
+            else:
+                should_sync = False
+            if should_sync:
+                sync_fn(self)
+
+        postset_fn = getattr(self.module, "postset", None)
+        if postset_fn is not None:
+            postset_fn(self, key, *args, **kwargs)
+
+    def doset(  # pylint: disable=keyword-arg-before-vararg
+        self,
+        key=None,
+        *args,
+        list_settings=False,
+        describe=False,
+        values=False,
+        verbose=False,
+        **kwargs,
+    ):
+        """Set a value in the data store or inspect schema-backed setting metadata."""
+        if list_settings:
+            self._print_setting_schema_list(verbose=verbose)
+            return
+        if describe:
+            if key is None:
+                raise ServerError("Error: set --describe requires a key")
+            try:
+                self._print_setting_schema_description(key)
+            except KeyResolutionError as ex:
+                raise ServerError(str(ex))
+            return
+        if values:
+            if key is None:
+                raise ServerError("Error: set --values requires a key")
+            try:
+                self._print_setting_schema_values(key)
+            except KeyResolutionError as ex:
+                raise ServerError(str(ex))
+            return
+        if key is None:
+            raise ServerError("Error: set requires a key")
+
+        resolved = None
+        schema = self.get_setting_schema()
+        if schema:
+            try:
+                resolved = resolve_requested_key(key, schema)
+            except KeyResolutionError as ex:
+                if "Ambiguous setting key" in str(ex):
+                    raise ServerError(str(ex))
+                resolved = None
+        effective_key = resolved.storage_key if resolved is not None else key
+        types, key = _parsekey(effective_key)
         runtime_managed_key = runtime_module.handles_set_key(key)
         if runtime_managed_key:
             try:
@@ -1260,12 +2077,7 @@ class Server(object):
                     )
                 )
         self._apply_set_value(self.data, types, key, value)
-        try:
-            fn = self.module.postset
-        except AttributeError:
-            pass
-        else:
-            fn(server, key, *args, **kwargs)
+        self._run_set_sync_hooks(key, *args, **kwargs)
         if (
             len(key) == 1
             and value != "DELETE"

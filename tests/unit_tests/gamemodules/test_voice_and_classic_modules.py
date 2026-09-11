@@ -54,7 +54,7 @@ def test_qlserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = qlserver.get_start_command(server)
 
-    assert cmd[0] == "./qzeroded.x64"
+    assert cmd[:3] == ["env", "LD_LIBRARY_PATH=./linux64", "./qzeroded.x64"]
     assert "net_port" in cmd
     assert "sv_hostname" in cmd
     assert cwd == server.data["dir"]
@@ -83,7 +83,8 @@ def test_qlserver_runtime_requirements_use_steamcmd_linux_family(tmp_path):
         {"host": 27960, "container": 27960, "protocol": "udp"}
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][3] == "/srv/server"
+    assert spec["command"][:3] == ["env", "LD_LIBRARY_PATH=./linux64", "./qzeroded.x64"]
+    assert spec["command"][spec["command"].index("fs_homepath") + 1] == "/srv/server"
 
 
 def test_qlserver_update_downloads_and_optionally_restarts(monkeypatch):
@@ -138,7 +139,11 @@ def test_mumbleserver_runtime_requirements_use_simple_tcp_family(tmp_path):
         {"host": 64738, "container": 64738, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"] == ["murmurd", "-fg", "-ini", "/srv/server/mumble-server.ini"]
+    assert spec["command"] == [
+        "sh",
+        "-lc",
+        "mkdir -p /srv/server && chown -R mumble-server:mumble-server /srv/server && exec murmurd -fg -ini /srv/server/mumble-server.ini",
+    ]
 
 
 def test_ut99server_install_extracts_archive(tmp_path, monkeypatch):
@@ -228,6 +233,8 @@ def test_ut2k4server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = ut2k4server.get_start_command(server)
 
-    assert cmd[0] == "./System/ucc-bin"
+    assert cmd[0] == "env"
+    assert any(token.startswith("HOME=") for token in cmd)
+    assert "./System/ucc-bin" in cmd
     assert "DM-Antalus?Game=XGame.xDeathMatch?MaxPlayers=16" in cmd
     assert cwd == server.data["dir"]

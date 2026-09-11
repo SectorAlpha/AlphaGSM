@@ -2,6 +2,13 @@
 
 This guide covers the `arma2coserver` module in AlphaGSM.
 
+## Status
+
+`arma2coserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 2: Combined Operations dedicated server app `33935`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,24 @@ alphagsm myarma2cos backup
 
 - Module name: `arma2coserver`
 - Default port: 2302
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create arma2coserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `servername` | hostname, name | string | The public hostname written to server.cfg. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

@@ -2,9 +2,16 @@
 
 This guide covers the `starbound` module in AlphaGSM.
 
+`starbound` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection around that staged-native-server-tree prerequisite,
+while local runs remain process-backed by default unless you opt into the
+Docker backend.
+
 ## Requirements
 
 - `screen`
+- a native Starbound server tree containing `linux64/starbound_server`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -21,6 +28,11 @@ Run setup:
 ```bash
 alphagsm mystarboun setup
 ```
+
+`starbound` is supported in `ENABLED (BYO)` mode. The current anonymous
+SteamCMD app does not ship the required Linux server binary, so before `setup`
+or `start` you should stage a native Starbound server tree containing
+`linux64/starbound_server` inside your chosen `<install_dir>/`.
 
 Start it:
 
@@ -46,7 +58,15 @@ Setup configures:
 
 - the game port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+
+Suggested flow:
+
+```bash
+alphagsm mystarboun create starbound
+alphagsm mystarboun setup -n /path/to/starbound
+# copy linux64/starbound_server and the rest of the native server tree into /path/to/starbound/
+alphagsm mystarboun start
+```
 
 ## Useful Commands
 
@@ -59,6 +79,23 @@ alphagsm mystarboun backup
 
 - Module name: `starbound`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create starbound`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

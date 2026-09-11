@@ -26,14 +26,15 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_soulmask_get_start_command_builds_expected_args(tmp_path):
+def test_soulmask_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(soulmask, "IS_LINUX", False)
     server = DummyServer("soul")
-    exe = tmp_path / "WSServer.sh"
+    exe = tmp_path / "WSServer.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "WSServer.sh",
+            "exe_name": "WSServer.exe",
             "level": "Level01_Main",
             "servername": "AlphaGSM soul",
             "maxplayers": 10,
@@ -51,7 +52,7 @@ def test_soulmask_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = soulmask.get_start_command(server)
 
-    assert cmd[0] == "./WSServer.sh"
+    assert cmd[0] == "./WSServer.exe"
     assert "-Port=8777" in cmd
     assert "-QueryPort=27015" in cmd
     assert cwd == server.data["dir"]
@@ -70,7 +71,8 @@ def test_stnserver_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_notdserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(notdserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(notdserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setattr(notdserver, "IS_LINUX", False)
     server = DummyServer("notd")
     exe_dir = tmp_path / "LF" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -90,11 +92,41 @@ def test_notdserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
     assert cmd == [
         "LF/Binaries/Win64/LFServer.exe",
         "?listen",
-        "-log",
         "-Port=7777",
         "-QueryPort=27015",
+        "-log",
+        "-CRASHREPORTS",
     ]
     assert cwd == server.data["dir"]
+
+
+def test_notdserver_runtime_metadata_enables_xvfb_for_docker(tmp_path):
+    server = DummyServer("notd")
+    exe = tmp_path / "LFServer.exe"
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "LFServer.exe",
+            "port": 7777,
+            "queryport": 27015,
+        }
+    )
+
+    requirements = notdserver.get_runtime_requirements(server)
+    spec = notdserver.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["SDL_VIDEODRIVER"] == "x11"
+
+
+def test_notdserver_query_addresses_use_tcp_on_linux(monkeypatch):
+    monkeypatch.setattr(notdserver, "IS_LINUX", True)
+    server = DummyServer("notd")
+    server.data.update({"port": 7777, "queryport": 27015})
+
+    assert notdserver.get_query_address(server) == ("127.0.0.1", 7777, "tcp")
+    assert notdserver.get_info_address(server) == ("127.0.0.1", 7777, "tcp")
 
 
 def test_more_survival_modules_update_downloads_and_optionally_restart(monkeypatch):
@@ -116,7 +148,7 @@ def test_more_survival_modules_update_downloads_and_optionally_restart(monkeypat
     stnserver.update(stn, validate=False, restart=False)
     notdserver.update(notd, validate=False, restart=False)
 
-    assert ("/srv/soul/", 3017300, True, True) in calls
+    assert ("/srv/soul/", 3017310, True, True) in calls
     assert ("/srv/stn/", 1502300, True, False) in calls
     assert ("/srv/notd/", 1420710, True, False) in calls
     assert soul.start_calls == 1

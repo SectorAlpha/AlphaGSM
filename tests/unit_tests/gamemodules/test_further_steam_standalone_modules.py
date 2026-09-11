@@ -59,7 +59,7 @@ def test_ark_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = ark.get_start_command(server)
 
     assert cmd[0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
-    assert "TheIsland?listen?SessionName=AlphaGSM arkalpha?Port=7777?QueryPort=27015?MaxPlayers=70?ServerAdminPassword=alphagsm" in cmd[1]
+    assert "TheIsland?listen?SessionName=AlphaGSM_arkalpha?Port=7777?QueryPort=27015?MaxPlayers=70?ServerAdminPassword=alphagsm" in cmd[1]
     assert cwd == server.data["dir"]
 
 

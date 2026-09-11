@@ -1,82 +1,94 @@
-# Just Cause 3
+# Just Cause 3 Multiplayer
 
 This guide covers the `jc3server` module in AlphaGSM.
 
-## Requirements
-
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+Status: supported on Linux. The validated branch path uses AlphaGSM's shared
+`steamcmd-linux` Docker runtime with the native Linux dedicated server from
+Steam app `619960`.
 
 ## Quick Start
 
 Create the server:
 
 ```bash
-alphagsm myjc3serve create jc3server
+alphagsm myjc3server create jc3server
 ```
 
 Run setup:
 
 ```bash
-alphagsm myjc3serve setup
+alphagsm myjc3server setup
 ```
 
 Start it:
 
 ```bash
-alphagsm myjc3serve start
+alphagsm myjc3server start
 ```
 
 Check it:
 
 ```bash
-alphagsm myjc3serve status
+alphagsm myjc3server status
+alphagsm myjc3server query
+alphagsm myjc3server info --json
 ```
 
 Stop it:
 
 ```bash
-alphagsm myjc3serve stop
+alphagsm myjc3server stop
 ```
 
 ## Setup Details
 
 Setup configures:
 
-- the game port (default 7777)
+- the main game port, default `4200`
 - the install directory
-- SteamCMD downloads the server files
+- anonymous SteamCMD download of the dedicated server files
+
+AlphaGSM also keeps the native `config.json` in sync before `start`.
+
+## Port Contract
+
+AlphaGSM manages the native JC3MP side ports from the configured main port:
+
+- `port = <game port>`
+- `queryPort = port + 1`
+- `steamPort = port + 2`
+- `httpPort = port + 3`
+
+The validated AlphaGSM health surface is generic `tcp` on `httpPort`.
+
+## Runtime Notes
+
+- Module name: `jc3server`
+- Default executable: `Server`
+- Config file: `<install_dir>/config.json`
+- SteamCMD App ID: `619960`
+- Default runtime family: `steamcmd-linux`
 
 ## Useful Commands
 
 ```bash
-alphagsm myjc3serve update
-alphagsm myjc3serve backup
+alphagsm myjc3server update
+alphagsm myjc3server backup
 ```
 
-## Notes
+<!-- alphagsm-server-variables:start -->
 
-- Module name: `jc3server`
-- Default port: 7777
+## Server variables
 
-## Developer Notes
+After `create jc3server`, inspect or change these with `set`:
 
-### Run File
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
 
-- **Executable**: `openjc3-server`
-- **Location**: `<install_dir>/openjc3-server`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `619960`
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
 
-### Server Configuration
-
-- **Config file**: See game module source
-- **Max players**: `64`
-- **Template**: See [server-templates/jc3server/](../server-templates/jc3server/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+<!-- alphagsm-server-variables:end -->

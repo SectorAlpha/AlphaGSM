@@ -105,6 +105,24 @@ def test_kill_via_pidfile(tmp_path):
     assert not alive or not (tmp_path / "logs" / "Alpha#srv1.pid").exists()
 
 
+def test_kill_via_pidfile_force_kills_recorded_process_group(tmp_path, monkeypatch):
+    backend = _make_backend(tmp_path)
+    pidfile = tmp_path / "logs" / "Alpha#srv1.pid"
+    pidfile.write_text("4321")
+    killed_groups = []
+    monkeypatch.setattr(os, "getpgid", lambda pid: pid)
+    monkeypatch.setattr(
+        os,
+        "killpg",
+        lambda pid, sig: killed_groups.append((pid, sig)),
+    )
+
+    backend.kill("srv1")
+
+    assert killed_groups == [(4321, signal.SIGKILL)]
+    assert not pidfile.exists()
+
+
 def test_kill_raises_for_unknown_session(tmp_path):
     backend = _make_backend(tmp_path)
     with pytest.raises(ProcessError, match="No running session"):

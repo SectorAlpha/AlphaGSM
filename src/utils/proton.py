@@ -26,6 +26,12 @@ HEADLESS_ENV = {
     "DISPLAY": "",
     "WINEDLLOVERRIDES": "winex11.drv=",
 }
+PROTON_HEADLESS_ENV = {
+    # Proton-GE's optional controller UI helper requires a display and can
+    # abort otherwise-valid dedicated-server launches before the game binds.
+    "PROTON_USE_XALIA": "0",
+}
+SANITIZED_TEMP_VARS = ("TMPDIR", "TMP", "TEMP")
 
 # ---------------------------------------------------------------------------
 # Proton-GE search directories (checked in order; first match wins)
@@ -37,6 +43,16 @@ _PROTON_SEARCH_DIRS = [
     os.path.expanduser("~/.local/share/Steam/compatibilitytools.d"),
     "/opt/proton-ge",
 ]
+
+XVFB_RUN_HOST_DEPENDENCY = {
+    "id": "xvfb-run",
+    "display_name": "xvfb-run",
+    "command": "xvfb-run",
+    "platforms": ("linux",),
+    "install_hints": {
+        "linux": "Install the host package 'xvfb' before launching this server locally.",
+    },
+}
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +93,12 @@ def find_proton():
 def is_available():
     """Return ``True`` if Wine or Proton-GE is available on this system."""
     return find_wine() is not None or find_proton() is not None
+
+
+def xvfb_host_dependency():
+    """Return the shared Linux xvfb-run host dependency metadata."""
+
+    return dict(XVFB_RUN_HOST_DEPENDENCY)
 
 
 # ---------------------------------------------------------------------------
@@ -123,37 +145,75 @@ def wrap_command(command, wineprefix=None, prefer_proton=False):
     if prefer_proton and proton is not None:
         compat_dir = wineprefix or os.path.expanduser("~/.proton")
         os.makedirs(compat_dir, exist_ok=True)
-        return [
+        return prepend_env_unsets([
             "env",
             *_HEADLESS,
+            *["%s=%s" % item for item in PROTON_HEADLESS_ENV.items()],
             f"STEAM_COMPAT_DATA_PATH={compat_dir}",
             "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
             proton,
             "run",
-        ] + list(command)
+        ] + list(command), *SANITIZED_TEMP_VARS)
 
     if wine is not None:
         env_vars = list(_HEADLESS)
         if wineprefix:
             env_vars.append(f"WINEPREFIX={wineprefix}")
-        return ["env"] + env_vars + [wine] + list(command)
+        return prepend_env_unsets(["env"] + env_vars + [wine] + list(command), *SANITIZED_TEMP_VARS)
 
     if proton is not None:
         compat_dir = wineprefix or os.path.expanduser("~/.proton")
         os.makedirs(compat_dir, exist_ok=True)
-        return [
+        return prepend_env_unsets([
             "env",
             *_HEADLESS,
+            *["%s=%s" % item for item in PROTON_HEADLESS_ENV.items()],
             f"STEAM_COMPAT_DATA_PATH={compat_dir}",
             "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
             proton,
             "run",
-        ] + list(command)
+        ] + list(command), *SANITIZED_TEMP_VARS)
 
     raise RuntimeError(
         "Neither Wine nor Proton-GE is available on this system.  "
         "Run  scripts/install_proton.sh  to install one of them."
     )
+
+
+def prepend_env_assignments(command, **env_vars):
+    """Return *command* with extra ``env`` assignments prepended."""
+
+    assignments = [
+        "%s=%s" % (key, value)
+        for key, value in env_vars.items()
+        if value is not None
+    ]
+    command = list(command)
+    if not assignments:
+        return command
+    if command and command[0] == "env":
+        prefix = ["env"]
+        index = 1
+        while index + 1 < len(command) and command[index] == "-u":
+            prefix.extend(command[index:index + 2])
+            index += 2
+        return prefix + assignments + command[index:]
+    return ["env"] + assignments + command
+
+
+def prepend_env_unsets(command, *env_names):
+    """Return *command* with leading ``env -u`` unsets inserted."""
+
+    command = list(command)
+    names = [name for name in env_names if name]
+    if not names:
+        return command
+    unset_tokens = []
+    for name in names:
+        unset_tokens.extend(["-u", name])
+    if command and command[0] == "env":
+        return ["env"] + unset_tokens + command[1:]
+    return ["env"] + unset_tokens + command
 
 
 def _is_env_assignment(token):
@@ -166,7 +226,7 @@ def _is_env_assignment(token):
 
 
 def unwrap_runtime_command(command):
-    """Strip a leading ``env``/Wine/Proton launcher wrapper from *command*."""
+    """Strip display, env, Wine, and Proton wrappers from *command*."""
 
     command = list(command)
     if not command:
@@ -174,16 +234,25 @@ def unwrap_runtime_command(command):
     index = 0
     if command[index] == "env":
         index += 1
+        while index + 1 < len(command) and command[index] == "-u":
+            index += 2
         while index < len(command) and _is_env_assignment(command[index]):
             index += 1
     if index >= len(command):
         return command
+    if os.path.basename(command[index]) == "xvfb-run":
+        index += 1
+        while index < len(command) and command[index].startswith("-"):
+            index += 1
+        if index >= len(command):
+            return command
+        return unwrap_runtime_command(command[index:])
     launcher = os.path.basename(command[index])
     if launcher in ("wine", "wine64"):
         return command[index + 1 :]
     if index + 1 < len(command) and command[index + 1] == "run":
         return command[index + 2 :]
-    return command
+    return command[index:]
 
 
 def _build_port_specs(server, port_definitions):
@@ -193,12 +262,25 @@ def _build_port_specs(server, port_definitions):
     for definition in port_definitions or ():
         if isinstance(definition, dict):
             key = definition.get("key")
-            if key not in server.data or server.data[key] is None:
+            value = server.data.get(key, definition.get("default"))
+            if value is None:
                 continue
+            base_port = int(value)
+            offset = int(definition.get("offset", 0))
+            host_port = base_port + offset
+            container_port = int(definition.get("container", host_port))
+            for port in (host_port, container_port):
+                if port < 1 or port > 65535:
+                    raise ValueError(
+                        "Invalid derived port {} for server {}".format(
+                            port,
+                            getattr(server, "name", "<unknown>"),
+                        )
+                    )
             ports.append(
                 {
-                    "host": int(server.data[key]),
-                    "container": int(definition.get("container", server.data[key])),
+                    "host": host_port,
+                    "container": container_port,
                     "protocol": definition.get("protocol", "udp"),
                 }
             )
@@ -217,6 +299,31 @@ def _build_port_specs(server, port_definitions):
             }
         )
     return ports
+
+
+def _map_host_path_into_container(mounts, host_path):
+    """Return the container path for *host_path* when it is mounted."""
+
+    if not host_path:
+        return None
+
+    host_path_abs = os.path.abspath(host_path)
+    for mount in mounts or ():
+        source = mount.get("source")
+        target = mount.get("target")
+        if not source or not target:
+            continue
+        source_abs = os.path.abspath(source)
+        try:
+            if os.path.commonpath([source_abs, host_path_abs]) != source_abs:
+                continue
+        except ValueError:
+            continue
+        relative_path = os.path.relpath(host_path_abs, source_abs)
+        if relative_path == ".":
+            return str(target)
+        return os.path.join(str(target), relative_path).replace("\\", "/")
+    return None
 
 
 def _resolve_container_wineprefix(server):
@@ -263,6 +370,9 @@ def get_runtime_requirements(
     port_definitions=(),
     prefer_proton=False,
     extra_env=None,
+    extra_host_dependencies=None,
+    stop_mode=None,
+    stdin_open=False,
 ):
     """Return Docker metadata for Windows servers run through Wine/Proton."""
 
@@ -270,6 +380,8 @@ def get_runtime_requirements(
     env = dict(HEADLESS_ENV)
     env["ALPHAGSM_WINEPREFIX"] = wineprefix
     env["ALPHAGSM_PREFER_PROTON"] = "1" if prefer_proton else "0"
+    if prefer_proton:
+        env.update(PROTON_HEADLESS_ENV)
     if extra_env:
         env.update({key: str(value) for key, value in extra_env.items()})
 
@@ -278,10 +390,27 @@ def get_runtime_requirements(
         "family": "wine-proton",
         "mounts": mounts,
         "env": env,
+        "host_dependencies": [
+            {
+                "id": "wine-proton",
+                "display_name": "Wine or Proton-GE",
+                "platforms": ("linux",),
+                "command": (
+                    {"label": "wine", "command": "wine"},
+                    {"label": "proton", "command": find_proton() or "proton"},
+                ),
+            }
+        ],
     }
+    if extra_host_dependencies:
+        requirements["host_dependencies"].extend(list(extra_host_dependencies))
     ports = _build_port_specs(server, port_definitions)
     if ports:
         requirements["ports"] = ports
+    if stop_mode is not None:
+        requirements["stop_mode"] = stop_mode
+    if stdin_open:
+        requirements["stdin_open"] = True
     return requirements
 
 
@@ -292,24 +421,45 @@ def get_container_spec(
     port_definitions=(),
     prefer_proton=False,
     extra_env=None,
+    stop_mode=None,
+    stdin_open=False,
+    tty=False,
     working_dir=CONTAINER_SERVER_DIR,
 ):
     """Return the Docker launch spec for a Wine/Proton-backed server."""
 
-    command, _cwd = _get_container_start_command(server, get_start_command)
+    command, cwd = _get_container_start_command(server, get_start_command)
     requirements = get_runtime_requirements(
         server,
         port_definitions=port_definitions,
         prefer_proton=prefer_proton,
         extra_env=extra_env,
     )
-    return {
-        "working_dir": working_dir,
+    resolved_working_dir = working_dir
+    mapped_cwd = _map_host_path_into_container(requirements.get("mounts", []), cwd)
+    if mapped_cwd and working_dir == CONTAINER_SERVER_DIR:
+        resolved_working_dir = mapped_cwd
+    native_command = unwrap_runtime_command(command)
+    if (
+        native_command
+        and not os.path.isabs(native_command[0])
+        and not native_command[0].startswith("./")
+    ):
+        native_command[0] = "./" + native_command[0].lstrip("./")
+    spec = {
+        "working_dir": resolved_working_dir,
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
         "env": requirements.get("env", {}),
-        "command": unwrap_runtime_command(command),
+        "command": native_command,
     }
+    if tty:
+        spec["tty"] = True
+    if stop_mode is not None:
+        spec["stop_mode"] = stop_mode
+    if stdin_open:
+        spec["stdin_open"] = True
+    return spec
 
 
 def _get_container_start_command(server, get_start_command):

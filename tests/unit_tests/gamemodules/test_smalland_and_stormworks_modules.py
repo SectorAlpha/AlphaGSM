@@ -1,3 +1,5 @@
+import pytest
+
 import gamemodules.smallandserver as smallandserver
 import gamemodules.stormworksserver as stormworksserver
 
@@ -47,7 +49,7 @@ def test_smallandserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_stormworksserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
     # Monkeypatch proton.wrap_command so the test is independent of Wine/Proton installation.
-    monkeypatch.setattr(stormworksserver.proton, "wrap_command", lambda cmd, wineprefix=None: ["wine"] + list(cmd))
+    monkeypatch.setattr(stormworksserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: ["wine"] + list(cmd))
 
     server = DummyServer("storm")
     exe = tmp_path / "server64.exe"
@@ -76,8 +78,8 @@ def test_smalland_and_stormworks_updates_download_and_optionally_restart(monkeyp
     )
 
     smallandserver.update(small, validate=True, restart=True)
-    stormworksserver.update(storm, validate=False, restart=False)
+    with pytest.raises(Exception, match="ENABLED \\(BYO\\): stormworksserver"):
+        stormworksserver.update(storm, validate=False, restart=False)
 
     assert ("/srv/small/", 808040, True, True) in calls
-    assert ("/srv/storm/", 1247090, True, False) in calls
     assert small.start_calls == 1

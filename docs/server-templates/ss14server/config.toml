@@ -1,0 +1,3 @@
+server_name = "AlphaGSM <server name>"
+port = 1212
+max_players = 32

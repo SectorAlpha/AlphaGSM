@@ -2,9 +2,15 @@
 
 This guide covers the `soulmask` module in AlphaGSM.
 
+`soulmask` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. The checked-in GitHub validation path for this server is
+Docker-first through the shared `wine-proton` runtime. `query` and `info`
+use the validated generic TCP health surface on the managed game port under
+Linux/Wine.
+
 ## Requirements
 
-- `screen`
+- `docker` for the validated Linux Wine/Proton path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +50,7 @@ alphagsm mysoulmask stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 8777)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,16 +64,49 @@ alphagsm mysoulmask backup
 ## Notes
 
 - Module name: `soulmask`
-- Default port: 27015
+- Default port: `8777`
+- Validated Linux runtime: Docker-backed `wine-proton`
+- Query/info contract on Linux: generic TCP on the managed game port
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create soulmask`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Administrator password. Stored as a secret. |
+| `backupinterval` | — | integer | Backup interval in seconds. |
+| `bindaddress` | — | string | Hosted IP address to bind for launch. |
+| `dir` | — | string | Install directory for the server. |
+| `echoport` | — | integer | Echo service port. |
+| `exe_name` | — | string | Server executable filename. |
+| `level` | — | string | The startup world or map. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `mods` | — | string | Optional mod list. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+| `savinginterval` | — | integer | Autosave interval in seconds. |
+| `servername` | hostname, name | string | The advertised server name. Example: `AlphaGSM Server`. |
+| `serverpassword` | sv_password, password | string | Server password. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `WSServer.sh`
-- **Location**: `<install_dir>/WSServer.sh`
-- **Engine**: Custom (SteamCMD)
-- **SteamCMD App ID**: `3017300`
+- **Executable**: `WSServer.exe`
+- **Location**: `<install_dir>/WSServer.exe`
+- **Engine**: Windows dedicated server under Wine/Proton on Linux
+- **SteamCMD App ID**: `3017310`
 
 ### Server Configuration
 

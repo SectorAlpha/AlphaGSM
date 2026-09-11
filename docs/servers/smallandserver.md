@@ -2,7 +2,11 @@
 
 This guide covers the `smallandserver` module in AlphaGSM.
 
+`smallandserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The GitHub integration lane exercises process and Docker runtimes. Validation of the Docker host-user change is pending CI; local runs use the process runtime unless you select Docker.
+
 ## Requirements
+
+For Docker, run AlphaGSM as a normal user with Docker access. The server rejects root; its container uses your user and group IDs and a private writable home directory.
 
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
@@ -59,6 +63,29 @@ alphagsm mysmalland backup
 
 - Module name: `smallandserver`
 - Default port: 7777
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create smallandserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `servername` | hostname, name | string | Configured public server name. |
+| `serverpassword` | sv_password, password | string | Optional join password. Stored as a secret. |
+| `worldname` | world, map, gamemap, levelname | string | Configured persistent world name. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

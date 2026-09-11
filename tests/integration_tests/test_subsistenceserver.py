@@ -1,12 +1,15 @@
 """Integration test for subsistenceserver."""
 
+import os
+
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    require_proton,
+    resolve_runtime_image,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -14,9 +17,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_glob_log_marker,
-    wait_for_tcp_closed,
+    wait_for_info_protocol,
     wait_for_udp_closed,
 )
 from gamemodules.subsistenceserver import steam_app_id
@@ -24,26 +25,46 @@ from gamemodules.subsistenceserver import steam_app_id
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+LOCAL_DOCKER_IMAGE = "alphagsm-wine-proton-runtime:local"
+PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
+runtime_backend = os.environ.get(
+    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+)
+module_name = "subsistenceserver"
 
 
 def test_subsistenceserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_proton()
-    require_command("screen")
+    require_command("docker")
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itsubsistences"
+    image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_DOCKER_IMAGE,
+        PUBLISHED_DOCKER_IMAGE,
+    )
+    queryport = pick_free_tcp_port()
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        backend="subprocess",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "subsistenceserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -54,16 +75,7 @@ def test_subsistenceserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # UE3 dedicated-server logs go to <GameName>/Logs/Launch.log.
-        # The game folder name varies; use a glob so we find it regardless.
-        # LIBGL_ALWAYS_SOFTWARE in get_start_command prevents D3D SM3 shader
-        # compilation crashes under Wine's wined3d.
-        wait_for_glob_log_marker(
-            install_dir,
-            "*/Logs/Launch.log",
-            ["Engine is initialized", "listening on port", "Listening for client"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -95,4 +107,5 @@ def test_subsistenceserver_lifecycle(tmp_path):
         log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

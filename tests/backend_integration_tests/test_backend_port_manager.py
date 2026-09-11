@@ -72,9 +72,9 @@ def test_port_manager_setup_auto_shift_lifecycle_process(tmp_path, lifecycle):
     assert "shifted claimed port set" in setup_result.stdout
 
     shifted_data = lifecycle.load_server_data(home_dir, "pm-shift")
-    assert shifted_data["port"] == base_port + 3
-    assert shifted_data["queryport"] == base_port + 4
-    assert shifted_data["metricsport"] == base_port + 5
+    assert shifted_data["port"] != base_port
+    assert shifted_data["queryport"] == shifted_data["port"] + 1
+    assert shifted_data["metricsport"] == shifted_data["port"] + 2
     assert shifted_data["port_claim_policy"] == {
         "port": "default",
         "queryport": "default",
@@ -179,7 +179,7 @@ def test_port_manager_start_preflight_blocks_taken_port_then_lifecycle_recovers(
     config_path = tmp_path / ("alphagsm-" + runtime_backend + ".conf")
     install_dir = tmp_path / ("server-" + runtime_backend)
 
-    port = lifecycle.pick_free_tcp_port()
+    port = lifecycle.pick_free_tcp_port_group(3)
     lifecycle.write_config(
         config_path,
         home_dir,

@@ -2,7 +2,11 @@
 
 This guide covers the `exfilserver` module in AlphaGSM.
 
+`exfilserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The GitHub integration lane exercises process and Docker runtimes. Docker runs the server as the invoking host user because the executable rejects root.
+
 ## Requirements
+
+For Docker, run AlphaGSM as a normal user with Docker access. The server rejects root; its container uses your user and group IDs and a private writable home directory.
 
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
@@ -44,7 +48,8 @@ alphagsm myexfilser stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the Steam query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +63,32 @@ alphagsm myexfilser backup
 ## Notes
 
 - Module name: `exfilserver`
-- Default port: 27015
+- Default game port: 7777
+- Default query port: 27015
+- `query`, `info`, and `info --json` use Exfil's Steam A2S query port after
+  the game reaches its logged `IpNetDriver` readiness marker.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create exfilserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

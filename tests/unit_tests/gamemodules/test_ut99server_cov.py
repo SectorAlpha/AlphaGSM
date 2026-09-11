@@ -1,36 +1,17 @@
 """Full coverage tests for ut99server."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.ut99server', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.ut99server as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -98,6 +79,9 @@ def test_install_installer_accepts_terms_non_interactively(tmp_path, monkeypatch
     monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/7z")
     monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(installer_root))
     monkeypatch.setattr(mod.os, "chmod", lambda *_args, **_kwargs: None)
+    monkeypatch.setenv("ALPHAGSM_GITHUB_TOKEN", "ci-token")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
 
     calls = []
 
@@ -114,6 +98,7 @@ def test_install_installer_accepts_terms_non_interactively(tmp_path, monkeypatch
     assert kwargs["check"] is True
     assert kwargs["input"] == "y\n"
     assert kwargs["text"] is True
+    assert kwargs["env"]["GITHUB_TOKEN"] == "ci-token"
 
 def test_install_installer_updates_exe_name_to_installed_binary(tmp_path, monkeypatch):
     server = DummyServer()
@@ -146,6 +131,30 @@ def test_install_installer_updates_exe_name_to_installed_binary(tmp_path, monkey
 
     assert server.data["exe_name"] == "System64/ucc-bin-amd64"
     assert server.data["configfile"] == "System64/UnrealTournament.ini"
+
+
+def test_get_runtime_requirements_declares_7z_host_dependency_for_installer(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 7777,
+            "download_mode": "installer",
+            "exe_name": "System/ucc-bin",
+        }
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    dependency = requirements["host_dependencies"][0]
+
+    assert dependency["id"] == "7z"
+    assert dependency["display_name"] == "7z-compatible extractor"
+    assert dependency["command"] == (
+        {"label": "7zz", "command": "7zz"},
+        {"label": "7z", "command": "7z"},
+    )
+    assert "p7zip-full" in dependency["install_hints"]["linux"]
+
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
@@ -196,7 +205,7 @@ def test_get_container_spec_does_not_require_installed_executable(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_get_query_address_uses_udp_protocol():
     server = DummyServer()

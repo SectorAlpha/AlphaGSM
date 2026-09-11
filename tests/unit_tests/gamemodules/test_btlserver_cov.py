@@ -5,34 +5,13 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.btlserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.btlserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -116,7 +95,45 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./Battalion/Binaries/Linux/BattalionServer-Linux-Shipping",
+        "test",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-log",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_battalion_launch_formats():
+    assert mod.setting_schema["map"].launch_arg_format == "{value}"
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+
+
+def test_runtime_wrappers_launch_battalion_as_the_host_user(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.runtime_module, "_steamcmd_sdk_mounts", lambda *args, **kwargs: [])
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Battalion/Binaries/Linux/BattalionServer-Linux-Shipping",
+            "map": "Derailed",
+            "port": 7777,
+            "queryport": 7778,
+        }
+    )
+    executable = tmp_path / server.data["exe_name"]
+    executable.parent.mkdir(parents=True)
+    executable.write_text("", encoding="utf-8")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert spec["run_as_host_user"] is True
+    assert spec["container_home"] == "/home/alphagsm"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -133,7 +150,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -205,4 +222,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

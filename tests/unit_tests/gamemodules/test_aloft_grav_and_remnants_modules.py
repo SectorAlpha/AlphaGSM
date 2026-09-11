@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import gamemodules.aloftserver as aloftserver
 import gamemodules.gravserver as gravserver
 import gamemodules.remnantsserver as remnantsserver
@@ -77,14 +79,18 @@ def test_grav_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_remnants_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(remnantsserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        remnantsserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("remnants")
-    exe = tmp_path / "StartServer.bat"
+    exe = tmp_path / "RemSurvivalServer.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "StartServer.bat",
+            "exe_name": "RemSurvivalServer.exe",
             "port": 7777,
             "queryport": 27015,
         }
@@ -92,7 +98,7 @@ def test_remnants_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
     cmd, cwd = remnantsserver.get_start_command(server)
 
-    assert cmd == ["StartServer.bat", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015", "-log", "-unattended"]
+    assert cmd == ["RemSurvivalServer.exe", "-MultiHome=0.0.0.0", "-Port=7777", "-QueryPort=27015", "-log", "-unattended"]
     assert cwd == server.data["dir"]
 
 
@@ -111,3 +117,36 @@ def test_remnants_update_downloads_and_optionally_restart(monkeypatch):
 
     assert calls == [("/srv/remnants/", 1141420, True, True)]
     assert server.start_calls == 1
+
+
+def test_remnants_runtime_metadata_prefers_proton(tmp_path):
+    server = DummyServer("remnants")
+    (tmp_path / "RemSurvivalServer.exe").write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "RemSurvivalServer.exe",
+            "port": 7777,
+            "queryport": 27015,
+        }
+    )
+
+    requirements = remnantsserver.get_runtime_requirements(server)
+    spec = remnantsserver.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+
+
+def test_remnants_query_and_info_addresses_use_tcp_game_port():
+    server = DummyServer("remnants")
+    server.data["port"] = 21762
+
+    with patch.object(
+        remnantsserver.runtime_module,
+        "resolve_query_host",
+        return_value="127.0.0.1",
+    ):
+        expected = ("127.0.0.1", 21762, "tcp")
+        assert remnantsserver.get_query_address(server) == expected
+        assert remnantsserver.get_info_address(server) == expected

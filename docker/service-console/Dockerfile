@@ -6,6 +6,7 @@ RUN apt-get update -qq \
  && apt-get install -y --no-install-recommends \
         bash \
         ca-certificates \
+        libcurl4 \
        python3 \
  && rm -rf /var/lib/apt/lists/*
 

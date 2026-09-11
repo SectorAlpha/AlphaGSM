@@ -1,14 +1,16 @@
 """Full coverage tests for enshrouded."""
 
+import json
 import os
 import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.enshrouded', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {
     'screen': MagicMock(),
     'utils.backups': MagicMock(),
@@ -18,35 +20,14 @@ with patch.dict('sys.modules', {
 }):
     import gamemodules.enshrouded as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=15637, dir=str(tmp_path))
     assert server.data['port'] == 15637
+    assert server.data['queryport'] == "15637"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -76,6 +57,40 @@ def test_install(tmp_path):
     server.data["Steam_AppID"] = 2278520
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
+
+
+def test_sync_server_config_writes_authoritative_query_port(tmp_path):
+    server = DummyServer("ensh")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "queryport": 25637,
+            "servername": "AlphaGSM Enshrouded",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    config = json.loads(
+        (tmp_path / "enshrouded_server.json").read_text(encoding="utf-8")
+    )
+    assert config["name"] == "AlphaGSM Enshrouded"
+    assert config["queryPort"] == 25637
+    assert config["ip"] == "0.0.0.0"
+    assert config["saveDirectory"] == "./savegame"
+    assert mod.config_sync_keys == ("queryport", "servername")
+
+
+def test_sync_server_config_without_install_dir_is_noop():
+    server = DummyServer("ensh")
+    server.data.update(
+        {
+            "queryport": 25637,
+            "servername": "AlphaGSM Enshrouded",
+        }
+    )
+
+    assert mod.sync_server_config(server) is None
 
 
 def test_update_with_restart(tmp_path):
@@ -128,6 +143,20 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_runtime_requirements_enable_xvfb_container_env():
+    server = DummyServer()
+    server.data["dir"] = "/srv/ensh/"
+    server.data["exe_name"] = "enshrouded_server.exe"
+    server.data["port"] = 15637
+    server.data["queryport"] = 15638
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -143,7 +172,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -221,4 +250,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

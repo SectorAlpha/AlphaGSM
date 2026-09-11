@@ -1,4 +1,11 @@
+import pytest
+
 import gamemodules.minecraft.bedrock as bedrock
+import gamemodules.ss14server.main as ss14server
+import server.runtime as runtime_module
+import utils.gamemodules.minecraft.properties_config as properties_config
+import server.server as server_module
+from utils.simple_kv_config import rewrite_equals_config
 
 
 class DummyData(dict):
@@ -14,6 +21,14 @@ class DummyServer:
     def __init__(self, name="alpha"):
         self.name = name
         self.data = DummyData()
+
+
+def make_server(module, name="alpha"):
+    server = server_module.Server.__new__(server_module.Server)
+    server.name = name
+    server.module = module
+    server.data = DummyData()
+    return server
 
 
 def test_resolve_bedrock_download_uses_explicit_version():
@@ -34,6 +49,19 @@ def test_resolve_bedrock_download_parses_latest_page(monkeypatch):
 
     assert version == "1.21.100.6"
     assert url.endswith("/bedrock-server-1.21.100.6.zip")
+
+
+def test_resolve_bedrock_download_falls_back_when_page_has_only_frontend_config(monkeypatch):
+    monkeypatch.setattr(
+        bedrock,
+        "_read_download_page",
+        lambda: '{"downloadType1":"serverBedrockLinux","downloadType2":"serverBedrockPreviewLinux"}',
+    )
+
+    version, url = bedrock.resolve_bedrock_download()
+
+    assert version == bedrock.BEDROCK_FALLBACK_VERSION
+    assert url.endswith(f"/bedrock-server-{bedrock.BEDROCK_FALLBACK_VERSION}.zip")
 
 
 def test_bedrock_configure_sets_defaults(tmp_path, monkeypatch):
@@ -94,21 +122,147 @@ def test_bedrock_install_downloads_archive_and_updates_properties(tmp_path, monk
         }
     )
     download_root = tmp_path / "download"
+    staging_dir = tmp_path / "staging"
     executable = download_root / "bedrock_server"
     executable.parent.mkdir(parents=True)
     executable.write_text("")
     updates = []
-
-    monkeypatch.setattr(bedrock.downloader, "getpath", lambda module, args: str(download_root))
     monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+    monkeypatch.setattr(
+        bedrock,
+        "_download_and_extract_bedrock_install",
+        lambda current_server: (str(staging_dir), str(download_root)),
+    )
 
     bedrock.install(server)
 
     assert (tmp_path / "server" / "bedrock_server").exists()
     assert updates[0][0].endswith("server.properties")
     assert updates[0][1]["server-port"] == "19132"
+    assert updates[0][1]["level-name"] == "world_one"
     assert updates[0][1]["server-name"] == "AlphaGSM Bedrock"
     assert server.data["current_url"] == "http://example.com/bedrock.zip"
+
+
+def test_bedrock_doset_gamemap_updates_levelname_and_server_properties(monkeypatch, tmp_path):
+    server = make_server(bedrock, "bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19132,
+            "gamemode": "survival",
+            "difficulty": "easy",
+            "levelname": "world_one",
+            "maxplayers": "10",
+            "servername": "AlphaGSM Bedrock",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    server.doset("gamemap", "world_two")
+
+    assert server.data["levelname"] == "world_two"
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "19132",
+                "gamemode": "survival",
+                "difficulty": "easy",
+                "level-name": "world_two",
+                "max-players": "10",
+                "server-name": "AlphaGSM Bedrock",
+            },
+        )
+    ]
+
+
+def test_bedrock_exposes_schema_metadata_for_native_properties():
+    map_spec = bedrock.setting_schema["map"]
+    servername_spec = bedrock.setting_schema["servername"]
+
+    assert bedrock.config_sync_keys == (
+        "port",
+        "gamemode",
+        "difficulty",
+        "levelname",
+        "maxplayers",
+        "servername",
+    )
+    assert map_spec.canonical_key == "map"
+    assert map_spec.aliases == ("gamemap", "level", "world")
+    assert map_spec.storage_key == "levelname"
+    assert servername_spec.canonical_key == "servername"
+    assert servername_spec.aliases == ()
+
+
+def test_bedrock_uses_shared_properties_config_contract():
+    assert bedrock.config_sync_keys == properties_config.CONFIG_SYNC_KEYS
+    assert bedrock.setting_schema == properties_config.build_setting_schema(
+        port_description="The port the Bedrock server listens on.",
+        port_example="19132",
+        map_example="Bedrock level",
+        maxplayers_example="10",
+        servername_description="The server name shown in Bedrock server listings.",
+        servername_example="AlphaGSM Bedrock Server",
+    )
+
+
+def test_bedrock_uses_shared_equals_config_writer():
+    assert bedrock.updateconfig is rewrite_equals_config
+
+
+def test_bedrock_sync_server_config_updates_server_properties(monkeypatch, tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19133,
+            "gamemode": "creative",
+            "difficulty": "hard",
+            "levelname": "world_two",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Changed",
+        }
+    )
+    updates = []
+
+    monkeypatch.setattr(bedrock, "updateconfig", lambda filename, settings: updates.append((filename, settings)))
+
+    bedrock.sync_server_config(server)
+
+    assert updates == [
+        (
+            str(tmp_path / "server.properties"),
+            {
+                "server-port": "19133",
+                "gamemode": "creative",
+                "difficulty": "hard",
+                "level-name": "world_two",
+                "max-players": "20",
+                "server-name": "AlphaGSM Changed",
+            },
+        )
+    ]
+
+
+def test_bedrock_sync_server_config_requires_existing_gamemode(tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "port": 19133,
+            "difficulty": "hard",
+            "levelname": "world_two",
+            "maxplayers": "20",
+            "servername": "AlphaGSM Changed",
+        }
+    )
+
+    with pytest.raises(KeyError):
+        bedrock.sync_server_config(server)
 
 
 def test_bedrock_get_start_command_uses_local_library_path(tmp_path):
@@ -121,3 +275,89 @@ def test_bedrock_get_start_command_uses_local_library_path(tmp_path):
 
     assert cmd == ["env", "LD_LIBRARY_PATH=.", "./bedrock_server"]
     assert cwd == str(tmp_path)
+
+
+def test_bedrock_do_stop_uses_runtime_console(monkeypatch):
+    server = DummyServer("bedrock")
+    calls = []
+
+    monkeypatch.setattr(
+        bedrock.runtime_module,
+        "send_to_server",
+        lambda current_server, command: calls.append((current_server, command)),
+    )
+
+    bedrock.do_stop(server, 0)
+
+    assert calls == [(server, "\nstop\n")]
+
+
+def test_bedrock_query_and_info_use_raknet_udp():
+    server = DummyServer("bedrock")
+    server.data.update({"port": 19132})
+
+    assert bedrock.get_query_address(server) == ("127.0.0.1", 19132, "bedrock")
+    assert bedrock.get_info_address(server) == ("127.0.0.1", 19132, "bedrock")
+
+
+def test_bedrock_runtime_requirements_use_service_console_family(tmp_path):
+    server = DummyServer("bedrock")
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "bedrock_server",
+        "port": 19132,
+    })
+
+    requirements = bedrock.get_runtime_requirements(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "service-console"
+    assert requirements["stop_mode"] == "docker-stop"
+    assert requirements["mounts"] == [
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
+    ]
+    assert requirements["ports"] == [
+        {"host": 19132, "container": 19132, "protocol": "udp"}
+    ]
+    assert "env" not in requirements
+    assert "java" not in requirements
+
+
+def test_bedrock_container_spec_preserves_native_command(tmp_path):
+    server = DummyServer("bedrock")
+    executable = tmp_path / "bedrock_server"
+    executable.write_text("")
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "bedrock_server",
+        "port": 19132,
+    })
+
+    spec = bedrock.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["stdin_open"] is True
+    assert spec["tty"] is True
+    assert spec["stop_mode"] == "docker-stop"
+    assert spec["ports"] == [{"host": 19132, "container": 19132, "protocol": "udp"}]
+    assert spec["command"] == ["env", "LD_LIBRARY_PATH=.", "./bedrock_server"]
+    assert spec["env"] == {}
+
+
+def test_ss14_runtime_requirements_declare_dotnet_host_dependency(tmp_path):
+    server = DummyServer("ss14")
+    server.name = "ss14"
+    server.module = ss14server
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "exe_name": "Robust.Server",
+        "port": 1212,
+    })
+
+    requirements = runtime_module._get_module_runtime_requirements(server)
+
+    assert requirements["runtime"] == "docker"
+    assert requirements["runtime_family"] == "steamcmd-linux"
+    assert requirements["host_dependencies"] == [
+        {"id": "dotnet", "display_name": ".NET", "kind": "command", "command": "dotnet"}
+    ]

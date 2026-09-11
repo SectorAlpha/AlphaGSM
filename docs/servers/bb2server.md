@@ -2,6 +2,8 @@
 
 This guide covers the `bb2server` module in AlphaGSM.
 
+`bb2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -62,6 +64,29 @@ alphagsm mybb2serve backup
 - Module name: `bb2server`
 - Default port: 27015
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create bb2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `bba_barracks`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `20`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM BrainBread 2`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File
@@ -92,5 +117,6 @@ alphagsm mybb2serve backup
 - **Map directory**: `brainbread2/maps/`
 - **Mod directory**: `brainbread2/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/brainbread2/`.
 - **Map install**: Copy `.bsp` files into `brainbread2/maps/` and add to `brainbread2/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `brainbread2/addons/`.

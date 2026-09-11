@@ -26,7 +26,12 @@ class DummyServer:
         self.start_calls += 1
 
 
-def test_deadpoly_get_start_command_builds_expected_args(tmp_path):
+def test_deadpoly_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        deadpolyserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("deadpoly")
     exe = tmp_path / "DeadPolyServer.sh"
     exe.write_text("")
@@ -42,20 +47,29 @@ def test_deadpoly_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = deadpolyserver.get_start_command(server)
 
-    assert cmd[0] == "./DeadPolyServer.sh"
+    assert cmd[0] == "DeadPolyServer.sh"
     assert "-queryport=7779" in cmd
     assert cwd == server.data["dir"]
 
 
 def test_heat_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(heatserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    monkeypatch.setattr(
+        heatserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: wrap_calls.append(
+            {"wineprefix": wineprefix, "prefer_proton": prefer_proton}
+        ) or list(cmd),
+    )
+    monkeypatch.setattr(heatserver.shutil, "which", lambda name: None)
     server = DummyServer("heat")
-    exe = tmp_path / "HeatServer.exe"
+    exe = tmp_path / "Server.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "HeatServer.exe",
+            "exe_name": "Server.exe",
             "port": 27015,
             "queryport": 27016,
             "startmap": "America",
@@ -65,9 +79,10 @@ def test_heat_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
     cmd, cwd = heatserver.get_start_command(server)
 
-    assert cmd[0] == "HeatServer.exe"
-    assert "-map" in cmd
+    assert cmd[:2] == ["env", "TERM=screen"]
+    assert cmd[2] == "Server.exe"
     assert cwd == server.data["dir"]
+    assert wrap_calls == [{"wineprefix": None, "prefer_proton": False}]
 
 
 def test_longvinter_get_start_command_builds_expected_args(tmp_path):
@@ -75,11 +90,11 @@ def test_longvinter_get_start_command_builds_expected_args(tmp_path):
     exe = tmp_path / "LongvinterServer.sh"
     exe.write_text("")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "LongvinterServer.sh",
-                        "port": 7777, "queryport": 27016})
+                        "port": 7777})
 
     cmd, cwd = longvinterserver.get_start_command(server)
 
-    assert cmd == ["./LongvinterServer.sh", "-Port=7777", "-QueryPort=27016"]
+    assert cmd == ["./LongvinterServer.sh", "-Port=7777"]
     assert cwd == server.data["dir"]
 
 

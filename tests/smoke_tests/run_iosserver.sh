@@ -1,8 +1,10 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for iosserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+# ENABLED (AUTH): IOSoccer Dedicated Server app 673990 currently needs
+# authenticated Steam or SteamCMD access to the iosoccer2025/beta sdk2013
+# branch before setup. Anonymous SteamCMD fails to set those branches, and
+# the public branch still crashes on Linux. See docs/servers/iosserver.md.
+echo "Smoke test for iosserver is ENABLED (AUTH) - authenticate Steam/SteamCMD for app 673990 branch iosoccer2025 or beta before setup; see docs/servers/iosserver.md"
+exit 77
 
 set -Eeuo pipefail
 set -x

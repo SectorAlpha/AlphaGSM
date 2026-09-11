@@ -28,25 +28,43 @@ class DummyServer:
 
 def test_jc3server_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("jc3")
-    exe = tmp_path / "openjc3-server"
+    exe = tmp_path / "Server"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "openjc3-server", "port": 7777, "maxplayers": "64", "gamemode": "freeroam"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Server",
+            "port": 7777,
+            "maxplayers": "32",
+            "servername": "AlphaGSM JC3",
+            "host": "0.0.0.0",
+        }
+    )
 
     cmd, cwd = jc3server.get_start_command(server)
 
-    assert cmd == ["./openjc3-server", "--port", "7777", "--players", "64", "--mode", "freeroam"]
+    assert cmd == ["./Server"]
     assert cwd == server.data["dir"]
 
 
 def test_rwserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("rw")
-    exe = tmp_path / "server.jar"
+    exe = tmp_path / "RisingWorldServer.x64"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "server.jar", "javapath": "java", "world": "rw", "port": 4254})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "RisingWorldServer.x64",
+            "world": "rw",
+            "port": 4255,
+            "servername": "AlphaGSM RW",
+        }
+    )
 
     cmd, cwd = rwserver.get_start_command(server)
 
-    assert cmd == ["java", "-jar", "server.jar", "--server", "rw", "4254"]
+    assert cmd[0:2] == ["sh", "-lc"]
+    assert "RisingWorldServer.x64" in cmd[2]
     assert cwd == server.data["dir"]
 
 
@@ -54,11 +72,29 @@ def test_tiserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("ti")
     exe = tmp_path / "TheIsleServer.sh"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "TheIsleServer.sh", "map": "TheIsle", "port": 7777, "queryport": "7778"})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "TheIsleServer.sh",
+            "map": "TheIsle",
+            "port": 7777,
+            "queryport": "7778",
+            "eos_client_id": "client-id",
+            "eos_client_secret": "client-secret",
+        }
+    )
 
     cmd, cwd = tiserver.get_start_command(server)
 
-    assert cmd == ["./TheIsleServer.sh", "TheIsle", "-Port=7777", "-QueryPort=7778", "-log"]
+    assert cmd == [
+        "./TheIsleServer.sh",
+        "TheIsle",
+        "-Port=7777",
+        "-QueryPort=7778",
+        "-log",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientId=client-id",
+        "-ini:Engine:[EpicOnlineServices]:DedicatedServerClientSecret=client-secret",
+    ]
     assert cwd == server.data["dir"]
 
 

@@ -50,8 +50,27 @@ def test_ets2server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = ets2server.get_start_command(server)
 
-    assert cmd == ["./bin/linux_x64/eurotrucks2_server", "-ip", "0.0.0.0", "-port", "27015", "-query_port", "27016"]
+    assert cmd == [
+        "env", "XDG_DATA_HOME=" + str(tmp_path / ".local/share"),
+        "./bin/linux_x64/eurotrucks2_server",
+    ]
     assert cwd == server.data["dir"]
+
+
+def test_ets2server_query_and_info_use_dedicated_query_port(monkeypatch):
+    observed = []
+
+    def fake_resolve_query_host(server):
+        observed.append(server.name)
+        return "10.0.0.8"
+
+    monkeypatch.setattr(ets2server.runtime_module, "resolve_query_host", fake_resolve_query_host)
+    server = DummyServer("ets2")
+    server.data["queryport"] = "27016"
+
+    assert ets2server.get_query_address(server) == ("10.0.0.8", 27016, "a2s")
+    assert ets2server.get_info_address(server) == ("10.0.0.8", 27016, "a2s")
+    assert observed == ["ets2", "ets2"]
 
 
 def test_trucksim_modules_update_downloads_and_optionally_restart(monkeypatch):

@@ -1,10 +1,11 @@
 """Full coverage tests for readyornotserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.readyornotserver', None)
 _proton_mock = MagicMock()
@@ -12,29 +13,7 @@ _proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.readyornotserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -68,7 +47,24 @@ def test_install(tmp_path):
     server.data["exe_name"] = "ReadyOrNotServer.exe"
     server.data["Steam_AppID"] = 950290
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["queryport"] = 7778
+    server.data["maxplayers"] = 16
     mod.install(server)
+    assert (tmp_path / "ReadyOrNot" / "Config" / "ServerConfig.ini").read_text() == "queryport=7778\nmaxplayers=16\n"
+
+
+def test_sync_server_config_updates_server_config_ini(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["queryport"] = 7788
+    server.data["maxplayers"] = 20
+    config_dir = tmp_path / "ReadyOrNot" / "Config"
+    config_dir.mkdir(parents=True)
+    (config_dir / "ServerConfig.ini").write_text("queryport=7778\nmaxplayers=16\nextra=keep\n")
+
+    mod.sync_server_config(server)
+
+    assert (config_dir / "ServerConfig.ini").read_text() == "queryport=7788\nmaxplayers=20\nextra=keep\n"
 
 
 def test_update_with_restart(tmp_path):
@@ -113,11 +109,165 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "ReadyOrNotServer.exe"
     (tmp_path / "ReadyOrNotServer.exe").write_text("")
+    exe_dir = tmp_path / "ReadyOrNot" / "Binaries" / "Win64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "ReadyOrNotServer-Win64-Shipping.exe").write_text("")
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     server.data["queryport"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "ReadyOrNotServer.exe",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-MaxPlayers=27015",
+        "-log",
+        "-unattended",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_nested_dedicated_server_root(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    nested_root = tmp_path / "Dedicated Server"
+    (nested_root / "ReadyOrNotServer.exe").parent.mkdir(parents=True, exist_ok=True)
+    (nested_root / "ReadyOrNotServer.exe").write_text("")
+    exe_path = nested_root / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ReadyOrNotServer.exe"
+    server.data["maxplayers"] = 16
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "Dedicated Server/ReadyOrNotServer.exe"
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_nested_dedicated_server_root_over_top_level_payload(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    nested_root = tmp_path / "Dedicated Server"
+    (nested_root / "ReadyOrNotServer.exe").parent.mkdir(parents=True, exist_ok=True)
+    (nested_root / "ReadyOrNotServer.exe").write_text("")
+    nested_exe = nested_root / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
+    nested_exe.parent.mkdir(parents=True, exist_ok=True)
+    nested_exe.write_text("")
+    top_level_exe = tmp_path / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
+    top_level_exe.parent.mkdir(parents=True, exist_ok=True)
+    top_level_exe.write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ReadyOrNotServer.exe"
+    server.data["maxplayers"] = 16
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "Dedicated Server/ReadyOrNotServer.exe"
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_default_runtime_wrapper_on_linux(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    observed = {}
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        observed["command"] = list(cmd)
+        observed["wineprefix"] = wineprefix
+        observed["prefer_proton"] = prefer_proton
+        return ["proton", "run", *cmd]
+
+    monkeypatch.setattr(mod.proton, "wrap_command", fake_wrap_command)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ReadyOrNotServer.exe"
+    (tmp_path / "ReadyOrNotServer.exe").write_text("")
+    exe_dir = tmp_path / "ReadyOrNot" / "Binaries" / "Win64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "ReadyOrNotServer-Win64-Shipping.exe").write_text("")
+    server.data["maxplayers"] = 16
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert observed == {
+        "command": [
+            "ReadyOrNotServer.exe",
+            "-Port=27015",
+            "-QueryPort=27016",
+            "-MaxPlayers=16",
+            "-log",
+            "-unattended",
+        ],
+        "wineprefix": None,
+        "prefer_proton": False,
+    }
+    assert cmd[:2] == ["proton", "run"]
+    assert cwd == server.data["dir"]
+
+
+def test_sync_server_config_uses_nested_dedicated_server_root(tmp_path):
+    nested_root = tmp_path / "Dedicated Server"
+    config_dir = nested_root / "ReadyOrNot" / "Config"
+    config_dir.mkdir(parents=True)
+    exe_dir = nested_root / "ReadyOrNot" / "Binaries" / "Win64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "ReadyOrNotServer-Win64-Shipping.exe").write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["queryport"] = 7788
+    server.data["maxplayers"] = 20
+
+    mod.sync_server_config(server)
+
+    assert (config_dir / "ServerConfig.ini").read_text() == "queryport=7788\nmaxplayers=20\n"
+
+
+def test_setting_schema_exposes_readyornot_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["queryport"].native_config_key == "queryport"
+    assert mod.setting_schema["maxplayers"].native_config_key == "maxplayers"
+
+
+def test_query_and_info_address_use_resolved_game_udp_port(monkeypatch):
+    server = DummyServer("ready")
+    server.data["port"] = "27015"
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 27015, "udp")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27015, "udp")
+
+
+def test_get_container_spec_maps_nested_workdir(tmp_path):
+    nested_root = tmp_path / "Dedicated Server"
+    (nested_root / "ReadyOrNotServer.exe").parent.mkdir(parents=True, exist_ok=True)
+    (nested_root / "ReadyOrNotServer.exe").write_text("")
+    exe_path = nested_root / "ReadyOrNot" / "Binaries" / "Win64" / "ReadyOrNotServer-Win64-Shipping.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server = DummyServer("ready")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "ReadyOrNotServer.exe"
+    server.data["port"] = 7777
+    server.data["queryport"] = 7778
+    server.data["runtime"] = "docker"
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["command"][0] == "./Dedicated Server/ReadyOrNotServer.exe"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -134,7 +284,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -206,4 +356,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

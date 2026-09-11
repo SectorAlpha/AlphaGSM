@@ -2,7 +2,7 @@
 # DISABLED: Legacy CS:GO smoke runner.
 # Use tests/smoke_tests/run_counterstrike2.sh for the current CS2 surface.
 echo "Smoke test for counterstrikeglobaloffensive is disabled; use run_counterstrike2.sh for CS2"
-exit 0
+exit 77
 
 set -Eeuo pipefail
 set -x

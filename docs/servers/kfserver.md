@@ -2,6 +2,13 @@
 
 This guide covers the `kfserver` module in AlphaGSM.
 
+## Status
+
+`kfserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Killing Floor dedicated server app `215360`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,23 @@ alphagsm mykfserver backup
 
 - Module name: `kfserver`
 - Default port: 7707
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create kfserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

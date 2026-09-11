@@ -2,6 +2,13 @@
 
 This guide covers the `dayzarma2epochserver` module in AlphaGSM.
 
+## Status
+
+`dayzarma2epochserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 2: Combined Operations dedicated server app `33935`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,23 @@ alphagsm mydayzarma backup
 
 - Module name: `dayzarma2epochserver`
 - Default port: 2302
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create dayzarma2epochserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

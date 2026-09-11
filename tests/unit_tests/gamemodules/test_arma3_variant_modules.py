@@ -2,6 +2,8 @@ import gamemodules.arma3epochserver as arma3epochserver
 import gamemodules.arma3exileserver as arma3exileserver
 import gamemodules.arma3headlessserver as arma3headlessserver
 import gamemodules.arma3wastelandserver as arma3wastelandserver
+import pytest
+from server.settable_keys import resolve_requested_key
 
 
 class DummyData(dict):
@@ -145,3 +147,32 @@ def test_arma3_variant_modules_update_downloads_and_optional_restart(monkeypatch
     assert ("/srv/exile/", 233780, True, False) in calls
     assert ("/srv/headless/", 233780, True, False) in calls
     assert epoch.start_calls == 1
+
+
+@pytest.mark.parametrize(
+    "module",
+    (arma3epochserver, arma3exileserver, arma3wastelandserver),
+)
+def test_arma3_variant_modules_expose_servername_setting_schema(module):
+    resolved = resolve_requested_key("hostname", module.setting_schema)
+
+    assert resolved.canonical_key == "servername"
+
+
+@pytest.mark.parametrize(
+    "module",
+    (arma3epochserver, arma3exileserver, arma3wastelandserver),
+)
+def test_arma3_variant_modules_sync_server_config_writes_hostname(tmp_path, module):
+    server = DummyServer("variant")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "configfile": "server.cfg",
+            "servername": 'Alpha "Quoted"',
+        }
+    )
+
+    module.sync_server_config(server)
+
+    assert (tmp_path / "server.cfg").read_text() == 'hostname = "Alpha \\"Quoted\\"";\n'

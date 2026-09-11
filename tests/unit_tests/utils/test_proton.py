@@ -102,13 +102,32 @@ def test_is_available_true_when_proton_found(tmp_path, monkeypatch):
 def test_wrap_command_with_wine_no_prefix(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe"])
-    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"]
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
 
 
 def test_wrap_command_with_wine_and_prefix(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe"], wineprefix="/srv/game/.wine")
-    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "WINEPREFIX=/srv/game/.wine", "/usr/bin/wine", "server.exe"]
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "WINEPREFIX=/srv/game/.wine",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
 
 
 def test_wrap_command_prefers_proton_when_requested(tmp_path, monkeypatch):
@@ -125,12 +144,93 @@ def test_wrap_command_prefers_proton_when_requested(tmp_path, monkeypatch):
     assert str(proton_exe) in result
     assert "run" in result
     assert "/usr/bin/wine" not in result
+    assert "PROTON_USE_XALIA=0" in result
 
 
 def test_wrap_command_preserves_trailing_args(monkeypatch):
     monkeypatch.setattr(proton_module.shutil, "which", lambda name: "/usr/bin/wine" if name == "wine" else None)
     result = proton_module.wrap_command(["server.exe", "--port", "7000"])
-    assert result == ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe", "--port", "7000"]
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+        "--port",
+        "7000",
+    ]
+
+
+def test_prepend_env_assignments_wraps_plain_command():
+    result = proton_module.prepend_env_assignments(["server.exe"], LIBGL_ALWAYS_SOFTWARE="1")
+    assert result == ["env", "LIBGL_ALWAYS_SOFTWARE=1", "server.exe"]
+
+
+def test_prepend_env_assignments_inserts_before_existing_env_tokens():
+    result = proton_module.prepend_env_assignments(
+        ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"],
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    assert result == [
+        "env",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
+
+
+def test_prepend_env_assignments_preserves_existing_env_unsets():
+    result = proton_module.prepend_env_assignments(
+        [
+            "env",
+            "-u", "TMPDIR",
+            "-u", "TMP",
+            "-u", "TEMP",
+            "DISPLAY=",
+            "/usr/bin/wine",
+            "server.exe",
+        ],
+        LIBGL_ALWAYS_SOFTWARE="1",
+    )
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "LIBGL_ALWAYS_SOFTWARE=1",
+        "DISPLAY=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
+
+
+def test_prepend_env_unsets_wraps_plain_command():
+    result = proton_module.prepend_env_unsets(["server.exe"], "TMPDIR", "TMP")
+    assert result == ["env", "-u", "TMPDIR", "-u", "TMP", "server.exe"]
+
+
+def test_prepend_env_unsets_inserts_before_existing_env_tokens():
+    result = proton_module.prepend_env_unsets(
+        ["env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "/usr/bin/wine", "server.exe"],
+        "TMPDIR",
+        "TMP",
+        "TEMP",
+    )
+    assert result == [
+        "env",
+        "-u", "TMPDIR",
+        "-u", "TMP",
+        "-u", "TEMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "server.exe",
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -195,6 +295,64 @@ def test_unwrap_runtime_command_removes_wine_wrapper():
     assert result == ["Server.exe", "-port", "27015"]
 
 
+def test_unwrap_runtime_command_skips_env_unset_options():
+    command = [
+        "env",
+        "-u",
+        "TMPDIR",
+        "-u",
+        "TMP",
+        "DISPLAY=",
+        "WINEDLLOVERRIDES=winex11.drv=",
+        "/usr/bin/wine",
+        "Server.exe",
+        "-port",
+        "27015",
+    ]
+
+    result = proton_module.unwrap_runtime_command(command)
+
+    assert result == ["Server.exe", "-port", "27015"]
+
+
+def test_unwrap_runtime_command_removes_env_wrapper_for_native_command():
+    command = [
+        "env",
+        "SDL_VIDEODRIVER=x11",
+        "SDL_AUDIODRIVER=dummy",
+        "bin/Server.exe",
+        "exec",
+        "default.cfg",
+    ]
+
+    assert proton_module.unwrap_runtime_command(command) == [
+        "bin/Server.exe",
+        "exec",
+        "default.cfg",
+    ]
+
+
+def test_unwrap_runtime_command_removes_xvfb_wrapper():
+    command = [
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1024x768x24 -nolisten tcp",
+        "env",
+        "DISPLAY=",
+        "/usr/bin/proton",
+        "run",
+        "Server.exe",
+        "-port",
+        "27015",
+    ]
+
+    assert proton_module.unwrap_runtime_command(command) == [
+        "Server.exe",
+        "-port",
+        "27015",
+    ]
+
+
 def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
     server = DummyServer(
         data={
@@ -209,6 +367,8 @@ def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
         server,
         port_definitions=(("port", "udp"), ("queryport", "udp")),
         prefer_proton=True,
+        stop_mode="exec-console",
+        stdin_open=True,
     )
 
     assert requirements["engine"] == "docker"
@@ -227,6 +387,31 @@ def test_get_runtime_requirements_for_docker_mounts_prefix_and_ports():
     ]
     assert requirements["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/wineprefix"
     assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["env"]["PROTON_USE_XALIA"] == "0"
+    assert requirements["stop_mode"] == "exec-console"
+    assert requirements["stdin_open"] is True
+    assert requirements["host_dependencies"][0]["id"] == "wine-proton"
+    assert requirements["host_dependencies"][0]["platforms"] == ("linux",)
+
+
+def test_get_runtime_requirements_appends_extra_host_dependencies():
+    server = DummyServer(
+        data={
+            "dir": "/srv/aska/",
+            "port": 27015,
+        }
+    )
+
+    requirements = proton_module.get_runtime_requirements(
+        server,
+        port_definitions=(("port", "udp"),),
+        extra_host_dependencies=(proton_module.xvfb_host_dependency(),),
+    )
+
+    dependency_ids = [item["id"] for item in requirements["host_dependencies"]]
+
+    assert dependency_ids == ["wine-proton", "xvfb-run"]
+    assert requirements["host_dependencies"][1]["platforms"] == ("linux",)
 
 
 def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
@@ -254,11 +439,31 @@ def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
     )
 
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"] == ["WindowsServer/SurvivalGameServer.exe", "-Port=7777"]
+    assert spec["command"] == ["./WindowsServer/SurvivalGameServer.exe", "-Port=7777"]
     assert spec["env"]["ALPHAGSM_WINEPREFIX"] == "/srv/server/.alphagsm-wineprefix"
     assert spec["mounts"] == [
         {"source": "/srv/opz/", "target": "/srv/server", "mode": "rw"}
     ]
+
+
+@pytest.mark.parametrize(
+    "data, expected_ports",
+    [
+        ({}, [{"host": 27020, "container": 27020, "protocol": "tcp"}]),
+        ({"rconport": 28020}, [{"host": 28020, "container": 28020, "protocol": "tcp"}]),
+        ({"rconport": None}, []),
+    ],
+)
+def test_proton_port_definition_default_only_applies_when_key_is_absent(data, expected_ports):
+    server = DummyServer(data=data)
+
+    requirements = proton_module.get_runtime_requirements(
+        server,
+        port_definitions=({"key": "rconport", "default": 27020, "protocol": "tcp"},),
+    )
+
+    assert requirements.get("ports", []) == expected_ports
+    assert server.data == data
 
 
 def test_get_container_spec_recovers_when_host_runtime_wrapper_is_unavailable():
@@ -307,4 +512,4 @@ def test_get_container_spec_recovers_when_host_runtime_wrapper_is_unavailable():
         monkeypatch.undo()
 
     assert observed == ["called", "called"]
-    assert spec["command"] == ["WindowsServer/Server.exe", "-Port=7777"]
+    assert spec["command"] == ["./WindowsServer/Server.exe", "-Port=7777"]

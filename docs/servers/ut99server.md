@@ -2,6 +2,11 @@
 
 This guide covers the `ut99server` module in AlphaGSM.
 
+`ut99server` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane
+validates both process and Docker runtimes for this module, while local runs
+remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -56,10 +61,53 @@ alphagsm myut99serv update
 alphagsm myut99serv backup
 ```
 
+## Mod Sources
+
+Unreal Tournament 99 content management currently targets the canonical custom
+content directories under the server root:
+
+- `Maps/`
+- `Music/`
+- `Sounds/`
+- `Textures/`
+
+Current mod source support is direct `url` entries only.
+
+- `mod add url <https-url>` accepts supported archive URLs such as `.zip`, `.7z`, or tar variants when the payload unpacks into the approved UT99 content directories above.
+- `mod add url <https-url>` also accepts direct content-file URLs such as `.unr`, `.utx`, `.uax`, and `.umx`; AlphaGSM places each file into the matching canonical content directory automatically.
+- `mod cleanup` removes only AlphaGSM-tracked files and keeps its cache/state under `.alphagsm/mods/ut99server/`.
+- The first UT99 content slice intentionally excludes `System/` payloads, code packages, and mutators; archives that require those paths are rejected instead of being partially installed.
+
+Examples:
+
+```bash
+alphagsm myut99serv mod add url https://example.invalid/mappack.zip
+alphagsm myut99serv mod add url https://example.invalid/DM-Deck-Test.unr
+alphagsm myut99serv mod apply
+alphagsm myut99serv mod cleanup
+```
+
 ## Notes
 
 - Module name: `ut99server`
 - Default port: 7777
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ut99server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -83,6 +131,7 @@ alphagsm myut99serv backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `Maps/`
+- **Mod directory**: `Maps/`, `Music/`, `Sounds/`, `Textures/`
+- **Mod notes**: AlphaGSM can now track direct archive and direct content-file `url` entries for UT99, install only approved custom-content payloads, and clean up only AlphaGSM-managed files from `.alphagsm/mods/ut99server/`. The initial UT99 content surface rejects `System/` payloads on purpose.
 - **Workshop support**: No

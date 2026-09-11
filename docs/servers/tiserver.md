@@ -2,11 +2,22 @@
 
 This guide covers the `tiserver` module in AlphaGSM.
 
-## Requirements
+## Support Status
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+`tiserver` is supported in `ENABLED (AUTH)` mode.
+
+AlphaGSM can:
+
+- install the native Linux dedicated-server payload anonymously from SteamCMD app `412680`
+- manage the server lifecycle through AlphaGSM
+- run the server on the shared `steamcmd-linux` Docker runtime
+
+The remaining operator-provided prerequisite is Epic Online Services dedicated-server authentication:
+
+- `eos_client_id`
+- `eos_client_secret`
+
+Without those credentials the server exits during EOS platform startup with `Unable to initialize EOS platform.`
 
 ## Quick Start
 
@@ -20,6 +31,13 @@ Run setup:
 
 ```bash
 alphagsm mytiserver setup
+```
+
+Set the required EOS credentials:
+
+```bash
+alphagsm mytiserver set eos_client_id YOUR_EOS_DEDICATED_SERVER_CLIENT_ID
+alphagsm mytiserver set eos_client_secret YOUR_EOS_DEDICATED_SERVER_CLIENT_SECRET
 ```
 
 Start it:
@@ -40,42 +58,88 @@ Stop it:
 alphagsm mytiserver stop
 ```
 
+## Requirements
+
+- Docker for the supported Linux runtime path
+- SteamCMD
+- Epic Online Services dedicated-server credentials for The Isle EVRIMA
+
 ## Setup Details
 
 Setup configures:
 
-- the game port (default 7778)
+- the game port
+- the query port
 - the install directory
-- SteamCMD downloads the server files
+- the native Linux dedicated-server payload from Steam app `412680`
+
+## EOS Credentials
+
+The Isle EVRIMA dedicated server now installs anonymously on Linux, but it will not finish booting until you provide valid EOS dedicated-server credentials.
+
+AlphaGSM expects them as datastore keys:
+
+- `eos_client_id`
+- `eos_client_secret`
+
+The official guide also supports file-based configuration in:
+
+- `TheIsle/Saved/Config/LinuxServer/Engine.ini`
+
+but AlphaGSM's supported operator flow is to store the values with `set` and let the module pass them on startup.
 
 ## Useful Commands
 
 ```bash
 alphagsm mytiserver update
 alphagsm mytiserver backup
+alphagsm mytiserver dump
 ```
 
 ## Notes
 
 - Module name: `tiserver`
-- Default port: 7778
+- Steam App ID: `412680`
+- Default game port: `7777`
+- Default query port: `7778`
+- Default executable: `TheIsleServer.sh`
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create tiserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `eos_client_id` | — | string | Epic Online Services dedicated server client ID. Stored as a secret. |
+| `eos_client_secret` | — | string | Epic Online Services dedicated server client secret. Stored as a secret. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The startup map. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
 ### Run File
 
 - **Executable**: `TheIsleServer.sh`
+- **Binary**: `TheIsle/Binaries/Linux/TheIsleServer-Linux-Shipping`
 - **Location**: `<install_dir>/TheIsleServer.sh`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Unreal Engine native Linux dedicated server
 - **SteamCMD App ID**: `412680`
 
-### Server Configuration
+### Runtime Notes
 
-- **Config file**: See game module source
-- **Template**: See [server-templates/tiserver/](../server-templates/tiserver/) if available
-
-### Maps and Mods
-
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- The validated install layout is a real native Linux server payload, not a missing-binary app stub.
+- The Linux container path must run as a non-root user; the dedicated binary refuses to run as root.
+- EOS authentication is the remaining prerequisite for a full green integration path.

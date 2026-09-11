@@ -5,6 +5,7 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.bannerlordserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
@@ -12,33 +13,11 @@ with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMoc
     from server import ServerError
 
 
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
-
-
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7210, dir=str(tmp_path))
     assert server.data['port'] == 7210
+    assert server.data['exe_name'] == mod.BANNERLORD_LINUX_DLL
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -65,27 +44,43 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "Bannerlord.DedicatedServer"
+    server.data["exe_name"] = mod.BANNERLORD_LINUX_DLL
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
+    mod.steamcmd.download = MagicMock()
     mod.install(server)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/",
+        1863440,
+        False,
+        validate=False,
+        beta_branch=mod.BANNERLORD_LINUX_BETA_BRANCH,
+    )
 
 
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=True, restart=True)
     assert server._stopped
     assert server._started
+    mod.steamcmd.download.assert_called_with(
+        str(tmp_path) + "/",
+        1863440,
+        False,
+        validate=True,
+        beta_branch=mod.BANNERLORD_LINUX_BETA_BRANCH,
+    )
 
 
 def test_update_no_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
     mod.update(server, validate=False, restart=False)
     assert server._stopped
     assert not server._started
@@ -95,7 +90,7 @@ def test_update_stop_exception(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1863440
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data["Steam_anonymous_login_possible"] = False
     server.stop = MagicMock(side_effect=Exception('already stopped'))
     mod.update(server, validate=False, restart=False)
 
@@ -110,8 +105,10 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "Bannerlord.DedicatedServer"
-    (tmp_path / "Bannerlord.DedicatedServer").write_text("")
+    server.data["exe_name"] = mod.BANNERLORD_LINUX_DLL
+    exe_path = tmp_path / "bin" / "Linux64_Shipping_Server" / "TaleWorlds.Starter.DotNetCore.Linux.dll"
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_text("")
     server.data["game_type"] = "test"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
@@ -119,6 +116,8 @@ def test_get_start_command(tmp_path):
     server.data["scene"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cmd[:2] == ["dotnet", "TaleWorlds.Starter.DotNetCore.Linux.dll"]
+    assert cwd == str(tmp_path / "bin" / "Linux64_Shipping_Server")
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -134,10 +133,19 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_do_stop():
+def test_do_stop_uses_runtime_send_to_server(monkeypatch):
     server = DummyServer()
+    calls = []
+
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "send_to_server",
+        lambda current, text: calls.append((current, text)),
+    )
+
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+
+    assert calls == [(server, "\003")]
 
 
 def test_status():
@@ -221,4 +229,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -1,8 +1,7 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for redmserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+#!/usr/bin/env bash
+# ENABLED (AUTH): supported with Cfx-backed txAdmin/server-data provisioning.
+echo "Smoke test for redmserver is ENABLED (AUTH) - complete txAdmin/server-data provisioning with server.cfg and a Cfx license key before lifecycle validation"
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -5,40 +5,39 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.nightingale', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.nightingale as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data['queryport'] == 7778
+
+
+def test_configure_moves_default_owned_status_port_with_game_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+
+    mod.configure(server, ask=False, port=8000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 8001
+
+
+def test_configure_preserves_explicit_status_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    server.data["queryport"] = 9000
+
+    mod.configure(server, ask=False, port=8000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 9000
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -108,9 +107,20 @@ def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "NWXServer.sh"
+    server.data["port"] = 7777
+    server.data["queryport"] = 7778
     (tmp_path / "NWXServer.sh").write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./NWXServer.sh",
+        "-port=7777",
+        "-statusPort=7778",
+        (
+            "-ini:Engine:[HTTPServer.Listeners]:"
+            "+ListenerOverrides=(Port=7778,BindAddress=0.0.0.0)"
+        ),
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -124,7 +134,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -168,6 +178,12 @@ def test_checkvalue_port():
     assert result == 12345
 
 
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12345")
+    assert result == 12345
+
+
 def test_checkvalue_savegame():
     server = DummyServer()
     result = mod.checkvalue(server, ("savegame",), "/test/value")
@@ -191,3 +207,103 @@ def test_checkvalue_backup():
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
 
+
+def test_runtime_requirements_without_dir_keep_default_server_mount_behavior():
+    server = DummyServer()
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["family"] == "steamcmd-linux"
+    assert "mounts" not in requirements
+
+
+def test_get_container_spec_runs_as_non_root(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["exe_name"] = "NWXServer.sh"
+    server.data["port"] = 7777
+    server.data["queryport"] = 7778
+    (tmp_path / "NWXServer.sh").write_text("")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["network_mode"] == "host"
+    assert spec["ports"] == []
+    assert spec["stdin_open"] is True
+    assert spec["tty"] is False
+    assert {
+        "source": str(tmp_path),
+        "target": "/srv/server",
+        "mode": "rw",
+    } in spec["mounts"]
+    assert {
+        "source": os.path.normpath(mod.steamcmd.STEAMCMD_DIR),
+        "target": mod.CONTAINER_STEAMCMD_DIR,
+        "mode": "ro",
+    } in spec["mounts"]
+    shell_command = spec["command"][-1]
+    assert "useradd -M -u 1000 -o alphagsm;" in shell_command
+    assert "mkdir -p /home/alphagsm/.steam/sdk64;" in shell_command
+    assert "chmod -R a+rwX /srv/server /home/alphagsm;" in shell_command
+    assert (
+        f"ln -sfn {mod.CONTAINER_STEAMCMD_DIR}/linux64/steamclient.so "
+        "/home/alphagsm/.steam/sdk64/steamclient.so;"
+    ) in shell_command
+    assert "export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm;" in shell_command
+    assert "exec runuser -u alphagsm -- sh -lc" in shell_command
+    assert "./NWXServer.sh -port=7777 -statusPort=7778" in shell_command
+    assert "BindAddress=0.0.0.0" in shell_command
+
+
+def test_runtime_requirements_claim_game_udp_and_status_tcp_on_host_network():
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 7778})
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7778, "container": 7778, "protocol": "tcp"},
+    ]
+    assert requirements["network_mode"] == "host"
+
+
+def test_runtime_requirements_use_docker_stop_for_noninteractive_container():
+    server = DummyServer()
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["stop_mode"] == "docker-stop"
+
+
+def test_query_hooks_use_runtime_resolved_status_endpoint(monkeypatch):
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 7778})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.10",
+    )
+
+    expected = ("172.18.0.10", 7778, "http_status")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
+
+
+def test_http_status_payload_is_read_inside_docker_container(monkeypatch):
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 7778})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_runtime_metadata",
+        lambda current: {"runtime": "docker"},
+    )
+    read_status = MagicMock(return_value={"status": "ready", "player_count": 0})
+    monkeypatch.setattr(mod.runtime_module, "read_container_http_json", read_status)
+
+    assert mod.get_http_status_payload(server) == {
+        "status": "ready",
+        "player_count": 0,
+    }
+    read_status.assert_called_once_with(server, 7778, "/status")

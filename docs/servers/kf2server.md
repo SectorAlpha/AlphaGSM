@@ -2,6 +2,8 @@
 
 This guide covers the `kf2server` module in AlphaGSM.
 
+`kf2server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +61,33 @@ alphagsm mykf2serve backup
 
 - Module name: `kf2server`
 - Default port: 7777
+- Default Steam query port: 27015
+- `query` and `info` use the configured A2S query port. Docker publishes this
+  UDP listener separately from the gameplay port.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create kf2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `configsubdir` | — | string | Relative config directory. |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `gametype` | — | string | Game mode class to start. |
+| `port` | gameport | integer | Primary gameplay port. |
+| `queryport` | — | integer | Steam query port. |
+| `startmap` | map, gamemap, level, world | string | Starting map name. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

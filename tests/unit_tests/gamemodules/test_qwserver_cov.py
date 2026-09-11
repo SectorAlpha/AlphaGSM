@@ -1,36 +1,17 @@
 """Full coverage tests for qwserver."""
 
 import os
+from pathlib import Path
 import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.qwserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.github_releases': MagicMock()}):
     import gamemodules.qwserver as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -64,7 +45,114 @@ def test_install(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
-    mod.install(server)
+    with patch.object(mod, '_install_base_content'):
+        mod.install(server)
+
+
+def test_install_base_content_downloads_shareware_and_maps(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+
+    def fake_extract(archive_path, stage_root):
+        archive_name = Path(archive_path).name
+        stage_root = Path(stage_root)
+        if archive_name == mod.QW_SERVER_BIN_NAME:
+            ktx_root = stage_root / "ktx"
+            ktx_root.mkdir(parents=True, exist_ok=True)
+            (ktx_root / "qwprogs.so").write_text("plugin", encoding="utf-8")
+            return
+        if archive_name == mod.QW_SERVER_GPL_NAME:
+            id1_root = stage_root / "id1" / "maps"
+            id1_root.mkdir(parents=True, exist_ok=True)
+            (id1_root / "b_exbox2.bsp").write_text("map", encoding="utf-8")
+            maps_root = stage_root / "qw" / "maps"
+            maps_root.mkdir(parents=True, exist_ok=True)
+            (maps_root / "dm2.bsp").write_text("map", encoding="utf-8")
+            return
+        if archive_name == mod.QW_SERVER_NON_GPL_NAME:
+            ktx_root = stage_root / "ktx" / "sound"
+            ktx_root.mkdir(parents=True, exist_ok=True)
+            (ktx_root / "flagcap.wav").write_text("sound", encoding="utf-8")
+            return
+        if archive_name == mod.QW_SERVER_CONFIGS_NAME:
+            ktx_root = stage_root / "ktx"
+            ktx_root.mkdir(parents=True, exist_ok=True)
+            (ktx_root / "server.cfg").write_text("config", encoding="utf-8")
+            return
+        if archive_name == mod.QW_SHAREWARE_NAME:
+            pak_root = stage_root / "ID1"
+            pak_root.mkdir(parents=True, exist_ok=True)
+            (pak_root / "PAK0.PAK").write_text("shareware", encoding="utf-8")
+            return
+        maps_root = stage_root / "qw" / "maps"
+        maps_root.mkdir(parents=True, exist_ok=True)
+        (maps_root / "mvdsv-kg.bsp").write_text("map", encoding="utf-8")
+
+    with patch.object(mod, 'download_to_cache') as download_to_cache, \
+         patch.object(mod, 'extract_zip_safe', side_effect=fake_extract):
+        installed_base_content = mod._install_base_content(server)
+
+    assert installed_base_content is True
+    assert download_to_cache.call_count == 6
+    download_to_cache.assert_any_call(
+        mod.QW_SERVER_BIN_URL,
+        allowed_hosts=("github.com",),
+        target_path=Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.QW_MOD_CACHE_DIRNAME / "bootstrap" / mod.QW_SERVER_BIN_NAME,
+    )
+    download_to_cache.assert_any_call(
+        mod.QW_SERVER_GPL_URL,
+        allowed_hosts=("github.com",),
+        target_path=Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.QW_MOD_CACHE_DIRNAME / "bootstrap" / mod.QW_SERVER_GPL_NAME,
+    )
+    download_to_cache.assert_any_call(
+        mod.QW_SERVER_NON_GPL_URL,
+        allowed_hosts=("github.com",),
+        target_path=Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.QW_MOD_CACHE_DIRNAME / "bootstrap" / mod.QW_SERVER_NON_GPL_NAME,
+    )
+    download_to_cache.assert_any_call(
+        mod.QW_SERVER_CONFIGS_URL,
+        allowed_hosts=("github.com",),
+        target_path=Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.QW_MOD_CACHE_DIRNAME / "bootstrap" / mod.QW_SERVER_CONFIGS_NAME,
+    )
+    download_to_cache.assert_any_call(
+        mod.QW_SHAREWARE_URL,
+        allowed_hosts=("github.com",),
+        target_path=Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.QW_MOD_CACHE_DIRNAME / "bootstrap" / mod.QW_SHAREWARE_NAME,
+    )
+    download_to_cache.assert_any_call(
+        mod.QW_SERVER_MAPS_URL,
+        allowed_hosts=("github.com",),
+        target_path=Path(server.data["dir"]) / ".alphagsm" / "mods" / mod.QW_MOD_CACHE_DIRNAME / "bootstrap" / mod.QW_SERVER_MAPS_NAME,
+    )
+    assert (tmp_path / "id1" / "pak0.pak").read_text(encoding="utf-8") == "shareware"
+    assert (tmp_path / "qw" / "maps" / "mvdsv-kg.bsp").read_text(encoding="utf-8") == "map"
+    assert (tmp_path / "qw" / "maps" / "dm2.bsp").read_text(encoding="utf-8") == "map"
+    assert (tmp_path / "ktx" / "server.cfg").read_text(encoding="utf-8") == "config"
+    assert (tmp_path / "ktx" / "qwprogs.so").read_text(encoding="utf-8") == "plugin"
+
+
+def test_install_base_content_skips_when_shareware_and_maps_exist(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    pak0_path = tmp_path / "id1" / "pak0.pak"
+    dm2_path = tmp_path / "qw" / "maps" / "dm2.bsp"
+    map_path = tmp_path / "qw" / "maps" / "mvdsv-kg.bsp"
+    server_cfg_path = tmp_path / "ktx" / "server.cfg"
+    qwprogs_path = tmp_path / "ktx" / "qwprogs.so"
+    pak0_path.parent.mkdir(parents=True, exist_ok=True)
+    map_path.parent.mkdir(parents=True, exist_ok=True)
+    server_cfg_path.parent.mkdir(parents=True, exist_ok=True)
+    pak0_path.write_text("existing", encoding="utf-8")
+    dm2_path.write_text("existing", encoding="utf-8")
+    map_path.write_text("existing", encoding="utf-8")
+    server_cfg_path.write_text("existing", encoding="utf-8")
+    qwprogs_path.write_text("existing", encoding="utf-8")
+
+    with patch.object(mod, 'download_to_cache') as download_to_cache:
+        installed_base_content = mod._install_base_content(server)
+
+    assert installed_base_content is False
+    download_to_cache.assert_not_called()
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
@@ -75,7 +163,26 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./mvdsv",
+        "-mem",
+        "64",
+        "-game",
+        "ktx",
+        "-port",
+        "27015",
+        "+hostname",
+        "test",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_quakeworld_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+hostname",)
+    assert mod.setting_schema["startmap"].aliases == ("map",)
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()

@@ -1,20 +1,18 @@
 """Namespaced Arma 3 Altis Life server module."""
 
 from gamemodules.arma3altislifeserver import *  # noqa: F401,F403
+from gamemodules.arma3altislifeserver import get_start_command
 import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-    )
+)
 
-def get_container_spec(server):
-    return runtime_module.build_container_spec(
-        server,
+get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
         get_start_command=get_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
-    )
+)

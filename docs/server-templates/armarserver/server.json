@@ -1,0 +1,17 @@
+{
+  "a2s": {
+    "address": "0.0.0.0",
+    "port": 2002
+  },
+  "game": {
+    "name": "AlphaGSM Arma Reforger Server",
+    "admins": [],
+    "passwordAdmin": "",
+    "maxPlayers": 8,
+    "crossPlatform": false,
+    "supportedPlatforms": [
+      "PLATFORM_PC"
+    ],
+    "scenarioId": "{ECC61978EDCC2B5A}Missions/23_Campaign.conf"
+  }
+}

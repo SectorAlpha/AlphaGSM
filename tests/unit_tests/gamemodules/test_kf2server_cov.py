@@ -5,34 +5,13 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.kf2server', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.kf2server as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -118,7 +97,42 @@ def test_get_start_command(tmp_path):
     server.data["queryport"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./Binaries/Win64/KFGameSteamServer.bin.x86_64",
+        "test?Game=test",
+        "-Port=27015",
+        "-QueryPort=27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+
+
+def test_query_surface_and_container_publish_the_a2s_port(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Binaries/Win64/KFGameSteamServer.bin.x86_64",
+            "port": 7777,
+            "queryport": 27015,
+            "startmap": "KF-BioticsLab",
+            "gametype": "KFGameContent.KFGameInfo_Survival",
+        }
+    )
+    exe_path = tmp_path / server.data["exe_name"]
+    exe_path.parent.mkdir(parents=True)
+    exe_path.write_text("")
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert {
+        (entry["host"], entry["container"], entry["protocol"])
+        for entry in mod.get_container_spec(server)["ports"]
+    } >= {(27015, 27015, "udp")}
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -136,7 +150,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -220,4 +234,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

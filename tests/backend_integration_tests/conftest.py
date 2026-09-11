@@ -14,15 +14,20 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 import pytest
+from scripts import select_test_port
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ALPHAGSM_SCRIPT = REPO_ROOT / "alphagsm"
 STATUS_HELPER = REPO_ROOT / "tests" / "smoke_tests" / "minecraft_status.py"
+DEFAULT_BACKEND_WORK_DIR = Path("/tmp/alphagsm-work")
 
 BACKEND_TEST_TIMEOUT = 1200  # 20 minutes per test
+MINECRAFT_RELEASE_ID_ENV = "ALPHAGSM_MINECRAFT_RELEASE_ID"
+MINECRAFT_SERVER_URL_ENV = "ALPHAGSM_MINECRAFT_SERVER_URL"
 
 
 # ---------------------------------------------------------------------------
@@ -62,12 +67,19 @@ def _require_command(name):
 
 
 def _pick_free_tcp_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
+    return select_test_port.pick_free_port_group(1)
+
+
+def _pick_free_tcp_port_group(count):
+    return select_test_port.pick_free_port_group(count)
 
 
 def _latest_minecraft_release():
+    release_id = os.environ.get(MINECRAFT_RELEASE_ID_ENV, "").strip()
+    server_url = os.environ.get(MINECRAFT_SERVER_URL_ENV, "").strip()
+    if release_id and server_url:
+        return release_id, server_url
+
     result = subprocess.run(
         [sys.executable, str(STATUS_HELPER), "latest-release"],
         capture_output=True, text=True, check=True, timeout=60,
@@ -121,6 +133,33 @@ def _alphagsm_env(config_path):
         ]
     )
     return env
+
+
+def build_backend_tmp_path(test_name, _tmp_path_factory):
+    """Return a host-visible temp directory root for a backend integration test."""
+
+    del _tmp_path_factory
+    work_dir = os.environ.get("ALPHAGSM_WORK_DIR")
+    root = (
+        Path(work_dir).expanduser()
+        if work_dir
+        else DEFAULT_BACKEND_WORK_DIR
+    ) / "pytest-backend-integration"
+    root.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix=f"{test_name}-", dir=str(root)))
+
+
+@pytest.fixture
+def tmp_path(request, tmp_path_factory):
+    """Create and clean backend temp dirs under the shared work root."""
+
+    path = build_backend_tmp_path(request.node.name, tmp_path_factory)
+    try:
+        yield path
+    finally:
+        if os.environ.get("ALPHAGSM_KEEP_BACKEND_TMP") == "1":
+            return
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def _write_java_wrapper(wrapper_path, *java_args):
@@ -199,6 +238,42 @@ def _log_command_result(label, result):
         print("stderr:", result.stderr.rstrip())
 
 
+def _dump_docker_container(container_name):
+    """Print container state and logs without masking the original test failure."""
+
+    commands = (
+        (
+            "docker inspect " + container_name,
+            [
+                "docker",
+                "inspect",
+                container_name,
+                "--format",
+                "{{json .State}}\n{{json .Config}}\n{{json .Mounts}}",
+            ],
+        ),
+        (
+            "docker logs " + container_name,
+            ["docker", "logs", "--tail", "200", container_name],
+        ),
+    )
+    for label, command in commands:
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            print(f"\n=== {label} ===")
+            print("diagnostic command failed:", exc)
+            continue
+        _log_command_result(label, result)
+
+
 def _bind_tcp_listener(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -214,7 +289,7 @@ def _run_and_assert_ok(env, *args, timeout=BACKEND_TEST_TIMEOUT):
     return result
 
 
-def _wait_for_status(host, port, timeout_seconds):
+def _wait_for_status(host, port, timeout_seconds, container_name=None):
     result = subprocess.run(
         [
             sys.executable, str(STATUS_HELPER),
@@ -224,6 +299,8 @@ def _wait_for_status(host, port, timeout_seconds):
     )
     if result.returncode != 0:
         _log_command_result("wait-for-status", result)
+        if container_name:
+            _dump_docker_container(container_name)
         pytest.fail(
             f"Minecraft status did not respond within {timeout_seconds}s"
         )
@@ -270,6 +347,7 @@ class BackendLifecycle:
     require_backend_opt_in = staticmethod(_require_backend_opt_in)
     require_command = staticmethod(_require_command)
     pick_free_tcp_port = staticmethod(_pick_free_tcp_port)
+    pick_free_tcp_port_group = staticmethod(_pick_free_tcp_port_group)
     latest_minecraft_release = staticmethod(_latest_minecraft_release)
     write_config = staticmethod(_write_config)
     write_java_wrapper = staticmethod(_write_java_wrapper)
@@ -280,6 +358,7 @@ class BackendLifecycle:
     run_and_assert_ok = staticmethod(_run_and_assert_ok)
     ensure_docker_image = staticmethod(_ensure_docker_image)
     log_command_result = staticmethod(_log_command_result)
+    dump_docker_container = staticmethod(_dump_docker_container)
     bind_tcp_listener = staticmethod(_bind_tcp_listener)
     wait_for_status = staticmethod(_wait_for_status)
     wait_for_closed = staticmethod(_wait_for_closed)

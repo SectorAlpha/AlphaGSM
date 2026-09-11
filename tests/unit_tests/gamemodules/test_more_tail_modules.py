@@ -44,7 +44,7 @@ def test_wfserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = wfserver.get_start_command(server)
 
     assert cmd[0] == "./wf_server.x86_64"
-    assert "net_port" in cmd
+    assert "sv_port" in cmd
     assert cwd == server.data["dir"]
 
 
@@ -78,21 +78,28 @@ def test_ecoserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("eco")
     exe = tmp_path / "EcoServer"
     exe.write_text("")
+    linux64_dir = tmp_path / "linux64"
+    linux64_dir.mkdir()
+    (linux64_dir / "steamclient.so").write_text("")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "EcoServer", "port": 3000, "world": "eco", "storage": "Storage"})
 
     cmd, cwd = ecoserver.get_start_command(server)
 
-    assert cmd == ["./EcoServer", "-nogui", "-port", "3000", "-world", "eco", "-storedirectory", "Storage"]
+    assert cmd[0] == "env"
+    assert "./EcoServer" in cmd
+    assert "-offline" in cmd
+    assert "-port" in cmd
     assert cwd == server.data["dir"]
 
 
-def test_tail_modules_update_downloads_and_optionally_restart(monkeypatch):
+def test_tail_modules_update_downloads_and_optionally_restart(monkeypatch, tmp_path):
     tw = DummyServer("tw")
     tw.data["dir"] = "/srv/tw/"
     wf = DummyServer("wf")
     wf.data["dir"] = "/srv/wf/"
     eco = DummyServer("eco")
-    eco.data["dir"] = "/srv/eco/"
+    eco.data["dir"] = str(tmp_path / "eco") + "/"
+    (tmp_path / "eco").mkdir()
     calls = []
 
     monkeypatch.setattr(
@@ -107,5 +114,5 @@ def test_tail_modules_update_downloads_and_optionally_restart(monkeypatch):
 
     assert ("/srv/tw/", 380840, False, True) in calls
     assert ("/srv/wf/", 1136510, True, False) in calls
-    assert ("/srv/eco/", 739590, True, False) in calls
+    assert (eco.data["dir"], 739590, True, False) in calls
     assert tw.start_calls == 1

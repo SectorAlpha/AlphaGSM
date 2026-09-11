@@ -11,6 +11,16 @@ IT_DIR="${SCRIPT_DIR}/tests/integration_tests"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 export PYTHONPATH=".:src${PYTHONPATH:+:$PYTHONPATH}"
 
+if [[ -z "${ALPHAGSM_WORK_DIR:-}" && -d "${DEFAULT_INTEGRATION_WORK_DIR}" ]]; then
+    export ALPHAGSM_WORK_DIR="${DEFAULT_INTEGRATION_WORK_DIR}"
+fi
+
+if [[ -n "${ALPHAGSM_WORK_DIR:-}" ]]; then
+    mkdir -p "${ALPHAGSM_WORK_DIR}"
+    export TMPDIR="${ALPHAGSM_WORK_DIR}"
+    echo "=== Using integration work dir: ${ALPHAGSM_WORK_DIR} ==="
+fi
+
 echo "=== Running lint and unit coverage preflight ==="
 bash "${SCRIPT_DIR}/lint.sh"
 "${PYTHON_BIN}" -m pytest "${SCRIPT_DIR}/tests/unit_tests" \

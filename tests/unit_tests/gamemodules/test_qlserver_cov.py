@@ -5,34 +5,12 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.qlserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.qlserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):
@@ -67,6 +45,7 @@ def test_install(tmp_path):
     server.data["exe_name"] = "qzeroded.x64"
     server.data["Steam_AppID"] = 349090
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["servercfg"] = "baseq3/server.cfg"
     mod.install(server)
 
 
@@ -116,7 +95,164 @@ def test_get_start_command(tmp_path):
     server.data["servercfg"] = "test"
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=./linux64",
+        "./qzeroded.x64",
+        "+set",
+        "fs_game",
+        "baseq3",
+        "+set",
+        "fs_homepath",
+        server.data["dir"],
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+set",
+        "serverstartup",
+        "map test ffa",
+        "+set",
+        "net_ip",
+        "0.0.0.0",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_container_paths_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "qzeroded.x64"
+    server.data["runtime"] = "docker"
+    (tmp_path / "qzeroded.x64").write_text("")
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["servercfg"] = "test"
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=./linux64",
+        "./qzeroded.x64",
+        "+set",
+        "fs_game",
+        "baseq3",
+        "+set",
+        "fs_homepath",
+        "/srv/server",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+set",
+        "serverstartup",
+        "map test ffa",
+        "+set",
+        "net_ip",
+        "0.0.0.0",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_container_spec_uses_container_homepath(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "qzeroded.x64"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    server.data["servercfg"] = "server.cfg"
+    server.data["startmap"] = "campgrounds"
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["command"] == [
+        "env",
+        "LD_LIBRARY_PATH=./linux64",
+        "./qzeroded.x64",
+        "+set",
+        "fs_game",
+        "baseq3",
+        "+set",
+        "fs_homepath",
+        "/srv/server",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "server.cfg",
+        "+set",
+        "serverstartup",
+        "map campgrounds ffa",
+        "+set",
+        "net_ip",
+        "0.0.0.0",
+    ]
+
+
+@pytest.mark.parametrize("exe_name, library_dir", [
+    ("qzeroded.x64", "./linux64"),
+    ("qzeroded.x86", "./linux32"),
+    ("custom-qzeroded.x64", "./linux64"),
+])
+def test_launchers_use_bundled_steam_library_for_selected_binary(tmp_path, exe_name, library_dir):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27960, dir=str(tmp_path), exe_name=exe_name)
+    (tmp_path / exe_name).write_bytes(b"mock executable")
+
+    process_command, process_cwd = mod.get_start_command(server)
+    spec = mod.get_container_spec(server)
+
+    for command in (process_command, spec["command"]):
+        assert command[:3] == ["env", "LD_LIBRARY_PATH=" + library_dir, "./" + exe_name]
+    assert process_cwd == server.data["dir"]
+    assert spec["working_dir"] == "/srv/server"
+    assert process_command[process_command.index("fs_homepath") + 1] == server.data["dir"]
+    assert spec["command"][spec["command"].index("fs_homepath") + 1] == "/srv/server"
+
+
+def test_setting_schema_exposes_quake_live_launch_tokens():
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["startmap"].aliases == ("map",)
+    assert mod.setting_schema["homepath"].storage_key == "dir"
+    assert mod.setting_schema["servercfg"].launch_arg_tokens == ("+exec",)
+
+
+def test_sync_server_config_updates_quake_live_server_cfg(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servercfg"] = "baseq3/server.cfg"
+    server.data["hostname"] = "AlphaGSM QL Test"
+    server.data["startmap"] = "asylum"
+    config_dir = tmp_path / "baseq3"
+    config_dir.mkdir()
+    config_path = config_dir / "server.cfg"
+    config_path.write_text(
+        'hostname="Old Name"\n'
+        'startmap=campgrounds\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'set sv_hostname "AlphaGSM QL Test"',
+        'set serverstartup "map asylum ffa"',
+        'set net_ip "0.0.0.0"',
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -187,8 +323,8 @@ def test_checkvalue_hostname():
 
 def test_checkvalue_startmap():
     server = DummyServer()
-    result = mod.checkvalue(server, ("startmap",), "/test/value")
-    assert result == "/test/value"
+    result = mod.checkvalue(server, ("startmap",), "campgrounds")
+    assert result == "campgrounds"
 
 
 def test_checkvalue_servercfg():

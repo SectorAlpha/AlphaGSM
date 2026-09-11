@@ -14,9 +14,9 @@ DIRS=(
 )
 
 if command -v rg >/dev/null 2>&1; then
-  mapfile -t files < <(rg --files "${DIRS[@]}" -g '*.py' -g '!src/downloadermodules/steamcmd.py')
+  mapfile -t files < <(rg --files "${DIRS[@]}" -g '*.py')
 else
-  mapfile -t files < <(find "${DIRS[@]}" -type f -name '*.py' ! -path 'src/downloadermodules/steamcmd.py' | sort)
+  mapfile -t files < <(find "${DIRS[@]}" -type f -name '*.py' | sort)
 fi
 
 PYTHONPATH="${PYTHONPATH:-.:src}" "$PYTHON_BIN" -m pylint --fail-under=10 "${files[@]}"

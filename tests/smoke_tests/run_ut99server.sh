@@ -75,7 +75,7 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create ut99server
-run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 if [[ ! -e "$INSTALL_DIR/System64/ucc-bin" ]] \
   && [[ ! -e "$INSTALL_DIR/System64/ucc-bin-amd64" ]] \

@@ -1,38 +1,16 @@
 """Full coverage tests for mumbleserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.mumbleserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.mumbleserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):
@@ -72,6 +50,35 @@ def test_install(tmp_path):
     mod.install(server)
 
 
+def test_sync_server_config_rewrites_mumble_config(tmp_path):
+    server = DummyServer("voice")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 64739
+    server.data["welcometext"] = "Welcome to voice"
+    server.data["users"] = "42"
+    server.data["database"] = "voice.sqlite"
+    server.data["serverpassword"] = "secret"
+
+    mod.sync_server_config(server)
+
+    config_text = (tmp_path / "mumble-server.ini").read_text()
+    assert "welcometext=Welcome to voice" in config_text
+    assert "port=64739" in config_text
+    assert "users=42" in config_text
+    assert "database=voice.sqlite" in config_text
+    assert "serverpassword=secret" in config_text
+
+
+def test_setting_schema_exposes_canonical_ini_keys():
+    schema = mod.setting_schema
+
+    assert mod.config_sync_keys == ("port", "users", "database", "serverpassword", "welcometext")
+    assert schema["maxplayers"].storage_key == "users"
+    assert schema["maxplayers"].native_config_key == "users"
+    assert schema["serverpassword"].secret is True
+    assert schema["maxplayers"].value_type == "integer"
+
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -79,6 +86,52 @@ def test_get_start_command(tmp_path):
     (tmp_path / "server").write_text("")
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_get_start_command_uses_relative_ini_for_docker(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "server"
+    server.data["runtime"] = "docker"
+    (tmp_path / "server").write_text("")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["server", "-fg", "-ini", "mumble-server.ini"]
+    assert cwd == server.data["dir"]
+
+
+def test_query_and_info_address_use_runtime_query_host():
+    server = DummyServer()
+    server.data["port"] = 64738
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="172.18.0.25") as resolver:
+        assert mod.get_query_address(server) == ("172.18.0.25", 64738, "tcp")
+        assert mod.get_info_address(server) == ("172.18.0.25", 64738, "tcp")
+        assert resolver.call_count == 2
+
+
+def test_get_runtime_requirements_declare_mumble_host_dependency(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 64738,
+            "exe_name": "murmurd",
+        }
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    dependency = requirements["host_dependencies"][0]
+
+    assert dependency["id"] == "mumble-server"
+    assert dependency["display_name"] == "Mumble dedicated server binary"
+    assert dependency["command_key"] == "exe_name"
+    assert dependency["command"] == (
+        {"label": "mumble-server", "command": "mumble-server"},
+        {"label": "murmurd", "command": "murmurd"},
+    )
+    assert dependency["platforms"] == ("linux",)
+    assert "murmurd" in dependency["install_hints"]["linux"]
 
 
 def test_do_stop():

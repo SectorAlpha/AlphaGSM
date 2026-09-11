@@ -26,7 +26,7 @@ class DummyServer:
 
 
 def test_mw3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(mw3server.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(mw3server.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("mw3")
     exe = tmp_path / "iw5mp_server.exe"
     exe.write_text("")
@@ -49,7 +49,7 @@ def test_mw3_get_start_command_builds_expected_args(tmp_path, monkeypatch):
 
 
 def test_reignofdwarf_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(reignofdwarfserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(reignofdwarfserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("rod")
     exe = tmp_path / "ReignOfDwarfServer.exe"
     exe.write_text("")
@@ -68,6 +68,83 @@ def test_reignofdwarf_get_start_command_builds_expected_args(tmp_path, monkeypat
     assert cmd[0] == "ReignOfDwarfServer.exe"
     assert "-queryport" in cmd
     assert cwd == server.data["dir"]
+
+
+def test_reignofdwarf_launches_without_a_graphical_window(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        reignofdwarfserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
+    executable = tmp_path / "Server.exe"
+    executable.write_text("", encoding="utf-8")
+    server = DummyServer("rod")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Server.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "maxplayers": 16,
+        }
+    )
+
+    command, _ = reignofdwarfserver.get_start_command(server)
+
+    assert "-batchmode" in command
+    assert "-nographics" in command
+
+
+def test_reignofdwarf_runtime_metadata_enables_xvfb_for_docker(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        reignofdwarfserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
+    executable = tmp_path / "Server.exe"
+    executable.write_text("", encoding="utf-8")
+    server = DummyServer("rod")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Server.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "maxplayers": 16,
+        }
+    )
+
+    requirements = reignofdwarfserver.get_runtime_requirements(server)
+    spec = reignofdwarfserver.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["ALPHAGSM_PREFER_PROTON"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
+def test_reignofdwarf_uses_tcp_health_on_the_game_port(monkeypatch):
+    server = DummyServer("rod")
+    server.data.update({"port": 7777})
+    monkeypatch.setattr(
+        reignofdwarfserver.runtime_module,
+        "resolve_query_host",
+        lambda _server: "127.0.0.1",
+    )
+
+    assert reignofdwarfserver.get_query_address(server) == (
+        "127.0.0.1",
+        7777,
+        "tcp",
+    )
+    assert reignofdwarfserver.get_info_address(server) == (
+        "127.0.0.1",
+        7777,
+        "tcp",
+    )
 
 
 def test_mw3_and_reignofdwarf_update_downloads_and_optionally_restart(monkeypatch):

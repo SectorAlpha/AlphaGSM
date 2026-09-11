@@ -1,36 +1,18 @@
 """Full coverage tests for coduoserver."""
 
 import os
+import shutil
 import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.coduoserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.coduoserver as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -60,22 +42,151 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "coduoded_lnxded"
+    server.data["exe_name"] = "coduo_lnxded"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
+
+    def fake_install_archive(_server, _compression):
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "pak0.pk3").write_text("", encoding="utf-8")
+
+    mod.install_archive.side_effect = fake_install_archive
     mod.install(server)
+    mod.install_archive.side_effect = None
+
+
+def test_install_normalizes_extensionless_download_name(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "coduo_lnxded"
+    server.data["url"] = mod.CODUO_SERVER_URL
+    server.data["download_name"] = "call-of-duty-united-offensive-dedicated-linux-server-files-v151b"
+
+    def fake_install_archive(_server, _compression):
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "pak0.pk3").write_text("", encoding="utf-8")
+
+    mod.install_archive.side_effect = fake_install_archive
+    mod.install(server)
+    mod.install_archive.side_effect = None
+
+    assert server.data["download_name"] == mod.CODUO_SERVER_NAME
+    mod.detect_compression.assert_called_with(mod.CODUO_SERVER_NAME)
+
+
+def test_install_rejects_missing_base_cod_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "coduo_lnxded"
+    server.data["url"] = mod.CODUO_SERVER_URL
+    server.data["download_name"] = mod.CODUO_SERVER_NAME
+
+    def fake_install_archive(_server, _compression):
+        uo_dir = tmp_path / "uo"
+        uo_dir.mkdir()
+        (uo_dir / "pakuo00.pk3").write_text("", encoding="utf-8")
+
+    mod.install_archive.side_effect = fake_install_archive
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): coduoserver"):
+        mod.install(server)
+    mod.install_archive.side_effect = None
+
+
+def test_install_flattens_nested_payload_before_missing_assets_gate(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "coduo_lnxded"
+    server.data["url"] = mod.CODUO_SERVER_URL
+    server.data["download_name"] = mod.CODUO_SERVER_NAME
+
+    def fake_install_archive(_server, _compression):
+        payload_dir = tmp_path / "coduo-lnxded-1.51-large"
+        payload_dir.mkdir()
+        (payload_dir / "coduo_lnxded").write_text("", encoding="utf-8")
+
+    def fake_sync_tree(source, target, skip_root_files=()):
+        for root, dirs, files in os.walk(source):
+            rel_root = os.path.relpath(root, source)
+            target_root = target if rel_root == "." else os.path.join(target, rel_root)
+            os.makedirs(target_root, exist_ok=True)
+            for dirname in dirs:
+                os.makedirs(os.path.join(target_root, dirname), exist_ok=True)
+            for filename in files:
+                if rel_root == "." and filename in skip_root_files:
+                    continue
+                shutil.copy2(os.path.join(root, filename), os.path.join(target_root, filename))
+
+    mod.install_archive.side_effect = fake_install_archive
+    with patch.object(mod, "sync_tree", side_effect=fake_sync_tree) as sync_tree:
+        with pytest.raises(ServerError, match="ENABLED \\(BYO\\): coduoserver"):
+            mod.install(server)
+
+    assert (tmp_path / "coduo_lnxded").is_file()
+    sync_tree.assert_called_once_with(str(tmp_path / "coduo-lnxded-1.51-large"), str(tmp_path) + "/")
+    mod.install_archive.side_effect = None
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "coduoded_lnxded"
-    (tmp_path / "coduoded_lnxded").write_text("")
+    server.data["exe_name"] = "coduo_lnxded"
+    (tmp_path / "coduo_lnxded").write_text("")
     server.data["hostname"] = "test"
     server.data["moddir"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./coduo_lnxded",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_coduo_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "moddir"
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+
+
+def test_sync_server_config_updates_mod_server_cfg(tmp_path):
+    server = DummyServer("coduo")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "moddir": "uo",
+            "hostname": "AlphaGSM coduo",
+            "startmap": "mp_hurtgen",
+        }
+    )
+    cfg_dir = tmp_path / "uo"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nmoddir=main\nstartmap=mp_brecourt\nset g_gametype dm\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM coduo"\n'
+        'moddir=uo\n'
+        'startmap=mp_hurtgen\n'
+        'set g_gametype dm\n'
+    )
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -91,7 +202,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()
@@ -166,4 +277,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

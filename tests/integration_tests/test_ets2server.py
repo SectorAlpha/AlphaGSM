@@ -1,20 +1,26 @@
 """Integration test for ets2server."""
 
+import os
+from pathlib import Path
+import shutil
+import sys
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    default_runtime_backend,
+    require_command_for_runtime,
     pick_free_tcp_port,
+    pick_free_udp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_tcp_closed,
+    wait_for_info_protocol,
     wait_for_udp_closed,
 )
 from gamemodules.ets2server import steam_app_id
@@ -27,7 +33,24 @@ STOP_TIMEOUT = 90
 def test_ets2server_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    export_dir = os.environ.get("ALPHAGSM_ETS2_SERVER_PACKAGES_DIR")
+    if not export_dir:
+        pytest.skip(
+            "ENABLED (BYO): set ALPHAGSM_ETS2_SERVER_PACKAGES_DIR to owned-client "
+            "exports containing server_packages.sii and server_packages.dat"
+        )
+    for filename in ("server_packages.sii", "server_packages.dat"):
+        path = Path(export_dir) / filename
+        assert path.is_file() and path.stat().st_size > 0, f"Missing or empty ETS2 export: {path}"
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "ets2server"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -35,29 +58,38 @@ def test_ets2server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itets2server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    query_port = pick_free_udp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "ets2server")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    run_and_assert_ok(env, server_name, "set", "queryport", str(query_port))
+
+    native_home = install_dir / ".local/share/Euro Truck Simulator 2"
+    native_home.mkdir(parents=True, exist_ok=True)
+    for filename in ("server_packages.sii", "server_packages.dat", "server_config.sii"):
+        source = Path(export_dir) / filename
+        if source.is_file():
+            shutil.copyfile(source, native_home / filename)
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=query_port)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -86,7 +118,11 @@ def test_ets2server_lifecycle(tmp_path):
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)

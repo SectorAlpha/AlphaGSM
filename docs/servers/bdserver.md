@@ -2,6 +2,10 @@
 
 This guide covers the `bdserver` module in AlphaGSM.
 
+`bdserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub continues to exercise process and Docker lanes; both use the
+same shared Valve A2S query hook.
+
 ## Requirements
 
 - `screen`
@@ -60,7 +64,33 @@ alphagsm mybdserver backup
 ## Notes
 
 - Module name: `bdserver`
+- Docker readiness uses AlphaGSM `info --json` with the runtime-resolved A2S
+  host rather than a host-only `screen` log.
+- Replacement GitHub CI validation of this shared query-host correction is pending.
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create bdserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `pve_tomb`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `3`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM Base Defense`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

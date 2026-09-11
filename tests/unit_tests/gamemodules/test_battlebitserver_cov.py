@@ -1,60 +1,53 @@
 """Full coverage tests for battlebitserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+import types
+from unittest.mock import MagicMock, patch
 
 import pytest
+from server.settable_keys import resolve_requested_key
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
-sys.modules.pop('gamemodules.battlebitserver', None)
-with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
+sys.modules.pop("gamemodules.battlebitserver", None)
+with patch.dict(
+    "sys.modules",
+    {
+        "screen": MagicMock(),
+        "utils.backups": MagicMock(),
+        "utils.backups.backups": MagicMock(),
+        "utils.steamcmd": MagicMock(),
+    },
+):
     import gamemodules.battlebitserver as mod
     from server import ServerError
 
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
+    mod.proton = types.SimpleNamespace(
+        wrap_command=MagicMock(side_effect=lambda cmd, **_: ["wrapped"] + list(cmd))
+    )
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
-    mod.configure(server, ask=False, port=7787, dir=str(tmp_path))
-    assert server.data['port'] == 7787
+    mod.configure(server, ask=False, port=29992, dir=str(tmp_path))
+    assert server.data["port"] == 29992
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
     server = DummyServer()
-    server.data["port"] = 7787
+    server.data["port"] = 29992
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = "test"
     server.data["Steam_anonymous_login_possible"] = "test"
-    server.data["maxplayers"] = 27015
-    server.data["queryport"] = 27015
+    server.data["maxplayers"] = 127
+    server.data["servername"] = "AlphaGSM Test"
+    server.data["apiendpoint"] = ""
     mod.configure(server, ask=True)
 
 
 def test_configure_ask_custom(tmp_path, monkeypatch):
-    inputs = iter(["7788", str(tmp_path / 'custom')])
+    inputs = iter(["29993", str(tmp_path / "custom")])
     monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
     server = DummyServer()
     mod.configure(server, ask=True)
@@ -63,7 +56,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "BattleBitDedicatedServer"
+    server.data["exe_name"] = "BattleBit.exe"
     server.data["Steam_AppID"] = 689410
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -94,7 +87,7 @@ def test_update_stop_exception(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 689410
     server.data["Steam_anonymous_login_possible"] = True
-    server.stop = MagicMock(side_effect=Exception('already stopped'))
+    server.stop = MagicMock(side_effect=Exception("already stopped"))
     mod.update(server, validate=False, restart=False)
 
 
@@ -105,33 +98,56 @@ def test_restart():
     assert server._started
 
 
+def test_setting_schema_resolves_api_endpoint_alias():
+    resolved = resolve_requested_key("api_endpoint", mod.setting_schema)
+
+    assert resolved.canonical_key == "apiendpoint"
+    assert resolved.storage_key == "apiendpoint"
+
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "BattleBitDedicatedServer"
-    (tmp_path / "BattleBitDedicatedServer").write_text("")
-    server.data["maxplayers"] = 27015
-    server.data["port"] = 27015
-    server.data["queryport"] = 27015
+    server.data["exe_name"] = "BattleBit.exe"
+    (tmp_path / "BattleBit.exe").write_text("")
+    server.data["maxplayers"] = 127
+    server.data["port"] = 29992
+    server.data["servername"] = "AlphaGSM BattleBit IT"
+    server.data["apiendpoint"] = "127.0.0.1:29294"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    server.data["maxplayers"] = 27015
-    server.data["port"] = 27015
-    server.data["queryport"] = 27015
+    server.data["maxplayers"] = 127
+    server.data["port"] = 29992
+    server.data["apiendpoint"] = "127.0.0.1:29294"
     with pytest.raises(ServerError):
         mod.get_start_command(server)
+
+
+def test_get_start_command_requires_apiendpoint(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "BattleBit.exe"
+    (tmp_path / "BattleBit.exe").write_text("")
+    server.data["maxplayers"] = 127
+    server.data["port"] = 29992
+
+    with pytest.raises(ServerError) as excinfo:
+        mod.get_start_command(server)
+
+    assert "ENABLED (AUTH)" in str(excinfo.value)
 
 
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -147,7 +163,10 @@ def test_message():
 def test_backup():
     server = DummyServer()
     server.data["dir"] = "/tmp/test/"
-    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    server.data["backup"] = {
+        "profiles": {"default": {"targets": ["saves"]}},
+        "schedule": [("default", 0, "days")],
+    }
     mod.backup(server)
 
 
@@ -175,16 +194,34 @@ def test_checkvalue_port():
     assert result == 12345
 
 
-def test_checkvalue_queryport():
+def test_checkvalue_queryport_is_unsupported():
     server = DummyServer()
-    result = mod.checkvalue(server, ("queryport",), "12345")
-    assert result == 12345
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("queryport",), "12345")
 
 
 def test_checkvalue_maxplayers():
     server = DummyServer()
     result = mod.checkvalue(server, ("maxplayers",), "12345")
     assert result == 12345
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM BattleBit")
+    assert result == "AlphaGSM BattleBit"
+
+
+def test_checkvalue_apiendpoint():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("apiendpoint",), "127.0.0.1:29294")
+    assert result == "127.0.0.1:29294"
+
+
+def test_checkvalue_apitoken():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("apitoken",), "secret-token")
+    assert result == "secret-token"
 
 
 def test_checkvalue_exe_name():
@@ -201,6 +238,8 @@ def test_checkvalue_dir():
 
 def test_checkvalue_backup():
     server = DummyServer()
-    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    server.data["backup"] = {
+        "profiles": {"default": {"targets": ["saves"]}},
+        "schedule": [("default", 0, "days")],
+    }
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

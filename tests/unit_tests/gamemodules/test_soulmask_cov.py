@@ -5,34 +5,15 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.soulmask', None)
-with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
+_proton_mock = MagicMock()
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.soulmask as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -72,8 +53,8 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "WSServer.sh"
-    server.data["Steam_AppID"] = 3017300
+    server.data["exe_name"] = "WSServer.exe"
+    server.data["Steam_AppID"] = 3017310
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
 
@@ -81,7 +62,7 @@ def test_install(tmp_path):
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["Steam_AppID"] = 3017300
+    server.data["Steam_AppID"] = 3017310
     server.data["Steam_anonymous_login_possible"] = True
     mod.update(server, validate=True, restart=True)
     assert server._stopped
@@ -91,7 +72,7 @@ def test_update_with_restart(tmp_path):
 def test_update_no_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["Steam_AppID"] = 3017300
+    server.data["Steam_AppID"] = 3017310
     server.data["Steam_anonymous_login_possible"] = True
     mod.update(server, validate=False, restart=False)
     assert server._stopped
@@ -101,7 +82,7 @@ def test_update_no_restart(tmp_path):
 def test_update_stop_exception(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["Steam_AppID"] = 3017300
+    server.data["Steam_AppID"] = 3017310
     server.data["Steam_anonymous_login_possible"] = True
     server.stop = MagicMock(side_effect=Exception('already stopped'))
     mod.update(server, validate=False, restart=False)
@@ -115,10 +96,63 @@ def test_restart():
 
 
 def test_get_start_command(tmp_path):
+    with patch.object(mod, "IS_LINUX", False):
+        server = DummyServer()
+        server.data["dir"] = str(tmp_path) + "/"
+        server.data["exe_name"] = "WSServer.exe"
+        exe_path = tmp_path / "WSServer.exe"
+        exe_path.write_text("")
+        server.data["adminpassword"] = "test"
+        server.data["backupinterval"] = "test"
+        server.data["bindaddress"] = "test"
+        server.data["echoport"] = "test"
+        server.data["level"] = "test"
+        server.data["maxplayers"] = 27015
+        server.data["mods"] = "test"
+        server.data["port"] = 27015
+        server.data["queryport"] = 27015
+        server.data["savinginterval"] = "test"
+        server.data["servername"] = "test"
+        server.data["serverpassword"] = "test"
+        cmd, cwd = mod.get_start_command(server)
+        assert cmd == [
+            "./WSServer.exe",
+            "test",
+            "-server",
+            "-log",
+            "-forcepassthrough",
+            "-UTF8Output",
+            "-SteamServerName=test",
+            "-MaxPlayers=27015",
+            "-PSW=test",
+            "-adminpsw=test",
+            "-MULTIHOME=test",
+            "-Port=27015",
+            "-QueryPort=27015",
+            "-EchoPort=test",
+            "-saving=test",
+            "-backup=test",
+            '-mod="test"',
+        ]
+        assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_proton_on_linux(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    observed = {}
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        observed["command"] = list(cmd)
+        observed["wineprefix"] = wineprefix
+        observed["prefer_proton"] = prefer_proton
+        return ["proton", "run", *cmd]
+
+    monkeypatch.setattr(mod.proton, "wrap_command", fake_wrap_command)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "WSServer.sh"
-    (tmp_path / "WSServer.sh").write_text("")
+    server.data["exe_name"] = "WSServer.exe"
+    exe_path = tmp_path / "WSServer.exe"
+    exe_path.write_text("")
     server.data["adminpassword"] = "test"
     server.data["backupinterval"] = "test"
     server.data["bindaddress"] = "test"
@@ -132,7 +166,76 @@ def test_get_start_command(tmp_path):
     server.data["servername"] = "test"
     server.data["serverpassword"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert observed == {
+        "command": [
+            "./WSServer.exe",
+            "test",
+            "-server",
+            "-log",
+            "-forcepassthrough",
+            "-UTF8Output",
+            "-SteamServerName=test",
+            "-MaxPlayers=27015",
+            "-PSW=test",
+            "-adminpsw=test",
+            "-MULTIHOME=test",
+            "-Port=27015",
+            "-QueryPort=27015",
+            "-EchoPort=test",
+            "-saving=test",
+            "-backup=test",
+            '-mod="test"',
+        ],
+        "wineprefix": None,
+        "prefer_proton": True,
+    }
+    assert cmd == [
+        "proton",
+        "run",
+        "./WSServer.exe",
+        "test",
+        "-server",
+        "-log",
+        "-forcepassthrough",
+        "-UTF8Output",
+        "-SteamServerName=test",
+        "-MaxPlayers=27015",
+        "-PSW=test",
+        "-adminpsw=test",
+        "-MULTIHOME=test",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-EchoPort=test",
+        "-saving=test",
+        "-backup=test",
+        '-mod="test"',
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_query_and_info_address_use_tcp_main_port_on_linux(monkeypatch):
+    server = DummyServer("soul")
+    server.data["port"] = "8777"
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.12")
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+
+    assert mod.get_query_address(server) == ("10.0.0.12", 8777, "tcp")
+    assert mod.get_info_address(server) == ("10.0.0.12", 8777, "tcp")
+
+
+def test_setting_schema_launch_formats():
+    assert mod.setting_schema["level"].launch_arg_format == "{value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-SteamServerName={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["serverpassword"].launch_arg_format == "-PSW={value}"
+    assert mod.setting_schema["adminpassword"].launch_arg_format == "-adminpsw={value}"
+    assert mod.setting_schema["bindaddress"].launch_arg_format == "-MULTIHOME={value}"
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["echoport"].launch_arg_format == "-EchoPort={value}"
+    assert mod.setting_schema["savinginterval"].launch_arg_format == "-saving={value}"
+    assert mod.setting_schema["backupinterval"].launch_arg_format == "-backup={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -158,7 +261,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -284,4 +387,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

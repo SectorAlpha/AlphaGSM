@@ -2,6 +2,12 @@
 
 This guide covers the `tsserver` module in AlphaGSM.
 
+`tsserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection around that owned-mod-content prerequisite, while
+local runs remain process-backed by default unless you opt into the Docker
+backend.
+
 ## Requirements
 
 - `screen`
@@ -21,6 +27,12 @@ Run setup:
 ```bash
 alphagsm mytsserver setup
 ```
+
+`tsserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide The
+Specialists mod payload. Before `start`, copy a complete owned The Specialists
+content tree into `<install_dir>/ts/` so
+`<install_dir>/ts/maps/ts_neobaroque.bsp` exists.
 
 Start it:
 
@@ -50,6 +62,15 @@ Setup configures:
 - SteamCMD downloads the server files
 - default configuration and backup settings
 
+Suggested flow:
+
+```bash
+alphagsm mytsserver create tsserver
+alphagsm mytsserver setup -n 27015 /path/to/tsserver
+# copy the full The Specialists mod tree into /path/to/tsserver/ts/
+alphagsm mytsserver start
+```
+
 ## Useful Commands
 
 ```bash
@@ -61,6 +82,29 @@ alphagsm mytsserver backup
 
 - Module name: `tsserver`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create tsserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `ts_neobaroque`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `32`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM The Specialists`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

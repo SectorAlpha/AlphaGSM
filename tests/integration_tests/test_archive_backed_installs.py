@@ -107,8 +107,8 @@ def test_etlegacy_downloads_latest_release_and_installs(tmp_path):
     assert data["url"]
     assert data["version"]
     assert data["download_name"]
-    assert data["exe_name"] == "etl.x86_64"
-    assert (install_dir / "etl.x86_64").exists()
+    assert data["exe_name"] == "etlded.x86_64"
+    assert (install_dir / "etlded.x86_64").exists()
 
     # A second setup pass should reuse the resolved settings cleanly.
     _run_and_assert_ok(env, server_name, "setup", "--noask", "27960", str(install_dir))

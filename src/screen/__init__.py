@@ -75,9 +75,9 @@ def _create_backend():
         return TmuxBackend(session_tag, log_path, keeplogs)
 
     if choice == "subprocess":
-        from .subprocess_backend import SubprocessBackend  # pylint: disable=import-outside-toplevel
+        from .managed_subprocess import ManagedSubprocessBackend
 
-        return SubprocessBackend(session_tag, log_path, keeplogs)
+        return ManagedSubprocessBackend(session_tag, log_path, keeplogs)
 
     raise ProcessError("Unknown process backend: '%s'" % choice)
 

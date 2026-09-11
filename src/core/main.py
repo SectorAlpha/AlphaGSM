@@ -3,11 +3,14 @@
 from utils.cmdparse import cmdparse
 from server import Server, ServerError, server as servermodule
 from . import multiplexer as mp
+from . import self_update
 import subprocess as sp
 import screen
 import os
+import sys
 import traceback
 from . import program
+from .version import get_version
 from sys import stderr, stdout
 from textwrap import dedent
 
@@ -55,6 +58,13 @@ def main(name, args):
     The main role of this function is to sanitize the command input from the user.
     """
 
+    if len(args) == 1 and args[0].lower() in ("-v", "--version", "version"):
+        print("AlphaGSM %s" % (get_version(),))
+        return 0
+
+    if len(args) >= 1 and args[0].lower() == "self-update":
+        return self_update.run_self_update(name, args[1:], stderr=stderr)
+
     if len(args) == 1 and (args[0].lower() in ("-h", "-?", "--help")):
         args = ["*/*", "help"]
     #  if no arguments are called
@@ -90,6 +100,7 @@ def main(name, args):
             "logs",
             "compose",
             "ps",
+            "self-update",
         )
         + Server.default_commands
     )
@@ -137,7 +148,7 @@ def main(name, args):
     #  If command is "help" and servers contains just the wild card server
     #  ("/") then show help for commands common to all servers.
     if len(servers) == 1 and servers[0] == ("*", "*") and cmd == "help":
-        help(name, None, *args, file=stdout)
+        help(name, None, *args, file=stdout, full_help=not args)
         return 0
 
     #  Now we modify the server list even more.
@@ -166,6 +177,27 @@ def main(name, args):
 
 
 def run_one(name, server, cmd, args):
+    """Serialize local commands before their datastore is loaded."""
+    from utils.state_io import state_lock
+
+    user, tag = server
+    if user is not None:
+        return _run_one_unlocked(name, server, cmd, args)
+    if not tag or tag in (".", "..") or any(char in tag for char in "/\\\0:"):
+        print("Invalid local server name", file=stderr)
+        return 2
+    # Interactive attachment must not prevent a different CLI from stopping it.
+    if cmd == "connect":
+        return _run_one_unlocked(name, server, cmd, args)
+    try:
+        with state_lock(os.path.join(servermodule.DATAPATH, tag + ".json")):
+            return _run_one_unlocked(name, server, cmd, args)
+    except (TimeoutError, OSError) as error:
+        print_handled_ex(error)
+        return 1
+
+
+def _run_one_unlocked(name, server, cmd, args):
     """
     Run a single command or list of commands on a single server.
     """
@@ -225,7 +257,13 @@ def run_one(name, server, cmd, args):
             #  Here we are running a command on a server that already exists.
             #  First check to see if the server exists
             try:
-                server = Server(tag)
+                if cmd == "doctor" and any(arg in ("--json", "-j") for arg in args):
+                    from contextlib import redirect_stdout
+                    from io import StringIO
+                    with redirect_stdout(StringIO()):
+                        server = Server(tag)
+                else:
+                    server = Server(tag)
             except ServerError as ex:
                 print("Can't find server", file=stderr)
                 print_handled_ex(ex)
@@ -278,6 +316,8 @@ def run_one(name, server, cmd, args):
                 ),
                 "alphagsm",
             )
+            if getattr(sys, "frozen", False):
+                program.PATH = sys.executable
             #  now we have the commands that the game server understands,
             #  try running the command
             try:
@@ -368,7 +408,7 @@ def get_all_user_servers():
         servers = [
             (None, el[:-5])
             for el in os.listdir(servermodule.DATAPATH)
-            if el.endswith(".json")
+            if el.endswith(".json") and not el.endswith(".secrets.json")
         ]
     except FileNotFoundError:
         print("No servers found for user", file=stderr)
@@ -433,6 +473,8 @@ def get_run_cmd(name, server, args, multi=False):
     Return a list suitable to run in sp.subprocess
     """
 
+    if getattr(sys, "frozen", False):
+        return [sys.executable, "--_run-command", "1" if multi else "0", name, server] + list(args)
     scriptpath = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))),
         "alphagsm-internal",
@@ -498,6 +540,8 @@ def run_multi(name, count, servers, args):
     This is achieved by a multiplexer.
     """
 
+    if os.name == "nt":
+        return _run_multi_windows(name, servers, args)
     multi = mp.Multiplexer()
     for user, server in servers:
         if user is not None:
@@ -519,6 +563,7 @@ def run_multi(name, count, servers, args):
     retvals = list(multi.checkreturnvalues().values())
     if len(retvals) != len(servers):
         print("Warning: Not all servers have returned", file=stderr)
+        return 1
     if all(val == 0 for val in retvals):
         return 0
     retvalsnon0 = [val for val in retvals if val != 0]
@@ -526,6 +571,88 @@ def run_multi(name, count, servers, args):
         return retvalsnon0[0]
     else:
         return 10
+
+
+def _run_multi_windows(name, servers, args):
+    """Windows selectors cannot monitor subprocess pipes; drain with threads."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def run_target(target):
+        user, tag = target
+        if user is not None:
+            return tag, 1, "Cross-user commands require a Unix sudo environment."
+        try:
+            process = sp.run(get_run_cmd(name, tag, args), stdin=sp.DEVNULL,
+                             stdout=sp.PIPE, stderr=sp.STDOUT, text=True, check=False)
+            return tag, process.returncode, process.stdout
+        except OSError as error:
+            return tag, 1, str(error)
+
+    codes = []
+    with ThreadPoolExecutor(max_workers=min(8, len(servers))) as executor:
+        for tag, code, output in executor.map(run_target, servers):
+            for line in output.splitlines():
+                print(tag + ": " + line)
+            codes.append(code)
+    failures = set(code for code in codes if code)
+    return 0 if not failures else next(iter(failures)) if len(failures) == 1 else 10
+
+
+HELP_COMMAND_GROUPS = (
+    ("Lifecycle", ("setup", "start", "stop", "restart", "kill")),
+    ("Check", ("status", "query", "info", "doctor")),
+    ("Console", ("send", "message", "connect", "logs")),
+    ("Settings", ("set", "dump")),
+    ("Backup and worlds", ("backup", "restore", "wipe", "reset-world")),
+    ("Start on boot", ("activate", "deactivate")),
+)
+
+
+def _print_command_shorthelp(command, server, file):
+    """Print one command's short usage line from a server or the defaults."""
+    if command == "self-update":
+        cmdparse.shorthelp(
+            command,
+            self_update.SELF_UPDATE_DESCRIPTION,
+            self_update.SELF_UPDATE_CMDSPEC,
+            file=file,
+        )
+        return
+    if server is None:
+        cmdparse.shorthelp(
+            command,
+            Server.default_command_descriptions.get(command, None),
+            Server.default_command_args[command],
+            file=file,
+        )
+        return
+    cmdparse.shorthelp(
+        command,
+        server.get_command_description(command),
+        server.get_command_args(command),
+        file=file,
+    )
+
+
+def _print_grouped_command_help(server, file):
+    """Print default commands in operator groups, then any extra module commands."""
+    listed = set()
+    commands = Server.default_commands if server is None else server.get_commands()
+    for title, group in HELP_COMMAND_GROUPS:
+        present = [command for command in group if command in commands]
+        if not present:
+            continue
+        print(title + ":", file=file)
+        for command in present:
+            _print_command_shorthelp(command, server, file)
+            listed.add(command)
+        print(file=file)
+    extras = [command for command in commands if command not in listed]
+    if extras:
+        print("Game extras:", file=file)
+        for command in extras:
+            _print_command_shorthelp(command, server, file)
+        print(file=file)
 
 
 def help(name, server, cmd=None, *, file=stderr, full_help=False):
@@ -544,7 +671,8 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
     if cmd is None:
         if full_help:
             print(
-                "The Sector-Alpha Game Server Management Script (AlphaGSM)", file=file
+                "AlphaGSM — create, set up, start, check, and stop game servers.",
+                file=file,
             )
         print(file=file)
         print(name, "SERVER COMMAND [ARGS...]", file=file)
@@ -552,25 +680,25 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         if full_help:
             print(
                 dedent("""
-                SERVER is the server or servers to process. If a server is
-                specified as username/server then we use sudo to run as the
-                relevant user. This is always possible as root but is up to sudo
-                otherwise and may prompt for a password. The server can be the
-                special forms "*", which means apply to all the current user's
-                servers ("username/*" works too), or "*/*" which means run on a
-                command dependent definition of "all servers". This last form is
-                only available for a very limited set of commands.
+                Everyday flow: create -> setup -> start -> status/query/info -> stop.
+
+                SERVER is the server or servers to process. username/server runs
+                as that user through sudo when permitted. "*" is every server
+                for the current user. "*/*" is a command-dependent "all servers"
+                form used by a few commands such as help.
 
                 If the second calling form is specified there must be EXACTLY
                 COUNT servers specified.
-             
+
+                Longer operator guides: README.md, docs/commands.md,
+                docs/installing-mods.md, and docs/updating.md.
             """),
                 file=file,
             )
 
+        print("Top-level commands:", file=file)
         print(
             dedent("""
-        The available commands are:
           help [COMMAND] : Print a help message. Without a command print
                            this message or with a command print detailed help
                            for that command.
@@ -583,31 +711,25 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            checking what servers a wildcard matched or in
                            scripts to list the servers in a script processable
                            way.
-        """),
+          self-update [OPTION]... : Check for a newer AlphaGSM release and
+                           apply it when supported.
+        """).rstrip(),
             file=file,
         )
-
-        #  if there is no server, then return a default set of server commands
-        #  that are typical of every game server
-        if server is None:
-            for cmd in Server.default_commands:
-                cmdparse.shorthelp(
-                    cmd,
-                    Server.default_command_descriptions.get(cmd, None),
-                    Server.default_command_args[cmd],
-                )
-        #  otherwise return the commands specific to the server.
-        else:
-            for cmd in server.get_commands():
-                cmdparse.shorthelp(
-                    cmd,
-                    server.get_command_description(cmd),
-                    server.get_command_args(cmd),
-                )
+        print(file=file)
+        _print_grouped_command_help(server, file)
     else:
         #  if we have a command, return help relating to the command to the
         #  specific command
         if server is None:
+            if cmd == "self-update":
+                cmdparse.longhelp(
+                    cmd,
+                    self_update.SELF_UPDATE_DESCRIPTION,
+                    self_update.SELF_UPDATE_CMDSPEC,
+                    file=file,
+                )
+                return
             if cmd not in Server.default_commands:
                 print("Unknown Command", file=file)
                 print(file=file)
@@ -632,18 +754,14 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         # print the copyright and information notice.
         print(
             dedent("""
-            AlphaGSM Copyright (C) 2016 by Sector Alpha.
-            Licensed under GPL v3.0. See the LISCENCE file for details.
+            AlphaGSM Copyright (C) 2016-2026 by Sector Alpha.
+            Licensed under GPL v3.0. See the LICENSE file for details.
             Developed by Cosmosquark and Staircase27. See the CREDITS file for a
             full list of contributors.
 
-            A command line tool to download, manage and maintain game servers
-            using simple and similar commands. See the README, future_plans and
-            the changelog files for more details. Hosted and maintained on our
-            github page https://github.com/SectorAlpha/AlphaGSM. Raise any issues
-            or ask any questions on our github page, or contact
-            cosmosquark@sector-alpha.net. Additionally check out the project
-            wiki at http://wiki.sector-alpha.net/index.php?title=AlphaGSM
+            Source and issues: https://github.com/SectorAlpha/AlphaGSM
+            Docs: README.md, docs/commands.md, DEVELOPERS.md
+            Contact: cosmosquark@sector-alpha.net
         """),
             file=file,
         )

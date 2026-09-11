@@ -12,6 +12,7 @@ RUN dpkg --add-architecture i386 \
         git \
         lib32gcc-s1 \
         lib32stdc++6 \
+        util-linux \
         wget \
  && test -x /usr/bin/docker \
  && rm -rf /var/lib/apt/lists/*
@@ -29,14 +30,20 @@ RUN wget -q -O /usr/share/keyrings/adoptium.asc \
 
 WORKDIR /opt/alphagsm
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-runtime.txt ./
+RUN pip install --no-cache-dir -r requirements-runtime.txt
 
 COPY . .
 COPY docker/manager/entrypoint.sh /usr/local/bin/alphagsm-manager-entrypoint
 
 RUN chmod +x /usr/local/bin/alphagsm-manager-entrypoint \
- && mkdir -p /srv/alphagsm/home /srv/alphagsm/servers
+ && groupadd --gid 1000 alphagsm \
+ && useradd --uid 1000 --gid 1000 --home-dir /home/alphagsm --create-home \
+        --shell /bin/bash alphagsm \
+ && install -d -o 1000 -g 1000 \
+        /srv/alphagsm \
+        /srv/alphagsm/home \
+        /srv/alphagsm/servers
 
 ENV PYTHONPATH=/opt/alphagsm/src
 ENV ALPHAGSM_CONFIG_LOCATION=/srv/alphagsm/alphagsm.conf

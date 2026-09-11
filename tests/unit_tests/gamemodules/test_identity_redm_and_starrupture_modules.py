@@ -22,6 +22,9 @@ def test_redm_get_start_command_builds_expected_args(tmp_path):
     exe = tmp_path / "run.sh"
     exe.write_text("")
     server.data.update({"dir": str(tmp_path) + "/", "exe_name": "run.sh", "port": 30120})
+    server_data_dir = tmp_path / "server-data"
+    server_data_dir.mkdir()
+    (server_data_dir / "server.cfg").write_text("sv_licenseKey test\n")
 
     cmd, cwd = redmserver.get_start_command(server)
 
@@ -31,13 +34,29 @@ def test_redm_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_starrupture_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(starruptureserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(starruptureserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("star")
-    exe = tmp_path / "StarRuptureServer.x86_64"
+    exe = tmp_path / "StarRupture" / "Binaries" / "Win64" / "StarRuptureServerEOS-Win64-Shipping.exe"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "StarRuptureServer.x86_64", "port": 7777})
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe",
+            "port": 7777,
+            "servername": "AlphaGSM StarRupture",
+            "maxplayers": 4,
+        }
+    )
 
     cmd, cwd = starruptureserver.get_start_command(server)
 
-    assert cmd == ["StarRuptureServer.x86_64", "--port", "7777"]
+    assert cmd == [
+        "StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe",
+        "-Log",
+        "-MULTIHOME=0.0.0.0",
+        "-Port=7777",
+        "-MaxPlayers=4",
+        "-ServerName=AlphaGSM StarRupture",
+    ]
     assert cwd == server.data["dir"]

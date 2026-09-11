@@ -31,12 +31,13 @@ def test_q2server_configure_sets_expected_defaults(tmp_path):
 
 def test_q2server_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("q2")
-    exe = tmp_path / "q2ded"
+    (tmp_path / "release").mkdir()
+    exe = tmp_path / "release" / "q2ded"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "q2ded",
+            "exe_name": "release/q2ded",
             "gamedir": "baseq2",
             "hostname": "AlphaGSM q2",
             "port": 27910,
@@ -46,18 +47,19 @@ def test_q2server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = q2server.get_start_command(server)
 
-    assert cmd[0] == "./q2ded"
+    assert cmd[0] == "./release/q2ded"
     assert "+map" in cmd
     assert cwd == server.data["dir"]
 
 
 def test_q2server_runtime_requirements_use_quake_linux_family(tmp_path):
-    (tmp_path / "q2ded").write_text("")
+    (tmp_path / "release").mkdir()
+    (tmp_path / "release" / "q2ded").write_text("")
     server = DummyServer("q2")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "q2ded",
+            "exe_name": "release/q2ded",
             "gamedir": "baseq2",
             "hostname": "AlphaGSM q2",
             "port": 27910,
@@ -73,8 +75,16 @@ def test_q2server_runtime_requirements_use_quake_linux_family(tmp_path):
     assert requirements["ports"] == [
         {"host": 27910, "container": 27910, "protocol": "udp"}
     ]
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert requirements["env"]["HOME"] == "/home/alphagsm"
+    assert any(
+        mount["target"] == "/home/alphagsm"
+        for mount in requirements["mounts"]
+    )
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "./q2ded"
+    assert spec["command"][0] == "./release/q2ded"
+    assert spec["run_as_host_user"] is True
 
 
 def test_qwserver_configure_sets_expected_defaults(tmp_path):
@@ -101,7 +111,19 @@ def test_qwserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = qwserver.get_start_command(server)
 
-    assert cmd == ["./mvdsv", "-port", "27500", "+hostname", "AlphaGSM qw", "+map", "dm2"]
+    assert cmd == [
+        "./mvdsv",
+        "-mem",
+        "64",
+        "-game",
+        "ktx",
+        "-port",
+        "27500",
+        "+hostname",
+        "AlphaGSM qw",
+        "+map",
+        "dm2",
+    ]
     assert cwd == server.data["dir"]
 
 
@@ -126,14 +148,26 @@ def test_qwserver_runtime_requirements_use_quake_linux_family(tmp_path):
     assert requirements["ports"] == [
         {"host": 27500, "container": 27500, "protocol": "udp"}
     ]
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert requirements["env"]["HOME"] == "/home/alphagsm"
+    assert any(
+        mount["target"] == "/home/alphagsm"
+        for mount in requirements["mounts"]
+    )
     assert spec["working_dir"] == "/srv/server"
     assert spec["command"][0] == "./mvdsv"
+    assert spec["run_as_host_user"] is True
 
 
 def test_rtcwserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("rtcw")
     exe = tmp_path / "iowolfded.x86_64"
     exe.write_text("")
+    main_dir = tmp_path / "main"
+    main_dir.mkdir()
+    for filename in rtcwserver.RTCW_REQUIRED_MULTIPLAYER_ASSETS:
+        (main_dir / filename).write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -154,6 +188,10 @@ def test_rtcwserver_get_start_command_builds_expected_args(tmp_path):
 
 def test_rtcwserver_runtime_requirements_use_quake_linux_family(tmp_path):
     (tmp_path / "iowolfded.x86_64").write_text("")
+    main_dir = tmp_path / "main"
+    main_dir.mkdir()
+    for filename in rtcwserver.RTCW_REQUIRED_MULTIPLAYER_ASSETS:
+        (main_dir / filename).write_text("")
     server = DummyServer("rtcw")
     server.data.update(
         {
@@ -228,6 +266,8 @@ def test_jk2server_runtime_requirements_use_quake_linux_family(tmp_path):
 
 def test_etlegacyserver_runtime_requirements_use_quake_linux_family(tmp_path):
     (tmp_path / "etl.x86_64").write_text("")
+    (tmp_path / "etmain").mkdir()
+    (tmp_path / "etmain" / "pak0.pk3").write_text("")
     server = DummyServer("etl")
     server.data.update(
         {

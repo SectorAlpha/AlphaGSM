@@ -2,10 +2,15 @@
 
 This guide covers the `ark` module in AlphaGSM.
 
+`ark` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline.
+The checked-in GitHub validation path for this server is Docker-first through
+the shared `steamcmd-linux` runtime, with the real Linux dedicated server
+answering A2S `query`, `info`, and `info --json` on the managed `queryport`.
+
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Docker or another supported AlphaGSM runtime backend
+- SteamCMD access for app `376030`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -44,7 +49,8 @@ alphagsm myark stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port (default 27015)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +64,28 @@ alphagsm myark backup
 ## Notes
 
 - Module name: `ark`
-- Default port: 27015
+- Default game port: `7777`
+- Default query port: `27015`
+- Validated Linux support path: Docker `steamcmd-linux` runtime with A2S `query` / `info` on `queryport`
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ark`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Server admin password. Stored as a secret. |
+| `serverpassword` | sv_password, password | string | Password required to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -66,7 +93,7 @@ alphagsm myark backup
 
 - **Executable**: `ShooterGame/Binaries/Linux/ShooterGameServer`
 - **Location**: `<install_dir>/ShooterGame/Binaries/Linux/ShooterGameServer`
-- **Engine**: Custom (SteamCMD)
+- **Engine**: Native Linux dedicated server via SteamCMD
 - **SteamCMD App ID**: `376030`
 
 ### Server Configuration

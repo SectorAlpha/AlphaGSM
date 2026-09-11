@@ -1,0 +1,3 @@
+world="<server name>"
+worldindex=0
+maxplayers=8

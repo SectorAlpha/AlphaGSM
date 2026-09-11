@@ -2,6 +2,12 @@
 
 This guide covers the `dstserver` module in AlphaGSM.
 
+`dstserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection around that staged cluster-config prerequisite, while
+local runs remain process-backed by default unless you opt into the Docker
+backend.
+
 ## Requirements
 
 - `screen`
@@ -48,6 +54,43 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+Don't Starve Together is supported in `ENABLED (BYO)` mode in AlphaGSM.
+The anonymous server payload installs, but startup still exits immediately
+unless you provide both:
+
+- a real `cluster_token.txt`
+- a real cluster config directory for the world you want to run
+
+With the module defaults, AlphaGSM starts DST with:
+
+- `-persistent_storage_root <install_dir>`
+- `-conf_dir DoNotStarveTogether`
+- `-cluster <server-name>`
+- `-shard Master`
+
+That means the expected default layout is:
+
+```text
+<install_dir>/DoNotStarveTogether/<server-name>/
+├── cluster_token.txt
+├── cluster.ini
+└── Master/
+    └── server.ini
+```
+
+If you change `cluster`, `shard`, or `confdir` with `alphagsm set`, place the
+files under the matching adjusted path before retrying `start`.
+
+Example:
+
+```bash
+alphagsm mydstserve create dstserver
+alphagsm mydstserve setup
+mkdir -p "<install_dir>/DoNotStarveTogether/mydstserve/Master"
+# Copy your real Klei token and cluster config into that directory tree
+alphagsm mydstserve start
+```
+
 ## Useful Commands
 
 ```bash
@@ -59,6 +102,23 @@ alphagsm mydstserve backup
 
 - Module name: `dstserver`
 - Default port: 10999
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create dstserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

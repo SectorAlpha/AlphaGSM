@@ -6,33 +6,20 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
 sys.modules.pop('gamemodules.acserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.acserver as mod
     from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
 
 
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+@pytest.fixture(autouse=True)
+def configured_steam_account(monkeypatch):
+    configured = MagicMock()
+    configured.user.getsection.return_value.getsection.return_value.get.return_value = "entitled-user"
+    monkeypatch.setattr(mod, "settings", configured)
 
 
 def test_configure_basic(tmp_path):
@@ -128,7 +115,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -207,3 +194,35 @@ def test_checkvalue_backup():
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
 
+
+@pytest.mark.parametrize("username", [None, "", "  ", "anonymous", "ANONYMOUS"])
+def test_setup_requires_entitled_steam_login_before_download(tmp_path, monkeypatch, username):
+    monkeypatch.setattr(mod, "settings", MagicMock())
+    mod.settings.user.getsection.return_value.getsection.return_value.get.return_value = username
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    downloader = MagicMock()
+    monkeypatch.setattr(mod.steamcmd, "download", downloader)
+    with pytest.raises(ServerError, match=r"ENABLED \(AUTH\).*302550"):
+        mod.install(server)
+    downloader.assert_not_called()
+
+
+def test_authenticated_install_uses_windows_depot_and_never_anonymous(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    downloader = MagicMock()
+    monkeypatch.setattr(mod.steamcmd, "download", downloader)
+    mod.install(server)
+    downloader.assert_called_once_with(str(tmp_path), 302550, False, validate=False, force_windows=True)
+    assert mod.get_provider_requirements(server)[0]["support_category"] == "provider-license"
+
+
+def test_missing_auth_update_does_not_stop_existing_server(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "settings", MagicMock())
+    mod.settings.user.getsection.return_value.getsection.return_value.get.return_value = ""
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    with pytest.raises(ServerError, match=r"ENABLED \(AUTH\)"):
+        mod.update(server)
+    assert not server._stopped

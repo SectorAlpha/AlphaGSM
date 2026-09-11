@@ -2,6 +2,8 @@
 
 This guide covers the `minecraft.waterfall` module in AlphaGSM.
 
+`minecraft.waterfall` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -54,10 +56,42 @@ alphagsm mywaterfal update
 alphagsm mywaterfal backup
 ```
 
+Built-in manifest plugin families, direct plugin jars, and provider-hosted
+plugin archives can all be managed through AlphaGSM:
+
+```bash
+alphagsm mywaterfal mod add manifest viaversion
+alphagsm mywaterfal mod add manifest viabackwards
+alphagsm mywaterfal mod add manifest viarewind
+alphagsm mywaterfal mod add manifest luckperms
+alphagsm mywaterfal mod add manifest geyser
+alphagsm mywaterfal mod add url https://plugins.example.invalid/TestPlugin.jar
+alphagsm mywaterfal mod add moddb https://www.moddb.com/mods/proxy-pack/downloads/proxy-pack
+alphagsm mywaterfal mod apply
+alphagsm mywaterfal mod cleanup
+```
+
 ## Notes
 
 - Module name: `minecraft.waterfall`
 - Default port: 25565
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create minecraft.waterfall`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -69,9 +103,10 @@ alphagsm mywaterfal backup
 
 ### Server Configuration
 
-- **Config file**: `config.yml`
+- **Config file**: `config.yml`. On first setup AlphaGSM waits for Waterfall to
+  finish writing a usable listener configuration before applying the managed port.
 - **Key settings** (in `config.yml`):
-  - `server-port` — Game port (default 25565)
+  - `listeners[].host` — Proxy listen address and port (default 25565)
   - `motd` — Message of the day
   - `max-players` — Maximum players
   - `level-seed` — World generation seed
@@ -84,4 +119,4 @@ alphagsm mywaterfal backup
 - **Mod directory**: `plugins/`
 - **Workshop support**: No
 - **Map notes**: Waterfall is a proxy and does not host worlds.
-- **Mod notes**: Place Waterfall plugin .jar files in the `plugins/` directory.
+- **Mod notes**: AlphaGSM can install built-in manifest families such as `viaversion`, `viabackwards`, `viarewind`, `luckperms`, and `geyser`, place plugin `.jar` files from direct URLs into `plugins/`, and install Mod DB-backed archives when they contain plugin payloads under approved proxy plugin paths. `mod cleanup` removes only AlphaGSM-managed plugin files. The checked-in manifest now auto-installs ViaVersion-stack prerequisites when needed and selects the Bungee-compatible jar for variant-specific families. Waterfall keeps its own cache/state under `.alphagsm/mods/minecraft-waterfall/`.

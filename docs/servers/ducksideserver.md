@@ -2,6 +2,13 @@
 
 This guide covers the `ducksideserver` module in AlphaGSM.
 
+## Status
+
+`ducksideserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Duckside dedicated server app `2690320`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,23 @@ alphagsm myduckside backup
 
 - Module name: `ducksideserver`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ducksideserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

@@ -1,38 +1,17 @@
 """Full coverage tests for veinserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.veinserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.veinserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -111,7 +90,35 @@ def test_get_start_command(tmp_path):
     (tmp_path / "VeinServer.sh").write_text("")
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./VeinServer.sh",
+        "-Port=27015",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "VeinServer.sh"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "VeinServer.sh"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "VeinServer.sh").symlink_to(nested_exe)
+    server.data["port"] = 27015
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == [
+        "./VeinServer.sh",
+        "-Port=27015",
+    ]
+    assert cwd == str(nested_dir)
+
+
+def test_setting_schema_exposes_vein_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -126,7 +133,90 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_runtime_requirements_without_dir_keep_default_server_mount_behavior():
+    server = DummyServer()
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["family"] == "steamcmd-linux"
+    assert "mounts" not in requirements
+
+
+def test_get_container_spec_runs_as_non_root(tmp_path):
+    server = DummyServer()
+    (tmp_path / "VeinServer.sh").write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "VeinServer.sh",
+            "port": 27015,
+            "queryport": 27016,
+        }
+    )
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert spec["stdin_open"] is True
+    assert any(
+        mount["target"] == "/srv/server" and mount["mode"] == "rw"
+        for mount in spec["mounts"]
+    )
+    assert any(
+        mount["target"] == mod.CONTAINER_STEAMCMD_DIR and mount["mode"] == "ro"
+        for mount in spec["mounts"]
+    )
+    shell_command = " ".join(spec["command"])
+    assert 'useradd -M -u 1000 -o alphagsm;' in shell_command
+    assert 'mkdir -p /home/alphagsm/.steam/sdk64;' in shell_command
+    assert 'chmod -R a+rwX /srv/server /home/alphagsm;' in shell_command
+    assert (
+        'ln -sfn /opt/alphagsm-steamcmd/linux64/steamclient.so '
+        '/home/alphagsm/.steam/sdk64/steamclient.so;'
+    ) in shell_command
+    assert 'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm;' in shell_command
+    assert (
+        "exec runuser -u alphagsm -- sh -lc "
+        "'cd /srv/server && ./VeinServer.sh -Port=27015 -QueryPort=27016'"
+    ) in shell_command
+
+
+def test_get_container_spec_rewrites_external_launcher_cwd(tmp_path):
+    server = DummyServer()
+    external_dir = tmp_path.parent / f"{tmp_path.name}-external-cache" / "vein"
+    external_dir.mkdir(parents=True)
+    external_launcher = external_dir / "VeinServer.sh"
+    external_launcher.write_text("", encoding="utf-8")
+    (tmp_path / "VeinServer.sh").symlink_to(external_launcher)
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "VeinServer.sh",
+            "port": 27015,
+            "queryport": 27016,
+        }
+    )
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == str(external_dir)
+    assert any(
+        mount["source"] == str(external_dir)
+        and mount["target"] == str(external_dir)
+        and mount["mode"] == "ro"
+        for mount in spec["mounts"]
+    )
+    shell_command = " ".join(spec["command"])
+    assert (
+        "exec runuser -u alphagsm -- sh -lc "
+        f"'cd {external_dir} && ./VeinServer.sh -Port=27015 -QueryPort=27016'"
+    ) in shell_command
+    assert "'cd /srv/server && ./VeinServer.sh -Port=27015 -QueryPort=27016'" not in shell_command
 
 
 def test_status():
@@ -192,4 +282,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

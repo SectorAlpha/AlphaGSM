@@ -2,6 +2,8 @@
 
 This guide covers the `craftopiaserver` module in AlphaGSM.
 
+`craftopiaserver` is currently listed as `PASSED` in the checked-in support tracker on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection around this SteamCMD-backed lifecycle, but the checked-in integration test still carries an upstream install skip note and should be revalidated before treating that tracker row as freshly proven.
+
 ## Requirements
 
 - `screen`
@@ -49,6 +51,14 @@ Setup configures:
 - a generated `ServerSetting.ini` with the selected world name, max player count, and save path
 - SteamCMD downloads the server files
 
+Common `set` values:
+
+```bash
+alphagsm mycraftopi set map AlphaGSM World
+alphagsm mycraftopi set serverpassword craft-secret
+alphagsm mycraftopi set bindaddress 0.0.0.0
+```
+
 ## Useful Commands
 
 ```bash
@@ -62,6 +72,28 @@ alphagsm mycraftopi backup
 - Default port: 8787
 - AlphaGSM seeds `ServerSetting.ini` because the Linux dedicated server reads its actual host settings from the ini file rather than the CLI flags
 - AlphaGSM `query` and `info` use generic UDP reachability on the main game port
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create craftopiaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | IP address the server binds to. Example: `0.0.0.0`. |
+| `map` | worldname, gamemap, startmap, level | string | The selected Craftopia world name. Example: `AlphaGSM World`. |
+| `maxplayers` | users | integer | Maximum number of players allowed on the server. Example: `8`. |
+| `port` | gameport | integer | The primary game port. Example: `8787`. |
+| `serverpassword` | sv_password, password | string | Password required for joining the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

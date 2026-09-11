@@ -2,6 +2,11 @@
 
 This guide covers the `wurmserver` module in AlphaGSM.
 
+`wurmserver` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane
+validates both process and Docker runtimes for this module, while local runs
+remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -67,6 +72,23 @@ alphagsm mywurmserv backup
 - During install AlphaGSM copies `linux64/steamclient.so` into `nativelibs/` because the headless launcher expects a local Steam client library
 - During install AlphaGSM seeds root-level `Adventure` and `Creative` world folders from `dist/` on fresh SteamCMD installs
 - AlphaGSM `query` and `info` use generic TCP reachability on the game port
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create wurmserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

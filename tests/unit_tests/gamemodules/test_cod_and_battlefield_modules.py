@@ -50,6 +50,7 @@ def test_cod2server_get_start_command_builds_expected_args(tmp_path):
 
     assert cmd[0] == "./cod2_lnxded"
     assert "+map" in cmd
+    assert "fs_game" not in cmd
     assert cwd == server.data["dir"]
 
 
@@ -72,17 +73,39 @@ def test_cod4server_get_start_command_builds_expected_args(tmp_path):
 
     assert cmd[0] == "./cod4_lnxded"
     assert "sv_hostname" in cmd
+    assert "fs_game" not in cmd
     assert cwd == server.data["dir"]
 
 
-def test_coduoserver_get_start_command_builds_expected_args(tmp_path):
-    server = DummyServer("coduo")
-    exe = tmp_path / "coduoded_lnxded"
+def test_cod4server_get_start_command_keeps_fs_game_for_custom_moddir(tmp_path):
+    server = DummyServer("cod4mod")
+    exe = tmp_path / "cod4_lnxded"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "coduoded_lnxded",
+            "exe_name": "cod4_lnxded",
+            "moddir": "promodlive",
+            "hostname": "AlphaGSM cod4mod",
+            "port": 28960,
+            "startmap": "mp_crash",
+        }
+    )
+
+    cmd, _ = cod4server.get_start_command(server)
+
+    assert "fs_game" in cmd
+    assert "promodlive" in cmd
+
+
+def test_coduoserver_get_start_command_builds_expected_args(tmp_path):
+    server = DummyServer("coduo")
+    exe = tmp_path / "coduo_lnxded"
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "coduo_lnxded",
             "moddir": "uo",
             "hostname": "AlphaGSM coduo",
             "port": 28960,
@@ -92,8 +115,9 @@ def test_coduoserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = coduoserver.get_start_command(server)
 
-    assert cmd[0] == "./coduoded_lnxded"
+    assert cmd[0] == "./coduo_lnxded"
     assert "+set" in cmd
+    assert "fs_game" not in cmd
     assert cwd == server.data["dir"]
 
 
@@ -127,5 +151,19 @@ def test_codwaw_and_battlefield_commands_build_expected_args(tmp_path):
     bfv_cmd, _ = bfvserver.get_start_command(bfv)
 
     assert waw_cmd[0] == "./codwaw_lnxded"
+    assert "fs_game" not in waw_cmd
     assert bf_cmd == ["./bf1942_lnxded", "+statusMonitor", "1", "+map", "wake", "+port", "14567"]
     assert bfv_cmd == ["./bfvietnam_lnxded", "+statusMonitor", "1", "+map", "operation_hastings", "+port", "15567"]
+
+
+def test_cod_family_query_and_info_use_declared_protocol():
+    for module in (cod2server, cod4server, codserver, coduoserver, codwawserver):
+        server = DummyServer(module.__name__)
+        server.data["port"] = 28960
+
+        query_address = module.get_query_address(server)
+        info_address = module.get_info_address(server)
+
+        assert query_address[1] == 28960
+        assert query_address[2] == ("quake" if module is codwawserver else "tcp")
+        assert info_address == query_address

@@ -55,11 +55,33 @@ Where applicable, it should also integrate cleanly with:
 
 The goal is that a user can create and operate a new server type using the same AlphaGSM mental model they already use for Minecraft, TF2, or CS:GO.
 
+## Support-State Contract
+
+When lifecycle work changes a server's practical support status, keep the repo's
+public support buckets semantically clean:
+
+- `PASSED` — integration is green and the server self-provisions on the
+  supported path
+- `ENABLED (AUTH)` — the module is supported, but setup/start still needs
+  provider-managed authentication, credentials, tokens, licenses, or
+  provisioning
+- `ENABLED (BYO)` — the module is supported, but still needs owned assets,
+  exported client files, direct archive URLs, or local services
+
+Do not flatten provider-backed prerequisites into generic BYO wording when the
+shared auth/provider contract is a better fit.
+
 ## Game Module Function Contract
 
-Every game module is a Python file under `src/gamemodules/`.  The `Server`
-class (in `src/server/server.py`) calls into the module via named attributes.
-Use this table as a checklist when writing or reviewing a module.
+Every canonical top-level game module is a package-backed Python module under
+`src/gamemodules/<name>/` with `__init__.py` as the import surface. The
+`Server` class (in `src/server/server.py`) calls into that canonical module
+surface via named attributes. Use this table as a checklist when writing or
+reviewing a module.
+
+Flat `.py` files are still fine for helper submodules that live inside an
+existing package-backed game family, but top-level user-facing game modules
+should now be directories, with the main implementation in `main.py`.
 
 ### Required functions — every module must have these
 
@@ -70,11 +92,12 @@ Use this table as a checklist when writing or reviewing a module.
 | `get_start_command` | `(server, *args, **kwargs)` | `start` | Return `(command_list, working_dir)` — the argv list and the directory to run it in. |
 | `do_stop` | `(server, time, *args, **kwargs)` | `stop` | Send a stop command to the running server.  `time` is minutes elapsed since the stop was initiated.  Called repeatedly until the server exits or the timeout (`max_stop_wait`) is reached. |
 | `status` | `(server, verbose, *args, **kwargs)` | `status` | Print game-specific status.  Only called when `verbose > 0` — the caller already prints the "running / not running" line. |
-| `message` | `(server, message, *args, **kwargs)` | `message` | Send a chat message to all players.  If the server has no concept of in-game messages, print a clear explanation and return without raising. |
+| `message` | `(server, message, *args, **kwargs)` | `message` | Send a chat or broadcast message through the server's active console-input pathway. Prefer the runtime-aware helper (`server.runtime.send_to_server(server, ...)`) or a shared wrapper built on it so the same hook works whether the server is reached via screen, tmux/subprocess facade, or Docker exec-console input. If the server has no concept of in-game messages, print a clear explanation and return without raising. |
 | `backup` | `(server, *args, **kwargs)` | `backup` | Back up the server.  Call `backup_utils.backup(server.data["dir"], server.data["backup"], profile)` from `utils.backups.backups` in the standard case. |
 | `checkvalue` | `(server, key, *values, **kwargs)` | `set` | Validate and convert a value before it is stored.  Return the sanitised value, return the string `"DELETE"` to request deletion, or raise `ServerError` with a clear message for invalid input.  Delegate backup-related keys to `backup_utils.checkdatavalue`. |
 | `get_runtime_requirements` | `(server)` | runtime selection | Return runtime metadata for Docker-capable modules.  Preferred families today are `"java"`, `"quake-linux"`, `"service-console"`, `"simple-tcp"`, `"steamcmd-linux"`, and `"wine-proton"`.  Use `{"engine": "docker", "family": "<family>"}` plus fields like `java`, `env`, `mounts`, and `ports`.  Legacy aliases `"minecraft"` and `"ts3"` are still accepted and normalized.  Every maintained game module must define this wrapper in module scope, usually by calling shared builders through `import server.runtime as runtime_module`. |
 | `get_container_spec` | `(server)` | Docker launch | Return the Docker launch spec: container working dir, command, stdin/tty settings, env, mounts, and published ports.  Keep this wrapper in module scope even when it delegates to shared runtime helpers. |
+| `get_provider_requirements` | `(server)` | support-state / prerequisite validation | Return declarative provider-backed prerequisite metadata when the module depends on provider-managed credentials, tokens, licenses, or provisioning. Use shared categories such as `provider-auth`, `provider-token`, `provider-license`, and `provider-provisioning`. Validate them with `utils.gamemodules.common.validate_provider_requirements(...)` at the appropriate lifecycle phase. |
 
 ### Optional functions — add these where the server supports them
 
@@ -82,6 +105,7 @@ Use this table as a checklist when writing or reviewing a module.
 |---|---|---|---|
 | `prestart` | `(server, *args, **kwargs)` | `start` (pre-hook) | Run immediately before the screen session is created — e.g. symlink Steam libraries, rotate logs. |
 | `poststart` | `(server, *args, **kwargs)` | `start` (post-hook) | Run after the screen session starts — e.g. wait for a readiness marker, send init commands. |
+| `sync_server_config` | `(server)` | `set` config sync | Rewrite on-disk game-server config files from datastore values that mirror real server config. Pair this with `config_sync_keys` so only valid game-config-backed keys trigger the sync. |
 | `postset` | `(server, key, **kwargs)` | `set` (post-hook) | React to a data-store change — e.g. regenerate a config file when `port` is updated. |
 | `get_query_address` | `(server)` | `query` | Return `(host, port, protocol)` so `Server.query()` uses the right address.  Protocol values: `"a2s"`, `"quake"`, `"ts3"`, `"tcp"`.  Without this hook the server falls back to `("127.0.0.1", data["port"], "a2s")`. |
 | `get_info_address` | `(server)` | `info` | Return `(host, port, protocol)` so `Server.info()` uses the right address and protocol.  Protocol values: `"a2s"`, `"quake"`, `"slp"`, `"ts3"`, `"tcp"`.  Without this hook the server falls back to A2S then TCP.  **Always add this** unless the module uses `define_valve_server_module()` (which configures it automatically). |
@@ -98,12 +122,16 @@ Use this table as a checklist when writing or reviewing a module.
 | `command_descriptions` | `dict[str, str]` | Yes | Human-readable description for every command in `commands`. |
 | `command_functions` | `dict[str, callable]` | Yes | Implementation function for every command in `commands`. |
 | `max_stop_wait` | `int` | No | Maximum minutes to wait for a graceful stop before the `Server` class kills the process.  Capped at 5 minutes.  Default is 5 if omitted. |
+| `config_sync_keys` | `tuple[str, ...]` or iterable | Conditional | Required when any `set`-able datastore keys map directly to real game-server config values. List only the top-level keys that represent actual game-server config. Do not include AlphaGSM-only keys such as internal runtime metadata, backup settings, install-only fields, or other manager-only values. |
 
 ### Quick checklist for a new module
 
 Before marking a new game module complete, verify all of these:
 
 - [ ] `commands`, `command_args`, `command_descriptions`, `command_functions` are defined
+- [ ] the canonical top-level module import surface is `<module>/__init__.py`
+- [ ] the primary top-level module implementation lives in `<module>/main.py`
+- [ ] if the module carries local curated manifests or multiple support files, those assets live beside the package-backed module implementation instead of as sibling top-level files
 - [ ] `configure` stores at minimum `port` and `dir` in `server.data`
 - [ ] `configure` initialises `server.data["backup"]` with a default profile and schedule
 - [ ] `configure` returns `((), {})` (or args/kwargs to forward to `install`)
@@ -111,14 +139,19 @@ Before marking a new game module complete, verify all of these:
 - [ ] `get_start_command` returns `(argv_list, working_dir)` with the correct executable path
 - [ ] `do_stop` sends a graceful stop command through the runtime-aware helper (e.g. `runtime_module.send_to_server(server, "\nquit\n")`)
 - [ ] `status` at minimum passes (no-op is acceptable if no extra info is available)
-- [ ] `message` either sends a message or prints a clear "not supported" explanation
+- [ ] `message` either sends a message through the active runtime input path or prints a clear "not supported" explanation
 - [ ] `backup` calls `backup_utils.backup(...)` with the correct arguments
 - [ ] `checkvalue` handles `"port"`, `"dir"`, `"exe_name"` (where stored), and `"backup"` keys
 - [ ] `checkvalue` or shared validation covers any claim-affecting hosted-IP keys the module stores (`bindaddress`, `publicip`, `externalip`, `hostip`)
+- [ ] if any `set`-able keys map to real game-server config, `sync_server_config(server)` exists and `config_sync_keys` lists exactly those top-level keys
+- [ ] `config_sync_keys` excludes AlphaGSM-only keys such as backup config, runtime metadata, install-cache fields, or manager-only convenience values
+- [ ] if the module exposes map-like `set` keys such as `map`, `startmap`, `world`, `level`, or `mission`, validate them against installed content, declared supported defaults, or another module-specific allowlist when practical
 - [ ] `get_info_address` is defined and returns the correct `(host, port, protocol)` tuple
 - [ ] `get_query_address` is defined if the query port differs from the game port or the server uses a non-A2S protocol
 - [ ] `import server.runtime as runtime_module` appears in modules that use shared Docker builders
 - [ ] `get_runtime_requirements` and `get_container_spec` are available in module scope and describe the correct image family, env, mounts, and ports through explicit wrappers
+- [ ] provider-backed prerequisites use `get_provider_requirements(server)` plus shared validation instead of bespoke one-off auth/licensing errors
+- [ ] public support-state wording matches the real prerequisite class: `ENABLED (AUTH)` for provider-managed requirements, `ENABLED (BYO)` for owned assets/exports/URLs/services
 - [ ] runtime/container claim metadata can be derived during `setup` before `install` finishes; do not make `get_container_spec` depend on already-installed files unless the setup-time path has a safe fallback
 - [ ] `update` and `restart` are wired up in `commands` / `command_functions` if offered
 - [ ] at least one unit test exists under `tests/unit_tests/` for the module or its shared helper surface
@@ -126,6 +159,19 @@ Before marking a new game module complete, verify all of these:
 - [ ] the integration test exercises the AlphaGSM lifecycle, including `create`, `setup`, `start`, readiness, `status`, `query`, `info`, `info --json`, and `stop`
 - [ ] Source-engine integration coverage either keeps the server awake or wires an explicit wake-on-query/info hook rather than accepting hibernation as "good enough"
 - [ ] The module passes `make lint` with a score of `10.00/10`
+
+## Curated Mod And Plugin Work
+
+When a module exposes `mod add manifest ...` or another checked-in curated
+registry flow, treat that registry as part of the module lifecycle contract.
+
+- Prefer popular, high-value curated families backed by authoritative release assets.
+- Declare dependencies in the checked-in registry instead of relying on docs or user ordering.
+- Make the desired/apply path install declared dependencies automatically.
+- Keep the registry beside the canonical module implementation when the module is package-backed.
+- If a checked-in registry is intentionally shared across multiple game modules through one helper surface, keep it in the shared helper path instead of forcing it into an unrelated canonical module package.
+- Expand shared helpers when upstream payloads reveal a real packaging gap, rather than hardcoding one-off install logic in a single module.
+- Add unit coverage for checked-in manifest resolution and at least one apply/install path when the payload shape is new.
 
 ## Test Expectations For New Server Types
 
@@ -136,6 +182,27 @@ When adding a new game server, treat the lifecycle work as incomplete until it h
 - smoke tests for a streamed real-world lifecycle example — run with `make smoke-test SMOKE_TEST=run_<name>.sh`
 
 The smoke tests are not owned by this skill, but new server lifecycle work should still result in smoke coverage being added or updated.
+
+## Completion Discipline
+
+Do not treat a lifecycle task as complete just because the server now starts.
+
+- If smoke/integration prove the server is working, update the repo trackers in
+  the same change so the server is clearly marked enabled/passed.
+- Treat `docs/TEST_STATUS.md` as the source of truth for enablement state, then
+  regenerate `docs/game-server-support.md` from it in the same slice instead of
+  hand-editing the generated tracker.
+- If the only remaining prerequisite is provider-managed auth/provisioning,
+  prefer `ENABLED (AUTH)` over a vague BYO note, and move the row into
+  `enabled_auth_servers.conf`.
+- Only sync `disabled_servers.conf` when the server is genuinely hard-disabled;
+  if the server is merely waiting on validation or still under investigation,
+  keep it in `SKIPPED` with an evidence-backed note instead of bouncing it
+  between active and disabled states.
+- Mark any local plan, checklist, or campaign tracker entry done in the same
+  PR once the server has crossed the finish line.
+- If the server is still blocked, leave an evidence-backed note describing the
+  exact remaining blocker so future agents do not repeat the same work.
 
 ## Integration Test Standards
 
@@ -161,6 +228,39 @@ steps, in order, without any of them being silently skipped:
 7. **`info --json`** — assert valid JSON with correct protocol field
 8. **`stop`** — stop the server
 9. **shutdown verification** — wait for the port to close
+
+For maintained servers that are Docker-capable, lifecycle completion should
+also include a Docker-backed validation path through AlphaGSM's own runtime
+images, not just the host/process path.
+
+When a local process launch depends on host tooling, treat the dependency
+metadata as part of the lifecycle contract too:
+
+- declare required host commands, Java runtimes, and shared libraries in
+  `host_dependencies` via `get_runtime_requirements(...)` instead of bespoke
+  `prestart(...)` failures where practical
+- use `platforms` for OS-specific dependencies so Linux-only wrappers do not
+  block Windows or macOS process launches with false requirements
+- if the module or its launch script invokes `xvfb-run`, declare the shared
+  Linux `xvfb-run` dependency so AlphaGSM can recommend Docker instead of
+  attempting a broken local launch
+
+## Future SteamCMD Auth Note
+
+Steam-auth-gated installs should grow into this same provider-backed contract.
+
+- Treat the future SteamCMD auth-profile flow as an upcoming provider-backed
+  prerequisite, not as an unrelated exception path.
+- When auditing auth-gated servers now, note whether the likely blocker is:
+  - anonymous SteamCMD not being sufficient
+  - a future authenticated SteamCMD profile
+  - true retail/base-game assets that still would not arrive even with login
+- Prefer evidence-backed notes that make that future migration straightforward
+  once the shared SteamCMD auth profile work lands.
+
+When running local integration or smoke verification, prefer the repository's
+shared scratch root under
+
 
 If a game server module genuinely does not implement one of these commands,
 the module itself needs to be fixed to provide a meaningful result (e.g. TCP

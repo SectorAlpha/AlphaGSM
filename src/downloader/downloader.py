@@ -1,6 +1,7 @@
 """Module to download game servers and cache and share the downloads"""
 
 from importlib import import_module
+import contextlib
 import getpass
 import os
 import time
@@ -9,6 +10,7 @@ import sys
 from urllib.parse import quote, unquote
 from utils.platform_info import IS_WINDOWS
 from utils.settings import settings
+from utils.state_io import atomic_write_text, state_lock
 
 if not IS_WINDOWS:
     import pwd  # pylint: disable=import-error
@@ -19,26 +21,35 @@ else:
 def expandcustomuser(path, user):
     """Expand a `~/` path using the home directory of the named user."""
     if path[0:2] == "~/":
-        if IS_WINDOWS:
+        if IS_WINDOWS or user is None:
             return os.path.expanduser("~") + path[1:]
         return pwd.getpwnam(user).pw_dir + path[1:]
     return path
+
+
+def current_user():
+    """Return the current POSIX account name, if the runtime UID has one."""
+    try:
+        return pwd.getpwuid(os.getuid()).pw_name
+    except KeyError:
+        # Docker can deliberately run with a host UID that is not in /etc/passwd.
+        return None
 
 
 # NONE OF THESE PATHS SHOULD BE ON A NFS!
 # If they are there may be race conditions and database corruption
 
 
-RAW_USER = settings.system.downloader.get("user")
+RAW_USER = settings.system.getsection("downloader").get("user")
 USER_SET = RAW_USER != None
 if USER_SET:
     USER = RAW_USER
 elif IS_WINDOWS:
     USER = getpass.getuser()
 else:
-    USER = pwd.getpwuid(os.getuid()).pw_name
+    USER = current_user()
 DB_PATH = expandcustomuser(
-    settings.get(USER_SET).downloader.get("db_path")
+    settings.get(USER_SET).getsection("downloader").get("db_path")
     or os.path.join(
         settings.get(USER_SET).getsection("core").get("alphagsm_path", "~/.alphagsm"),
         "downloads/downloads.txt",
@@ -46,7 +57,7 @@ DB_PATH = expandcustomuser(
     USER,
 )
 TARGET_PATH = expandcustomuser(
-    settings.system.downloader.get("target_path")
+    settings.system.getsection("downloader").get("target_path")
     or os.path.join(
         settings.get(USER_SET).getsection("core").get("alphagsm_path", "~/.alphagsm"),
         "downloads/downloads",
@@ -54,7 +65,7 @@ TARGET_PATH = expandcustomuser(
     USER,
 )
 
-DOWNLOADERS_PACKAGE = settings.system.downloader.get(
+DOWNLOADERS_PACKAGE = settings.system.getsection("downloader").get(
     "downloaders_package", "downloadermodules."
 )
 UPDATE_SUFFIX = ".new"
@@ -63,17 +74,17 @@ LOCK_SUFFIX = ".lock"
 LOCK_PATH = DB_PATH + LOCK_SUFFIX
 UPDATE_PATH = DB_PATH + UPDATE_SUFFIX
 
-PARENTLEN = settings.user.downloader.getsection("pathgen").get("parentlen", 1)
-PARENTCHARS = settings.user.downloader.getsection("pathgen").get(
+PARENTLEN = settings.user.getsection("downloader").getsection("pathgen").get("parentlen", 1)
+PARENTCHARS = settings.user.getsection("downloader").getsection("pathgen").get(
     "parentchars", "abcdefghijklmnopqrstuvxyz"
 )
 
-DIRLEN = settings.user.downloader.getsection("pathgen").get("dirlen", 8)
-DIRCHARS = settings.user.downloader.getsection("pathgen").get(
+DIRLEN = settings.user.getsection("downloader").getsection("pathgen").get("dirlen", 8)
+DIRCHARS = settings.user.getsection("downloader").getsection("pathgen").get(
     "dirchars", "abcdefghijklmnopqrstuvwxyz0123456789_"
 )
 
-MAX_TRIES = settings.user.downloader.getsection("pathgen").get("maxtries", 238328)
+MAX_TRIES = settings.user.getsection("downloader").getsection("pathgen").get("maxtries", 238328)
 RETRYPARENT = MAX_TRIES // 10
 
 __all__ = [
@@ -83,6 +94,7 @@ __all__ = [
     "main",
     "getpaths",
     "getargsforpath",
+    "run_download_helper",
 ]
 
 
@@ -97,25 +109,19 @@ class DownloaderError(Exception):
 
 def _findmodule(name):
     """Resolve a downloader module name, following namespace and alias indirection."""
-    while True:
-        name = str(name)
-        if len(name) < 2 and all(
-            (len(el) > 0 and el.isalnum()) for el in name.split(".")
-        ):
-            raise DownloaderError("Invalid module requested: " + self.data["module"])
+    name = str(name)
+    if len(name) < 2 or not all((len(el) > 0 and el.isalnum()) for el in name.split(".")):
+        raise DownloaderError("Invalid module requested: " + name)
+    try:
+        module = import_module(DOWNLOADERS_PACKAGE + name)
+    except ImportError as ex:
+        # If the requested name is a package namespace, try its DEFAULT submodule
         try:
-            module = import_module(DOWNLOADERS_PACKAGE + name)
-        except ImportError as ex:
+            module = import_module(DOWNLOADERS_PACKAGE + name + ".DEFAULT")
+        except ImportError:
             raise DownloaderError("Can't find module: " + name, ex)
-        if not hasattr(
-            module, "__file__"
-        ):  # no filesystem path so must be a namespace path
-            name = name + ".DEFAULT"
-            continue
-        try:
-            name = module.ALIAS_TARGET
-        except AttributeError:
-            return module
+    # Return the resolved module directly; do not follow ALIAS_TARGET legacy indirection.
+    return module
 
 
 def generatepath():
@@ -166,21 +172,28 @@ def download(module, args):
     return path
 
 
+def _parse_database_record(line):
+    """Read the legacy five fields while retaining whitespace inside cache paths."""
+    prefix, date, active = line.rsplit(maxsplit=2)
+    module, args, path = prefix.split(maxsplit=2)
+    return module, args, path, date, active
+
+
 def getpathifexists(module, args):
     """Check if a path for the download is already in the database and if so return it else return None"""
     sargs = ",".join(quote(a) for a in args)
     # check if DB_PATH exists, if not make it
     if not os.path.exists(DB_PATH):
-        make_dirs = DB_PATH.rsplit("/", 1)[0]
+        make_dirs = os.path.dirname(DB_PATH) or "."
         try:
             os.makedirs(make_dirs)
         except FileExistsError:
             pass
-        open(DB_PATH, "a").close()
+        open(DB_PATH, "a", encoding="utf-8").close()
         return None
-    with open(DB_PATH, "r") as f:
+    with open(DB_PATH, "r", encoding="utf-8") as f:
         for line in f:
-            lmodule, largs, llocation, ldate, lactive = line.split()
+            lmodule, largs, llocation, ldate, lactive = _parse_database_record(line)
             if int(lactive) and lmodule == module and largs == sargs:
                 return llocation
     return None
@@ -195,64 +208,56 @@ def getpath(module, args):
     if path is not None:
         return path
 
-    if not IS_WINDOWS and os.getuid() != pwd.getpwnam(USER).pw_uid:
+    if not IS_WINDOWS and USER is not None and os.getuid() != pwd.getpwnam(USER).pw_uid:
         import subprocess as sp
 
+        if getattr(sys, "frozen", False):
+            launcher = [sys.executable, "--_download"]
+        else:
+            launcher = [os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))),
+                "alphagsm-downloads",
+            )]
         try:
-            path = sp.check_output(
-                [
-                    "sudo",
-                    "-Hu",
-                    str(USER),
-                    os.path.join(
-                        os.path.dirname(
-                            os.path.dirname(os.path.dirname(os.path.realpath(os.path.abspath(__file__))))
-                        ),
-                        "alphagsm-downloads",
-                    ),
-                    module,
-                ]
-                + list(args)
-            )
+            path = sp.check_output(["sudo", "-Hu", str(USER)] + launcher + [module] + list(args))
         except sp.CalledProcessError as ex:
             raise DownloaderError("Error downloading file", ret=ex.returncode)
         else:
-            return unquote(path.decode(sys.stdout.encoding).strip())
+            return unquote(path.decode("ascii").strip())
 
-    # Definitely running as correct user now and file not found (yet) but may have other threads updating the file so lock then check again
-
-    while True:
-        try:
-            open(LOCK_PATH, "x")
-        except FileExistsError:
-            time.sleep(1)
-            continue
-        else:
-            break
-    try:
-        # Now locked so no-one else can be changing it
+    # Recheck under the lock: another invocation may have downloaded it while
+    # this one was waiting. Wait up to an hour for large installs; the operating
+    # system releases the lock automatically if the downloader crashes.
+    with state_lock(DB_PATH, timeout=3600):
         path = getpathifexists(module, args)
         if path is not None:
-            return Path
+            return path
 
-        # definitely doesn't exist so we need to download it
         path = download(module, args)
-
         sargs = ",".join(quote(a) for a in args)
-
-        try:
-            os.remove(UPDATE_PATH)
-        except FileNotFoundError:
-            pass
-        with open(UPDATE_PATH, "w") as f:
-            with open(DB_PATH, "r") as f2:
-                for l in f2:
-                    f.write(l)
-            f.write(" ".join((module, sargs, path, str(time.time()), str(1))) + "\n")
-        os.rename(UPDATE_PATH, DB_PATH)
+        with open(DB_PATH, "r", encoding="utf-8") as database:
+            contents = database.read()
+        contents += " ".join((module, sargs, path, str(time.time()), str(1))) + "\n"
+        # os.rename cannot replace an existing destination on Windows. The
+        # shared writer fsyncs a same-directory temporary file and os.replace's
+        # the complete database, retaining the old contents on commit failure.
+        atomic_write_text(DB_PATH, contents)
         return path
-    finally:
-        os.remove(LOCK_PATH)
+
+
+def run_download_helper(args):
+    """Serve the standalone equivalent of alphagsm-downloads' quoted-path CLI."""
+    if not args:
+        print("A download module is required.", file=sys.stderr)
+        return 2
+    with contextlib.redirect_stdout(sys.stderr):
+        try:
+            path = getpath(args[0], args[1:])
+        except DownloaderError as ex:
+            print(ex)
+            return ex.ret
+    print(quote(path))
+    return 0
 
 
 main = getpath
@@ -269,11 +274,12 @@ def _getallfilter(active=None, sort=None):
     sortfn = None
     if active != None:
         active = bool(active)
-        filterfn = lambda lmodule, largs, llocation, ldate, lactive: active == lactive
+        filterfn = lambda lmodule, largs, llocation, ldate, lactive: active == bool(int(lactive))
     if sort == "date":
-        sortfn = lambda lmodule, largs, llocation, ldate, lactive: ldate
-    else:
+        sortfn = lambda lmodule, largs, llocation, ldate, lactive: float(ldate)
+    elif sort is not None:
         raise DownloaderError("Unknown sort key")
+    return filterfn, sortfn
 
 
 def getpaths(module, sort=None, **filter):
@@ -288,28 +294,28 @@ def getpaths(module, sort=None, **filter):
             (module_name,[list,of,arguments],path,date_added,is_active)
     """
     if module is None:
-        filterfn, sortfn = _getallfilter(**kwargs)
+        filterfn, sortfn = _getallfilter(sort=sort, **filter)
     else:
-        filterfn, sortfn = _findmodule(module).getfilter(**kwargs)
+        filterfn, sortfn = _findmodule(module).getfilter(sort=sort, **filter)
     downloads = []
-    with open(DB_PATH, "r") as f:
+    with open(DB_PATH, "r", encoding="utf-8") as f:
         for line in f:
-            lmodule, largs, llocation, ldate, lactive = line.split()
+            lmodule, largs, llocation, ldate, lactive = _parse_database_record(line)
             largs = [unquote(arg) for arg in largs.split(",")]
             if (module is None or lmodule == module) and filterfn(
                 lmodule, largs, llocation, ldate, lactive
             ):
                 downloads.append((lmodule, largs, llocation, ldate, lactive))
     if sortfn:
-        downloads.sort(key=sortfn)
+        downloads.sort(key=lambda record: sortfn(*record))
     return downloads
 
 
 def getargsforpath(path):
     """Get the module and arguments for a download path or return None if not a valid path"""
-    with open(DB_PATH, "r") as f:
+    with open(DB_PATH, "r", encoding="utf-8") as f:
         for line in f:
-            lmodule, largs, llocation, ldate, lactive = line.split()
+            lmodule, largs, llocation, ldate, lactive = _parse_database_record(line)
             if llocation == path:
                 return (lmodule, [unquote(arg) for arg in largs.split(",")])
     return None

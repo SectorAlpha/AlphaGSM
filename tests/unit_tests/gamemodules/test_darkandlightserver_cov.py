@@ -1,40 +1,20 @@
 """Full coverage tests for darkandlightserver."""
 
 import os
+import signal
 import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.darkandlightserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.darkandlightserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -127,7 +107,66 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["serverpassword"] = "test"
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "DNL/Binaries/Win64/DNLServer.exe",
+        "test?listen?SessionName=test?ServerPassword=test?ServerAdminPassword=test?Port=27015?QueryPort=27015?MaxPlayers=27015",
+        "-nullRHI",
+        "-log",
+        "-unattended",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_uses_nested_dnl_install_root(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    nested_root = tmp_path / "DNL Dedicated Server"
+    exe_path = nested_root / "DNL" / "Binaries" / "Win64" / "DNLServer.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["adminpassword"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    server.data["serverpassword"] = "test"
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "DNL Dedicated Server/DNL/Binaries/Win64/DNLServer.exe"
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_nested_dnl_install_root_over_top_level_payload(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    nested_root = tmp_path / "DNL Dedicated Server"
+    nested_exe = nested_root / "DNL" / "Binaries" / "Win64" / "DNLServer.exe"
+    nested_exe.parent.mkdir(parents=True, exist_ok=True)
+    nested_exe.write_text("")
+    top_level_exe = tmp_path / "DNL" / "Binaries" / "Win64" / "DNLServer.exe"
+    top_level_exe.parent.mkdir(parents=True, exist_ok=True)
+    top_level_exe.write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["adminpassword"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    server.data["serverpassword"] = "test"
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "DNL Dedicated Server/DNL/Binaries/Win64/DNLServer.exe"
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -145,10 +184,74 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
+def test_query_and_info_address_use_game_port_udp_on_linux(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["port"] = "34121"
+    server.data["queryport"] = "27016"
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 34121, "udp")
+    assert mod.get_info_address(server) == ("10.0.0.10", 34121, "udp")
+
+
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_do_stop_targets_linux_server_processes(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["port"] = 33741
+    server.data["queryport"] = 27016
+    killed = []
+
+    mod.runtime_module.send_to_server.reset_mock()
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(
+        mod,
+        "_find_linux_server_pids",
+        lambda current: [4321, 5432],
+    )
+    monkeypatch.setattr(mod.os, "kill", lambda pid, sig: killed.append((pid, sig)))
+
+    mod.do_stop(server, 0)
+
+    assert killed == [(4321, signal.SIGTERM), (5432, signal.SIGTERM)]
+    mod.runtime_module.send_to_server.assert_not_called()
+
+
+def test_runtime_requirements_enable_xvfb_container_env():
+    server = DummyServer()
+    server.data["dir"] = "/srv/dnl/"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27016
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
+def test_find_linux_server_pids_filters_for_matching_commandline(monkeypatch):
+    server = DummyServer("dnl")
+    server.data["exe_name"] = "DNL/Binaries/Win64/DNLServer.exe"
+    server.data["port"] = 33741
+    server.data["queryport"] = 27016
+    ps_output = "\n".join(
+        [
+            "1111 env proton run DNL/Binaries/Win64/DNLServer.exe DNL_ALL?Port=33741?QueryPort=27016",
+            "2222 env proton run DNL/Binaries/Win64/DNLServer.exe DNL_ALL?Port=33742?QueryPort=27016",
+            "3333 other.exe Port=33741 QueryPort=27016",
+        ]
+    )
+
+    monkeypatch.setattr(mod.subprocess, "check_output", lambda *args, **kwargs: ps_output)
+
+    assert mod._find_linux_server_pids(server) == [1111]
 
 
 def test_status():
@@ -244,4 +347,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

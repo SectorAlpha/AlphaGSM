@@ -1,8 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for kfserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+# ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 215360.
+echo "Smoke test for kfserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Killing Floor dedicated server app 215360 before setup/start."
+exit 77
 
 set -Eeuo pipefail
 set -x

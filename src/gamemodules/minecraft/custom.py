@@ -2,45 +2,34 @@
 
 import os
 import urllib.request
-import json
 import time
 import datetime
-import subprocess as sp
 from server import ServerError
-import re
-import screen
 import server.runtime as runtime_module
 import downloader
 import utils.updatefs
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec, ArgSpec
+from utils.gamemodules.minecraft import messaging as minecraft_messaging
+from utils.gamemodules.minecraft.worlds import java_world_paths
+from utils.gamemodules import common as gamemodule_common
+from utils.gamemodules.minecraft.properties_config import (
+    CONFIG_SYNC_KEYS,
+    build_server_properties_values,
+    build_setting_schema,
+)
 from utils import backups
+from utils.simple_kv_config import rewrite_equals_config as updateconfig
 import random
-
-_confpat = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s*=(?:\s*(\S+))?(\s*)\Z")
-
-
-def updateconfig(filename, settings):
-    """Rewrite a simple key/value config file with the provided settings."""
-    lines = []
-    if os.path.isfile(filename):
-        settings = settings.copy()
-        with open(filename, "r") as f:
-            for l in f:
-                m = _confpat.match(l)
-                if m is not None and m.group(1) in settings:
-                    lines.append(m.expand(r"\1=" + settings[m.group(1)] + r"\3"))
-                    del settings[m.group(1)]
-                else:
-                    lines.append(l)
-    for k, v in settings.items():
-        lines.append(k + "=" + v + "\n")
-    print(lines)
-    with open(filename, "w") as f:
-        f.write("".join(lines))
 
 
 # required tuple
 commands = ("op", "deop")
+
+
+def get_wipe_paths(server):
+    """Return this Java server's configured world directory."""
+
+    return java_world_paths(server)
 
 # required
 # dictionary command_args
@@ -127,6 +116,15 @@ command_descriptions = {
     "using that profiles"
 }
 command_functions = {}  # will have elements added as the functions are defined
+config_sync_keys = CONFIG_SYNC_KEYS
+setting_schema = build_setting_schema(
+    port_description="The port the server listens on.",
+    port_example="25565",
+    map_example="world",
+    maxplayers_example="20",
+    servername_description="The server name shown in the client list.",
+    servername_example="AlphaGSM Server",
+)
 
 
 def configure(
@@ -191,6 +189,11 @@ def configure(
     if port is None:
         raise ValueError("No Port")
     server.data["port"] = port
+    server.data.setdefault("levelname", server.name)
+    server.data.setdefault("gamemode", "survival")
+    server.data.setdefault("difficulty", "easy")
+    server.data.setdefault("maxplayers", "20")
+    server.data.setdefault("servername", "AlphaGSM %s" % (server.name,))
 
     # assign the installation directory
     if dir is None:
@@ -231,38 +234,25 @@ def install(server, *, eula=False):
         os.makedirs(server.data["dir"])
     mcjar = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(mcjar):
-        raise ServerError(
-            "Can't find server jar ({}). Please place the files in the directory and/or update the 'exe_name' then run setup again".format(
-                mcjar
-            )
+        gamemodule_common.raise_byo_requirement(
+            "minecraft.custom",
+            "a real custom Minecraft server jar",
+            actions=(
+                "Place the jar at <install_dir>/<exe_name>",
+                "Update exe_name if the jar has a different filename",
+                "Rerun setup once the jar is present",
+            ),
+            docs_slug="minecraft-custom",
         )
     server.data.save()
 
     eulafile = os.path.join(server.data["dir"], "eula.txt")
-    configfile = os.path.join(server.data["dir"], "server.properties")
-    javapath = server.data.get("javapath", "java")
-    had_configfile = os.path.isfile(configfile)
-    had_eulafile = os.path.isfile(eulafile)
     if eula and not os.path.isfile(eulafile):
         with open(eulafile, "w", encoding="utf-8") as handle:
             handle.write("eula=true\n")
-    # Seed server.properties before first boot so new Minecraft releases bind the
-    # requested port even when the bundler starts without an existing config.
-    updateconfig(configfile, {"server-port": str(server.data["port"])})
-    if not had_configfile or (eula and not had_eulafile):
-        print("Starting server to create settings")
-        try:
-            sp.check_call(
-                [javapath, "-jar", server.data["exe_name"], "nogui"],
-                cwd=server.data["dir"],
-                shell=False,
-                timeout=20,
-            )
-        except sp.CalledProcessError as ex:
-            print("Error running server. Java returned status: " + str(ex.returncode))
-        except sp.TimeoutExpired:
-            print("Error running server. Process didn't complete in time")
-    updateconfig(configfile, {"server-port": str(server.data["port"])})
+    # AlphaGSM owns these first-run files; the normal start lifecycle generates
+    # the remaining Minecraft state without leaving a setup JVM behind.
+    sync_server_config(server)
     if eula:
         updateconfig(eulafile, {"eula": "true"})
 
@@ -338,54 +328,55 @@ def do_stop(server, j):
 
 def status(server, verbose):
     """Report Minecraft server status information."""
-    pass
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
 
 
-def message(server, msg, *targets, parse=False):
-    """Send a chat message or command through the Minecraft server console."""
-    if len(targets) < 1:
-        targets = ["@a"]
-    if parse and "@" in msg:
-        msglist = []
-        pat = re.compile(r"([^@]*[^\\])?(@.(?:\[[^\]]+\])?)")
-        while True:
-            match = pat.match(msg)
-            if match is None:
-                break
-            if match.group(1) is not None:
-                msglist.append(match.group(1))  # group is optional
-                # nothing stopping two selectors straight after each other
-            msglist.append({"selector": match.group(2)})
-            msg = msg[match.end(0) :]
-        msglist.append(msg)
-        msgjson = json.dumps(msglist)
-    else:
-        msgjson = json.dumps({"text": msg})
-    cmd = "\n".join("tellraw " + target + " " + msgjson for target in targets)
-    print(cmd)
-    runtime_module.send_to_server(server, "\n" + cmd + "\n")
+message = minecraft_messaging.make_tellraw_message_hook(runtime_module=runtime_module)
+message.__doc__ = "Send a chat message or command through the Minecraft server console."
+
+
+def sync_server_config(server):
+    """Write supported datastore values to server.properties."""
+    server_properties = os.path.join(server.data["dir"], "server.properties")
+    updateconfig(
+        server_properties,
+        build_server_properties_values(
+            server,
+            setting_schema=setting_schema,
+            servername_key="motd",
+            default_port=25565,
+            default_levelname=server.name,
+            default_maxplayers="20",
+            default_servername="AlphaGSM %s" % (server.name,),
+        ),
+    )
 
 
 def checkvalue(server, key, *value):
     """Validate a proposed stored setting value for this server type."""
-    if key[0] == "TEST":
-        return value[0]
-    if key == ("exe_name",):
-        if len(value) != 1:
-            raise ServerError("Only one value supported for 'exe_name'")
-        return value[0]
-    if key == ("javapath",):
-        if len(value) != 1:
-            raise ServerError("Only one value supported for 'javapath'")
-        return value[0]
-    if key[0] == ("backup"):
-        try:
-            return backups.checkdatavalue(
-                server.data.get("backup", {}), key[1:], *value
-            )
-        except backups.BackupError as ex:
-            raise ServerError(ex)
-    raise ServerError("{} invalid key to set".format(".".join(str(k) for k in key)))
+    try:
+        return gamemodule_common.handle_setting_schema_checkvalue(
+            server,
+            key,
+            *value,
+            setting_schema=setting_schema,
+            resolved_int_keys=("port",),
+            resolved_str_keys=("map", "gamemode", "difficulty", "servername"),
+            resolved_handlers={"maxplayers": lambda _server, *values: str(int(values[0]))},
+            raw_str_keys=("exe_name", "javapath", "levelname"),
+            raw_handlers={"TEST": lambda _server, *values: values[0]},
+            backup_module=backups,
+        )
+    except ServerError as ex:
+        if str(ex) == "Unsupported key":
+            raise ServerError("{} invalid key to set".format(".".join(str(k) for k in key)))
+        raise
 
 
 def _parsewhen(frequency, when):

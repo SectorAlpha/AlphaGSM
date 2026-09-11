@@ -40,15 +40,30 @@ def test_dayofdragons_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_empyrion_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(empyrionserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(empyrionserver, "IS_LINUX", True)
+    monkeypatch.setattr(
+        empyrionserver,
+        "_wrap_linux_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("emp")
-    exe = tmp_path / "EmpyrionDedicated.exe"
+    dedicated_dir = tmp_path / "DedicatedServer"
+    dedicated_dir.mkdir()
+    exe = dedicated_dir / "EmpyrionDedicated.exe"
     exe.write_text("")
-    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "EmpyrionDedicated.exe"})
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "DedicatedServer/EmpyrionDedicated.exe"})
 
     cmd, cwd = empyrionserver.get_start_command(server)
 
-    assert cmd == ["EmpyrionDedicated.exe"]
+    assert cmd == [
+        "DedicatedServer/EmpyrionDedicated.exe",
+        "-batchmode",
+        "-nographics",
+        "-logFile",
+        "Logs/alphagsm-dedicated.log",
+        "-dedicated",
+        "dedicated.yaml",
+    ]
     assert cwd == server.data["dir"]
 
 

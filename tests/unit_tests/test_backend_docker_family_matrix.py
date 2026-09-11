@@ -22,19 +22,25 @@ def test_docker_backend_family_matrix_declares_three_cases_per_runtime_family():
     }
 
 
-def test_docker_backend_family_matrix_active_cases_are_ci_ready_java_lifecycle_cases():
+def test_docker_backend_family_matrix_active_cases_cover_current_ci_ready_families():
     active = matrix.active_cases()
 
     assert [case.slug for case in active] == [
         "java-minecraft-vanilla",
         "java-minecraft-paper",
         "java-minecraft-velocity",
+        "simple-tcp-mumble-default",
     ]
+    expected = {
+        "java-minecraft-vanilla": ("java", "minecraft-status", "slp"),
+        "java-minecraft-paper": ("java", "minecraft-status", "slp"),
+        "java-minecraft-velocity": ("java", "minecraft-status", "slp"),
+        "simple-tcp-mumble-default": ("simple-tcp", "tcp-open", "tcp"),
+    }
+
     for case in active:
-        assert case.runtime_family == "java"
         assert case.status == "active"
-        assert case.validator == "minecraft-status"
         assert case.query_marker
         assert case.info_marker
-        assert case.info_protocol == "slp"
         assert case.setup_profile
+        assert (case.runtime_family, case.validator, case.info_protocol) == expected[case.slug]

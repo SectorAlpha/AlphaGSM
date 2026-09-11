@@ -2,42 +2,26 @@
 
 This guide covers the `hl2dmserver` module in AlphaGSM.
 
+`hl2dmserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux
+baseline. GitHub integration exercises both process and Docker. Local runs stay
+on the host process path unless you opt into Docker.
+
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- `screen` (host/process path)
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`) on the host path
 - Python packages from `requirements.txt`
 
 ## Quick Start
 
-Create the server:
-
 ```bash
-alphagsm myhl2dmser create hl2dmserver
-```
-
-Run setup:
-
-```bash
-alphagsm myhl2dmser setup
-```
-
-Start it:
-
-```bash
-alphagsm myhl2dmser start
-```
-
-Check it:
-
-```bash
-alphagsm myhl2dmser status
-```
-
-Stop it:
-
-```bash
-alphagsm myhl2dmser stop
+alphagsm myhl2dm create hl2dmserver
+alphagsm myhl2dm setup
+alphagsm myhl2dm start
+alphagsm myhl2dm status
+alphagsm myhl2dm query
+alphagsm myhl2dm info
+alphagsm myhl2dm stop
 ```
 
 ## Setup Details
@@ -45,22 +29,55 @@ alphagsm myhl2dmser stop
 Setup configures:
 
 - the game port (default 27015)
+- client and SourceTV ports
 - the install directory
-- the executable name
+- the executable name (`srcds_run`)
 - SteamCMD downloads the server files
-- default configuration and backup settings
+- default `hl2mp/cfg/server.cfg` and backup settings
+
+`query` and `info` speak A2S. A hibernating server is not treated as ready;
+AlphaGSM keeps the dedicated server queryable for those checks.
 
 ## Useful Commands
 
 ```bash
-alphagsm myhl2dmser update
-alphagsm myhl2dmser backup
+alphagsm myhl2dm update
+alphagsm myhl2dm update -r
+alphagsm myhl2dm backup
 ```
+
+See [Updating Servers And AlphaGSM](../updating.md) and
+[Installing Mods](../installing-mods.md).
 
 ## Notes
 
 - Module name: `hl2dmserver`
-- Default port: 27015
+- Default map: `dm_lockdown`
+- Default port: 27015 (UDP and TCP)
+- Query/info protocol: A2S
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create hl2dmserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `dm_lockdown`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `16`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM Half-Life 2: Deathmatch`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -92,5 +109,18 @@ alphagsm myhl2dmser backup
 - **Map directory**: `hl2mp/maps/`
 - **Mod directory**: `hl2mp/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM can now manage Half-Life 2: Deathmatch addons from checked-in `manifest` entries plus direct archive `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular Source admin/plugin stacks such as MetaMod and SourceMod. Archives must unpack into approved addon paths under `hl2mp/addons/`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/hl2dmserver/`.
 - **Map install**: Copy `.bsp` files into `hl2mp/maps/` and add to `hl2mp/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `hl2mp/addons/`.
+
+Examples:
+
+```bash
+alphagsm myhl2dm mod add manifest metamod
+alphagsm myhl2dm mod add manifest sourcemod
+alphagsm myhl2dm mod add url https://mods.example.invalid/hl2dm-addon-pack.zip
+alphagsm myhl2dm mod add gamebanana 12345
+alphagsm myhl2dm mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+alphagsm myhl2dm mod apply
+alphagsm myhl2dm mod cleanup
+```

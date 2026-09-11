@@ -2,6 +2,12 @@
 
 This guide covers the `qlserver` module in AlphaGSM.
 
+`qlserver` retains its existing `ENABLED (BYO)` classification while process and
+Docker startup are revalidated in CI. The latest run reached Steam initialization
+but exposed incorrect config loading and query protocol selection; it did not
+establish an authentication requirement.
+Local runs use the process runtime unless you select Docker.
+
 ## Requirements
 
 - `screen`
@@ -48,17 +54,79 @@ Setup configures:
 - the install directory
 - SteamCMD downloads the server files
 
+Anonymous SteamCMD setup installs the dedicated-server payload. AlphaGSM now
+adds the bundled `linux64` directory to the launcher's library search path so
+`qzeroded.x64` can load `libsteam_api.so`; selecting `qzeroded.x86` uses
+`linux32`. This applies to both process and Docker launches. Keep these
+library directories beside the executable when staging an installation.
+
+CI validation of this launcher fix is pending. A missing `libsteam_api.so`
+error occurs before server authentication and should be diagnosed as a
+library-loading problem.
+
 ## Useful Commands
 
 ```bash
 alphagsm myqlserver update
 alphagsm myqlserver backup
+alphagsm myqlserver set servername "AlphaGSM QL"
+alphagsm myqlserver set map asylum
+alphagsm myqlserver set factory ca
+```
+
+`set servername` and `set map` rewrite `baseq3/server.cfg` immediately through the schema-backed config-sync path.
+
+## Mod Sources
+
+Quake Live content management currently targets the directory that contains the
+configured `servercfg` file. By default that is `baseq3/`, but if you point
+`servercfg` at a custom relative path such as `custommod/server.cfg`, AlphaGSM
+installs into that directory instead.
+
+- Current mod source support is direct `url` entries only.
+- `mod add url <https-url>` accepts direct `.pk3` URLs and supported archive URLs such as `.zip`, `.7z`, or tar variants when the payload exposes either `<content-root>/<name>.pk3` or bare `.pk3` files at the archive root.
+- `mod cleanup` removes only AlphaGSM-tracked `.pk3` files and keeps its cache/state under `.alphagsm/mods/qlserver/`.
+- The first Quake Live slice intentionally stops at `.pk3` content and does not try to install arbitrary extracted scripts or binaries.
+
+Examples:
+
+```bash
+alphagsm myqlserver mod add url https://example.invalid/mappack.zip
+alphagsm myqlserver mod add url https://example.invalid/pak-custom.pk3
+alphagsm myqlserver mod apply
+alphagsm myqlserver mod cleanup
 ```
 
 ## Notes
 
 - Module name: `qlserver`
 - Default port: 27960
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create qlserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | Local IP on which Quake Live listens (default: 0.0.0.0). |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `factory` | — | string | Quake Live factory used with the startup map (default: ffa). |
+| `homepath` | — | string | Launch-only homepath for Quake Live. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `servercfg` | — | string | Server config file to exec on startup. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -73,9 +141,16 @@ alphagsm myqlserver backup
 
 - **Config files**: `baseq3/server.cfg`
 - **Template**: See [server-templates/qlserver/](../server-templates/qlserver/) if available
+- **Managed settings**: `hostname`, `startmap`, `factory` and `bindaddress` update
+  native Quake configuration. The default factory is `ffa`; the default bind
+  address is `0.0.0.0` (all local interfaces).
+- **Queries**: `query` and `info` use Steam A2S on the game port.
+- **Current validation**: config loading, startup factory and query corrections
+  have unit coverage; process and Docker lifecycle verification is pending CI.
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: directory containing `servercfg` (default `baseq3/`)
+- **Mod directory**: directory containing `servercfg` (default `baseq3/`)
+- **Mod notes**: AlphaGSM can now track direct `.pk3` and archive `url` entries for Quake Live, install approved `.pk3` payloads into the content directory implied by `servercfg`, and clean up only AlphaGSM-managed files from `.alphagsm/mods/qlserver/`.
 - **Workshop support**: No

@@ -16,8 +16,8 @@ class _DummyServer:
 
 def test_q2server_uses_explicit_quake_protocol():
     server = _DummyServer(27910)
-    assert q2server.get_query_address(server) == ("127.0.0.1", 27910, "quake")
-    assert q2server.get_info_address(server) == ("127.0.0.1", 27910, "quake")
+    assert q2server.get_query_address(server) == ("127.0.0.1", 27910, "quake2")
+    assert q2server.get_info_address(server) == ("127.0.0.1", 27910, "quake2")
 
 
 def test_q3server_uses_explicit_quake_protocol():
@@ -34,11 +34,11 @@ def test_q4server_uses_explicit_quake_protocol():
 
 def test_qwserver_uses_explicit_quake_protocol():
     server = _DummyServer(27500)
-    assert qwserver.get_query_address(server) == ("127.0.0.1", 27500, "quake")
-    assert qwserver.get_info_address(server) == ("127.0.0.1", 27500, "quake")
+    assert qwserver.get_query_address(server) == ("127.0.0.1", 27500, "quakeworld")
+    assert qwserver.get_info_address(server) == ("127.0.0.1", 27500, "quakeworld")
 
 
-def test_qlserver_uses_explicit_quake_protocol():
+def test_qlserver_uses_steam_a2s_protocol():
     server = _DummyServer(27960)
-    assert qlserver.get_query_address(server) == ("127.0.0.1", 27960, "quake")
-    assert qlserver.get_info_address(server) == ("127.0.0.1", 27960, "quake")
+    assert qlserver.get_query_address(server) == ("127.0.0.1", 27960, "a2s")
+    assert qlserver.get_info_address(server) == ("127.0.0.1", 27960, "a2s")

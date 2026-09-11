@@ -27,7 +27,7 @@ class DummyServer:
 
 
 def test_motortown_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(motortownserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(motortownserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("mt")
     exe_dir = tmp_path / "MotorTown" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -51,7 +51,8 @@ def test_motortown_get_start_command_builds_expected_args(tmp_path, monkeypatch)
 
 
 def test_noonesurvived_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(noonesurvivedserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(noonesurvivedserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
+    monkeypatch.setattr(noonesurvivedserver.shutil, "which", lambda _name: None)
     server = DummyServer("nos")
     exe = tmp_path / "WRSHServer.exe"
     exe.write_text("")
@@ -73,28 +74,38 @@ def test_noonesurvived_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 
 def test_subsistence_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(subsistenceserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(
+        subsistenceserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     monkeypatch.setattr(subsistenceserver, "IS_LINUX", False)
     server = DummyServer("subs")
-    exe_dir = tmp_path / "Binaries" / "Win32"
+    exe_dir = tmp_path / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
-    exe = exe_dir / "Subsistence.exe"
+    exe = exe_dir / "UDK.exe"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "Binaries/Win32/Subsistence.exe",
+            "exe_name": "Binaries/Win64/UDK.exe",
             "port": 27015,
             "queryport": 27016,
             "maxplayers": 10,
         }
     )
-    import os
-
     cmd, cwd = subsistenceserver.get_start_command(server)
 
-    assert cmd == ["Subsistence.exe", "server coldmap1?Port=27015?QueryPort=27016?MaxPlayers=10?steamsockets", "-log"]
-    assert cwd == os.path.join(server.data["dir"], "Binaries", "Win32")
+    assert cmd == [
+        "Binaries/Win64/UDK.exe",
+        "server",
+        "coldmap1?steamsockets",
+        "-log",
+        "-Port=27015",
+        "-QueryPort=27016",
+        "-MaxPlayers=10",
+    ]
+    assert cwd == server.data["dir"]
 
 
 def test_motortown_noonesurvived_and_subsistence_update_downloads_and_optionally_restart(monkeypatch):

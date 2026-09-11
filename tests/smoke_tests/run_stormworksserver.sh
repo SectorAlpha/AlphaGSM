@@ -1,8 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for stormworksserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+# ENABLED (BYO): supported with an authenticated Stormworks dedicated-server install tree.
+echo "Smoke test for stormworksserver is ENABLED (BYO) - install the Stormworks Dedicated Server tool through logged-in Steam or authenticated SteamCMD, then stage that installed server tree into <install_dir>; Steam app 1247090 is only a redirect stub"
+exit 77
 
 set -Eeuo pipefail
 set -x

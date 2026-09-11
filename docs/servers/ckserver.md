@@ -2,6 +2,8 @@
 
 This guide covers the `ckserver` module in AlphaGSM.
 
+`ckserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -65,6 +67,23 @@ alphagsm myckserver backup
 - AlphaGSM uses the direct-connect game port for generic UDP `query` and `info` reachability checks
 - Dedicated server state is written under `DedicatedServer/`
 - The server writes connection details to `GameInfo.txt`
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ckserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

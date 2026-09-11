@@ -1,8 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for dstserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+# ENABLED (BYO): supported with operator-supplied Klei token/config.
+echo "Smoke test for dstserver is ENABLED (BYO) - provide cluster_token.txt and cluster config under <install_dir>/<confdir>/<cluster>/ (default <install_dir>/DoNotStarveTogether/<server-name>/)"
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -2,9 +2,16 @@
 
 This guide covers the `pathoftitansserver` module in AlphaGSM.
 
+`pathoftitansserver` is currently `ENABLED (AUTH)` on the documented Ubuntu
+24.04 Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around the managed Alderon host-token
+path, while a staged archive override remains the supported escape hatch when
+you are not using the managed install flow.
+
 ## Requirements
 
 - `screen`
+- an Alderon auth token for the hosting account, or a staged server archive override/tree
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -20,6 +27,14 @@ Run setup:
 ```bash
 alphagsm mypathofti setup
 ```
+
+`pathoftitansserver` is supported in `ENABLED (AUTH)` mode. Before `setup` or
+`start`, either:
+
+- set `auth_token` to an Alderon host account token so AlphaGSM can install via
+  `AlderonGamesCmd`, or
+- stage a direct archive override/server tree and point `url` at that archive if
+  you are using a prepackaged payload
 
 Start it:
 
@@ -45,19 +60,57 @@ Setup configures:
 
 - the game port (default 7777)
 - the install directory
-- downloads and extracts the server archive
+- installs via `AlderonGamesCmd` when `auth_token` is present, or uses a direct
+  archive override when `url` is set
+
+Suggested flow:
+
+```bash
+alphagsm mypathofti create pathoftitansserver
+alphagsm mypathofti set auth_token your-alderon-token
+alphagsm mypathofti setup -n 7777 /path/to/pathoftitansserver
+alphagsm mypathofti start
+```
+
+Or with a staged archive override:
+
+```bash
+alphagsm mypathofti create pathoftitansserver
+alphagsm mypathofti set url https://example.invalid/pathoftitans-server.zip
+alphagsm mypathofti setup -n 7777 /path/to/pathoftitansserver
+alphagsm mypathofti start
+```
 
 ## Useful Commands
 
 ```bash
 alphagsm mypathofti update
 alphagsm mypathofti backup
+alphagsm mypathofti set auth_token your-alderon-token
+alphagsm mypathofti set url https://example.invalid/pathoftitans-server.zip
 ```
 
 ## Notes
 
 - Module name: `pathoftitansserver`
 - Default port: 7777
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create pathoftitansserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -69,7 +122,8 @@ alphagsm mypathofti backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `PathOfTitans/Saved/Config/WindowsServer/Game.ini`
+- **Notes**: upstream docs use `WindowsServer` for the Windows example path; the platform folder differs on non-Windows servers. AlphaGSM still manages `ServerGUID`, `BranchKey`, `Database`, and `-port` through launch arguments.
 - **Max players**: `100`
 - **Template**: See [server-templates/pathoftitansserver/](../server-templates/pathoftitansserver/) if available
 

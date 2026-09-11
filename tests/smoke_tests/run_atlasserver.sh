@@ -1,8 +1,9 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for atlasserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+#!/usr/bin/env bash
+# ENABLED (BYO): ATLAS is supported once a ServerGrid.json,
+# ServerGrid.ServerOnly.json, and ServerGrid folder are staged under
+# <install_dir>/ShooterGame/.
+echo "Smoke test for atlasserver requires a staged ATLAS server-grid export - see docs/servers/atlasserver.md"
+exit 77
 
 set -Eeuo pipefail
 set -x
@@ -12,10 +13,11 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$_SCRIPT_DIR/../.
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 
-START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
+START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itatlasserve}"
 SERVER_STARTED=0
+DOCKER_IMAGE="${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest}"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -44,13 +46,13 @@ cleanup() {
 trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
-require_cmd screen
+require_cmd docker
 
 WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/atlasserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-atlasserver.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-atlasserve-IT#$SERVER_NAME.log"
+EXPECTED_PROTOCOL="a2s"
 
 mkdir -p "$HOME_DIR"
 
@@ -68,6 +70,12 @@ target_path = $HOME_DIR/downloads/downloads
 [server]
 datapath = $HOME_DIR/conf
 
+[runtime]
+backend = docker
+
+[process]
+backend = subprocess
+
 [screen]
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-atlasserve-IT#
@@ -78,11 +86,12 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create atlasserver
+run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "$EXPECTED_PROTOCOL" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

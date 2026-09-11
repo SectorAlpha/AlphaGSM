@@ -1,62 +1,84 @@
 """Integration test for sevendaystodie."""
 
 import glob
+import os
 import time
 from pathlib import Path
 
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    skip_for_known_steamcmd_issue,
+    run_setup_with_port_retry,
     wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
 from gamemodules.sevendaystodie import steam_app_id
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(
-        reason="SteamCMD app 294420 anonymous install repeatedly returns state 0x202; dedicated server payload is not installable in CI"
-    ),
-]
+pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 900  # 7DTD generates a game world on first start, which takes several minutes
 STOP_TIMEOUT = 90
+SETUP_TIMEOUT = 3600
 
 
 @pytest.mark.timeout(3600)  # 60 min: large download (~12 GB) + world generation on first start
 def test_sevendaystodie_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "sevendaystodie"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
     config_path = tmp_path / "alphagsm.conf"
-    server_name = "itsevendaystod"
+    server_name = ("it7dtd" + tmp_path.name.replace("_", "")[-9:])[:15]
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "sevendaystodie")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    _, port = run_setup_with_port_retry(
+        env,
+        server_name,
+        port,
+        install_dir,
+        timeout=SETUP_TIMEOUT,
+        steam_app_id=steam_app_id,
+    )
+
+    # Setup can take a long time, so refresh the claimed port just before start.
+    port = pick_free_tcp_port()
+    run_and_assert_ok(env, server_name, "set", "port", str(port))
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -79,6 +101,7 @@ def test_sevendaystodie_lifecycle(tmp_path):
             ["INF StartGame done", "StartGame done", "GameSense", "INF Net:"],
             START_TIMEOUT,
         )
+        wait_for_info_protocol(env, server_name, "a2s", 300)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -111,3 +134,4 @@ def test_sevendaystodie_lifecycle(tmp_path):
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

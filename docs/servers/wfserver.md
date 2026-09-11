@@ -2,6 +2,11 @@
 
 This guide covers the `wfserver` module in AlphaGSM.
 
+`wfserver` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane
+validates both process and Docker runtimes for this module, while local runs
+remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -57,8 +62,35 @@ alphagsm mywfserver backup
 
 ## Notes
 
+Docker launches include the shared SteamCMD SDK mounts required to load
+`steamclient.so`.
+
 - Module name: `wfserver`
 - Default port: 44400
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create wfserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | The hosted IP address to bind for launch. Example: `0.0.0.0`. |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `fs_game` | — | string | The active game/mod directory. Example: `baseq3`. |
+| `hostname` | servername, name | string | The advertised server name. Example: `AlphaGSM Arena`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. Example: `q3dm17`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -76,6 +108,27 @@ alphagsm mywfserver backup
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<fs_game>/`
+- **Mod directory**: `<install_dir>/<fs_game>/`
 - **Workshop support**: No
+
+## Mod Sources
+
+Warfork supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<fs_game>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `fs_game` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm mywfserver mod add url https://example.com/mappack.pk3
+alphagsm mywfserver mod add url https://example.com/custom-content.zip
+alphagsm mywfserver mod apply
+alphagsm mywfserver mod cleanup
+```

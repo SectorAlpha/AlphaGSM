@@ -30,7 +30,12 @@ source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 
 cleanup() {
+  local rc=$?
   set +e
+  if [[ "$rc" -ne 0 && -n "${LOG_PATH:-}" ]]; then
+    capture_application_logs "$LOG_PATH"
+    capture_runtime_diagnostics "$SERVER_NAME"
+  fi
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
     ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
   fi
@@ -50,6 +55,10 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-exfilserve-IT#$SERVER_NAME.log"
 mkdir -p "$HOME_DIR"
 
 PORT="$(pick_free_port)" 
+QUERY_PORT="$(pick_free_port)"
+while [[ "$QUERY_PORT" == "$PORT" ]]; do
+  QUERY_PORT="$(pick_free_port)"
+done
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -71,14 +80,20 @@ EOF
 
 echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
+echo "Using query port: $QUERY_PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create exfilserver
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" "IpNetDriver listening on port ${PORT}"
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS" "$QUERY_PORT"
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

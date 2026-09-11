@@ -2,6 +2,12 @@
 
 This guide is for running a normal vanilla Minecraft server with AlphaGSM.
 
+`minecraft.vanilla` is currently `PASSED` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection, and the validated Java-backed lifecycle
+stays aligned across both backends while local runs remain process-backed by
+default unless you opt into the Docker backend.
+
 ## What You Need
 
 - Java 21 or another compatible Java runtime
@@ -48,6 +54,20 @@ alphagsm mymc stop
 - where to install the server
 - where Java is installed
 
+Setup downloads the jar and writes the managed `server.properties` plus
+`eula.txt` when the EULA is accepted, without launching a temporary Java
+server. The first JVM is started by `alphagsm <name> start`, so setup cannot
+leave the game port occupied.
+
+## Resetting the World
+
+Stop the server, then run `alphagsm mymc reset-world` (or `wipe`). AlphaGSM
+lists the world data to delete and asks for confirmation. Add `-Y` to skip the
+prompt. Run `start` afterwards to generate a fresh world.
+
+See [world creation and reset](../world-management.md) for exactly which files
+are removed and the supported layouts.
+
 ## Useful Commands
 
 ```bash
@@ -79,6 +99,29 @@ alphagsm itmc status
 - `minecraft` is the short name people usually type.
 - `minecraft.vanilla` is the full module name.
 - If you want the most realistic example, follow the smoke test.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create minecraft.vanilla`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `difficulty` | — | string | The world difficulty. Example: `easy`. |
+| `gamemode` | — | string | The default game mode. Example: `survival`. |
+| `map` | gamemap, level, world, startmap, worldname | string | The selected world or level name. Example: `world`. |
+| `maxplayers` | users | integer | The maximum number of players allowed on the server. Example: `20`. |
+| `port` | gameport | integer | The port the server listens on. Example: `25565`. |
+| `servername` | hostname, name | string | The server name shown in the client list. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

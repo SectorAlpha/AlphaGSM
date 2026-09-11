@@ -2,6 +2,8 @@
 
 This guide covers the `groundbranchserver` module in AlphaGSM.
 
+`groundbranchserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -57,8 +59,36 @@ alphagsm mygroundbr backup
 
 ## Notes
 
+- AlphaGSM uses the dedicated server's documented `MultiHome=0.0.0.0`, `Port=`,
+  `QueryPort=`, and `?MaxPlayers=` options. Both game and Steam query ports use
+  UDP. Current SteamSockets builds under Proton do not expose a local A2S reply,
+  so `query`, `info`, and readiness checks probe the configured game port.
+  See the [developer's server guide](https://steamcommunity.com/sharedfiles/filedetails/?id=1449083065).
 - Module name: `groundbranchserver`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create groundbranchserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | The IP address used for the game and Steam query listeners. Example: `0.0.0.0`. |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players. Example: `16`. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

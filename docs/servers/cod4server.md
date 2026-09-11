@@ -2,9 +2,17 @@
 
 This guide covers the `cod4server` module in AlphaGSM.
 
+`cod4server` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around that owned-base-assets
+prerequisite, while local runs remain process-backed by default unless you opt
+into the Docker backend.
+
 ## Requirements
 
 - `screen`
+- owned base-game multiplayer assets that include `fileSysCheck.cfg` and
+  `main/localized_*.iwd`
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -45,7 +53,35 @@ Setup configures:
 
 - the game port (default 28960)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the official Linux dedicated-server archive
+- still requires copied retail/localized multiplayer assets before the server
+  can finish startup
+
+`cod4server` is supported in `ENABLED (BYO)` mode. AlphaGSM installs the Linux
+dedicated binary for you, but the stock archive still does not include all of
+the owned multiplayer files the server expects at startup.
+
+Before `start`, copy the required owned files from a legitimate Call of Duty 4
+installation into the AlphaGSM server tree:
+
+```text
+<install_dir>/fileSysCheck.cfg
+<install_dir>/main/localized_*.iwd
+```
+
+Minimal operator flow:
+
+```bash
+alphagsm mycod4serv create cod4server
+alphagsm mycod4serv setup
+cp /path/to/cod4/fileSysCheck.cfg <install_dir>/
+cp /path/to/cod4/main/localized_*.iwd <install_dir>/main/
+alphagsm mycod4serv start
+```
+
+If the server still exits immediately, verify that `fileSysCheck.cfg` is at the
+server root and the localized `.iwd` files are under `main/`, not only inside a
+custom `moddir`.
 
 ## Useful Commands
 
@@ -58,6 +94,33 @@ alphagsm mycod4serv backup
 
 - Module name: `cod4server`
 - Default port: 28960
+- Current blocker for anonymous installs: the default dedicated archive does
+  not ship `fileSysCheck.cfg` or `main/localized_*.iwd`
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create cod4server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `download_name` | — | string | Cached archive filename. |
+| `exe_name` | — | string | Server executable filename. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `moddir` | — | string | The active Call of Duty 4 mod directory. Example: `baseq3`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+| `url` | — | string | Download URL for the server archive. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -69,11 +132,37 @@ alphagsm mycod4serv backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
+- `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- **Owned base assets still required**: `fileSysCheck.cfg`,
+  `main/localized_*.iwd`
+- **Copy targets before first start**: `<install_dir>/` for `fileSysCheck.cfg`,
+  `<install_dir>/main/` for `localized_*.iwd`
 - **Template**: See [server-templates/cod4server/](../server-templates/cod4server/) if available
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
+- **Map directory**: `<install_dir>/<moddir>/`
+- **Mod directory**: `<install_dir>/<moddir>/` (default `<install_dir>/main/`)
 - **Workshop support**: No
+
+## Mod Sources
+
+Call of Duty 4 supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<moddir>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `moddir`, tracks only the files it owns, and keeps the active `moddir` in the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm mycod4serv mod add url https://example.com/custom.pk3
+alphagsm mycod4serv mod add url https://example.com/custom-pack.zip
+alphagsm mycod4serv mod apply
+alphagsm mycod4serv mod cleanup
+```

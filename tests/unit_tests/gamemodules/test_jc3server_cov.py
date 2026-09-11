@@ -1,44 +1,25 @@
 """Full coverage tests for jc3server."""
 
+import json
 import os
 import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.jc3server', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.jc3server as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data["exe_name"] == "Server"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -108,13 +89,55 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "openjc3-server"
-    (tmp_path / "openjc3-server").write_text("")
-    server.data["gamemode"] = "test"
+    server.data["exe_name"] = "Server"
+    (tmp_path / "Server").write_text("")
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+    config = json.loads((tmp_path / "config.json").read_text())
+    assert config["port"] == 27015
+    assert config["queryPort"] == 27016
+    assert config["steamPort"] == 27017
+    assert config["httpPort"] == 27018
+
+
+def test_sync_derived_ports_updates_defaults_when_base_port_changes():
+    server = DummyServer()
+    server.data["port"] = 4200
+    mod._sync_derived_ports(server)
+
+    server.data["port"] = 4300
+    mod._sync_derived_ports(server)
+
+    assert server.data["queryport"] == 4301
+    assert server.data["steamport"] == 4302
+    assert server.data["httpport"] == 4303
+
+
+def test_get_runtime_requirements_mounts_and_ports(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["port"] = 7777
+    requirements = mod.get_runtime_requirements(server)
+    mounts = requirements["mounts"]
+    ports = requirements["ports"]
+    assert any(mount["target"] == "/srv/server" for mount in mounts)
+    assert any(mount["target"] == "/opt/alphagsm-steamcmd" for mount in mounts)
+    assert any(port["protocol"] == "tcp" and port["host"] == 7780 for port in ports)
+    assert any(port["protocol"] == "udp" and port["host"] == 7778 for port in ports)
+    assert any(port["protocol"] == "udp" and port["host"] == 7779 for port in ports)
+    assert any(port["protocol"] == "udp" and port["host"] == 7777 for port in ports)
+
+
+def test_get_query_address_uses_http_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["port"] = 4200
+    host, port, protocol = mod.get_query_address(server)
+    assert host == "127.0.0.1"
+    assert port == 4203
+    assert protocol == "tcp"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -131,7 +154,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -183,7 +206,7 @@ def test_checkvalue_maxplayers():
 
 def test_checkvalue_gamemode():
     server = DummyServer()
-    result = mod.checkvalue(server, ("gamemode",), "/test/value")
+    result = mod.checkvalue(server, ("servername",), "/test/value")
     assert result == "/test/value"
 
 
@@ -203,4 +226,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

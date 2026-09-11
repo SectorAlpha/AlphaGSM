@@ -1,8 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for police1013server is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+# ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for app 2691380.
+echo "Smoke test for police1013server is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Police 1013 dedicated server app 2691380 before setup/start."
+exit 77
 
 set -Eeuo pipefail
 set -x

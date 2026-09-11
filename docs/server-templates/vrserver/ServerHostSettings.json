@@ -1,0 +1,7 @@
+{
+  "Name": "AlphaGSM <server name>",
+  "Description": "AlphaGSM-managed V Rising server",
+  "Port": 9876,
+  "QueryPort": 9877,
+  "MaxConnectedUsers": 40
+}

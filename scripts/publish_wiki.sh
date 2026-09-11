@@ -102,30 +102,71 @@ server_guide_lines = "\n".join(
     f"- [[{name.replace('-', ' ')}]]" for name in server_wiki_names
 )
 
-home = f"""# AlphaGSM Wiki
+home = f"""# AlphaGSM
 
-This wiki is published from the main repository documentation.
+**Alpha Game Server Manager** — run dedicated servers from a terminal that stays readable under pressure.
 
-## Start Here
+Create, set up, start, check, update, and back up game servers on the host or in Docker. This wiki is published from the repository docs; the source of truth is [SectorAlpha/AlphaGSM](https://github.com/SectorAlpha/AlphaGSM).
 
-- [[Getting Started]]
-- [[Docs]]
-- [[Developers]]
+> The everyday flow is always the same: **Create → Setup → Launch → Verify**.
 
-## Server Information
+## Start here
 
-- [[Game Server Support]]
+| I want to… | Open |
+| --- | --- |
+| Install AlphaGSM and run my first server | [[Getting Started]] |
+| Pick a game and copy the commands | [[Docs]] |
+| Everyday commands (backup, restore, console, boot) | [[Commands]] |
+| Install mods (TF2, Source, plugins) | [[Installing Mods]] |
+| Update a game or AlphaGSM | [[Updating]] |
+| SteamCMD login (not implemented yet) | [[Steamcmd Auth]] |
+| Add a new game to AlphaGSM | [[Adding A Game Server]] |
+| Change AlphaGSM itself | [[Developers]] |
+
+## Workflow
+
+| Step | Command | What it does |
+| --- | --- | --- |
+| Create | `alphagsm <name> create <module>` | Register the server |
+| Setup | `alphagsm <name> setup` | Download files and write config |
+| Launch | `alphagsm <name> start` | Run it on the host or in Docker |
+| Verify | `status` / `query` / `info` | Confirm it is actually up |
+
+Then `stop`, `backup`, or `update` as needed.
+
+## Runtimes
+
+Use the host when you need direct control. Use Docker when you want cleaner isolation.
+
+- [[Docker Manager]] — run AlphaGSM itself as a manager container
+- [[Docker Runtime Host]] — keep AlphaGSM on the host, launch games in Docker
+- `alphagsm <name> doctor` — check backend, image, and container state before `start`
+
+## Support
+
+- [[Game Server Support]] — which servers currently pass
 - [[Platform Support]]
 - [[Manual Download Fallbacks]]
 - [[Test Status]]
 
-## Server Guides
+## Featured server guides
+
+- [[Minecraft Vanilla]]
+- [[Teamfortress2]]
+- [[Palworld]]
+- [[Hl2dmserver]]
+
+<details>
+<summary>All server guides</summary>
 
 {server_guide_lines}
 
-## Source Repository
+</details>
+
+## Source repository
 
 - [SectorAlpha/AlphaGSM](https://github.com/SectorAlpha/AlphaGSM)
+- [Product site](https://alphagsm.sector-alpha.net/)
 """
 
 (wiki_dir / "Home.md").write_text(home)

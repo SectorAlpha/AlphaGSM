@@ -99,5 +99,25 @@ def test_cmdspec_combine_appends_optional_arguments_and_options():
 def test_cmdspec_repeatable_maxarguments_is_unbounded():
     spec = CmdSpec(repeatable=True)
 
-    with pytest.raises(NameError, match="_sys"):
-        spec.maxarguments()
+    import sys
+    assert spec.maxarguments() == sys.maxsize
+
+
+@pytest.mark.parametrize("spec, fields", [
+    (CmdSpec(), ("requiredarguments", "optionalarguments", "repeatable", "options")),
+    (ArgSpec("NAME", "name", str), ("name", "description", "conversion")),
+    (OptSpec("v", ("verbose",), "verbose", "verbose", None, True),
+     ("shortforms", "longforms", "description", "keyword", "argument", "value_or_conversion")),
+])
+def test_specs_expose_named_fields(spec, fields):
+    assert list(spec.__dict__) == list(fields)
+    assert list(spec.__dict__.values()) == list(spec)
+
+
+def test_repeatable_spec_combines_extra_options():
+    base = CmdSpec(optionalarguments=(ArgSpec("ITEM", "items", str),), repeatable=True)
+    option = OptSpec("v", ("verbose",), "verbose", "verbose", None, True)
+    combined = base.combine(CmdSpec(options=(option,)))
+    assert combined.repeatable
+    assert combined.optionalarguments == base.optionalarguments
+    assert combined.options == (option,)

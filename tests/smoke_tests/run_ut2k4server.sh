@@ -1,8 +1,4 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for ut2k4server is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+#!/usr/bin/env bash
 
 set -Eeuo pipefail
 set -x
@@ -45,8 +41,10 @@ trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
 require_cmd screen
+require_cmd 7z
 
-WORK_DIR="$(mktemp -d)"
+WORK_ROOT="$(resolve_work_root)"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" ut2k4server-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/ut2k4server-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-ut2k4server.conf"
@@ -54,7 +52,7 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-ut2k4serve-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)" 
+PORT="$(pick_free_port)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -80,10 +78,18 @@ echo "Using port: $PORT"
 run_create_or_skip_disabled "$SERVER_NAME" create ut2k4server
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
+if [[ ! -e "$INSTALL_DIR/System/ucc-bin" ]]; then
+  echo "Expected UT2004 launcher not found in $INSTALL_DIR/System/ucc-bin" >&2
+  exit 1
+fi
+
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'Bringing Level|UdpServerQuery'
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

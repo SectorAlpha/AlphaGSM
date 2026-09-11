@@ -8,6 +8,13 @@ This guide covers the `l4d2server` module in AlphaGSM.
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
+## Support Status
+
+`l4d2server` is fully supported. AlphaGSM now installs app `222860`
+anonymously by staging the Windows depots first and then applying the Linux
+depots into the same server tree, which matches the current working SteamCMD
+install path for Left 4 Dead 2 Dedicated Server.
+
 ## Quick Start
 
 Create the server:
@@ -50,6 +57,11 @@ Setup configures:
 - SteamCMD downloads the server files
 - default configuration and backup settings
 
+`setup` now uses the proven two-phase anonymous SteamCMD install flow for app
+`222860`: Windows depots first, then Linux depots in the same directory. This
+works around the current SteamCMD `Invalid platform` failure for a Linux-only
+anonymous install.
+
 ## Useful Commands
 
 ```bash
@@ -61,6 +73,29 @@ alphagsm myl4d2serv backup
 
 - Module name: `l4d2server`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create l4d2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `c5m1_waterfront`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `8`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM Left 4 Dead 2`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -91,5 +126,21 @@ alphagsm myl4d2serv backup
 - **Map directory**: `left4dead2/maps/`
 - **Mod directory**: `left4dead2/addons/`
 - **Workshop support**: No
+- **Mod notes**: AlphaGSM can now manage Left 4 Dead 2 addons from checked-in `manifest` entries plus direct `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular Source admin/plugin stacks such as MetaMod and SourceMod. Direct URLs can point at `.vpk` files or supported archives; provider-backed and manifest sources currently install supported archives only. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps its cache/state under `.alphagsm/mods/left4dead2/`.
+- **Current status**: Fully supported. The current anonymous SteamCMD lane for
+  app `222860` works when AlphaGSM stages the Windows depots first and then the
+  Linux depots into the same install tree.
 - **Map install**: Copy `.bsp` files into `left4dead2/maps/` and add to `left4dead2/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `left4dead2/addons/`.
+
+Examples:
+
+```bash
+alphagsm myl4d2 mod add manifest metamod
+alphagsm myl4d2 mod add manifest sourcemod
+alphagsm myl4d2 mod add url https://mods.example.invalid/custom-campaign.vpk
+alphagsm myl4d2 mod add gamebanana 12345
+alphagsm myl4d2 mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+alphagsm myl4d2 mod apply
+alphagsm myl4d2 mod cleanup
+```

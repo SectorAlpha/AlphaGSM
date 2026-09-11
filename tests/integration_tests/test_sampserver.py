@@ -1,13 +1,16 @@
 """Integration test for sampserver.
 
-Disabled: SA-MP download domain files.sa-mp.com is dead
+ENABLED (BYO): set a working archive url or stage samp03svr before setup/start
 """
+
+import os
 
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
+    default_runtime_backend,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -15,14 +18,19 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
 
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skip(reason="SA-MP download domain files.sa-mp.com is dead"),
+    pytest.mark.skip(
+        reason=(
+            "ENABLED (BYO): set url to a working SA-MP dedicated-server archive or "
+            "stage samp03svr in <install_dir> before setup/start"
+        )
+    ),
 ]
 
 START_TIMEOUT = 600
@@ -31,7 +39,15 @@ STOP_TIMEOUT = 90
 
 def test_sampserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "sampserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -39,12 +55,18 @@ def test_sampserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itsampserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "sampserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -56,9 +78,9 @@ def test_sampserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )

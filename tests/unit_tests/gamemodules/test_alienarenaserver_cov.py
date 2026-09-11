@@ -6,33 +6,12 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
 sys.modules.pop('gamemodules.alienarenaserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.alienarenaserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):
@@ -67,7 +46,18 @@ def test_install(tmp_path):
     server.data["exe_name"] = "crx-dedicated"
     server.data["Steam_AppID"] = 629540
     server.data["Steam_anonymous_login_possible"] = True
+    (tmp_path / "crx-dedicated").write_text("")
     mod.install(server)
+
+
+def test_install_without_staged_tree_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "crx-dedicated"
+    server.data["Steam_AppID"] = 629540
+    server.data["Steam_anonymous_login_possible"] = True
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): alienarenaserver"):
+        mod.install(server)
 
 
 def test_update_with_restart(tmp_path):
@@ -116,7 +106,28 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./crx-dedicated",
+        "+set",
+        "game",
+        "test",
+        "+set",
+        "port",
+        "27015",
+        "+set",
+        "hostname",
+        "test",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_alien_arena_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "game"
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "game")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "hostname")
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -127,7 +138,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): alienarenaserver"):
         mod.get_start_command(server)
 
 

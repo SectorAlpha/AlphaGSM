@@ -67,7 +67,35 @@ def _run_setup_for_case(lifecycle, env, case, install_dir, port):
         )
         return
 
+    if case.setup_profile == "mumble-default":
+        lifecycle.run_and_assert_ok(
+            env,
+            case.server_name,
+            "setup",
+            "-n",
+            str(port),
+            str(install_dir),
+        )
+        return
+
     raise AssertionError("Unsupported active Docker setup profile: %s" % (case.setup_profile,))
+
+
+def _wait_for_case_ready(lifecycle, case, port, container_name):
+    """Wait for the active Docker lifecycle case to become reachable."""
+
+    if case.validator == "minecraft-status":
+        lifecycle.wait_for_status(
+            "127.0.0.1",
+            port,
+            180,
+            container_name=container_name,
+        )
+        return
+    if case.validator == "tcp-open":
+        lifecycle.wait_for_tcp_open("127.0.0.1", port, 180)
+        return
+    raise AssertionError("Unsupported active Docker validator: %s" % (case.validator,))
 
 
 def _assert_case_query_and_info(lifecycle, env, case):
@@ -128,7 +156,7 @@ def test_active_docker_runtime_lifecycle_cases(tmp_path, lifecycle, case):
     try:
         _run_setup_for_case(lifecycle, env, case, install_dir, port)
         lifecycle.run_and_assert_ok(env, case.server_name, "start")
-        lifecycle.wait_for_status("127.0.0.1", port, 180)
+        _wait_for_case_ready(lifecycle, case, port, container_name)
 
         status_result = lifecycle.run_and_assert_ok(env, case.server_name, "status")
         assert "Server is running" in status_result.stdout, (

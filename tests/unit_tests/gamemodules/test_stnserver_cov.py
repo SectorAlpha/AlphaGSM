@@ -1,38 +1,17 @@
 """Full coverage tests for stnserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.stnserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.stnserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -68,6 +47,99 @@ def test_install(tmp_path):
     server.data["configfile"] = "Config/ServerConfig.txt"
     server.data["port"] = 8888
     mod.install(server)
+
+
+def test_sync_server_config_updates_port_config(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "Config" / "ServerConfig.txt").read_text() == "ServerPort=9999\nQueryPort=10000\n"
+
+
+def test_sync_server_config_preserves_unknown_config_lines(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+    config_dir = tmp_path / "Config"
+    config_dir.mkdir()
+    config_path = config_dir / "ServerConfig.txt"
+    config_path.write_text("Name=Alpha\nServerPort=8888\n", encoding="utf-8")
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        "Name=Alpha",
+        "ServerPort=9999",
+        "QueryPort=10000",
+    ]
+
+
+def test_sync_server_config_seeds_missing_shipped_config_without_overwriting(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+    template_dir = (
+        tmp_path
+        / "STN_Dedicated_Server_Data"
+        / "StreamingAssets"
+        / "Config_Template"
+    )
+    template_dir.mkdir(parents=True)
+    (template_dir / "ServerConfig.txt").write_text(
+        "Name=Template\nServerPort=8888\n", encoding="utf-8"
+    )
+    (template_dir / "TpPresets.json").write_text(
+        '{"presets": []}\n', encoding="utf-8"
+    )
+    streamlabs = template_dir / "StreamLabs"
+    streamlabs.mkdir()
+    (streamlabs / "StreamLabsCommands.json").write_text("{}\n", encoding="utf-8")
+    config_dir = tmp_path / "Config"
+    config_dir.mkdir()
+    (config_dir / "ServerConfig.txt").write_text(
+        "Name=Operator\nServerPort=7777\n", encoding="utf-8"
+    )
+
+    mod.sync_server_config(server)
+
+    assert (config_dir / "TpPresets.json").read_text(encoding="utf-8") == (
+        '{"presets": []}\n'
+    )
+    assert (config_dir / "StreamLabs" / "StreamLabsCommands.json").read_text(
+        encoding="utf-8"
+    ) == "{}\n"
+    assert (config_dir / "ServerConfig.txt").read_text(encoding="utf-8").splitlines() == [
+        "Name=Operator",
+        "ServerPort=9999",
+        "QueryPort=10000",
+    ]
+
+
+def test_sync_server_config_supports_current_linux_payload_directory(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "Config/ServerConfig.txt"
+    server.data["port"] = 9999
+    template_dir = (
+        tmp_path
+        / "Server_Linux_x64_Data"
+        / "StreamingAssets"
+        / "Config_Template"
+    )
+    template_dir.mkdir(parents=True)
+    (template_dir / "TpPresets.json").write_text(
+        '{"presets": []}\n', encoding="utf-8"
+    )
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "Config" / "TpPresets.json").is_file()
 
 
 def test_update_with_restart(tmp_path):
@@ -115,6 +187,15 @@ def test_get_start_command(tmp_path):
     assert isinstance(cmd, list)
 
 
+def test_query_and_info_address_use_separate_query_port(monkeypatch):
+    server = DummyServer("stn")
+    server.data["port"] = "8888"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.11")
+
+    assert mod.get_query_address(server) == ("10.0.0.11", 8889, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.11", 8889, "a2s")
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -126,7 +207,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -192,4 +273,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -1,23 +1,66 @@
 """Minecraft Bedrock Edition dedicated server helpers."""
 
 import os
+import re
 import shutil
+import subprocess as sp
+import tempfile
+import time
+import urllib.error
 import urllib.request
+import zipfile
 
-import downloader
-import screen
 from server import ServerError
-from utils import backups
+from utils import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+from utils.gamemodules import common as gamemodule_common
+from utils.gamemodules.minecraft.properties_config import (
+    CONFIG_SYNC_KEYS,
+    build_server_properties_values,
+    build_setting_schema,
+)
 from .custom import updateconfig
+from utils.gamemodules.minecraft.worlds import configured_world_name, validate_world_directories
 
 import server.runtime as runtime_module
 
-BEDROCK_DOWNLOAD_PAGE = "https://www.minecraft.net/en-us/download/server/bedrock"
+
+def get_wipe_paths(server):
+    """Return the configured Bedrock world, preserving other worlds."""
+
+    paths = [os.path.join("worlds", configured_world_name(server, default="Bedrock level"))]
+    validate_world_directories(server, paths)
+    return paths
+
+
+BEDROCK_DOWNLOAD_PAGES = (
+    "https://www.minecraft.net/en-us/download/server/bedrock",
+    "https://www.minecraft.net/en-us/download/server/bedrock/",
+)
 BEDROCK_URL_TEMPLATE = (
     "https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-%s.zip"
 )
-BEDROCK_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
+BEDROCK_HTTP_HEADERS = {
+    # Minecraft.net has been more reliable in CI when the request looks like a normal
+    # browser page fetch instead of a custom automation client.
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+}
+BEDROCK_HTTP_RETRIES = 3
+BEDROCK_HTTP_RETRY_DELAY_SECONDS = 5
+BEDROCK_HTTP_TIMEOUT_SECONDS = 60
+BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS = 1200
+BEDROCK_FALLBACK_VERSION = "1.26.14.1"
+BEDROCK_DOWNLOAD_URL_RE = re.compile(
+    r"https://www\.minecraft\.net/bedrockdedicatedserver/bin-linux/"
+    r"bedrock-server-([0-9.]+)\.zip"
+)
 
 commands = ()
 command_args = {
@@ -48,16 +91,36 @@ command_args = {
 }
 command_descriptions = {}
 command_functions = {}
+config_sync_keys = CONFIG_SYNC_KEYS
+setting_schema = build_setting_schema(
+    port_description="The port the Bedrock server listens on.",
+    port_example="19132",
+    map_example="Bedrock level",
+    maxplayers_example="10",
+    servername_description="The server name shown in Bedrock server listings.",
+    servername_example="AlphaGSM Bedrock Server",
+)
 
 
 def _read_download_page():
     """Return the Bedrock download page HTML."""
 
-    request = urllib.request.Request(
-        BEDROCK_DOWNLOAD_PAGE, headers={"User-Agent": BEDROCK_USER_AGENT}
-    )
-    with urllib.request.urlopen(request) as response:
-        return response.read().decode("utf-8")
+    last_error = None
+    for page_url in BEDROCK_DOWNLOAD_PAGES:
+        request = urllib.request.Request(page_url, headers=BEDROCK_HTTP_HEADERS)
+        for attempt in range(BEDROCK_HTTP_RETRIES):
+            try:
+                with urllib.request.urlopen(
+                    request, timeout=BEDROCK_HTTP_TIMEOUT_SECONDS
+                ) as response:
+                    return response.read().decode("utf-8", errors="ignore")
+            except (OSError, urllib.error.URLError) as exc:
+                last_error = exc
+                if attempt + 1 < BEDROCK_HTTP_RETRIES:
+                    time.sleep(BEDROCK_HTTP_RETRY_DELAY_SECONDS)
+    raise ServerError(
+        "Unable to fetch the Bedrock dedicated server download page"
+    ) from last_error
 
 
 def resolve_bedrock_download(version=None):
@@ -66,15 +129,14 @@ def resolve_bedrock_download(version=None):
     if version not in (None, "", "latest"):
         return version, BEDROCK_URL_TEMPLATE % (version,)
     page = _read_download_page()
-    marker = "https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-"
-    start = page.find(marker)
-    if start < 0:
-        raise ServerError("Unable to locate the latest Bedrock dedicated server download")
-    end = page.find(".zip", start)
-    if end < 0:
-        raise ServerError("Unable to parse the latest Bedrock dedicated server download")
-    url = page[start : end + 4]
-    version = url.rsplit("bedrock-server-", 1)[1][:-4]
+    match = BEDROCK_DOWNLOAD_URL_RE.search(page)
+    if match is None:
+        # Minecraft.net now embeds Bedrock download choices behind frontend config ids
+        # in the raw HTML. Keep setup working by falling back to the last verified
+        # official Linux version until Mojang exposes a stable non-JS resolver again.
+        return BEDROCK_FALLBACK_VERSION, BEDROCK_URL_TEMPLATE % (BEDROCK_FALLBACK_VERSION,)
+    version = match.group(1)
+    url = match.group(0)
     return version, url
 
 
@@ -100,6 +162,70 @@ def _sync_tree(source, target):
             os.makedirs(os.path.join(target_root, dirname), exist_ok=True)
         for filename in files:
             shutil.copy2(os.path.join(root, filename), os.path.join(target_root, filename))
+
+
+def _download_bedrock_archive(url, targetname, timeout):
+    """Download the Bedrock archive using browser-style headers."""
+
+    curl_path = shutil.which("curl")
+    if curl_path is not None:
+        command = [
+            curl_path,
+            "--http1.1",
+            "--fail",
+            "--location",
+            "--silent",
+            "--show-error",
+            "--retry",
+            str(BEDROCK_HTTP_RETRIES),
+            "--retry-delay",
+            str(BEDROCK_HTTP_RETRY_DELAY_SECONDS),
+            "--retry-all-errors",
+            "--connect-timeout",
+            str(min(30, timeout)),
+            "--speed-time",
+            str(timeout),
+            "--speed-limit",
+            "1",
+        ]
+        for key, value in BEDROCK_HTTP_HEADERS.items():
+            command.extend(["-H", f"{key}: {value}"])
+        command.extend(["--output", targetname, url])
+        result = sp.run(
+            command,
+            check=False,
+            stdout=sp.DEVNULL,
+            stderr=sp.PIPE,
+            text=True,
+        )
+        if result.returncode == 0:
+            return targetname
+
+    request = urllib.request.Request(url, headers=BEDROCK_HTTP_HEADERS)
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        with open(targetname, "wb") as out:
+            shutil.copyfileobj(response, out)
+    return targetname
+
+
+def _download_and_extract_bedrock_install(server):
+    """Stage the Bedrock archive in a temp dir and return the extracted root."""
+
+    staging_dir = tempfile.mkdtemp(
+        prefix="bedrock-download-",
+        dir=os.path.dirname(server.data["dir"]) or None,
+    )
+    archive_path = os.path.join(staging_dir, server.data["download_name"])
+    extract_root = os.path.join(staging_dir, "extract")
+    os.makedirs(extract_root, exist_ok=True)
+    _download_bedrock_archive(
+        server.data["url"],
+        archive_path,
+        BEDROCK_ARCHIVE_DOWNLOAD_TIMEOUT_SECONDS,
+    )
+    with zipfile.ZipFile(archive_path) as archive:
+        archive.extractall(extract_root)
+    return staging_dir, _resolve_archive_root(extract_root)
 
 
 def configure(
@@ -169,6 +295,25 @@ def configure(
     return (), {}
 
 
+def sync_server_config(server):
+    """Write supported datastore values to server.properties."""
+
+    server_properties = os.path.join(server.data["dir"], "server.properties")
+    updateconfig(
+        server_properties,
+        build_server_properties_values(
+            server,
+            setting_schema=setting_schema,
+            servername_key="server-name",
+            default_port=19132,
+            default_levelname=server.name,
+            default_maxplayers="10",
+            default_servername="AlphaGSM %s" % (server.name,),
+            use_defaults=False,
+        ),
+    )
+
+
 def install(server):
     """Download and install the Bedrock dedicated server files."""
 
@@ -180,24 +325,15 @@ def install(server):
         or server.data["current_url"] != server.data["url"]
         or not os.path.isfile(executable)
     ):
-        downloadpath = downloader.getpath(
-            "url", (server.data["url"], server.data["download_name"], "zip")
-        )
-        _sync_tree(_resolve_archive_root(downloadpath), server.data["dir"])
+        staging_dir, extracted_root = _download_and_extract_bedrock_install(server)
+        try:
+            _sync_tree(extracted_root, server.data["dir"])
+        finally:
+            shutil.rmtree(staging_dir, ignore_errors=True)
+        os.chmod(executable, os.stat(executable).st_mode | 0o111)
         server.data["current_url"] = server.data["url"]
 
-    server_properties = os.path.join(server.data["dir"], "server.properties")
-    updateconfig(
-        server_properties,
-        {
-            "server-port": str(server.data["port"]),
-            "gamemode": str(server.data["gamemode"]),
-            "difficulty": str(server.data["difficulty"]),
-            "level-name": str(server.data["levelname"]),
-            "max-players": str(server.data["maxplayers"]),
-            "server-name": str(server.data["servername"]),
-        },
-    )
+    sync_server_config(server)
     server.data.save()
 
 
@@ -213,76 +349,75 @@ def get_start_command(server):
 def do_stop(server, j):
     """Stop a running Bedrock server via the console."""
 
-    screen.send_to_server(server.name, "\nstop\n")
+    runtime_module.send_to_server(server, "\nstop\n")
 
 
 def status(server, verbose):
-    """Detailed Bedrock status is not implemented yet."""
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))
+status.__doc__ = "Detailed Bedrock status is not implemented yet."
 
 
-def message(server, msg):
-    """Send a Bedrock chat message through the server console."""
-
-    screen.send_to_server(server.name, "\nsay %s\n" % (msg,))
+message = gamemodule_common.make_server_message_hook(
+    command="say",
+    runtime_module=runtime_module,
+)
+message.__doc__ = "Send a Bedrock chat message through the server console."
 
 
 def backup(server, profile=None):
     """Run the shared backup helper for a Bedrock server."""
 
-    backups.backup(server.data["dir"], server.data["backup"], profile)
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
 
 
 def checkvalue(server, key, *value):
     """Validate supported Bedrock datastore edits."""
 
-    if len(key) == 0:
-        raise ServerError("Invalid key")
-    if key[0] == "backup":
-        return backups.checkdatavalue(server.data["backup"], key, *value)
-    if len(value) == 0:
-        raise ServerError("No value specified")
-    if key[0] == "port":
-        return int(value[0])
-    if key[0] in (
-        "exe_name",
-        "url",
-        "version",
-        "dir",
-        "levelname",
-        "gamemode",
-        "difficulty",
-        "servername",
-    ):
-        return str(value[0])
-    if key[0] == "maxplayers":
-        return str(int(value[0]))
-    raise ServerError("Unsupported key")
+    return gamemodule_common.handle_setting_schema_checkvalue(
+        server,
+        key,
+        *value,
+        setting_schema=setting_schema,
+        resolved_int_keys=("port",),
+        resolved_str_keys=("map", "gamemode", "difficulty", "servername"),
+        resolved_handlers={"maxplayers": lambda _server, *values: str(int(values[0]))},
+        raw_str_keys=("exe_name", "url", "version", "dir", "levelname"),
+        backup_module=backup_utils,
+    )
+
+
+def get_query_address(server):
+    """Return the RakNet UDP endpoint used by the ``query`` command."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "bedrock")
+
+
+def get_info_address(server):
+    """Return the RakNet UDP endpoint used by the ``info`` command."""
+
+    return get_query_address(server)
 
 def get_runtime_requirements(server):
-    java_major = server.data.get("java_major")
-    if java_major is None:
-        java_major = runtime_module.infer_minecraft_java_major(
-            server.data.get("version")
-        )
     return runtime_module.build_runtime_requirements(
         server,
-        family="java",
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
-        env={
-            "ALPHAGSM_JAVA_MAJOR": str(java_major),
-            "ALPHAGSM_SERVER_JAR": server.data.get("exe_name", "server.jar"),
-        },
-        extra={"java": int(java_major)},
+        family="service-console",
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
+        extra={"stop_mode": "docker-stop"},
     )
 
 def get_container_spec(server):
-    requirements = get_runtime_requirements(server)
     return runtime_module.build_container_spec(
         server,
-        family="java",
+        family="service-console",
         get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'tcp'},),
-        env=requirements.get("env", {}),
+        port_definitions=({'key': 'port', 'protocol': 'udp'},),
         stdin_open=True,
         tty=True,
+        extra={"stop_mode": "docker-stop"},
     )

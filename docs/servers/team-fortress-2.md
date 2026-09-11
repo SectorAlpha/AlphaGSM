@@ -49,6 +49,44 @@ alphagsm mytf2 update
 alphagsm mytf2 update -r
 ```
 
+`-r` restarts after the SteamCMD update. See
+[Updating Servers And AlphaGSM](../updating.md).
+
+## Mod Sources
+
+The full copy-paste walkthrough is [Installing Mods](../installing-mods.md).
+TF2 mod installs distinguish between AlphaGSM-owned manifest entries and
+external provider ids.
+
+- `manifest` means AlphaGSM resolves the mod from its own checked-in registry.
+  Use this for known entries such as SourceMod and MetaMod when you want the
+  most predictable result.
+- `gamebanana` means you provide a numeric GameBanana item id and AlphaGSM
+  resolves the current downloadable archive from GameBanana.
+- `moddb` means you provide a canonical Mod DB download or addon page URL and
+  AlphaGSM resolves Mod DB's start-download link when the file is a supported
+  zip or tar archive.
+- `workshop` means you provide a numeric Steam Workshop item id and AlphaGSM
+  tries to download it through SteamCMD.
+- GameBanana, Mod DB, and Workshop are shared external providers, not TF2-owned
+  registries. TF2 currently just consumes those provider integrations.
+- `curated` still works as a compatibility alias for `manifest`.
+
+Examples:
+
+```bash
+alphagsm mytf2 mod add manifest metamod
+alphagsm mytf2 mod add manifest sourcemod
+alphagsm mytf2 mod add gamebanana 12345
+alphagsm mytf2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
+alphagsm mytf2 mod add workshop 1234567890
+alphagsm mytf2 mod apply
+alphagsm mytf2 mod cleanup
+```
+
+Use `mod cleanup` when you want AlphaGSM to remove files it previously
+installed and reset the tracked TF2 mod state.
+
 ## Best Working Example
 
 The best full example in the repository is:
@@ -71,3 +109,28 @@ alphagsm ittf2 status
 - `tf2` is the short name people usually type.
 - setup can take a while because TF2 installs through SteamCMD.
 - if you want the most realistic example, follow the smoke test.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create teamfortress2`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `cp_dustbowl`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `16`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM TF2 Server`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->

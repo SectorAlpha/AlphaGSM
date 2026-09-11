@@ -5,40 +5,21 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.jc2server', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.jc2server as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
     assert server.data['port'] == 7777
+    assert server.data["exe_name"] == "Jcmp-Server"
+    assert server.data["servername"] == "AlphaGSM testserver"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -63,7 +44,7 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "openjc2-server"
+    server.data["exe_name"] = "Jcmp-Server"
     server.data["Steam_AppID"] = 261140
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -108,13 +89,56 @@ def test_restart():
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "openjc2-server"
-    (tmp_path / "openjc2-server").write_text("")
-    server.data["gamemode"] = "test"
-    server.data["maxplayers"] = 27015
+    server.data["exe_name"] = "Jcmp-Server"
+    (tmp_path / "Jcmp-Server").write_text("")
+    (tmp_path / "default_config.lua").write_text(
+        'Server = {\n'
+        '    MaxPlayers = 5000,\n'
+        '    BindPort = 7777,\n'
+        '    Name = "JC2-MP Server",\n'
+        '}\n'
+    )
+    default_scripts = tmp_path / "default_scripts"
+    default_scripts.mkdir()
+    (default_scripts / "README.md").write_text("hello")
+    server.data["maxplayers"] = 128
     server.data["port"] = 27015
+    server.data["servername"] = "AlphaGSM JC2"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == ["./Jcmp-Server"]
+    assert cwd == server.data["dir"]
+    config = (tmp_path / "config.lua").read_text()
+    assert "MaxPlayers = 128" in config
+    assert "BindPort = 27015" in config
+    assert 'Name = "AlphaGSM JC2"' in config
+    assert (tmp_path / "scripts" / "README.md").read_text() == "hello"
+
+
+def test_get_runtime_requirements_uses_steamcmd_linux_family(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["port"] = 7777
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["stop_mode"] == "docker-stop"
+    assert requirements["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7777, "container": 7777, "protocol": "tcp"},
+    ]
+
+
+def test_get_query_address_uses_game_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["port"] = 4200
+
+    host, port, protocol = mod.get_query_address(server)
+
+    assert host == "127.0.0.1"
+    assert port == 4200
+    assert protocol == "tcp"
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -131,7 +155,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -181,9 +205,9 @@ def test_checkvalue_maxplayers():
     assert result == 12345
 
 
-def test_checkvalue_gamemode():
+def test_checkvalue_servername():
     server = DummyServer()
-    result = mod.checkvalue(server, ("gamemode",), "/test/value")
+    result = mod.checkvalue(server, ("servername",), "/test/value")
     assert result == "/test/value"
 
 
@@ -203,4 +227,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

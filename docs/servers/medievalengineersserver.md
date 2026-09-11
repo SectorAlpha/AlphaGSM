@@ -2,12 +2,14 @@
 
 This guide covers the `medievalengineersserver` module in AlphaGSM.
 
+`medievalengineersserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
-- `screen`
+- Docker for the validated Linux runtime path
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- Proton compatibility runtime on Linux; bare Wine is not sufficient for the current dedicated server build
+- Proton compatibility runtime and `xvfb-run` on Linux; bare Wine is not sufficient for the current dedicated server build
 
 ## Quick Start
 
@@ -61,6 +63,23 @@ alphagsm mymedieval backup
 - Module name: `medievalengineersserver`
 - Default port: 27016
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create medievalengineersserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File
@@ -72,9 +91,9 @@ alphagsm mymedieval backup
 
 ### Server Configuration
 
-- **Config files**: `global.cfg`
-- **Template**: See [server-templates/medievalengineersserver/](../server-templates/medievalengineersserver/) if available
-- **Current status**: Disabled in CI. With Proton installed, the dedicated server now gets past the old bare-Wine startup failure but still exits before producing any Medieval Engineers server log or readiness marker. By cleanup time there is no running process left for `stop`, so more runtime-specific investigation is still required.
+- **Config files**: `instance-data/MedievalEngineers-Dedicated.cfg`
+- **Template**: See [server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg](../server-templates/medievalengineersserver/MedievalEngineers-Dedicated.cfg)
+- **Current status**: Supported on the validated Docker `wine-proton` Linux lane. AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, launches `DedicatedServer64/MedievalEngineersDedicated.exe` through the shared Wine/Proton runtime, and the current health surface is generic `tcp` on the managed main port. Host process launches use Xvfb and explicitly enable Wine's X11 driver.
 
 ### Maps and Mods
 

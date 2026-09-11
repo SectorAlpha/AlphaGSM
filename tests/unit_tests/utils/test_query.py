@@ -17,6 +17,7 @@ class _FakeUDPSocket:
     def __init__(self, response=None, raise_on_send=None):
         self._response = response
         self._raise_on_send = raise_on_send
+        self.sent = []
 
     def __enter__(self):
         return self
@@ -30,6 +31,7 @@ class _FakeUDPSocket:
     def sendto(self, data, addr):
         if self._raise_on_send:
             raise self._raise_on_send
+        self.sent.append((data, addr))
 
     def connect(self, addr):
         pass
@@ -108,6 +110,69 @@ def test_tcp_ping_raises_on_connection_error(monkeypatch):
         query_module.tcp_ping("127.0.0.1", 27015)
 
 
+def test_terraria_info_sends_framed_handshake_and_reads_response(monkeypatch):
+    class _FakeTerrariaSocket:
+        def __init__(self):
+            self.sent = []
+            self.response = bytearray(b"\x03\x00\x02")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def settimeout(self, _timeout):
+            pass
+
+        def sendall(self, payload):
+            self.sent.append(payload)
+
+        def recv(self, size):
+            chunk = bytes(self.response[:size])
+            del self.response[:size]
+            return chunk
+
+    sock = _FakeTerrariaSocket()
+    monkeypatch.setattr(
+        query_module.socket,
+        "create_connection",
+        lambda addr, timeout: sock,
+    )
+
+    result = query_module.terraria_info("127.0.0.1", 7777)
+
+    assert sock.sent == [b"\x0d\x00\x01\x09Terraria0"]
+    assert result == {"response": "disconnect"}
+
+
+def test_terraria_info_rejects_unexpected_response(monkeypatch):
+    class _FakeTerrariaSocket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def settimeout(self, _timeout):
+            pass
+
+        def sendall(self, _payload):
+            pass
+
+        def recv(self, size):
+            return b"\x03\x00\xff"[:size]
+
+    monkeypatch.setattr(
+        query_module.socket,
+        "create_connection",
+        lambda addr, timeout: _FakeTerrariaSocket(),
+    )
+
+    with pytest.raises(query_module.QueryError, match="unexpected response type"):
+        query_module.terraria_info("127.0.0.1", 7777)
+
+
 def test_udp_ping_returns_positive_latency_on_silent_listener(monkeypatch):
     class _SilentUDPSocket(_FakeUDPSocket):
         def recv(self, bufsize):
@@ -132,6 +197,40 @@ def test_udp_ping_raises_on_socket_error(monkeypatch):
 
     with pytest.raises(query_module.QueryError, match="UDP ping failed"):
         query_module.udp_ping("127.0.0.1", 27015)
+
+
+def test_ut3_status_returns_response_on_valid_reply(monkeypatch):
+    valid = b"\x00\x01\x02\x03\x04response"
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=valid),
+    )
+
+    result = query_module.ut3_status("127.0.0.1", 6500)
+    assert result == valid
+
+
+def test_ut3_status_raises_on_short_reply(monkeypatch):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=b"bad"),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected UT3 response"):
+        query_module.ut3_status("127.0.0.1", 6500)
+
+
+def test_ut3_status_raises_on_socket_error(monkeypatch):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(raise_on_send=OSError("refused")),
+    )
+
+    with pytest.raises(query_module.QueryError, match="UT3 query failed"):
+        query_module.ut3_status("127.0.0.1", 6500)
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +279,79 @@ def test_parse_a2s_info_extracts_all_fields():
 def test_parse_a2s_info_returns_none_on_truncated_data():
     result = query_module.parse_a2s_info(b"\xff\xff\xff\xff\x49\x11")
     assert result is None
+
+
+def _build_bedrock_pong(
+    name="AlphaGSM Bedrock",
+    map_name="Bedrock level",
+    version="1.21.80",
+    players_online=0,
+    players_max=10,
+    protocol_version=776,
+    gamemode="Survival",
+    gamemode_numeric=1,
+    port_v4=19132,
+    port_v6=19133,
+):
+    motd = ";".join(
+        [
+            "MCPE",
+            name,
+            str(protocol_version),
+            version,
+            str(players_online),
+            str(players_max),
+            "13253860892328930865",
+            map_name,
+            gamemode,
+            str(gamemode_numeric),
+            str(port_v4),
+            str(port_v6),
+            "",
+        ]
+    ).encode("utf-8")
+    return (
+        b"\x1c"
+        + (123456789).to_bytes(8, "big")
+        + (987654321).to_bytes(8, "big")
+        + bytes.fromhex("00ffff00fefefefefdfdfdfd12345678")
+        + len(motd).to_bytes(2, "big")
+        + motd
+    )
+
+
+def test_bedrock_info_extracts_all_fields(monkeypatch):
+    packet = _build_bedrock_pong(players_online=3, players_max=25)
+
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=packet),
+    )
+
+    result = query_module.bedrock_info("127.0.0.1", 19132)
+
+    assert result["edition"] == "MCPE"
+    assert result["name"] == "AlphaGSM Bedrock"
+    assert result["map"] == "Bedrock level"
+    assert result["version"] == "1.21.80"
+    assert result["players_online"] == 3
+    assert result["players_max"] == 25
+    assert result["protocol_version"] == 776
+    assert result["gamemode"] == "Survival"
+    assert result["port_v4"] == 19132
+    assert result["port_v6"] == 19133
+
+
+def test_bedrock_info_raises_on_unexpected_header(monkeypatch):
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=b"\x00not-a-bedrock-pong"),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected Bedrock"):
+        query_module.bedrock_info("127.0.0.1", 19132)
 
 
 # ---------------------------------------------------------------------------
@@ -346,3 +518,70 @@ def test_quake_status_parses_q4_style_cvar_aliases(monkeypatch):
         "players": 0,
         "max_players": 8,
     }
+
+
+def test_quakeworld_status_parses_qw_cvars(monkeypatch):
+    payload = (
+        b"\xff\xff\xff\xffn\\maxfps\\77\\*version\\MVDSV 1.11\\maxclients\\32"
+        b"\\hostname\\AlphaGSM QW\\map\\dm2\\status\\Standby\n\x00"
+    )
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    result = query_module.quakeworld_status("127.0.0.1", 27500)
+
+    assert result == {
+        "name": "AlphaGSM QW",
+        "map": "dm2",
+        "players": 0,
+        "max_players": 32,
+    }
+
+
+def test_quakeworld_status_raises_on_unexpected_payload(monkeypatch):
+    payload = b"\xff\xff\xff\xffstatusResponse\n\\hostname\\Wrong\n"
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected QuakeWorld status response payload"):
+        query_module.quakeworld_status("127.0.0.1", 27500)
+
+
+def test_quake2_status_parses_q2_print_response(monkeypatch):
+    payload = (
+        b"\xff\xff\xff\xffprint\n"
+        b"\\hostname\\AlphaGSM Q2\\mapname\\demo1\\maxclients\\8\n"
+        b"0 50 \"Player1\"\n"
+    )
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    result = query_module.quake2_status("127.0.0.1", 27910)
+
+    assert result == {
+        "name": "AlphaGSM Q2",
+        "map": "demo1",
+        "players": 1,
+        "max_players": 8,
+    }
+
+
+def test_quake2_status_raises_on_unexpected_payload(monkeypatch):
+    payload = b"\xff\xff\xff\xffstatusResponse\n\\hostname\\Wrong\n"
+    monkeypatch.setattr(
+        query_module.socket,
+        "socket",
+        lambda *a, **kw: _FakeUDPSocket(response=payload),
+    )
+
+    with pytest.raises(query_module.QueryError, match="Unexpected Quake II status response payload"):
+        query_module.quake2_status("127.0.0.1", 27910)

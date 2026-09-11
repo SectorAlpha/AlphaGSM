@@ -7,9 +7,9 @@ import time
 
 from .bungeecord import *
 from . import bungeecord as proxy_base
-from .jardownload import install_downloaded_jar
 from .papermc import resolve_download
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec
+from utils.gamemodules.minecraft.jardownload import install_downloaded_jar
 
 
 import server.runtime as runtime_module
@@ -58,19 +58,28 @@ def configure(
 
     if url is None:
         resolved_version, url = resolve_download("velocity", version=version)
-        server.data["version"] = resolved_version
-    else:
-        server.data["version"] = version
-    server.data["url"] = url
-    server.data["download_name"] = download_name
-    return proxy_base.configure(server, ask, port=port, dir=dir, exe_name=exe_name)
+        version = resolved_version
+    return proxy_base.configure(
+        server,
+        ask,
+        port=port,
+        dir=dir,
+        version=version,
+        url=url,
+        exe_name=exe_name,
+        download_name=download_name,
+        mod_cache_dirname="minecraft-velocity",
+        mod_label="Velocity",
+    )
 
 
 def install(server, *, eula=False):
     """Download or validate the configured Velocity proxy jar."""
 
+    server.data.setdefault("mod_cache_dirname", "minecraft-velocity")
+    server.data.setdefault("mod_label", "Velocity")
     install_downloaded_jar(server)
-    proxy_base.install(server)
+    proxy_base.install(server, configure_listener=False)
     # Velocity uses velocity.toml instead of config.yml - update its bind address.
     server_dir = server.data.get("dir")
     if not server_dir:
@@ -118,9 +127,10 @@ def _update_velocity_bind_port(toml_path, port):
 def get_runtime_requirements(server):
     java_major = server.data.get("java_major")
     if java_major is None:
-        java_major = runtime_module.infer_minecraft_java_major(
-            server.data.get("version")
-        )
+        # Velocity's proxy version is independent of Minecraft's version scheme.
+        version = str(server.data.get("version") or "latest")
+        major = re.match(r"(\d+)\.", version)
+        java_major = 21 if major and int(major.group(1)) < 4 else 25
     return runtime_module.build_runtime_requirements(
         server,
         family="java",
@@ -143,3 +153,14 @@ def get_container_spec(server):
         stdin_open=True,
         tty=True,
     )
+
+
+def status(server, verbose):
+    """Report Velocity proxy status information."""
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))

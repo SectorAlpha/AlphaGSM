@@ -2,6 +2,13 @@
 
 This guide covers the `arma3desolationreduxserver` module in AlphaGSM.
 
+## Status
+
+`arma3desolationreduxserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 3 dedicated server app `233780`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,24 @@ alphagsm myarma3des backup
 
 - Module name: `arma3desolationreduxserver`
 - Default port: 2302
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create arma3desolationreduxserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `servername` | hostname, name | string | The public hostname written to server.cfg. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

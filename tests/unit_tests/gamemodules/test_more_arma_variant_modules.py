@@ -1,6 +1,8 @@
 import gamemodules.arma2coserver as arma2coserver
 import gamemodules.arma3altislifeserver as arma3altislifeserver
 import gamemodules.arma3desolationreduxserver as arma3desolationreduxserver
+import pytest
+from server.settable_keys import resolve_requested_key
 
 
 class DummyData(dict):
@@ -121,3 +123,32 @@ def test_more_arma_variant_modules_update_downloads_and_optional_restart(monkeyp
     assert ("/srv/altis/", 233780, True, False) in calls
     assert ("/srv/deso/", 233780, True, False) in calls
     assert arma2.start_calls == 1
+
+
+@pytest.mark.parametrize(
+    "module",
+    (arma2coserver, arma3altislifeserver, arma3desolationreduxserver),
+)
+def test_more_arma_variants_expose_servername_setting_schema(module):
+    resolved = resolve_requested_key("hostname", module.setting_schema)
+
+    assert resolved.canonical_key == "servername"
+
+
+@pytest.mark.parametrize(
+    "module",
+    (arma2coserver, arma3altislifeserver, arma3desolationreduxserver),
+)
+def test_more_arma_variants_sync_server_config_writes_hostname(tmp_path, module):
+    server = DummyServer("variant")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "configfile": "server.cfg",
+            "servername": "Alpha Variant",
+        }
+    )
+
+    module.sync_server_config(server)
+
+    assert (tmp_path / "server.cfg").read_text() == 'hostname = "Alpha Variant";\n'

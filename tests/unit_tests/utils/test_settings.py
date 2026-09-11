@@ -107,7 +107,42 @@ def test_settings_honors_explicit_user_config_override(tmp_path, monkeypatch, re
     assert settings.user.getsection("feature")["flag"] == "enabled"
 
 
+def test_settings_frozen_binary_uses_config_next_to_executable(tmp_path, monkeypatch, reset_settings_singleton):
+    config_path = tmp_path / "alphagsm.conf"
+    config_path.write_text("[core]\nuserconf=/unused\n")
+    observed = {}
+
+    def _fake_loadsettings(filename, parent=None, **kwargs):
+        observed["filename"] = filename
+        return settings_module.SettingsSection({}, {})
+
+    monkeypatch.delenv("ALPHAGSM_CONFIG_LOCATION", raising=False)
+    monkeypatch.setattr(settings_module, "_loadsettings", _fake_loadsettings)
+    monkeypatch.setattr(settings_module.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(settings_module.sys, "executable", str(tmp_path / "alphagsm"), raising=False)
+
+    settings = settings_module.Settings()
+
+    assert settings.system is not None
+    assert observed["filename"] == str(config_path)
+
+
 def test_utils_settings_reexports_the_singleton():
     public_module = importlib.import_module("utils.settings")
 
     assert public_module.settings is settings_module.settings
+
+
+@pytest.mark.parametrize('bom', [False, True])
+def test_settings_use_utf8_independently_of_windows_default_codepage(tmp_path, monkeypatch, bom):
+    import builtins
+    path = tmp_path / 'settings.conf'
+    path.write_text('[core]\nalphagsm_path = C:/Users/User Name é/AlphaGSM\n',
+                    encoding='utf-8-sig' if bom else 'utf-8')
+    real_open = builtins.open
+    def windows_open(filename, mode='r', **kwargs):
+        kwargs.setdefault('encoding', 'cp1252')
+        return real_open(filename, mode, **kwargs)
+    monkeypatch.setattr(settings_module, 'open', windows_open, raising=False)
+    loaded = settings_module._loadsettings(str(path))
+    assert loaded.getsection('core').get('alphagsm_path') == 'C:/Users/User Name é/AlphaGSM'

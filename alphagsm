@@ -4,6 +4,23 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
+if len(sys.argv) == 3 and sys.argv[1] == "--_supervise-process":
+    from screen.supervisor import serve
+    sys.exit(serve(sys.argv[2]))
+
+if sys.argv[1:2] == ["--_complete-self-update"]:
+    from core.self_update import run_deferred_update
+    sys.exit(run_deferred_update(sys.argv[2:], stderr=sys.stderr))
+
+if sys.argv[1:2] == ["--_download"]:
+    from downloader import run_download_helper
+    sys.exit(run_download_helper(sys.argv[2:]))
+
 import core as core  # pylint: disable=wrong-import-position
+
+if len(sys.argv) >= 5 and sys.argv[1] == "--_run-command":
+    if sys.argv[2] == "1":
+        print("#%AlphaGSM-INTERNAL%#", flush=True)
+    sys.exit(core.main(sys.argv[3], sys.argv[4:]))
 
 sys.exit(core.main(sys.argv[0], sys.argv[1:]))

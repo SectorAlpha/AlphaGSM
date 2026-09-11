@@ -1,44 +1,24 @@
 """Full coverage tests for twserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.twserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.twserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=8303, dir=str(tmp_path))
     assert server.data['port'] == 8303
+    assert server.data['servername'] == 'AlphaGSM testserver'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -126,12 +106,35 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
     server = DummyServer()
     mod.status(server, verbose=True)
+
+
+def test_sync_server_config_rewrites_autoexec_cfg_in_place(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["configfile"] = "autoexec.cfg"
+    server.data["port"] = 8304
+    server.data["servername"] = "AlphaGSM TW Test"
+    config_path = tmp_path / "autoexec.cfg"
+    config_path.write_text(
+        'sv_name "Old Name"\n'
+        'sv_port 8303\n'
+        'sv_register 1\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'sv_name "AlphaGSM TW Test"',
+        'sv_port 8304',
+        'sv_register 1',
+    ]
 
 
 def test_message():
@@ -188,8 +191,13 @@ def test_checkvalue_dir():
     assert result == "/test/value"
 
 
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "AlphaGSM TW")
+    assert result == "AlphaGSM TW"
+
+
 def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

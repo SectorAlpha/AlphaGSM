@@ -54,6 +54,43 @@ class SubprocessBackend(ProcessBackend):
         if os.path.isfile(pidfile):
             os.remove(pidfile)
 
+    @staticmethod
+    def _force_kill_process_group(pid):
+        """Force-stop a process and descendants from an AlphaGSM launch."""
+        if IS_WINDOWS:
+            try:
+                sp.run(
+                    ["taskkill", "/PID", str(pid), "/T", "/F"],
+                    stdout=sp.DEVNULL,
+                    stderr=sp.DEVNULL,
+                    check=False,
+                    shell=False,
+                )
+            except OSError:
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+            return
+
+        try:
+            process_group = os.getpgid(pid)
+        except ProcessLookupError:
+            return
+        if process_group != pid:
+            # Only launches made with start_new_session=True are safe to
+            # address as a process group. Avoid disturbing an unrelated group
+            # if a legacy PID file points at an older launch.
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            return
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
     # ── public API ──────────────────────────────────────────────────────────
 
     def start(self, name, command, cwd=None):
@@ -132,7 +169,7 @@ class SubprocessBackend(ProcessBackend):
             ) from ex
 
     def kill(self, name):
-        """Terminate the process, falling back to SIGKILL after a timeout."""
+        """Terminate the process and force-stop its launch process group."""
         entry = _processes.get(name)
         if entry is not None:
             proc, logfh = entry
@@ -140,7 +177,11 @@ class SubprocessBackend(ProcessBackend):
                 proc.terminate()
                 proc.wait(timeout=10)
             except sp.TimeoutExpired:
-                proc.kill()
+                pass
+            finally:
+                self._force_kill_process_group(proc.pid)
+                if proc.poll() is None:
+                    proc.kill()
             logfh.close()
             del _processes[name]
             self._cleanup_pidfile(name)
@@ -148,10 +189,7 @@ class SubprocessBackend(ProcessBackend):
         # Cross-invocation: try by PID file.
         pid = self._read_pid(name)
         if pid is not None:
-            try:
-                os.kill(pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
+            self._force_kill_process_group(pid)
             self._cleanup_pidfile(name)
             return
         raise ProcessError("No running session '%s' to kill" % name)

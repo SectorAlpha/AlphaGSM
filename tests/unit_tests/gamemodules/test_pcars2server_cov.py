@@ -1,38 +1,17 @@
 """Full coverage tests for pcars2server."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.pcars2server', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.pcars2server as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
@@ -65,7 +44,11 @@ def test_install(tmp_path):
     server.data["exe_name"] = "DedicatedServerCmd"
     server.data["Steam_AppID"] = 413770
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     mod.install(server)
+    assert (tmp_path / "server.cfg").exists()
+    assert "hostPort : 27015" in (tmp_path / "server.cfg").read_text()
+    assert "queryPort : 27016" in (tmp_path / "server.cfg").read_text()
 
 
 def test_update_with_restart(tmp_path):
@@ -73,6 +56,7 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 413770
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     mod.update(server, validate=True, restart=True)
     assert server._stopped
     assert server._started
@@ -83,6 +67,7 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 413770
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     mod.update(server, validate=False, restart=False)
     assert server._stopped
     assert not server._started
@@ -93,6 +78,7 @@ def test_update_stop_exception(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 413770
     server.data["Steam_anonymous_login_possible"] = True
+    server.data["port"] = 27015
     server.stop = MagicMock(side_effect=Exception('already stopped'))
     mod.update(server, validate=False, restart=False)
 
@@ -111,7 +97,57 @@ def test_get_start_command(tmp_path):
     (tmp_path / "DedicatedServerCmd").write_text("")
     server.data["configfile"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == ["./DedicatedServerCmd"]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DedicatedServerCmd"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "DedicatedServerCmd"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "DedicatedServerCmd").symlink_to(nested_exe)
+    server.data["configfile"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd == ["./DedicatedServerCmd"]
+    assert cwd == str(nested_dir)
+
+
+def test_query_and_info_address_use_default_query_port(monkeypatch):
+    server = DummyServer("pcars2")
+    server.data["port"] = "27015"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 27016, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 27016, "a2s")
+
+
+def test_query_and_info_address_use_explicit_query_port(monkeypatch):
+    server = DummyServer("pcars2")
+    server.data["port"] = "27015"
+    server.data["queryport"] = "28000"
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.10")
+
+    assert mod.get_query_address(server) == ("10.0.0.10", 28000, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.10", 28000, "a2s")
+
+
+def test_sync_server_config_writes_canonical_server_cfg(tmp_path):
+    server = DummyServer("pcars2")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 27015
+    server.data["configfile"] = "custom.cfg"
+
+    mod.sync_server_config(server)
+
+    assert 'name : "AlphaGSM pcars2"' in (tmp_path / "custom.cfg").read_text()
+    assert "hostPort : 27015" in (tmp_path / "server.cfg").read_text()
+    assert "queryPort : 27016" in (tmp_path / "server.cfg").read_text()
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -126,7 +162,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -192,4 +228,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

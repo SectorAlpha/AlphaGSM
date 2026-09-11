@@ -11,55 +11,107 @@ from typing import NoReturn
 
 import screen
 from server.errors import ServerError
+from server.settable_keys import KeyResolutionError, SettingSpec, resolve_requested_key
+import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
-from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
 from utils.fileutils import make_empty_file
+from utils.simple_kv_config import rewrite_space_config, rewrite_single_token_space_config
+from utils.gamemodules import common as gamemodule_common
 from utils.settings import settings
 import utils.steamcmd as steamcmd
 
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 STEAMCLIENT_32_DST = os.path.expanduser("~/.steam/sdk32/steamclient.so")
-_CONFPAT = re.compile(r"\s*([^ \t\n\r\f\v#]\S*)\s* (?:\s*(\S+))?(\s*)\Z")
 _SOURCE_STATUS_PLAYERS_RE = re.compile(
     r"(?P<players>\d+) humans, (?P<bots>\d+) bots \((?P<max_players>\d+) max\)"
 )
 _SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
 _SOURCE_UNKNOWN_COMMAND_RE = re.compile(r'^Unknown command "(?P<name>[^"]+)"$', re.MULTILINE)
 
-_COMMAND_ARGS = {
-    "setup": CmdSpec(
-        optionalarguments=(
-            ArgSpec("PORT", "The port for the server to listen on", int),
-            ArgSpec("DIR", "The directory to install the server in", str),
-        )
-    ),
-    "update": CmdSpec(
-        options=(
-            OptSpec(
-                "v",
-                ["validate"],
-                "Validate the server files after updating",
-                "validate",
-                None,
-                True,
-            ),
-            OptSpec(
-                "r",
-                ["restart"],
-                "Restart the server after updating",
-                "restart",
-                None,
-                True,
-            ),
-        )
-    ),
-    "restart": CmdSpec(),
-}
+_COMMAND_ARGS = gamemodule_common.build_setup_update_restart_command_args(
+    "The port for the server to listen on",
+    "The directory to install the server in",
+)
 
 _COMMAND_DESCRIPTIONS = {
     "update": "Update the game server to the latest version available via SteamCMD.",
     "restart": "Restart the game server by stopping it and then starting it again.",
 }
+
+VALVE_SERVER_CONFIG_SYNC_KEYS = ("servername", "rconpassword", "serverpassword")
+
+
+def build_valve_server_setting_schema(
+    *,
+    game_name,
+    default_map,
+    max_players,
+    servername_example=None,
+    port_launch_arg_tokens=("-port",),
+    map_launch_arg_tokens=("+map",),
+    maxplayers_launch_arg_tokens=("-maxplayers",),
+):
+    """Return the shared datastore/config schema for Valve-engine servers."""
+
+    if servername_example is None:
+        servername_example = f"AlphaGSM {game_name}"
+
+    return {
+        "port": SettingSpec(
+            canonical_key="port",
+            description="The primary game port.",
+            value_type="integer",
+            apply_to=("datastore", "launch_args"),
+            launch_arg_tokens=port_launch_arg_tokens,
+            examples=("27015",),
+        ),
+        "map": SettingSpec(
+            canonical_key="map",
+            aliases=("gamemap", "startmap", "level"),
+            description="The currently selected map or level.",
+            value_type="string",
+            apply_to=("datastore", "launch_args"),
+            storage_key="startmap",
+            launch_arg_tokens=map_launch_arg_tokens,
+            examples=(default_map,),
+        ),
+        "maxplayers": SettingSpec(
+            canonical_key="maxplayers",
+            aliases=("max_players",),
+            description="Maximum number of player slots.",
+            value_type="integer",
+            apply_to=("datastore", "launch_args"),
+            launch_arg_tokens=maxplayers_launch_arg_tokens,
+            examples=(str(max_players),),
+        ),
+        "servername": SettingSpec(
+            canonical_key="servername",
+            aliases=("hostname", "server_name", "name"),
+            description="The server's public name shown to players.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="hostname",
+            examples=(servername_example,),
+        ),
+        "rconpassword": SettingSpec(
+            canonical_key="rconpassword",
+            aliases=("rconpass", "rcon_password"),
+            description="Remote console password for administrative access.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="rcon_password",
+            secret=True,
+        ),
+        "serverpassword": SettingSpec(
+            canonical_key="serverpassword",
+            aliases=("sv_password", "svpassword", "password"),
+            description="Password required for players to join the server.",
+            value_type="string",
+            apply_to=("datastore", "native_config"),
+            native_config_key="sv_password",
+            secret=True,
+        ),
+    }
 
 
 def _raise_server_error(*args) -> NoReturn:
@@ -75,12 +127,9 @@ def _runtime_module():
 
 
 def _send_console_input(server, text):
-    """Send console input through screen for process servers and runtime for containers."""
+    """Send console input through the shared runtime abstraction."""
 
-    runtime_name = getattr(getattr(server, "data", None), "get", lambda *_: None)("runtime")
-    if runtime_name == "docker":
-        return _runtime_module().send_to_server(server, text)
-    return screen.send_to_server(server.name, text)
+    return _runtime_module().send_to_server(server, text)
 
 
 def _default_backup_config(game_dir):
@@ -235,7 +284,16 @@ def detect_query_host(default="127.0.0.1"):
 def source_query_address(server):
     """Return the preferred host/port/protocol tuple for Source A2S queries."""
 
-    return detect_query_host(), int(server.data.get("queryport", server.data["port"])), "a2s"
+    default_host = "127.0.0.1"
+    if runtime_module.resolve_runtime_metadata(server).get("runtime") != "docker":
+        # Preserve the established local-interface default for Source process
+        # UDP probes while leaving Docker routing to the shared resolver.
+        default_host = detect_query_host()
+    return (
+        runtime_module.resolve_query_host(server, default=default_host),
+        int(server.data.get("queryport", server.data["port"])),
+        "a2s",
+    )
 
 
 def parse_source_bool_cvar(output, cvar_name):
@@ -319,24 +377,84 @@ def _ensure_steamclient_link():
         os.symlink(steamclient_src, dst_path)
 
 
+def _write_runtime_steam_appid(server, app_id):
+    """Write a runtime steam_appid.txt file when a module needs one."""
+
+    if app_id in (None, ""):
+        return
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return
+    os.makedirs(install_dir, exist_ok=True)
+    with open(os.path.join(install_dir, "steam_appid.txt"), "w", encoding="ascii") as handle:
+        handle.write(f"{int(app_id)}\n")
+
+
+def _steamcmd_sdk_mounts():
+    """Return Docker mounts for Steam SDK and canonical client paths."""
+
+    mounts = []
+    for src_subdir, target_dirs in (
+        ("linux64", ("/root/.steam/sdk64", "/root/.steam/steamcmd/linux64")),
+        ("linux32", ("/root/.steam/sdk32", "/root/.steam/steamcmd/linux32")),
+    ):
+        source_dir = os.path.join(steamcmd.STEAMCMD_DIR, src_subdir)
+        source_file = os.path.join(source_dir, "steamclient.so")
+        if not os.path.isfile(source_file):
+            continue
+        mounts.extend(
+            {"source": source_dir, "target": target_dir, "mode": "ro"}
+            for target_dir in target_dirs
+        )
+    return mounts
+
+
+def legacy_source_docker_mounts(server):
+    """Return Docker mounts for legacy Source-family SteamCMD servers."""
+
+    mounts = []
+    server_dir = server.data.get("dir")
+    if server_dir:
+        mounts.append({"source": server_dir, "target": "/srv/server", "mode": "rw"})
+    mounts.extend(_steamcmd_sdk_mounts())
+    return mounts
+
+
 def updateconfig(filename, config_values):
     """Rewrite a simple key/value config file while preserving unknown lines."""
 
-    lines = []
-    if os.path.isfile(filename):
-        config_values = config_values.copy()
-        with open(filename, "r", encoding="utf-8") as handle:
-            for line in handle:
-                match = _CONFPAT.match(line)
-                if match is not None and match.group(1) in config_values:
-                    lines.append(match.expand(r"\1 " + str(config_values[match.group(1)]) + r"\3"))
-                    del config_values[match.group(1)]
-                else:
-                    lines.append(line)
-    for key, value in config_values.items():
-        lines.append("%s %s\n" % (key, value))
-    with open(filename, "w", encoding="utf-8") as handle:
-        handle.write("".join(lines))
+    rewrite_space_config(filename, config_values)
+
+
+def validate_source_startmap(server, game_dir, startmap):
+    """Validate a Source startmap against installed BSP files when available."""
+
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return str(startmap)
+
+    maps_dir = os.path.join(install_dir, game_dir, "maps")
+    if not os.path.isdir(maps_dir):
+        return str(startmap)
+
+    installed_maps = sorted(
+        os.path.splitext(filename)[0]
+        for filename in os.listdir(maps_dir)
+        if filename.endswith(".bsp")
+    )
+    if not installed_maps:
+        return str(startmap)
+
+    normalized_maps = {name.lower(): name for name in installed_maps}
+    requested_map = str(startmap)
+    if requested_map.lower() in normalized_maps:
+        return requested_map
+
+    sample_maps = ", ".join(installed_maps[:10])
+    raise ServerError(
+        "Unsupported map %s. Installed maps include: %s"
+        % (requested_map, sample_maps)
+    )
 
 
 def _get_module_settings(module_name):
@@ -354,6 +472,23 @@ def _get_int_setting(module_settings, key, default):
     return int(value)
 
 
+def _valve_launcher_candidates(*, engine, default_executable, configured_executable):
+    """Return preferred launcher candidates for shared Valve-engine modules."""
+
+    candidates = []
+    if configured_executable and configured_executable != default_executable:
+        candidates.append(configured_executable)
+
+    if engine == "source" and default_executable == "srcds_run":
+        candidates.extend(("srcds_run_64", "srcds_run", "srcds_linux64"))
+    elif engine == "goldsrc" and default_executable == "hlds_run":
+        candidates.extend(("hlds_run", "hlds_linux"))
+    elif default_executable:
+        candidates.append(default_executable)
+
+    return list(dict.fromkeys(candidate for candidate in candidates if candidate))
+
+
 def define_valve_server_module(
     *,
     game_name,
@@ -368,52 +503,141 @@ def define_valve_server_module(
     sourcetv_port=None,
     steam_port=None,
     app_id_mod=None,
+    runtime_app_id=None,
     config_subdir="cfg",
     config_default="server.cfg",
     default_server_config=None,
+    enable_map_validation=False,
 ):
     """Create a standard AlphaGSM game-module surface for a Valve-engine server."""
     default_port = port
-    module_name = inspect.currentframe().f_back.f_globals["__name__"].split(".")[-1]
+    caller_globals = inspect.currentframe().f_back.f_globals
+    module_name = caller_globals["__name__"].split(".")[-1]
     default_server_config = {} if default_server_config is None else default_server_config.copy()
     default_backupfiles = _default_backupfiles(game_dir, config_subdir, config_default)
+    setting_schema = build_valve_server_setting_schema(
+        game_name=game_name,
+        default_map=default_map,
+        max_players=max_players,
+    )
+    config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
+
+    def _server_cfg_path(server):
+        """Return the authoritative config file path for this Valve server."""
+
+        cfg_dir = os.path.join(server.data["dir"], game_dir)
+        if config_subdir:
+            cfg_dir = os.path.join(cfg_dir, config_subdir)
+        return cfg_dir, os.path.join(cfg_dir, server.data["server_cfg"])
+
+    def _resolve_preferred_launcher(server):
+        """Resolve the best available Valve launcher from the install tree."""
+
+        configured_executable = server.data.get("exe_name")
+        last_error = None
+        candidates = _valve_launcher_candidates(
+            engine=engine,
+            default_executable=executable,
+            configured_executable=configured_executable,
+        )
+        default_candidates = _valve_launcher_candidates(
+            engine=engine, default_executable=executable, configured_executable=None,
+        )
+        # Mounted games can ship a newer wrapper than the server itself. Try
+        # this installation's launchers before recursively searching content.
+        # Deliberate custom launcher overrides retain their priority.
+        candidates.sort(key=lambda candidate: (
+            candidate in default_candidates
+            and not os.path.isfile(os.path.join(server.data["dir"], candidate))
+        ))
+        for candidate in candidates:
+            try:
+                exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(
+                    server,
+                    exe_name=candidate,
+                )
+            except ServerError as exc:
+                last_error = exc
+                continue
+            return candidate, exe_path, launcher, working_dir
+        if last_error is not None:
+            raise last_error
+        raise ServerError("Executable file not found")
+
+    def _quote_config_value(value):
+        """Return a Source-style quoted config value."""
+
+        text = str(value)
+        if len(text) >= 2 and text.startswith('"') and text.endswith('"'):
+            return text
+        return '"' + text.replace('"', '\\"') + '"'
+
+    def _current_servername(server, module_settings):
+        """Return the best available server name for the datastore or config file."""
+
+        server_cfg = module_settings.getsection("servercfg")
+        return server.data.get(
+            "servername",
+            module_settings.get(
+                "servername",
+                server_cfg.get("hostname", "AlphaGSM %s" % (game_name,)),
+            ),
+        )
+
+    def _current_rconpassword(server, module_settings):
+        """Return the best available RCON password for the datastore or config file."""
+
+        server_cfg = module_settings.getsection("servercfg")
+        return server.data.get(
+            "rconpassword",
+            module_settings.get("rconpassword", server_cfg.get("rcon_password", "")),
+        )
+
+    def _current_serverpassword(server, module_settings):
+        """Return the best available join password for the datastore or config file."""
+
+        server_cfg = module_settings.getsection("servercfg")
+        return server.data.get(
+            "serverpassword",
+            module_settings.get("serverpassword", server_cfg.get("sv_password", "")),
+        )
 
     def configure(server, ask, port=None, dir=None, *, exe_name=None):
         """Store install and networking defaults for this Valve-engine server."""
         module_settings = _get_module_settings(module_name)
 
-        server.data["Steam_AppID"] = steam_app_id
-        server.data["Steam_anonymous_login_possible"] = True
+        gamemodule_common.set_steam_install_metadata(
+            server,
+            steam_app_id=steam_app_id,
+            steam_anonymous_login_possible=True,
+        )
         if app_id_mod is not None:
             server.data["Steam_AppID_Mod"] = app_id_mod
 
-        server.data.setdefault("startmap", module_settings.get("startmap", default_map))
-        server.data.setdefault("maxplayers", str(module_settings.get("maxplayers", max_players)))
-        server.data.setdefault("game_dir", game_dir)
-        server.data.setdefault("server_cfg", module_settings.get("server_cfg", config_default))
-        server.data.setdefault("backupfiles", list(default_backupfiles))
-        if "backup" not in server.data:
-            server.data["backup"] = _default_backup_config(game_dir)
-
-        if port is None:
-            port = server.data.get("port", _get_int_setting(module_settings, "port", default_port))
-        if ask:
-            while True:
-                inp = input(
-                    "Please specify the port to use for this server: "
-                    + ("(current=%s) " % (port,) if port is not None else "")
-                ).strip()
-                if port is not None and inp == "":
-                    break
-                try:
-                    port = int(inp)
-                except ValueError:
-                    print(inp + " isn't a valid port number")
-                    continue
-                break
-        if port is None:
-            raise ValueError("No Port")
-        server.data["port"] = int(port)
+        gamemodule_common.set_server_defaults(
+            server,
+            {
+                "startmap": module_settings.get("startmap", default_map),
+                "maxplayers": str(module_settings.get("maxplayers", max_players)),
+                "servername": _current_servername(server, module_settings),
+                "rconpassword": _current_rconpassword(server, module_settings),
+                "serverpassword": _current_serverpassword(server, module_settings),
+                "game_dir": game_dir,
+                "server_cfg": module_settings.get("server_cfg", config_default),
+            },
+        )
+        gamemodule_common.ensure_backup_config(
+            server,
+            backupfiles=default_backupfiles,
+            targets=[game_dir],
+        )
+        gamemodule_common.configure_port(
+            server,
+            ask,
+            port,
+            default_port=_get_int_setting(module_settings, "port", default_port),
+            prompt="Please specify the port to use for this server:",
+        )
 
         if client_port is not None:
             server.data.setdefault(
@@ -435,17 +659,19 @@ def define_valve_server_module(
                 or module_settings.get("dir")
                 or os.path.expanduser(os.path.join("~", server.name))
             )
-            if ask:
-                inp = input(
-                    "Where would you like to install the server: [%s] " % (dir,)
-                ).strip()
-                if inp != "":
-                    dir = inp
-        server.data["dir"] = os.path.join(dir, "")
-        server.data["exe_name"] = (
-            exe_name
-            or server.data.get("exe_name")
-            or module_settings.get("exe_name", executable)
+        gamemodule_common.configure_install_dir(
+            server,
+            ask,
+            dir,
+            prompt="Where would you like to install the server:",
+        )
+        gamemodule_common.configure_executable(
+            server,
+            exe_name=(
+                exe_name
+                or server.data.get("exe_name")
+                or module_settings.get("exe_name", executable)
+            ),
         )
         _save_data_store(server)
         return (), {}
@@ -468,13 +694,25 @@ def define_valve_server_module(
         module_settings = _get_module_settings(module_name)
 
         doinstall(server)
-        if server.data["exe_name"] == "srcds_run" and os.path.isfile(server.data["dir"] + "srcds_run_64"):
-            server.data["exe_name"] = "srcds_run_64"
+        try:
+            selected_executable, _exe_path, _launcher, _working_dir = _resolve_preferred_launcher(
+                server
+            )
+        except ServerError:
+            selected_executable = None
+        if selected_executable is not None and server.data.get("exe_name") != selected_executable:
+            server.data["exe_name"] = selected_executable
+        _write_runtime_steam_appid(server, runtime_app_id)
 
         # Strip Windows CRLF line endings from srcds startup scripts.  Some
         # older games (e.g. Insurgency) ship srcds_run with \r\n endings which
         # prevents the kernel from executing the script on Linux.
-        for _script in ("srcds_run", "srcds_run.sh", os.path.join("bin", "srcds_run.sh")):
+        for _script in (
+            "srcds_run",
+            "srcds_run.sh",
+            os.path.join("bin", "srcds_run.sh"),
+            "hlds_run",
+        ):
             _path = os.path.join(server.data["dir"], _script)
             if os.path.isfile(_path):
                 with open(_path, "rb") as _fh:
@@ -483,29 +721,61 @@ def define_valve_server_module(
                     with open(_path, "wb") as _fh:
                         _fh.write(_content.replace(b"\r\n", b"\n"))
 
-        cfg_dir = os.path.join(server.data["dir"], game_dir)
-        if config_subdir:
-            cfg_dir = os.path.join(cfg_dir, config_subdir)
+        cfg_dir, cfg_path = _server_cfg_path(server)
         if not os.path.isdir(cfg_dir):
             os.makedirs(cfg_dir)
+        sync_server_config(server)
+        _save_data_store(server)
 
-        cfg_path = os.path.join(cfg_dir, server.data["server_cfg"])
+    def sync_server_config(server):
+        """Rewrite the shared Valve native config file from datastore values."""
+
+        module_settings = _get_module_settings(module_name)
+        cfg_dir, cfg_path = _server_cfg_path(server)
+        if not os.path.isdir(cfg_dir):
+            os.makedirs(cfg_dir)
         if not os.path.isfile(cfg_path):
             make_empty_file(cfg_path)
             with open(cfg_path, "w", encoding="utf-8") as handle:
                 handle.write("// AlphaGSM default config for %s\n" % (game_name,))
-        config_values = {"hostname": "\"AlphaGSM %s\"" % (game_name,)}
+
+        config_values = {}
         config_values.update(default_server_config)
         config_values.update(dict(module_settings.getsection("servercfg").items()))
         if engine == "source":
             config_values.update(integration_source_server_config())
+        config_values["hostname"] = _quote_config_value(_current_servername(server, module_settings))
+        config_values["rcon_password"] = _quote_config_value(  # lgtm[py/clear-text-storage-sensitive-data]
+            _current_rconpassword(server, module_settings)
+        )
+        config_values["sv_password"] = _quote_config_value(  # lgtm[py/clear-text-storage-sensitive-data]
+            _current_serverpassword(server, module_settings)
+        )
         updateconfig(cfg_path, config_values)
-        _save_data_store(server)
+
+    def list_setting_values(server, canonical_key):
+        """Return installed values for schema-backed keys when they are enumerable."""
+
+        if canonical_key != "map":
+            return None
+        install_dir = server.data.get("dir")
+        if not install_dir:
+            return []
+        maps_dir = os.path.join(install_dir, game_dir, "maps")
+        if not os.path.isdir(maps_dir):
+            return []
+        installed_maps = sorted(
+            os.path.splitext(filename)[0]
+            for filename in os.listdir(maps_dir)
+            if filename.endswith(".bsp")
+        )
+        return installed_maps
 
     def prestart(server, *args, **kwargs):
         """Perform common Valve-engine startup preparation."""
 
         _ensure_steamclient_link()
+        _write_runtime_steam_appid(server, runtime_app_id)
 
     def update(server, validate=False, restart=False):
         """Update the server files and optionally restart the server."""
@@ -535,21 +805,13 @@ def define_valve_server_module(
     def get_start_command(server):
         """Build the start command for this Valve-engine server."""
 
-        exe_name = server.data["exe_name"]
-        if exe_name == "srcds_run":
-            for candidate in ("srcds_run_64", "srcds_run"):
-                if os.path.isfile(server.data["dir"] + candidate):
-                    exe_name = candidate
-                    server.data["exe_name"] = candidate
-                    _save_data_store(server)
-                    break
-        if not os.path.isfile(os.path.join(server.data["dir"], exe_name)):
-            _raise_server_error("Executable file not found")
-        if not exe_name.startswith("./"):
-            exe_name = "./" + exe_name
+        exe_name, _exe_path, launcher, working_dir = _resolve_preferred_launcher(server)
+        if server.data.get("exe_name") != exe_name:
+            server.data["exe_name"] = exe_name
+            _save_data_store(server)
 
         cmd = [
-            exe_name,
+            launcher,
             "-game",
             game_dir,
             "-strictportbind",
@@ -572,7 +834,7 @@ def define_valve_server_module(
                 str(server.data["maxplayers"]),
             ]
         )
-        return cmd, server.data["dir"]
+        return cmd, working_dir
 
     def get_runtime_requirements(server):
         """Return Docker runtime metadata for Valve-engine Linux servers."""
@@ -581,10 +843,14 @@ def define_valve_server_module(
             "engine": "docker",
             "family": "steamcmd-linux",
         }
+        mounts = []
         if "dir" in server.data:
-            requirements["mounts"] = [
+            mounts.append(
                 {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
-            ]
+            )
+        mounts.extend(_steamcmd_sdk_mounts())
+        if mounts:
+            requirements["mounts"] = mounts
         ports = []
         for key in ("port", "clientport", "sourcetvport", "steamport"):
             if key in server.data and server.data[key] is not None:
@@ -602,15 +868,19 @@ def define_valve_server_module(
     def get_container_spec(server):
         """Return the Docker launch spec for this Valve-engine server."""
 
-        cmd, _cwd = get_start_command(server)
-        requirements = get_runtime_requirements(server)
-        return {
-            "working_dir": "/srv/server",
-            "stdin_open": True,
-            "mounts": requirements.get("mounts", []),
-            "ports": requirements.get("ports", []),
-            "command": cmd,
-        }
+        return runtime_module.build_container_spec(
+            server,
+            family="steamcmd-linux",
+            get_start_command=get_start_command,
+            port_definitions=(
+                {"key": "port", "protocol": "udp"},
+                {"key": "clientport", "protocol": "udp"},
+                {"key": "sourcetvport", "protocol": "udp"},
+                {"key": "steamport", "protocol": "udp"},
+            ),
+            mounts=get_runtime_requirements(server).get("mounts", []),
+            stdin_open=True,
+        )
 
     def do_stop(server, j):
         """Send the generic Valve-engine shutdown command."""
@@ -618,8 +888,19 @@ def define_valve_server_module(
         _send_console_input(server, "\nquit\n")
 
     def status(server, verbose):
-        """Detailed engine-specific status is not implemented yet."""
-        return None
+        """Report server status using the shared query/info helpers.
+
+        When *verbose* is true call the richer `info()` path; otherwise use
+        the quicker `query()` check. Errors are caught and printed so this
+        remains non-fatal and backward-compatible with existing callers.
+        """
+        try:
+            if verbose:
+                server.info(as_json=False, detailed=False)
+            else:
+                server.query()
+        except Exception as exc:
+            print("Status check failed: " + str(exc))
 
     def message(server, msg):
         """Broadcast a message using the generic Valve-engine chat command."""
@@ -640,15 +921,40 @@ def define_valve_server_module(
             return backup_utils.checkdatavalue(server.data["backup"], key, *value)
         if len(value) == 0:
             _raise_server_error("No value specified")
+        try:
+            resolved = resolve_requested_key(key[0], setting_schema)
+        except KeyResolutionError:
+            resolved = None
+        if resolved is not None:
+            if resolved.canonical_key == "port":
+                return int(value[0])
+            if resolved.canonical_key == "maxplayers":
+                return str(int(value[0]))
+            if resolved.canonical_key in ("servername", "rconpassword", "serverpassword"):
+                return str(value[0])
+            if resolved.canonical_key == "map":
+                if enable_map_validation and engine == "source":
+                    return validate_source_startmap(server, game_dir, value[0])
+                return str(value[0])
         if key[0] in ("port", "clientport", "sourcetvport", "steamport"):
             return int(value[0])
         if key[0] == "maxplayers":
             return str(int(value[0]))
-        if key[0] in ("startmap", "dir", "server_cfg", "exe_name"):
+        if key[0] in ("servername", "hostname"):
+            return str(value[0])
+        if key[0] in ("rconpassword", "rcon_password"):
+            return str(value[0])
+        if key[0] in ("serverpassword", "sv_password", "svpassword", "password"):
+            return str(value[0])
+        if key[0] == "startmap":
+            if enable_map_validation and engine == "source":
+                return validate_source_startmap(server, game_dir, value[0])
+            return str(value[0])
+        if key[0] in ("dir", "server_cfg", "exe_name"):
             return str(value[0])
         _raise_server_error("Unsupported key for Valve server module: %s" % (key[0],))
 
-    return SimpleNamespace(
+    exported_namespace = SimpleNamespace(
         steam_app_id=steam_app_id,
         commands=("update", "restart"),
         command_args=_COMMAND_ARGS,
@@ -669,6 +975,10 @@ def define_valve_server_module(
         message=message,
         backup=backup,
         checkvalue=checkvalue,
+        config_sync_keys=config_sync_keys,
+        sync_server_config=sync_server_config,
+        setting_schema=setting_schema,
+        list_setting_values=list_setting_values,
         updateconfig=updateconfig,
         wake_a2s_query=wake_source_server_for_a2s if engine == "source" else None,
         get_query_address=source_query_address if engine == "source" else None,
@@ -677,3 +987,13 @@ def define_valve_server_module(
             hibernating_source_console_info if engine == "source" else None
         ),
     )
+    caller_globals["config_sync_keys"] = config_sync_keys
+    caller_globals["sync_server_config"] = sync_server_config
+    caller_globals["setting_schema"] = setting_schema
+    caller_globals["list_setting_values"] = list_setting_values
+    if engine == "source":
+        caller_globals["wake_a2s_query"] = wake_source_server_for_a2s
+        caller_globals["get_query_address"] = source_query_address
+        caller_globals["get_info_address"] = source_query_address
+        caller_globals["get_hibernating_console_info"] = hibernating_source_console_info
+    return exported_namespace

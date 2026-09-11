@@ -1,36 +1,18 @@
 """Full coverage tests for ss14server."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from urllib.error import HTTPError
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.ss14server', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.github_releases': MagicMock()}):
     import gamemodules.ss14server as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -61,6 +43,90 @@ def test_configure_resolves_download(tmp_path):
         mod.configure(server, ask=False, port=1212, dir=str(tmp_path))
     assert server.data['url'] == 'https://example.com/ss14.zip'
     assert server.data['version'] == '42'
+
+def test_resolve_download_uses_latest_manifest_entry():
+    manifest = {
+        "builds": {
+            "old": {
+                "time": "2025-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/old.zip"}},
+            },
+            "new": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/new.zip"}},
+            },
+        }
+    }
+
+    mod.read_json.return_value = manifest
+
+    version, url = mod.resolve_download()
+
+    assert version == "new"
+    assert url == "https://example.com/new.zip"
+
+def test_resolve_download_uses_requested_manifest_version():
+    mod.read_json.return_value = {
+        "builds": {
+            "wanted": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/wanted.zip"}},
+            }
+        }
+    }
+
+    version, url = mod.resolve_download(version="wanted")
+
+    assert version == "wanted"
+    assert url == "https://example.com/wanted.zip"
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_is_unavailable():
+    error = HTTPError(mod.SS14_MANIFEST_URL, 404, "Not Found", None, None)
+    with patch.object(mod, "read_json", side_effect=error):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_preserves_transient_network_errors():
+    with patch.object(mod, "read_json", side_effect=OSError("network unreachable")):
+        with pytest.raises(OSError, match="network unreachable"):
+            mod.resolve_download()
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_has_no_builds():
+    with patch.object(mod, "read_json", return_value={"builds": {}}):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_is_malformed():
+    with patch.object(mod, "read_json", return_value=None):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_rejects_missing_linux_x64_build():
+    mod.read_json.return_value = {
+        "builds": {
+            "wanted": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"win-x64": {"url": "https://example.com/wanted.zip"}},
+            }
+        }
+    }
+
+    with pytest.raises(ServerError):
+        mod.resolve_download(version="wanted")
 
 def test_install(tmp_path):
     server = DummyServer()
@@ -98,7 +164,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()
@@ -163,4 +229,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

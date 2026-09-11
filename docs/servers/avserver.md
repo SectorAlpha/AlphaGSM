@@ -2,6 +2,8 @@
 
 This guide covers the `avserver` module in AlphaGSM.
 
+`avserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -67,6 +69,23 @@ alphagsm myavserver backup
 - AlphaGSM starts Avorion with `--datapath ./galaxies` so galaxy state stays under the install directory
 - AlphaGSM `query` and `info` use generic UDP reachability on the Steam query port
 - The `administration` datastore key is optional and maps to Avorion's `--admin` CLI argument, not an `admin.xml` file path
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create avserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

@@ -1,3 +1,7 @@
 """Core command-dispatch and process-management helpers for AlphaGSM."""
 
-from .main import *
+import sys
+
+# Internal workers must boot without loading user/server configuration.
+if sys.argv[1:2] != ["--_complete-self-update"]:
+    from .main import *

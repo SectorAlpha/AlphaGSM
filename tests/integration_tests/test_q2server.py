@@ -1,24 +1,23 @@
-"""Integration test for q2server.
+"""Integration test for q2server."""
 
-Disabled: Quake 2 builds from source and requires a full build toolchain
-(make, gcc, etc.).  Awaiting further support.
-"""
+import os
+import sys
 
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
-    skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_quake_ready,
-    wait_for_tcp_closed,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
+    wait_for_info_protocol,
+    wait_for_generic_udp_closed,
 )
 
 pytestmark = pytest.mark.integration
@@ -27,10 +26,19 @@ START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 
 
-@pytest.mark.skip(reason="Disabled: requires build toolchain (make, gcc) to compile from source")
 def test_q2server_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "q2server"
+    require_command("gcc")
+    require_command("make")
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -38,35 +46,28 @@ def test_q2server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itq2server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "q2server")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
-    if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result)
+    run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
 
     # start
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
-
-        # status
         run_and_assert_ok(env, server_name, "status")
-
-        # Quake 2 uses the Quake UDP status protocol, not A2S
-        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
+        wait_for_info_protocol(env, server_name, "quake2", START_TIMEOUT, expected_port=port)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -84,15 +85,21 @@ def test_q2server_lifecycle(tmp_path):
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "quake", (
-            f"Expected quake protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "quake2", (
+            f"Expected quake2 protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_generic_udp_closed(
+        "127.0.0.1", port, STOP_TIMEOUT, payload=b"\xff\xff\xff\xffstatus\n"
+    )

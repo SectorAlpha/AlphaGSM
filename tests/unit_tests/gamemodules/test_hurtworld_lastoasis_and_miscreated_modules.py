@@ -44,18 +44,19 @@ def test_hurtworld_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = hurtworldserver.get_start_command(server)
 
     assert cmd[0] == "./HurtworldDedicated"
-    assert "-worldname" in cmd
+    assert "host 12871;queryport 12872;maxplayers 50;servername AlphaGSM hurt" in cmd[4]
     assert cwd == server.data["dir"]
 
 
 def test_lastoasis_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("oasis")
-    exe = tmp_path / "LastOasisServer.x86_64"
+    exe = tmp_path / "Mist" / "Binaries" / "Linux" / "MistServer-Linux-Shipping"
+    exe.parent.mkdir(parents=True)
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "LastOasisServer.x86_64",
+            "exe_name": "Mist/Binaries/Linux/MistServer-Linux-Shipping",
             "port": 15000,
             "queryport": 15001,
             "worldname": "oasisworld",
@@ -65,13 +66,13 @@ def test_lastoasis_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = lastoasisserver.get_start_command(server)
 
-    assert cmd[0] == "./LastOasisServer.x86_64"
+    assert cmd[0] == "./Mist/Binaries/Linux/MistServer-Linux-Shipping"
     assert "-worldname=oasisworld" in cmd
     assert cwd == server.data["dir"]
 
 
 def test_miscreated_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(miscreatedserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(miscreatedserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("mis")
     exe_dir = tmp_path / "Bin64_dedicated"
     exe_dir.mkdir(parents=True)

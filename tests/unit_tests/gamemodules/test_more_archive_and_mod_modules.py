@@ -25,6 +25,7 @@ def test_mtaserver_configure_sets_defaults(tmp_path):
     mtaserver.configure(server, ask=False, port=22003, dir=str(tmp_path), url="http://example.com/mta.tar.gz")
 
     assert server.data["download_name"] == "mta.tar.gz"
+    assert server.data["httpport"] == 22005
 
 
 def test_sampserver_get_start_command_builds_expected_args(tmp_path):

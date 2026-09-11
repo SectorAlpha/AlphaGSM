@@ -1,20 +1,24 @@
 """Integration test for heatserver."""
 
+import os
+
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command,
-    require_proton,
+    resolve_runtime_image,
     pick_free_tcp_port,
+    wait_for_glob_log_marker,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -23,13 +27,23 @@ from gamemodules.heatserver import steam_app_id
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
+PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
 
 
 def test_heatserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_proton()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "heatserver"
+    require_command("docker")
+    image = resolve_runtime_image(
+        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+        LOCAL_WINE_PROTON_IMAGE,
+        PUBLISHED_WINE_PROTON_IMAGE,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -37,12 +51,23 @@ def test_heatserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itheatserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    query_port = pick_free_tcp_port()
+    while query_port == port:
+        query_port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "heatserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "queryport", str(query_port))
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -54,12 +79,15 @@ def test_heatserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = install_dir / "server.log"
-        wait_for_log_marker(
-            log_path,
-            ["Server started", "Listening", "listening on", "port", "online"],
+        wait_for_glob_log_marker(
+            install_dir / "Logs",
+            "Console*.txt",
+            ["Game has started.", "Type /shutdown to shut down the server."],
             START_TIMEOUT,
+            env=env,
+            server_name=server_name,
         )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -92,3 +120,4 @@ def test_heatserver_lifecycle(tmp_path):
 
     # verify stopped
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)

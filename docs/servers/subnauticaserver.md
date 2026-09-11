@@ -2,9 +2,17 @@
 
 This guide covers the `subnauticaserver` module in AlphaGSM.
 
+`subnauticaserver` is currently `ENABLED (BYO)` on the documented Ubuntu
+24.04 Linux baseline. The current GitHub integration lane still exercises
+both process and Docker runtime selection around that owned-client-install
+prerequisite, while local runs remain process-backed by default unless you opt
+into the Docker backend.
+
 ## Requirements
 
 - `screen`
+- An owned Subnautica client installation path for Nitrox to inspect
+  - Nitrox currently looks for a configured game path or the `SUBNAUTICA_INSTALLATION_PATH` environment variable
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -47,6 +55,10 @@ Setup configures:
 - the install directory
 - downloads and extracts the server archive
 
+This server is supported in `ENABLED (BYO)` mode. Before `start`, provide Nitrox with a real owned Subnautica installation path.
+On the current Linux lane, the missing `.NET` runtime is no longer the blocker;
+startup now aborts only when Nitrox cannot find the base game files.
+
 ## Useful Commands
 
 ```bash
@@ -59,6 +71,23 @@ alphagsm mysubnauti backup
 - Module name: `subnauticaserver`
 - Default port: 11000
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create subnauticaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File
@@ -66,6 +95,7 @@ alphagsm mysubnauti backup
 - **Executable**: `Nitrox.Server.Subnautica`
 - **Location**: `<install_dir>/Nitrox.Server.Subnautica`
 - **Engine**: Custom
+- **Owned client path required before start**: set Nitrox's game path or `SUBNAUTICA_INSTALLATION_PATH` to a real Subnautica install
 
 ### Server Configuration
 

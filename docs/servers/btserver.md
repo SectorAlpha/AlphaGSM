@@ -2,9 +2,18 @@
 
 This guide covers the `btserver` module in AlphaGSM.
 
+`btserver` is currently `PASSED` in the checked-in support tracker. On the
+documented Ubuntu 24.04 Linux baseline, the current smoke and GitHub
+integration coverage runs through the shared `steamcmd-linux` Docker runtime,
+while local host-process flows remain the fallback path documented elsewhere
+in the repo. AlphaGSM checks Barotrauma through the live Lidgren UDP surface
+on the primary game port rather than assuming the adjacent Steam query port
+provides A2S.
+
 ## Requirements
 
-- `screen`
+- Docker for the validated Linux runtime path
+- For process mode: `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,7 +53,8 @@ alphagsm mybtserver stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the adjacent query port (default 27016)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -58,7 +68,27 @@ alphagsm mybtserver backup
 ## Notes
 
 - Module name: `btserver`
-- Default port: 27016
+- Default game port: 27015
+- Default query port: 27016
+- `query`, `info`, and `info --json` use generic UDP health on the managed
+  game port for both process and Docker.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create btserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

@@ -35,6 +35,7 @@ def test_rust_configure_sets_defaults(tmp_path):
     assert server.data["Steam_AppID"] == 258550
     assert server.data["hostname"] == "AlphaGSM rustalpha"
     assert server.data["rconport"] == "28016"
+    assert server.data["queryport"] == "28017"
 
 
 def test_rust_get_start_command_builds_expected_args(tmp_path):
@@ -52,6 +53,7 @@ def test_rust_get_start_command_builds_expected_args(tmp_path):
             "maxplayers": "50",
             "seed": "12345",
             "rconport": "28016",
+            "queryport": "28017",
         }
     )
 
@@ -61,6 +63,7 @@ def test_rust_get_start_command_builds_expected_args(tmp_path):
     assert "+server.port" in cmd
     assert "28015" in cmd
     assert "+rcon.port" in cmd
+    assert "+server.queryport" in cmd
     assert cwd == server.data["dir"]
 
 
@@ -71,7 +74,7 @@ def test_sdtd_configure_sets_defaults(tmp_path):
 
     assert server.data["Steam_AppID"] == 294420
     assert server.data["configfile"] == "serverconfig.xml"
-    assert server.data["backupfiles"] == ["Saves", "serverconfig.xml", "startserver.sh"]
+    assert server.data["backupfiles"] == ["Saves", "Mods", "serverconfig.xml", "startserver.sh"]
 
 
 def test_sdtd_get_start_command_uses_configfile(tmp_path):

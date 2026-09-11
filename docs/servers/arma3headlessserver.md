@@ -2,6 +2,13 @@
 
 This guide covers the `arma3headlessserver` module in AlphaGSM.
 
+## Status
+
+`arma3headlessserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 3 dedicated server app `233780`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,24 @@ alphagsm myarma3hea backup
 
 - Module name: `arma3headlessserver`
 - Default port: 2302
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create arma3headlessserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `password` | — | string | Password required to connect to the Arma 3 server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

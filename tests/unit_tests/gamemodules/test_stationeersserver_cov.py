@@ -1,44 +1,31 @@
 """Full coverage tests for stationeersserver."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.stationeersserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.stationeersserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27500, dir=str(tmp_path))
     assert server.data['port'] == 27500
+
+
+def test_configure_sets_post_terrain_defaults(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, dir=str(tmp_path))
+    assert server.data["port"] == 27016
+    assert server.data["updateport"] == "27015"
+    assert server.data["worldname"] == "Lunar"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -117,18 +104,94 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "rocketstation_DedicatedServer.x86_64"
     (tmp_path / "rocketstation_DedicatedServer.x86_64").write_text("")
-    server.data["autosave"] = "test"
-    server.data["maxplayers"] = 27015
-    server.data["port"] = 27015
-    server.data["saveinterval"] = "test"
-    server.data["savename"] = "test"
-    server.data["servername"] = "test"
-    server.data["serverpassword"] = "test"
+    server.data["autosave"] = "true"
+    server.data["maxplayers"] = 10
+    server.data["port"] = 27016
+    server.data["saveinterval"] = 300
+    server.data["savename"] = "alpha"
+    server.data["servername"] = "AlphaGSM alpha"
+    server.data["serverpassword"] = ""
     server.data["updateport"] = 27015
-    server.data["upnp"] = True
-    server.data["worldname"] = "test"
+    server.data["upnp"] = "false"
+    server.data["worldname"] = "Lunar"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./rocketstation_DedicatedServer.x86_64",
+        "-file",
+        "start",
+        "alpha",
+        "Lunar",
+        "-logFile",
+        "./server.log",
+        "-settings",
+        "StartLocalHost",
+        "true",
+        "ServerVisible",
+        "true",
+        "GamePort",
+        "27016",
+        "UPNPEnabled",
+        "false",
+        "ServerName",
+        "AlphaGSM alpha",
+        "ServerPassword",
+        "",
+        "ServerMaxPlayers",
+        "10",
+        "AutoSave",
+        "true",
+        "SaveInterval",
+        "300",
+        "UpdatePort",
+        "27015",
+        "AutoPauseServer",
+        "true",
+        "UseSteamP2P",
+        "false",
+        "LocalIpAddress",
+        "0.0.0.0",
+        "-batchmode",
+        "-nographics",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "rocketstation_DedicatedServer.x86_64"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "rocketstation_DedicatedServer.x86_64"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "rocketstation_DedicatedServer.x86_64").symlink_to(nested_exe)
+    server.data["autosave"] = "true"
+    server.data["maxplayers"] = 10
+    server.data["port"] = 27016
+    server.data["saveinterval"] = 300
+    server.data["savename"] = "alpha"
+    server.data["servername"] = "AlphaGSM alpha"
+    server.data["serverpassword"] = ""
+    server.data["updateport"] = 27015
+    server.data["upnp"] = "false"
+    server.data["worldname"] = "Lunar"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./rocketstation_DedicatedServer.x86_64"
+    assert cwd == str(nested_dir)
+
+
+def test_get_query_address():
+    server = DummyServer()
+    server.data["port"] = 27016
+    assert mod.get_query_address(server) == ("127.0.0.1", 27016, "udp")
+
+
+def test_get_info_address():
+    server = DummyServer()
+    server.data["port"] = 27016
+    assert mod.get_info_address(server) == ("127.0.0.1", 27016, "udp")
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -152,7 +215,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -266,4 +329,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

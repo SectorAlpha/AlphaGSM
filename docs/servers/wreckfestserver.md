@@ -2,11 +2,13 @@
 
 This guide covers the `wreckfestserver` module in AlphaGSM.
 
+Status: `PASSED` on 2026-05-31.
+
 ## Requirements
 
-- `screen`
-- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
-- Python packages from `requirements.txt`
+- Docker
+- AlphaGSM's `wine-proton` runtime image on Linux
+- SteamCMD access for app `361580` with anonymous login
 
 ## Quick Start
 
@@ -32,6 +34,8 @@ Check it:
 
 ```bash
 alphagsm mywreckfes status
+alphagsm mywreckfes query
+alphagsm mywreckfes info --json
 ```
 
 Stop it:
@@ -44,38 +48,87 @@ alphagsm mywreckfes stop
 
 Setup configures:
 
-- the game port (default 33540)
+- the main game port (default `33540`)
+- the Steam query port (default `27016`)
+- the Steam networking port (default `27015`)
 - the install directory
-- SteamCMD downloads the server files
+- the managed `server_config.cfg`
+
+On Linux, AlphaGSM downloads the Windows dedicated payload for app `361580`,
+launches `Wreckfest_x64.exe` through the shared Docker `wine-proton` runtime,
+and seeds `server_config.cfg` from the vendor `initial_server_config.cfg` when
+needed.
 
 ## Useful Commands
 
 ```bash
 alphagsm mywreckfes update
 alphagsm mywreckfes backup
+alphagsm mywreckfes set port 33541
+alphagsm mywreckfes set queryport 27017
+alphagsm mywreckfes set steamport 27018
+alphagsm mywreckfes set servername "AlphaGSM Wreckfest"
+alphagsm mywreckfes set maxplayers 16
 ```
+
+AlphaGSM keeps these upstream config keys in sync inside `server_config.cfg`:
+
+- `game_port`
+- `query_port`
+- `steam_port`
+- `server_name`
+- `password`
+- `max_players`
 
 ## Notes
 
 - Module name: `wreckfestserver`
-- Default port: 33540
+- Main game port default: `33540`
+- Query/info contract on validated Linux lane: generic `tcp` on the managed main game port
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create wreckfestserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `maxplayers` | users | integer | The maximum number of players allowed on the server. |
+| `port` | gameport | integer | The main game port for the Wreckfest server. |
+| `queryport` | — | integer | The Steam query port for the Wreckfest server. |
+| `servername` | hostname, name | string | The advertised Wreckfest server name. |
+| `serverpassword` | sv_password, password | string | Password required to join the Wreckfest server. Stored as a secret. |
+| `steamport` | — | integer | The Steam networking port for the Wreckfest server. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
 ### Run File
 
-- **Executable**: `WreckfestServer`
-- **Location**: `<install_dir>/WreckfestServer`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `Wreckfest_x64.exe`
+- **Fallback executable**: `Wreckfest.exe`
+- **Location**: `<install_dir>/Wreckfest_x64.exe`
+- **Runtime**: Docker `wine-proton` on Linux
 - **SteamCMD App ID**: `361580`
 
 ### Server Configuration
 
 - **Config file**: `server_config.cfg`
-- **Template**: See [server-templates/wreckfestserver/](../server-templates/wreckfestserver/) if available
+- **Vendor seed file**: `initial_server_config.cfg`
+- **Template**: See [server-templates/wreckfestserver/server_config.cfg](../server-templates/wreckfestserver/server_config.cfg)
 
 ### Maps and Mods
 
-- **Map directory**: Check game documentation
-- **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Map rotation**: configure through `server_config.cfg`
+- **Mod directory**: `<install_dir>/mods/`
+- **Workshop support**: use Wreckfest's native mod loading rules

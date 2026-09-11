@@ -22,6 +22,13 @@ Run setup:
 alphagsm mytekkit setup
 ```
 
+`minecraft.tekkit` is supported in `ENABLED (BYO)` mode. The old automatic
+TechnicPack page scrape is no longer reliable, so before `setup` or `start`
+you should either:
+
+- set `url` to a direct Tekkit server archive URL, or
+- stage `Tekkit.jar` directly inside `<install_dir>/`
+
 Start it:
 
 ```bash
@@ -47,6 +54,32 @@ Setup configures:
 - the game port (default 27015)
 - the install directory
 
+Suggested flow:
+
+```bash
+alphagsm mytekkit create minecraft.tekkit
+alphagsm mytekkit setup -n 25565 /path/to/minecraft-tekkit --url https://example.com/Tekkit.zip
+alphagsm mytekkit start
+```
+
+Or with a pre-staged jar:
+
+```bash
+alphagsm mytekkit create minecraft.tekkit
+alphagsm mytekkit setup -n 25565 /path/to/minecraft-tekkit
+# place Tekkit.jar in /path/to/minecraft-tekkit/
+alphagsm mytekkit start
+```
+
+## Resetting the World
+
+Stop the server, then run `alphagsm mymc reset-world` (or `wipe`). AlphaGSM
+lists the world data to delete and asks for confirmation. Add `-Y` to skip the
+prompt. Run `start` afterwards to generate a fresh world.
+
+See [world creation and reset](../world-management.md) for exactly which files
+are removed and the supported layouts.
+
 ## Useful Commands
 
 ```bash
@@ -58,6 +91,29 @@ alphagsm mytekkit backup
 
 - Module name: `minecraft.tekkit`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create minecraft.tekkit`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `difficulty` | — | string | The world difficulty. Example: `easy`. |
+| `gamemode` | — | string | The default game mode. Example: `survival`. |
+| `map` | gamemap, level, world, startmap, worldname | string | The selected world or level name. Example: `world`. |
+| `maxplayers` | users | integer | The maximum number of players allowed on the server. Example: `20`. |
+| `port` | gameport | integer | The port the server listens on. Example: `25565`. |
+| `servername` | hostname, name | string | The server name shown in the client list. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

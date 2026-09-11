@@ -1,12 +1,14 @@
 """Integration coverage for Source server port-manager collisions."""
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
 from conftest import (
-    require_command,
+    require_command_for_runtime,
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     pick_free_tcp_port,
@@ -136,7 +138,15 @@ def test_source_servers_only_both_run_after_one_changes_port(tmp_path):
 
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "port_manager_source_collision"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -149,7 +159,13 @@ def test_source_servers_only_both_run_after_one_changes_port(tmp_path):
     shifted_port = _pick_distinct_port(shared_port)
     query_host = detect_query_host()
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
 
     run_and_assert_ok(env, tf2_server, "create", "teamfortress2")

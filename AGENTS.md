@@ -31,20 +31,96 @@ Keep documentation split by audience:
 - `DEVELOPERS.md`
   technical, detailed, implementation-focused
 
+## Game Module Layout
+
+Treat the module import surface and its checked-in assets as one unit.
+
+- Canonical top-level game server modules should use a package-backed layout
+  under `src/gamemodules/<name>/` with `__init__.py` as the canonical import
+  surface.
+- Keep flat `.py` files only for internal helper submodules that live under an
+  already-package-backed game family, such as `minecraft/paper.py` or
+  `terraria/tshock.py`.
+- For package-backed top-level game server modules, keep the canonical import
+  surface in `__init__.py` and put the main implementation in a nearby
+  `main.py`.
+- Prefer package-local manifest filenames such as `curated_mods.json` or
+  `curated_plugins.json` beside the implementation instead of sibling flat
+  files like `src/gamemodules/<name>_curated_mods.json`.
+- When converting a flat module into a package, keep the canonical module id
+  stable so `import_module("gamemodules.<name>")` continues to work.
+
+## Curated Mod And Plugin Guidance
+
+Treat checked-in mod/plugin/addon manifests as part of the supported product
+surface, not ad hoc download shortcuts.
+
+Default scope for mod-support work in this repository is **multiplayer server
+content only**.
+
+- Prioritize popular, high-value mods/addons/plugins with stable,
+  authoritative release assets.
+- Prioritize dedicated-server-compatible multiplayer content such as admin
+  tooling, server frameworks, moderation tools, server-side gameplay rules,
+  maps, and other assets that a hosted multiplayer server can actually load
+  and serve.
+- Ignore single-player-only, client-only, local-only, campaign/story-only,
+  save-editing, or otherwise non-dedicated-server mod ecosystems unless the
+  user explicitly asks for them.
+- When scouting new mod-support targets, reject candidates whose mod scene is
+  primarily single-player or whose popular mods are not meaningfully usable on
+  a hosted multiplayer dedicated server.
+- Prefer immutable or authoritative download sources such as:
+  - GitHub release assets
+  - official project download archives
+  - other upstream-hosted versioned release files
+- Do not point checked-in manifests at moving repository branches or vague
+  "latest source" downloads when a real release artifact exists.
+- Colocate a module's checked-in curated manifest with that module's package
+  whenever the module has enough local assets to justify a directory layout.
+- Keep genuinely shared registries shared. If one checked-in manifest is owned
+  by a cross-module helper and intentionally serves multiple server modules,
+  do not invent a fake canonical game-module package just to relocate that
+  file.
+- Declare manifest dependencies explicitly and keep apply/install paths
+  dependency-aware so requesting a higher-level family installs prerequisites
+  automatically.
+- When a provider or release ships a different payload shape than the current
+  helper expects, fix the shared install path at the root cause before adding
+  more manifest entries.
+- For Source-family addon work, distinguish clearly between:
+  - archive-backed addon payloads
+  - bare addon-root archives
+  - single-file addon payloads such as `.gma` or `.vpk`
+- Only add checked-in entries for payload types the module's current install
+  path can actually stage and clean up safely.
+- When expanding a checked-in curated manifest, update tests, docs, and
+  changelog entries in the same change.
+
+## Changelog Discipline
+
+Keep `changelog.txt` current for every PR that changes user-visible behaviour,
+server support, CI, packaging, or workflow expectations.
+
+- Use `skills/changelog-discipline/SKILL.md` when updating the changelog.
+- Treat `changelog.txt` as part of the release surface, not an optional extra.
+- Backfill historical context from git history instead of inventing release notes.
+
 ## When Behaviour Changes
 
 Update these in order when relevant:
 
 1. the smoke test
-2. the matching server guide
-3. `README.md`
-4. `DEVELOPERS.md`
+2. `changelog.txt`
+3. the matching server guide
+4. `README.md`
+5. `DEVELOPERS.md`
 
 ## Quality Gates
 
 - lint: `make lint` (or `bash ./lint.sh` directly) — must score `10.00/10`
 - unit tests: `make test` — keep green
-- integration tests: `make integration-test` (needs `ALPHAGSM_WORK_DIR` set) — keep green
+- integration tests: `make integration-test` — keep green
 - smoke tests: `make smoke-test` (or `make smoke-test SMOKE_TEST=run_<name>.sh`) — keep accurate
 
 ## New Module Test Contract
@@ -83,6 +159,29 @@ process and Docker runtimes.
 - Collision checks ignore protocol and include optional and runtime-published
   ports, not just the main game port.
 
+## Config Sync Contract
+
+Game modules should declare which `set` values represent real game-server
+configuration, and only those keys should auto-sync into on-disk config files.
+
+- If a module supports `set` on values that map directly to the game server's
+  own config file or live config payload, add `sync_server_config(server)`.
+- Add `config_sync_keys` listing the top-level datastore keys that represent
+  real game-server config values such as `port`, `queryport`, `maxplayers`,
+  `servername`, `map`, or similar module-specific settings.
+- Do not include AlphaGSM-only keys in `config_sync_keys`, including backup
+  settings, install-only cache fields, runtime metadata, wrapper image fields,
+  or other manager-specific values.
+- Treat missing `config_sync_keys` on a module with game-config-backed `set`
+  values as incomplete lifecycle wiring.
+- If a module exposes map-like values via `set` such as `map`, `startmap`,
+  `world`, `level`, or `mission`, validate them against installed content,
+  known defaults, or another module-specific allowlist when practical instead
+  of accepting arbitrary strings blindly.
+- When editing an existing module, prefer a single `sync_server_config(server)`
+  helper reused by `install`, `prestart`, `update`, and `set` rather than
+  duplicating config write logic in each phase.
+
 ## Container Runtime Contract
 
 Container-capable modules should describe their runtime explicitly instead of
@@ -107,6 +206,14 @@ explicit module-scope wrappers.
 - Keep `tests/backend_integration_tests/docker_family_matrix.py` at three
   declared representative cases per runtime family, and keep active cases
   green in CI via `tests/backend_integration_tests/test_backend_docker.py`.
+- For server-enablement work, treat Docker validation as part of the normal
+  completion path: if the module is container-capable, verify that AlphaGSM
+  can launch it successfully through the Docker/runtime-image path as well as
+  the host/process path.
+- Prefer the repository's own Docker images and branch-local builds during
+  smoke, integration, and backend validation instead of relying on stale
+  published `:latest` images when a local image can prove the current branch
+  behaviour.
 - Prefer the shared runtime families now in use:
   - `java`
   - `quake-linux`
@@ -127,6 +234,18 @@ explicit module-scope wrappers.
 Aim to keep as many server modules **enabled** as possible.
 
 - A server is considered enabled only when its integration test passes.
+- Use the public support states consistently:
+  - `PASSED` for fully validated self-provisioning servers
+  - `ENABLED (AUTH)` for supported servers that still require provider-managed
+    authentication, credentials, tokens, licenses, or provisioning
+  - `ENABLED (BYO)` for supported servers that still require operator-supplied
+    owned assets, exported files, direct archive URLs, or local services
+- A server enablement task is **not done** until the repo trackers are updated
+  in the same change: mark the server passed/enabled in `docs/TEST_STATUS.md`,
+  update the matching server guide status note when needed, and clear any stale
+  skip/disable wording that would cause future agents to repeat the same work.
+- Treat tracker updates as part of the technical completion criteria, not as
+  optional follow-up documentation.
 - A failing integration test is a debugging task, not a reason to leave the
   server broken indefinitely.
 - Before accepting a skip or disablement, search the web for the upstream
@@ -135,6 +254,47 @@ Aim to keep as many server modules **enabled** as possible.
   dedicated-server quirks.
 - Prefer official documentation, vendor docs, release notes, and upstream
   issue trackers over forum guesswork when researching fixes.
+
+## Task Closure Discipline
+
+When working through server-enablement backlog items, always close the loop in
+the repository state so the same task is not rediscovered later.
+
+- If a local plan doc, tracker row, or enablement checklist exists for the
+  current campaign, mark the completed server task as done in the same PR.
+- Do not leave a server in an ambiguous "investigated" state if the current
+  branch has already proven it passed smoke/integration. Promote it to an
+  explicit enabled/passed state immediately.
+- If a server remains blocked, leave an evidence-backed note describing the
+  current blocker so the next agent does not restart the investigation from
+  scratch.
+
+## Provider Requirement Contract
+
+Provider-backed prerequisites should use the shared module API instead of ad
+hoc per-module wording.
+
+- Modules that need provider-managed credentials, tokens, licenses, or
+  provisioning should declare `get_provider_requirements(server)` and validate
+  them through `utils.gamemodules.common.validate_provider_requirements(...)`.
+- Prefer shared provider categories such as:
+  - `provider-auth`
+  - `provider-token`
+  - `provider-license`
+  - `provider-provisioning`
+- If a module supports both a provider-auth path and a staged override path,
+  keep the shared provider metadata for the auth path and add the smallest
+  possible module-specific branch for the override case instead of abandoning
+  the shared API.
+- When reclassifying a supported server, move it between `enabled_auth_servers.conf`
+  and `enabled_byo_servers.conf` deliberately instead of flattening everything
+  into generic BYO wording.
+- Keep the public docs aligned with the true prerequisite class:
+  `ENABLED (AUTH)` for provider-backed requirements, `ENABLED (BYO)` for owned
+  assets, exports, URLs, or local services.
+- Treat the future SteamCMD auth-profile flow as part of this same contract:
+  Steam-auth-gated installs should eventually map through the shared provider
+  requirement model rather than inventing a parallel secret/config system.
 
 ## Integration Test Timeout Policy
 
@@ -164,10 +324,6 @@ The wait helpers in `tests/integration_tests/conftest.py` print the last 150
 lines of the server log and the last query error before failing the test. Use
 that output to understand what actually happened.
 
-## Known Exception
-
-`src/downloadermodules/steamcmd.py` is legacy parser-broken code and is intentionally outside the active lint/docstring verification surface.
-
 ## Repo Skills
 
 See:
@@ -181,3 +337,4 @@ See:
 - `skills/smoke-driven-docs/SKILL.md`
 - `skills/system-install-validation/SKILL.md`
 - `skills/wiki-publishing/SKILL.md`
+- `skills/changelog-discipline/SKILL.md`

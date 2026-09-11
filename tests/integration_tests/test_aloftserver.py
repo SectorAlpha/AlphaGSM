@@ -1,14 +1,16 @@
 """Integration test for aloftserver.
 
-Disabled: Aloft requires user-provided server files (PowerShell script)
-and is not available for automated download.  Awaiting further support.
+ENABLED (BYO): Aloft requires an operator-supplied server tree.
 """
+
+import os
 
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    default_runtime_backend,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -16,7 +18,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -25,12 +27,22 @@ pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
+BYO_SKIP_REASON = (
+    "ENABLED (BYO): copy an owned Aloft server tree into <install_dir>/ "
+    "so AloftServerNoGuiLoad.ps1 exists before setup/start"
+)
 
-
-@pytest.mark.skip(reason="Disabled: requires user-provided server files (bring-your-own)")
 def test_aloftserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "aloftserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -38,26 +50,44 @@ def test_aloftserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "italoftserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
+    staged_launcher = install_dir / "AloftServerNoGuiLoad.ps1"
 
     # create
-    run_and_assert_ok(env, server_name, "create", "aloftserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
+        result,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+        if not staged_launcher.is_file():
+            pytest.skip(BYO_SKIP_REASON)
+    assert result.returncode == 0, result.stderr or result.stdout
 
     # start
-    run_and_assert_ok(env, server_name, "start")
+    start_result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm " + " ".join((server_name, "start")), start_result)
+    if start_result.returncode != 0 and not staged_launcher.is_file():
+        pytest.skip(BYO_SKIP_REASON)
+    assert start_result.returncode == 0, start_result.stderr or start_result.stdout
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )

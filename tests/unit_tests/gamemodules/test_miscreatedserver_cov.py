@@ -5,36 +5,14 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.miscreatedserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.miscreatedserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):
@@ -126,6 +104,41 @@ def test_get_start_command(tmp_path, monkeypatch):
     assert isinstance(cmd, list)
 
 
+def test_miscreated_runtime_metadata_enables_xvfb_for_docker(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Bin64_dedicated/MiscreatedServer.exe",
+            "gameserverid": "100",
+            "maxplayers": 50,
+            "port": 64090,
+            "servername": "AlphaGSM miscreated",
+            "startmap": "islands",
+        }
+    )
+    exe_path = tmp_path / "Bin64_dedicated" / "MiscreatedServer.exe"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+
+
+def test_query_addresses_use_tcp_on_linux(monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    server = DummyServer()
+    server.data.update({"port": 64090})
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 64090, "tcp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 64090, "tcp")
+
+
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -141,8 +154,9 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 
 
 def test_status():
@@ -226,4 +240,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

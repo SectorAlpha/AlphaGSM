@@ -5,37 +5,27 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.codwawserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.codwawserver as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=28960, dir=str(tmp_path), url="https://example.com/test.zip", download_name="test.zip")
     assert server.data['port'] == 28960
+
+
+def test_configure_uses_linuxgsm_archive_defaults(tmp_path):
+    server = DummyServer()
+
+    mod.configure(server, ask=False, port=28960, dir=str(tmp_path))
+
+    assert server.data["url"] == mod.CODWAW_SERVER_URL
+    assert server.data["download_name"] == mod.CODWAW_SERVER_NAME
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
@@ -65,6 +55,23 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
+
+def test_install_normalizes_extensionless_download_name(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "codwaw_lnxded"
+    server.data["url"] = mod.CODWAW_SERVER_URL
+    server.data["download_name"] = "codwaw-lnxded-1.7-full"
+
+    mod.install(server)
+
+    assert server.data["download_name"] == mod.CODWAW_SERVER_NAME
+    mod.detect_compression.assert_called_with(mod.CODWAW_SERVER_NAME)
+
+
+def test_normalize_archive_download_name_keeps_tar_xz_name():
+    assert mod._normalize_archive_download_name(mod.CODWAW_SERVER_NAME, "fallback.tar.gz") == mod.CODWAW_SERVER_NAME
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -75,7 +82,76 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./codwaw_lnxded",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "codwaw_lnxded"
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    nested_exe = nested_dir / "codwaw_lnxded"
+    nested_exe.write_text("", encoding="utf-8")
+    (tmp_path / "codwaw_lnxded").symlink_to(nested_exe)
+    server.data["hostname"] = "test"
+    server.data["moddir"] = "test"
+    server.data["port"] = 27015
+    server.data["startmap"] = "test"
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./codwaw_lnxded"
+    assert cwd == str(nested_dir)
+
+
+def test_setting_schema_exposes_codwaw_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "moddir"
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+
+
+def test_sync_server_config_updates_mod_server_cfg(tmp_path):
+    server = DummyServer("waw")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "moddir": "main",
+            "hostname": "AlphaGSM waw",
+            "startmap": "mp_asylum",
+        }
+    )
+    cfg_dir = tmp_path / "main"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nmoddir=mods\nstartmap=mp_airfield\nset scr_war_allow_juggernauts 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM waw"\n'
+        'moddir=main\n'
+        'startmap=mp_asylum\n'
+        'set scr_war_allow_juggernauts 0\n'
+    )
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -91,7 +167,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()
@@ -167,3 +243,9 @@ def test_checkvalue_backup():
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
 
+
+def test_query_and_info_use_quake_status_protocol():
+    server = DummyServer()
+    server.data["port"] = 28960
+    assert mod.get_query_address(server) == ("127.0.0.1", 28960, "quake")
+    assert mod.get_info_address(server) == ("127.0.0.1", 28960, "quake")

@@ -2,6 +2,13 @@
 
 This guide covers the `boserver` module in AlphaGSM.
 
+## Status
+
+`boserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Blackwake: Overgrowth dedicated server app `416881`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,23 @@ alphagsm myboserver backup
 
 - Module name: `boserver`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create boserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

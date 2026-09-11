@@ -5,36 +5,14 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.noonesurvivedserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.noonesurvivedserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
 
 
 def test_configure_basic(tmp_path):
@@ -117,7 +95,95 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["queryport"] = 27015
     server.data["servername"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "WRSHServer.exe",
+        "-server",
+        "-log",
+        "-port=27015",
+        "-queryport=27015",
+        "-servername=test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_noonesurvived_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-queryport={value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-servername={value}"
+
+
+def test_noonesurvived_runtime_metadata_enables_xvfb_for_docker(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "WRSHServer.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "servername": "AlphaGSM noonesurvived",
+        }
+    )
+    (tmp_path / "WRSHServer.exe").write_text("")
+
+    requirements = mod.get_runtime_requirements(server)
+    spec = mod.get_container_spec(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["PROTON_USE_XALIA"] == "0"
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+    assert spec["env"]["PROTON_USE_XALIA"] == "0"
+
+
+def test_noonesurvived_linux_process_launch_uses_xvfb(monkeypatch):
+    monkeypatch.setattr(mod.shutil, "which", lambda _name: "/usr/bin/xvfb-run")
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_command",
+        lambda command, **_kwargs: [
+            "env",
+            "DISPLAY=",
+            "WINEDLLOVERRIDES=winex11.drv=",
+            "wine",
+            *command,
+        ],
+    )
+    monkeypatch.setattr(
+        mod.proton,
+        "prepend_env_assignments",
+        lambda cmd, **env: [
+            cmd[0],
+            *(f"{key}={value}" for key, value in env.items()),
+            *cmd[1:],
+        ],
+    )
+
+    command = mod._wrap_linux_command(["WRSHServer.exe", "-server"])
+
+    assert command[:2] == ["xvfb-run", "-a"]
+    assert "DISPLAY=" not in command
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in command
+    assert "WINEDLLOVERRIDES=" in command
+    assert "SDL_VIDEODRIVER=x11" in command
+    assert "SDL_AUDIODRIVER=dummy" in command
+    assert "PROTON_USE_XALIA=0" in command
+
+
+@pytest.mark.parametrize(
+    "is_linux,expected",
+    [
+        (True, ("127.0.0.1", 7777, "tcp")),
+        (False, ("127.0.0.1", 27015, "a2s")),
+    ],
+)
+def test_query_addresses_use_validated_platform_protocol(monkeypatch, is_linux, expected):
+    monkeypatch.setattr(mod, "IS_LINUX", is_linux)
+    server = DummyServer()
+    server.data.update({"port": 7777, "queryport": 27015})
+
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -133,8 +199,9 @@ def test_get_start_command_missing_exe(tmp_path):
 
 def test_do_stop():
     server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
 
 
 def test_status():
@@ -206,4 +273,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

@@ -1,0 +1,5 @@
+mapname="<server name>"
+servername="<server name>"
+visible=true
+privateislands=false
+playercount=8

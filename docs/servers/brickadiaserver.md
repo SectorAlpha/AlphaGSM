@@ -2,6 +2,17 @@
 
 This guide covers the `brickadiaserver` module in AlphaGSM.
 
+## Status
+
+`brickadiaserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04
+Linux baseline.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Brickadia dedicated server app `3017590`. The current GitHub integration lane
+still validates both process and Docker runtime selection around that
+auth-gated prerequisite, while local runs remain process-backed by default
+unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +70,28 @@ alphagsm mybrickadi backup
 
 - Module name: `brickadiaserver`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create brickadiaserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+| `servername` | hostname, name | string | The advertised server name. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

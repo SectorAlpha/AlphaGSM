@@ -27,7 +27,14 @@ class DummyServer:
 
 
 def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(askaserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(askaserver, "IS_LINUX", True)
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(askaserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("aska")
     exe = tmp_path / "AskaServer.exe"
     exe.write_text("")
@@ -41,29 +48,24 @@ def test_askaserver_get_start_command_builds_expected_args(tmp_path, monkeypatch
             "displayname": "AlphaGSM aska",
             "maxplayers": 4,
             "password": "",
+            "authenticationtoken": "test-gslt",
         }
     )
 
     cmd, cwd = askaserver.get_start_command(server)
 
-    assert cmd == [
+    assert cmd[0] == "xvfb-run"
+    assert "WINEDLLOVERRIDES=" in cmd
+    assert "SDL_VIDEODRIVER=x11" in cmd
+    assert cmd[cmd.index("AskaServer.exe"):] == [
         "AskaServer.exe",
         "-batchmode",
         "-nographics",
-        "-logFile",
-        "./server.log",
-        "-Port",
-        "27015",
-        "-QueryPort",
-        "27016",
-        "-ServerName",
-        "aska",
-        "-DisplayName",
-        "AlphaGSM aska",
-        "-MaxPlayers",
-        "4",
+        "-propertiesPath",
+        "server properties.txt",
     ]
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_askaserver_runtime_requirements_use_wine_proton_family(tmp_path, monkeypatch):
@@ -91,6 +93,7 @@ def test_askaserver_runtime_requirements_use_wine_proton_family(tmp_path, monkey
             "displayname": "AlphaGSM aska",
             "maxplayers": 4,
             "password": "",
+            "authenticationtoken": "test-gslt",
         }
     )
 
@@ -104,11 +107,17 @@ def test_askaserver_runtime_requirements_use_wine_proton_family(tmp_path, monkey
         {"host": 27016, "container": 27016, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "AskaServer.exe"
+    assert spec["command"][0] == "./AskaServer.exe"
 
 
 def test_astroneerserver_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(astroneerserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(astroneerserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("astro")
     exe = tmp_path / "AstroServer.exe"
     exe.write_text("")
@@ -118,6 +127,32 @@ def test_astroneerserver_get_start_command_builds_expected_args(tmp_path, monkey
 
     assert cmd == ["AstroServer.exe"]
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
+
+
+def test_astroneerserver_runtime_metadata_enables_xvfb_for_docker(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        astroneerserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
+    server = DummyServer("astro")
+    exe = tmp_path / "AstroServer.exe"
+    exe.write_text("")
+    server.data.update({"dir": str(tmp_path) + "/", "exe_name": "AstroServer.exe", "port": 8777})
+
+    requirements = astroneerserver.get_runtime_requirements(server)
+    spec = astroneerserver.get_container_spec(server)
+
+    assert requirements["engine"] == "docker"
+    assert requirements["family"] == "wine-proton"
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["ALPHAGSM_XVFB_DISPLAY"] == ":99"
+    assert requirements["env"]["SDL_VIDEODRIVER"] == "x11"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    assert spec["env"]["LIBGL_ALWAYS_SOFTWARE"] == "1"
+    assert spec["command"][0] == "./AstroServer.exe"
 
 
 def test_atlasserver_get_start_command_builds_expected_args(tmp_path):
@@ -126,6 +161,10 @@ def test_atlasserver_get_start_command_builds_expected_args(tmp_path):
     exe_dir.mkdir(parents=True)
     exe = exe_dir / "ShooterGameServer"
     exe.write_text("")
+    shooter_dir = tmp_path / "ShooterGame"
+    (shooter_dir / "ServerGrid").mkdir(exist_ok=True)
+    (shooter_dir / "ServerGrid.json").write_text("{}", encoding="utf-8")
+    (shooter_dir / "ServerGrid.ServerOnly.json").write_text("{}", encoding="utf-8")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -143,12 +182,12 @@ def test_atlasserver_get_start_command_builds_expected_args(tmp_path):
     cmd, cwd = atlasserver.get_start_command(server)
 
     assert cmd == [
-        "./ShooterGame/Binaries/Linux/ShooterGameServer",
-        "Ocean?listen?SessionName=AlphaGSM atlas?Port=57555?QueryPort=57561?MaxPlayers=100?ServerAdminPassword=alphagsm",
+        "./ShooterGameServer",
+        "Ocean?listen?SessionName=AlphaGSM_atlas?Port=57555?QueryPort=57561?MaxPlayers=100?ServerAdminPassword=alphagsm",
         "-server",
         "-log",
     ]
-    assert cwd == server.data["dir"]
+    assert cwd == str(exe_dir)
 
 
 def test_more_dedicated_modules_update_downloads_and_optionally_restart(monkeypatch):

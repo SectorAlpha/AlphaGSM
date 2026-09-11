@@ -41,11 +41,11 @@ trap cleanup EXIT
 require_cmd "$PYTHON_BIN"
 require_cmd screen
 
-WORK_DIR="$(mktemp -d)"
+WORK_ROOT="$(resolve_work_root)"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" sevendaystodie-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/sevendaystodie-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-sevendaystodie.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-sevendayst-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
@@ -83,7 +83,11 @@ run_alphagsm "$SERVER_NAME" set port "$PORT"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_glob_ready "$INSTALL_DIR/output_log__*.txt" "$START_TIMEOUT_SECONDS" "INF StartGame done|StartGame done|GameSense|INF Net:"
+wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

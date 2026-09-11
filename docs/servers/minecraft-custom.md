@@ -2,6 +2,12 @@
 
 This guide covers the `minecraft.custom` module in AlphaGSM.
 
+`minecraft.custom` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around that user-supplied-jar
+prerequisite, while local runs remain process-backed by default unless you opt
+into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -44,27 +50,92 @@ alphagsm mycustom stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 25565)
 - the install directory
+
+`minecraft.custom` is supported in `ENABLED (BYO)` mode. AlphaGSM does not know which
+custom server binary you want by default, so `setup` only succeeds after you
+provide the jar yourself.
+
+Setup writes the managed `server.properties` values and, when `-l` / `--eula`
+is supplied, `eula.txt`. It does not start the jar; the first Java process is
+owned by the normal `start` lifecycle.
+
+Supported operator workflow:
+
+1. create the server
+2. choose the jar filename AlphaGSM should execute
+3. copy the real server jar into the install directory
+4. rerun `setup`
+5. start the server normally
+
+Example:
+
+```bash
+alphagsm mycustom create minecraft.custom
+alphagsm mycustom set exe_name paper-1.21.1.jar
+mkdir -p /srv/alphagsm/mycustom
+cp /path/to/paper-1.21.1.jar /srv/alphagsm/mycustom/
+alphagsm mycustom setup 25565 /srv/alphagsm/mycustom
+alphagsm mycustom start
+```
+
+If `setup` says `Can't find server jar (...)`, the fix is to place the jar at
+`<install_dir>/<exe_name>` or update `exe_name` and run `setup` again.
+
+## Resetting the World
+
+Stop the server, then run `alphagsm mymc reset-world` (or `wipe`). AlphaGSM
+lists the world data to delete and asks for confirmation. Add `-Y` to skip the
+prompt. Run `start` afterwards to generate a fresh world.
+
+See [world creation and reset](../world-management.md) for exactly which files
+are removed and the supported layouts.
 
 ## Useful Commands
 
 ```bash
 alphagsm mycustom update
 alphagsm mycustom backup
+alphagsm mycustom set gamemap CustomWorld
+alphagsm mycustom set servername "AlphaGSM Custom Server"
+alphagsm mycustom set exe_name paper-1.21.1.jar
 ```
 
 ## Notes
 
 - Module name: `minecraft.custom`
-- Default port: 27015
+- Default port: 25565
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create minecraft.custom`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `difficulty` | — | string | The world difficulty. Example: `easy`. |
+| `gamemode` | — | string | The default game mode. Example: `survival`. |
+| `map` | gamemap, level, world, startmap, worldname | string | The selected world or level name. Example: `world`. |
+| `maxplayers` | users | integer | The maximum number of players allowed on the server. Example: `20`. |
+| `port` | gameport | integer | The port the server listens on. Example: `25565`. |
+| `servername` | hostname, name | string | The server name shown in the client list. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
 ### Run File
 
 - **Executable**: `custom .jar (user-specified)`
-- **Location**: `<install_dir>/custom .jar (user-specified)`
+- **Location**: `<install_dir>/<exe_name>`
 - **Engine**: Java (Custom)
 
 ### Server Configuration
@@ -72,7 +143,8 @@ alphagsm mycustom backup
 - **Config file**: `server.properties`
 - **Key settings** (in `server.properties`):
   - `server-port` — Game port (default 25565)
-  - `motd` — Message of the day
+  - `level-name` — World name managed by `set gamemap`
+  - `motd` — Message of the day, managed by `set servername`
   - `max-players` — Maximum players
   - `level-seed` — World generation seed
   - `online-mode` — Mojang authentication

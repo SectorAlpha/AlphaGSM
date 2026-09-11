@@ -4,24 +4,40 @@ Provides query strategies:
 
 * :func:`a2s_info` — Source/Steam A2S_INFO UDP query.
 * :func:`quake_status` — Quake3/QFusion UDP getstatus query.
+* :func:`quakeworld_status` — QuakeWorld UDP status query.
+* :func:`quake2_status` — Quake II UDP status query.
+* :func:`ut3_status` — Unreal Tournament 3 / Unreal3 GameSpy4 UDP probe.
+* :func:`bedrock_info` — Minecraft Bedrock RakNet unconnected ping.
 * :func:`slp_info` — Minecraft Server List Ping.
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
+* :func:`soldat_info` — classic Soldat file-server status query over TCP.
+* :func:`source_rcon_info` — authenticated Source RCON ``ListPlayers`` query.
+* :func:`http_json` — HTTP JSON endpoint query.
 * :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
+* :func:`terraria_info` — framed Terraria connection handshake.
 
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
-``"ts3"``, ``"udp"``, or ``"tcp"``.  When that hook is absent the caller falls back to a
+``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``,
+``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"terraria"``,
+``"udp"``, or ``"tcp"``. When that hook is absent the caller falls back to a
 TCP ping on the main port.
 """
 
+# pylint: disable=too-many-lines
+
 import bz2
+import json
+import re
 import socket
 import struct
 import time
+import urllib.error
+import urllib.request
 
-__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "slp_info", "udp_ping", "tcp_ping",
-           "ts3_serverinfo"]
+__all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping", "terraria_info",
+           "ts3_serverinfo", "soldat_info", "source_rcon_info", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
 _A2S_PAYLOAD = b"\x54Source Engine Query\x00"
@@ -36,10 +52,223 @@ _A2S_RESPONSE_TYPE = 0x49
 # before the actual info, requiring the request to be re-sent with the
 # 4-byte challenge appended.
 _A2S_CHALLENGE_TYPE = 0x41
+_UT3_QUERY_REQUEST = b"\xfe\xfd\x09\x00\x00\x00\x00"
+_BEDROCK_UNCONNECTED_PING_ID = 0x01
+_BEDROCK_UNCONNECTED_PONG_ID = 0x1C
+_BEDROCK_MAGIC = bytes.fromhex("00ffff00fefefefefdfdfdfd12345678")
+_BEDROCK_CLIENT_GUID = 0x1337C0DE12345678
 
 
 class QueryError(OSError):
     """Raised when a query attempt fails or returns an unexpected result."""
+
+
+def soldat_info(host, port, timeout=5.0):
+    """Read classic Soldat's fixed gamestat file from its TCP file port.
+
+    Require the complete ENDFILES terminator plus player count and map fields.
+    Limit the entire exchange to one deadline and at most 64 KiB of response;
+    do not return player names or raw file contents.
+    """
+
+    deadline = time.monotonic() + timeout
+
+    def remaining_time():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise QueryError("Soldat query timed out")
+        return remaining
+
+    data = bytearray()
+    limit = 65536
+    try:
+        with socket.create_connection((host, int(port)), timeout=remaining_time()) as sock:
+            sock.settimeout(remaining_time())
+            sock.sendall(b"STARTFILES\r\nlogs/gamestat.txt\r\nENDFILES\r\n")
+            while not data.endswith(b"ENDFILES\r\n"):
+                if len(data) >= limit:
+                    raise QueryError("Soldat response exceeds 64 KiB limit")
+                sock.settimeout(remaining_time())
+                chunk = sock.recv(min(4096, limit - len(data)))
+                remaining_time()
+                if not chunk:
+                    raise QueryError("Soldat response ended before ENDFILES")
+                data.extend(chunk)
+                if len(data) > limit:
+                    raise QueryError("Soldat response exceeds 64 KiB limit")
+    except QueryError:
+        raise
+    except OSError as exc:
+        raise QueryError("Soldat query failed: " + str(exc)) from exc
+
+    # The file-transfer wrapper varies across classic versions. Validate the
+    # documented gamestat fields without assuming an additional opening header.
+    text = data.decode("utf-8", errors="replace")
+    players = re.search(r"(?m)^[ \t]*Players:[ \t]*([0-9]+)[ \t]*\r?$", text)
+    map_name = re.search(r"(?m)^[ \t]*Map:[ \t]*([^\r\n]+)", text)
+    if not players or not map_name or not map_name[1].strip():
+        raise QueryError("Soldat response is missing valid Players or Map fields")
+    try:
+        count = int(players[1])
+    except ValueError as exc:
+        raise QueryError("Soldat response has an invalid player count") from exc
+    result = {"players": count, "map": map_name[1].strip()}
+    gamemode = re.search(r"(?m)^[ \t]*Gamemode:[ \t]*([^\r\n]+)", text)
+    if gamemode and gamemode[1].strip():
+        result["gamemode"] = gamemode[1].strip()
+    return result
+
+
+def _source_rcon_info_once(host, port, password, timeout):
+    """Run one bounded Source RCON authentication and command exchange.
+
+    ARK: Survival Ascended exposes RCON rather than the Steam A2S endpoint used
+    by Survival Evolved.  The response body is intentionally reduced to a
+    count so player names and the configured password never reach manager
+    output or diagnostic JSON. ASA omits the standard multipart sentinel, so
+    fragments are collected until a short quiet window inside one deadline.
+    """
+
+    if not password:
+        raise QueryError("Source RCON password is not configured")
+
+    deadline = time.monotonic() + timeout
+
+    def remaining_time():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise QueryError("Source RCON query timed out")
+        return remaining
+
+    def packet(request_id, packet_type, body):
+        encoded = body.encode("utf-8")
+        payload = struct.pack("<ii", request_id, packet_type) + encoded + b"\x00\x00"
+        return struct.pack("<i", len(payload)) + payload
+
+    def recv_exact(sock, length):
+        chunks = bytearray()
+        while len(chunks) < length:
+            sock.settimeout(remaining_time())
+            chunk = sock.recv(length - len(chunks))
+            remaining_time()
+            if not chunk:
+                raise QueryError("Source RCON response ended unexpectedly")
+            chunks.extend(chunk)
+        return bytes(chunks)
+
+    def recv_packet(sock, initial_header=b""):
+        header = initial_header + recv_exact(sock, 4 - len(initial_header))
+        size = struct.unpack("<i", header)[0]
+        if size < 10 or size > 1024 * 1024:
+            raise QueryError("Source RCON returned an invalid packet length")
+        payload = recv_exact(sock, size)
+        if not payload.endswith(b"\x00\x00"):
+            raise QueryError("Source RCON returned malformed packet framing")
+        request_id, packet_type = struct.unpack("<ii", payload[:8])
+        body = payload[8:-2].decode("utf-8", errors="replace")
+        return request_id, packet_type, body, size
+
+    try:
+        with socket.create_connection(
+            (host, int(port)), timeout=remaining_time()
+        ) as sock:
+            sock.settimeout(remaining_time())
+            sock.sendall(packet(1, 3, password))
+            authenticated = False
+            for _ in range(4):
+                request_id, packet_type, _body, _size = recv_packet(sock)
+                if request_id == -1:
+                    raise QueryError("Source RCON authentication failed")
+                if request_id == 1 and packet_type == 2:
+                    authenticated = True
+                    break
+            if not authenticated:
+                raise QueryError("Source RCON did not confirm authentication")
+
+            sock.settimeout(remaining_time())
+            sock.sendall(packet(2, 2, "ListPlayers"))
+            response_parts = []
+            response_size = 0
+            for _ in range(4096):
+                if response_parts:
+                    sock.settimeout(min(0.05, remaining_time()))
+                    try:
+                        initial_header = sock.recv(4)
+                    except socket.timeout:
+                        break
+                    remaining_time()
+                    if not initial_header:
+                        break
+                else:
+                    initial_header = b""
+                request_id, packet_type, response_body, packet_size = recv_packet(
+                    sock, initial_header
+                )
+                if request_id != 2 or packet_type != 0:
+                    raise QueryError("Source RCON returned an unexpected command response")
+                response_size += packet_size
+                if response_size > 1024 * 1024:
+                    raise QueryError("Source RCON response exceeds 1 MiB limit")
+                response_parts.append(response_body)
+            else:
+                raise QueryError("Source RCON response has too many packets")
+            body = "".join(response_parts)
+    except QueryError:
+        raise
+    except OSError as exc:
+        raise QueryError("Source RCON query failed: " + str(exc)) from exc
+
+    if "no players connected" in body.lower():
+        return {"players": 0}
+    players = len(re.findall(r"(?m)^\s*\d+\.\s+", body))
+    return {"players": players if players else None}
+
+
+def source_rcon_info(
+    host,
+    port,
+    password,
+    timeout=5.0,
+    *,
+    retries=0,
+    retry_delay=0.0,
+):
+    """Authenticate to Source RCON and return a bounded player count.
+
+    Optional retries share the original total timeout. Only transient socket
+    failures and deadline expiry are retried; invalid credentials, malformed
+    framing, and unexpected protocol replies fail immediately.
+    """
+
+    deadline = time.monotonic() + timeout
+    last_error = None
+    for attempt in range(retries + 1):
+        attempts_left = retries + 1 - attempt
+        remaining = deadline - time.monotonic()
+        delay_budget = retry_delay * (attempts_left - 1)
+        attempt_timeout = (remaining - delay_budget) / attempts_left
+        if attempt_timeout <= 0:
+            break
+        try:
+            return _source_rcon_info_once(
+                host,
+                port,
+                password,
+                timeout=attempt_timeout,
+            )
+        except QueryError as exc:
+            transient = isinstance(exc.__cause__, OSError) or "timed out" in str(
+                exc
+            ).lower()
+            if not transient or attempt >= retries:
+                raise
+            last_error = exc
+            remaining = deadline - time.monotonic()
+            if remaining <= retry_delay:
+                break
+            time.sleep(retry_delay)
+
+    raise QueryError("Source RCON query timed out after retries") from last_error
 
 
 def _recv_a2s_packet(sock):
@@ -170,6 +399,101 @@ def parse_a2s_info(data):
         return None
 
 
+def bedrock_info(host, port, timeout=5.0):
+    """Send a Bedrock RakNet unconnected ping and return server metadata.
+
+    The returned dict contains at minimum: ``name`` (server MOTD line 1),
+    ``map`` (MOTD line 2 / level name), ``players_online`` (int),
+    ``players_max`` (int), ``version`` (str), and ``edition`` (str).
+
+    Raises :class:`QueryError` on socket failure or malformed pong payloads.
+    """
+
+    started = time.monotonic()
+    ping_time = int(time.time() * 1000) & 0xFFFFFFFFFFFFFFFF
+    request = (
+        bytes([_BEDROCK_UNCONNECTED_PING_ID])
+        + struct.pack(">Q", ping_time)
+        + _BEDROCK_MAGIC
+        + struct.pack(">Q", _BEDROCK_CLIENT_GUID)
+    )
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(request, (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("Bedrock query failed: " + str(exc)) from exc
+
+    if len(data) < 35:
+        raise QueryError("Unexpected Bedrock pong length")
+    if data[0] != _BEDROCK_UNCONNECTED_PONG_ID:
+        raise QueryError("Unexpected Bedrock pong packet id")
+    if data[17:33] != _BEDROCK_MAGIC:
+        raise QueryError("Unexpected Bedrock pong magic")
+
+    echoed_ping = struct.unpack_from(">Q", data, 1)[0]
+    server_guid = struct.unpack_from(">Q", data, 9)[0]
+    (payload_length,) = struct.unpack_from(">H", data, 33)
+    payload_start = 35
+    payload_end = payload_start + payload_length
+    if len(data) < payload_end:
+        raise QueryError("Truncated Bedrock pong payload")
+
+    try:
+        motd_fields = data[payload_start:payload_end].decode(
+            "utf-8", errors="replace"
+        ).split(";")
+    except Exception as exc:  # noqa: BLE001
+        raise QueryError("Failed to decode Bedrock pong payload: " + str(exc)) from exc
+
+    if motd_fields and motd_fields[-1] == "":
+        motd_fields.pop()
+    if len(motd_fields) < 6:
+        raise QueryError("Unexpected Bedrock pong structure")
+
+    def _field(index, default=""):
+        if index < len(motd_fields):
+            return motd_fields[index]
+        return default
+
+    def _int_field(index, label):
+        value = _field(index, "")
+        if value in (None, ""):
+            return None
+        try:
+            return int(value)
+        except ValueError as exc:
+            raise QueryError(
+                "Unexpected Bedrock pong {}: {!r}".format(label, value)
+            ) from exc
+
+    players_online = _int_field(4, "players_online")
+    players_max = _int_field(5, "players_max")
+    if players_online is None or players_max is None:
+        raise QueryError("Unexpected Bedrock pong player counts")
+
+    return {
+        "edition": _field(0),
+        "description": _field(1),
+        "name": _field(1),
+        "protocol_version": _int_field(2, "protocol_version"),
+        "version": _field(3),
+        "players_online": players_online,
+        "players_max": players_max,
+        "server_id": _field(6),
+        "server_guid": server_guid,
+        "map": _field(7),
+        "gamemode": _field(8),
+        "gamemode_numeric": _int_field(9, "gamemode_numeric"),
+        "port_v4": _int_field(10, "port_v4"),
+        "port_v6": _int_field(11, "port_v6"),
+        "echoed_ping_time": echoed_ping,
+        "latency_ms": round((time.monotonic() - started) * 1000.0, 1),
+    }
+
+
 def slp_info(host, port, timeout=5.0):
     """Send a Minecraft Server List Ping to *host*:*port* and return a dict.
 
@@ -260,6 +584,35 @@ def slp_info(host, port, timeout=5.0):
         raise QueryError("Unexpected SLP response structure: " + str(exc)) from exc
 
 
+def _format_http_host(host):
+    """Return *host* formatted for use in an HTTP URL."""
+
+    host = str(host)
+    if ":" in host and not host.startswith("["):
+        return "[{}]".format(host)
+    return host
+
+
+def http_json(host, port, path, timeout=5.0):
+    """Fetch JSON from an HTTP endpoint and return the decoded object."""
+
+    path = str(path)
+    if not path.startswith("/"):
+        path = "/" + path
+    url = "http://{}:{}{}".format(_format_http_host(host), int(port), path)
+    request = urllib.request.Request(url, headers={"User-Agent": "AlphaGSM"})
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            charset = response.headers.get_content_charset() or "utf-8"
+            payload = response.read().decode(charset, errors="replace")
+    except (OSError, ValueError, urllib.error.URLError) as exc:
+        raise QueryError("HTTP JSON query failed for {}: {}".format(url, exc)) from exc
+    try:
+        return json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise QueryError("HTTP JSON query failed for {}: invalid JSON response".format(url)) from exc
+
+
 def udp_ping(host, port, timeout=2.0, payload=b"\x00"):
     """Probe a UDP port and return latency in milliseconds when reachable.
 
@@ -302,8 +655,10 @@ def quake_status(host, port, timeout=2.0):
         raise QueryError("Quake status query failed: " + str(exc)) from exc
     if not data.startswith(b"\xff\xff\xff\xff"):
         raise QueryError("Unexpected Quake status response header")
-    # Response format: \xff\xff\xff\xffstatusResponse\n\cvars\n<player lines>
     text = data[4:].decode("utf-8", errors="replace")
+    if not text.startswith("statusResponse\n"):
+        raise QueryError("Unexpected Quake status response payload")
+    # Response format: \xff\xff\xff\xffstatusResponse\n\cvars\n<player lines>
     lines = text.split("\n")
     info = {"name": "", "map": "", "players": 0, "max_players": 0}
     if len(lines) >= 2:
@@ -337,6 +692,110 @@ def quake_status(host, port, timeout=2.0):
     return info
 
 
+def quakeworld_status(host, port, timeout=2.0):
+    """Send a QuakeWorld ``status`` UDP packet and parse the response."""
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(b"\xff\xff\xff\xffstatus\n", (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("QuakeWorld status query failed: " + str(exc)) from exc
+    if not data.startswith(b"\xff\xff\xff\xff"):
+        raise QueryError("Unexpected QuakeWorld status response header")
+    text = data[4:].decode("utf-8", errors="replace").rstrip("\x00")
+    lines = [line for line in text.split("\n") if line.strip()]
+    if not lines or not lines[0].startswith("n\\"):
+        raise QueryError("Unexpected QuakeWorld status response payload")
+
+    parts = lines[0][2:].split("\\")
+    cvars = dict(zip(parts[::2], parts[1::2]))
+    info = {
+        "name": cvars.get("hostname", ""),
+        "map": cvars.get("map", ""),
+        "players": sum(1 for line in lines[1:] if line.strip()),
+        "max_players": 0,
+    }
+
+    max_players = cvars.get("maxclients") or cvars.get("sv_maxclients")
+    if max_players not in (None, ""):
+        try:
+            info["max_players"] = int(max_players)
+        except ValueError:
+            pass
+    return info
+
+
+def quake2_status(host, port, timeout=2.0):
+    """Send a Quake II ``status`` UDP packet and parse the response."""
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(b"\xff\xff\xff\xffstatus\n", (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("Quake II status query failed: " + str(exc)) from exc
+    if not data.startswith(b"\xff\xff\xff\xff"):
+        raise QueryError("Unexpected Quake II status response header")
+    text = data[4:].decode("utf-8", errors="replace")
+    if not text.startswith("print\n"):
+        raise QueryError("Unexpected Quake II status response payload")
+    lines = text.split("\n")
+    info = {"name": "", "map": "", "players": 0, "max_players": 0}
+    if len(lines) >= 2:
+        parts = lines[1].strip("\\").split("\\")
+        cvars = dict(zip(parts[::2], parts[1::2]))
+
+        for key in ("sv_hostname", "hostname", "si_name"):
+            value = cvars.get(key, "")
+            if value:
+                info["name"] = value
+                break
+
+        for key in ("mapname", "map"):
+            value = cvars.get(key, "")
+            if value:
+                info["map"] = value
+                break
+
+        for key in ("sv_maxclients", "maxclients", "si_maxPlayers"):
+            value = cvars.get(key)
+            if value in (None, ""):
+                continue
+            try:
+                parsed = int(value)
+            except ValueError:
+                continue
+            if parsed > 0:
+                info["max_players"] = parsed
+                break
+        info["players"] = sum(1 for line in lines[2:] if line.strip())
+    return info
+
+
+def ut3_status(host, port, timeout=2.0):
+    """Send the Unreal3/GameSpy4 status probe used by UT3-style servers.
+
+    The UT3/GameSpy4 query surface is enough for AlphaGSM to prove the query
+    port is responding, but this helper intentionally does not attempt a full
+    parser yet. It returns the raw response bytes when the server answers with
+    a non-trivial packet.
+    """
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(_UT3_QUERY_REQUEST, (host, int(port)))
+            data, _ = sock.recvfrom(4096)
+    except OSError as exc:
+        raise QueryError("UT3 query failed: " + str(exc)) from exc
+    if not data or len(data) < 5:
+        raise QueryError("Unexpected UT3 response")
+    return data
+
+
 def tcp_ping(host, port, timeout=2.0):
     """Open a TCP connection to *host*:*port* and immediately close it.
 
@@ -350,6 +809,59 @@ def tcp_ping(host, port, timeout=2.0):
     except OSError as exc:
         raise QueryError("TCP ping failed: " + str(exc)) from exc
     return (time.monotonic() - t0) * 1000
+
+
+def terraria_info(host, port, timeout=2.0):
+    """Probe a Terraria listener with a complete connection handshake.
+
+    Terraria treats every accepted TCP socket as a game client. Opening and
+    immediately closing one can crash current vanilla servers in
+    ``DebugNetworkStream``. Send a correctly framed connection request with a
+    deliberately unsupported protocol version, then read the complete server
+    response before closing. A disconnect, slot assignment, or password
+    challenge proves that the listener speaks Terraria's native protocol.
+    """
+
+    version = b"Terraria0"
+    request = (
+        struct.pack("<HB", 4 + len(version), 1)
+        + bytes((len(version),))
+        + version
+    )
+
+    def recv_exact(sock, length):
+        data = bytearray()
+        while len(data) < length:
+            chunk = sock.recv(length - len(data))
+            if not chunk:
+                raise QueryError("Terraria response ended unexpectedly")
+            data.extend(chunk)
+        return bytes(data)
+
+    try:
+        with socket.create_connection((host, int(port)), timeout=timeout) as sock:
+            sock.settimeout(timeout)
+            sock.sendall(request)
+            header = recv_exact(sock, 3)
+            packet_length, response_type = struct.unpack("<HB", header)
+            if packet_length < 3 or packet_length > 65535:
+                raise QueryError("Terraria returned an invalid packet length")
+            recv_exact(sock, packet_length - 3)
+    except QueryError:
+        raise
+    except OSError as exc:
+        raise QueryError("Terraria query failed: " + str(exc)) from exc
+
+    responses = {
+        2: "disconnect",
+        3: "continue",
+        37: "password",
+    }
+    if response_type not in responses:
+        raise QueryError(
+            "Terraria returned unexpected response type {}".format(response_type)
+        )
+    return {"response": responses[response_type]}
 
 
 def _ts3_unescape(value):
@@ -385,6 +897,9 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
     TeamSpeak 3 server 3.13+ where anonymous ServerQuery connections no longer
     receive elevated permissions.
 
+    Commands are paced below the default ten-commands-per-three-seconds flood
+    limit, including the first command so consecutive CLI checks remain safe.
+
     Raises :class:`QueryError` on connection failure, unexpected banner, or
     malformed response.
     """
@@ -405,6 +920,9 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
                 return buf.decode("utf-8", errors="replace").strip()
 
     def _send(cmd):
+        # Docker queries need not originate from the exempt loopback address.
+        # Include login and quit, and leave headroom above the 300ms minimum.
+        time.sleep(0.35)
         conn.sendall((cmd + "\n").encode("utf-8"))
 
     def _read_until_ok():

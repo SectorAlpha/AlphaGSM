@@ -12,11 +12,14 @@ from .common import (
     configure_base,
     do_stop,
     get_vanilla_start_command,
+    get_wipe_paths,
     install_archive,
     message,
     resolve_terraria_download,
+    setting_schema,
     status,
 )
+from utils.gamemodules import common as gamemodule_common
 
 
 def configure(
@@ -56,23 +59,40 @@ def install(server):
     install_archive(server)
 
 
-def get_start_command(server):
+def get_start_command(server, *, autocreate=False):
     """Build the start command for Terraria vanilla."""
 
-    return get_vanilla_start_command(server)
+    return get_vanilla_start_command(server, autocreate=autocreate)
 
-def get_runtime_requirements(server):
-    return runtime_module.build_runtime_requirements(
-        server,
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+
+def get_query_address(server):
+    """Return the native Terraria handshake endpoint."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["port"]),
+        "terraria",
     )
 
-def get_container_spec(server):
+
+def get_info_address(server):
+    """Return the same native endpoint used by the query command."""
+
+    return get_query_address(server)
+
+
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+def get_container_spec(server, *, autocreate=False):
+    """Build the Docker command with the same explicit creation option."""
+
     return runtime_module.build_container_spec(
         server,
         family='steamcmd-linux',
-        get_start_command=get_start_command,
+        get_start_command=lambda current: get_start_command(current, autocreate=autocreate),
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
     )

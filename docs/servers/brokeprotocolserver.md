@@ -2,6 +2,15 @@
 
 This guide covers the `brokeprotocolserver` module in AlphaGSM.
 
+## Status
+
+`brokeprotocolserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+BROKE PROTOCOL app `696370`. The current dedicated-server hosting flow relies
+on the main game install tree rather than a separate anonymous Linux server
+tool.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +68,23 @@ alphagsm mybrokepro backup
 
 - Module name: `brokeprotocolserver`
 - Default port: 27777
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create brokeprotocolserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

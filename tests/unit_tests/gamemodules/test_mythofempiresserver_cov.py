@@ -5,42 +5,40 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.mythofempiresserver', None)
 _proton_mock = MagicMock()
-_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None: list(cmd)
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
     import gamemodules.mythofempiresserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=12888, dir=str(tmp_path))
     assert server.data['port'] == 12888
+
+
+def test_configure_moves_default_owned_query_port_with_game_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=12888, dir=str(tmp_path))
+
+    mod.configure(server, ask=False, port=14000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 14001
+
+
+def test_configure_preserves_explicit_query_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=12888, dir=str(tmp_path))
+    server.data["queryport"] = 15000
+
+    mod.configure(server, ask=False, port=14000, dir=str(tmp_path))
+
+    assert server.data["queryport"] == 15000
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -121,7 +119,36 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["queryport"] = 27015
     server.data["servername"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "MOE/Binaries/Win64/MOEServer.exe",
+        "-log",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-MaxPlayers=27015",
+        "-ServerName=test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_mythofempires_launch_formats():
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-ServerName={value}"
+
+
+def test_query_hooks_use_runtime_resolved_host(monkeypatch):
+    server = DummyServer()
+    server.data.update({"port": 12888, "queryport": 12889})
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.11",
+    )
+
+    expected = ("172.18.0.11", 12889, "a2s")
+    assert mod.get_query_address(server) == expected
+    assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -139,7 +166,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -217,4 +244,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

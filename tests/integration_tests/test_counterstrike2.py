@@ -1,6 +1,7 @@
 """Integration test for counterstrike2."""
 
 import json
+import os
 import subprocess
 
 import pytest
@@ -8,7 +9,8 @@ import pytest
 from conftest import (
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
+    default_runtime_backend,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -21,7 +23,7 @@ from conftest import (
     find_source_server_cfg,
     set_source_hibernation,
     assert_source_server_empty,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_a2s_ready,
     wait_for_udp_closed,
 )
@@ -69,7 +71,15 @@ def _run_setup_with_retry(env, server_name, port, install_dir):
 def test_counterstrike2_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "counterstrike2"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -77,12 +87,18 @@ def test_counterstrike2_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itcounterstrike2"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
     query_host = detect_query_host()
 
-    run_and_assert_ok(env, server_name, "create", "counterstrike2")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     _run_setup_with_retry(env, server_name, port, install_dir)
 
@@ -93,8 +109,9 @@ def test_counterstrike2_lifecycle(tmp_path):
 
     try:
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["SV_ActivateServer", "VAC secure mode"],
             START_TIMEOUT,
         )

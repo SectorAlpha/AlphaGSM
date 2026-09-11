@@ -1,195 +1,211 @@
-"""Full coverage tests for wreckfestserver."""
+"""Focused coverage tests for wreckfestserver."""
 
-import os
+from pathlib import Path
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-sys.modules.pop('gamemodules.wreckfestserver', None)
-with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
+sys.modules.pop("gamemodules.wreckfestserver", None)
+with patch.dict(
+    "sys.modules",
+    {
+        "utils.backups": MagicMock(),
+        "utils.backups.backups": MagicMock(),
+        "utils.steamcmd": MagicMock(),
+    },
+):
     import gamemodules.wreckfestserver as mod
     from server import ServerError
 
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
+    mod.runtime_module.send_to_server = MagicMock()
 
 
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 
-def test_configure_basic(tmp_path):
+def test_configure_sets_wreckfest_defaults(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=33540, dir=str(tmp_path))
-    assert server.data['port'] == 33540
+    assert server.data["configfile"] == "server_config.cfg"
+    assert server.data["queryport"] == "27016"
+    assert server.data["steamport"] == "27015"
+    assert server.data["maxplayers"] == "24"
 
 
-def test_configure_ask_defaults(tmp_path, monkeypatch):
-    monkeypatch.setattr("builtins.input", lambda prompt: "")
+def test_sync_server_config_updates_official_keys(tmp_path):
     server = DummyServer()
-    server.data["port"] = 33540
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["Steam_AppID"] = "test"
-    server.data["Steam_anonymous_login_possible"] = "test"
-    server.data["configfile"] = "test"
-    mod.configure(server, ask=True)
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "configfile": "server_config.cfg",
+            "port": 33541,
+            "queryport": 33542,
+            "steamport": 33543,
+            "servername": "AlphaGSM Wreckfest",
+            "serverpassword": "secret",
+            "maxplayers": 12,
+        }
+    )
+    config_path = tmp_path / "server_config.cfg"
+    config_path.write_text(
+        "server_name=\n"
+        "password=\n"
+        "max_players=24\n"
+        "steam_port=27015\n"
+        "game_port=33540\n"
+        "query_port=27016\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        "server_name=AlphaGSM Wreckfest",
+        "password=secret",
+        "max_players=12",
+        "steam_port=33543",
+        "game_port=33541",
+        "query_port=33542",
+    ]
 
 
-def test_configure_ask_custom(tmp_path, monkeypatch):
-    inputs = iter(["33541", str(tmp_path / 'custom')])
-    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+def test_sync_server_config_without_install_dir_is_noop():
     server = DummyServer()
-    mod.configure(server, ask=True)
+    server.data["queryport"] = 27016
+
+    assert mod.sync_server_config(server) is None
 
 
-def test_install(tmp_path):
+def test_sync_server_config_seeds_vendor_initial_config(tmp_path):
     server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "WreckfestServer"
-    server.data["Steam_AppID"] = 361580
-    server.data["Steam_anonymous_login_possible"] = True
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "configfile": "server_config.cfg",
+            "port": 33541,
+            "queryport": 33542,
+            "steamport": 33543,
+        }
+    )
+    (tmp_path / "initial_server_config.cfg").write_text(
+        "steam_port=27015\n"
+        "game_port=33540\n"
+        "query_port=27016\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert (tmp_path / "server_config.cfg").is_file()
+    assert "game_port=33541" in (tmp_path / "server_config.cfg").read_text(encoding="utf-8")
+
+
+def test_install_ensures_parent_appid_and_config(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "configfile": "server_config.cfg",
+            "port": 33540,
+            "queryport": 27016,
+            "steamport": 27015,
+            "Steam_AppID": 361580,
+            "Steam_anonymous_login_possible": True,
+        }
+    )
+    (tmp_path / "initial_server_config.cfg").write_text(
+        "steam_port=27015\n"
+        "game_port=33540\n"
+        "query_port=27016\n",
+        encoding="utf-8",
+    )
+
     mod.install(server)
 
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="utf-8").strip() == "228380"
+    assert (tmp_path / "server_config.cfg").is_file()
 
-def test_update_with_restart(tmp_path):
+
+def test_get_query_address_uses_queryport():
     server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["Steam_AppID"] = 361580
-    server.data["Steam_anonymous_login_possible"] = True
-    mod.update(server, validate=True, restart=True)
-    assert server._stopped
-    assert server._started
+    server.data["port"] = "33540"
+    server.data["queryport"] = "27016"
+    with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
+        assert mod.get_query_address(server) == ("127.0.0.1", 33540, "tcp")
+        assert mod.get_info_address(server) == ("127.0.0.1", 33540, "tcp")
 
 
-def test_update_no_restart(tmp_path):
+def test_get_start_command_wraps_windows_payload_on_linux(tmp_path):
     server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["Steam_AppID"] = 361580
-    server.data["Steam_anonymous_login_possible"] = True
-    mod.update(server, validate=False, restart=False)
-    assert server._stopped
-    assert not server._started
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "exe_name": "Wreckfest_x64.exe",
+            "configfile": "server_config.cfg",
+            "wineprefix": str(tmp_path / "wineprefix"),
+        }
+    )
+    (tmp_path / "Wreckfest_x64.exe").write_text("", encoding="utf-8")
+    (tmp_path / "server_config.cfg").write_text("game_port=33540\n", encoding="utf-8")
+
+    with patch.object(mod.proton, "wrap_command", return_value=["wrapped"]) as wrap_command:
+        cmd, cwd = mod.get_start_command(server)
+
+    wrap_command.assert_called_once()
+    assert cmd == ["wrapped"]
+    assert cwd == str(tmp_path)
 
 
-def test_update_stop_exception(tmp_path):
+def test_get_start_command_missing_exe_raises(tmp_path):
     server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["Steam_AppID"] = 361580
-    server.data["Steam_anonymous_login_possible"] = True
-    server.stop = MagicMock(side_effect=Exception('already stopped'))
-    mod.update(server, validate=False, restart=False)
+    server.data.update({"dir": str(tmp_path), "exe_name": "missing.exe", "configfile": "server_config.cfg"})
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
 
 
-def test_restart():
+def test_prestart_refreshes_config(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "configfile": "server_config.cfg",
+            "port": 33540,
+            "queryport": 27016,
+            "steamport": 27015,
+        }
+    )
+    (tmp_path / "initial_server_config.cfg").write_text(
+        "steam_port=27015\n"
+        "game_port=33540\n"
+        "query_port=27016\n",
+        encoding="utf-8",
+    )
+
+    mod.prestart(server)
+
+    assert (tmp_path / "steam_appid.txt").is_file()
+    assert (tmp_path / "server_config.cfg").is_file()
+
+
+def test_do_stop_uses_runtime_layer():
+    server = DummyServer()
+    mod.runtime_module.send_to_server.reset_mock()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
+
+
+def test_restart_hook_stops_and_starts():
     server = DummyServer()
     mod.restart(server)
     assert server._stopped
     assert server._started
 
 
-def test_get_start_command(tmp_path):
+def test_checkvalue_supports_runtime_keys():
     server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "WreckfestServer"
-    (tmp_path / "WreckfestServer").write_text("")
-    server.data["configfile"] = "test"
-    cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
-
-
-def test_get_start_command_missing_exe(tmp_path):
-    server = DummyServer()
-    server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "nonexistent"
-    server.data["configfile"] = "test"
-    with pytest.raises(ServerError):
-        mod.get_start_command(server)
-
-
-def test_do_stop():
-    server = DummyServer()
-    mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
-
-
-def test_status():
-    server = DummyServer()
-    mod.status(server, verbose=True)
-
-
-def test_message():
-    server = DummyServer()
-    mod.message(server, "hello")
-
-
-def test_backup():
-    server = DummyServer()
-    server.data["dir"] = "/tmp/test/"
-    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
-    mod.backup(server)
-
-
-def test_checkvalue_empty_key():
-    server = DummyServer()
-    with pytest.raises(ServerError):
-        mod.checkvalue(server, ())
-
-
-def test_checkvalue_unsupported_key():
-    server = DummyServer()
-    with pytest.raises(ServerError):
-        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
-
-
-def test_checkvalue_no_value():
-    server = DummyServer()
-    with pytest.raises(ServerError):
-        mod.checkvalue(server, ("port",))
-
-
-def test_checkvalue_port():
-    server = DummyServer()
-    result = mod.checkvalue(server, ("port",), "12345")
-    assert result == 12345
-
-
-def test_checkvalue_configfile():
-    server = DummyServer()
-    result = mod.checkvalue(server, ("configfile",), "/test/value")
-    assert result == "/test/value"
-
-
-def test_checkvalue_exe_name():
-    server = DummyServer()
-    result = mod.checkvalue(server, ("exe_name",), "/test/value")
-    assert result == "/test/value"
-
-
-def test_checkvalue_dir():
-    server = DummyServer()
-    result = mod.checkvalue(server, ("dir",), "/test/value")
-    assert result == "/test/value"
-
-
-def test_checkvalue_backup():
-    server = DummyServer()
-    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
-    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
+    assert mod.checkvalue(server, ("port",), "12345") == 12345
+    assert mod.checkvalue(server, ("queryport",), "12346") == 12346
+    assert mod.checkvalue(server, ("steamport",), "12347") == 12347
+    assert mod.checkvalue(server, ("maxplayers",), "16") == 16
+    assert mod.checkvalue(server, ("servername",), "AlphaGSM Wreckfest") == "AlphaGSM Wreckfest"

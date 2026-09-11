@@ -2,9 +2,9 @@
 
 from .bungeecord import *
 from . import bungeecord as proxy_base
-from .jardownload import install_downloaded_jar
 from .papermc import resolve_download
 from utils.cmdparse.cmdspec import CmdSpec, OptSpec
+from utils.gamemodules.minecraft.jardownload import install_downloaded_jar
 
 
 import server.runtime as runtime_module
@@ -49,17 +49,26 @@ def configure(
 
     if url is None:
         resolved_version, url = resolve_download("waterfall", version=version)
-        server.data["version"] = resolved_version
-    else:
-        server.data["version"] = version
-    server.data["url"] = url
-    server.data["download_name"] = download_name
-    return proxy_base.configure(server, ask, port=port, dir=dir, exe_name=exe_name)
+        version = resolved_version
+    return proxy_base.configure(
+        server,
+        ask,
+        port=port,
+        dir=dir,
+        version=version,
+        url=url,
+        exe_name=exe_name,
+        download_name=download_name,
+        mod_cache_dirname="minecraft-waterfall",
+        mod_label="Waterfall",
+    )
 
 
 def install(server, *, eula=False):
     """Download or validate the configured Waterfall proxy jar."""
 
+    server.data.setdefault("mod_cache_dirname", "minecraft-waterfall")
+    server.data.setdefault("mod_label", "Waterfall")
     install_downloaded_jar(server)
     proxy_base.install(server)
 
@@ -91,3 +100,14 @@ def get_container_spec(server):
         stdin_open=True,
         tty=True,
     )
+
+
+def status(server, verbose):
+    """Report Waterfall proxy status information."""
+    try:
+        if verbose:
+            server.info(as_json=False, detailed=False)
+        else:
+            server.query()
+    except Exception as exc:
+        print("Status check failed: " + str(exc))

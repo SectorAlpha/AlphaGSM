@@ -1,44 +1,24 @@
 """Full coverage tests for rust."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.rust', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.rust as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=28015, dir=str(tmp_path))
     assert server.data['port'] == 28015
+    assert server.data["queryport"] == "28017"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -51,6 +31,7 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
     server.data["hostname"] = "test"
     server.data["level"] = "test"
     server.data["maxplayers"] = 27015
+    server.data["queryport"] = 27017
     server.data["rconport"] = 27015
     server.data["seed"] = "test"
     server.data["worldsize"] = "test"
@@ -118,11 +99,14 @@ def test_get_start_command(tmp_path):
     server.data["level"] = "test"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
+    server.data["queryport"] = 27017
     server.data["rconport"] = 27015
     server.data["seed"] = "test"
     server.data["worldsize"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert "+server.queryport" in cmd
+    assert cmd[cmd.index("+server.queryport") + 1] == "27017"
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -133,6 +117,7 @@ def test_get_start_command_missing_exe(tmp_path):
     server.data["level"] = "test"
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
+    server.data["queryport"] = 27017
     server.data["rconport"] = 27015
     server.data["seed"] = "test"
     server.data["worldsize"] = "test"
@@ -143,7 +128,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -211,6 +196,36 @@ def test_checkvalue_rconport():
     assert result == 12345
 
 
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12345")
+    assert result == 12345
+
+
+def test_query_info_and_runtime_ports_use_explicit_queryport(monkeypatch):
+    server = DummyServer("rust")
+    server.data.update(
+        {
+            "port": 28015,
+            "rconport": 28016,
+            "queryport": 28017,
+        }
+    )
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        lambda current: "10.0.0.7",
+    )
+
+    assert mod.get_query_address(server) == ("10.0.0.7", 28017, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.7", 28017, "a2s")
+    assert mod.get_runtime_requirements(server)["ports"] == [
+        {"host": 28015, "container": 28015, "protocol": "udp"},
+        {"host": 28017, "container": 28017, "protocol": "udp"},
+        {"host": 28016, "container": 28016, "protocol": "tcp"},
+    ]
+
+
 def test_checkvalue_hostname():
     server = DummyServer()
     result = mod.checkvalue(server, ("hostname",), "/test/value")
@@ -239,4 +254,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

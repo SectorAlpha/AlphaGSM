@@ -6,8 +6,6 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$_SCRIPT_DIR/../.." && pwd))"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
-STATUS_HELPER="$REPO_ROOT/tests/smoke_tests/source_status.py"
-
 START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itahl2server}"
@@ -46,8 +44,6 @@ WORK_DIR="$(mktemp -d)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/ahl2server-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-ahl2server.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-ahl2server-IT#$SERVER_NAME.log"
-
 mkdir -p "$HOME_DIR"
 
 PORT="$(pick_free_port)" 
@@ -78,8 +74,11 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'SV_ActivateServer|Server is hibernating|ready'
+wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

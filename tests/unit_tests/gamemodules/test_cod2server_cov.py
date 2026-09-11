@@ -5,32 +5,13 @@ import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.cod2server', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.cod2server as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -63,7 +44,33 @@ def test_install(tmp_path):
     server.data["exe_name"] = "cod2_lnxded"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
+
+    def fake_install_archive(_server, _compression):
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "localized_english_iw00.iwd").write_text("", encoding="utf-8")
+
+    mod.install_archive.side_effect = fake_install_archive
     mod.install(server)
+    mod.install_archive.side_effect = None
+
+
+def test_install_rejects_missing_localized_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "cod2_lnxded"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+
+    def fake_install_archive(_server, _compression):
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "iw_15.iwd").write_text("", encoding="utf-8")
+
+    mod.install_archive.side_effect = fake_install_archive
+    with pytest.raises(ServerError, match="localized base-game assets"):
+        mod.install(server)
+    mod.install_archive.side_effect = None
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
@@ -75,7 +82,56 @@ def test_get_start_command(tmp_path):
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./cod2_lnxded",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+map",
+        "test",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_cod2_launch_tokens():
+    assert mod.setting_schema["fs_game"].canonical_key == "moddir"
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+
+
+def test_sync_server_config_updates_mod_server_cfg(tmp_path):
+    server = DummyServer("cod2")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "moddir": "main",
+            "hostname": "AlphaGSM cod2",
+            "startmap": "mp_dawnville",
+        }
+    )
+    cfg_dir = tmp_path / "main"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text(
+        'hostname="Old Name"\nmoddir=uo\nstartmap=mp_toujane\nset g_allowvote 0\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert cfg_path.read_text(encoding="utf-8") == (
+        'hostname="AlphaGSM cod2"\n'
+        'moddir=main\n'
+        'startmap=mp_dawnville\n'
+        'set g_allowvote 0\n'
+    )
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -91,7 +147,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 def test_status():
     server = DummyServer()
@@ -166,4 +222,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

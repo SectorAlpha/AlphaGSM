@@ -62,6 +62,15 @@ def long_running_process(queue):
     queue.put("done")
 
 
+def process_until_complete(multi, timeout=15):
+    """Drive a multiplexer until it has reaped every registered process."""
+
+    deadline = time() + timeout
+    while multi.procs:
+        assert time() < deadline, "Multiplexer did not finish within the timeout."
+        multi.process(0.5)
+
+
 def test_multiplexer(mock_selector):
     # Mock process with stdout and stderr streams
     proc = MockProc(stdout=MockStream(b"output"), stderr=MockStream(b"error"))
@@ -247,23 +256,13 @@ def test_multiplexer_process_interruption(setup_multiplexer_addproc):
 
     with patch.object(StreamData, 'consumelines', mock_consumelines):
         try:
-            while True:
-                capture_multi.process(0.5)
-
-                # Stop processing if all streams have finished
-                if not capture_multi.streams:
-                    break
+            process_until_complete(capture_multi)
 
         except OutputInteruptedException as ex:
             print("Process was interrupted.")
 
     # Ensure the subprocess has terminated
-    if sp_proc.poll() is None:
-        sp_proc.terminate()
-        try:
-            sp_proc.wait(timeout=5)
-        except Exception:
-            pass
+    assert not capture_multi.procs
     assert sp_proc.poll() is not None, "The subprocess should have been terminated."
 
     # Verify the captured output contains at least one "Iteration" message
@@ -304,17 +303,13 @@ def test_multiplexer_run_method(setup_multiplexer):
 
     with patch.object(StreamData, 'consumelines', mock_consumelines):
         try:
-            while True:
-                multi.process(0.5)
-
-                # Stop processing if all streams have finished
-                if not multi.streams:
-                    break
+            process_until_complete(multi)
 
         except OutputInteruptedException as ex:
             print("Process was interrupted.")
 
     # Ensure the subprocess has terminated
+    assert not multi.procs
     assert sp_proc.poll() is not None, "The subprocess should have been terminated."
 
     # Verify the captured output contains at least one "Iteration" message

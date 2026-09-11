@@ -2,6 +2,11 @@
 
 This guide covers the `necserver` module in AlphaGSM.
 
+`necserver` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane
+validates both process and Docker runtimes for this module, while local runs
+remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -22,10 +27,10 @@ Run setup:
 alphagsm mynecserve setup
 ```
 
-Start it:
+Create its first world and start it:
 
 ```bash
-alphagsm mynecserve start
+alphagsm mynecserve start --autocreate
 ```
 
 Check it:
@@ -47,6 +52,23 @@ Setup configures:
 - the game port (default 14159)
 - the install directory
 - SteamCMD downloads the server files
+
+## World Selection and Reset
+
+`start --autocreate` creates the configured world only when it is missing.
+If the world already exists, the option does nothing and startup behaves like
+plain `start`. Use `alphagsm mynecserve connect` to answer the native console prompts.
+
+To start over, stop the server and run `alphagsm mynecserve reset-world`.
+It lists the world data to delete and asks for confirmation; `-Y` bypasses
+that prompt. `wipe` is an alias for the same operation.
+
+See [world creation and reset](../world-management.md) for settings, supported
+paths, and the full lifecycle.
+
+New installations use the install directory as `datadir`, persisted in Docker.
+For older installations, point `datadir` at the existing Necesse data directory
+before using `--autocreate` or `reset-world`; changing it does not move saves.
 
 ## Useful Commands
 

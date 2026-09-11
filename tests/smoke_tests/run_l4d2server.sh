@@ -1,8 +1,4 @@
-#\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for l4d2server is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+#!/usr/bin/env bash
 
 set -Eeuo pipefail
 set -x
@@ -73,6 +69,10 @@ datapath = $HOME_DIR/conf
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-l4d2server-IT#
 keeplogs = 1
+
+# Keep the smoke server awake for real A2S query and info checks.
+[gamemodules.l4d2server.servercfg]
+sv_hibernate_when_empty = 0
 EOF
 
 echo "Using install dir: $INSTALL_DIR"
@@ -83,7 +83,14 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS" 'SV_ActivateServer|Server is hibernating|ready'
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

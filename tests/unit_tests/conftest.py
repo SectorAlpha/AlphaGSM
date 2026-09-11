@@ -5,6 +5,7 @@ works without needing the parent ``tests/conftest.py`` to be loaded first.
 """
 
 import os
+import re
 import sys
 import urllib.request
 from pathlib import Path
@@ -19,6 +20,33 @@ if _src not in sys.path:
     sys.path.insert(0, _src)
 
 os.environ["ALPHAGSM_CONFIG_LOCATION"] = str(_REPO_ROOT / "tests" / "alphagsm-test.conf")
+
+_GAMEMODULE_POP_RE = re.compile(r"sys\.modules\.pop\('gamemodules\.([^']+)'")
+
+
+def _clear_cached_package_main_modules(test_file):
+    """Reset cached package-backed module impls before importing a test module.
+
+    Many generated coverage tests still clear only ``gamemodules.<name>``.
+    After the package-backed migration, the real implementation lives in
+    ``gamemodules.<name>.main`` and can stay cached across test-module imports,
+    bypassing the import-time mocks those tests rely on.
+    """
+
+    try:
+        source = Path(test_file).read_text(encoding="utf-8")
+    except OSError:
+        return
+
+    for module_name in set(_GAMEMODULE_POP_RE.findall(source)):
+        sys.modules.pop("gamemodules.%s.main" % (module_name,), None)
+
+
+def pytest_pycollect_makemodule(module_path, parent):
+    """Clear cached package submodules before pytest imports a test module."""
+
+    _clear_cached_package_main_modules(module_path)
+    return None
 
 
 def _blocked(name):

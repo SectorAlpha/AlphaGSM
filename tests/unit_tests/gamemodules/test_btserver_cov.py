@@ -2,38 +2,18 @@
 
 import os
 import sys
-from unittest.mock import patch, MagicMock
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.btserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.btserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
-
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -75,7 +55,11 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1026340
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=True, restart=True)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 1026340, True, validate=True
+    )
     assert server._stopped
     assert server._started
 
@@ -85,7 +69,11 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 1026340
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=False, restart=False)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 1026340, True, validate=False
+    )
     assert server._stopped
     assert not server._started
 
@@ -111,11 +99,41 @@ def test_get_start_command(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "DedicatedServer"
     (tmp_path / "DedicatedServer").write_text("")
-    server.data["gamemode"] = "test"
+    server.data["gamemode"] = "Sandbox"
     server.data["port"] = 27015
-    server.data["queryport"] = 27015
+    server.data["queryport"] = 27016
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == [
+        "./DedicatedServer",
+        "-name",
+        "testserver",
+        "-port",
+        "27015",
+        "-queryport",
+        "27016",
+        "-gamemode",
+        "Sandbox",
+    ]
+    assert cwd == str(tmp_path)
+
+
+def test_get_start_command_prefers_symlink_target_within_install_tree(tmp_path):
+    server = DummyServer()
+    nested_dir = tmp_path / "serverfiles"
+    nested_dir.mkdir()
+    target = nested_dir / "DedicatedServer"
+    target.write_text("", encoding="utf-8")
+    os.symlink(target, tmp_path / "DedicatedServer")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "DedicatedServer"
+    server.data["gamemode"] = "Sandbox"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "./DedicatedServer"
+    assert cwd == str(nested_dir)
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -132,7 +150,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -143,6 +161,89 @@ def test_status():
 def test_message():
     server = DummyServer()
     mod.message(server, "hello")
+
+
+def test_get_query_and_info_address_use_runtime_resolved_host():
+    server = DummyServer()
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    with patch.object(
+        mod.runtime_module,
+        "resolve_query_host",
+        side_effect=["172.18.0.7", "172.18.0.7"],
+    ) as resolve_query_host:
+        assert mod.get_query_address(server) == ("172.18.0.7", 27015, "udp")
+        assert mod.get_info_address(server) == ("172.18.0.7", 27015, "udp")
+
+    assert resolve_query_host.call_args_list == [((server,),), ((server,),)]
+
+
+def test_get_runtime_requirements_adds_steam_sdk_mounts(monkeypatch, tmp_path):
+    steamcmd_root = tmp_path / "Steam"
+    linux64 = steamcmd_root / "linux64"
+    linux32 = steamcmd_root / "linux32"
+    linux64.mkdir(parents=True)
+    linux32.mkdir(parents=True)
+    (linux64 / "steamclient.so").write_text("64")
+    (linux32 / "steamclient.so").write_text("32")
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "steamcmd_module",
+        SimpleNamespace(STEAMCMD_DIR=str(steamcmd_root)),
+    )
+
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path / "server") + "/"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27016
+
+    requirements = mod.get_runtime_requirements(server)
+    mounts = requirements["mounts"]
+
+    assert mounts[0] == {"source": server.data["dir"], "target": "/srv/server", "mode": "rw"}
+    assert [mount["target"] for mount in mounts[1:]] == [
+        "/root/.steam/sdk64",
+        "/root/.steam/steamcmd/linux64",
+        "/root/.steam/sdk32",
+        "/root/.steam/steamcmd/linux32",
+    ]
+    assert all(mount["mode"] == "ro" for mount in mounts[1:])
+    assert [os.path.basename(mount["source"]) for mount in mounts[1:]] == [
+        "linux64",
+        "linux64",
+        "linux32",
+        "linux32",
+    ]
+
+
+def test_get_container_spec_publishes_game_and_a2s_ports(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "steamcmd_module",
+        SimpleNamespace(STEAMCMD_DIR=str(tmp_path / "Steam")),
+    )
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "DedicatedServer",
+            "gamemode": "Sandbox",
+            "port": 27015,
+            "queryport": 27016,
+        }
+    )
+    (tmp_path / "DedicatedServer").write_text("", encoding="utf-8")
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server"
+    assert {(port["host"], port["container"], port["protocol"]) for port in spec["ports"]} == {
+        (27015, 27015, "udp"),
+        (27015, 27015, "tcp"),
+        (27016, 27016, "udp"),
+        (27016, 27016, "tcp"),
+    }
 
 
 def test_backup():
@@ -210,4 +311,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

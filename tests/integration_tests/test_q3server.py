@@ -1,13 +1,13 @@
-"""Integration test for q3server.
+"""Integration test for q3server."""
 
-Disabled: ioquake3 has no GitHub releases; download 404
-"""
+import os
 
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_tcp_port,
     write_config,
     alphagsm_env,
@@ -15,15 +15,12 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_quake_ready,
     wait_for_tcp_closed,
 )
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skip(reason="ioquake3 has no GitHub releases; download 404"),
-]
+pytestmark = [pytest.mark.integration]
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
@@ -31,7 +28,15 @@ STOP_TIMEOUT = 90
 
 def test_q3server_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "q3server"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -39,17 +44,28 @@ def test_q3server_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itq3server"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "q3server")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result)
+
+    if not (install_dir / "baseq3" / "pak0.pk3").is_file():
+        pytest.skip(
+            "Quake 3 requires licensed baseq3/pak0.pk3 content; CI only downloads the public ioquake3 engine build"
+        )
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -57,8 +73,9 @@ def test_q3server_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["ready", "started", "listening", "Done"],
             START_TIMEOUT,
         )

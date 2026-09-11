@@ -49,7 +49,12 @@ def test_citadel_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_battlebit_get_start_command_builds_expected_args(tmp_path):
+def test_battlebit_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        battlebitserver.proton,
+        "wrap_command",
+        lambda cmd, wineprefix=None, prefer_proton=False: list(cmd),
+    )
     server = DummyServer("bb")
     exe = tmp_path / "BattleBitDedicatedServer"
     exe.write_text("")
@@ -60,18 +65,19 @@ def test_battlebit_get_start_command_builds_expected_args(tmp_path):
             "port": 7787,
             "queryport": 27015,
             "maxplayers": 127,
+            "apiendpoint": "127.0.0.1:29294",
         }
     )
 
     cmd, cwd = battlebitserver.get_start_command(server)
 
-    assert cmd[0] == "./BattleBitDedicatedServer"
-    assert "-queryport" in cmd
+    assert cmd[0] == "BattleBitDedicatedServer"
+    assert "-ApiEndPoint=127.0.0.1:29294" in cmd
     assert cwd == server.data["dir"]
 
 
 def test_staxel_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(staxelserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(staxelserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("staxel")
     exe_dir = tmp_path / "bin"
     exe_dir.mkdir()

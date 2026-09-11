@@ -1,22 +1,24 @@
 """Integration test for stnserver."""
 
+import os
+import sys
+
 import pytest
 
 from conftest import (
+    alphagsm_env,
+    default_runtime_backend,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
+    pick_free_tcp_port_group,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
-    pick_free_tcp_port,
-    write_config,
-    alphagsm_env,
+    require_command_for_runtime,
     run_and_assert_ok,
-    run_alphagsm,
-    log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_a2s_ready,
-    wait_for_tcp_closed,
+    wait_for_info_protocol,
     wait_for_udp_closed,
+    write_config,
 )
 from gamemodules.stnserver import steam_app_id
 
@@ -29,7 +31,15 @@ STOP_TIMEOUT = 90
 def test_stnserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "stnserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -37,12 +47,18 @@ def test_stnserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itstnserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
-    port = pick_free_tcp_port()
+    port = pick_free_tcp_port_group(2)
 
     # create
-    run_and_assert_ok(env, server_name, "create", "stnserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -53,18 +69,10 @@ def test_stnserver_lifecycle(tmp_path):
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["ready", "started", "listening", "Done"],
-            START_TIMEOUT,
-        )
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=port + 1)
 
         # status
         run_and_assert_ok(env, server_name, "status")
-
-        wait_for_a2s_ready("127.0.0.1", port, 300, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -90,7 +98,11 @@ def test_stnserver_lifecycle(tmp_path):
         )
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
+        )
+
+    assert_alphagsm_result_ok(stop_result)
 
     # verify stopped
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed("127.0.0.1", port + 1, STOP_TIMEOUT)

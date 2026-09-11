@@ -1,6 +1,8 @@
 import importlib
 from types import SimpleNamespace
 
+import pytest
+
 
 class FakeSection(dict):
     def __init__(self, values=None, sections=None):
@@ -37,6 +39,59 @@ def test_source_module_configure_and_start_command(tmp_path):
     assert "de_dust2" in cmd
     assert server.data["port"] == 28015
     assert server.data["backupfiles"] == ["cstrike", "cstrike/cfg/server.cfg"]
+
+
+def test_source_module_start_command_prefers_nested_resolved_launcher(tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    module.configure(server, False, 28015, str(tmp_path / "css"))
+    install_dir = tmp_path / "css"
+    nested_dir = install_dir / "bin"
+    nested_dir.mkdir(parents=True)
+    (nested_dir / "srcds_run").write_text("", encoding="utf-8")
+    (install_dir / "srcds_run").symlink_to(nested_dir / "srcds_run")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
+    assert cwd == str(nested_dir)
+
+
+def test_source_module_start_command_keeps_wrapper_over_nested_binary(tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    server = SimpleNamespace(name="cssalpha", data={})
+
+    module.configure(server, False, 28015, str(tmp_path / "css"))
+    install_dir = tmp_path / "css"
+    bin_dir = install_dir / "bin"
+    bin_dir.mkdir(parents=True)
+    (install_dir / "srcds_run").write_text("", encoding="utf-8")
+    (bin_dir / "srcds_linux64").write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
+    assert cwd == server.data["dir"]
+    assert server.data["exe_name"] == "srcds_run"
+
+
+def test_goldsrc_module_start_command_prefers_runtime_wrapper(tmp_path):
+    module = importlib.import_module("gamemodules.csserver")
+    server = SimpleNamespace(name="csalpha", data={})
+
+    module.configure(server, False, 27015, str(tmp_path / "cs"))
+    install_dir = tmp_path / "cs"
+    bin_dir = install_dir / "bin"
+    bin_dir.mkdir(parents=True)
+    (install_dir / "hlds_run").write_text("", encoding="utf-8")
+    (bin_dir / "hlds_linux").write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[:4] == ["./hlds_run", "-game", "cstrike", "-strictportbind"]
+    assert cwd == server.data["dir"]
+    assert server.data["exe_name"] == "hlds_run"
 
 
 def test_goldsrc_module_update_uses_mod_aware_steamcmd(monkeypatch, tmp_path):
@@ -131,6 +186,198 @@ def test_valve_module_install_updates_server_cfg_from_settings(monkeypatch, tmp_
     assert "sv_pure 1" in cfg_text
 
 
+def test_goldsrc_install_normalizes_hlds_run_line_endings(monkeypatch, tmp_path):
+    module = importlib.import_module("gamemodules.csserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    monkeypatch.setattr(valve_server.steamcmd, "download", lambda *args, **kwargs: None)
+    launcher_path = tmp_path / "hlds_run"
+    launcher_path.write_bytes(b"#!/bin/sh\r\necho hi\r\n")
+    server = SimpleNamespace(
+        name="csalpha",
+        data={"dir": str(tmp_path) + "/", "exe_name": "hlds_run", "server_cfg": "server.cfg"},
+    )
+
+    module.install(server)
+
+    assert launcher_path.read_bytes() == b"#!/bin/sh\necho hi\n"
+
+
+def test_valve_module_exposes_schema_and_sync_helpers():
+    module = importlib.import_module("gamemodules.cssserver")
+
+    assert "port" in module.setting_schema
+    assert "serverpassword" in module.setting_schema
+    assert "servername" in module.config_sync_keys
+    assert "rconpassword" in module.config_sync_keys
+    assert "serverpassword" in module.config_sync_keys
+    assert callable(module.sync_server_config)
+    assert callable(module.list_setting_values)
+    assert "map" in module.setting_schema
+    assert module.setting_schema["port"].launch_arg_tokens == ("-port",)
+    assert module.setting_schema["map"].storage_key == "startmap"
+    assert "gamemap" in module.setting_schema["map"].aliases
+    assert module.setting_schema["servername"].native_config_key == "hostname"
+    assert module.setting_schema["rconpassword"].native_config_key == "rcon_password"
+    assert module.setting_schema["serverpassword"].native_config_key == "sv_password"
+
+
+def test_valve_module_sync_server_config_updates_real_server_cfg(monkeypatch, tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    fake_settings = SimpleNamespace(
+        user=FakeSection(
+            sections={
+                "gamemodules": FakeSection(
+                    sections={
+                        "cssserver": FakeSection(
+                            sections={
+                                "servercfg": FakeSection({"sv_pure": "1"})
+                            }
+                        )
+                    }
+                )
+            }
+        )
+    )
+    monkeypatch.setattr(valve_server, "settings", fake_settings)
+
+    cfg_dir = tmp_path / "cstrike" / "cfg"
+    cfg_dir.mkdir(parents=True)
+    cfg_path = cfg_dir / "server.cfg"
+    cfg_path.write_text('sv_cheats 0\nhostname "Old"\nrcon_password old\n', encoding="utf-8")
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "servername": "Configured CSS",
+            "rconpassword": 'super secret "pass"',
+            "serverpassword": 'join secret "pass"',
+            "server_cfg": "server.cfg",
+        },
+    )
+
+    module.sync_server_config(server)
+
+    cfg_text = cfg_path.read_text()
+    assert 'hostname "Configured CSS"' in cfg_text
+    assert 'rcon_password "super secret \\"pass\\""' in cfg_text
+    assert 'sv_password "join secret \\"pass\\""' in cfg_text
+    assert "sv_cheats 0" in cfg_text
+
+
+def test_valve_server_schema_builder_supports_tf2_style_maxplayers_token():
+    valve_server = importlib.import_module("utils.valve_server")
+
+    schema = valve_server.build_valve_server_setting_schema(
+        game_name="TF2 Server",
+        default_map="cp_dustbowl",
+        max_players=16,
+        servername_example="AlphaGSM TF2 Server",
+        maxplayers_launch_arg_tokens=("+maxplayers",),
+    )
+
+    assert schema["port"].launch_arg_tokens == ("-port",)
+    assert schema["map"].launch_arg_tokens == ("+map",)
+    assert schema["maxplayers"].launch_arg_tokens == ("+maxplayers",)
+    assert schema["servername"].native_config_key == "hostname"
+    assert schema["rconpassword"].native_config_key == "rcon_password"
+    assert schema["serverpassword"].native_config_key == "sv_password"
+
+
+def test_valve_updateconfig_preserves_unknown_lines_and_appends_missing_keys(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text('hostname "Old"\nsv_cheats 0\n', encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": '"Configured CSS"', "rcon_password": '"topsecret"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname "Configured CSS"',
+        "sv_cheats 0",
+        'rcon_password "topsecret"',
+    ]
+
+
+def test_valve_updateconfig_rewrites_quoted_multi_word_values_in_place(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text('hostname "Old Name"\nsv_cheats 0\n', encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": '"Configured CSS"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'hostname "Configured CSS"',
+        "sv_cheats 0",
+    ]
+
+
+def test_valve_updateconfig_leaves_tab_delimited_line_and_appends_new_value(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("hostname\tOldName\nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"hostname": "Configured CSS"},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        "hostname\tOldName",
+        "sv_cheats 0",
+        "hostname Configured CSS",
+    ]
+
+
+def test_valve_updateconfig_rewrites_hash_prefixed_values_in_place(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("rcon_password #placeholder\nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"rcon_password": "topsecret"},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        "rcon_password topsecret",
+        "sv_cheats 0",
+    ]
+
+
+def test_valve_updateconfig_rewrites_existing_blank_managed_line(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    cfg_path = tmp_path / "server.cfg"
+    cfg_path.write_text("rcon_password \nsv_cheats 0\n", encoding="utf-8")
+
+    valve_server.updateconfig(
+        str(cfg_path),
+        {"rcon_password": '"topsecret"'},
+    )
+
+    assert cfg_path.read_text(encoding="utf-8").splitlines() == [
+        'rcon_password "topsecret"',
+        "sv_cheats 0",
+    ]
+
+
+def test_valve_module_list_setting_values_returns_installed_maps(tmp_path):
+    module = importlib.import_module("gamemodules.cssserver")
+    maps_dir = tmp_path / "cstrike" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "cp_badlands.bsp").write_text("")
+    (maps_dir / "cp_dustbowl.bsp").write_text("")
+    (maps_dir / "readme.txt").write_text("")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    assert module.list_setting_values(server, "map") == ["cp_badlands", "cp_dustbowl"]
+
+
 def test_valve_source_install_disables_hibernation_for_integration(monkeypatch, tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
     valve_server = importlib.import_module("utils.valve_server")
@@ -154,9 +401,11 @@ def test_valve_source_module_exposes_wake_hook(monkeypatch):
     server = SimpleNamespace(name="cssalpha", data={})
 
     monkeypatch.setattr(
-        valve_server.screen,
-        "send_to_server",
-        lambda name, payload: calls.append((name, payload)),
+        valve_server,
+        "_runtime_module",
+        lambda: SimpleNamespace(
+            send_to_server=lambda server_obj, payload: calls.append((server_obj.name, payload))
+        ),
     )
 
     delay = module.MODULE.wake_a2s_query(server)
@@ -175,9 +424,158 @@ def test_valve_source_module_exposes_source_info_hooks():
     assert callable(module.MODULE.get_container_spec)
 
 
+def test_valve_source_module_exports_info_hooks_on_canonical_surface():
+    module = importlib.import_module("gamemodules.ahl2server")
+
+    assert callable(module.wake_a2s_query)
+    assert callable(module.get_query_address)
+    assert callable(module.get_info_address)
+    assert callable(module.get_hibernating_console_info)
+
+
+def test_ahl2_health_contract_uses_runtime_resolved_tcp_game_port(monkeypatch):
+    module = importlib.import_module("gamemodules.ahl2server")
+    server = SimpleNamespace(name="ahl2alpha", data={"port": 27015})
+    monkeypatch.setattr(
+        module.runtime_module,
+        "resolve_query_host",
+        lambda server_obj: "172.18.0.9",
+    )
+
+    assert module.get_query_address(server) == ("172.18.0.9", 27015, "tcp")
+    assert module.get_info_address(server) == ("172.18.0.9", 27015, "tcp")
+
+
+def test_ahl2_start_command_uses_steam_console_mode(tmp_path):
+    module = importlib.import_module("gamemodules.ahl2server")
+    server = SimpleNamespace(name="ahl2alpha", data={})
+
+    module.configure(server, False, 27015, str(tmp_path))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+
+    cmd, _cwd = module.get_start_command(server)
+
+    assert cmd[1:3] == ["-console", "-steam"]
+
+
+def test_ahl2_docker_contract_uses_private_host_user_home_and_runtime_appid(
+    monkeypatch, tmp_path
+):
+    module = importlib.import_module("gamemodules.ahl2server")
+    valve_server = importlib.import_module("utils.valve_server")
+    monkeypatch.setenv("ALPHAGSM_HOME", str(tmp_path / "manager"))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+    steamcmd_root = tmp_path / "steamcmd"
+    for bits in ("linux32", "linux64"):
+        sdk_dir = steamcmd_root / bits
+        sdk_dir.mkdir(parents=True)
+        (sdk_dir / "steamclient.so").write_text("", encoding="utf-8")
+    monkeypatch.setattr(valve_server.steamcmd, "STEAMCMD_DIR", str(steamcmd_root))
+    server = SimpleNamespace(
+        name="ahl2alpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "port": 27015,
+            "clientport": 27005,
+            "sourcetvport": 27020,
+            "exe_name": "srcds_run",
+            "startmap": "act_airport",
+            "server_cfg": "server.cfg",
+            "maxplayers": "20",
+        },
+    )
+
+    requirements = module.get_runtime_requirements(server)
+    spec = module.get_container_spec(server)
+
+    assert requirements["run_as_host_user"] is True
+    assert requirements["container_home"] == "/home/alphagsm"
+    assert requirements["env"]["HOME"] == "/home/alphagsm"
+    assert spec["run_as_host_user"] is True
+    assert spec["container_home"] == "/home/alphagsm"
+    assert spec["env"]["HOME"] == "/home/alphagsm"
+    assert {
+        mount["target"] for mount in requirements["mounts"]
+    } == {
+        "/srv/server",
+        "/home/alphagsm",
+        "/home/alphagsm/.steam/sdk64",
+        "/home/alphagsm/.steam/steamcmd/linux64",
+        "/home/alphagsm/.steam/sdk32",
+        "/home/alphagsm/.steam/steamcmd/linux32",
+    }
+
+    monkeypatch.setattr(valve_server, "_ensure_steamclient_link", lambda: None)
+    module.prestart(server)
+
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "985050\n"
+
+
+def test_valve_source_query_hooks_use_runtime_resolved_host(monkeypatch):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={"port": 27015, "queryport": 27016},
+    )
+
+    monkeypatch.setattr(
+        valve_server.runtime_module,
+        "resolve_query_host",
+        lambda server_obj, default="127.0.0.1": "172.18.0.9",
+    )
+
+    assert module.MODULE.get_query_address(server) == ("172.18.0.9", 27016, "a2s")
+    assert module.MODULE.get_info_address(server) == ("172.18.0.9", 27016, "a2s")
+
+
+@pytest.mark.parametrize(
+    "backend,inside_container,explicit_host,expected_host",
+    [
+        ("process", False, None, "192.0.2.10"),
+        ("process", True, None, "192.0.2.10"),
+        ("process", False, "127.0.0.1", "127.0.0.1"),
+        ("process", False, "192.0.2.20", "192.0.2.20"),
+        ("docker", False, None, "127.0.0.1"),
+        ("docker", True, None, "172.18.0.1"),
+        ("docker", True, "192.0.2.20", "192.0.2.20"),
+    ],
+)
+def test_source_query_host_preserves_process_nic_and_docker_routing(
+    monkeypatch, backend, inside_container, explicit_host, expected_host
+):
+    module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    runtime = valve_server.runtime_module
+    server = SimpleNamespace(
+        name="cssalpha",
+        data={"port": 27015, "queryport": 27016, "bindaddress": explicit_host},
+    )
+    monkeypatch.setattr(valve_server, "detect_query_host", lambda: "192.0.2.10")
+    monkeypatch.setattr(
+        runtime,
+        "resolve_runtime_metadata",
+        lambda _server: {"runtime": backend, "container_name": "alphagsm-cssalpha"},
+    )
+    monkeypatch.setattr(runtime, "_running_inside_container", lambda: inside_container)
+    monkeypatch.setattr(
+        runtime, "_inspect_container_network_value", lambda *_args: "172.18.0.1"
+    )
+
+    assert module.get_query_address(server) == (expected_host, 27016, "a2s")
+    assert module.get_info_address(server) == (expected_host, 27016, "a2s")
+
+
 def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
+    valve_server = importlib.import_module("utils.valve_server")
     (tmp_path / "srcds_run").write_text("")
+    steamcmd_root = tmp_path / "steamcmd"
+    for bits in ("linux32", "linux64"):
+        sdk_dir = steamcmd_root / bits
+        sdk_dir.mkdir(parents=True)
+        (sdk_dir / "steamclient.so").write_text("")
+    valve_server.steamcmd.STEAMCMD_DIR = str(steamcmd_root)
     server = SimpleNamespace(
         name="cssalpha",
         data={
@@ -199,7 +597,19 @@ def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     assert requirements["engine"] == "docker"
     assert requirements["family"] == "steamcmd-linux"
     assert requirements["mounts"] == [
-        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"}
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(steamcmd_root / "linux64"), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux64"),
+            "target": "/root/.steam/steamcmd/linux64",
+            "mode": "ro",
+        },
+        {"source": str(steamcmd_root / "linux32"), "target": "/root/.steam/sdk32", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux32"),
+            "target": "/root/.steam/steamcmd/linux32",
+            "mode": "ro",
+        },
     ]
     assert requirements["ports"] == [
         {"host": 27015, "container": 27015, "protocol": "udp"},
@@ -209,6 +619,158 @@ def test_valve_module_runtime_requirements_expose_docker_metadata(tmp_path):
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] is True
     assert spec["command"][:4] == ["./srcds_run", "-game", "cstrike", "-strictportbind"]
+
+
+def test_legacy_source_module_runtime_requirements_include_steam_sdk_mounts(tmp_path):
+    module = importlib.import_module("gamemodules.dabserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    (tmp_path / "dabds.sh").write_text("")
+    steamcmd_root = tmp_path / "steamcmd"
+    for bits in ("linux32", "linux64"):
+        sdk_dir = steamcmd_root / bits
+        sdk_dir.mkdir(parents=True)
+        (sdk_dir / "steamclient.so").write_text("")
+    valve_server.steamcmd.STEAMCMD_DIR = str(steamcmd_root)
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "port": 27015,
+            "clientport": 27005,
+            "sourcetvport": 27020,
+            "exe_name": "dabds.sh",
+            "startmap": "da_rooftops",
+            "server_cfg": "server.cfg",
+            "maxplayers": "10",
+        },
+    )
+
+    requirements = module.get_runtime_requirements(server)
+    spec = module.get_container_spec(server)
+
+    assert requirements["mounts"] == [
+        {"source": str(tmp_path) + "/", "target": "/srv/server", "mode": "rw"},
+        {"source": str(steamcmd_root / "linux64"), "target": "/root/.steam/sdk64", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux64"),
+            "target": "/root/.steam/steamcmd/linux64",
+            "mode": "ro",
+        },
+        {"source": str(steamcmd_root / "linux32"), "target": "/root/.steam/sdk32", "mode": "ro"},
+        {
+            "source": str(steamcmd_root / "linux32"),
+            "target": "/root/.steam/steamcmd/linux32",
+            "mode": "ro",
+        },
+    ]
+    assert spec["mounts"] == requirements["mounts"]
+
+
+def test_legacy_source_module_prestart_writes_runtime_steam_appid_file(tmp_path, monkeypatch):
+    module = importlib.import_module("gamemodules.dabserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    (tmp_path / "dab").mkdir(parents=True)
+    (tmp_path / "dab" / "GameInfo.txt").write_text("", encoding="utf-8")
+    (tmp_path / "dabds.sh").write_text("", encoding="utf-8")
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "Steam_AppID": 317800,
+        },
+    )
+
+    monkeypatch.setattr(valve_server, "_ensure_steamclient_link", lambda: None)
+    module.prestart(server)
+
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "317360\n"
+
+
+def test_zpsserver_prestart_writes_goldsrc_runtime_steam_appid_file(tmp_path, monkeypatch):
+    module = importlib.import_module("gamemodules.zpsserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    (tmp_path / "zp").mkdir(parents=True)
+    (tmp_path / "zp" / "server.cfg").write_text("", encoding="utf-8")
+    (tmp_path / "hlds_run").write_text("", encoding="utf-8")
+    server = SimpleNamespace(
+        name="zpsalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "Steam_AppID": 4523420,
+        },
+    )
+
+    monkeypatch.setattr(valve_server, "_ensure_steamclient_link", lambda: None)
+    module.prestart(server)
+
+    assert (tmp_path / "steam_appid.txt").read_text(encoding="ascii") == "70\n"
+
+
+def test_dabserver_install_requires_authenticated_current_content(tmp_path):
+    module = importlib.import_module("gamemodules.dabserver")
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "server_cfg": "server.cfg",
+            "servername": "AlphaGSM Double Action: Boogaloo",
+            "rconpassword": "",
+            "serverpassword": "",
+        },
+    )
+
+    with pytest.raises(Exception, match="ENABLED \\(AUTH\\)"):
+        module.install(server)
+
+
+def test_dabserver_install_accepts_staged_current_content(tmp_path):
+    module = importlib.import_module("gamemodules.dabserver")
+    staged_dir = tmp_path / "dab" / "cfg"
+    staged_dir.mkdir(parents=True)
+    (tmp_path / "dab" / "GameInfo.txt").write_text("", encoding="utf-8")
+    (tmp_path / "dabds.sh").write_text("", encoding="utf-8")
+    server = SimpleNamespace(
+        name="dabalpha",
+        data={
+            "dir": str(tmp_path) + "/",
+            "server_cfg": "server.cfg",
+            "servername": "AlphaGSM Double Action: Boogaloo",
+            "rconpassword": "",
+            "serverpassword": "",
+        },
+    )
+
+    module.install(server)
+
+    assert (staged_dir / "server.cfg").is_file()
+
+
+def test_validate_source_startmap_accepts_installed_map(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    maps_dir = tmp_path / "cstrike" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "de_dust2.bsp").write_text("")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    assert valve_server.validate_source_startmap(server, "cstrike", "de_dust2") == "de_dust2"
+
+
+def test_validate_source_startmap_rejects_unknown_installed_map(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    maps_dir = tmp_path / "cstrike" / "maps"
+    maps_dir.mkdir(parents=True)
+    (maps_dir / "de_dust2.bsp").write_text("")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    with pytest.raises(Exception, match="Unsupported map de_train"):
+        valve_server.validate_source_startmap(server, "cstrike", "de_train")
+
+
+def test_validate_source_startmap_skips_validation_without_installed_maps(tmp_path):
+    valve_server = importlib.import_module("utils.valve_server")
+    server = SimpleNamespace(name="cssalpha", data={"dir": str(tmp_path) + "/"})
+
+    assert valve_server.validate_source_startmap(server, "cstrike", "custom_map") == "custom_map"
 
 
 def test_parse_source_console_status_returns_latest_complete_block():
@@ -248,7 +810,7 @@ def test_source_console_status_collects_new_log_output(monkeypatch, tmp_path):
     log_file.write_text("existing\n", encoding="utf-8")
     server = SimpleNamespace(name="cssalpha", data={})
 
-    def fake_send_to_server(_name, _payload):
+    def fake_send_to_server(_server, _payload):
         with open(log_file, "a", encoding="utf-8") as handle:
             handle.write(
                 "status\n"
@@ -261,7 +823,11 @@ def test_source_console_status_collects_new_log_output(monkeypatch, tmp_path):
             )
 
     monkeypatch.setattr(valve_server.screen, "logpath", lambda _name: str(log_file))
-    monkeypatch.setattr(valve_server.screen, "send_to_server", fake_send_to_server)
+    monkeypatch.setattr(
+        valve_server,
+        "_runtime_module",
+        lambda: SimpleNamespace(send_to_server=fake_send_to_server),
+    )
     monkeypatch.setattr(valve_server.time, "sleep", lambda *_args: None)
 
     parsed = valve_server.source_console_status(server, timeout=1.0)

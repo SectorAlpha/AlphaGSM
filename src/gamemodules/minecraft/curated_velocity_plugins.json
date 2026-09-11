@@ -1,0 +1,61 @@
+{
+  "families": {
+    "viaversion": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/ViaVersion/ViaVersion/releases/download/5.9.0/ViaVersion-5.9.0.jar",
+          "hosts": ["github.com"],
+          "archive_type": "jar",
+          "destinations": ["plugins"]
+        }
+      }
+    },
+    "viabackwards": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/ViaVersion/ViaBackwards/releases/download/5.9.0/ViaBackwards-5.9.0.jar",
+          "hosts": ["github.com"],
+          "archive_type": "jar",
+          "destinations": ["plugins"],
+          "dependencies": ["viaversion"]
+        }
+      }
+    },
+    "viarewind": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://github.com/ViaVersion/ViaRewind/releases/download/4.1.0/ViaRewind-4.1.0.jar",
+          "hosts": ["github.com"],
+          "archive_type": "jar",
+          "destinations": ["plugins"],
+          "dependencies": ["viabackwards"]
+        }
+      }
+    },
+    "luckperms": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://cdn.modrinth.com/data/Vebnzrzj/versions/GZjsuCmU/LuckPerms-Velocity-5.5.17.jar",
+          "hosts": ["cdn.modrinth.com"],
+          "archive_type": "jar",
+          "destinations": ["plugins"]
+        }
+      }
+    },
+    "geyser": {
+      "default": "beta",
+      "releases": {
+        "beta": {
+          "url": "https://cdn.modrinth.com/data/wKkoqHrH/versions/se47CXXN/Geyser-Velocity.jar",
+          "hosts": ["cdn.modrinth.com"],
+          "archive_type": "jar",
+          "destinations": ["plugins"]
+        }
+      }
+    }
+  }
+}

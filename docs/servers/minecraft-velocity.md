@@ -2,11 +2,17 @@
 
 This guide covers the `minecraft.velocity` module in AlphaGSM.
 
+`minecraft.velocity` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
-- Java 21 or compatible runtime
+- Java 25 for Velocity 4.x/current releases; Java 21 for Velocity 3.x
 - Python packages from `requirements.txt`
+
+Docker selects Java from the installed Velocity version, independently of the
+Minecraft game version. An explicit `java_major` setting takes precedence.
+The Java 25 selection fix is awaiting replacement GitHub CI validation.
 
 ## Quick Start
 
@@ -47,6 +53,10 @@ Setup configures:
 - the game port (default 25565)
 - the install directory
 
+On first setup, AlphaGSM starts Velocity briefly to generate `velocity.toml`
+and then writes the selected port to its `bind` setting. It does not create or
+require BungeeCord's `config.yml`.
+
 ## Useful Commands
 
 ```bash
@@ -54,10 +64,42 @@ alphagsm myvelocity update
 alphagsm myvelocity backup
 ```
 
+Built-in manifest plugin families, direct plugin jars, and provider-hosted
+plugin archives can all be managed through AlphaGSM:
+
+```bash
+alphagsm myvelocity mod add manifest viaversion
+alphagsm myvelocity mod add manifest viabackwards
+alphagsm myvelocity mod add manifest viarewind
+alphagsm myvelocity mod add manifest luckperms
+alphagsm myvelocity mod add manifest geyser
+alphagsm myvelocity mod add url https://plugins.example.invalid/TestPlugin.jar
+alphagsm myvelocity mod add moddb https://www.moddb.com/mods/proxy-pack/downloads/proxy-pack
+alphagsm myvelocity mod apply
+alphagsm myvelocity mod cleanup
+```
+
 ## Notes
 
 - Module name: `minecraft.velocity`
 - Default port: 25565
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create minecraft.velocity`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -71,7 +113,7 @@ alphagsm myvelocity backup
 
 - **Config file**: `velocity.toml`
 - **Key settings** (in `velocity.toml`):
-  - `server-port` — Game port (default 25565)
+  - `bind` — Listen address and game port (default 25565)
   - `motd` — Message of the day
   - `max-players` — Maximum players
   - `level-seed` — World generation seed
@@ -84,4 +126,4 @@ alphagsm myvelocity backup
 - **Mod directory**: `plugins/`
 - **Workshop support**: No
 - **Map notes**: Velocity is a proxy and does not host worlds.
-- **Mod notes**: Place Velocity plugin .jar files in the `plugins/` directory.
+- **Mod notes**: AlphaGSM can install built-in manifest families such as `viaversion`, `viabackwards`, `viarewind`, `luckperms`, and `geyser`, place plugin `.jar` files from direct URLs into `plugins/`, and install Mod DB-backed archives when they contain plugin payloads under approved proxy plugin paths. `mod cleanup` removes only AlphaGSM-managed plugin files. The checked-in manifest now auto-installs ViaVersion-stack prerequisites when needed and selects the Velocity-compatible jar for variant-specific families. Velocity keeps its own cache/state under `.alphagsm/mods/minecraft-velocity/`.

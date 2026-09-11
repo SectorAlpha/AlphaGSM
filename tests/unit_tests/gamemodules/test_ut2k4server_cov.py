@@ -1,36 +1,17 @@
 """Full coverage tests for ut2k4server."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.ut2k4server', None)
 with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
     import gamemodules.ut2k4server as mod
     from server import ServerError
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
@@ -69,6 +50,75 @@ def test_install(tmp_path):
     server.data["download_mode"] = "test"
     mod.install(server)
 
+
+def test_install_installer_requires_7z(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = "https://example.com/install-ut2004.sh"
+    server.data["download_name"] = "install-ut2004.sh"
+    server.data["download_mode"] = "installer"
+
+    monkeypatch.setattr(mod.shutil, "which", lambda cmd: None)
+
+    with pytest.raises(ServerError, match="7z-compatible extractor"):
+        mod.install(server)
+
+
+def test_install_installer_runs_non_interactive(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = "https://example.com/install-ut2004.sh"
+    server.data["download_name"] = "install-ut2004.sh"
+    server.data["download_mode"] = "installer"
+
+    download_dir = tmp_path / "downloads"
+    download_dir.mkdir()
+    installer_path = download_dir / "install-ut2004.sh"
+    installer_path.write_text("#!/bin/sh\n", encoding="utf-8")
+    run_calls = []
+
+    monkeypatch.setattr(mod.shutil, "which", lambda cmd: "/usr/bin/7z")
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(download_dir))
+    monkeypatch.setattr(mod.sp, "run", lambda *args, **kwargs: run_calls.append((args, kwargs)))
+    monkeypatch.setenv("ALPHAGSM_GITHUB_TOKEN", "ci-token")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    mod.install(server)
+
+    assert len(run_calls) == 1
+    _args, kwargs = run_calls[0]
+    assert kwargs["input"] == "y\n"
+    assert kwargs["text"] is True
+    assert kwargs["check"] is True
+    assert kwargs["env"]["GITHUB_TOKEN"] == "ci-token"
+
+
+def test_get_runtime_requirements_declares_7z_host_dependency_for_installer(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 7777,
+            "download_mode": "installer",
+            "exe_name": "System/ucc-bin",
+        }
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    dependency = requirements["host_dependencies"][0]
+
+    assert dependency["id"] == "7z"
+    assert dependency["display_name"] == "7z-compatible extractor"
+    assert dependency["command"] == (
+        {"label": "7zz", "command": "7zz"},
+        {"label": "7z", "command": "7z"},
+    )
+    assert "p7zip-full" in dependency["install_hints"]["linux"]
+
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -83,6 +133,26 @@ def test_get_start_command(tmp_path):
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_get_start_command_uses_server_local_home(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    exe_path = tmp_path / "System/ucc-bin"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["configfile"] = "test"
+    server.data["gametype"] = "test"
+    server.data["maxplayers"] = 16
+    server.data["port"] = 7777
+    server.data["startmap"] = "DM-Antalus"
+
+    cmd, _cwd = mod.get_start_command(server)
+
+    assert cmd[0] == "env"
+    assert any(token.startswith("HOME=") for token in cmd)
+    assert any(".alphagsm/ut2k4-home" in token for token in cmd if token.startswith("HOME="))
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
@@ -99,7 +169,24 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_get_query_address_uses_managed_game_port(tmp_path):
+    server = DummyServer()
+    server.data["port"] = 27015
+
+    address = mod.get_query_address(server)
+
+    assert address == ("127.0.0.1", 27015, "udp")
+
+
+def test_get_info_address_matches_query_address():
+    server = DummyServer()
+    server.data["port"] = 27015
+
+    assert mod.get_info_address(server) == mod.get_query_address(server)
+
 
 def test_status():
     server = DummyServer()
@@ -184,4 +271,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-

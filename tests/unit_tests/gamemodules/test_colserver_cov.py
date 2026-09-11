@@ -1,44 +1,25 @@
 """Full coverage tests for colserver."""
 
+import json
 import os
 import sys
 from unittest.mock import patch, MagicMock
 
 import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.colserver', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.colserver as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
+    mod.runtime_module.send_to_server = MagicMock()
 
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27004, dir=str(tmp_path))
     assert server.data['port'] == 27004
+    assert server.data["queryport"] == "27003"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -112,9 +93,18 @@ def test_get_start_command(tmp_path):
     (tmp_path / "colonyserver.x86_64").write_text("")
     server.data["maxplayers"] = 27015
     server.data["port"] = 27015
+    server.data["queryport"] = 27014
     server.data["world"] = "test"
+    server.data["servername"] = "AlphaGSM Test"
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cwd == server.data["dir"]
+    assert cmd == [
+        "./colonyserver.x86_64",
+        "-batchmode",
+        "-nographics",
+        "+server.config",
+        "server.config.json",
+    ]
 
 
 def test_get_start_command_missing_exe(tmp_path):
@@ -131,7 +121,7 @@ def test_get_start_command_missing_exe(tmp_path):
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -181,6 +171,12 @@ def test_checkvalue_maxplayers():
     assert result == 12345
 
 
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12346")
+    assert result == 12346
+
+
 def test_checkvalue_world():
     server = DummyServer()
     result = mod.checkvalue(server, ("world",), "/test/value")
@@ -204,3 +200,29 @@ def test_checkvalue_backup():
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
 
+
+def test_sync_server_config_without_dir_is_noop():
+    server = DummyServer()
+    mod.sync_server_config(server)
+
+
+def test_sync_server_config_writes_server_config_json(tmp_path):
+    server = DummyServer("colony")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 27005
+    server.data["queryport"] = 27004
+    server.data["world"] = "colonyworld"
+    server.data["maxplayers"] = "24"
+    server.data["servername"] = "AlphaGSM Colony"
+
+    mod.sync_server_config(server)
+
+    with open(tmp_path / "server.config.json", "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+
+    assert payload["NewOptions"]["WorldName"] == "colonyworld"
+    assert payload["ServerSettings"]["ServerName"] == "AlphaGSM Colony"
+    assert payload["ServerSettings"]["ServerGamePort"] == 27005
+    assert payload["ServerSettings"]["ServerQueryPort"] == 27004
+    assert payload["ServerSettings"]["MaxPlayerCount"] == 24
+    assert payload["ServerSettings"]["NetworkType"] == "SteamOnline"

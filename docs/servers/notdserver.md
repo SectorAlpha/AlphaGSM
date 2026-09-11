@@ -2,9 +2,12 @@
 
 This guide covers the `notdserver` module in AlphaGSM.
 
+Status: PASSED on 2026-05-29
+
 ## Requirements
 
-- `screen`
+- Docker recommended on Linux: branch-local or published `alphagsm-wine-proton-runtime`
+- Host/process fallback: `screen` plus a working Wine/Proton install
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -44,9 +47,12 @@ alphagsm mynotdserv stop
 
 Setup configures:
 
-- the game port (default 27015)
+- the game port (default 7777)
+- the query port (default 27015)
 - the install directory
-- SteamCMD downloads the server files
+- SteamCMD downloads the Windows dedicated-server files
+- AlphaGSM mirrors the root `ServerSettings.ini` into `LF/Saved/Config/ServerSettings.ini`
+  before launch on Linux so the live runtime reads the managed settings
 
 ## Useful Commands
 
@@ -58,7 +64,32 @@ alphagsm mynotdserv backup
 ## Notes
 
 - Module name: `notdserver`
-- Default port: 27015
+- Default port: `7777`
+- Default query port: `27015`
+- Current supported validation lane on Linux: Docker-backed `wine-proton`
+- On Linux Wine/Proton, `query`, `info`, and `info --json` use the validated TCP
+  listener on the managed game port; native Windows keeps A2S on `queryport`.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create notdserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | The game port for the server. Example: `7777`. |
+| `queryport` | — | integer | The query port for the server. Example: `27015`. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -71,7 +102,7 @@ alphagsm mynotdserv backup
 
 ### Server Configuration
 
-- **Config files**: `ServerSettings.ini`
+- **Config files**: root `ServerSettings.ini`, mirrored at `LF/Saved/Config/ServerSettings.ini`
 - **Template**: See [server-templates/notdserver/](../server-templates/notdserver/) if available
 
 ### Maps and Mods

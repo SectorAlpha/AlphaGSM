@@ -2,6 +2,17 @@
 
 This guide covers the `accserver` module in AlphaGSM.
 
+## Status
+
+`accserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04
+Linux baseline.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Assetto Corsa Competizione dedicated server app `1430110`. The current GitHub
+integration lane still validates both process and Docker runtime selection
+around that auth-gated prerequisite, while local runs remain process-backed by
+default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +70,23 @@ alphagsm myaccserve backup
 
 - Module name: `accserver`
 - Default port: 9231
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create accserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

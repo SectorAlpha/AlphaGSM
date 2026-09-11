@@ -47,7 +47,7 @@ def test_craftopia_get_start_command_builds_expected_args(tmp_path):
 
 
 def test_mythofempires_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(mythofempiresserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(mythofempiresserver.proton, "wrap_command", lambda cmd, wineprefix=None, prefer_proton=False: list(cmd))
     server = DummyServer("moe")
     exe_dir = tmp_path / "MOE" / "Binaries" / "Win64"
     exe_dir.mkdir(parents=True)
@@ -72,7 +72,14 @@ def test_mythofempires_get_start_command_builds_expected_args(tmp_path, monkeypa
 
 
 def test_sunkenland_get_start_command_builds_expected_args(tmp_path, monkeypatch):
-    monkeypatch.setattr(sunkenlandserver.proton, "wrap_command", lambda cmd, wineprefix=None: list(cmd))
+    monkeypatch.setattr(sunkenlandserver, "IS_LINUX", True)
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(sunkenlandserver.proton, "wrap_command", fake_wrap_command)
     server = DummyServer("sunken")
     exe = tmp_path / "Sunkenland-DedicatedServer.exe"
     exe.write_text("")
@@ -88,9 +95,13 @@ def test_sunkenland_get_start_command_builds_expected_args(tmp_path, monkeypatch
 
     cmd, cwd = sunkenlandserver.get_start_command(server)
 
-    assert cmd[0] == "Sunkenland-DedicatedServer.exe"
+    assert cmd[0] == "xvfb-run"
+    assert "WINEDLLOVERRIDES=" in cmd
+    assert "SDL_VIDEODRIVER=x11" in cmd
+    assert "Sunkenland-DedicatedServer.exe" in cmd
     assert "-servername" in cmd
     assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
 
 
 def test_craftopia_mythofempires_and_sunkenland_update_downloads_and_optionally_restart(monkeypatch):

@@ -108,5 +108,18 @@ def test_doupdate_processes_new_entries(tmp_path):
     new_dir.mkdir()
     (new_dir / "file.txt").write_text("new")
 
-    with pytest.raises(NameError, match="entrym"):
-        updatefs_module.doupdate(str(old_dir), str(new_dir), str(target_dir), ".", [], [], [], False)
+    assert updatefs_module.doupdate(str(old_dir), str(new_dir), str(target_dir), ".", [], [], [], False) is False
+    assert (target_dir / "file.txt").read_text() == "new"
+
+
+def test_clear_removed_tree_recurses_and_preserves_local_changes(tmp_path):
+    old = tmp_path / "old"
+    target = tmp_path / "target"
+    for directory in (old, target):
+        (directory / "nested").mkdir(parents=True)
+        (directory / "nested" / "same.txt").write_text("same")
+        (directory / "nested" / "changed.txt").write_text("old")
+    (target / "nested" / "changed.txt").write_text("local")
+    assert not updatefs_module.checkandcleartrees(".", str(target), str(old), [])
+    assert not (target / "nested" / "same.txt").exists()
+    assert (target / "nested" / "changed.txt.~local").read_text() == "local"

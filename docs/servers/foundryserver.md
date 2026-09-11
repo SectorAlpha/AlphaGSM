@@ -2,9 +2,16 @@
 
 This guide covers the `foundryserver` module in AlphaGSM.
 
+`foundryserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
+Linux baseline. The current GitHub integration lane still exercises both
+process and Docker runtime selection around that staged-server prerequisite,
+while local runs remain process-backed by default unless you opt into the
+Docker backend.
+
 ## Requirements
 
 - `screen`
+- a native FOUNDRY dedicated server tree containing `FoundryDedicatedServer`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -21,6 +28,11 @@ Run setup:
 ```bash
 alphagsm myfoundrys setup
 ```
+
+`foundryserver` is supported in `ENABLED (BYO)` mode. The current anonymous
+SteamCMD app does not deliver the required native server payload, so before
+`setup` or `start` you should stage a native FOUNDRY dedicated server tree
+containing `FoundryDedicatedServer` inside your chosen `<install_dir>/`.
 
 Start it:
 
@@ -46,7 +58,15 @@ Setup configures:
 
 - the game port (default 37200)
 - the install directory
-- SteamCMD downloads the server files
+
+Suggested flow:
+
+```bash
+alphagsm myfoundrys create foundryserver
+alphagsm myfoundrys setup -n 37200 /path/to/foundry
+# copy FoundryDedicatedServer and the rest of the native server tree into /path/to/foundry/
+alphagsm myfoundrys start
+```
 
 ## Useful Commands
 
@@ -59,6 +79,23 @@ alphagsm myfoundrys backup
 
 - Module name: `foundryserver`
 - Default port: 37200
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create foundryserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

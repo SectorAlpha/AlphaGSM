@@ -1,10 +1,13 @@
 """Integration test for rimworldtogetherserver."""
 
+import os
+
 import pytest
 
 from conftest import (
     require_integration_opt_in,
-    require_command,
+    default_runtime_backend,
+    require_command_for_runtime,
     pick_free_tcp_port,
     wait_for_tcp_open,
     write_config,
@@ -13,7 +16,7 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -26,7 +29,13 @@ STOP_TIMEOUT = 90
 
 def test_rimworldtogetherserver_lifecycle(tmp_path):
     require_integration_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
+    module_name = "rimworldtogetherserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -34,12 +43,18 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itrimworldtoge"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "rimworldtogetherserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -52,8 +67,9 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["Server launched", "Listening for users"],
             START_TIMEOUT,
         )
@@ -66,13 +82,13 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
-            "Server is responding" in query_result.stdout
+            f"Server port is open (TCP ping on port {port}" in query_result.stdout
         ), f"Unexpected query output: {query_result.stdout!r}"
 
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            f"Server port is open (TCP ping on port {port}" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
@@ -81,6 +97,12 @@ def test_rimworldtogetherserver_lifecycle(tmp_path):
         _info_data = _info_json.loads(info_json_result.stdout.strip())
         assert _info_data["protocol"] == "tcp", (
             f"Expected tcp protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data["port"] == port, (
+            f"Expected configured port in info JSON: {_info_data!r}"
+        )
+        assert "latency_ms" in _info_data, (
+            f"Expected TCP latency in info JSON: {_info_data!r}"
         )
     finally:
         # stop

@@ -44,6 +44,8 @@ def test_etlegacyserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("etl")
     exe = tmp_path / "etl.x86_64"
     exe.write_text("")
+    (tmp_path / "etmain").mkdir()
+    (tmp_path / "etmain" / "pak0.pk3").write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",

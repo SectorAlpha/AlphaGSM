@@ -42,16 +42,16 @@ trap cleanup EXIT
 require_cmd "$PYTHON_BIN"
 require_cmd screen
 require_proton
+require_cmd xvfb-run
 
-WORK_DIR="$(mktemp -d)"
+WORK_ROOT="$(resolve_work_root)"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" theforestserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/theforestserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-theforestserver.conf"
-LOG_PATH="$HOME_DIR/logs/AlphaGSM-theforests-IT#$SERVER_NAME.log"
-
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)" 
+PORT="$(pick_free_port_group 3)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -75,12 +75,18 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create theforestserver
+run_alphagsm "$SERVER_NAME" set queryport "$((PORT + 1))"
+run_alphagsm "$SERVER_NAME" set steamport "$((PORT + 2))"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+test -f "$INSTALL_DIR/server-data/Server.cfg"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS" "$((PORT + 1))"
 run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 

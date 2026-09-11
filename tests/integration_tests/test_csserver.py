@@ -1,11 +1,14 @@
 """Integration test for csserver."""
 
+import os
+
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -13,7 +16,8 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
+    wait_for_runtime_log_marker,
+    wait_for_info_protocol,
     wait_for_tcp_closed,
     wait_for_udp_closed,
 )
@@ -29,9 +33,15 @@ def _run_setup_with_start_retry(env, server_name, install_dir, initial_port):
     """Retry setup/start once when a transient listener steals the chosen port."""
 
     port = initial_port
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result("alphagsm setup", result)
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, (
+        f"Unexpected csserver setup failure: rc={result.returncode}\n"
+        f"stdout={result.stdout}\n"
+        f"stderr={result.stderr}"
+    )
 
     start_result = run_alphagsm(env, server_name, "start")
     log_command_result("alphagsm " + " ".join((server_name, "start")), start_result)
@@ -44,9 +54,15 @@ def _run_setup_with_start_retry(env, server_name, install_dir, initial_port):
         assert start_result.returncode == 0, start_result.stderr or start_result.stdout
 
     port = pick_free_udp_port()
-    rerun_result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    rerun_result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result("alphagsm setup [retry]", rerun_result)
     if rerun_result.returncode != 0:
         skip_for_known_steamcmd_issue(rerun_result, app_id=steam_app_id)
+    assert rerun_result.returncode == 0, (
+        f"Unexpected csserver setup retry failure: rc={rerun_result.returncode}\n"
+        f"stdout={rerun_result.stdout}\n"
+        f"stderr={rerun_result.stderr}"
+    )
 
     retry_result = run_alphagsm(env, server_name, "start")
     log_command_result("alphagsm " + " ".join((server_name, "start", "[retry]")), retry_result)
@@ -58,7 +74,14 @@ def _run_setup_with_start_retry(env, server_name, install_dir, initial_port):
 def test_csserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name="csserver",
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -66,7 +89,13 @@ def test_csserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itcsserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name="csserver",
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
 
@@ -78,11 +107,14 @@ def test_csserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
-        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
             ["SV_ActivateServer", "Server is hibernating", "Connection to Steam servers successful", "VAC secure mode"],
             START_TIMEOUT,
+        )
+        wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
 
         # status

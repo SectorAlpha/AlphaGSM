@@ -1,8 +1,7 @@
 #\!/usr/bin/env bash
-# DISABLED: This smoke test is disabled because the server failed, is disabled, or was skipped in integration testing
-# See docs/TEST_STATUS.md for current server status
-echo "Smoke test for dabserver is disabled - see docs/TEST_STATUS.md for status"
-exit 0
+# ENABLED (AUTH): supported with authenticated Steam/SteamCMD entitlement for current app 317360 content.
+echo "Smoke test for dabserver is ENABLED (AUTH) - authenticate Steam or SteamCMD with an account entitled to Double Action: Boogaloo so current app 317360 content can be staged before setup/start; retired dedicated tool app 317800 still crashes on modern Linux."
+exit 77
 
 set -Eeuo pipefail
 set -x

@@ -1,3 +1,5 @@
+import os
+
 import gamemodules.solserver as solserver
 import gamemodules.wurmserver as wurmserver
 import gamemodules.xntserver as xntserver
@@ -50,7 +52,7 @@ def test_solserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = solserver.get_start_command(server)
 
-    assert cmd == ["./soldatserver", "-p", "23073", "-maxplayers", "16"]
+    assert cmd == ["./soldatserver", "-c", "soldat.ini", "-p", "23073", "-l", "16"]
     assert cwd == server.data["dir"]
 
 
@@ -103,8 +105,9 @@ def test_xntserver_configure_sets_expected_defaults(tmp_path):
 
 def test_xntserver_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("xnt")
-    exe = tmp_path / "xonotic-linux64-dedicated"
-    exe.write_text("")
+    launcher = tmp_path / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
@@ -118,9 +121,56 @@ def test_xntserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = xntserver.get_start_command(server)
 
-    assert cmd[0] == "./xonotic-linux64-dedicated"
+    assert cmd[0] == "./server/server_linux.sh"
     assert "+port" in cmd
     assert cwd == server.data["dir"]
+
+
+def test_xntserver_get_start_command_uses_nested_archive_root(tmp_path):
+    server = DummyServer("xnt")
+    content_root = tmp_path / "Xonotic"
+    content_root.mkdir()
+    launcher = content_root / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "xonotic-linux64-dedicated",
+            "userdir": "server",
+            "port": 26000,
+            "gametype": "dm",
+            "hostname": "AlphaGSM xnt",
+        }
+    )
+
+    cmd, cwd = xntserver.get_start_command(server)
+
+    assert cmd[0] == "./server/server_linux.sh"
+    assert cwd == str(content_root)
+
+
+def test_xntserver_container_spec_uses_nested_archive_root(tmp_path):
+    server = DummyServer("xnt")
+    content_root = tmp_path / "Xonotic"
+    content_root.mkdir()
+    launcher = content_root / "server" / "server_linux.sh"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "xonotic-linux64-dedicated",
+            "userdir": "server",
+            "port": 26000,
+            "gametype": "dm",
+            "hostname": "AlphaGSM xnt",
+        }
+    )
+
+    spec = xntserver.get_container_spec(server)
+
+    assert spec["working_dir"] == "/srv/server/Xonotic"
 
 
 def test_sol_and_wurm_update_downloads_and_optionally_restart(monkeypatch):

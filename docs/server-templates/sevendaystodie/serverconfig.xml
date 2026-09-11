@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<!-- Network -->
+	<property name="ServerPort" value="26900" />
+	<property name="ServerVisibility" value="2" />
+	<property name="ServerDisabledNetworkProtocols" value="SteamNetworking" />
+	<property name="ServerMaxWorldTransferSpeedKiBs" value="512" />
+
+	<!-- Server identity -->
+	<property name="ServerName" value="AlphaGSM 7 Days to Die Server" />
+	<property name="ServerDescription" value="An AlphaGSM-managed 7 Days to Die server" />
+	<property name="ServerWebsiteURL" value="" />
+	<property name="ServerPassword" value="" />
+	<property name="ServerLoginConfirmationText" value="Welcome to the server" />
+	<property name="Region" value="NorthAmericaEast" />
+
+	<!-- Player limits -->
+	<property name="ServerMaxPlayerCount" value="8" />
+	<property name="ServerReservedSlots" value="0" />
+	<property name="ServerReservedSlotsPermission" value="100" />
+	<property name="ServerAdminSlots" value="0" />
+	<property name="ServerAdminSlotsPermission" value="0" />
+
+	<!-- Files -->
+	<property name="AdminFileName" value="serveradmin.xml" />
+	<property name="UserDataFolder" value="" />
+	<property name="SaveGameFolder" value="" />
+	<property name="LogFileName" value="output_log__yyyy-MM-dd__HH-mm-ss.txt" />
+
+	<!-- World -->
+	<property name="GameWorld" value="Navezgane" />
+	<property name="WorldGenSeed" value="AlphaGSM" />
+	<property name="WorldGenSize" value="6144" />
+	<property name="GameName" value="AlphaGSMWorld" />
+	<property name="GameMode" value="GameModeSurvival" />
+	<property name="WorldGenOptions" value="" />
+
+	<!-- Gameplay -->
+	<property name="BloodMoonFrequency" value="7" />
+	<property name="BloodMoonRange" value="0" />
+	<property name="BloodMoonWarning" value="8" />
+	<property name="BloodMoonEnemyCount" value="8" />
+	<property name="LootAbundance" value="100" />
+	<property name="LootRespawnDays" value="7" />
+	<property name="AirDropFrequency" value="72" />
+	<property name="AirDropMarker" value="true" />
+	<property name="DropOnDeath" value="1" />
+	<property name="DropOnQuit" value="0" />
+	<property name="BedrollDeadZoneSize" value="15" />
+	<property name="BedrollExpiryTime" value="45" />
+
+	<!-- Land claim -->
+	<property name="LandClaimCount" value="1" />
+	<property name="LandClaimSize" value="41" />
+	<property name="LandClaimDeadZone" value="30" />
+	<property name="LandClaimExpiryTime" value="7" />
+	<property name="LandClaimDecayMode" value="0" />
+	<property name="LandClaimOnlineDurabilityModifier" value="4" />
+	<property name="LandClaimOfflineDurabilityModifier" value="4" />
+	<property name="LandClaimOfflineDelay" value="0" />
+
+	<!-- Performance / admin -->
+	<property name="EACEnabled" value="true" />
+	<property name="HideCommandExecutionLog" value="0" />
+	<property name="MaxUncoveredMapChunksPerPlayer" value="131072" />
+	<property name="PersistentPlayerProfiles" value="false" />
+	<property name="TelnetEnabled" value="true" />
+	<property name="TelnetPort" value="8081" />
+	<property name="TelnetPassword" value="" />
+	<property name="TerminalWindowEnabled" value="true" />
+	<property name="ServerAllowCrossplay" value="false" />
+</config>

@@ -2,6 +2,8 @@
 
 This guide covers the `squadserver` module in AlphaGSM.
 
+`squadserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +61,23 @@ alphagsm mysquadser backup
 
 - Module name: `squadserver`
 - Default port: 27165
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create squadserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

@@ -87,7 +87,7 @@ def test_necserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = necserver.get_start_command(server)
 
-    assert cmd == ["java", "-jar", "Server.jar", "-nogui", "-world", "nec", "-port", "14159", "-slots", "10"]
+    assert cmd == ["java", "-jar", "Server.jar", "-nogui", "-port", "14159", "-slots", "10"]
     assert cwd == server.data["dir"]
 
 

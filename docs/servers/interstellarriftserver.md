@@ -2,6 +2,13 @@
 
 This guide covers the `interstellarriftserver` module in AlphaGSM.
 
+## Status
+
+`interstellarriftserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Interstellar Rift dedicated server app `363360`.
+
 ## Requirements
 
 - `screen`
@@ -60,6 +67,23 @@ alphagsm myinterste backup
 - Module name: `interstellarriftserver`
 - Default port: 7777
 
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create interstellarriftserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
 ## Developer Notes
 
 ### Run File
@@ -71,7 +95,8 @@ alphagsm myinterste backup
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `server.json`
+- **Notes**: upstream docs place `server.json` under `%APPDATA%/InterstellarRift/`; AlphaGSM still manages the listen port through the launch command
 - **Template**: See [server-templates/interstellarriftserver/](../server-templates/interstellarriftserver/) if available
 
 ### Maps and Mods

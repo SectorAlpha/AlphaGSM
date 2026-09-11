@@ -2,6 +2,8 @@
 
 This guide covers the `projectzomboid` module in AlphaGSM.
 
+`projectzomboid` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +61,24 @@ alphagsm myprojectz backup
 
 - Module name: `projectzomboid`
 - Default port: 16261
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create projectzomboid`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `adminpassword` | adminpass | string | Server admin password. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

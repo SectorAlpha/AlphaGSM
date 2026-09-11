@@ -1,11 +1,15 @@
 """Integration test for svenserver."""
 
+import json
+import os
+
 import pytest
 
 from conftest import (
+    default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
-    require_command,
+    require_command_for_runtime,
     pick_free_udp_port,
     write_config,
     alphagsm_env,
@@ -13,11 +17,14 @@ from conftest import (
     run_alphagsm,
     log_command_result,
     skip_for_known_steamcmd_issue,
-    wait_for_log_marker,
-    wait_for_tcp_closed,
+    wait_for_info_protocol,
+    assert_source_server_empty,
+    wait_for_runtime_log_marker,
+    wait_for_a2s_ready,
     wait_for_udp_closed,
 )
 from gamemodules.svenserver import steam_app_id
+from utils.valve_server import detect_query_host
 
 pytestmark = pytest.mark.integration
 
@@ -28,7 +35,15 @@ STOP_TIMEOUT = 90
 def test_svenserver_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("screen")
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    module_name = "svenserver"
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
@@ -36,17 +51,29 @@ def test_svenserver_lifecycle(tmp_path):
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itsvenserver"
 
-    write_config(config_path, home_dir, session_tag="AlphaGSM-IT#")
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
     env = alphagsm_env(config_path)
     port = pick_free_udp_port()
+    query_host = detect_query_host()
 
     # create
-    run_and_assert_ok(env, server_name, "create", "svenserver")
+    run_and_assert_ok(env, server_name, "create", module_name)
 
     # setup
-    result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
+        result,
+    )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, f"setup failed: {result.stderr or result.stdout}"
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -54,14 +81,26 @@ def test_svenserver_lifecycle(tmp_path):
     try:
         # wait for readiness
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_log_marker(
-            log_path,
-            ["SV_ActivateServer", "Server is hibernating", "Connection to Steam servers successful", "VAC secure mode"],
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
+            [
+                "SV_ActivateServer",
+                "Connection to Steam servers successful",
+                "VAC secure mode",
+            ],
             START_TIMEOUT,
         )
 
         # status
         run_and_assert_ok(env, server_name, "status")
+
+        info_data = wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port
+        )
+        assert_source_server_empty(info_data)
+
+        wait_for_a2s_ready(query_host, port, START_TIMEOUT, log_path=log_path)
 
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
@@ -76,18 +115,20 @@ def test_svenserver_lifecycle(tmp_path):
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
-        import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
-        _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        info_data = json.loads(info_json_result.stdout.strip())
+        assert info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {info_data!r}"
         )
-        assert _info_data.get("players") == 0, (
-            f"Expected 0 players on fresh server: {_info_data!r}"
+        assert info_data["port"] == port, (
+            f"Expected A2S query port {port}: {info_data!r}"
         )
+        assert_source_server_empty(info_data)
     finally:
         # stop
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = run_alphagsm(env, server_name, "stop")
+        log_command_result("alphagsm stop", stop_result)
 
+    assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
     # verify stopped
-    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    wait_for_udp_closed(query_host, port, STOP_TIMEOUT)

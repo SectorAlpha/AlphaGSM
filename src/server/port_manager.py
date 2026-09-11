@@ -15,6 +15,7 @@ from utils.settings import settings
 
 from . import data as data_module
 from .errors import ServerError
+from .module_catalog import load_default_module_catalog
 from . import runtime as runtime_module
 
 
@@ -34,6 +35,7 @@ DATAPATH = os.path.expanduser(
 SERVERMODULEPACKAGE = settings.system.getsection("server").get(
     "servermodulespackage", "gamemodules."
 )
+MODULE_CATALOG = load_default_module_catalog()
 
 
 @dataclass(frozen=True)
@@ -117,6 +119,17 @@ def _get_module_hook(module, hook_name):
     return None
 
 
+def _get_module_attr(module, attr_name, default=None):
+    """Return a module-scope attribute from the module or shared MODULE namespace."""
+
+    for owner in (module, getattr(module, "MODULE", None)):
+        if owner is None:
+            continue
+        if hasattr(owner, attr_name):
+            return getattr(owner, attr_name)
+    return default
+
+
 def _resolve_module_name(module_name):
     """Resolve *module_name* via AlphaGSM's own module lookup path."""
 
@@ -133,17 +146,13 @@ def _resolve_module_name(module_name):
 
 
 def _resolve_module_name_fallback(name):
-    """Resolve a module name recursively when the canonical server resolver is unavailable."""
+    """Resolve a module name through the shared catalog when server.server is unavailable."""
 
+    canonical_name = MODULE_CATALOG.resolve(str(name))
     try:
-        module = import_module(SERVERMODULEPACKAGE + name)
+        module = import_module(SERVERMODULEPACKAGE + canonical_name)
     except ImportError:
         return None
-    if not hasattr(module, "__file__"):
-        return _resolve_module_name_fallback(name + ".DEFAULT")
-    alias_target = getattr(module, "ALIAS_TARGET", None)
-    if alias_target:
-        return _resolve_module_name_fallback(alias_target)
     runtime_module.ensure_runtime_hooks(module)
     return module
 
@@ -242,6 +251,8 @@ def _runtime_port_endpoints(server, module, payload, allow_stale_saved_ports):
         data=payload,
         module=module,
     )
+    if runtime_module.resolve_runtime_metadata(temp_server).get("runtime", "process") != "docker":
+        return []
     try:
         spec = runtime_module.get_container_spec(temp_server)
     except (
@@ -298,6 +309,46 @@ def _runtime_port_endpoints(server, module, payload, allow_stale_saved_ports):
     return endpoints
 
 
+def _module_port_endpoints(server, module, payload, existing_endpoints):
+    """Return game-declared derived port claims for every runtime."""
+
+    definitions = _get_module_attr(module, "port_claim_definitions", ()) or ()
+    if not definitions:
+        return []
+
+    temp_server = SimpleNamespace(
+        name=getattr(server, "name", "<unknown>"),
+        data=payload,
+        module=module,
+    )
+    try:
+        port_specs = runtime_module.build_port_specs(temp_server, definitions)
+    except (KeyError, RuntimeError, TypeError, ValueError):
+        return []
+
+    endpoints = []
+    for entry in port_specs:
+        host_port = _normalize_port_value(entry.get("host"))
+        if host_port is None:
+            continue
+        for scope, ip in (
+            ("internal", payload["internal_ip"]),
+            ("external", payload["external_ip"]),
+        ):
+            candidate = PortEndpoint(
+                scope,
+                ip,
+                host_port,
+                "module:port_claim_definitions",
+                derived=True,
+                shiftable=False,
+            )
+            if _endpoint_is_covered([*existing_endpoints, *endpoints], candidate):
+                continue
+            _add_endpoint(endpoints, candidate)
+    return endpoints
+
+
 def collect_claim_set(server, overrides=None):
     """Collect the claim set for *server*, applying optional overrides first."""
 
@@ -318,9 +369,14 @@ def collect_claim_set(server, overrides=None):
 
     endpoints = []
     shift_group_keys = []
+    ignored_port_keys = {
+        str(key) for key in (_get_module_attr(module, "ignored_port_keys", ()) or ())
+    }
 
     for key, value in payload.items():
         if key in ("internal_ip", "external_ip"):
+            continue
+        if str(key) in ignored_port_keys:
             continue
         if not is_port_key(key):
             continue
@@ -337,6 +393,9 @@ def collect_claim_set(server, overrides=None):
             endpoints,
             PortEndpoint("external", external_ip, port, key_name),
         )
+
+    for endpoint in _module_port_endpoints(server, module, payload, endpoints):
+        _add_endpoint(endpoints, endpoint)
 
     for endpoint in _runtime_port_endpoints(
         server,

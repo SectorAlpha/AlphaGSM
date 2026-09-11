@@ -2,6 +2,13 @@
 
 This guide covers the `ror2server` module in AlphaGSM.
 
+## Status
+
+`ror2server` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Risk of Rain 2 dedicated server app `1180760`.
+
 ## Requirements
 
 - `screen`
@@ -59,6 +66,23 @@ alphagsm myror2serv backup
 
 - Module name: `ror2server`
 - Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create ror2server`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 

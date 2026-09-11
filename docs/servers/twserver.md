@@ -2,6 +2,17 @@
 
 This guide covers the `twserver` module in AlphaGSM.
 
+## Status
+
+`twserver` is currently `ENABLED (AUTH)` on the documented Ubuntu 24.04 Linux
+baseline.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+server app `380840`. The current GitHub integration lane still validates both
+process and Docker runtime selection around that auth-gated prerequisite,
+while local runs remain process-backed by default unless you opt into the
+Docker backend.
+
 ## Requirements
 
 - `screen`
@@ -53,12 +64,35 @@ Setup configures:
 ```bash
 alphagsm mytwserver update
 alphagsm mytwserver backup
+alphagsm mytwserver set port 8304
+alphagsm mytwserver set servername "AlphaGSM Teeworlds Server"
 ```
+
+`set port` and `set servername` rewrite `autoexec.cfg` immediately. The shared alias layer also accepts `hostname` and maps it to the Teeworlds `servername` setting.
 
 ## Notes
 
 - Module name: `twserver`
 - Default port: 8303
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create twserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `port` | gameport | integer | The UDP/TCP game port Teeworlds listens on. |
+| `servername` | hostname, name | string | The advertised server name. |
+
+<!-- alphagsm-server-variables:end -->
 
 ## Developer Notes
 
@@ -73,6 +107,7 @@ alphagsm mytwserver backup
 
 - **Config file**: `autoexec.cfg`
 - **Template**: See [server-templates/twserver/](../server-templates/twserver/) if available
+- **Schema-backed sync**: AlphaGSM keeps `sv_port` and `sv_name` in sync with `set port` / `set servername`
 
 ### Maps and Mods
 

@@ -9,6 +9,7 @@ All repo-local skills live under [skills](skills).
 ## Current Skills
 
 - [disabled-server-gate](skills/disabled-server-gate/SKILL.md)
+- [changelog-discipline](skills/changelog-discipline/SKILL.md)
 - [docker-runtime-wiring](skills/docker-runtime-wiring/SKILL.md)
 - [install-layout](skills/install-layout/SKILL.md)
 - [server-info-gathering](skills/server-info-gathering/SKILL.md)
@@ -20,4 +21,5 @@ All repo-local skills live under [skills](skills).
 ## Related Guidance
 
 - [AGENTS.md](AGENTS.md) — includes integration test timeout policy
+- [AGENTS.md](AGENTS.md) — also includes canonical game-module layout and curated mod/plugin guidance
 - [skills/README.md](skills/README.md)

@@ -1,43 +1,24 @@
 """Full coverage tests for starbound."""
 
-import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
 
 sys.modules.pop('gamemodules.starbound', None)
 with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
     import gamemodules.starbound as mod
     from server import ServerError
-
-
-class DummyData(dict):
-    def save(self):
-        pass
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
-    def get(self, key, default=None):
-        return super().get(key, default)
-
-
-class DummyServer:
-    def __init__(self, name="testserver"):
-        self.name = name
-        self.data = DummyData()
-        self._stopped = False
-        self._started = False
-    def stop(self):
-        self._stopped = True
-    def start(self):
-        self._started = True
-
+    mod.runtime_module.send_to_server = MagicMock()
 
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    assert server.data["Steam_AppID"] == 211820
+    assert server.data["backupfiles"] == ["giraffe_storage", "linux64/sbboot.config"]
+    assert server.data["exe_name"] == "linux64/starbound_server"
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -62,7 +43,20 @@ def test_install(tmp_path):
     server.data["exe_name"] = "linux64/starbound_server"
     server.data["Steam_AppID"] = 211820
     server.data["Steam_anonymous_login_possible"] = True
+    exe_path = tmp_path / "linux64/starbound_server"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
     mod.install(server)
+
+
+def test_install_without_staged_tree_requires_byo(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "linux64/starbound_server"
+    server.data["Steam_AppID"] = 211820
+    server.data["Steam_anonymous_login_possible"] = True
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): starbound"):
+        mod.install(server)
 
 
 def test_update_with_restart(tmp_path):
@@ -70,7 +64,11 @@ def test_update_with_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 211820
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=True, restart=True)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 211820, True, validate=True
+    )
     assert server._stopped
     assert server._started
 
@@ -80,7 +78,11 @@ def test_update_no_restart(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["Steam_AppID"] = 211820
     server.data["Steam_anonymous_login_possible"] = True
+    mod.steamcmd.download = MagicMock()
     mod.update(server, validate=False, restart=False)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 211820, True, validate=False
+    )
     assert server._stopped
     assert not server._started
 
@@ -109,21 +111,22 @@ def test_get_start_command(tmp_path):
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert isinstance(cmd, list)
+    assert cmd == ["./linux64/starbound_server"]
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "nonexistent"
-    with pytest.raises(ServerError):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): starbound"):
         mod.get_start_command(server)
 
 
 def test_do_stop():
     server = DummyServer()
     mod.do_stop(server, 0)
-    mod.screen.send_to_server.assert_called()
+    mod.runtime_module.send_to_server.assert_called()
 
 
 def test_status():
@@ -177,4 +180,3 @@ def test_checkvalue_backup():
     server = DummyServer()
     server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
     mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
-
