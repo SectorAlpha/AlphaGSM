@@ -7,6 +7,14 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-11
+- Agent workflows: add 26 focused operations and development skills alongside
+  the nine existing repository skills, with task routing and evidence handoffs.
+- Agent skills: add standard discovery metadata, native repository links,
+  structural validation, CI coverage and an operator guide.
+- Docs: correct server inventory syntax, ZIP restore examples, Vanilla upgrade
+  flags and backend test paths; make skill capability/disablement limits explicit.
+
 2026-09-10
 - CLI: print `alphagsm --help` with ASCII arrows so the Windows standalone
   binary does not crash under the default cp1252 console encoding.

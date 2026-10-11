@@ -1,3 +1,8 @@
+---
+name: disabled-server-gate
+description: "Use when diagnosing the disabled creation gate or changing a module support state."
+---
+
 # Disabled Server Gate
 
 | Field | Value |
@@ -51,7 +56,8 @@ Disable a server module when:
 - Its download URL is permanently dead or returns 404/403.
 - Its version scraper is broken and there is no quick fix.
 - The upstream project has no release assets.
-- The module requires a runtime or toolchain that cannot be auto-installed.
+- The upstream runtime cannot run on any supported documented path, with
+  evidence after checking shared process/container alternatives.
 - You have already exhausted reasonable fixes, including web research into
   upstream docs, runtime dependencies, config files, startup flags, and
   dedicated-server requirements.
@@ -59,7 +65,8 @@ Disable a server module when:
 Do **not** disable a server just because:
 
 - It needs SteamCMD (that is gated separately by the test opt-in flag).
-- It needs authenticated SteamCMD login (handle with a skip in integration tests instead).
+- It needs authenticated SteamCMD login (use ENABLED (AUTH), shared provider
+  requirements and prerequisite-aware test gating instead).
 - It only works on a different OS (document the platform requirement in docs instead).
 
 ## When To Re-enable A Server

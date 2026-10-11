@@ -326,6 +326,18 @@ that output to understand what actually happened.
 
 ## Repo Skills
 
+For broad requests, start with the matching entry skill and load only the
+specialists needed for the task:
+
+- `skills/alphagsm-agent-operations/SKILL.md` — run and manage servers
+- `skills/alphagsm-agent-development/SKILL.md` — implement and maintain AlphaGSM
+
+The complete catalogue is in `SKILLS.md`. Canonical instructions stay under
+`skills/`; `.agents/skills/` supplies native discovery through relative links.
+Run `make skills-check` after changing skill metadata, references or discovery.
+Skills preserve the user's authorized scope and do not implicitly create
+background monitors, reset worlds, publish releases or modify unrelated servers.
+
 See:
 
 - `SKILLS.md`

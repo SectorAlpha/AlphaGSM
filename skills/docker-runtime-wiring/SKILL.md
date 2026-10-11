@@ -1,3 +1,8 @@
+---
+name: docker-runtime-wiring
+description: "Use when implementing or reviewing explicit Docker runtime hooks in an AlphaGSM game module."
+---
+
 # Docker Runtime Wiring
 
 | Field | Value |

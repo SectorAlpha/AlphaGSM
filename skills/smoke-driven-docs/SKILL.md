@@ -1,3 +1,8 @@
+---
+name: smoke-driven-docs
+description: "Use when updating server guides or command examples from verified AlphaGSM smoke workflows."
+---
+
 # Smoke-Driven Docs
 
 | Field | Value |

@@ -1,3 +1,8 @@
+---
+name: system-install-validation
+description: "Use when a downloaded game server cannot start or answer queries on its installed host."
+---
+
 # System Install Validation
 
 | Field | Value |

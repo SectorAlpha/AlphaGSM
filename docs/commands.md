@@ -11,7 +11,7 @@ game.
 
 | Command | What it does |
 | --- | --- |
-| `alphagsm list` | Print this user's servers, one per line |
+| `alphagsm '*' list` | Print this user's servers, one per line |
 | `alphagsm <name> create <module>` | Register a new server |
 | `alphagsm <name> setup` | Download files and write config |
 | `alphagsm <name> start` | Launch the dedicated server |
@@ -22,8 +22,10 @@ game.
 | `alphagsm <name> restart` | Stop, then start |
 | `alphagsm <name> kill` | Immediate force-kill if stop is stuck |
 
-`setup -n` fails instead of prompting. Pass port and directory when you already
-know them: `alphagsm mymc setup -n 25565 "$HOME/minecraft-server"`.
+`setup -n` disables prompts; supply the required game values as well as port
+and directory. For fresh Minecraft, after accepting the game's EULA, use
+`alphagsm mymc setup -n -l 25565 "$HOME/minecraft-server"`.
+Without that EULA choice, setup can finish while the game still refuses to start.
 
 ## Console and logs
 
@@ -57,9 +59,11 @@ something you need for daily use.
 alphagsm mymc backup
 alphagsm mymc restore          # list available backups
 alphagsm mymc restore 0        # restore by index
-alphagsm mymc restore backup-filename.tar.gz
+alphagsm mymc restore backup-filename.zip
 ```
 
+Backups use ZIP archives. Check the module's backup support: TF2 currently
+advertises the shared command but has no backup hook.
 Restore stops the server first. `reset-world` / `wipe` delete **world data
 only**, with a confirmation prompt (`-Y` skips it). See
 [World creation and reset](world-management.md).
@@ -77,6 +81,9 @@ alphagsm mymc deactivate
 
 `activate` needs a working user crontab on Unix. Standalone Windows binaries
 do not install a boot scheduler.
+The current generated job does not preserve a custom `ALPHAGSM_CONFIG_LOCATION`
+and does not robustly handle executable paths containing spaces. Check that
+the job can find your intended installation before relying on boot startup.
 
 ## Runtime check
 
@@ -115,7 +122,7 @@ states besides a plain pass:
 ## More than one server
 
 ```bash
-alphagsm list
+alphagsm '*' list
 alphagsm '*' status
 ```
 

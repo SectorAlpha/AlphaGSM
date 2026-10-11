@@ -25,6 +25,11 @@ The everyday flow is always the same:
 Then `stop`, `backup`, or `update` as needed. Pick a game from
 [the server guides](docs/README.md) if you want the exact module name.
 
+You can also ask an AI agent with terminal access to do this work. Start with
+“Use alphagsm-agent-operations to run my server,” and give it the game, server
+name and desired result. See [Run AlphaGSM With An AI Agent](docs/agent-operations.md)
+for setup and examples.
+
 It can run directly on the host, or optionally run as a Docker "manager"
 container that launches Docker-backed game-server containers through the host
 daemon.

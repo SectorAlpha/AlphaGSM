@@ -1,30 +1,29 @@
-# AlphaGSM Skills
+# AlphaGSM Skill Packaging
 
-This directory contains repo-local skills for agents and automation.
+The [canonical catalogue](../SKILLS.md) lists all skills by task. Start with
+`alphagsm-agent-operations` for running servers or `alphagsm-agent-development`
+for repository maintenance.
 
-Each skill lives in its own directory and exposes a `SKILL.md` file.
+Each directory contains a `SKILL.md` with YAML `name` and `description`, followed
+by focused instructions. Names match directories. Canonical files stay here so
+existing documentation links remain stable. `.agents/skills/<name>` contains a
+relative directory symlink to `../../skills/<name>` for native repository
+discovery; maintain one instruction source.
 
-## Current Skills
+Agents with shell access can use these workflows in the selected AlphaGSM
+installation. Other agents can load files explicitly from [SKILLS.md](../SKILLS.md).
+When Git checks symlinks out as plain text files, native discovery is unavailable;
+use explicit loading or a checkout with symlink support. The validator accepts
+valid Git link stubs and reports this limitation.
 
-- [changelog-discipline](changelog-discipline/SKILL.md)
-- [disabled-server-gate](disabled-server-gate/SKILL.md)
-- [install-layout](install-layout/SKILL.md)
-- [server-info-gathering](server-info-gathering/SKILL.md)
-- [server-lifecycle](server-lifecycle/SKILL.md)
-- [smoke-driven-docs](smoke-driven-docs/SKILL.md)
-- [system-install-validation](system-install-validation/SKILL.md)
-- [wiki-publishing](wiki-publishing/SKILL.md)
+Keep descriptions concise and specific. Link supporting references only when
+needed, and use Markdown links for local files so validation can check them.
+Read [AGENTS.md](../AGENTS.md) for authoritative repository contracts: canonical
+top-level game modules are package-backed, module assets stay colocated, and
+server content is multiplayer dedicated-server content by default.
 
-## Related Files
-
-- [../AGENTS.md](../AGENTS.md)
-- [../SKILLS.md](../SKILLS.md)
-
-## Repository Conventions
-
-Repo-local skills should follow the same core repository conventions captured in
-[../AGENTS.md](../AGENTS.md), especially:
-
-- canonical game modules may be flat files or package-backed directories
-- package-backed modules should keep checked-in curated manifests beside their implementation
-- curated mod/plugin/addon guidance should prefer popular families with authoritative release assets and explicit dependency wiring
+Run `make skills-check` after editing. Structural validation checks metadata,
+catalogue membership, inline local Markdown references and discovery targets.
+Evaluate actual task behavior separately using
+[skill-maintenance](alphagsm-skill-maintenance/SKILL.md). Full authoring and check
+details are in [DEVELOPERS.md](../DEVELOPERS.md).

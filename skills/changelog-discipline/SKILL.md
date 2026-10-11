@@ -1,3 +1,8 @@
+---
+name: changelog-discipline
+description: "Use when changing release-relevant behavior or workflow expectations and updating AlphaGSM release notes."
+---
+
 # Changelog Discipline
 
 | Field | Value |

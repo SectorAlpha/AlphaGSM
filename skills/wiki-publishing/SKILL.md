@@ -1,3 +1,8 @@
+---
+name: wiki-publishing
+description: "Use when explicitly publishing the wiki or changing the repository documentation mirror."
+---
+
 # Wiki Publishing
 
 | Field | Value |

@@ -1,3 +1,8 @@
+---
+name: install-layout
+description: "Use when changing game install paths, archive extraction, executable lookup or config file layout."
+---
+
 # Install Layout
 
 | Field | Value |
