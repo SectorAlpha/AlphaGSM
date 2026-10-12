@@ -18,6 +18,9 @@ Record only the context needed for the task:
 | Ports and IP | Full claim set including optional and published ports; preserve explicit choices |
 | Intended final state | Keep running, stay stopped, restore service, or temporary validation |
 | Authorized change | Specific server/operation; existing permission persists across steps |
+| Docker consent | Explicit first-use approval for this host/config/topology and server scope |
+| Image origin | Verified SectorAlpha/AlphaGSM publication or inspected repository build; resolved identity |
+| Dependency approval | Concrete approved packages/images/helpers, destinations and transitive install scope |
 | External prerequisite | Provider AUTH or owned assets/exports/URL/local service; never guess secrets |
 
 For a fresh server, list before creating; module-specific help may require the
@@ -36,9 +39,11 @@ credential disclosure. Read secret-bearing config privately; redact reports and
 disable shell tracing while handling credentials.
 
 Inspect current state before mutations. If it already meets the request, verify
-and report it. Continue reversible authorized work without repeated permission
-checks. Ask only when an unresolved input affects the correct target or a
-material action, and keep independent inspection moving.
+and report it. Continue authorized work without repeated permission checks
+within the approved scope. The [Docker and dependency gates](../../alphagsm-server-requirements/references/approval-gates.md)
+require first-use Docker consent and explicit concrete approval for every new
+dependency installation, including indirect installs. Broad task permission
+cannot replace those approvals. Keep independent inspection moving.
 
 For temporary validation, use unique tags and backend session/container names,
 disposable install/config directories, free claim sets and a cleanup path that

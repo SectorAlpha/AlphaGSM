@@ -5,6 +5,8 @@ description: "Use when moving an AlphaGSM server between hosts with verified dat
 
 # Migrate a server
 
+Destination approval is host-specific: use [server-requirements](../alphagsm-server-requirements/SKILL.md) and its [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before destination installs or Docker first use. Source-host Docker consent does not carry to a different host. Prefer the repository manager/runtime containers and verify destination image provenance.
+
 Inputs: explicit source/destination access, owner/tag/module, data locations, port/address choices, transfer method, downtime and cutover scope. Read [backup/restore](../alphagsm-backup-restore/SKILL.md), [install-layout](../install-layout/SKILL.md), and destination [preflight](../alphagsm-host-preflight/SKILL.md). There is no AlphaGSM migrate command.
 
 Inventory install tree, worlds/datadir outside it, mods, game config, manager datastore and private secrets. An ordinary game-directory archive does not capture all manager metadata or external data. Record source runtime/version privately and plan new destination paths/ports. Do not copy source claim/runtime identities blindly.

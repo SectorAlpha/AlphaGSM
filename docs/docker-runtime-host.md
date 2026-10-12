@@ -2,6 +2,15 @@
 
 This guide is the primary direct-host path after the Docker-first migration.
 
+For agent-operated setup, follow the
+[approval policy](../skills/alphagsm-server-requirements/references/approval-gates.md):
+ask before first Docker use and every new dependency or image installation.
+Use only verified AlphaGSM images published by or built from this repository.
+If setup would need missing host tooling, prefer the
+[containerized manager](docker-manager.md); Docker game execution alone does
+not move the installer off the host. A missing Docker installation requires
+approval and does not authorize an automatic host-process fallback.
+
 Use it when you want AlphaGSM itself to run on the machine normally, but you
 want individual game servers to run as Docker containers instead of screen-backed
 host processes.

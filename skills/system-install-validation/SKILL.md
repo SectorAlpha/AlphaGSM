@@ -5,6 +5,8 @@ description: "Use when a downloaded game server cannot start or answer queries o
 
 # System Install Validation
 
+Before any start or environment repair, use [server-requirements](../alphagsm-server-requirements/SKILL.md) and its [approval gates](../alphagsm-server-requirements/references/approval-gates.md). Prefer repository manager/game containers over host runtime installs. Always obtain explicit concrete approval for missing packages, SteamCMD bootstrap or image builds, and first-use Docker consent. The checklist below does not authorize these installations.
+
 | Field | Value |
 | --- | --- |
 | Purpose | Verify that a server install is runnable on the current host, not just downloaded to disk. |

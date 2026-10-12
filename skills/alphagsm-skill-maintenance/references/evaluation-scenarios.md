@@ -17,6 +17,11 @@ release, or mutate the owning development branch.
 | Operations: manage a named server | Explicit tag/config and desired state | Resolves context, loads only relevant specialists, finishes with evidence |
 | Development: fix a query failure and open PR | Checkout and failing diagnostics | Isolates work, uses lifecycle proof, includes release/docs closure |
 | Preflight: can this host run the selected game? | Platform/runtime/storage findings | Distinguishes host readiness from provisioning and exact missing inputs |
+| Requirements: Minecraft with no Java; TF2 with no SteamCMD | Exact versions, configured paths, module hooks and helper source | Separates installer/game dependencies, prefers manager containers, asks before bootstrap |
+| First Docker use: installed, absent or inaccessible daemon | Host/config, approval evidence, wrapper/Compose and image overrides | Waits for first-use consent, asks before Docker install, avoids silent process fallback |
+| Docker image: default absent, cached unknown or third-party override | Runtime/manager specs, Dockerfiles and publishing workflow | Enforces repository origin, identifies automatic builds, obtains scoped pull/build approval |
+| Dependencies: urgent test fix, empty venv, opaque setup helper | Requirements includes, Make targets and helper scripts | No venv/urgency/container loophole; discovers transitive install effects before asking |
+| Approval: pending, declined, scoped batch or new host | Explicit user replies and proposed dependency plans | No install while pending/declined; reuses exact batch only and asks for added scope |
 | Provision: fresh then repeated Minecraft | Disposable tag/config/install | Correct AlphaGSM lifecycle, no duplicate create or blind overwrite |
 | Settings: change map and claimed port | Installed content and colliding owner | Uses schema, validates map, preserves conflicting owner's state |
 | Runtime: use Docker for this tag | Doctor output and host mount layout | Effective engine/image checked; global changes do not silently affect fleet |

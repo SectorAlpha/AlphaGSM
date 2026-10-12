@@ -5,6 +5,8 @@ description: "Use when changing game install paths, archive extraction, executab
 
 # Install Layout
 
+Inspect installers and archive tools without invoking setup as a probe. Follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before new dependencies, image builds or first-use Docker in live layout/lifecycle validation; a layout fix does not implicitly authorize environment installation.
+
 | Field | Value |
 | --- | --- |
 | Purpose | Keep per-server install directories predictable so setup, docs, tests, and updates all agree about where files live. |
