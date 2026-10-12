@@ -5,7 +5,7 @@ description: "Use when updating server guides or command examples from verified 
 
 # Smoke-Driven Docs
 
-Before executing a smoke/integration runner, use [server-requirements](../alphagsm-server-requirements/SKILL.md) and its [approval gates](../alphagsm-server-requirements/references/approval-gates.md). Inspect bootstrap/image/helper side effects, obtain first-use Docker consent and ask before every new dependency install. Reading a runner is independent work; running it is not a read-only documentation check.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 | Field | Value |
 | --- | --- |

@@ -5,7 +5,7 @@ description: "Use when upgrading game server files or the AlphaGSM manager and v
 
 # Upgrade a server or manager
 
-Assess the selected version through [server-requirements](../alphagsm-server-requirements/SKILL.md) first. Apply the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before new/updated runtime packages, SteamCMD bootstrap/self-update or image pulls/builds. An authorized game update does not approve new dependencies. Reuse verified existing tools and preserve the chosen runtime unless a change is approved.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Read [updating](../../docs/updating.md), the selected module's help and current versions/state. Distinguish game files from AlphaGSM itself. Back up mutable data and retain a recoverable prior install/version when rollback is required; a save archive alone may not restore an older binary.
 

@@ -5,7 +5,7 @@ description: "Use when adding a new dedicated-server game module with lifecycle 
 
 # Add a game module
 
-Discover the exact game/version installer and runtime prerequisites with [server-requirements](../alphagsm-server-requirements/SKILL.md). Declare required host tools and provider requirements explicitly; documentation should separate setup-time dependencies from the game runtime. Follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before any new dependency or Docker validation start.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Read [AGENTS.md](../../AGENTS.md), [adding a game](../../docs/adding-a-game-server.md), [server-lifecycle](../server-lifecycle/SKILL.md), and a similar module with passing integration. Establish upstream dedicated-server distribution, platform, license/auth/assets, start/config/stop protocol and multiplayer suitability before coding. Use authoritative upstream research for unknown requirements.
 

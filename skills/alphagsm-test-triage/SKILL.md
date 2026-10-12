@@ -5,7 +5,7 @@ description: "Use when diagnosing AlphaGSM lint, unit, integration, smoke or CI 
 
 # Triage tests
 
-Before reproducing, inspect the runner and dependency chain. Follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) for new packages in any venv/container/host and for first-use Docker or image builds. Prefer an approved repository container environment for game prerequisites. Missing tools are an environment blocker; do not run make deps/install or a bootstrap-enabled test without concrete user approval.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Inputs: failing command/CI job, checkout revision, full traceback/log tail and environment. Reproduce with the repository's pinned dependencies and the same test runner before changing implementation. Distinguish an environment mismatch from a repository defect; preserve baseline evidence.
 

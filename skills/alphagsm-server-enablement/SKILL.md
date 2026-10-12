@@ -5,7 +5,7 @@ description: "Use when fixing disabled or skipped game servers and closing Alpha
 
 # Enable a server
 
-Before reproducing a lifecycle, assess the selected game with [server-requirements](../alphagsm-server-requirements/SKILL.md) and apply its [approval gates](../alphagsm-server-requirements/references/approval-gates.md). Prefer repository Docker environments, ask on first use and wait for approval of any new host/manager/image/test dependency. A failing integration test is no permission to install prerequisites silently.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Read [disabled-server-gate](../disabled-server-gate/SKILL.md), [TEST_STATUS](../../docs/TEST_STATUS.md), [public support tracker](../../docs/game-server-support.md), matching guide and integration test. Identify canonical id/aliases and the evidence behind the current disabled/skip state. Record any local campaign checklist so it can be closed in the same change.
 

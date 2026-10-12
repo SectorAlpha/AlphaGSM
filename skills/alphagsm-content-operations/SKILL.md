@@ -5,11 +5,11 @@ description: "Use when applying supported server mods, plugins, addons or maps t
 
 # Operate server content
 
-Before apply/install, inspect the complete content dependency graph and follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md). Always ask and wait before installing new mod/plugin prerequisites, packages or runtimes. A SourceMod request does not implicitly approve newly discovered MetaMod or toolchain dependencies; present the full batch first.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Read [installing mods](../../docs/installing-mods.md), matching game guide and `<tag> --help`. Inputs include the exact server-compatible family/source/version, initialized install and allowed downtime. Not every module exposes mod/map commands; Palworld has no manager mod installer today. Unsupported Workshop desired state is not an apply capability.
 
-For TF2, request both prerequisites explicitly where the checked-in registry does not declare dependency wiring:
+For TF2, add both prerequisites explicitly where the checked-in registry does not declare dependency wiring. A supported SourceMod request covers these managed steps without a separate MetaMod approval:
 
 ```bash
 alphagsm mytf2 mod add manifest metamod

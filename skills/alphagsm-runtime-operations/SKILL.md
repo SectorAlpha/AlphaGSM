@@ -5,7 +5,7 @@ description: "Use when selecting or diagnosing process versus Docker execution f
 
 # Operate a runtime
 
-Before any manager/game container start, apply the [Docker and installation approval gates](../alphagsm-server-requirements/references/approval-gates.md): ask on first use, verify repository image origin and obtain approval for absent image pulls/builds or tooling. Prefer the containerized manager when installer tools are missing on the host. An existing process server must not be moved to Docker without an approved scope; never silently fall back to host installs.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Resolve [execution context](../alphagsm-agent-operations/references/execution-context.md), then inspect:
 

@@ -26,7 +26,7 @@ that toolchain on a host that lacks it. Verify what the manager actually supplie
 it is not guaranteed to include every custom game's build tool. The manager
 Dockerfile supplies Java and SteamCMD libraries, but does not explicitly bundle
 the SteamCMD client or a general compiler toolchain. A required client bootstrap
-inside the manager still needs installation approval.
+inside the manager is an ordinary step of the approved AlphaGSM recipe.
 
 ## Runtime family routing
 
@@ -57,16 +57,16 @@ check is not implemented, retain `unknown` rather than reporting `present`.
   is a different native implementation, not a Java JAR.
 - `tf2` resolves to [teamfortress2](../../../src/gamemodules/teamfortress2/main.py).
   Check the configured SteamCMD executable, not just PATH. Missing SteamCMD is
-  installed by the shared download helper; obtain approval before setup. An
-  already-installed Steam client can also self-update; include that behavior
-  before an invocation that would change the dependency.
+  installed by the shared download helper as part of the managed setup recipe.
+  Steam client self-updates inside that workflow need no separate approval.
 - [TShock](../../../src/gamemodules/terraria/tshock.py) and
   [Vintage Story](../../../src/gamemodules/vintagestoryserver/main.py) declare
   `dotnet` requirements; do not assume every Terraria variant needs Mono or
   Java. Inspect the actual executable and supported release's runtime version.
 - [Quake II](../../../src/gamemodules/q2server/main.py) has a source-build setup
   path that invokes `make server game`; undeclared build tools must still be
-  discovered from the source/Makefile and approved before installation.
+  discovered from the source/Makefile. New external host tools need installation
+  approval; build inputs inside repository images and managed workflows do not.
 - [ASKA](../../../src/gamemodules/askaserver/main.py) declares a provider token;
   [The Isle](../../../src/gamemodules/tiserver/main.py) declares EOS credentials;
   [BattleBit](../../../src/gamemodules/battlebitserver/main.py) declares API

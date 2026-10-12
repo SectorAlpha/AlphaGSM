@@ -5,7 +5,7 @@ description: "Use when preparing validated AlphaGSM versions, standalone binarie
 
 # Prepare a release
 
-Inspect build helper requirements before execution and follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) for missing build tools, venv packages and image dependencies. Preparing a release does not authorize a new package installation. Use existing verified tools or wait for approval of the exact build-environment plan.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Inspect [release workflow](../../.github/workflows/release.yml), [binary workflow](../../.github/workflows/binary.yml), [standalone guide](../../docs/standalone-binaries.md), [build script](../../scripts/build_binary.py) and [signing script](../../scripts/sign_release.py). Establish requested version, platforms, artifact destination and whether publishing/tagging was explicitly requested. Preparation alone does not authorize a public release.
 

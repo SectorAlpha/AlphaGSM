@@ -69,6 +69,6 @@ and the [agent operations guide](docs/agent-operations.md) for setup and example
 Read [AGENTS.md](AGENTS.md) for lifecycle, module layout, port ownership,
 config sync, runtime, provider, support-state and release-note requirements.
 Skills guide execution within the user’s task and existing authorization.
-The [approval gates](skills/alphagsm-server-requirements/references/approval-gates.md)
-require first-use Docker consent, repository image provenance and explicit
-approval before new direct or indirect dependency installation.
+The [installation/request policy](skills/alphagsm-server-requirements/references/approval-gates.md)
+asks to install an absent game, clarifies vague existing-game requests, and gates
+only genuinely new software. AlphaGSM-managed steps have no additional approval.

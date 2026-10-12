@@ -5,7 +5,7 @@ description: "Use when creating missing game worlds or resetting explicitly requ
 
 # Manage worlds
 
-Before creating a world through start or restarting after reset, apply the [Docker and installation approval gates](../alphagsm-server-requirements/references/approval-gates.md). A world request does not authorize first-use Docker startup or missing runtime/image installations; inspect and obtain the required approvals first.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Read [world management](../../docs/world-management.md) and the selected module's help/settings. Resolve the configured world and exact existing save paths. `reset-world`/`wipe` take no world-name argument and have no dry-run flag. A request to reset a different named world cannot be fulfilled by blindly deleting the currently configured one.
 

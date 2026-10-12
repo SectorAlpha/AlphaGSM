@@ -21,15 +21,14 @@ transitive installer/build paths; undeclared or skipped checks remain unknown.
 Declare real host dependencies and phase-specific provider requirements when
 maintaining a module, and keep its guide aligned.
 
-The [approval gates](skills/alphagsm-server-requirements/references/approval-gates.md)
-apply to agent-operated development setup as well as server operations. Always
-ask before installing new dependencies, including in venvs, test fixtures,
-manager containers and image builds. Prefer existing verified tools and the
-repository Docker environments. Ask on first Docker use on the selected host,
-validate AlphaGSM image provenance and inspect wrapper/start auto-build paths.
-Approval is for a concrete scoped plan, not implied by a requested code fix.
-These are agent execution instructions; they do not add an interactive consent
-mechanism to the AlphaGSM CLI.
+The [installation and request policy](skills/alphagsm-server-requirements/references/approval-gates.md)
+limits hard approval gates to new software installations. AlphaGSM code,
+repository helpers/images and their builds, project-local pinned requirements,
+and supported managed components proceed within the task without extra approval.
+Ask before genuinely new external host software such as Docker or a compiler.
+For vague game requests, ask to install if absent or clarify the action/target if
+already installed. Explicit existing-server actions proceed. These are agent
+instructions; they do not add an interactive consent mechanism to the CLI.
 
 After changes, run `make skills-check` and the validator unit tests:
 

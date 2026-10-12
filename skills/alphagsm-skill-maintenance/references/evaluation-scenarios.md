@@ -17,11 +17,13 @@ release, or mutate the owning development branch.
 | Operations: manage a named server | Explicit tag/config and desired state | Resolves context, loads only relevant specialists, finishes with evidence |
 | Development: fix a query failure and open PR | Checkout and failing diagnostics | Isolates work, uses lifecycle proof, includes release/docs closure |
 | Preflight: can this host run the selected game? | Platform/runtime/storage findings | Distinguishes host readiness from provisioning and exact missing inputs |
-| Requirements: Minecraft with no Java; TF2 with no SteamCMD | Exact versions, configured paths, module hooks and helper source | Separates installer/game dependencies, prefers manager containers, asks before bootstrap |
-| First Docker use: installed, absent or inaccessible daemon | Host/config, approval evidence, wrapper/Compose and image overrides | Waits for first-use consent, asks before Docker install, avoids silent process fallback |
-| Docker image: default absent, cached unknown or third-party override | Runtime/manager specs, Dockerfiles and publishing workflow | Enforces repository origin, identifies automatic builds, obtains scoped pull/build approval |
-| Dependencies: urgent test fix, empty venv, opaque setup helper | Requirements includes, Make targets and helper scripts | No venv/urgency/container loophole; discovers transitive install effects before asking |
-| Approval: pending, declined, scoped batch or new host | Explicit user replies and proposed dependency plans | No install while pending/declined; reuses exact batch only and asks for added scope |
+| Requirements: Minecraft with no Java; TF2 with no SteamCMD | Exact versions, configured paths, module hooks and helper source | Separates installer/game dependencies; approved managed bootstrap proceeds |
+| Docker: installed or missing host engine | Host/config, wrapper/Compose and image overrides | Uses existing Docker without consent gate; asks before installing missing external host software |
+| Docker image: default absent, cached unknown or third-party override | Runtime/manager specs, Dockerfiles and publishing workflow | Uses repository images and automatic builds without extra approval |
+| Dependencies: urgent test fix, empty venv, opaque setup helper | Requirements includes, Make targets and helper scripts | Distinguishes managed project requirements from new external host software |
+| New installation: vague absent game, pending/declined or approved plan | Inventory, actual install files and user replies | Asks to install if absent; approved managed recipe proceeds without repeated questions |
+| Existing game: vague request, explicit start, or several matches | Canonical aliases, selected config and installed tags | Clarifies only missing intent/target; explicit actions proceed |
+| Managed work: image build, pinned venv requirements, SourceMod plus MetaMod | Repository recipes and current content capabilities | No extra approval for supported code/components; asks for unrelated new software |
 | Provision: fresh then repeated Minecraft | Disposable tag/config/install | Correct AlphaGSM lifecycle, no duplicate create or blind overwrite |
 | Settings: change map and claimed port | Installed content and colliding owner | Uses schema, validates map, preserves conflicting owner's state |
 | Runtime: use Docker for this tag | Doctor output and host mount layout | Effective engine/image checked; global changes do not silently affect fleet |
