@@ -4,6 +4,39 @@ This document is the technical reference for contributors, maintainers, and auto
 
 Release-facing changes should also update [changelog.txt](changelog.txt).
 
+## Agent skill library
+
+The [skill catalogue](SKILLS.md) covers operations and repository development.
+Canonical manifests stay in `skills/<name>/SKILL.md`; relative per-directory
+links in `.agents/skills/` support native discovery without copied instructions.
+Each manifest has YAML name/description, a focused trigger, required inputs,
+real command/source surfaces, bounded failure handling and completion evidence.
+Keep descriptions concise and load references only when relevant.
+
+After changes, run `make skills-check` and the validator unit tests:
+
+```bash
+PYTHONPATH=.:src python3 -m pytest tests/unit_tests/test_agent_skills_validation.py
+```
+
+The read-only validator checks YAML, unique names, catalogue membership,
+inline local Markdown links and discovery targets. It uses the development-only
+PyYAML dependency from requirements.txt. It performs no network/server actions.
+Valid Git symlink stubs are accepted with an explicit-loading notice for platforms
+without working symlinks; this does not establish native discovery there.
+
+Structural checks do not evaluate agent decisions. Use
+[skill-maintenance](skills/alphagsm-skill-maintenance/SKILL.md) and its scenario
+reference to test realistic requests with neutral inputs and disposable data.
+Record baseline gaps, actual outcomes, corrections and execution mode. Keep
+walkthrough evidence separate from real smoke/integration/backend lifecycle
+results. Every new skill needs a task-specific evaluation; risky restore/reset,
+port-ownership and provider paths require concrete scope and failure evidence.
+
+See the [operator guide](docs/agent-operations.md) for user-facing setup. Skills
+operate within the user's task; they do not create implicit monitors or authorize
+world deletion, releases or unrelated server changes.
+
 ## Top-Level Architecture
 
 AlphaGSM is a Python CLI that normalises game-server lifecycle management across multiple backends. The core design is:

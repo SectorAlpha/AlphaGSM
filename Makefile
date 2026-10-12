@@ -12,10 +12,11 @@
 #   make config        — copy alphagsm.conf-template → alphagsm.conf (once)
 #   make lint          — run the pylint quality gate (must score 10.00/10)
 #   make test          — run the unit test suite
+#   make skills-check  — validate agent skill metadata, links and discovery
 #   make help          — show this message
 # ==============================================================================
 
-.PHONY: all install python deps system-libs wine proton wine-proton config lint test coverage integration-test smoke-test help
+.PHONY: all install python deps system-libs wine proton wine-proton config lint test skills-check coverage integration-test smoke-test help
 
 
 # Read the pinned Python version from .python-version (e.g. 3.10.13)
@@ -45,6 +46,7 @@ help:
 	@echo "  make config        Initialise alphagsm.conf from the template (skipped if exists)"
 	@echo "  make lint          Run the pylint quality gate"
 	@echo "  make test          Run the unit test suite"
+	@echo "  make skills-check  Validate agent skill metadata, links and discovery"
 	@echo "  make coverage      Run the unit coverage report"
 	@echo "  make integration-test  Run the integration test suite (uses $$ALPHAGSM_WORK_DIR or $(DEFAULT_INTEGRATION_WORK_DIR) if present)"
 	@echo "  make smoke-test    Run all smoke tests in tests/smoke_tests/"
@@ -172,10 +174,13 @@ config:
 # ------------------------------------------------------------------------------
 # Development targets
 # ------------------------------------------------------------------------------
-lint:
+skills-check:
+	$(PYTHON_BIN) scripts/validate_agent_skills.py
+
+lint: skills-check
 	bash lint.sh
 
-test:
+test: skills-check
 	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests -n auto
 
 coverage:

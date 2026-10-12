@@ -31,9 +31,10 @@ alphagsm mytf2 update -v
 
 You can combine them: `alphagsm mytf2 update -v -r`.
 
-Minecraft and similar download-URL games are not SteamCMD updates. Change the
-version or URL with `set`, then run `setup` again. See the matching server
-guide.
+Minecraft and similar download-URL games are not SteamCMD updates. Use the
+matching guide's setup flags. For Minecraft Vanilla, preserve your existing
+port and directory and pass `--version VERSION` or `--url URL` to
+`setup -n -l PORT DIR`; version and URL are not supported `set` keys.
 
 After any upgrade, `doctor` is a good check:
 

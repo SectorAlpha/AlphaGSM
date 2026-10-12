@@ -1,3 +1,8 @@
+---
+name: server-info-gathering
+description: "Use when implementing or debugging AlphaGSM query and info protocol hooks."
+---
+
 # Server Info Gathering
 
 | Field | Value |

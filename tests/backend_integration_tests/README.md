@@ -16,20 +16,21 @@ path:
 ## Docker runtime family coverage
 
 Docker backend validation is now tracked by runtime family in
-`backend_integration_tests/docker_family_matrix.py`.
+`tests/backend_integration_tests/docker_family_matrix.py`.
 
 Each runtime family now declares **three** representative Docker lifecycle
-cases. CI currently runs the active Java cases:
+cases. CI currently runs these active cases:
 
 - `java-minecraft-vanilla`
 - `java-minecraft-paper`
 - `java-minecraft-velocity`
+- `simple-tcp-mumble-default`
 
 The remaining declared families are tracked as planned activation work:
 
 - `quake-linux`
 - `service-console`
-- `simple-tcp`
+- `simple-tcp` (the remaining two Mumble cases)
 - `steamcmd-linux`
 - `wine-proton`
 
@@ -38,7 +39,7 @@ The remaining declared families are tracked as planned activation work:
 ```bash
 ALPHAGSM_RUN_BACKEND_INTEGRATION=1 \
 PYTHONPATH=src \
-  python -m pytest backend_integration_tests/ -v
+  python -m pytest tests/backend_integration_tests/ -v
 ```
 
 ## CI
@@ -46,7 +47,7 @@ PYTHONPATH=src \
 These run as dedicated host-runner jobs in the GitHub Actions workflow, in
 parallel with the normal smoke and integration test matrix. A matching
 **backend-smoke-test** job runs the bash-level smoke scripts under
-`smoke_tests/run_backend_*.sh`.
+`tests/smoke_tests/run_backend_*.sh`.
 
 The Linux backend job explicitly runs `test_backend_docker.py` against the
 active matrix cases. That Docker step must prove the AlphaGSM command flow
@@ -76,7 +77,7 @@ To run the Minecraft Vanilla subprocess backend integration test in a Windows co
 
 1. Build the image:
    ```powershell
-   docker build -f backend_integration_tests/Dockerfile.windows -t alphagsm-win .
+   docker build -f tests/backend_integration_tests/Dockerfile.windows -t alphagsm-win .
    ```
 2. Run the container interactively:
    ```powershell
