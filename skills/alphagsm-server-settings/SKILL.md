@@ -5,6 +5,8 @@ description: "Use when changing AlphaGSM game settings, secrets, map selection o
 
 # Change server settings
 
+Inspect the selected setting hook for update/install side effects, then follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before new dependencies or first-use Docker. This also applies to a required restart or changed image override; verify repository image provenance before starting.
+
 Inputs: exact tag/config, requested key/value, intended running state. Discover the module's schema instead of assuming generic game keys:
 
 ```bash

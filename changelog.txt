@@ -7,6 +7,13 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-12
+- Agent prerequisites: add per-game/version requirement discovery across manager,
+  installer, runtime, provider/assets, configuration and host resources.
+- Agent approval gates: prefer repository Docker deployments, require first-use
+  Docker consent and verified AlphaGSM image origin, and require concrete user
+  approval before every new direct or indirect dependency installation.
+
 2026-10-17
 - SteamCMD: detect the default Steam directory from the host operating
   system. Linux keeps `~/.local/share/Steam` and the `~/.steam` links,

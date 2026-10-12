@@ -13,6 +13,24 @@ Each manifest has YAML name/description, a focused trigger, required inputs,
 real command/source surfaces, bounded failure handling and completion evidence.
 Keep descriptions concise and load references only when relevant.
 
+The [server-requirements skill](skills/alphagsm-server-requirements/SKILL.md)
+discovers prerequisites for the selected canonical module/version across
+manager, installation, runtime, provider/assets, settings and host resources.
+Use the capability inventory as a routing index, then inspect actual hooks and
+transitive installer/build paths; undeclared or skipped checks remain unknown.
+Declare real host dependencies and phase-specific provider requirements when
+maintaining a module, and keep its guide aligned.
+
+The [approval gates](skills/alphagsm-server-requirements/references/approval-gates.md)
+apply to agent-operated development setup as well as server operations. Always
+ask before installing new dependencies, including in venvs, test fixtures,
+manager containers and image builds. Prefer existing verified tools and the
+repository Docker environments. Ask on first Docker use on the selected host,
+validate AlphaGSM image provenance and inspect wrapper/start auto-build paths.
+Approval is for a concrete scoped plan, not implied by a requested code fix.
+These are agent execution instructions; they do not add an interactive consent
+mechanism to the AlphaGSM CLI.
+
 After changes, run `make skills-check` and the validator unit tests:
 
 ```bash

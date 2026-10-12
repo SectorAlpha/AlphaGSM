@@ -5,6 +5,8 @@ description: "Use when selecting or diagnosing process versus Docker execution f
 
 # Operate a runtime
 
+Before any manager/game container start, apply the [Docker and installation approval gates](../alphagsm-server-requirements/references/approval-gates.md): ask on first use, verify repository image origin and obtain approval for absent image pulls/builds or tooling. Prefer the containerized manager when installer tools are missing on the host. An existing process server must not be moved to Docker without an approved scope; never silently fall back to host installs.
+
 Resolve [execution context](../alphagsm-agent-operations/references/execution-context.md), then inspect:
 
 ```bash

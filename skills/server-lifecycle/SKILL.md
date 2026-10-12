@@ -5,6 +5,8 @@ description: "Use when changing game module lifecycle hooks or checking the Alph
 
 # Server Lifecycle
 
+Before live lifecycle or integration examples, use [server-requirements](../alphagsm-server-requirements/SKILL.md) and its [approval gates](../alphagsm-server-requirements/references/approval-gates.md). Prefer repository container environments, obtain first-use Docker consent and concrete approval before any new direct or indirect dependency installation. The contract/examples below do not authorize installer, image or test-environment bootstraps.
+
 | Field | Value |
 | --- | --- |
 | Purpose | Preserve, document, and enforce the standard AlphaGSM server lifecycle contract. |

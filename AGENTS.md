@@ -2,6 +2,28 @@
 
 This file is for coding agents and automation working inside this repository.
 
+## Operational Requirements And Approval Gates
+
+Before provisioning, repairing or testing a selected game, use
+[server-requirements](skills/alphagsm-server-requirements/SKILL.md) to inspect its
+actual module/version, installation helpers, platform/runtime and AUTH/BYO inputs.
+Missing declarations or skipped checks do not prove that prerequisites are met.
+
+Prefer the containerized AlphaGSM manager and Docker game runtimes. On first use
+on a selected host/config, ask the user before starting Docker containers.
+Use only AlphaGSM images published by or built from SectorAlpha/AlphaGSM on GitHub.
+The checked-in manager uses the host socket and sibling containers; true
+Docker-in-Docker requires a separate topology decision.
+
+**Always ask and wait for the user's explicit approval of a concrete plan before
+installing any new package or dependency**, including Docker itself, host
+runtimes, virtualenv packages, SteamCMD bootstrap, plugin prerequisites, image
+pulls/builds and indirect installs through setup/start/helpers/test runners.
+Broad task authorization and noninteractive flags do not satisfy this gate.
+Reuse approval only for the exact described scope; new dependencies need another
+approval. Continue independent inspection when approval is pending or declined.
+Follow the [shared approval policy](skills/alphagsm-server-requirements/references/approval-gates.md).
+
 ## Main Rule
 
 
@@ -339,6 +361,8 @@ Skills preserve the user's authorized scope and do not implicitly create
 background monitors, reset worlds, publish releases or modify unrelated servers.
 
 See:
+
+- `skills/alphagsm-server-requirements/SKILL.md` — game prerequisites and mandatory approval gates
 
 - `SKILLS.md`
 - `skills/disabled-server-gate/SKILL.md`

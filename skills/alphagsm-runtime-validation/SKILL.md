@@ -5,6 +5,8 @@ description: "Use when verifying AlphaGSM runtime families, branch-local images 
 
 # Validate runtimes
 
+Apply the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before Docker first use, image acquisition/build or test dependency installation. Use only verified images published by or built from SectorAlpha/AlphaGSM. Inspect the selected test and installer for transitive dependencies before executing it; lifecycle validation that needs unapproved installs remains blocked.
+
 Read [docker-runtime-wiring](../docker-runtime-wiring/SKILL.md), [runtime defaults](../../src/server/runtime.py), [family matrix](../../tests/backend_integration_tests/docker_family_matrix.py), [backend guide](../../tests/backend_integration_tests/README.md) and [Docker lifecycle tests](../../tests/backend_integration_tests/test_backend_docker.py). Inspect collection/selection before starting expensive cases.
 
 Keep three declared representative cases for each java, quake-linux, service-console, simple-tcp, steamcmd-linux and wine-proton family; every active case needs CI coverage. Deferred cases remain explicitly explained, not converted to passes. Choose branch-local images from the matching docker family scaffold and explicit test image overrides rather than relying on stale latest tags.

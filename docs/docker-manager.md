@@ -2,6 +2,14 @@
 
 This is the recommended quickest-first-run deployment mode.
 
+When an AI agent performs this setup, it must follow the
+[agent approval policy](../skills/alphagsm-server-requirements/references/approval-gates.md):
+ask before first Docker use, verify repository image origin, and obtain approval
+before any missing Docker/Compose package or manager/runtime image pull/build.
+The wrapper can build and start images automatically, so inspect those paths
+before running it. The deployment below uses the host socket; it does not
+implement a nested Docker-in-Docker daemon.
+
 AlphaGSM can still run directly on the host exactly as before. This guide is
 only for the case where you want AlphaGSM itself to run in a Docker container
 while still launching game-server containers through the host Docker daemon.

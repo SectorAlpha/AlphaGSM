@@ -7,13 +7,15 @@ description: "Use when creating, setting up or starting a named AlphaGSM game se
 
 Inputs: selected host/config, owner/tag, supported module, install path, ports, required game values/assets, and final running state. Read [execution context](../alphagsm-agent-operations/references/execution-context.md), the matching guide, and the canonical [Minecraft](../../tests/smoke_tests/run_minecraft_vanilla.sh) or [TF2](../../tests/smoke_tests/run_tf2.sh) smoke pattern.
 
+First use [server-requirements](../alphagsm-server-requirements/SKILL.md) and its [approval gates](../alphagsm-server-requirements/references/approval-gates.md). Prefer the containerized manager and repository Docker runtimes. Obtain first-use Docker consent and approval for every new dependency before setup/start: SteamCMD bootstrap, JAR tooling and automatic image builds count. Do not use a setup/start attempt as a prerequisite probe or fall back to host installs without approval.
+
 1. List servers and inspect existing state. Reuse a matching healthy tag; stop if the tag belongs to a different game or setup would overwrite unreviewed assets.
 2. Check support prerequisites and module/platform support. Create only a missing tag.
 3. Inspect `myserver --help`, `set --list`, and `help setup`; provide known required values with `setup -n` so missing inputs fail instead of prompting.
 4. Apply game-specific prerequisites/configuration through supported settings. For Terraria/TShock/Necesse, use explicit `start --autocreate` only when creating the configured missing world is intended; never answer an unknown console prompt blindly.
 5. Run doctor, start through AlphaGSM, and [check real readiness](../alphagsm-health-check/SKILL.md) with a deadline. Diagnose one failed attempt before retrying; do not repeatedly overwrite or restart.
 
-Minecraft example after a supported URL, install path and operator EULA acceptance have been established (`-l` records that choice):
+Minecraft example after runtime consent, required dependency approvals, a supported URL, install path and operator EULA acceptance have been established (`-l` records that choice). Use the selected AlphaGSM executable, or forward these same tag commands through the approved manager wrapper:
 
 ```bash
 alphagsm mymc create minecraft.vanilla

@@ -5,6 +5,8 @@ description: "Use when preparing validated AlphaGSM versions, standalone binarie
 
 # Prepare a release
 
+Inspect build helper requirements before execution and follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) for missing build tools, venv packages and image dependencies. Preparing a release does not authorize a new package installation. Use existing verified tools or wait for approval of the exact build-environment plan.
+
 Inspect [release workflow](../../.github/workflows/release.yml), [binary workflow](../../.github/workflows/binary.yml), [standalone guide](../../docs/standalone-binaries.md), [build script](../../scripts/build_binary.py) and [signing script](../../scripts/sign_release.py). Establish requested version, platforms, artifact destination and whether publishing/tagging was explicitly requested. Preparation alone does not authorize a public release.
 
 Read script help and workflow inputs before building. Run pinned dependencies/quality gates and applicable binary verification/release-gate tests. Keep artifacts paired with real SHA-256 files and required provenance/signing evidence; do not invent a checksum or say an untested binary is validated.
