@@ -5,7 +5,7 @@ description: "Use when moving an AlphaGSM server between hosts with verified dat
 
 # Migrate a server
 
-Destination approval is host-specific: use [server-requirements](../alphagsm-server-requirements/SKILL.md) and its [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before destination installs or Docker first use. Source-host Docker consent does not carry to a different host. Prefer the repository manager/runtime containers and verify destination image provenance.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Inputs: explicit source/destination access, owner/tag/module, data locations, port/address choices, transfer method, downtime and cutover scope. Read [backup/restore](../alphagsm-backup-restore/SKILL.md), [install-layout](../install-layout/SKILL.md), and destination [preflight](../alphagsm-host-preflight/SKILL.md). There is no AlphaGSM migrate command.
 

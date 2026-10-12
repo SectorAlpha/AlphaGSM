@@ -5,7 +5,7 @@ description: "Use when changing AlphaGSM game settings, secrets, map selection o
 
 # Change server settings
 
-Inspect the selected setting hook for update/install side effects, then follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before new dependencies or first-use Docker. This also applies to a required restart or changed image override; verify repository image provenance before starting.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Inputs: exact tag/config, requested key/value, intended running state. Discover the module's schema instead of assuming generic game keys:
 

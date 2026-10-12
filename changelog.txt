@@ -10,9 +10,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
 2026-10-12
 - Agent prerequisites: add per-game/version requirement discovery across manager,
   installer, runtime, provider/assets, configuration and host resources.
-- Agent approval gates: prefer repository Docker deployments, require first-use
-  Docker consent and verified AlphaGSM image origin, and require concrete user
-  approval before every new direct or indirect dependency installation.
+- Agent installation policy: gate only new software installations; allow
+  AlphaGSM-managed helpers, repository images/builds and supported prerequisites
+  without extra approval. Ask to install an absent game for a vague run request;
+  clarify unspecified actions on existing games, and execute explicit actions.
+- Agent runtime policy: prefer repository Docker deployments and AlphaGSM images
+  from the GitHub repository without a separate first-use Docker consent gate.
 
 2026-10-11
 - Agent workflows: add 26 focused operations and development skills alongside

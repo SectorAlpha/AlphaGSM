@@ -5,7 +5,7 @@ description: "Use when a downloaded game server cannot start or answer queries o
 
 # System Install Validation
 
-Before any start or environment repair, use [server-requirements](../alphagsm-server-requirements/SKILL.md) and its [approval gates](../alphagsm-server-requirements/references/approval-gates.md). Prefer repository manager/game containers over host runtime installs. Always obtain explicit concrete approval for missing packages, SteamCMD bootstrap or image builds, and first-use Docker consent. The checklist below does not authorize these installations.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 | Field | Value |
 | --- | --- |

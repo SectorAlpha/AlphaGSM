@@ -7,7 +7,7 @@ description: "Use when asked to implement, fix or maintain AlphaGSM through a ve
 
 Read [AGENTS.md](../../AGENTS.md), inspect the checkout/diff, and identify the requested deliverable. Preserve unrelated work. For a new PR on latest mainline, determine the actual remote default branch and use an isolated branch/worktree; do not assume it is named main.
 
-Use existing dependencies for read-only checks and tests. Before any new package, venv dependency, toolchain, image or transitive helper install, follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) and wait for the user. Prefer repository container images for game validation; obtain first-use Docker consent. For lifecycle tests, use [server-requirements](../alphagsm-server-requirements/SKILL.md) for the exact game/version and installer environment.
+Follow the [installation policy](../alphagsm-server-requirements/references/approval-gates.md): AlphaGSM code, helpers, project-local pinned dependencies and repository image builds are available within the requested task without additional approval. Ask before installing genuinely new external software such as a missing host Docker engine or compiler. For game lifecycle work, use [server-requirements](../alphagsm-server-requirements/SKILL.md) and clarify vague existing-server requests.
 
 ## Select the change workflow
 

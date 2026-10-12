@@ -11,11 +11,10 @@ Open this repository in your agent and give it access to the host where AlphaGSM
 is installed. Tell it which server to work on and what result you want. If you
 use a separate installed AlphaGSM binary or config, give it that location too.
 
-The agent prefers the AlphaGSM manager and game servers in Docker. On first use
-on your selected host, it asks before starting Docker containers and explains
-the images, server folders, ports and Docker access it will use. If Docker is
-missing, it asks before installing Docker or Compose. You can choose host
-execution; it still asks before installing any missing host dependency.
+The agent prefers the AlphaGSM manager and game servers in Docker. Existing
+Docker and repository image pulls/builds need no separate approval. If Docker
+or another external host runtime is missing, it asks before installing that new
+software.
 
 For server management, ask it to use `alphagsm-agent-operations`. For code changes,
 ask it to use `alphagsm-agent-development`. These entry skills select the focused
@@ -54,39 +53,45 @@ readiness. A running process alone is not a healthy server. It reports the
 resulting running state, meaningful checks, backup/recovery artifacts and any
 remaining blocker. Fleet results are reported per server.
 
-## Requirements and installation approval
+## Requirements and installation intent
 
 Ask “Use alphagsm-server-requirements. Check what this host needs for
-minecraft.vanilla version [my version], but do not install anything yet.”
-The agent checks the exact game/version and reports each requirement as
-present, missing, unknown or not applicable, with its source and next step.
-This includes platform/CPU compatibility, manager and installation tools,
-game runtime, storage, ports, settings, required worlds, credentials and assets.
-It distinguishes what must exist on the host, in the manager, and in the game
-container. A Docker game image may not supply tools needed during setup.
+minecraft.vanilla version [my version].” The agent checks the exact type/version,
+platform, manager/installer tools, game runtime, resources, ports, settings,
+worlds, credentials and assets. It reports what exists and what is still needed.
 
-**The agent always asks and waits for your approval before installing a new
-package or dependency.** It presents the packages/images, sources, destination,
-commands and expected effects first. This includes Python packages in a
-virtualenv, Java/.NET/Wine/Proton, SteamCMD bootstrap, plugin prerequisites and
-runtime image pulls/builds. A setup/start command that installs these indirectly
-needs the same approval. “Run the server” or “fix the tests” is not that approval.
+For every game type:
 
-One approval can cover the described installation batch and first Docker use.
-The agent reuses that approval within its stated scope; additional dependencies,
-another host or a different deployment need a new decision. If you decline or
-have not replied, it continues independent checks and reports what is blocked.
+- “Run a TF2 server” with no TF2 installed: it asks to install it, then proceeds
+  through the supported workflow once you agree.
+- The same request with TF2 already installed: it clarifies whether you want to
+  start that server, change it or create another. If several match, it clarifies
+  which one.
+- “Start mytf2” or another explicit action on an existing server: it performs the
+  action without another confirmation.
+- An explicit or already-approved installation: its managed steps proceed
+  without repeated approval questions.
 
-AlphaGSM manager/game images must be published by or built from
-[SectorAlpha/AlphaGSM](https://github.com/SectorAlpha/AlphaGSM). The agent checks
-image overrides and records their origin and identity; it will not substitute
-unrelated third-party images. Local builds use the repository Dockerfiles.
-The agent explains any automatic pull/build fallback before you approve it.
+**Hard approval gates apply only to new software installation.** AlphaGSM's
+code, helpers, repository images/builds, project-local pinned dependencies and
+supported mod/plugin prerequisites are part of the requested work. They do not
+need separate permission. A requested SourceMod installation includes its
+supported MetaMod prerequisite; an approved fresh game installation includes
+its AlphaGSM-managed setup recipe.
 
-The supported [Docker manager](docker-manager.md) runs game containers through
-the host Docker socket. That is Docker-outside-of-Docker. True Docker-in-Docker
-uses a nested daemon and requires a separate deployment decision; the repository
-does not provide that deployment. Both need a working container executor.
+New external software outside that managed scope, such as a missing host Docker
+engine/Compose, host Java or system package, still requires an installation
+request describing what will be installed and where. That can be included in
+the fresh-server installation question. The agent reuses the approval for that
+scope and continues independent work while a needed reply is pending.
+
+AlphaGSM manager/game images come from publication or builds of
+[SectorAlpha/AlphaGSM](https://github.com/SectorAlpha/AlphaGSM). The agent selects
+those images directly rather than asking for approval to pull/build each one.
+The supported [manager](docker-manager.md) uses the host Docker socket and
+sibling containers. True Docker-in-Docker uses a nested daemon and is not
+provided by the checked-in deployment; this is a capability distinction, not
+another consent gate.
 
 For a code change, it follows the repository's lifecycle, runtime and support
 contracts, updates tests/docs/changelog as needed, and includes executed

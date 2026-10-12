@@ -5,7 +5,7 @@ description: "Use when making or restoring an AlphaGSM backup with an explicit s
 
 # Back up and restore
 
-Follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before installing missing archive tools or other dependencies, and before first-use Docker or a restart that would pull/build an image. A restore request does not implicitly approve its newly discovered runtime prerequisites.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 Inputs: selected tag/config, backup or restore intent, exact archive, acceptable downtime, and final state. Inspect the actual module backup hook as well as help: shared help can advertise an unimplemented hook (TF2 currently has no backup hook). Establish a scoped staged-copy recovery plan or report that capability blocker rather than claiming a backup succeeded. Inspect the module's backup profile and [backup implementation](../../src/utils/backups/backups.py): targets/exclusions and retention determine actual coverage. Minecraft's default profile targets literal `world`, which may differ from its configured world/tag. Verify the actual configured saves are included before claiming recoverability. Mutable data outside the install tree needs deliberate inclusion or a separate staged copy.
 

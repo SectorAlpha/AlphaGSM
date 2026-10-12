@@ -5,7 +5,7 @@ description: "Use when implementing or reviewing explicit Docker runtime hooks i
 
 # Docker Runtime Wiring
 
-Before live validation, follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) for Docker first use and new image/tooling installs. Verify AlphaGSM images originate from SectorAlpha/AlphaGSM publication or the inspected repository build. Runtime declarations must distinguish installation-manager tools from game-container dependencies; an available game image does not prove setup requirements.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 | Field | Value |
 | --- | --- |

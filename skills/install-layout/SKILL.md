@@ -5,7 +5,7 @@ description: "Use when changing game install paths, archive extraction, executab
 
 # Install Layout
 
-Inspect installers and archive tools without invoking setup as a probe. Follow the [approval gates](../alphagsm-server-requirements/references/approval-gates.md) before new dependencies, image builds or first-use Docker in live layout/lifecycle validation; a layout fix does not implicitly authorize environment installation.
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
 
 | Field | Value |
 | --- | --- |
