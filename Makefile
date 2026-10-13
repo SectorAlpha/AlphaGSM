@@ -185,6 +185,7 @@ test: skills-check
 
 coverage:
 	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests \
+		--cov=agent \
 		--cov=core \
 		--cov=downloader \
 		--cov=downloadermodules \

@@ -534,3 +534,14 @@ Use:
 - License: GPL v3.0, see [LICENSE](LICENSE)
 - Credits: see [CREDITS](CREDITS)
 - Changelog: [changelog.txt](changelog.txt)
+
+## Optional Sector Alpha connection
+
+AlphaGSM can connect to a compatible Sector Alpha service over outbound HTTPS.
+Reporting and remote management are separate opt-ins and stay disabled until
+you enable them locally. You choose each published server and which of status,
+start, stop and restart it permits. Local AlphaGSM works without a connection.
+
+See [the connection guide](docs/sector-alpha-agent.md). The open source project’s
+home is https://alphagsm.sector-alpha.net/; the gaming community and server
+directory belong on https://sector-alpha.net/.

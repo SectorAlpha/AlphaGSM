@@ -16,6 +16,10 @@ if sys.argv[1:2] == ["--_download"]:
     from downloader import run_download_helper
     sys.exit(run_download_helper(sys.argv[2:]))
 
+if sys.argv[1:2] == ["--_agent-runtime"]:
+    from agent.runtime_helper import main
+    sys.exit(main(sys.argv[2:]))
+
 import core as core  # pylint: disable=wrong-import-position
 
 if len(sys.argv) >= 5 and sys.argv[1] == "--_run-command":

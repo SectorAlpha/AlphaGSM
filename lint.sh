@@ -5,6 +5,7 @@ set -euo pipefail
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 DIRS=(
   src/core
+  src/agent
   src/downloader
   src/downloadermodules
   src/gamemodules

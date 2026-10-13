@@ -75,7 +75,7 @@ def test_binary_command_covers_all_packages_and_only_excludes_placeholder():
     args = build_binary.pyinstaller_arguments()
     packages = [args[index + 1] for index, arg in enumerate(args)
                 if arg == "--collect-submodules"]
-    assert set(packages) == {"core", "downloader", "downloadermodules", "gamemodules",
+    assert set(packages) == {"agent", "core", "downloader", "downloadermodules", "gamemodules",
                              "screen", "server", "utils"}
     excluded = [args[index + 1] for index, arg in enumerate(args)
                 if arg == "--exclude-module"]
