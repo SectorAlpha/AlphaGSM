@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DIST_DIR = REPO_ROOT / "dist-binary"
 BUILD_DIR = REPO_ROOT / "build" / "pyinstaller"
 BUILD_VERSION_FILE = REPO_ROOT / "src" / "core" / "_build_version.py"
-PACKAGES = ("core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils")
+PACKAGES = ("agent", "core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils")
 
 
 def collect_runtime_data():

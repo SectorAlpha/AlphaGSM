@@ -7,6 +7,21 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-13
+- Sector Alpha: add an optional outbound HTTPS agent with separate reporting and
+  management opt-ins, exact local server bindings, private scoped credentials,
+  and durable results that prevent replay of lifecycle effects after a crash.
+- Remote actions are limited to status/start/stop/restart. Normal stop can fall
+  back to forceful termination; restart requires a running server. Both
+  capabilities remain disabled until explicitly enabled by the operator.
+- Public query interface: reviewed A2S_INFO and Minecraft Java SLP profiles with
+  pinned numerical destinations, total deadlines, bounded fragments/decompression
+  and JSON framing, and scalar observations without player names or credentials.
+- Lifecycle: POSIX port checks ignore closed TCP connections in TIME_WAIT while
+  continuing to reject active listeners; Windows keeps exclusive port probes.
+- Packaging/lint/coverage include the new agent package. Agent credential storage
+  currently supports POSIX; Windows enrollment fails closed pending an ACL adapter.
+
 2026-10-11
 - Agent workflows: add 26 focused operations and development skills alongside
   the nine existing repository skills, with task routing and evidence handoffs.

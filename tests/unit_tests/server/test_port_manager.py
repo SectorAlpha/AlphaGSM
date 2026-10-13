@@ -382,6 +382,9 @@ def test_probe_live_listener_treats_eaddrnotavail_as_unclaimed(monkeypatch):
         def __init__(self, *args):
             self.bound = None
 
+        def setsockopt(self, *args):
+            pass
+
         def bind(self, sockaddr):
             raise OSError(errno.EADDRNOTAVAIL, "Cannot assign requested address")
 
@@ -463,3 +466,36 @@ def test_iter_managed_servers_uses_alpha_resolution_path_and_skips_missing_modul
     assert len(managed) == 2
     assert managed[0].module is resolved
     assert managed[1].module is None
+
+
+def test_live_probe_ignores_closed_tcp_connections_but_detects_listeners():
+    import socket
+
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listener.bind(("127.0.0.1", 0))
+    port = listener.getsockname()[1]
+    listener.listen(1)
+    client = socket.create_connection(("127.0.0.1", port))
+    accepted, _ = listener.accept()
+    assert port_manager.probe_live_listener("127.0.0.1", port) is True
+    accepted.close()  # The server side enters TIME_WAIT after this exchange.
+    assert client.recv(1) == b""
+    client.close()
+    listener.close()
+    assert port_manager.probe_live_listener("127.0.0.1", port) is False
+
+
+def test_windows_live_probe_keeps_exclusive_tcp_binding(monkeypatch):
+    class Socket:
+        def setsockopt(self, *args):
+            raise AssertionError("Windows reuse can hide an active listener")
+        def bind(self, address):
+            raise OSError(errno.EADDRINUSE, "busy")
+        def close(self):
+            pass
+    monkeypatch.setattr(port_manager.os, "name", "nt")
+    monkeypatch.setattr(port_manager.socket, "getaddrinfo", lambda *a: [
+        (port_manager.socket.AF_INET, port_manager.socket.SOCK_STREAM, 0, "", ("127.0.0.1", 12345))])
+    monkeypatch.setattr(port_manager.socket, "socket", lambda *a: Socket())
+    assert port_manager.probe_live_listener("127.0.0.1", 12345) is True

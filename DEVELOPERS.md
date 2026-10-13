@@ -1006,3 +1006,35 @@ When upgrading an existing source environment that installed the obsolete
 `python -m pip uninstall crontab`, then install `requirements-runtime.txt` again.
 AlphaGSM uses the `python-crontab` distribution's `CronTab` API. A fresh binary or
 fresh environment does not need this cleanup.
+
+## Sector Alpha outbound agent and shared public queries
+
+`agent.contracts` is the dependency-free closed version-one wire schema.
+`server.public_query` contains the immutable public A2S_INFO/Java SLP registry,
+uses bounded parsers in `utils.query`, and never constructs Server or falls back
+to console/RCON/HTTP/TCP health. Central consumers must pin a reviewed commit
+and exclude their own infrastructure before numeric connect.
+
+The optional `agent` package keeps scoped credentials and consent under a
+private POSIX directory outside game datastores. Policy and report credentials
+are independent. The foreground manager uses outbound HTTPS long polling,
+rechecks exact local bindings and policy under the normal CLI lock, obtains
+final online authorization and persists executing before lifecycle effects.
+`Journal` stores durable results until acknowledgement; interrupted execution
+reconciles unknown and never repeats effects. A global foreground-service lock
+prevents competing pollers. No secrets are accepted as CLI arguments.
+
+Trusted local runtime helpers run in separate process groups with bounded
+state/operation deadlines. `held_descriptor`/`inherited_state_lock` hand the
+existing datastore sidecar lock to the child after an inode check. The helper
+marks the descriptor non-inheritable for further command children and never
+unlocks the shared open-file description; the parent retains exclusion until
+it receives a result or kills the timed-out helper group. Unknown may reflect
+an effect already applied by an independent game/Docker daemon.
+
+Run `tests/smoke_tests/run_sector_alpha_agent.sh`, the agent/public-query unit
+sets, and `ALPHAGSM_VALIDATE_AGENT=1` with Minecraft integration for each runtime.
+Windows credential storage deliberately fails closed pending an ACL adapter.
+Binary package collection, lint and coverage include agent. The service lives
+in the separate alpha-platform-lite repository; it supplies PostgreSQL roles,
+TLS transport round trips and worker isolation validation.

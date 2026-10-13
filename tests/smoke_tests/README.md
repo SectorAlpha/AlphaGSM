@@ -6,7 +6,14 @@ verification.
 Unlike the pytest-based integration tests, these scripts stream command output
 directly to the terminal or CI log as they run.
 
-Current smoke test:
+Current smoke tests:
+
+- `run_sector_alpha_agent.sh`
+  Exercises independent opt-ins, private credential storage, strict contracts,
+  local revocation, no-replay journaling, bounded lifecycle helper timeout and
+  hostile public protocol parsing. No enrollment or public destination is contacted.
+  The Minecraft integration test also proves agent restart and duplicate delivery
+  against the selected process/Docker runtime.
 
 - `run_minecraft_vanilla.sh`
   Creates a temporary AlphaGSM config, downloads a vanilla Minecraft server,
