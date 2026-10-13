@@ -36,6 +36,8 @@ def load_curated_registry():
     return CuratedRegistryLoader.load(path)
 
 
+workshop_app_id = 550
+
 MOD_SUPPORT = build_source_addon_mod_support(
     game_label="Left 4 Dead 2",
     game_dir="left4dead2",
@@ -43,6 +45,10 @@ MOD_SUPPORT = build_source_addon_mod_support(
     direct_url_suffixes={".vpk": "single"},
     direct_url_filename_description="a .vpk addon filename or a supported archive filename",
     curated_registry_loader=load_curated_registry,
+    enabled_sources=("url", "gamebanana", "moddb", "workshop"),
+    workshop_app_id=workshop_app_id,
+    workshop_downloader_getter=lambda: steamcmd.download_workshop_item,
+    workshop_single_file_suffix=".vpk",
 )
 
 steam_app_id = MODULE.steam_app_id
@@ -110,7 +116,11 @@ def install(server):
     _finish_l4d2_install(server)
 
 
-prestart = MODULE.prestart
+def prestart(server, *args, **kwargs):
+    """Prepare the Source runtime and apply enabled desired addons before launch."""
+    MODULE.prestart(server, *args, **kwargs)
+    if MOD_SUPPORT.ensure_mod_state(server).get("autoapply", True):
+        MOD_SUPPORT.apply_configured_mods(server)
 
 
 def update(server, validate=False, restart=False):

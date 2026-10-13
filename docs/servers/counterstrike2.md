@@ -99,8 +99,14 @@ AlphaGSM-owned manifest.
 - `moddb` means you provide a canonical Mod DB download or addon page URL and
 	AlphaGSM resolves Mod DB's start-download link when the file is a supported
 	zip or tar archive.
-- `workshop` means you provide a numeric Steam Workshop item id and AlphaGSM
+- `workshop` means you provide a Steam Workshop item ID or filedetails URL and AlphaGSM
 	tries to download it through SteamCMD.
+- `workshop-collection` expands a collection ID or filedetails URL into individual items.
+  The collection and every nested item must belong to CS2 (AppID `730`).
+  Imports preserve existing entries and skip duplicates. Both Workshop sources
+  use anonymous login; access remains controlled by Steam. Only supported
+  addon/config trees can be staged; arbitrary Workshop map packages are not
+  installed by this adapter.
 - AlphaGSM records the files installed for each CS2 mod entry so `mod cleanup`
 	removes only tracked files and leaves unrelated files alone.
 
@@ -110,6 +116,7 @@ Examples:
 alphagsm mycs2 mod add gamebanana 12345
 alphagsm mycs2 mod add moddb https://www.moddb.com/mods/cage-eight/downloads/cage-eight
 alphagsm mycs2 mod add workshop 1234567890
+alphagsm mycs2 mod add workshop-collection COLLECTION_ID
 alphagsm mycs2 mod apply
 alphagsm mycs2 mod cleanup
 ```

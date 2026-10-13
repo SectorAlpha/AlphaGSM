@@ -256,6 +256,19 @@ def test_l4d2_configure_seeds_mod_state_defaults(tmp_path):
     assert server.data["mods"]["desired"]["url"] == []
     assert server.data["mods"]["desired"]["gamebanana"] == []
     assert server.data["mods"]["desired"]["moddb"] == []
+    assert server.data["mods"]["desired"]["workshop"] == []
+
+
+@pytest.mark.parametrize("autoapply", [True, False])
+def test_l4d2_prestart_respects_mod_autoapply(tmp_path, monkeypatch, autoapply):
+    server = DummyServer("l4d2mods")
+    l4d2server.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    server.data["mods"]["autoapply"] = autoapply
+    calls = []
+    monkeypatch.setattr(l4d2server.MODULE, "prestart", lambda *a, **kw: calls.append("runtime"))
+    monkeypatch.setattr(l4d2server.MOD_SUPPORT, "apply_configured_mods", lambda *a: calls.append("mods"))
+    l4d2server.prestart(server)
+    assert calls == (["runtime", "mods"] if autoapply else ["runtime"])
 
 
 def test_l4d2_mod_add_manifest_persists_resolved_entry(tmp_path, monkeypatch):

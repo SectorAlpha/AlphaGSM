@@ -291,6 +291,25 @@ provider ids:
 
 The copy-paste TF2 walkthrough is [Installing Mods](docs/installing-mods.md).
 
+Every anonymous SteamCMD server supports Workshop downloads:
+
+```bash
+./alphagsm myserver workshop download item ITEM_ID_OR_URL
+./alphagsm myserver workshop download collection COLLECTION_ID_OR_URL
+./alphagsm myserver workshop list
+```
+
+Run `setup` first. Downloads are kept in the server's `.alphagsm/workshop/content/`
+folder; follow that game's mod installation steps to activate them. Anonymous
+access depends on the game's Steam Workshop settings.
+
+Workshop-capable installers also accept `mod add workshop-collection COLLECTION_ID`.
+Item and collection IDs can both be replaced by Steam Community Workshop URLs.
+AlphaGSM checks that the collection and all its items belong to the server's
+game before saving them. SteamCMD supports anonymous downloads where Steam
+permits them. L4D2 installs Workshop VPK addons; TF2 Workshop apply remains
+experimental. See [Installing Mods](docs/installing-mods.md) for the details.
+
 Examples:
 
 ```bash

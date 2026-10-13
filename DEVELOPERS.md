@@ -345,6 +345,43 @@ Curated server-side mod support now has a shared core under
 - `downloads.py` owns trusted-host validation, optional checksum enforcement, safe archive extraction, and destination allowlisting so AlphaGSM only installs files into explicitly approved server paths.
 - `ownership.py` records the AlphaGSM-owned relative file manifest for each installed curated entry.
 - `providers.py` owns shared external-provider helpers such as GameBanana item resolution, Mod DB page resolution, Workshop id validation, and direct URL normalization for plugin-style modules. These providers are not TF2-specific; individual game modules decide whether and how to install their payloads safely.
+- `workshop.py` resolves positive uint64 IDs through Valve's public metadata APIs,
+  normalizes numeric IDs and official Steam Community filedetails URLs at input
+  boundaries while keeping returned API IDs strictly numeric,
+  validates `consumer_app_id` against the module's game Workshop AppID, and
+  expands collections iteratively with order preservation, deduplication,
+  cycle detection, response-size limits, node/request limits, and bounded
+  transport retries. A collection must validate completely before intake saves
+  any additions. Collection provenance is stored on ordinary desired Workshop
+  entries; imports are snapshots and do not remove previously requested items.
+  Legacy metadata without `file_type` uses content fields to identify items
+  and verified collection details to identify collections.
+- `source_addons.py` revalidates desired Workshop metadata on apply, including
+  legacy/manual entries, in batches under one resolver's request budget.
+  Each completed installation persists ownership before proceeding so a later
+  download failure leaves earlier files tracked for cleanup. Staging rejects
+  destination symlinks and paths outside the server root before copying.
+  Modules must declare `workshop_app_id` independently
+  of their dedicated-server Steam app ID. L4D2 uses `550` for Workshop and
+  `222860` for server installation, and opts into a single bare `.vpk` payload
+  installed as `addons/workshop/<item-id>.vpk` through owned-file staging.
+- `workshop_downloads.py` supplies the shared `workshop download item|collection
+  ID_OR_URL` and `workshop list` command on every anonymous SteamCMD module.
+  Command availability reads module-owned anonymous metadata, including the
+  Valve factory namespace; editable datastore auth flags cannot enable it.
+  The game identity comes from module `workshop_app_id`, the configured Source
+  game's `gameinfo.txt` SteamAppId, or bounded discovery of upstream
+  `steam_appid.txt` files, excluding mod/Workshop caches. Missing,
+  invalid, or conflicting identity fails closed. Verified downloads are copied
+  into `.alphagsm/workshop/content/<app>/<item>` with per-item completed-state
+  persistence. Fresh staged payloads replace previous downloads with rollback
+  on publication failure; obsolete upstream files do not accumulate. Cache
+  symlinks are checked before SteamCMD runs. This shared path stages content;
+  module adapters own activation.
+- Workshop download verification requires the item-specific SteamCMD success
+  path, an expected app/item content directory under the requested cache or
+  configured SteamCMD root, and nonempty file content. Exit code zero and an
+  old cache directory are insufficient. Anonymous access errors remain errors.
 - `plugin_jars.py` packages the repeated desired-state, checked-in manifest resolution, dependency expansion, direct URL handling for plugin payloads, Mod DB archive installs, and owned-file cleanup flow for plugin-style modules such as Paper, the proxy family, and TShock.
 - `source_addons.py` packages the repeated desired-state, manifest registry loading, archive staging, GameBanana/Mod DB/workshop intake, direct single-file URL handling, and owned-file cleanup flow for Source-engine games that install addons under a known game directory.
 - Thin Source wrappers that share the same `addons/` layout can reuse one checked-in registry under [src/gamemodules/source_curated_mods.json](src/gamemodules/source_curated_mods.json) via `load_shared_source_curated_registry()` instead of carrying identical MetaMod/SourceMod manifests per module.

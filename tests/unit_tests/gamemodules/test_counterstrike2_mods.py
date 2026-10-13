@@ -34,6 +34,18 @@ class DummyServer:
         self.data = DummyData()
 
 
+@pytest.fixture(autouse=True)
+def workshop_metadata(monkeypatch):
+    """Synthetic addon tests supply metadata; provider tests cover live API parsing."""
+    provider = mod.command_functions["mod"].__globals__["workshop_provider"]
+    monkeypatch.setattr(provider, "resolve_workshop_item", lambda item_id, app_id: {
+        "workshop_id": str(item_id), "source_type": "workshop", "resolved_id": f"workshop.{item_id}"
+    })
+    monkeypatch.setattr(provider, "resolve_workshop_items", lambda ids, app_id: [
+        provider.resolve_workshop_item(identifier, app_id) for identifier in ids
+    ])
+
+
 def test_configure_seeds_mod_state_defaults(tmp_path):
     server = DummyServer()
 

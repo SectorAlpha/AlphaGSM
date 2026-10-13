@@ -230,7 +230,9 @@ def test_tf2_status_warns_when_mod_apply_has_errors(capsys):
     assert "download failed" in output
 
 
-def test_tf2_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_path):
+def test_tf2_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_path, monkeypatch):
+    provider = mod.command_functions["mod"].__globals__["workshop_provider"]
+    monkeypatch.setattr(provider, "resolve_workshop_items", lambda *args: [])
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["mods"] = {

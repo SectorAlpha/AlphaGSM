@@ -108,6 +108,12 @@ GameBanana and Mod DB ids/URLs are also accepted. Workshop `mod add` records a
 desired item, but Workshop apply is still experimental for TF2 — prefer
 `manifest`.
 
+`mod add workshop-collection COLLECTION_ID` also imports a collection snapshot.
+Both item and collection identifiers accept Steam Community Workshop URLs.
+Steam metadata must identify every item and nested collection as TF2 (AppID
+`440`) before AlphaGSM saves additions. This filter does not lift TF2's
+experimental Workshop apply limitation.
+
 ## Notes
 
 - Module name: `teamfortress2`

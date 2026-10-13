@@ -83,6 +83,69 @@ Checked-in map families currently include competitive maps such as
 
 ## Same commands on other games
 
+### Steam Workshop items and collections
+
+L4D2, CS2, and TF2 accept `workshop` items and `workshop-collection`
+collections using either numeric IDs or Steam Community Workshop URLs.
+AlphaGSM checks Steam's game AppID for the item or collection
+and every nested child before saving anything. Unavailable, private, wrong-game,
+empty, and cyclic collections are rejected. A same-game check does not prove
+that an addon works on a dedicated server; the module also checks its payload.
+
+```bash
+alphagsm myl4d2 mod add workshop ITEM_ID
+alphagsm myl4d2 mod add workshop-collection COLLECTION_ID
+alphagsm myl4d2 mod add workshop "https://steamcommunity.com/sharedfiles/filedetails/?id=762591677"
+alphagsm myl4d2 mod list
+alphagsm myl4d2 mod apply
+```
+
+Replace the uppercase placeholders with numeric Steam IDs or Workshop URLs. Collections are
+snapshots: importing again adds newly listed items and skips duplicates, while
+keeping previously requested items. To remove one item, run
+`alphagsm myl4d2 mod remove workshop ITEM_ID`, then `mod apply`.
+
+SteamCMD uses `login anonymous` on these modules. Some games/items require an
+entitled Steam account; AlphaGSM reports the download failure if anonymous
+access is denied. Public visibility does not guarantee anonymous download access.
+
+Every game-server module that installs through anonymous SteamCMD also exposes
+the shared download command, including modules without automatic mod installation:
+
+```bash
+alphagsm myserver workshop download item ITEM_ID_OR_URL
+alphagsm myserver workshop download collection COLLECTION_ID_OR_URL
+alphagsm myserver workshop list
+```
+
+Run server `setup` first. AlphaGSM checks the module's declared Workshop game
+AppID, the configured Source game's `gameinfo.txt`, or the game AppID in the
+upstream installation's `steam_appid.txt`,
+before downloading anything. Missing or conflicting identity fails with an
+explanation; the server-tool AppID is not used as a substitute. Private,
+unavailable, or wrong-game content also fails before any download starts.
+
+Downloads are staged under the server directory at
+`.alphagsm/workshop/content/<game-appid>/<item-id>/`; the command prints each
+location and `workshop list` records completed downloads. Downloading an item
+again replaces its staged payload, including files removed by the upstream update.
+Use the game's own
+mod installation and configuration rules to activate this content. Downloading
+does not establish that a mod loads on the server. Anonymous server installation
+does not guarantee that its publisher permits anonymous Workshop downloads.
+
+L4D2 accepts one bare `.vpk` per Workshop item and installs it under
+`left4dead2/addons/workshop/<item-id>.vpk`. It applies enabled desired addons
+before starting. CS2 retains its addon/config-tree installer; it does not
+automatically install arbitrary Workshop map packages. TF2 Workshop apply
+remains experimental; use its checked-in manifest for supported installs.
+
+The L4D2 Workshop integration test checks collection `3819008159` by default,
+with process and Docker lifecycles. It requires every installed VPK to appear
+in the running engine's `path` output. This proves mounting; addon-specific
+gameplay effects can still need a client or custom-map test. See the
+[L4D2 guide](servers/l4d2server.md) for how to run it.
+
 HL2DM, Garry's Mod, Left 4 Dead 2, and other Source wrappers use the same
 `mod add` / `mod apply` / `mod cleanup` surface. Their checked-in `manifest`
 families usually include `metamod` and `sourcemod`. Garry's Mod also has

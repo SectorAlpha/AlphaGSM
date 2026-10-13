@@ -7,6 +7,23 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-13
+- Workshop: accept numeric IDs or Steam Community filedetails URLs for items
+  and collections, including removal. Expose anonymous Workshop downloads on
+  every anonymous SteamCMD module, checking the module or installed game AppID
+  and staging content per server for game-specific activation.
+- Workshop: validate item and collection game AppIDs against Steam metadata,
+  expand nested collections before saving, and reject unavailable or mixed-game
+  content. Collection imports preserve order and deduplicate existing items.
+- SteamCMD: verify item-specific Workshop download success and nonempty content
+  at the actual SteamCMD/cache path; stale files no longer mask failed downloads.
+- L4D2: add anonymous Workshop VPK installation and collection imports, apply
+  configured addons before start, and track files for removal and cleanup.
+- Mod installs: retain ownership after partial collection failures and reject
+  destination symlinks before copying files.
+- Tests: add opt-in L4D2 collection 3819008159 coverage for process and Docker
+  lifecycles, requiring running-engine mount evidence for every installed addon.
+
 2026-10-11
 - Agent workflows: add 26 focused operations and development skills alongside
   the nine existing repository skills, with task routing and evidence handoffs.

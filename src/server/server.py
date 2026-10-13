@@ -18,6 +18,7 @@ from . import port_manager
 from . import runtime as runtime_module
 from . import diagnostics as diagnostics_module
 from . import worlds as worlds_module
+from .modsupport import workshop_downloads
 from .settable_keys import KeyResolutionError, resolve_requested_key
 from .settable_keys import get_effective_aliases
 from .errors import ServerError
@@ -663,10 +664,13 @@ class Server(object):
 
     def get_commands(self):
         """Get a list of all the commands available for this server"""
-        return self.default_commands + self.module.commands
+        extra = ("workshop",) if workshop_downloads.supports_anonymous_workshop(self) else ()
+        return self.default_commands + self.module.commands + extra
 
     def get_command_args(self, command):
         """Get the full argument spec for the command specified on this server"""
+        if command == "workshop" and workshop_downloads.supports_anonymous_workshop(self):
+            return workshop_downloads.COMMAND_SPEC
         args = self.default_command_args.get(command, None)
         extra_args = self.module.command_args.get(command, None)
         if args is None:
@@ -675,6 +679,8 @@ class Server(object):
 
     def get_command_description(self, command):
         """Get the complete description for the command specified for this server"""
+        if command == "workshop" and workshop_downloads.supports_anonymous_workshop(self):
+            return workshop_downloads.COMMAND_DESCRIPTION
         desc = self.default_command_descriptions.get(command, None)
         extra_desc = self.module.command_descriptions.get(command, None)
         if extra_desc is not None:
@@ -792,7 +798,9 @@ class Server(object):
         required functions. It can also raise other Exceptions if the arguments don't match those
         required by either this or the backend module
         """
-        if command in self.default_commands:
+        if command == "workshop":
+            workshop_downloads.run_workshop_command(self, *args, **kwargs)
+        elif command in self.default_commands:
             if command == "setup":
                 self.setup(*args, **kwargs)
             elif command == "start":

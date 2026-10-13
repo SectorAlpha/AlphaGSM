@@ -22,7 +22,9 @@ from utils.valve_server import (
 )
 from utils.gamemodules import common as gamemodule_common
 from .maps import apply_configured_maps, ensure_map_state, tf2_map_command
-from .mods import apply_configured_mods, ensure_mod_state, tf2_mod_command
+from .mods import TF2_WORKSHOP_APP_ID, apply_configured_mods, ensure_mod_state, tf2_mod_command
+
+workshop_app_id = TF2_WORKSHOP_APP_ID
 
 steam_app_id = 232250
 # This integration installs srcds_run and Linux Steam client libraries.
@@ -38,8 +40,8 @@ command_args = gamemodule_common.build_setup_update_restart_command_args(
 command_args["mod"] = CmdSpec(
     requiredarguments=(ArgSpec("ACTION", "mod action", str),),
     optionalarguments=(
-        ArgSpec("SOURCE", "manifest/curated, gamebanana, or workshop", str),
-        ArgSpec("IDENTIFIER", "family, GameBanana id, or workshop id", str),
+        ArgSpec("SOURCE", "manifest/curated, gamebanana, moddb, workshop, or workshop-collection", str),
+        ArgSpec("IDENTIFIER", "family, GameBanana id, or Workshop ID/URL", str),
         ArgSpec("EXTRA", "optional channel/version", str),
     ),
 )
