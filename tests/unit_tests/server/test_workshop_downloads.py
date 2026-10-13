@@ -60,6 +60,24 @@ def test_download_collection_url_validates_before_all_downloads(tmp_path, payloa
     assert len(instance.data['workshop_downloads']['items']) == 2
 
 
+def test_native_batch_downloads_return_staged_paths_after_full_validation(tmp_path, payload, monkeypatch):
+    instance = server(tmp_path)
+    checks = []
+    monkeypatch.setattr(workshop, 'resolve_workshop_items',
+                        lambda ids, app: checks.append((ids, app)))
+    paths = downloads.download_workshop_items(instance, 550, ['10', '11'])
+    assert checks == [(['10', '11'], 550)]
+    assert set(paths) == {'10', '11'}
+    assert all((path / 'addon.vpk').is_file() for path in paths.values())
+
+
+def test_native_batch_rejects_wrong_identity_before_downloader(tmp_path, payload):
+    instance = server(tmp_path)
+    with pytest.raises(ServerError, match='game AppID'):
+        downloads.download_workshop_items(instance, 730, ['10'])
+    assert payload == []
+
+
 def test_missing_identity_fails_before_remote_intake(tmp_path, payload):
     instance = server(tmp_path)
     (Path(instance.data['dir']) / 'steam_appid.txt').unlink()

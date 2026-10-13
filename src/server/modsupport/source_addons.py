@@ -35,6 +35,7 @@ from .providers import (
 from .reconcile import reconcile_mod_state
 from .registry import CuratedRegistryLoader
 from . import workshop as workshop_provider
+from .native_workshop import safe_server_path
 
 
 _ARCHIVE_URL_SUFFIXES = {
@@ -83,6 +84,7 @@ def build_source_addon_mod_support(
     workshop_app_id: int | None = None,
     workshop_login_anonymous: bool = True,
     workshop_single_file_suffix: str | None = None,
+    single_file_payload_transform_getter=None,
     prefix_provider_cache_files_with_resolved_id: bool = False,
     allow_bare_addon_root: bool = False,
     bare_addon_marker_files: tuple[str, ...] = (),
@@ -256,12 +258,16 @@ def build_source_addon_mod_support(
             f"Missing desired-state metadata for {game_label} addon '{resolved_id}'"
         )
 
+    def _allowed_payload_path(relative):
+        return any(relative == Path(destination) or Path(destination) in relative.parents
+                   for destination in allowed_destination_set)
+
     def _payload_has_allowed_content(stage_root: Path) -> bool:
         for path in stage_root.rglob("*"):
             if not path.is_file():
                 continue
             relative_path = path.relative_to(stage_root)
-            if relative_path.parts and relative_path.parts[0] in allowed_destination_set:
+            if _allowed_payload_path(relative_path):
                 return True
         return False
 
@@ -328,6 +334,31 @@ def build_source_addon_mod_support(
             installed_paths.append(destination)
         return build_owned_manifest(server_root, installed_paths)
 
+    def _validate_install_destinations(server, payload_root, destination_root, *, approved_only=False):
+        """Reject all unowned/active-owner collisions before copying a payload."""
+        server_root = Path(server.data["dir"]).resolve()
+        desired_ids = {entry.resolved_id for entry in _desired_entries(server)}
+        owners = {}
+        for entry in _installed_entries(server):
+            for relative in entry.installed_files:
+                owners.setdefault(relative, set()).add(entry.resolved_id)
+        for source in payload_root.rglob("*"):
+            if not source.is_file():
+                continue
+            payload_relative = source.relative_to(payload_root)
+            if approved_only and not _allowed_payload_path(payload_relative):
+                continue
+            target = destination_root / payload_relative
+            relative = target.relative_to(server_root).as_posix()
+            target = safe_server_path(server, relative)
+            current_owners = owners.get(relative, set())
+            if current_owners.intersection(desired_ids) or (target.exists() and not current_owners):
+                raise ModSupportError(f"Addon install collision with an unowned or active file: {relative}")
+            if target.exists() and not target.is_file():
+                raise ModSupportError(f"Addon install collision with a directory: {relative}")
+            if any(parent.exists() and not parent.is_dir() for parent in target.parents):
+                raise ModSupportError(f"Addon install collision with a parent file: {relative}")
+
     def _install_staged_payload(server, stage_root: Path, install_root_name: str | None = None) -> list[str]:
         server_root = Path(server.data["dir"]).resolve()
         game_root = server_root / game_dir
@@ -339,18 +370,24 @@ def build_source_addon_mod_support(
             raise ModSupportError("Refusing to install through a symlink game directory")
         payload_root = _discover_payload_root(stage_root)
         if _payload_has_allowed_content(payload_root):
+            _validate_install_destinations(server, payload_root, game_root, approved_only=True)
             installed_paths = install_staged_tree(
                 staged_root=payload_root,
                 server_root=game_root,
                 allowed_destinations=allowed_destinations,
+                ignore_unapproved=True,
             )
             return build_owned_manifest(server_root, installed_paths)
 
         if install_root_name and _payload_is_bare_addon_root(payload_root):
+            addon_name = _normalize_bare_addon_name(install_root_name)
+            _validate_install_destinations(
+                server, payload_root, game_root / single_file_destination / addon_name,
+            )
             return _install_bare_addon_root(
                 server,
                 payload_root,
-                _normalize_bare_addon_name(install_root_name),
+                addon_name,
             )
 
         if not _payload_has_allowed_content(payload_root):
@@ -372,6 +409,12 @@ def build_source_addon_mod_support(
         filename = Path(parsed.path).name
         return filename or fallback_name
 
+    def _stage_single_file_payload(archive_path, stage_root, filename):
+        if single_file_payload_transform_getter is not None:
+            single_file_payload_transform_getter()(archive_path, stage_root, filename)
+        else:
+            stage_single_file(archive_path, stage_root, f"{single_file_destination}/{filename}")
+
     def _install_url_entry(server, desired_entry: DesiredModEntry) -> InstalledModEntry:
         desired_record = _desired_record(server, "url", desired_entry.resolved_id)
         cache_root = _cache_root(server) / "url"
@@ -386,11 +429,7 @@ def build_source_addon_mod_support(
         if stage_root.exists():
             shutil.rmtree(stage_root)
         if desired_record["archive_type"] == "single":
-            stage_single_file(
-                archive_path,
-                stage_root,
-                f"{single_file_destination}/{desired_record['filename']}",
-            )
+            _stage_single_file_payload(archive_path, stage_root, desired_record["filename"])
         else:
             _extract_archive(archive_path, stage_root, desired_record["archive_type"])
         return InstalledModEntry(
@@ -425,11 +464,7 @@ def build_source_addon_mod_support(
         if stage_root.exists():
             shutil.rmtree(stage_root)
         if resolved.archive_type == "single":
-            stage_single_file(
-                archive_path,
-                stage_root,
-                f"{single_file_destination}/{archive_name}",
-            )
+            _stage_single_file_payload(archive_path, stage_root, archive_name)
         else:
             _extract_archive(archive_path, stage_root, resolved.archive_type)
         return InstalledModEntry(
@@ -531,7 +566,7 @@ def build_source_addon_mod_support(
             f"Unsupported {game_label} addon source: {desired_entry.source_type}"
         )
 
-    def _remove_owned_entry(server, installed_entry: InstalledModEntry) -> None:
+    def _remove_owned_entry(server, installed_entry: InstalledModEntry, *, retained_paths=()) -> None:
         server_root = Path(server.data["dir"]).resolve()
         targets = []
         for relative_path in installed_entry.installed_files:
@@ -545,7 +580,8 @@ def build_source_addon_mod_support(
                 raise ServerError(f"Refusing to remove outside server root: {relative_path}") from exc
             if target.is_symlink() or any(parent.is_symlink() for parent in target.parents if parent != server_root):
                 raise ServerError(f"Refusing to remove through a symlink: {relative_path}")
-            targets.append(target)
+            if relative_path not in retained_paths:
+                targets.append(target)
 
         for target in targets:
             if target.exists():
@@ -582,7 +618,12 @@ def build_source_addon_mod_support(
             return installed_entry
 
         def remove_tracked(entry):
-            _remove_owned_entry(server, entry)
+            desired_ids = {desired.resolved_id for desired in _desired_entries(server)}
+            retained_paths = {path for installed in _installed_entries(server)
+                              if installed.resolved_id != entry.resolved_id
+                              and installed.resolved_id in desired_ids
+                              for path in installed.installed_files}
+            _remove_owned_entry(server, entry, retained_paths=retained_paths)
             mods["installed"] = [item for item in mods["installed"] if item["resolved_id"] != entry.resolved_id]
             _save_data(server)
 

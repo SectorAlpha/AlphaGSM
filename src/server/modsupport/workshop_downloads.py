@@ -160,6 +160,55 @@ def _publish_download(root, managed_root, downloaded, destination):
             shutil.rmtree(previous)
 
 
+def _stage_workshop_items(server, root, app_id, item_ids):
+    """Publish prevalidated items with per-item persistence and failure evidence."""
+    managed_root = root / ".alphagsm" / "workshop"
+    _check_managed_path(root, managed_root)
+    cache = managed_root / "cache"
+    _check_cache(root, cache)
+    for item_id in item_ids:
+        _check_managed_path(root, managed_root / "content" / str(app_id) / item_id)
+    state = server.data.setdefault("workshop_downloads", {"items": [], "errors": []})
+    paths = {}
+    try:
+        for item_id in item_ids:
+            _check_cache(root, cache)
+            downloaded = steamcmd.download_workshop_item(cache, app_id, item_id, True)
+            destination = managed_root / "content" / str(app_id) / item_id
+            _publish_download(root, managed_root, downloaded, destination)
+            state["items"] = [entry for entry in state["items"]
+                              if (entry["app_id"], entry["workshop_id"]) != (app_id, item_id)]
+            state["items"].append({"app_id": app_id, "workshop_id": item_id,
+                                   "path": destination.relative_to(root).as_posix()})
+            paths[item_id] = destination
+            state["errors"] = []
+            server.data.save()
+            print(f"Downloaded Workshop item {item_id} to {destination}")
+    except (ServerError, ModSupportError, OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+        message = getattr(exc, "output", None) or str(exc)
+        state["errors"] = [message]
+        server.data.save()
+        raise ServerError(str(message)) from exc
+    return paths
+
+
+def download_workshop_items(server, app_id, item_ids):
+    """Download a same-game batch for an engine-specific activation adapter."""
+    if not supports_anonymous_workshop(server):
+        raise ServerError("Workshop downloads require an anonymous SteamCMD server module")
+    try:
+        app_id = _app_id(app_id)
+        if resolve_server_workshop_app_id(server) != app_id:
+            raise ServerError("Workshop download game AppID differs from this server")
+        item_ids = list(dict.fromkeys(workshop.normalize_workshop_identifier(value) for value in item_ids))
+        root = _server_root(server)
+        if item_ids:
+            workshop.resolve_workshop_items(item_ids, app_id)
+        return _stage_workshop_items(server, root, app_id, item_ids)
+    except ModSupportError as exc:
+        raise ServerError(str(exc)) from exc
+
+
 def run_workshop_command(server, action, source=None, identifier=None):
     """Stage validated content without assuming engine-specific activation rules."""
     if not supports_anonymous_workshop(server):
@@ -169,7 +218,6 @@ def run_workshop_command(server, action, source=None, identifier=None):
         return
     if action != "download" or source not in ("item", "collection") or identifier is None:
         raise ServerError("Use workshop download item|collection ID_OR_URL, or workshop list")
-    state = None
     try:
         identifier = workshop.normalize_workshop_identifier(identifier)
         root = _server_root(server)
@@ -182,25 +230,7 @@ def run_workshop_command(server, action, source=None, identifier=None):
             item_ids = workshop.resolve_workshop_collection(identifier, app_id)
         else:
             item_ids = [workshop.resolve_workshop_item(identifier, app_id)["workshop_id"]]
-        # Preflight every destination before a collection can trigger any downloads.
-        for item_id in item_ids:
-            _check_managed_path(root, managed_root / "content" / str(app_id) / item_id)
-        state = server.data.setdefault("workshop_downloads", {"items": [], "errors": []})
-        for item_id in item_ids:
-            _check_cache(root, cache)
-            downloaded = steamcmd.download_workshop_item(cache, app_id, item_id, True)
-            destination = managed_root / "content" / str(app_id) / item_id
-            _publish_download(root, managed_root, downloaded, destination)
-            state["items"] = [entry for entry in state["items"]
-                              if (entry["app_id"], entry["workshop_id"]) != (app_id, item_id)]
-            state["items"].append({"app_id": app_id, "workshop_id": item_id,
-                                   "path": destination.relative_to(root).as_posix()})
-            state["errors"] = []
-            server.data.save()
-            print(f"Downloaded Workshop item {item_id} to {destination}")
+        _stage_workshop_items(server, root, app_id, item_ids)
     except (ModSupportError, ServerError, OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         message = getattr(exc, "output", None) or str(exc)
-        if state is not None:
-            state["errors"] = [message]
-            server.data.save()
         raise ServerError(str(message)) from exc

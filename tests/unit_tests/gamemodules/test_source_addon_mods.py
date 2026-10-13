@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 import shutil
 import subprocess as sp
+import struct
+import zlib
 import tarfile
 import zipfile
 
@@ -433,11 +435,20 @@ def test_gmod_mod_add_moddb_persists_entry(tmp_path, monkeypatch):
     assert server.data["mods"]["desired"]["moddb"][0]["resolved_id"] == "moddb.downloads.308604"
 
 
+def _gmod_gma_payload(content):
+    payload = content.encode()
+    header = b"GMAD\x03" + b"\0" * 16 + b"\0fixture\0{}\0author\0" + struct.pack("<I", 1)
+    table = (struct.pack("<I", 1) + b"lua/autorun/fixture.lua\0"
+             + struct.pack("<qI", len(payload), zlib.crc32(payload)) + b"\0" * 4)
+    body = header + table + payload
+    return body + struct.pack("<I", zlib.crc32(body))
+
+
 def test_gmod_mod_apply_installs_direct_gma_url(tmp_path, monkeypatch):
     server = DummyServer("gmodmods")
     gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
     gma_path = tmp_path / "example-addon.gma"
-    gma_path.write_text("gma-data", encoding="utf-8")
+    gma_path.write_bytes(_gmod_gma_payload("gma-data"))
 
     monkeypatch.setattr(
         source_addons,
@@ -455,7 +466,7 @@ def test_gmod_mod_apply_installs_direct_gma_url(tmp_path, monkeypatch):
     )
     gmodserver.command_functions["mod"](server, "apply")
 
-    installed_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "example-addon.gma"
+    installed_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "example-addon" / "lua" / "autorun" / "fixture.lua"
     assert installed_file.read_text(encoding="utf-8") == "gma-data"
 
 
@@ -517,7 +528,7 @@ def test_gmod_mod_cleanup_removes_only_tracked_files(tmp_path):
 
     assert not tracked_file.exists()
     assert manual_file.exists()
-    assert server.data["mods"]["desired"] == {"curated": [], "url": [], "gamebanana": [], "moddb": []}
+    assert server.data["mods"]["desired"] == {"curated": [], "url": [], "gamebanana": [], "moddb": [], "workshop": []}
 
 
 def test_gmod_mod_add_curated_resolves_from_override_registry(tmp_path, monkeypatch):
@@ -654,7 +665,7 @@ def test_gmod_mod_apply_installs_curated_single_file_entry_from_override_registr
     server = DummyServer("gmodmods")
     gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
     gma_path = tmp_path / "advdupe2.gma"
-    gma_path.write_text("advdupe2-data", encoding="utf-8")
+    gma_path.write_bytes(_gmod_gma_payload("advdupe2-data"))
 
     monkeypatch.setattr(
         source_addons,
@@ -667,7 +678,7 @@ def test_gmod_mod_apply_installs_curated_single_file_entry_from_override_registr
     gmodserver.command_functions["mod"](server, "add", "curated", "advdupe2")
     gmodserver.command_functions["mod"](server, "apply")
 
-    installed_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "advdupe2.gma"
+    installed_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "advdupe2" / "lua" / "autorun" / "fixture.lua"
     assert installed_file.read_text(encoding="utf-8") == "advdupe2-data"
     assert [entry["resolved_id"] for entry in server.data["mods"]["installed"]] == [
         "advdupe2.stable"

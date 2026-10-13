@@ -63,6 +63,17 @@ def test_legacy_collection_metadata_without_file_type_is_supported(monkeypatch):
     assert provider.resolve_workshop_collection("1", 550) == ["10"]
 
 
+@pytest.mark.parametrize('filename', ['steamworkshop/collection/1_collection_branding.jpg', ''])
+def test_legacy_collection_branding_image_is_not_a_downloadable_mod(monkeypatch, filename):
+    record = detail(1, app_id=550, file_type=None)
+    record.update(filename=filename,
+                  file_url='https://images.steamusercontent.com/ugc/image', hcontent_file='900985983942213642')
+    provider, _calls = fake_api(monkeypatch, {'1': record, '10': detail(10, app_id=550)}, {'1': [10]})
+    assert provider.resolve_workshop_collection('1', 550) == ['10']
+    with pytest.raises(ModSupportError, match='collection'):
+        provider.resolve_workshop_item('1', 550)
+
+
 def test_batch_item_validation_shares_request_budget(monkeypatch):
     ids = [str(index) for index in range(1, 251)]
     provider, calls = fake_api(monkeypatch, {identifier: detail(identifier) for identifier in ids})

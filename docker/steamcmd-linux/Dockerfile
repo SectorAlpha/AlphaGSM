@@ -85,6 +85,11 @@ RUN apt-get update -qq \
 
 RUN ln -sf /lib/x86_64-linux-gnu/libc++.so.1 /lib/x86_64-linux-gnu/libc++.so
 
+# Source consoles need a real input terminal behind AlphaGSM's console FIFO.
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends bsdutils \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /srv/server
 
 CMD ["/bin/bash"]

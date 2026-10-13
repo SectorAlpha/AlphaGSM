@@ -43,6 +43,7 @@ def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "start-server.sh"
+    server.data["port"] = 16261
     server.data["Steam_AppID"] = 380870
     server.data["Steam_anonymous_login_possible"] = True
     mod.install(server)
@@ -51,6 +52,7 @@ def test_install(tmp_path):
 def test_update_with_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 16261
     server.data["Steam_AppID"] = 380870
     server.data["Steam_anonymous_login_possible"] = True
     mod.update(server, validate=True, restart=True)
@@ -61,6 +63,7 @@ def test_update_with_restart(tmp_path):
 def test_update_no_restart(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 16261
     server.data["Steam_AppID"] = 380870
     server.data["Steam_anonymous_login_possible"] = True
     mod.update(server, validate=False, restart=False)
@@ -71,6 +74,7 @@ def test_update_no_restart(tmp_path):
 def test_update_stop_exception(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 16261
     server.data["Steam_AppID"] = 380870
     server.data["Steam_anonymous_login_possible"] = True
     server.stop = MagicMock(side_effect=Exception('already stopped'))
@@ -160,8 +164,8 @@ def test_checkvalue_queryport():
 
 def test_checkvalue_servername():
     server = DummyServer()
-    result = mod.checkvalue(server, ("servername",), "/test/value")
-    assert result == "/test/value"
+    result = mod.checkvalue(server, ("servername",), "test-value")
+    assert result == "test-value"
 
 
 def test_checkvalue_adminpassword():

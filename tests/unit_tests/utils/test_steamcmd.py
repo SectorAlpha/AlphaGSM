@@ -360,6 +360,18 @@ def test_workshop_uses_actual_steamcmd_content_root(tmp_path, monkeypatch):
     assert steamcmd_module.download_workshop_item(tmp_path / "cache", 550, 10, True) == str(content)
 
 
+def test_workshop_legacy_success_reports_payload_file(tmp_path, monkeypatch):
+    content = tmp_path / "steamapps/workshop/content/550/10"
+    content.mkdir(parents=True)
+    payload = content / "123_legacy.bin"
+    payload.write_bytes(b"payload")
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(steamcmd_module.sp, "run", lambda *a, **kw: sp.CompletedProcess(
+        a[0], 0, f'Success. Downloaded item 10 to "{payload}" (7 bytes)\n'))
+    assert steamcmd_module.download_workshop_item(tmp_path, 550, 10, True) == str(content)
+
+
 def test_workshop_access_denied_fails_without_retry(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)

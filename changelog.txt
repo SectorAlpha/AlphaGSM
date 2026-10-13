@@ -21,8 +21,20 @@ Historical detail lives in git history. Keep this file focused on release-facing
   configured addons before start, and track files for removal and cleanup.
 - Mod installs: retain ownership after partial collection failures and reject
   destination symlinks before copying files.
-- Tests: add opt-in L4D2 collection 3819008159 coverage for process and Docker
-  lifecycles, requiring running-engine mount evidence for every installed addon.
+- Workshop: add native desired-state activation for Garry's Mod addons,
+  Unturned maps, Project Zomboid mods, and Don't Starve Together shard mods;
+  preserve operator configuration and remove only AlphaGSM-managed entries.
+- SteamCMD: accept legacy success messages that report a payload file; L4D2
+  recognizes legacy upload names after checking their VPK headers.
+- Tests: use the public Back To School collection and Admin System addon for
+  opt-in L4D2 process/Docker checks, requiring fresh engine mount evidence.
+  Add game-specific live Workshop checks; DST requires a disposable Klei cluster.
+- Docker: relay Garry's Mod and L4D2 console input through a real terminal,
+  preserving engine probes and shutdown commands behind the runtime FIFO.
+- DST: declare the Klei cluster token as an AUTH prerequisite, synchronize
+  shard gameplay/Steam query/authentication ports, and publish all three in Docker.
+- Integration runner: allow cleanup when no matching screen sessions exist,
+  keeping prerequisite skips successful while preserving actual test failures.
 
 2026-10-11
 - Agent workflows: add 26 focused operations and development skills alongside

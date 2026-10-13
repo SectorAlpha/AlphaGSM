@@ -84,7 +84,7 @@ Native declarations remain separate from process launch requirements and the req
 | dodserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | dodsserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | doiserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
-| dstserver | - | ENABLED (BYO) | no | no | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
+| dstserver | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-token | unknown | unknown | unknown |
 | ducksideserver | - | ENABLED (AUTH) | no | no | status | wine-proton | unknown | unknown | provider-license | unknown | unknown | unknown |
 | dysserver | - | ENABLED (AUTH) | yes | no | - | steamcmd-linux | unknown | unknown | provider-license | unknown | unknown | unknown |
 | ecoserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |

@@ -230,3 +230,127 @@ def test_mod_intake_and_remove_accept_workshop_urls(tmp_path, monkeypatch):
     assert desired[1]['collection_id'] == '1'
     command(server, 'remove', 'workshop', 'https://steamcommunity.com/sharedfiles/filedetails/?id=10')
     assert [item['workshop_id'] for item in desired] == ['11']
+
+
+def test_unowned_vpk_collision_is_rejected_without_overwrite_or_ownership(tmp_path, monkeypatch):
+    payload = tmp_path / "download"
+    payload.mkdir()
+    (payload / "addon.vpk").write_bytes(b"Workshop payload")
+    adapter, server = support(tmp_path, downloader=lambda *a: payload, workshop_single_file_suffix=".vpk")
+    monkeypatch.setattr(workshop, "resolve_workshop_item", valid_item)
+    target = Path(server.data["dir"]) / "left4dead2/addons/workshop/10.vpk"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"Operator payload")
+    command = adapter.command_functions["mod"]
+    command(server, "add", "workshop", "10")
+    with pytest.raises(ServerError, match="collision|unowned"):
+        command(server, "apply")
+    assert target.read_bytes() == b"Operator payload"
+    assert server.data["mods"]["installed"] == []
+
+
+@pytest.mark.parametrize("keep_old_desired", [False, True])
+def test_owned_url_release_refresh_preserves_new_file_during_old_cleanup(tmp_path, keep_old_desired):
+    def download(url, *, target_path, **kwargs):
+        del url, kwargs
+        target_path.write_bytes(b"Updated owned payload")
+
+    adapter = build_source_addon_mod_support(
+        game_label="Source fixture", game_dir="game", cache_namespace="fixture",
+        direct_url_suffixes={".vpk": "single"}, direct_url_filename_description="VPK",
+        enabled_sources=("url",), download_to_cache_getter=lambda: download,
+    )
+    server = SimpleNamespace(data=Data(dir=str(tmp_path / "server")))
+    adapter.ensure_mod_state(server)
+    target = Path(server.data["dir"]) / "game/addons/owned.vpk"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"Old owned payload")
+    server.data["mods"]["installed"] = [{"source_type": "url", "resolved_id": "url.old",
+        "installed_files": ["game/addons/owned.vpk"]}]
+    server.data["mods"]["desired"]["url"] = [{"requested_id": "https://example.com/new.vpk",
+        "resolved_id": "url.new", "download_url": "https://example.com/new.vpk",
+        "allowed_host": "example.com", "filename": "owned.vpk", "archive_type": "single"}]
+    if keep_old_desired:
+        server.data["mods"]["desired"]["url"].insert(0, {
+            "requested_id": "https://example.com/old.vpk", "resolved_id": "url.old",
+        })
+        with pytest.raises(ServerError, match="collision"):
+            adapter.apply_configured_mods(server)
+        assert target.read_bytes() == b"Old owned payload"
+        assert [item["resolved_id"] for item in server.data["mods"]["installed"]] == ["url.old"]
+        return
+    adapter.apply_configured_mods(server)
+    assert target.read_bytes() == b"Updated owned payload"
+    assert [item["resolved_id"] for item in server.data["mods"]["installed"]] == ["url.new"]
+    adapter.apply_configured_mods(server)
+    assert target.read_bytes() == b"Updated owned payload"
+    adapter.cleanup_configured_mods(server)
+    assert not target.exists()
+
+
+def test_bare_archive_collision_is_rejected_before_any_copy(tmp_path):
+    from zipfile import ZipFile
+    archive = tmp_path / "fixture.zip"
+    with ZipFile(archive, "w") as payload:
+        payload.writestr("lua/a_new.lua", "New payload")
+        payload.writestr("lua/z_operator.lua", "Replacement payload")
+
+    def download(url, *, target_path, **kwargs):
+        del url, kwargs
+        target_path.write_bytes(archive.read_bytes())
+
+    adapter = build_source_addon_mod_support(
+        game_label="Source fixture", game_dir="game", cache_namespace="fixture",
+        direct_url_suffixes={}, direct_url_filename_description="Archive",
+        enabled_sources=("url",), download_to_cache_getter=lambda: download,
+        allow_bare_addon_root=True, bare_addon_marker_dirs=("lua",),
+    )
+    server = SimpleNamespace(data=Data(dir=str(tmp_path / "server")))
+    adapter.ensure_mod_state(server)
+    addon = Path(server.data["dir"]) / "game/addons/fixture/lua"
+    addon.mkdir(parents=True)
+    target = addon / "z_operator.lua"
+    target.write_bytes(b"Operator payload")
+    server.data["mods"]["desired"]["url"] = [{"requested_id": "https://example.com/fixture.zip",
+        "resolved_id": "url.fixture", "download_url": "https://example.com/fixture.zip",
+        "allowed_host": "example.com", "filename": "fixture.zip", "archive_type": "zip"}]
+    with pytest.raises(ServerError, match="collision|unowned"):
+        adapter.apply_configured_mods(server)
+    assert target.read_bytes() == b"Operator payload"
+    assert not (addon / "a_new.lua").exists()
+    assert server.data["mods"]["installed"] == []
+
+
+def test_archive_with_ignored_readme_installs_addon_and_preserves_operator_readme(tmp_path):
+    from zipfile import ZipFile
+    archive = tmp_path / "fixture.zip"
+    with ZipFile(archive, "w") as payload:
+        payload.writestr("game/README", "Archive README")
+        payload.writestr("game/addons/fixture/lua/server.lua", "Supported addon")
+
+    def download(url, *, target_path, **kwargs):
+        del url, kwargs
+        target_path.write_bytes(archive.read_bytes())
+
+    adapter = build_source_addon_mod_support(
+        game_label="Source fixture", game_dir="game", cache_namespace="fixture",
+        direct_url_suffixes={}, direct_url_filename_description="Archive",
+        enabled_sources=("url",), download_to_cache_getter=lambda: download,
+    )
+    server = SimpleNamespace(data=Data(dir=str(tmp_path / "server")))
+    adapter.ensure_mod_state(server)
+    game = Path(server.data["dir"]) / "game"
+    game.mkdir(parents=True)
+    readme = game / "README"
+    readme.write_text("Operator README")
+    server.data["mods"]["desired"]["url"] = [{"requested_id": "https://example.com/fixture.zip",
+        "resolved_id": "url.fixture", "download_url": "https://example.com/fixture.zip",
+        "allowed_host": "example.com", "filename": "fixture.zip", "archive_type": "zip"}]
+    adapter.apply_configured_mods(server)
+    assert readme.read_text() == "Operator README"
+    assert (game / "addons/fixture/lua/server.lua").read_text() == "Supported addon"
+    assert server.data["mods"]["installed"][0]["installed_files"] == [
+        "game/addons/fixture/lua/server.lua",
+    ]
+    adapter.cleanup_configured_mods(server)
+    assert readme.read_text() == "Operator README"

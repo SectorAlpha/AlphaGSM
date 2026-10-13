@@ -2,16 +2,21 @@
 
 import json
 import os
+from pathlib import Path
+import shutil
 import time
+from uuid import uuid4
 
 import pytest
 
 from conftest import (
     default_runtime_backend,
+    effective_runtime_backend,
+    resolve_steamcmd_linux_runtime_image,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
-    pick_free_udp_port,
+    pick_free_tcp_port_group,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -39,7 +44,7 @@ def _assert_common_l4d2_info(data):
     assert data.get("name") == "AlphaGSM Left 4 Dead 2", f"Unexpected L4D2 name: {data!r}"
 
 
-def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None):
+def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None, item_id=None):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     runtime_backend = runtime_backend or os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
@@ -53,6 +58,11 @@ def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
+    depot_cache = os.environ.get("ALPHAGSM_L4D2_TEST_CACHE")
+    if depot_cache:
+        # Preserve stock engine configs such as valve.rc; recreate server.cfg and addon state.
+        shutil.copytree(Path(depot_cache), install_dir,
+                        ignore=shutil.ignore_patterns(".alphagsm", "addons", "server.cfg"))
     config_path = tmp_path / "alphagsm.conf"
     server_name = "itl4d2server"
 
@@ -64,16 +74,20 @@ def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
-    port = pick_free_udp_port()
+    port = pick_free_tcp_port_group(2)
 
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
+    run_and_assert_ok(env, server_name, "set", "clientport", str(port + 1))
     run_and_assert_ok(env, server_name, "workshop", "list")
 
     workshop_ids = []
+    if item_id:
+        run_and_assert_ok(env, server_name, "mod", "add", "workshop", item_id)
     if collection_id:
         # Validate public collection metadata before downloading the server depots.
         run_and_assert_ok(env, server_name, "mod", "add", "workshop-collection", collection_id)
+    if collection_id or item_id:
         store = json.loads((home_dir / "conf" / f"{server_name}.json").read_text())
         workshop_ids = [entry["workshop_id"] for entry in store["mods"]["desired"]["workshop"]]
         assert workshop_ids, "Collection must contain downloadable L4D2 items"
@@ -87,12 +101,14 @@ def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
     assert result.returncode == 0, f"setup failed: {result.stderr or result.stdout}"
+    if effective_runtime_backend(runtime_backend, module_name=module_name) == "docker":
+        run_and_assert_ok(env, server_name, "set", "image", resolve_steamcmd_linux_runtime_image())
 
     server_cfg_path = install_dir / "left4dead2" / "cfg" / "server.cfg"
     assert server_cfg_path.exists()
     set_source_hibernation(server_cfg_path, enabled=False)
 
-    if collection_id:
+    if collection_id or item_id:
         run_and_assert_ok(env, server_name, "mod", "apply", timeout=1800)
         for item_id in workshop_ids:
             addon = install_dir / "left4dead2" / "addons" / "workshop" / f"{item_id}.vpk"
@@ -107,7 +123,7 @@ def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None
             env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
         _assert_common_l4d2_info(info_data)
-        if collection_id:
+        if collection_id or item_id:
             _verify_workshop_loaded(env, server_name, workshop_ids)
 
         # status
@@ -147,29 +163,36 @@ def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None
 
 @pytest.mark.parametrize("runtime_backend", ["process", "docker"])
 def test_l4d2server_workshop_collection_loads(tmp_path, runtime_backend):
-    """Download the requested collection and prove every VPK is mounted in-engine."""
+    """Load a popular public campaign collection and independent server addon."""
     require_integration_opt_in()
     if os.environ.get("ALPHAGSM_RUN_L4D2_WORKSHOP") != "1":
         pytest.skip("Set ALPHAGSM_RUN_L4D2_WORKSHOP=1 for the external Workshop collection load test")
     collection_id = os.environ.get(
         "ALPHAGSM_L4D2_WORKSHOP_COLLECTION",
-        "https://steamcommunity.com/sharedfiles/filedetails/?id=3819008159",
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=121115793",
     )
-    test_l4d2server_lifecycle(tmp_path, collection_id=collection_id, runtime_backend=runtime_backend)
+    item_id = os.environ.get(
+        "ALPHAGSM_L4D2_WORKSHOP_ITEM",
+        "https://steamcommunity.com/sharedfiles/filedetails/?id=214630948",
+    )
+    test_l4d2server_lifecycle(tmp_path, collection_id=collection_id,
+                            runtime_backend=runtime_backend, item_id=item_id)
 
 
 def _verify_workshop_loaded(env, server_name, item_ids):
     """Probe the running server through AlphaGSM console commands and console logs."""
-    run_and_assert_ok(env, server_name, "send", f"echo {BEGIN_MARKER}")
-    run_and_assert_ok(env, server_name, "send", "path")
-    run_and_assert_ok(env, server_name, "send", f"echo {END_MARKER}")
+    nonce = uuid4().hex
+    begin_marker, end_marker = f"{BEGIN_MARKER}-{nonce}", f"{END_MARKER}-{nonce}"
+    run_and_assert_ok(env, server_name, "send", f"echo {begin_marker}")
+    run_and_assert_ok(env, server_name, "send", "show_addon_load_order")
+    run_and_assert_ok(env, server_name, "send", f"echo {end_marker}")
     deadline = time.monotonic() + 60
     last_output = ""
     last_error = None
     while time.monotonic() < deadline:
         last_output = run_and_assert_ok(env, server_name, "logs", "-n", "20000").stdout
         try:
-            assert_workshop_mounts(last_output, item_ids)
+            assert_workshop_mounts(last_output, item_ids, begin_marker=begin_marker, end_marker=end_marker)
             return
         except AssertionError as exc:
             last_error = exc

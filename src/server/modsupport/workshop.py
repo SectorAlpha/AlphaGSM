@@ -108,9 +108,13 @@ class _WorkshopResolver:
                         f"Steam Workshop ID {item_id} belongs to game AppID {actual_app}; expected {self.app_id}"
                     )
                 # Valve's legacy RemoteStorage responses omit file_type entirely.
-                # Real file content identifies items; otherwise verify collection identity.
+                # Collections can expose a branding image as file_url/hcontent_file.
+                # Confirm collection identities through the authoritative children API.
                 if record.get("file_type") is None:
-                    if record.get("file_url") or record.get("hcontent_file") not in (None, "", 0, "0"):
+                    branding = (str(record.get("filename", "")).startswith("steamworkshop/collection/")
+                                or urlsplit(str(record.get("file_url", ""))).hostname
+                                == "images.steamusercontent.com")
+                    if not branding and (record.get("file_url") or record.get("hcontent_file") not in (None, "", 0, "0")):
                         record["file_type"] = 0
                     else:
                         collection = self.request("GetCollectionDetails", [item_id], "collectiondetails")[item_id]

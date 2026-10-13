@@ -12,8 +12,8 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | Status   | Count |
 |----------|-------|
 | PASSED | 139 |
-| ENABLED (AUTH) | 49 |
-| ENABLED (BYO) | 45 |
+| ENABLED (AUTH) | 50 |
+| ENABLED (BYO) | 44 |
 | DISABLED | 4 |
 | SKIPPED | 0 |
 
@@ -211,7 +211,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | fearthenightserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; AlphaGSM syncs `Moonlight/Saved/Config/WindowsServer/Engine.ini` and `GameUserSettings.ini`, launches the dedicated server with the real `Pittsburgh_Overworld?listen?Port=...?QueryPort=...?SessionName=...?MaxPlayers=...` map URL, and treats the live health surface as generic `udp` on the managed game port. CI keeps the validated Docker lifecycle after the forced host-process recheck failed to expose that surface. |
 | fofserver | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
 | frozenflameserver | SteamCMD |
-| gmodserver | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
+| gmodserver | Workshop extension PASSED 2026-10-13 in process and branch-local Docker: collection `2886432224` expands ULib/ULX, GMAs safely extract into owned addon trees, and a fresh engine probe matches addon-file CRCs plus both live server APIs. Real A2S query/info and shutdown verified. Docker used the existing 60-second stop timeout/kill fallback; graceful completion remains unproven. |
 | hl2dmserver | SteamCMD (Source) |
 | hldmserver | SteamCMD (GoldSrc) |
 | hldmsserver | SteamCMD (Source) |
@@ -224,7 +224,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | kerbalspaceprogramserver | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh smoke and focused integration now prove the old SteamCMD/platform skip note was stale: AlphaGSM downloads the Linux LunaMultiplayer release directly, launches the native `LMPServer-linux-x64/Server` host inside the shared `steamcmd-linux` runtime, creates first-run `Config/ConnectionSettings.xml` and `GeneralSettings.xml` when the upstream archive has not generated them yet, syncs the managed port, server name, and max players before start, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
-| l4d2server | SteamCMD (Source) — PASSED 2026-06-01; app `222860` installs anonymously when AlphaGSM stages the Windows depots first and then applies the Linux depots into the same server tree. Process and Docker readiness uses the real A2S `info --json` response on the managed game port because Docker console logs can omit the traditional Source startup markers. Workshop extension 2026-10-13: game-validated collection intake and VPK staging implemented; opt-in process/Docker mounting tests for collection `3819008159` remain blocked because Valve's public metadata and collection APIs return result `9` (unavailable). Base lifecycle support is unchanged. |
+| l4d2server | SteamCMD (Source) — PASSED 2026-06-01; app `222860` installs anonymously by staging Windows then Linux depots. Workshop extension PASSED 2026-10-13 in process and branch-local Docker: Back To School collection `121115793` plus Admin System `214630948`; fresh engine addon load order confirms all 11 VPKs, with Admin System execution also observed. Real A2S readiness/query/info/info-json, status and UDP shutdown verified. Process stopped normally; Docker used the existing 60-second stop timeout/kill fallback, so graceful Docker shutdown remains unproven. The unavailable collection `3819008159` is no longer the default. |
 | lastoasisserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-30; anonymous SteamCMD app `920720`, the native `MistServer-Linux-Shipping` payload, and generic `tcp` health on the managed main port remain the supported contract. The 2026-07-16 forced process lane mounted content but never opened that surface, so CI now keeps one Docker-default lifecycle. |
 | longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
 | minecraft_bedrock | Docker runtime (service-console) — PASSED 2026-05-30; fresh focused integration now passes on the rebuilt branch-local `service-console` runtime image after AlphaGSM switches Bedrock setup from the stale JavaScript-page assumption to a direct browser-header archive fetch, keeps Docker-first lifecycle coverage on the shared runtime family, and uses Docker-stop for the container-backed stop path because Bedrock echoes console `stop` input without exiting cleanly under the shared exec-console path |
@@ -250,7 +250,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | palworld | SteamCMD Linux, process + Docker — PASSED; the corrected contract publishes and launches only Palworld's documented UDP game port, removes the invented query-port argument, and uses generic UDP `query`, `info`, and `info --json` on the managed game port. Fresh validation of this correction is pending the replacement CI run. |
 | primalcarnageextinctionserver | Wine/Proton — PASSED 2026-05-28; the corrected dedicated launch argv now feeds the `PC-Docks?...?bIsDedicated=true` map URL directly to `PrimalCarnageServer.exe`, focused smoke/integration reach `LoadMap: PC-Docks`, `Game class is 'PCTeamDeathMatchGame'`, and `NetMode is now 1`, A2S/info succeed on the managed `queryport`, and `stop` closes the live UE3 ports cleanly |
 | pcarserver | PASSED 2026-05-23; standard smoke and focused integration now both pass, with readiness driven by `info --json` protocol `a2s` on the derived query port (`port + 1`) |
-| projectzomboid | SteamCMD |
+| projectzomboid | Workshop extension PASSED 2026-10-13 on Build 42.21 in process and branch-local Docker: anonymous item `2773478544`, native Workshop Ready/install, exact mod ID loading and server Lua execution, status/query/info/info-json, successful stop, UDP shutdown, and removal verified. Build 41 compatibility has metadata unit coverage; its live runtime was not tested. |
 | q2server | Direct download — PASSED 2026-05-18; setup builds Yamagi Quake II from source, stages the official demo `baseq2` data, and defaults fresh servers to `demo1`. Process and Docker query/info use the dedicated Quake II `status` protocol, while Docker runs as the invoking host user because Quake II refuses root execution. |
 | qwserver | Direct download — PASSED 2026-05-18; setup stages the public nQuake shareware, KTX runtime, configs, and core maps needed for anonymous MVDSV installs. GitHub CI authenticates release metadata resolution, process and Docker launch with `-game ktx`, and the shared Quake image supplies MVDSV's required `libcurl.so.4` before validating the QuakeWorld `status` protocol. |
 | pvkiiserver | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
@@ -285,7 +285,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | tfcserver | SteamCMD (GoldSrc) |
 | thefrontserver | SteamCMD — PASSED on the Ubuntu 24.04 baseline; process and Docker retain one game command. The current Docker correction opts into the shared non-root host UID/GID contract with manager-owned HOME state, fail-closed host-path translation, and matching `doctor` checks. Replacement CI validation is pending and this does not record a new pass. |
 | trackmaniaserver | Direct download — PASSED 2026-05-17; setup now syncs the configured XML-RPC port into `GameData/Config/dedicated_cfg.txt`, launch stays attached with `/nodaemon`, and query/info use TCP reachability on the XML-RPC endpoint |
-| unturned | SteamCMD |
+| unturned | SteamCMD — Workshop map extension PASSED 2026-10-13 in process and Docker with public PEI Arena item `2396897717`: native download, engine level loading at 100%, real A2S map, query/info/status, removal and shutdown verified. Docker reached the existing graceful-stop timeout and used the kill fallback; clean-save completion is not established. |
 | ut2k4server | Direct download — PASSED 2026-05-29; fresh focused integration now passes once AlphaGSM requires the OldUnreal installer prerequisites, isolates the runtime `HOME` under `.alphagsm/ut2k4-home` so per-instance user state no longer leaks between servers, extends the setup budget for the full native installer path, and aligns `query`, `info`, and `info --json` to the current generic `udp` health surface on the managed game port |
 | ut99server | Direct download |
 | valheim | Docker runtime (SteamCMD Linux) — PASSED; the current contract includes `libatomic1`, `libpulse0`, and `libpulse-dev`, waits for `Game server connected`, publishes the primary and adjacent UDP server ports, and validates generic UDP `query`, `info`, and `info --json` on the primary game port instead of requiring a stale A2S response. Fresh validation is pending the replacement CI run. |
@@ -315,7 +315,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (49)
+## ENABLED (AUTH) (50)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -372,7 +372,9 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
 | zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |
 
-## ENABLED (BYO) (45)
+| dstserver | Klei cluster token plus disposable cluster/shard config; native Workshop declarations and process/Docker load-test harness added 2026-10-13. Live load remains pending: no Klei cluster supplied. `ALPHAGSM_DST_CLUSTER_SOURCE` enables the explicit credentialed test. |
+
+## ENABLED (BYO) (44)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -393,7 +395,6 @@ URLs.
 | cod4server | owned base-game assets |
 | codserver | owned multiplayer map content; the public dedicated archive ships the server payload and base PK3 files but no `maps/mp/*.bsp` map data |
 | coduoserver | owned base multiplayer assets |
-| dstserver | cluster token plus staged cluster config |
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
 | foundryserver | staged native FOUNDRY dedicated server tree |

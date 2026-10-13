@@ -355,7 +355,8 @@ Curated server-side mod support now has a shared core under
   any additions. Collection provenance is stored on ordinary desired Workshop
   entries; imports are snapshots and do not remove previously requested items.
   Legacy metadata without `file_type` uses content fields to identify items
-  and verified collection details to identify collections.
+  and verified collection details to identify collections. Collection branding
+  image URLs are not downloadable item payloads.
 - `source_addons.py` revalidates desired Workshop metadata on apply, including
   legacy/manual entries, in batches under one resolver's request budget.
   Each completed installation persists ownership before proceeding so a later
@@ -378,6 +379,26 @@ Curated server-side mod support now has a shared core under
   on publication failure; obsolete upstream files do not accumulate. Cache
   symlinks are checked before SteamCMD runs. This shared path stages content;
   module adapters own activation.
+- `native_workshop.py` shares game-validated item/collection intake and native
+  configuration state for Unturned, Project Zomboid and DST. Adapters receive
+  a completely validated ordered ID list; `native_workshop.status=configured`
+  describes declarations, not engine load evidence. Contained nonsymlink paths
+  and atomic text publication protect native configs. Cleanup calls the adapter
+  with an empty list before clearing desired entries. Module callbacks own
+  preservation/removal of operator config and multi-file rollback.
+- `utils.source_console.build_source_container_start_command` relays the runtime console FIFO through
+  `bsdutils` script so Garry's Mod and L4D2 see a real input terminal. Process
+  commands keep their ordinary launch path.
+- Garry's Mod validates GMAD tables, paths, sizes and CRCs before extracting
+  GMA payloads into owned addon trees. Unturned preserves existing File_IDs;
+  Project Zomboid inspects multiplayer mod metadata and preserves unowned
+  WorkshopItems/Mods entries. DST snapshots operator Lua and refuses to overwrite
+  later external edits; cleanup restores originals, including prior shard files.
+- `download_workshop_items` exposes the verified staged downloader to native
+  adapters, checking anonymous capability, game identity and complete item
+  metadata before SteamCMD. SteamCMD legacy success paths may name a file inside
+  the expected content directory. L4D2 normalizes legacy `.bin` uploads only
+  after validating a VPK header.
 - Workshop download verification requires the item-specific SteamCMD success
   path, an expected app/item content directory under the requested cache or
   configured SteamCMD root, and nonempty file content. Exit code zero and an

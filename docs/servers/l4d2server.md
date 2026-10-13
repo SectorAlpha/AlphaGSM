@@ -126,9 +126,8 @@ alphagsm myserver set KEY VALUE
 - **Map directory**: `left4dead2/maps/`
 - **Mod directory**: `left4dead2/addons/`
 - **Workshop support**: Anonymous item and collection downloads with game AppID
-  validation and one bare VPK per item. Live collection load validation is
-  pending: Steam's public APIs returned result `9` (unavailable) for collection
-  `3819008159` on 2026-10-13.
+  validation and one bare VPK per item, including verified legacy upload names.
+  The opt-in live test uses public Back To School and Admin System fixtures.
 - **Mod notes**: AlphaGSM manages addons from checked-in `manifest` entries,
   direct `url` entries, GameBanana IDs, Mod DB URLs, and game-validated Workshop
   IDs/collections. The manifest includes MetaMod and SourceMod. Direct URLs
@@ -166,7 +165,7 @@ before launch. Re-importing a collection adds new items without deleting old
 ones. Remove an individual entry with `mod remove workshop ITEM_ID`, then
 `mod apply`. Steam can still require an entitled account for some downloads.
 
-To test the supplied collection on process and Docker runtimes:
+To test a public campaign collection and server addon on process and Docker runtimes:
 
 ```bash
 ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
@@ -175,12 +174,23 @@ PYTHONPATH=.:src python3 -m pytest tests/integration_tests/test_l4d2server.py \
   -k workshop_collection -s
 ```
 
-The test defaults to collection `3819008159`; set
-`ALPHAGSM_L4D2_WORKSHOP_COLLECTION` to override it. It exercises AlphaGSM
+The test defaults to [Back To School](https://steamcommunity.com/sharedfiles/filedetails/?id=121115793)
+collection `121115793` and the independent
+[Admin System](https://steamcommunity.com/sharedfiles/filedetails/?id=214630948)
+item `214630948`. Set `ALPHAGSM_L4D2_WORKSHOP_COLLECTION` and
+`ALPHAGSM_L4D2_WORKSHOP_ITEM` to override them. The earlier collection
+`3819008159` returned Valve result `9` (unavailable), so it is no longer the
+default. The test exercises AlphaGSM
 create/setup/start/readiness/status/query/info/stop and requires every addon
-in the running engine's mounted search paths. File existence alone cannot
+in the running engine's addon load order. File existence alone cannot
 pass. This proves VPK mounting, rather than client rendering or every gameplay
 effect. An unavailable collection fails before downloading the server.
+
+Both process and branch-local Docker tests passed on 2026-10-13. Fresh engine
+output listed all 11 VPKs and showed Admin System executing; real A2S query/info
+and UDP shutdown also passed. Process shutdown completed normally. Docker used
+the existing 60-second timeout/kill fallback, so graceful Docker shutdown remains
+unverified.
 
 The streamed equivalent is
 `ALPHAGSM_RUN_L4D2_WORKSHOP=1 make smoke-test SMOKE_TEST=run_l4d2server.sh`.

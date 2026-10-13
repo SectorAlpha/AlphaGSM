@@ -287,7 +287,12 @@ def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonym
         last_output = proc.stdout
         success = success_pattern.search(proc.stdout)
         if proc.returncode == 0 and success and "ERROR!" not in proc.stdout:
-            content_dir = Path(success.group(1)).resolve()
+            reported_path = Path(success.group(1))
+            content_dir = reported_path.resolve()
+            # Legacy Workshop uploads report a payload filename instead of its directory.
+            if (reported_path.is_file() and not reported_path.is_symlink()
+                    and reported_path.stat().st_size > 0):
+                content_dir = content_dir.parent
             if content_dir in content_roots and content_dir.is_dir() and any(
                 file.is_file() and not file.is_symlink() and file.stat().st_size > 0
                 for file in content_dir.rglob("*")

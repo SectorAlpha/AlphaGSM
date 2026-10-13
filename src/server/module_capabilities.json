@@ -3915,16 +3915,20 @@
     {
       "aliases": [],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "authport",
+        "port",
+        "queryport"
+      ],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
-        "get_provider_requirements": false,
-        "get_query_address": false,
+        "get_provider_requirements": true,
+        "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "dstserver",
       "platform_requirements": {
@@ -3937,10 +3941,12 @@
         }
       },
       "platforms": null,
-      "provider_categories": [],
+      "provider_categories": [
+        "provider-token"
+      ],
       "query_protocols": {
-        "info": null,
-        "query": null
+        "info": "a2s",
+        "query": "a2s"
       },
       "runtime": {
         "docker": true,
@@ -3948,15 +3954,13 @@
         "process": true
       },
       "schema_version": 1,
-      "support_state": "ENABLED (BYO)",
+      "support_state": "ENABLED (AUTH)",
       "unknown_fields": [
         "architectures",
         "platform_requirements.docker.operating_system",
         "platform_requirements.process.architectures",
         "platform_requirements.process.platforms",
-        "platforms",
-        "query_protocols.info",
-        "query_protocols.query"
+        "platforms"
       ]
     },
     {
@@ -8098,7 +8102,11 @@
         "pzserver"
       ],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "port",
+        "queryport",
+        "servername"
+      ],
       "hooks": {
         "get_container_spec": true,
         "get_info_address": true,
@@ -8107,7 +8115,7 @@
         "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "projectzomboid",
       "platform_requirements": {

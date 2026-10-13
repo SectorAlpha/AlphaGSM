@@ -220,7 +220,7 @@ def extract_7z_safe(archive_path, extract_root):
     return extracted_paths
 
 
-def install_staged_tree(*, staged_root, server_root, allowed_destinations):
+def install_staged_tree(*, staged_root, server_root, allowed_destinations, ignore_unapproved=False):
     """Install staged files into approved server destinations only."""
     staged_root = Path(staged_root).resolve()
     server_root = Path(server_root).resolve()
@@ -238,6 +238,8 @@ def install_staged_tree(*, staged_root, server_root, allowed_destinations):
             ) from exc
         relative_path = source_path.relative_to(staged_root)
         if not _is_allowed_destination(relative_path, approved_roots):
+            if ignore_unapproved:
+                continue
             raise ModSupportError(f"Refusing to install outside approved destinations: {relative_path.as_posix()}")
         destination = server_root / relative_path
         try:
