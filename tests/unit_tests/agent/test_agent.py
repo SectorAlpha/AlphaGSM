@@ -112,3 +112,24 @@ def test_runtime_deadline_kills_helper_and_journals_unknown(tmp_path, monkeypatc
     assert result['outcome'] == 'unknown'
     assert result['category'] == 'budget_exceeded'
     assert ex.run(j) == result
+
+
+def test_replace_credential_preserves_policy_and_other_capability(tmp_path):
+    cfg = config(tmp_path)
+    old = cfg.load()
+    cfg.replace_credential("reporting", "new-report", "r" * 43)
+    assert cfg.load()["management"] == old["management"]
+    assert cfg.load()["bindings"] == old["bindings"]
+    cfg.replace_credential("management", "new-management", "m" * 43, generation=2)
+    current = cfg.load()
+    assert current["credential_generation"] == 2
+    assert current["reporting"] == {"key_id": "new-report", "secret": "r" * 43}
+    assert current["bindings"] == old["bindings"]
+    with pytest.raises(ConfigError):
+        cfg.replace_credential("management", "old-key", "x" * 43, generation=1)
+    reporting_only = Config(tmp_path / "reporting-only")
+    reporting_only.enroll("https://control.example", {
+        "schema_version": 1, "installation_id": "only-report", "credential_generation": 1,
+        "reporting": {"key_id": "report", "secret": "r" * 43}, "management": None})
+    with pytest.raises(ConfigError):
+        reporting_only.replace_credential("management", "forbidden", "m" * 43, generation=2)

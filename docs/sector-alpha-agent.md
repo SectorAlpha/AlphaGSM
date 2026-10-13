@@ -72,3 +72,12 @@ helper when `ALPHAGSM_VALIDATE_AGENT=1`, using its selected process/Docker runti
 The service repository supplies the verified HTTPS and PostgreSQL boundary tests.
 Production deployment still needs real TLS, secrets and the isolated query worker
 firewall described by the compatible service.
+
+Rotate one key in the website owner dashboard, then run either
+`alphagsm agent replace-credential reporting` or
+`alphagsm agent replace-credential management`. Enter the key ID and secret at
+the interactive prompts; management also asks for the new generation shown by
+the website. Reporting rotation leaves management/jobs unchanged. Management
+rotation cancels pending jobs under the old generation and leaves reporting
+credentials valid. Existing local opt-ins and selected server permissions stay
+unchanged; replacement cannot add a capability that was not enrolled.

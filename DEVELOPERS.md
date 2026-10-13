@@ -1038,3 +1038,8 @@ Windows credential storage deliberately fails closed pending an ACL adapter.
 Binary package collection, lint and coverage include agent. The service lives
 in the separate alpha-platform-lite repository; it supplies PostgreSQL roles,
 TLS transport round trips and worker isolation validation.
+
+Credential generation is the management dispatch fence. Reporting authentication
+uses its independent active key, so management key rotation cannot interrupt
+reports. Local key replacement requires the previously enrolled capability and
+never changes bindings/opt-ins; management generations must strictly advance.

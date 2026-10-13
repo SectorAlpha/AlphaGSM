@@ -121,6 +121,27 @@ class Config:
             value["origin"] = api_origin
             self._write(value)
 
+    def replace_credential(self, scope, key_id, secret, *, generation=None):
+        """Import one rotated key without granting a capability or changing policy."""
+        if scope not in ("reporting", "management"):
+            raise ConfigError("Invalid capability")
+        identifier(key_id)
+        if type(secret) is not str or not re.fullmatch(r"[A-Za-z0-9_-]{43}", secret):
+            raise ConfigError("Invalid credential")
+        with state_lock(self.path):
+            value = self.load()
+            if value[scope] is None:
+                raise ConfigError("This capability was not enrolled")
+            if scope == "management":
+                integer(generation)
+                if generation <= value["credential_generation"]:
+                    raise ConfigError("Management generation must advance")
+                value["credential_generation"] = generation
+            elif generation is not None:
+                raise ConfigError("Reporting rotation does not change management generation")
+            value[scope] = {"key_id": key_id, "secret": secret}
+            self._write(value)
+
     def bind(self, binding_id, tag, epoch, *, actions, publication, metadata):
         identifier(binding_id)
         local_tag(tag)

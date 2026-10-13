@@ -24,6 +24,8 @@ def run(args, *, root=None):
         "forget",
     ):
         commands.add_parser(command)
+    replacement = commands.add_parser("replace-credential")
+    replacement.add_argument("scope", choices=("reporting", "management"))
     bind = commands.add_parser("bind")
     bind.add_argument("binding_id")
     bind.add_argument("local_tag")
@@ -52,6 +54,12 @@ def run(args, *, root=None):
             response = Transport(api_origin).request("POST", "/v1/agent/enroll", payload={"code": code})
             cfg.enroll(api_origin, response)
             print("Enrolled. Reporting and management remain disabled until you enable each locally.")
+        elif options.command == "replace-credential":
+            key_id = input("Rotated key ID: ").strip()
+            secret = getpass.getpass("Rotated credential secret: ").strip()
+            generation = int(input("New management generation: ")) if options.scope == "management" else None
+            cfg.replace_credential(options.scope, key_id, secret, generation=generation)
+            print("Selected credential replaced. Existing local permissions are unchanged.")
         elif options.command == "bind":
             # Verify that the local target exists under this user's normal AlphaGSM namespace.
             from server.server import Server
